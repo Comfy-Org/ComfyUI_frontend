@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
     data-testid="bypass-button"

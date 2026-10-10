@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
@@ -164,7 +164,6 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
 
       splatLoad.mockRejectedValueOnce(new Error('boom'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=scan.splat')
 
@@ -350,7 +349,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -507,9 +506,6 @@ describe('LoaderManager', () => {
       const { lm, eventManager } = makeLoaderManager()
       const err = new Error('boom')
       meshLoad.mockRejectedValueOnce(err)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb')
 
@@ -517,10 +513,10 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
-      expect(consoleError).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('suppresses the alert on a 404 when silentOnNotFound is set', async () => {
@@ -529,16 +525,13 @@ describe('LoaderManager', () => {
         'fetch for "..." responded with 404: Not Found'
       )
       meshLoad.mockRejectedValueOnce(notFound)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(consoleError).toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -549,13 +542,12 @@ describe('LoaderManager', () => {
         response: { status: 404 }
       })
       meshLoad.mockRejectedValueOnce(httpError)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -563,13 +555,12 @@ describe('LoaderManager', () => {
     it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -608,18 +599,14 @@ describe('LoaderManager', () => {
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
       const { lm, modelManager } = makeLoaderManager()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?type=output', 'uploads/file.glb')
 
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Missing filename in URL:',
         'api/view?type=output'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
 
     it('proxies setOriginalModel and registerOriginalMaterial through the load context', async () => {
@@ -671,10 +658,6 @@ describe('LoaderManager', () => {
         .mockImplementationOnce(() => firstLoad)
         .mockResolvedValueOnce(new THREE.Object3D())
 
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
       const firstPromise = lm.loadModel('api/view?filename=first.glb')
       const secondPromise = lm.loadModel('api/view?filename=second.glb')
 
@@ -682,12 +665,11 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )
       expect(endEmits).toHaveLength(1)
-      consoleError.mockRestore()
     })
   })
 })

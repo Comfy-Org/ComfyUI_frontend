@@ -2,9 +2,36 @@ import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
+import type { LocaleAlternate } from '@/lib/hreflang'
 import SiteFooter from './SiteFooter.vue'
 
+const agentAlternates: LocaleAlternate[] = [
+  { locale: 'en', path: '/agent/' },
+  { locale: 'zh-CN', path: '/zh-CN/agent/' }
+]
+
 describe('SiteFooter', () => {
+  it.for([
+    ['en', 'Changelog', 'Resources'],
+    ['zh-CN', '更新日志', '资源'],
+    ['ja', 'Changelog', 'Resources']
+  ] as const)(
+    'links the live changelog last in footer Resources (%s)',
+    ([locale, name, resources]) => {
+      render(SiteFooter, { props: { locale } })
+      const links = screen.getAllByRole('link', { name })
+      expect(links.map((link) => link.getAttribute('href'))).toEqual(
+        Array(links.length).fill('/changelog/')
+      )
+      const columns = screen.getAllByRole('navigation', { name: resources })
+      expect(
+        columns.map((column) =>
+          within(column).getAllByRole('link').at(-1)?.textContent.trim()
+        )
+      ).toEqual(Array(columns.length).fill(name))
+    }
+  )
+
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
@@ -91,7 +118,6 @@ describe('SiteFooter', () => {
       ['Comfy MCP', routes.mcp],
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
-      ['Launches', routes.launches],
       ['Supported Models', routes.models]
     ])
   })
@@ -106,22 +132,29 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Launches and Supported Models only in Features', () => {
+  it('keeps Supported Models out of every column but Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
       const nav = screen.getByRole('navigation', { name: column })
-      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
       expect(
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
-    const features = screen.getByRole('navigation', { name: 'Features' })
+  })
+
+  it('hands the page alternates and the reader locale to the switcher', () => {
+    render(SiteFooter, {
+      props: { locale: 'zh-CN', alternates: agentAlternates }
+    })
+
     expect(
-      within(features).getByRole('link', { name: 'Launches' })
-    ).toBeTruthy()
-    expect(
-      within(features).getByRole('link', { name: 'Supported Models' })
-    ).toBeTruthy()
+      within(screen.getByRole('navigation', { name: '语言' }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+    ).toEqual([
+      ['English', '/agent/'],
+      ['简体中文', '/zh-CN/agent/']
+    ])
   })
 })

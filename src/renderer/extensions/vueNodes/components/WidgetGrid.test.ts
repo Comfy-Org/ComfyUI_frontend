@@ -1,7 +1,14 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { computed, defineComponent, h, markRaw, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  markRaw,
+  ref
+} from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -64,6 +71,11 @@ const WidgetStub = markRaw(
   })
 )
 
+const AttrsDroppingWidgetStub = defineComponent({
+  inheritAttrs: false,
+  template: '<div><input data-testid="widget-control" /></div>'
+})
+
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
@@ -78,8 +90,10 @@ const AppInputStub = defineComponent({
   props: {
     name: { type: String, required: true }
   },
-  template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+  template: `
+    <div data-testid="app-input" :data-widget-name="name"><slot /></div>
+    <span data-testid="app-input-sibling" />
+  `
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -113,7 +127,6 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
           messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
         })
       ],
-      directives: { tooltip: {} },
       stubs: { AppInput: AppInputStub }
     }
   })
@@ -299,7 +312,6 @@ describe('WidgetGrid', () => {
       render(Host, {
         global: {
           plugins: [testI18n],
-          directives: { tooltip: {} },
           stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
         }
       })
@@ -347,7 +359,6 @@ describe('WidgetGrid', () => {
         ]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: {
           AppInput: AppInputStub,
           InputSlot: InputSlotStub
@@ -372,6 +383,38 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
+  it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
+    const user = userEvent.setup()
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('seed', 'number', 0),
+            tooltipText: 'Widget value',
+            vueComponent: markRaw(
+              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+            )
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: InputSlotStub
+        }
+      }
+    })
+
+    await user.hover(await screen.findByTestId('widget-control'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    await waitFor(() =>
+      expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
+    )
+  })
+
   it('passes execution errors to the widget control API', () => {
     render(WidgetGrid, {
       props: {
@@ -380,7 +423,6 @@ describe('WidgetGrid', () => {
         processedWidgets: [{ ...widget('seed', 'string', 0), hasError: true }]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
       }
     })

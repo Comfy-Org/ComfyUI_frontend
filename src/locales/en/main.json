@@ -264,7 +264,7 @@
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
-    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "versionMismatchUpdateInstructions": "{detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
     "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
@@ -2272,12 +2272,16 @@
     "hideGizmos": "Hide gizmos",
     "lookThrough": "Camera view",
     "exitLookThrough": "Exit camera view",
+    "outputView": "Output view",
+    "lockCamera": "Lock camera",
+    "unlockCamera": "Unlock camera",
     "transformGizmo": {
       "label": "Edit",
       "none": "None",
       "target": "Target",
       "cameraTranslate": "Cam pos",
-      "cameraRotate": "Cam rot"
+      "cameraRotate": "Cam rot",
+      "lightPosition": "Light pos"
     },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
@@ -2407,7 +2411,8 @@
     "height": "Height",
     "background": "Background",
     "clear": "Clear",
-    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+    "uploadError": "Failed to upload painter image: {status} - {statusText}",
+    "uploadMissingName": "Painter image upload returned no file name"
   },
   "boundingBox": {
     "x": "X",
@@ -2458,6 +2463,23 @@
       "top": "TOP",
       "bottom": "BOTTOM"
     }
+  },
+  "lightInfo": {
+    "addLight": "Add light",
+    "removeLight": "Remove light",
+    "lightChip": "Light {index}, {type}",
+    "noLights": "Add a light to get started.",
+    "directional": "Directional",
+    "point": "Point",
+    "spot": "Spot",
+    "color": "Color",
+    "intensity": "Intensity",
+    "range": "Range",
+    "innerCone": "Inner cone",
+    "outerCone": "Outer cone",
+    "castShadow": "Cast shadow",
+    "size": "Size",
+    "angle": "Angle"
   },
   "boundingBoxes": {
     "clearAll": "Clear all",
@@ -2532,6 +2554,16 @@
     "noVideoSource": "Select or connect a video to preview and edit"
   },
   "toastMessages": {
+    "nothingToPasteIntoNode": "Nothing to paste into this node",
+    "notificationsLabel": "Notification",
+    "notificationsViewportLabel": "Notifications ({hotkey})",
+    "modelsAndCacheCleared": "Models and Execution Cache have been cleared.",
+    "modelsUnloaded": "Models have been unloaded.",
+    "unloadModelsFailed": "Unloading of models failed. Installed ComfyUI may be an outdated version.",
+    "unloadModelsError": "An error occurred while trying to unload models.",
+    "workflowLinksFixed": "Fixed {patched} node connections and removed {deleted} invalid links.",
+    "workflowLinksFixedTitle": "Workflow Links Fixed",
+    "workflowValidationTitle": "Workflow Validation",
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
@@ -2546,6 +2578,7 @@
     "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "a1111EmbeddingsUnavailable": "Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.",
     "dropFileError": "Unable to process dropped item: {error}",
+    "failedToRegisterSubgraph": "Failed to register subgraph",
     "assetDropFailed": "Unable to load the dropped asset",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Issues tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Issues tab.",
@@ -2556,6 +2589,7 @@
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
     "extraResourcesUploadFailed": "Extra resources upload failed",
+    "noWebcamImageCaptured": "No webcam image captured",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -2569,6 +2603,7 @@
     "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "invalidTemplateData": "Failed to load node template: invalid data",
+    "failedToSaveNodeTemplates": "Failed to save node templates",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
@@ -2590,6 +2625,7 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
+    "failedToInitializeLightInfoViewer": "Failed to initialize Light Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -2658,6 +2694,11 @@
     }
   },
   "auth": {
+    "desktopHost": {
+      "continueInBrowser": "Finish signing in in your browser",
+      "signInFailed": "Sign-in didn't finish. Try again.",
+      "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
+    },
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "apiKey": {
@@ -2902,10 +2943,7 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
-      "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
       "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
-      "manageBillingError": "Failed to open the billing portal. Please try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2968,6 +3006,9 @@
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
+    "cancelPaymentFailed": "We couldn't cancel this payment. Please try again.",
+    "cancelPaymentInFlight": "This payment is already processing and can't be canceled.",
+    "cancelPaymentNotCancelable": "This payment can no longer be canceled.",
     "operationAlreadyPendingDetail": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
@@ -2991,6 +3032,9 @@
     "cancelTimeout": "Subscription cancellation timed out"
   },
   "subscription": {
+    "planNotAvailable": "This plan is not available",
+    "previewLoadFailed": "Failed to load subscription preview",
+    "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
@@ -3033,19 +3077,45 @@
       "description": "You won't be charged again. Your features remain active until {date}.",
       "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period."
     },
-    "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
-      "title": "Cancel subscription",
-      "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
-      "endOfBillingPeriod": "end of billing period",
+      "endOfBillingPeriod": "the end of your billing period",
       "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
-      "keepSubscription": "Keep subscription",
-      "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
-      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option.",
-      "discountApplied": "Your discount has been applied, so this subscription wasn't canceled. Close this window to see your updated plan.",
-      "discountRefreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
+      "workspaceChanged": "Your active workspace changed. Switch back and try again."
+    },
+    "retentionOffer": {
+      "title": "Before you go",
+      "subtitle": "Here's an offer while you decide",
+      "stayOnPlan": "Stay on {plan}",
+      "percentOff": "{percent}% off",
+      "perMonth": "/mo",
+      "term": "for your next payment, then {regular}/mo | for your next {months} payments, then {regular}/mo",
+      "keepCreditsAndLoRAs": "Keep your {credits} monthly credits, custom LoRAs, and everything else in {plan}.",
+      "keepCredits": "Keep your {credits} monthly credits and everything else in {plan}.",
+      "keepEverything": "Keep everything in your {plan} plan.",
+      "finePrint": "One-time offer. After 1 renewal, {plan} returns to {regular}/mo. Cancel anytime. | One-time offer. After {months} renewals, {plan} returns to {regular}/mo. Cancel anytime.",
+      "accept": "Keep {plan} and save {percent}%",
+      "appliedTitle": "You're staying on {plan}",
+      "appliedBody": "{percent}% off is applied to your next payment, starting {date}. | {percent}% off is applied to your next {months} payments, starting {date}.",
+      "nextPayments": "Next payment | Next {months} payments",
+      "appliedBadge": "Applied",
+      "pricePerMonth": "{price}/mo",
+      "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
+      "renewsAt": "Renews at {regular} on {date}.",
+      "failedTitle": "We couldn't apply your discount",
+      "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
+      "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
+      "expiredTitle": "This offer is no longer available",
+      "expiredBody": "It expired, or your plan changed since it was made. Close and reopen cancellation to see your current options.",
+      "supportCode": "If this keeps happening, contact support with code DISCOUNT_NOT_APPLIED.",
+      "tryAgain": "Try again",
+      "unconfirmedTitle": "Your discount isn't confirmed yet",
+      "unconfirmedBody": "Your discount may still be applying. Check again in a moment before you make another billing change.",
+      "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
+      "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
+      "checkAgain": "Check again",
+      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change.",
+      "refreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
@@ -3296,6 +3366,7 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "cancelPaymentAndRetry": "Cancel payment and try again",
       "pendingVerificationDetail": "A payment you started earlier still needs your attention. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
       "completePayment": "Complete your payment",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
@@ -3396,6 +3467,54 @@
       "sendInvites": "Send invites",
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
+    },
+    "cancelFlow": {
+      "keepPlan": "Keep my plan",
+      "continueCancelling": "Continue cancelling",
+      "done": "Done",
+      "genericPlanName": "Comfy Cloud",
+      "survey": {
+        "title": "Why are you cancelling?",
+        "subtitle": "Optional, but it helps make Comfy Cloud better.",
+        "reasons": {
+          "tooExpensive": "Too expensive",
+          "notUsingEnough": "Not using it enough",
+          "missingFeatures": "Missing features or models",
+          "switchingTools": "Switching to another tool",
+          "somethingElse": "Something else"
+        },
+        "commentLabel": "Anything else you want to share? (optional)",
+        "commentPlaceholder": "Tell us anything"
+      },
+      "confirm": {
+        "title": "Cancel your plan?",
+        "description": "Your {plan} plan stays active until {date}, and you won't be charged again. You can resubscribe anytime.",
+        "loseAccess": "After {date}, you'll lose access to:",
+        "cancelPlan": "Cancel my plan",
+        "features": {
+          "gpus": {
+            "title": "Cloud GPUs",
+            "description": "RTX 6000 Pro hardware, nothing to set up."
+          },
+          "models": {
+            "title": "Every model, one balance",
+            "description": "Open-source and partner models side by side."
+          },
+          "customNodes": {
+            "title": "Custom nodes, ready",
+            "description": "The nodes behind ~90% of community workflows."
+          },
+          "credits": {
+            "monthly": "{credits} monthly credits",
+            "yearly": "{credits} yearly credits",
+            "generic": "Monthly credits",
+            "description": "Your credits stop refilling."
+          }
+        }
+      },
+      "cancelled": {
+        "title": "Your plan is cancelled"
+      }
     }
   },
   "userSettings": {
@@ -3737,6 +3856,7 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
@@ -4201,7 +4321,7 @@
     "assetDelete": {
       "error": "Items failed to delete",
       "success": "Deletion successful",
-      "warn": "Some items failed to delete"
+      "warning": "Some items failed to delete"
     },
     "assetsDeleted": "{n} / {total} assets were deleted",
     "jobsDeleted": "{n} / {total} jobs were deleted",
@@ -4322,7 +4442,13 @@
     "buttonLabel": "Deploy to Comfy API",
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
-    "deployOnPlatform": "Deploy on Platform"
+    "deployOnPlatform": "Deploy on Platform",
+    "deployWithAgent": "Build with your agent",
+    "copied": "Copied",
+    "summaryPacks": "{count} node pack | {count} node packs",
+    "summaryModels": "{count} model | {count} models",
+    "summaryClasses": "{count} node class | {count} node classes",
+    "briefFailed": "The brief for your agent could not be prepared. Try again."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -5168,7 +5294,7 @@
   },
   "workspace": {
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to:",
+    "addedToNamedWorkspace": "You have been added to {workspaceName}",
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
@@ -5464,6 +5590,7 @@
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
+    "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",
@@ -5524,7 +5651,14 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
+    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
+    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "skills": "Skills",
+    "typeToSearch": "type to search",
+    "skillNotAvailable": "Not available",
+    "skillsLoading": "Loading skills…",
+    "skillsLoadError": "Could not load skills. Try again.",
+    "noSkillsFound": "No skills found",
     "suggestedPrompts": {
       "cloud": [
         "Generate a character sheet of an astronaut",
@@ -5539,7 +5673,16 @@
         "Explain the selected nodes",
         "Help me install the missing nodes for this workflow",
         "Fix the errors in this workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Create a product image from a text prompt",
+          "Build an image-to-video workflow",
+          "Explain how a ComfyUI workflow works",
+          "Find the best workflow for a specific task",
+          "Diagnose and fix errors in a workflow"
+        ]
+      }
     },
     "attach": "Attach a file",
     "attachFiles": "Upload images or files",
@@ -5561,6 +5704,7 @@
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
+    "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
@@ -5610,12 +5754,17 @@
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
+    "removeAssetReference": "Remove {name} reference",
+    "removeAsset": "Remove {name}",
+    "previewAsset": "Preview {name}",
     "uploading": "Uploading",
+    "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
+    "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",

@@ -1,8 +1,6 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { createI18n } from 'vue-i18n'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type {
   DocResetFrame,
@@ -27,6 +25,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 /**
@@ -103,11 +102,6 @@ const SEED: WorkflowJSON = {
 }
 
 const SEND_LABEL = enMessages.agent.send
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 /**
  * Parses a raw `/ws` message down to its `doc_subscribe` payload, or `null`
@@ -143,6 +137,33 @@ function parseDocSubscribeFields(
   if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
     return null
   return { stateVectorB64: state_vector_b64 }
+}
+
+/**
+ * The node carries a stamp written before the reset, on an attribute Vue does
+ * not manage, so only a fresh element loses it. Both checks below read it;
+ * they differ in WHEN, which is the whole point.
+ *
+ * Right after the reset: proves the reset alone did not tear the node down.
+ */
+async function expectNodeSurvivedReset(page: Page): Promise<void> {
+  await expect(
+    page.locator('[data-node-id="1"][data-identity-probe="before-reset"]')
+  ).toBeVisible()
+}
+
+/**
+ * After the replacement content has actually landed: this is the one that
+ * exercises `GraphCanvas`'s own `:key="nodeData.id"`. Re-keying the list by
+ * anything unstable remounts every node when the new lineage is applied,
+ * which restarts media playback (PM-1790) while every visibility assertion in
+ * this repo still passes. Only reachable on the recovery paths -- the
+ * no-catch-up case never replaces the graph, so it has nothing to re-render.
+ */
+async function expectNodeSurvivedReplacement(page: Page): Promise<void> {
+  await expect(
+    page.locator('[data-node-id="1"][data-identity-probe="before-reset"]')
+  ).toBeVisible()
 }
 
 /**
@@ -297,7 +318,7 @@ async function driveThroughDocReset(
 
   await expect.poll(() => socket !== null).toBe(true)
 
-  const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Run the workflow.')
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
@@ -352,6 +373,17 @@ async function driveThroughDocReset(
   // frame able to sweep already-rendered nodes off the canvas; now it only
   // arms the next frame to replace the graph. From here on the resubscribe's
   // catch-up is governed by `dropCatchUpAfterReset`.
+  //
+  // Stamped on the live element before the reset so the assertion below can
+  // tell a node that was never unmounted from one that was torn down and
+  // rebuilt. `toBeVisible` cannot: a remounted node is equally visible, and a
+  // remount is what restarts media playback (PM-1790). Vue does not manage
+  // this dataset key, so only a fresh element loses it.
+  await page.evaluate((nodeId) => {
+    const el = document.querySelector(`[data-node-id="${nodeId}"]`)
+    if (el instanceof HTMLElement) el.dataset.identityProbe = 'before-reset'
+  }, '1')
+
   resetSent = true
   send({
     type: 'doc_reset',
@@ -387,6 +419,13 @@ async function driveThroughDocReset(
 
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+
+  // The same element, not merely an equivalent one: a reset that went back to
+  // clearing would drop this node and its stamp with it. It does NOT yet say
+  // anything about `GraphCanvas`'s key -- nothing re-renders between the
+  // reset and here, so the stamp survives a randomised key too. That is what
+  // `expectNodeSurvivedReplacement` covers, once content actually lands.
+  await expectNodeSurvivedReset(page)
 
   return { vueNodes, send }
 }
@@ -525,6 +564,7 @@ test.describe(
       ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+      await expectNodeSurvivedReplacement(page)
     })
 
     test('PM-1406 fix: a one-off dropped catch-up recovers via the active probe, well before the run completes', async ({
@@ -548,6 +588,7 @@ test.describe(
       ).toBeVisible()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+      await expectNodeSurvivedReplacement(page)
     })
   }
 )

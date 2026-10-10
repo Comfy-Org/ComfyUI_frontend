@@ -11,6 +11,7 @@ import {
   parseLlmsTxtLinks
 } from '@/lib/llms-txt'
 import { isExcludedFromSitemap } from './indexing'
+import { linkStaleSources } from './redirects'
 import { getRoutes } from './routes'
 import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
@@ -19,11 +20,6 @@ import { workshopPagePaths } from './workshop-page-content'
 
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
-const vercelRedirectSources = (
-  JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
-    redirects: { source: string }[]
-  }
-).redirects.map((redirect) => redirect.source)
 
 /**
  * Pages that exist in src/pages but are deliberately kept out of llms.txt.
@@ -196,7 +192,7 @@ describe('llms.txt', () => {
   })
 
   it('links a redirect destination rather than its stale source', () => {
-    const redirected = findRedirectedLinks(links, vercelRedirectSources)
+    const redirected = findRedirectedLinks(links, linkStaleSources)
     expect(redirected).toEqual([])
   })
 })

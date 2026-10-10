@@ -105,6 +105,7 @@
   "devDependencies": {
     "@comfyorg/design-system": "workspace:^",
     "@comfyorg/tailwind-utils": "workspace:^",
+    "@comfyorg/test-utils": "workspace:*",
     "@stripe/stripe-js": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",

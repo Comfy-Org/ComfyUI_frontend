@@ -8,7 +8,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
+import { searchRankBoost } from '@comfyorg/shared-frontend-utils/templateRanking'
 
 export const useTemplateRankingStore = defineStore('templateRanking', () => {
   const largestUsageScore = ref<number>()

@@ -563,6 +563,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -622,7 +623,6 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities"
     },
     "catalogue": {
@@ -726,7 +726,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -919,15 +920,18 @@
     "subtitle2": "Start from a community template or build from scratch.",
     "feature1": {
       "title": "Full Control with Nodes",
-      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable."
+      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.",
+      "cta": "Download Desktop"
     },
     "feature2": {
-      "title": "App mode, a simplified view of your workflows",
-      "description": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper."
+      "title": "Comfy Agent",
+      "description": "Describe what you want and Comfy Agent builds and runs the workflow for you.",
+      "cta": "Explore Comfy Agent"
     },
     "feature3": {
-      "title": "Community Workflows on Comfy Workflows",
-      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs."
+      "title": "Comfy API",
+      "description": "Run Comfy workflows and models from your own app with one API.",
+      "cta": "Explore Comfy API"
     },
     "badgeHow": "HOW",
     "badgeWorks": "WORKS"
@@ -1491,6 +1495,7 @@
       },
       "standard": {
         "label": "STANDARD",
+        "whatsIncluded": "What's included:",
         "price": "$20",
         "yearlyPrice": "$16",
         "yearlyTotal": "$192",
@@ -1505,6 +1510,7 @@
       },
       "creator": {
         "label": "CREATOR",
+        "everythingInStandardPlus": "Everything in Standard, plus:",
         "price": "$35",
         "yearlyPrice": "$28",
         "yearlyTotal": "$336",
@@ -1519,6 +1525,7 @@
       },
       "pro": {
         "label": "PRO",
+        "everythingInCreatorPlus": "Everything in Creator, plus:",
         "price": "$100",
         "yearlyPrice": "$80",
         "yearlyTotal": "$960",
@@ -1562,7 +1569,7 @@
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
       "inviteMembers": "Invite members",
-      "inviteMembersUpTo50": "Invite members up to 50",
+      "inviteMembersUpTo50": "Invite up to 50 members",
       "concurrentWorkflows": "Members can run workflows concurrently",
       "sharedCreditPool": "Shared credit pool for all members",
       "roleBasedPermissions": "Role-based permissions"
@@ -1718,10 +1725,6 @@
     }
   },
   "gallery": {
-    "label": "GALLERY",
-    "heroTitleBefore": "Built, Tweaked, and Dreamed in ",
-    "heroTitleAfter": "",
-    "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",
       "and": "and",
@@ -1731,10 +1734,6 @@
     "detail": {
       "close": "Close",
       "visitHub": "VISIT COMMUNITY HUB"
-    },
-    "contact": {
-      "label": "CONTACT",
-      "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
     }
   },
   "about": {
@@ -2394,11 +2393,33 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
+    "hubModels": "Models",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "hubWorkflows": "Workflows",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubImageToVideo": "Image to video",
+    "hubVideoFromReferences": "Video from references",
+    "hubMotionTransfer": "Motion transfer",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubAllWorkflows": "All workflows",
+    "hubApps": "Apps",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "reshoot": "Re-shoot",
+    "hubAllApps": "All apps",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2421,7 +2442,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2461,6 +2494,7 @@
     "workflows": "Workflows",
     "useCases": "Use Cases",
     "location": "San Francisco, USA",
+    "language": "Language",
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "wanAnimate2": "Wan Animate 2",
@@ -2471,7 +2505,8 @@
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -3539,27 +3574,9 @@
     }
   },
   "launches": {
-    "page": {
-      "title": "Launches: Everything New in ComfyUI",
-      "description": "Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them."
-    },
-    "hero": {
-      "title": "Everything new in ComfyUI",
-      "primary": "Download Desktop",
-      "secondary": "Try Cloud for free",
-      "visualAlt": "Comfy"
-    },
     "banner": {
       "text": "Comfy Agent can now build workflows inside ComfyUI.",
       "cta": "Try It for Free"
-    },
-    "cta": {
-      "heading": "Everything Comfy ships. All in one place.",
-      "primary": "Open Comfy Cloud",
-      "secondary": "Try Workflow"
-    },
-    "section": {
-      "title": "Latest Launches"
     }
   },
   "ltx": {
@@ -5567,5 +5584,18 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

@@ -1,8 +1,6 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { createI18n } from 'vue-i18n'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -21,6 +19,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression for "the agent says it added a node, but the canvas never shows
@@ -53,12 +52,6 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 interface SubscriptionFrame {
   type: 'doc_subscribe' | 'doc_unsubscribe'
@@ -227,7 +220,9 @@ test.describe(
       // the first (and so far only) connection before anything goes wrong.
       await expect.poll(() => connectionCount).toBe(1)
 
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       await composer.fill('Add a note to the canvas.')
       await panel.getByRole('button', { name: SEND_LABEL }).click()
       await expect(

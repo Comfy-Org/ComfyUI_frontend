@@ -1,4 +1,5 @@
 import type { SessionResult } from '@comfyorg/account-core/session'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
 import type { CheckoutUiState } from '@/config/checkoutUi'
 
@@ -31,7 +32,7 @@ vi.mock<unknown>(import('@/session/billingWebSession'), () => ({
   })
 }))
 
-const fetchMock = vi.fn<typeof fetch>()
+const FEATURES_URL = 'https://testcloud.comfy.org/api/features'
 
 function minted(token = 'jwt-1'): SessionResult {
   return {
@@ -60,7 +61,6 @@ beforeEach(() => {
   h.uid = 'uid-1'
   h.ensureFresh.mockResolvedValue(minted())
   localStorage.clear()
-  vi.stubGlobal('fetch', fetchMock)
 })
 
 async function freshCheckoutUi() {
@@ -111,14 +111,14 @@ describe('awaitCheckoutUiVariant', () => {
       variant: 'embedded'
     }
   ])('answers $variant for $name', async ({ reply, variant }) => {
-    fetchMock.mockImplementation(reply)
+    respondToFetch(FEATURES_URL, reply)
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     expect(await awaitCheckoutUiVariant()).toBe(variant)
   })
 
   it('asks with this session token, pinned to its own workspace, past any cache', async () => {
-    fetchMock.mockResolvedValue(answerFlag('full_page'))
+    respondToFetch(FEATURES_URL, () => answerFlag('full_page'))
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     await awaitCheckoutUiVariant()
@@ -127,8 +127,8 @@ describe('awaitCheckoutUiVariant', () => {
       undefined,
       expect.objectContaining({ workspaceId: 'ws-team' })
     )
-    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      'https://testcloud.comfy.org/api/features',
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      FEATURES_URL,
       expect.objectContaining({
         headers: { Authorization: 'Bearer jwt-1' },
         cache: 'no-store'
@@ -139,7 +139,7 @@ describe('awaitCheckoutUiVariant', () => {
   it('fails closed when the answer outruns its budget', async () => {
     vi.useFakeTimers()
     try {
-      fetchMock.mockImplementation(
+      vi.mocked(fetch).mockImplementation(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
             init?.signal?.addEventListener('abort', () =>
@@ -166,7 +166,7 @@ describe('awaitCheckoutUiVariant', () => {
 
       expect(await awaitCheckoutUiVariant()).toBe('embedded')
       expect(h.ensureFresh).not.toHaveBeenCalled()
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
@@ -183,12 +183,12 @@ describe('awaitCheckoutUiVariant', () => {
       const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
       expect(await awaitCheckoutUiVariant()).toBe('embedded')
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
   it('joins one resolution per user', async () => {
-    fetchMock.mockImplementation(async () => answerFlag('full_page'))
+    respondToFetch(FEATURES_URL, () => answerFlag('full_page'))
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     const concurrent = await Promise.all([
@@ -204,28 +204,32 @@ describe('awaitCheckoutUiVariant', () => {
       'full_page',
       'full_page'
     ])
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('asks again for a different user', async () => {
-    fetchMock.mockResolvedValueOnce(answerFlag('full_page'))
-    fetchMock.mockResolvedValueOnce(answerFlag('embedded'))
+    respondToFetch(FEATURES_URL, () => answerFlag('embedded'))
+    respondToFetch(FEATURES_URL, () => answerFlag('full_page'), { times: 1 })
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     expect(await awaitCheckoutUiVariant()).toBe('full_page')
     h.uid = 'uid-2'
     expect(await awaitCheckoutUiVariant()).toBe('embedded')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a failed answer for the rest of the tab', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
-    fetchMock.mockResolvedValue(answerFlag('full_page'))
+    respondToFetch(FEATURES_URL, () => answerFlag('full_page'))
+    respondToFetch(
+      FEATURES_URL,
+      () => Promise.reject(new TypeError('Failed to fetch')),
+      { times: 1 }
+    )
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     expect(await awaitCheckoutUiVariant()).toBe('embedded')
     expect(await awaitCheckoutUiVariant()).toBe('embedded')
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for(['full_page', 'embedded'])(
@@ -238,18 +242,17 @@ describe('awaitCheckoutUiVariant', () => {
       const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
       expect(await awaitCheckoutUiVariant()).toBe(variant)
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
   it('rejects a bare-string dev override and asks the server', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     localStorage.setItem('ff:billing_web_checkout_ui', 'full_page')
-    fetchMock.mockResolvedValue(answerFlag('embedded'))
+    respondToFetch(FEATURES_URL, () => answerFlag('embedded'))
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     expect(await awaitCheckoutUiVariant()).toBe('embedded')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[ff] Invalid JSON for override "billing_web_checkout_ui":',
       'full_page'
     )
@@ -257,7 +260,7 @@ describe('awaitCheckoutUiVariant', () => {
 
   it('ignores an unrecognised dev override and asks the server', async () => {
     localStorage.setItem('ff:billing_web_checkout_ui', '"banana"')
-    fetchMock.mockResolvedValue(answerFlag('full_page'))
+    respondToFetch(FEATURES_URL, () => answerFlag('full_page'))
     const { awaitCheckoutUiVariant } = await freshCheckoutUi()
 
     expect(await awaitCheckoutUiVariant()).toBe('full_page')

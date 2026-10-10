@@ -7,13 +7,10 @@ const LINK =
   'https://ark-content-generation-v2-ap-southeast-1.tos-ap-southeast-1.volces.com/seedream/take.jpeg?X-Tos-Signature=x'
 
 function serve(ok: boolean) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => {
-      if (!ok) throw new TypeError('Failed to fetch')
-      return new Response(new Blob(['still'], { type: 'image/jpeg' }))
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async () => {
+    if (!ok) throw new TypeError('Failed to fetch')
+    return new Response(new Blob(['still'], { type: 'image/jpeg' }))
+  })
 }
 
 describe('keepTake', () => {
