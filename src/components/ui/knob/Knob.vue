@@ -79,7 +79,10 @@ function onKeydown(event: KeyboardEvent) {
     "
     @keydown="onKeydown"
     @pointerdown="onPointerDown"
-    @pointermove="(event) => event.buttons === 1 && updateFromPointer(event)"
+    @pointermove="
+      (event) =>
+        root?.hasPointerCapture(event.pointerId) && updateFromPointer(event)
+    "
   >
     <svg viewBox="0 0 32 32" class="size-full rotate-[-225deg]">
       <circle

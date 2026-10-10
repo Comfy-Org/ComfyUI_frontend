@@ -70,6 +70,40 @@ describe('Knob', () => {
     }
   )
 
+  it.for([
+    {
+      dragStart: 'on the knob',
+      start: (slider: HTMLElement) => slider,
+      values: [[0], [50]]
+    },
+    {
+      dragStart: 'outside the knob',
+      start: () => document.body,
+      values: undefined
+    }
+  ])(
+    'only follows a drag that started on the knob (drag started $dragStart)',
+    async ({ start, values }) => {
+      const user = userEvent.setup()
+      const { emitted } = render(Knob, { props: { modelValue: 20 } })
+      const slider = screen.getByRole('slider')
+      vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 48, 48)
+      )
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: start(slider),
+          coords: { clientX: 0, clientY: 48 }
+        },
+        { target: slider, coords: { clientX: 24, clientY: 0 } }
+      ])
+
+      expect(emitted()['update:modelValue']).toEqual(values)
+    }
+  )
+
   it('ignores keyboard and pointer input and leaves the tab order when disabled', async () => {
     const user = userEvent.setup()
     const { emitted } = render(Knob, {
