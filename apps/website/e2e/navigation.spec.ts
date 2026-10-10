@@ -199,7 +199,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
-    for (const item of ['Events', 'About Us', 'Customer Stories', 'Launches']) {
+    for (const item of ['Events', 'About Us', 'Customer Stories']) {
       await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
     }
     await expect(

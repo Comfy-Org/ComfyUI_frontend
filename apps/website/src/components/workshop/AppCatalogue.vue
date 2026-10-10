@@ -63,7 +63,7 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
     </template>
     <div
       :id="HUB_TOOLBAR_ID"
-      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bleed-page-band bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
     >
       <slot name="tabs" />
@@ -76,7 +76,11 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
       data-testid="app-search-results"
     >
       <li v-for="(app, index) in apps" :key="app.key">
-        <WorkshopAppCard :app @click="openApp(app, 'results_grid', index)" />
+        <WorkshopAppCard
+          :app
+          :locale
+          @click="openApp(app, 'results_grid', index)"
+        />
       </li>
     </ul>
 
@@ -92,7 +96,11 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
             </h2>
           </template>
           <li v-for="(app, index) in shelf" :key="app.key" :class="SHELF_CARD">
-            <WorkshopAppCard :app @click="openApp(app, 'app_row', index)" />
+            <WorkshopAppCard
+              :app
+              :locale
+              @click="openApp(app, 'app_row', index)"
+            />
           </li>
         </CardRow>
         <HubRowSeen

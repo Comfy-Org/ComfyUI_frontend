@@ -139,9 +139,13 @@ describe('getMainNavigation', () => {
           {
             label: 'Cinematic Studio',
             href: '/hub/apps/cinematic-studio/',
-            newTab: true
+            newTab: undefined
           },
-          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+          {
+            label: 'Re-shoot',
+            href: '/hub/apps/reshoot/',
+            newTab: undefined
+          }
         ],
         allLink: { label: 'All apps', href: '/hub/apps/' }
       }
@@ -309,7 +313,7 @@ describe('getMainNavigation', () => {
       'Connect'
     ])
     expect(labels(0)).toEqual(['Events', 'Affiliates', 'Learning'])
-    expect(labels(2)).toEqual(['Customer Stories', 'Launches', 'Blog'])
+    expect(labels(2)).toEqual(['Customer Stories', 'Blog'])
     expect(company?.columns?.[3].placement).toBe('footer')
     expect(company?.columns?.[3].items).toContainEqual({
       label: 'Discord',

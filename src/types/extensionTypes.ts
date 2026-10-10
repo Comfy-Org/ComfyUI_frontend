@@ -6,7 +6,7 @@ import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import type { useDialogService } from '@/services/dialogService'
+import type { ExtensionDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
 interface BaseSidebarTabExtension {
@@ -85,7 +85,7 @@ export interface ExtensionManager {
   getSidebarTabs(): SidebarTabExtension[]
 
   toast: ToastManager
-  dialog: ReturnType<typeof useDialogService>
+  dialog: ExtensionDialogService
   command: CommandManager
   setting: {
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.

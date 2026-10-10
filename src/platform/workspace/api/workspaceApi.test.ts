@@ -45,8 +45,11 @@ beforeEach(() => {
 })
 
 import { workspaceApi } from './workspaceApi'
+import { installWorkspaceApiAuth } from './workspaceApiAuth'
 import { NoWorkspaceAccessError } from './workspaceApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 

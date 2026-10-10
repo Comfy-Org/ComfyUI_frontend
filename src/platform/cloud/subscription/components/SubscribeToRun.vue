@@ -1,9 +1,7 @@
 <template>
   <Button
-    v-tooltip.bottom="{
-      value: buttonTooltip,
-      showDelay: 600
-    }"
+    :tooltip="buttonTooltip"
+    tooltip-side="bottom"
     class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
     variant="subscribe"
     size="unset"
@@ -17,6 +15,7 @@
 
 <script setup lang="ts">
 import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
+
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

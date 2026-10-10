@@ -107,7 +107,7 @@ import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 type BannerAction =
   | 'addCredits'
@@ -133,7 +133,7 @@ const {
   planName: scheduledPlanName,
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const subscriptionDialog = useSubscriptionDialog()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
@@ -362,7 +362,7 @@ const banner = computed<BannerView | null>(() =>
 )
 
 function handleAddCredits() {
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog()
 }
 function handleResubscribePlan() {
   subscriptionDialog.show({

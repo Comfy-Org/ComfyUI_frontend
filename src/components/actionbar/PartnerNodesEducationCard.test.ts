@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -50,7 +50,7 @@ vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
   }
 })
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const { __setHasPartnerNodes } =
@@ -273,7 +273,7 @@ describe('PartnerNodesEducationCard', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
-    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'Kling'
     ])
   })
@@ -294,5 +294,18 @@ describe('PartnerNodesEducationCard', () => {
     await userEvent.click(partnerBtn)
     expect(openBtn).toHaveAccessibleName(copy.unmuteOpen)
     expect(partnerBtn).toHaveAccessibleName(copy.mutePartner)
+  })
+
+  it('explains partner nodes when the information button is tapped', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    await userEvent.pointer({
+      keys: '[TouchA]',
+      target: screen.getByRole('button', { name: copy.tooltip })
+    })
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(copy.tooltip)
   })
 })

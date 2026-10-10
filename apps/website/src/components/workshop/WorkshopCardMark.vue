@@ -11,7 +11,7 @@ const { label, logo } = defineProps<{
 
 <template>
   <span
-    class="pointer-events-none absolute right-4 bottom-4 z-10 inline-flex h-7 max-w-[calc(100%-2rem)] min-w-7 items-center justify-center rounded-lg bg-black/45 px-1.5 text-2xs/4 font-semibold text-white backdrop-blur-md"
+    class="pointer-events-none absolute top-4 right-4 z-10 inline-flex h-7 max-w-[calc(100%-2rem)] min-w-7 items-center justify-center rounded-lg bg-black/45 px-1.5 text-2xs/4 font-semibold text-white backdrop-blur-md"
     data-testid="model-card-provider"
   >
     <span
@@ -19,6 +19,7 @@ const { label, logo } = defineProps<{
       class="size-3.5 shrink-0 bg-white mask-contain mask-center mask-no-repeat"
       :style="{ maskImage: `url(${logo})` }"
       aria-hidden="true"
+      data-testid="model-card-provider-logo"
     />
     <span v-else class="shrink-0 text-xs" aria-hidden="true">
       {{ label.charAt(0).toUpperCase() }}

@@ -1,5 +1,5 @@
 import { union } from 'es-toolkit/compat'
-import { until, useAsyncState } from '@vueuse/core'
+import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
@@ -21,7 +21,6 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createLeafNodeExecutionId,
@@ -494,6 +493,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
+  const workflowRenamed = createEventHook<ComfyWorkflow>()
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
@@ -506,10 +506,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
-      useExecutionStore().rewriteSessionWorkflowPaths(
-        workflow.instanceId,
-        workflow.path
-      )
+      void workflowRenamed.trigger(workflow)
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
@@ -747,6 +744,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     createNewTemporary,
     renameWorkflow,
+    onWorkflowRenamed: workflowRenamed.on,
     deleteWorkflow,
     saveAs,
     saveWorkflow,

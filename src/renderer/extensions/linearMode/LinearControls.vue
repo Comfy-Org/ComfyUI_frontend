@@ -165,11 +165,8 @@ function replayAppModeTour() {
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <Button
-        v-tooltip.bottom="{
-          value: t('onboardingCoachmarks.appMode.replay'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
+        :tooltip="t('onboardingCoachmarks.appMode.replay')"
+        tooltip-side="bottom"
         variant="textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
@@ -180,7 +177,7 @@ function replayAppModeTour() {
       </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"
