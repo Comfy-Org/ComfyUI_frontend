@@ -7,7 +7,11 @@ import { computed, ref, useSlots } from 'vue'
 import { comfyAgentFeatureGroups } from '@/data/comfyAgentPlanLimits'
 import { comfyApiFeatureGroup } from '@/data/comfyApiPlanLimits'
 import { pricingPlans } from '@/data/pricingPlans'
-import type { BillingCycle, PricingPlan } from '@/data/pricingPlans'
+import type {
+  BillingCycle,
+  PlanFeatureGroup,
+  PricingPlan
+} from '@/data/pricingPlans'
 import { translationsFor } from '@/i18n/translations'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -83,6 +87,18 @@ function creditsLabelFor(plan: PricingPlan): string {
   )
 }
 
+function cardFeatureGroups(plan: PricingPlan): PlanFeatureGroup[] {
+  return [
+    ...plan.featureGroups,
+    ...comfyAgentFeatureGroups(plan.id),
+    comfyApiFeatureGroup(plan.id)
+  ]
+}
+
+const groupRowCount = computed(() =>
+  Math.max(...pricingPlans.map((plan) => cardFeatureGroups(plan).length))
+)
+
 const planCards = computed(() =>
   pricingPlans.map((plan) => ({
     plan,
@@ -92,16 +108,10 @@ const planCards = computed(() =>
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
-    featureGroups: [
-      ...plan.featureGroups,
-      ...comfyAgentFeatureGroups(plan.id),
-      comfyApiFeatureGroup(plan.id)
-    ]
+    featureGroupRows: Array.from({ length: groupRowCount.value }, (_, index) =>
+      cardFeatureGroups(plan).slice(index, index + 1)
+    )
   }))
-)
-
-const featureGroupRows = computed(() =>
-  Math.max(...planCards.value.map((card) => card.featureGroups.length))
 )
 
 const cardRowSpanByGroupRows: Record<number, string> = {
@@ -111,7 +121,7 @@ const cardRowSpanByGroupRows: Record<number, string> = {
   4: 'row-span-10'
 }
 const cardRowSpan = computed(
-  () => cardRowSpanByGroupRows[featureGroupRows.value] ?? 'row-span-10'
+  () => cardRowSpanByGroupRows[groupRowCount.value] ?? 'row-span-10'
 )
 </script>
 
@@ -171,7 +181,7 @@ const cardRowSpan = computed(
           creditsKey,
           creditsLabel,
           estimateKey,
-          featureGroups
+          featureGroupRows
         } in planCards"
         :key="plan.id"
         :class="cn('grid grid-rows-subgrid', cardRowSpan)"
@@ -197,15 +207,11 @@ const cardRowSpan = computed(
         />
 
         <div
-          v-for="groupIndex in featureGroupRows"
+          v-for="(groups, groupIndex) in featureGroupRows"
           :key="groupIndex"
-          :class="groupIndex === 1 ? 'mt-8' : 'mt-5'"
+          :class="groupIndex === 0 ? 'mt-8' : 'mt-5'"
         >
-          <PricingPlanFeatureList
-            v-if="featureGroups[groupIndex - 1]"
-            :features="[featureGroups[groupIndex - 1]]"
-            :locale
-          />
+          <PricingPlanFeatureList :features="groups" :locale />
         </div>
 
         <PricingCredits
