@@ -15,7 +15,7 @@ const { writeText } = vi.hoisted(() => ({
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'

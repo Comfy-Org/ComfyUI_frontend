@@ -53,7 +53,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
@@ -61,7 +61,6 @@ const menuItemStore = useMenuItemStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const settingsDialog = useSettingsDialog()
-const managerState = useManagerState()
 const settingStore = useSettingStore()
 
 const nodes2Enabled = computed(
@@ -97,7 +96,7 @@ const showSettings = (defaultPanel?: SettingPanelType) => {
 }
 
 const showManageExtensions = async () => {
-  await managerState.openManager({
+  await useManagerDialog().openManager({
     initialTab: ManagerTab.All,
     showToastOnLegacyError: false
   })
