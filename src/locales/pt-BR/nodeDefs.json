@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Escolha um ângulo de câmera ao redor de um objeto com uma visualização 3D. Gera um camera_info para nós 3D e uma descrição de enquadramento em inglês simples para prompts.",
+    "display_name": "Compor prompt de ângulo da câmera",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Azimute ao redor do objeto em graus. 0 é a frente, 90 o lado direito, 180 a parte de trás."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Imagem de referência opcional exibida na frente do cubo do objeto na visualização 3D."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Elevação em graus. Valores negativos olham para cima, de baixo; positivos olham para baixo, de cima."
+      },
+      "view": {
+        "name": "Visão"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom da lente sobre o objeto: 0 é um plano aberto, 10 um close-up. Incluído em camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "Primeiro sigma em que essas opções estarão em vigor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Amplie uma imagem com o Crystal Upscaler da Clarity AI, um ampliador de alta fidelidade que permanece fiel ao original e restaura rostos, pele e texturas finas. Saída máxima: 100 megapixels.",
+    "display_name": "Ampliação Crystal da Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "Modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_creativity": {
+        "name": "Criatividade"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Constrói um camera_info. O modo 'orbit' mira com yaw/pitch/distância ao redor do alvo; 'look_at' posiciona a câmera em uma posição no mundo. As coordenadas estão no espaço mundial do visualizador (mão direita, Y para cima).",
+    "description": "Cria um camera_info. O modo 'orbit' aponta usando guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço de mundo do visualizador (destro, Y para cima).",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "tipo_de_câmera",
         "tooltip": "Projeção usada pelo Render Splat: perspectiva (com profundidade) ou ortográfica (paralela)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Gere ou edite imagens de forma síncrona via Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGE+TEXT."
+        "tooltip": "Primeira imagem do processo de raciocínio do modelo. Disponível apenas com a modalidade IMAGE+TEXT."
       }
     }
   },
@@ -10364,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "Vista uma pessoa com uma peça de roupa. O resultado tem o mesmo tamanho da imagem da pessoa, limitado a 2048px no lado mais longo.",
+    "display_name": "Provador virtual Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "A roupa a vestir: foto de produto, flat lay, manequim ou foto em modelo. Uma foto em modelo pode transferir o restante daquela roupa. Apenas roupas; sapatos, bolsas e acessórios não são compatíveis."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Desative para permitir que a pose mude e melhorar a apresentação da roupa."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Foto de uma pessoa, idealmente de frente ou em visão de três quartos. Imagens com um lado maior que 2048px são reduzidas primeiro."
+      },
+      "seed": {
+        "name": "Semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Gere vídeos com Kling V3. Suporta texto-para-vídeo e imagem-para-vídeo com storyboard opcional, multi-prompt e geração de áudio.",
     "display_name": "Kling 3.0 Vídeo",
@@ -11322,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Pare de aplicar a operação nesta fração do cronograma de remoção de ruído do modelo. 1 é o fim."
+      },
       "model": {
         "name": "modelo"
       },
       "operation": {
         "name": "operação"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Comece a aplicar a operação nesta fração do cronograma de remoção de ruído do modelo. 0 é o início."
       }
     },
     "outputs": {
@@ -11561,6 +11658,24 @@
       },
       "samples": {
         "name": "amostras"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mescla todo o latent em direção ao latent de referência, redimensionando a referência com interpolação de vizinho mais próximo quando necessário.",
+    "display_name": "Mesclagem de operação latent",
+    "inputs": {
+      "reference": {
+        "name": "referência"
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "0 mantém o latent inalterado; 1 corresponde ao latent de referência redimensionado."
       }
     },
     "outputs": {
@@ -11970,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Aplique uma pilha de LoRAs a um modelo de difusão. Adicione uma linha para cada LoRA; cada linha seleciona um arquivo LoRA e sua intensidade.",
+    "display_name": "Carregar LoRA (Modelo)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Cada linha aplica uma LoRA ao modelo."
+      },
+      "loras_$add": {
+        "name": "Adicionar LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 ativada"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "Intensidade da LoRA #1"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo de difusão ao qual as LoRAs serão aplicadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo de difusão modificado."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Aplique uma pilha de LoRAs a um codificador de texto CLIP. Adicione uma linha para cada LoRA; cada linha seleciona um arquivo LoRA e sua intensidade.",
+    "display_name": "Carregar LoRA (Codificador de Texto)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "O codificador de texto CLIP ao qual as LoRAs serão aplicadas."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Cada linha aplica uma LoRA ao codificador de texto."
+      },
+      "loras_$add": {
+        "name": "Adicionar LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 ativada"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "Intensidade da LoRA #1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O codificador de texto CLIP modificado."
       }
     }
   },
@@ -18669,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Vetorização de uma imagem raster para SVG usando Quiver AI.",
-    "display_name": "Quiver Imagem para SVG",
+    "display_name": "Imagem para SVG do Quiver (Legado)",
     "inputs": {
       "auto_crop": {
         "name": "corte_automático",
@@ -18713,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Vetorize uma imagem rasterizada em SVG usando o Quiver AI.",
+    "display_name": "Imagem para SVG do Quiver",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após a geração"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para vetorização em SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_target_size": {
+        "name": "tamanho_alvo"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Gerar um SVG a partir de um prompt de texto usando Quiver AI.",
-    "display_name": "Quiver Texto para SVG",
+    "display_name": "Texto para SVG do Quiver (Legado)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18986,51 @@
       "seed": {
         "name": "semente",
         "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Gere um SVG a partir de um prompt de texto usando o Quiver AI.",
+    "display_name": "Texto para SVG do Quiver",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de SVG."
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_instructions": {
+        "name": "instruções"
+      },
+      "model_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "esforço_de_raciocínio"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largura"
       }
     },
     "outputs": {
@@ -27550,6 +27829,79 @@
         "tooltip": "Uma descrição textual para geração de vídeo, com comprimento máximo de 2000 caracteres."
       },
       "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Gere um vídeo a partir de um quadro inicial e de um prompt opcional. A saída mantém a proporção da imagem de entrada.",
+    "display_name": "Geração de Imagem para Vídeo Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Quadro inicial do vídeo gerado. A proporção deve estar entre 1:5 e 5:1."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Gere um vídeo a partir de imagens de referência, áudio de referência opcional e um prompt.",
+    "display_name": "Geração de Referência para Vídeo Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_da_tela"
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
         "name": "semente"
       }
     },
