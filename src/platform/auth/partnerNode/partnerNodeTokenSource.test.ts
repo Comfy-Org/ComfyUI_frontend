@@ -49,7 +49,7 @@ const target = (
 ): PartnerNodeTokenTarget => ({
   ownerUid: 'user-a',
   workspaceId: 'ws-a',
-  idToken: async () => 'firebase-id-token',
+  credential: async () => 'firebase-id-token',
   ...overrides
 })
 
@@ -101,7 +101,7 @@ describe('createPartnerNodeTokenSource', () => {
     const { source } = setup()
 
     await expect(
-      source.tokenFor(target({ idToken: async () => undefined }))
+      source.tokenFor(target({ credential: async () => undefined }))
     ).resolves.toBeUndefined()
     expect(fetchRequests(MINT_URL)).toHaveLength(0)
   })
