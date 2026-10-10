@@ -1301,6 +1301,176 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it.for([
+    {
+      name: 'live true and stored false',
+      liveSerialize: true,
+      storedSerialize: false,
+      expectedOps: ['set_widget', 'set_widget']
+    },
+    {
+      name: 'live undefined and stored false',
+      liveSerialize: undefined,
+      storedSerialize: false,
+      expectedOps: []
+    },
+    {
+      name: 'live false and stored true',
+      liveSerialize: false,
+      storedSerialize: true,
+      expectedOps: []
+    }
+  ])('reports $name once across separate writes', async ({
+    liveSerialize,
+    storedSerialize,
+    expectedOps
+  }) => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = storedSerialize
+    widget.serialize = liveSerialize
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 22,
+      previous: 21
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(expectedOps)
+    const reports = vi
+      .mocked(reportError)
+      .mock.calls.filter(
+        ([, metadata]) =>
+          metadata.errorType === 'agent_crdt_widget_serialize_drift'
+      )
+    expect(reports).toHaveLength(1)
+    expect(reports[0]?.[1].context).toEqual({
+      graphId: graph.id,
+      nodeId: source.id,
+      widget: 'steps',
+      liveSerialize: liveSerialize ?? null,
+      storedSerialize
+    })
+  })
+
+  it('reports a serialize disagreement while filtering an add-node snapshot', async () => {
+    const source = new TestSource()
+    graph.add(source)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
+
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        node: expect.objectContaining({ widgets_values: {} })
+      })
+    ])
+    const reports = vi
+      .mocked(reportError)
+      .mock.calls.filter(
+        ([, metadata]) =>
+          metadata.errorType === 'agent_crdt_widget_serialize_drift'
+      )
+    expect(reports).toHaveLength(1)
+    expect(reports[0]?.[1].context).toEqual({
+      graphId: graph.id,
+      nodeId: source.id,
+      widget: 'steps',
+      liveSerialize: null,
+      storedSerialize: false
+    })
+  })
+
+  it('reports a live serialize:false widget omitted by add-node serialization', async () => {
+    const source = new TestSource()
+    graph.add(source)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = true
+    widget.serialize = false
+
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        node: expect.objectContaining({ widgets_values: {} })
+      })
+    ])
+    const reports = vi
+      .mocked(reportError)
+      .mock.calls.filter(
+        ([, metadata]) =>
+          metadata.errorType === 'agent_crdt_widget_serialize_drift'
+      )
+    expect(reports).toHaveLength(1)
+    expect(reports[0]?.[1].context).toEqual({
+      graphId: graph.id,
+      nodeId: source.id,
+      widget: 'steps',
+      liveSerialize: false,
+      storedSerialize: true
+    })
+  })
+
+  it('does not report when live and stored serialize flags agree', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = false
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, metadata]) =>
+            metadata.errorType === 'agent_crdt_widget_serialize_drift'
+        )
+    ).toEqual([])
+  })
+
   it('uses the live serialize flag for direct store-path intents', async () => {
     const { source } = seedGraph(graph)
     source.widgets![0].serialize = false
