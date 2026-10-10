@@ -4,11 +4,11 @@ import { computed, ref } from 'vue'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getInputSpecType } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV1 } from '@/schemas/nodeDefSchema'
+import { ComfyWidgets } from '@/scripts/widgets'
 import type {
   ComfyWidgetConstructor,
   CustomComfyWidgetConstructor
-} from '@/scripts/widgets'
-import { ComfyWidgets } from '@/scripts/widgets'
+} from '@/types/comfy'
 
 type WidgetConstructor = ComfyWidgetConstructor | CustomComfyWidgetConstructor
 

@@ -1,6 +1,7 @@
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
+import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
@@ -112,13 +113,18 @@ function dynamicComboWidget(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
-  const { widget, minWidth, minHeight } = useApp().widgets['COMBO'](
+  const result = useApp().widgets.COMBO(
     node,
     inputName,
     subSpec,
     appArg,
     widgetName
   )
+  assert(
+    result && 'widget' in result && result.widget,
+    'COMBO widget constructor returned no widget'
+  )
+  const { widget, minWidth, minHeight } = result
   const removedWidgetValues = new Map<
     string | undefined,
     Map<string, { type: string; value: WidgetValue }>

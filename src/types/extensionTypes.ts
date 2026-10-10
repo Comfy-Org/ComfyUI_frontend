@@ -3,10 +3,10 @@ import type { Component } from 'vue'
 import type { ToastId } from '@/types/toastId'
 import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 
-import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { WorkflowStore } from '@/platform/workflow/management/stores/workflowStoreTypes'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import type { ExtensionDialogService } from '@/services/dialogService'
+import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
 
 interface BaseSidebarTabExtension {
@@ -92,7 +92,7 @@ export interface ExtensionManager {
     get: <T = unknown>(id: string) => T | undefined
     set: (id: string, value: unknown) => void
   }
-  workflow: ReturnType<typeof useWorkflowStore>
+  workflow: WorkflowStore
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null
