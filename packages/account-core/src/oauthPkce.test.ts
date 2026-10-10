@@ -251,7 +251,6 @@ describe('token grant failures', () => {
   })
 
   it('gives up as unavailable when the server does not answer in time', async () => {
-    vi.useFakeTimers()
     const fetchImpl = vi.fn<typeof fetch>(
       (_url, init) =>
         new Promise((_resolve, reject) => {
@@ -268,5 +267,31 @@ describe('token grant failures', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     await expect(pending).resolves.toEqual({ ok: false, reason: 'unavailable' })
+  })
+
+  it.for([
+    'http://cloud.example.test',
+    'ftp://cloud.example.test',
+    'http://cloud.example.test.localhost.evil'
+  ])('never sends a grant to the non-HTTPS issuer %s', async (issuer) => {
+    const fetchImpl = vi.fn<typeof fetch>()
+
+    await expect(
+      refreshAccessToken('refresh-1', { ...tokenOptions(fetchImpl), issuer })
+    ).resolves.toEqual({ ok: false, reason: 'unavailable' })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('sends grants over plain HTTP to a loopback issuer', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, tokenBody)
+    )
+
+    await refreshAccessToken('refresh-1', {
+      ...tokenOptions(fetchImpl),
+      issuer: 'http://localhost:8000'
+    })
+
+    expect(fetchImpl.mock.calls[0][0]).toBe('http://localhost:8000/oauth/token')
   })
 })
