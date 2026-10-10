@@ -50,6 +50,7 @@ type MintFailureReason =
   | 'http'
   | 'malformed'
   | 'workspace_mismatch'
+  | 'expired'
 
 type MintOutcome =
   | { ok: true; token: string; expiresAt: number }
@@ -57,7 +58,7 @@ type MintOutcome =
 
 export function createPartnerNodeTokenSource({
   apiUrl,
-  now = Date.now
+  now = () => Date.now()
 }: PartnerNodeTokenSourceDeps) {
   const minted = new Map<string, MintedPartnerNodeToken>()
   const inFlight = new Map<string, Promise<string | undefined>>()
@@ -102,11 +103,9 @@ export function createPartnerNodeTokenSource({
     if (parsed.data.workspace.id !== target.workspaceId) {
       return { ok: false, reason: 'workspace_mismatch' }
     }
-    return {
-      ok: true,
-      token: parsed.data.token,
-      expiresAt: Date.parse(parsed.data.expires_at)
-    }
+    const expiresAt = Date.parse(parsed.data.expires_at)
+    if (!(expiresAt > now())) return { ok: false, reason: 'expired' }
+    return { ok: true, token: parsed.data.token, expiresAt }
   }
 
   async function revokeWith(token: string): Promise<boolean> {

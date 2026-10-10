@@ -83,6 +83,10 @@ describe('createPartnerNodeTokenSource', () => {
     {
       name: 'a token for another workspace',
       respond: () => mintResponse('pn-other', { workspaceId: 'ws-b' })
+    },
+    {
+      name: 'a token that has already expired',
+      respond: () => mintResponse('pn-expired', { lifetimeMs: 0 })
     }
   ])('yields no token after $name and reports it', async ({ respond }) => {
     respondToFetch(MINT_URL, respond)
