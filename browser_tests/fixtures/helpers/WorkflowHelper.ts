@@ -4,6 +4,8 @@ import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import { workflowDraftReady } from '@e2e/fixtures/helpers/workflowDraftReady'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -62,11 +64,15 @@ export class WorkflowHelper {
   }
 
   async waitForDraftPersisted() {
-    await this.comfyPage.page.waitForFunction(() =>
-      Object.keys(localStorage).some((key) =>
-        key.startsWith('Comfy.Workflow.Draft.v2:')
-      )
-    )
+    const path = await this.getActiveWorkflowPath()
+    if (!path) throw new Error('No active workflow to persist')
+    const expected = await this.getExportedWorkflow()
+
+    await this.comfyPage.page.waitForFunction(workflowDraftReady, {
+      path,
+      draftKey: hashPath(path),
+      expected
+    })
   }
 
   /** Waits for V2 draft index recency, not payload content freshness. */

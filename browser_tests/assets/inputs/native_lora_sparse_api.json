@@ -5,8 +5,10 @@
       "model": ["3", 0],
       "loras.1.lora_name": "native-lora-e2e/A.safetensors",
       "loras.1.strength": 1,
+      "loras.1.enabled": true,
       "loras.3.lora_name": "native-lora-e2e/C.safetensors",
-      "loras.3.strength": 0.5
+      "loras.3.strength": 0.5,
+      "loras.3.enabled": true
     }
   },
   "2": {

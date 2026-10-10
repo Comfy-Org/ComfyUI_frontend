@@ -27,7 +27,7 @@
       "properties": {
         "Node name for S&R": "LoadLoraModel"
       },
-      "widgets_values": [1, "native-lora-e2e/A.safetensors", 1],
+      "widgets_values": [1, "native-lora-e2e/A.safetensors", 1, true],
       "title": "Load LoRA (Model)"
     },
     {

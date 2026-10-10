@@ -420,7 +420,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Comfy-Org/ComfyUI
-          ref: 0e5d418af303606f1e9f76089b5c21aba275fdc5
+          ref: 926d828e37c6f369a3cf3582887da470f7dab515
           path: .ci-backend
           persist-credentials: false
 

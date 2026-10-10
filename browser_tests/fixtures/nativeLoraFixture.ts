@@ -44,7 +44,7 @@ class NativeLoraHelper {
   }
 
   async promoteRow(number: number) {
-    for (const field of ['lora_name', 'strength']) {
+    for (const field of ['lora_name', 'strength', 'enabled']) {
       await this.comfyPage.contextMenu.openFor(
         this.row(number).getByText(field, { exact: true })
       )

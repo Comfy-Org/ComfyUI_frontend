@@ -109,8 +109,8 @@ test.describe(
         })
         const tab = comfyPage.menu.modelLibraryTab
         await tab.open()
-        await tab.getFolderRowByLabel('loras').click()
-        await tab.getFolderRowByLabel('native-lora-e2e').click()
+        await tab.getFolderByLabel('loras').click()
+        await tab.getFolderByLabel('native-lora-e2e').click()
         await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
         await comfyPage.canvasOps.waitForViewToSettle()
         await tab.getLeafByLabel('C').dragTo(lora.row(2))
@@ -142,8 +142,8 @@ test.describe(
         await comfyPage.nodeOps.clearGraph()
         const tab = comfyPage.menu.modelLibraryTab
         await tab.open()
-        await tab.getFolderRowByLabel('loras').click()
-        await tab.getFolderRowByLabel('native-lora-e2e').click()
+        await tab.getFolderByLabel('loras').click()
+        await tab.getFolderByLabel('native-lora-e2e').click()
         const box = (await comfyPage.canvas.boundingBox())!
         await tab.getLeafByLabel('C').dragTo(comfyPage.canvas, {
           targetPosition: { x: box.width / 2, y: box.height / 2 }
@@ -169,7 +169,8 @@ test.describe(
         class_type: 'LoadLoraModel',
         inputs: {
           'loras.0.lora_name': 'native-lora-e2e/B.safetensors',
-          'loras.0.strength': 1
+          'loras.0.strength': 1,
+          'loras.0.enabled': true
         }
       })
       await lora.execute('3.000')
@@ -231,6 +232,50 @@ test.describe(
       ).toEqual(before)
       await lora.execute('6.000')
     })
+
+    for (const workflow of ['native_lora_model', 'native_lora_clip']) {
+      test(`preserves disabled row values through save/reopen and re-enables their strength in ${workflow}`, async ({
+        comfyPage,
+        lora
+      }) => {
+        await comfyPage.workflow.loadWorkflow(`inputs/${workflow}`)
+        await lora.populate()
+        const before = await comfyPage.workflow.getExportedWorkflow({
+          api: true
+        })
+        const enabled = lora.row(2).getByRole('switch')
+        await expect(enabled).toBeChecked()
+        await enabled.uncheck()
+        await lora.execute('4.000')
+        await comfyPage.menu.topbar.saveWorkflow('native-lora-enabled')
+        await comfyPage.menu.topbar.closeWorkflowTab('native-lora-enabled')
+        await comfyPage.menu.workflowsTab.open()
+        await comfyPage.menu.workflowsTab
+          .getPersistedItem('native-lora-enabled')
+          .dblclick()
+        await comfyPage.menu.workflowsTab.close()
+        await expect(enabled).not.toBeChecked()
+        await expect(lora.picker(2).selection).toHaveText('B.safetensors')
+        await expect(lora.row(2).getByRole('spinbutton')).toHaveAttribute(
+          'aria-valuenow',
+          '1'
+        )
+        const restored = await comfyPage.workflow.getExportedWorkflow({
+          api: true
+        })
+        expect(restored['1'].inputs).toEqual({
+          ...before['1'].inputs,
+          'loras.1.enabled': false
+        })
+        await lora.execute('4.000')
+        await enabled.check()
+        expect(
+          (await comfyPage.workflow.getExportedWorkflow({ api: true }))['1']
+            .inputs
+        ).toEqual(before['1'].inputs)
+        await lora.execute('6.000')
+      })
+    }
 
     test.describe('populated rows', () => {
       test.use({ initialSettings: { 'Comfy.Workflow.Persist': true } })
@@ -355,7 +400,7 @@ test.describe(
         await lora.expectNames(['A.safetensors', 'C.safetensors'])
         await comfyPage.menu.topbar.saveWorkflow('native-lora-rows')
         await comfyPage.menu.topbar.closeWorkflowTab('native-lora-rows')
-        await comfyPage.page.keyboard.press('w')
+        await comfyPage.menu.workflowsTab.open()
         await comfyPage.menu.workflowsTab
           .getPersistedItem('native-lora-rows')
           .dblclick()
@@ -423,7 +468,11 @@ test.describe(
           )
           await expect
             .poll(() => getPromotedWidgetNames(comfyPage, hostId))
-            .toEqual(['loras.0.lora_name', 'loras.0.strength'])
+            .toEqual([
+              'loras.0.lora_name',
+              'loras.0.strength',
+              'loras.0.enabled'
+            ])
           await lora.promotedPicker(host, 1).selectOption('A.safetensors')
           await lora.execute('4.000')
         })
@@ -437,7 +486,7 @@ test.describe(
           await comfyPage.vueNodes.enterSubgraph(hostId)
           await expect
             .poll(() => getConnectedInputs(comfyPage, '1', 'loras.'))
-            .toHaveLength(2)
+            .toHaveLength(3)
           await lora.node
             .getByRole('button', { name: 'Remove LoRA #2', exact: true })
             .click()
@@ -477,7 +526,7 @@ test.describe(
           await comfyPage.command.executeCommand('Comfy.Undo')
           await expect
             .poll(() => getConnectedInputs(comfyPage, '1', 'loras.'))
-            .toHaveLength(2)
+            .toHaveLength(3)
           await comfyPage.page
             .getByTestId(TestIds.breadcrumb.item('root'))
             .click()
@@ -609,7 +658,7 @@ test.describe(
             await comfyPage.vueNodes.enterSubgraph()
             await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
             await comfyPage.canvasOps.waitForViewToSettle()
-            for (const field of ['lora_name', 'strength']) {
+            for (const field of ['lora_name', 'strength', 'enabled']) {
               const row = comfyPage.vueNodes.getWidgetRowByLabel(
                 'New Subgraph',
                 `LoRA #2 ${field}`
@@ -644,6 +693,38 @@ test.describe(
             await lora.execute('4.200')
           })
 
+          test('persists a two-level promoted toggle edited after draft reload', async ({
+            comfyPage,
+            lora
+          }) => {
+            await comfyPage.workflow.waitForDraftPersisted()
+            await comfyPage.workflow.reloadAndWaitForApp()
+            const host = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+            const before = await comfyPage.workflow.getExportedWorkflow({
+              api: true
+            })
+            await host.getByRole('switch').uncheck()
+            const prompt = await comfyPage.workflow.getExportedWorkflow({
+              api: true
+            })
+            const loader = Object.values(prompt).find(
+              (node) => node.class_type === 'LoadLoraModel'
+            )
+            expect(loader?.inputs['loras.1.enabled']).toBe(false)
+            await comfyPage.workflow.waitForDraftPersisted()
+            await comfyPage.workflow.reloadAndWaitForApp()
+            await expect(host.getByRole('switch')).not.toBeChecked()
+            expect(
+              await comfyPage.workflow.getExportedWorkflow({ api: true })
+            ).toEqual(prompt)
+            await lora.execute('4.000')
+            await host.getByRole('switch').check()
+            expect(
+              await comfyPage.workflow.getExportedWorkflow({ api: true })
+            ).toEqual(before)
+            await lora.execute('6.000')
+          })
+
           test('keeps top-level edits on the same row after reindexing across two boundaries', async ({
             comfyPage,
             lora
@@ -654,6 +735,8 @@ test.describe(
             await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
             await comfyPage.canvasOps.waitForViewToSettle()
             await comfyPage.vueNodes.enterSubgraph()
+            await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+            await comfyPage.canvasOps.waitForViewToSettle()
             await lora.node
               .getByRole('button', { name: 'Remove LoRA #1', exact: true })
               .click()
@@ -737,8 +820,10 @@ test.describe(
         model: ['3', 0],
         'loras.0.lora_name': 'native-lora-e2e/A.safetensors',
         'loras.0.strength': 1,
+        'loras.0.enabled': true,
         'loras.1.lora_name': 'native-lora-e2e/C.safetensors',
-        'loras.1.strength': 0.5
+        'loras.1.strength': 0.5,
+        'loras.1.enabled': true
       })
       await lora.execute('4.000')
     })
