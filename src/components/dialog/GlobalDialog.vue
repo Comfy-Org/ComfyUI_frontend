@@ -22,7 +22,6 @@
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
           :data-dialog-key="item.key"
-          @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
               (dialogStore.activeKey !== item.key ||
@@ -123,22 +122,6 @@ const dialogStore = useDialogStore()
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
-}
-
-// Reka's FocusScope focuses the first tabbable element on open (often a header
-// or footer button). Dialog content that marks an input with `autofocus` (e.g.
-// the keybinding capture input, the prompt input) expects that input focused,
-// so focus the autofocus target and cancel Reka's default auto-focus when one
-// is present.
-function onRekaOpenAutoFocus(event: Event, key: string) {
-  const content = document.querySelector<HTMLElement>(
-    `[data-dialog-key="${CSS.escape(key)}"]`
-  )
-  const autofocusEl = content?.querySelector<HTMLElement>('[autofocus]')
-  if (autofocusEl) {
-    event.preventDefault()
-    autofocusEl.focus()
-  }
 }
 
 function hasCloseButton({ dialogComponentProps }: DialogInstance) {
