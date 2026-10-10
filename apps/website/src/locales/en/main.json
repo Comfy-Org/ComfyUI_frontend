@@ -1,22 +1,409 @@
 {
   "cmsTesters": {
-    "title": "Tester invitations", "signIn": "CMS tester sign-in", "help": "Enter the one-use invitation code sent privately by your administrator. Access lasts up to seven days.",
-    "code": "Invitation code", "submit": "Sign in", "back": "Administration", "notice": "Temporary local test access, not production account permissions. Send codes privately. Revocation takes effect on the next request. Backend audit currently records the shared test account.",
-    "copy": "Copy this code now; it will not be shown again. Send it privately with the sign-in URL.", "newCode": "New invitation code", "name": "Tester name", "access": "Access", "review": "Review only", "edit": "Edit (no publication)", "publish": "Edit and publish", "create": "Create invitation", "revoke": "Revoke", "revoked": "Revoked", "expired": "Expired", "used": "Signed in", "unused": "Not used", "expires": "Expires {date}"
+    "title": "Tester invitations",
+    "signIn": "CMS tester sign-in",
+    "help": "Enter the one-use invitation code sent privately by your administrator. Access lasts up to seven days.",
+    "code": "Invitation code",
+    "submit": "Sign in",
+    "back": "Administration",
+    "notice": "Temporary local test access, not production account permissions. Send codes privately. Revocation takes effect on the next request. Backend audit currently records the shared test account.",
+    "copy": "Copy this code now; it will not be shown again. Send it privately with the sign-in URL.",
+    "newCode": "New invitation code",
+    "name": "Tester name",
+    "access": "Access",
+    "review": "Review only",
+    "edit": "Edit (no publication)",
+    "publish": "Edit and publish",
+    "create": "Create invitation",
+    "revoke": "Revoke",
+    "revoked": "Revoked",
+    "expired": "Expired",
+    "used": "Signed in",
+    "unused": "Not used",
+    "expires": "Expires {date}"
   },
   "cmsAdmin": {
+    "title": "Hub admin",
+    "subtitle": "Comfy content",
     "localReview": "Local admin",
-    "localHelp": "Open the CMS with the staff account for this local review. No production account or data is changed.",
-    "openAdmin": "Open site administration",
-    "changesHelp": "Review what differs from LIVE. Only changed fields are shown; array indices refer to LIVE for removals and DRAFT for additions or edits.",
-    "publishHelp": "Review the current Draft, publish it to LIVE, or restore the previous publication.",
-    "approvalsHelp": "Review workflows submitted to the existing Hub before approving or rejecting them.",
-    "fieldsChanged": "{count} field changes",
-    "inspectChanges": "Inspect changes",
-    "added": "Added",
-    "removed": "Removed",
-    "changed": "Changed",
-    "title": "Site administration", "changes": "Draft changes", "publish": "Publication", "approvals": "Workflow approvals", "preview": "PREVIEW", "live": "LIVE", "draft": "DRAFT", "exit": "EXIT", "now": "NOW", "time": "Preview time (UTC)", "timeHelp": "Enter an ISO date and time, including timezone. This changes visibility only, not infrastructure.", "showDraft": "View Draft website", "showLive": "View Live website", "history": "Publication history", "publishDraft": "Publish current Draft", "revert": "Revert to previous Live", "confirm": "I reviewed and approve this action", "emptyChanges": "No changes in the current Draft.", "emptyHistory": "No publication events recorded yet.", "emptyQueue": "No pending workflow submissions.", "before": "Live record", "after": "Draft record", "applyOnly": "Publishing and approvals require comfy_site.apply.", "reviewNote": "Approval updates the existing Hub workflow staging status. It does not publish the Comfy Draft.", "approve": "Approve", "reject": "Reject", "owner": "Owner", "submitted": "Submitted", "listed": "Listed", "unlisted": "Unlisted", "queueLimit": "Showing up to 100 pending submissions, oldest first.", "revision": "Revision", "generation": "Draft generation", "actor": "Actor", "locales": "Language", "hub": "Back to Hub", "unavailable": "Unable to load pending submissions. Please retry."
+    "localHelp": "Open the admin with the staff account for this local review. No production account or data is changed.",
+    "openAdmin": "Open Hub admin",
+    "hub": "Back to Hub",
+    "nav": {
+      "label": "Admin sections",
+      "draft": "Draft",
+      "content": "All content",
+      "history": "Publish history",
+      "tools": "Tools"
+    },
+    "live": "Live · revision {revision}",
+    "previewDraft": "View draft on site",
+    "liveSite": "Live site",
+    "applyOnly": "You can review, but publishing and approving need the comfy_site.apply permission.",
+    "unavailable": "Workflow submissions couldn't be loaded. Reload to try again.",
+    "change": {
+      "new": "New",
+      "updated": "Updated",
+      "removed": "Removed"
+    },
+    "kind": {
+      "MODEL": "Model",
+      "WORKFLOW": "Workflow",
+      "APP": "App"
+    },
+    "draft": {
+      "bulk": {
+        "reject": "Reject {count} | Reject all {count}",
+        "approve": "Approve {count} | Approve all {count}"
+      },
+      "title": "Draft",
+      "help": "Approve what should go live, then publish it after a final review.",
+      "all": "All",
+      "filter": {
+        "MODEL": "Models",
+        "WORKFLOW": "Workflows",
+        "APP": "Apps"
+      },
+      "filterLabel": "Filter by type",
+      "search": "Search title, creator or share ID",
+      "columns": {
+        "change": "Change",
+        "from": "From",
+        "appears": "Appears"
+      },
+      "catalogSource": "Catalog edit",
+      "onPublish": "On publish",
+      "removedOnPublish": "Removed on publish",
+      "hiddenUntil": "Hidden until then",
+      "emptyTitle": "You're all caught up",
+      "emptyBody": "Nothing is waiting for review. Changes and workflow submissions land here.",
+      "noMatches": "No changes match. Try another filter or search.",
+      "submissions": {
+        "title": "Workflow submissions",
+        "help": "Sent by creators. Run them, then approve, leave for later or reject."
+      },
+      "team": {
+        "title": "Content changes",
+        "help": "Saved to the draft by the team. Approve them, leave them for later, or undo one in its panel."
+      }
+    },
+    "review": {
+      "position": "{index} of {total}",
+      "previous": "Previous change",
+      "next": "Next change",
+      "close": "Close",
+      "submitted": "Submitted {date}",
+      "runTitle": "Run it before you approve",
+      "runAction": "Run in Comfy Cloud",
+      "shareId": "Share ID",
+      "listed": "Listed on the Hub",
+      "unlisted": "Unlisted",
+      "seeOnPage": "See it on the page",
+      "changesTitle": "What changes on the site",
+      "before": "Before",
+      "after": "After",
+      "empty": "Empty",
+      "description": "Description",
+      "reject": "Reject",
+      "copy": "Copy share ID",
+      "copied": "Copied",
+      "hubCard": "How it shows on the Hub",
+      "pending": "Pending approval",
+      "noImage": "No image sent with this submission",
+      "newTitle": "What this adds to the site"
+    },
+    "publish": {
+      "cancel": "Cancel"
+    },
+    "reject": {
+      "title": "Reject “{title}”?",
+      "titleMany": "Reject {count} workflows?",
+      "body": "It leaves the draft and the creator can fix it and submit again.",
+      "reason": "Reason",
+      "reasons": {
+        "broken": "Doesn't run",
+        "description": "Description is missing or unclear",
+        "outputs": "Example outputs are low quality",
+        "duplicate": "Duplicates an existing page",
+        "other": "Other"
+      },
+      "note": "Note to the creator",
+      "notePlaceholder": "What should they change before submitting again?",
+      "noteApi": "Sending the reason and note to the creator isn't connected yet.",
+      "confirm": "Reject"
+    },
+    "history": {
+      "title": "Publish history",
+      "help": "Every publish and approval, who made it and when. You can put the live site back to any earlier publish.",
+      "revision": "Revision {revision}",
+      "liveNow": "Live now",
+      "rollback": "Roll back",
+      "rollbackTitle": "Roll the site back to the previous publish?",
+      "rollbackBody": "The live site goes back to how it looked before the last publish. It's saved as a new publish, and your draft is kept.",
+      "restore": "Restore",
+      "restoreTitle": "Restore revision {revision}?",
+      "restoreBody": "The live site goes back to how it looked at revision {revision}. It's saved as a new publish, and your draft is kept.",
+      "restored": "restored revision {revision}",
+      "confirm": "Roll back",
+      "by": "by {actor}",
+      "action": {
+        "PUBLISH": "Published",
+        "REVERT": "Rolled back",
+        "APPROVE": "Approved workflow",
+        "REJECT": "Rejected workflow"
+      },
+      "empty": "Nothing has been published yet."
+    },
+    "content": {
+      "title": "All content",
+      "help": "Everything on the Hub right now. Open a page to check it on the site.",
+      "search": "Search title, provider or address",
+      "view": "View page",
+      "edit": "Edit",
+      "inDraft": "Changed in draft",
+      "hidden": "Turned off",
+      "appears": "Appears {date}",
+      "empty": "No pages match.",
+      "active": "Active",
+      "archivedCount": "Archived {count}",
+      "statusLabel": "Show",
+      "add": "Add content",
+      "noArchived": "Nothing is archived.",
+      "attentionCount": "Needs attention {count}",
+      "attentionHelp": "Pages on the Hub that are missing something. Pick a gap to fix the same thing across pages.",
+      "gapLabel": "Filter by what's missing",
+      "allGood": "Nothing needs attention. Every page has what the Hub needs."
+    },
+    "preview": {
+      "card": {
+        "new": "New",
+        "updated": "Changed",
+        "scheduled": "Scheduled"
+      },
+      "label": "Preview controls",
+      "mode": "Draft preview",
+      "changes": "{count} page change | {count} page changes",
+      "timeTravel": "time travel on",
+      "liveMode": "Live site",
+      "liveSummary": "What visitors see now",
+      "draftTab": "Draft",
+      "liveTab": "Live",
+      "modeLabel": "Show draft or live",
+      "now": "Now",
+      "asOf": "Show the site as of (UTC)",
+      "show": "Show",
+      "backToNow": "Back to now",
+      "jump": "Jump to a scheduled launch",
+      "language": "Language",
+      "changesButton": "Changes",
+      "changesTitle": "Changes in this draft",
+      "changesNote": "Pages this draft changes. Visitors keep seeing the live site until you publish.",
+      "toAdmin": "Back to the draft",
+      "exit": "Exit preview",
+      "editPage": "Edit this page",
+      "pendingWorkflows": "{count} workflow is waiting for approval | {count} workflows are waiting for approval",
+      "pendingHelp": "Workflows show on the Hub once you approve and publish them. Review them in Hub admin."
+    },
+    "demo": "Demo with sample data",
+    "demoHelp": "A demo of the Hub admin running on sample data. Nothing you do here changes comfy.org, and it starts over from time to time.",
+    "editor": {
+      "newTitle": "New {kind}",
+      "archived": "Archived",
+      "live": "Live",
+      "previewPage": "Preview page",
+      "save": "Save to draft",
+      "notice": {
+        "saved": "Saved to the draft. It goes live when the draft is published.",
+        "archived": "Archived in the draft. It leaves the Hub when the draft is published.",
+        "restored": "Restored in the draft. It comes back when the draft is published.",
+        "undone": "Changes undone. It matches the live site again.",
+        "versionRestored": "Version restored to the draft. It goes live when the draft is published."
+      },
+      "goToDraft": "Go to Draft",
+      "readOnly": "You can look, but saving changes needs the comfy_site.edit permission.",
+      "error": {
+        "denied": "You don't have permission to edit content.",
+        "invalid": "This can't be saved yet: check the name, page address and cover. The page address may already be taken.",
+        "conflict": "Someone changed the draft while you were editing. Reload to get their changes, then edit again.",
+        "failed": "Saving didn't work. Try again in a moment."
+      },
+      "details": "Details",
+      "detailsHelp": "What visitors read on the card and the page.",
+      "translationHelp": "Chinese text for the 中文 site. Leave a field empty to show the English text.",
+      "language": "Language",
+      "name": "Name",
+      "summary": "Summary",
+      "provider": "Provider",
+      "author": "Author",
+      "tags": "Tags",
+      "tagsPlaceholder": "e.g. image, edit, fast",
+      "address": "Page address",
+      "addressFixed": "The address can't change once a page exists, so links to it keep working.",
+      "problem": {
+        "name": "Add a name.",
+        "slug": "Use lowercase letters, numbers and dashes.",
+        "cover": "Add a cover image or video."
+      },
+      "cover": "Cover",
+      "coverHelp": "Shown on the Hub card and at the top of the page.",
+      "media": {
+        "image": "Image",
+        "video": "Video",
+        "kind": "Media type",
+        "placeholder": "https://media.comfy.org/…",
+        "drop": "Drop to upload",
+        "upload": "Upload file",
+        "orLink": "Or paste a link",
+        "uploaded": "Uploaded file",
+        "remove": "Remove file",
+        "noStorage": "Uploading needs file storage, which isn't connected yet. Paste a link for now.",
+        "problem": {
+          "type": "Use an image or a video file.",
+          "size": "Files can be up to 3 MB for now."
+        }
+      },
+      "visibility": "Visibility",
+      "shown": "Shown on the Hub",
+      "audience": "Who can see it",
+      "everyone": "Everyone",
+      "staff": "Staff only",
+      "appearsFrom": "Appears from (UTC)",
+      "appearsHelp": "Leave empty to show it as soon as the draft is published.",
+      "archiveTitle": "Archive",
+      "archiveHelp": "Takes it off the Hub when the draft is published. You can restore it any time.",
+      "restoreHelp": "This is archived. Restoring puts it back on the Hub when the draft is published.",
+      "archive": "Archive",
+      "restore": "Restore",
+      "unsaved": "Unsaved changes",
+      "discard": "Discard",
+      "examples": {
+        "title": "Examples",
+        "help": "The first example is the one the playground loads. Change the order with the arrows.",
+        "add": "Add example",
+        "empty": "No examples yet.",
+        "untitled": "Untitled example",
+        "first": "Shown first",
+        "up": "Move up",
+        "down": "Move down",
+        "remove": "Remove example",
+        "exampleTitle": "Title",
+        "prompt": "Prompt",
+        "description": "Description"
+      },
+      "parameters": {
+        "title": "Parameters",
+        "help": "Choose what people see first. Advanced ones stay folded away, and hidden ones always use their default.",
+        "name": "Parameter",
+        "default": "Default",
+        "shownAs": "Shown as",
+        "required": "Required",
+        "noDefault": "No default",
+        "basic": "Basic",
+        "advanced": "Advanced",
+        "hidden": "Hidden"
+      },
+      "new": {
+        "title": "Add content",
+        "help": "Pick an existing item to start from. You get a copy with its settings and examples, ready to change.",
+        "kind": "Kind",
+        "startFrom": "Start from this"
+      },
+      "card": {
+        "title": "On the Hub",
+        "help": "The card visitors see. It updates as you type.",
+        "untitled": "Untitled",
+        "noCover": "No cover yet"
+      }
+    },
+    "readiness": {
+      "title": "Before publishing",
+      "toCheck": "{count} to check | {count} to check",
+      "help": "Checks flag gaps but never block publishing. Fix them in the editor, or publish anyway.",
+      "flagged": "{count} change still has gaps. You can publish anyway. | {count} changes still have gaps. You can publish anyway.",
+      "passed": {
+        "page": "The page builds",
+        "name": "Has a name",
+        "summary": "Has a description",
+        "cover": "Has a cover",
+        "examples": "Has examples"
+      },
+      "missing": {
+        "page": "The page can't be built from this data",
+        "name": "Missing a name",
+        "summary": "Missing a description",
+        "cover": "Missing a cover",
+        "examples": "No examples yet"
+      },
+      "allPass": "Ready to publish: all {count} checks pass"
+    },
+    "undo": {
+      "undo": {
+        "action": "Undo changes",
+        "title": "Undo the changes to {title}?",
+        "body": "It goes back to what the live site shows now. What was saved to the draft for it is lost.",
+        "confirm": "Undo changes"
+      },
+      "remove": {
+        "action": "Remove from draft",
+        "title": "Remove {title} from the draft?",
+        "body": "It was never published, so it leaves the draft and won't go live.",
+        "confirm": "Remove"
+      },
+      "failed": "That didn't work. Reload the page and try again.",
+      "sectionTitle": "Unpublished changes",
+      "sectionHelp": "This page has changes saved to the draft that aren't live yet."
+    },
+    "decision": {
+      "approve": "Approve",
+      "approveTitle": "Approve {title}",
+      "rejectTitle": "Reject {title}"
+    },
+    "stage": {
+      "tabLabel": "Show changes by review status",
+      "tab": {
+        "NEW": "To review {count}",
+        "APPROVED": "Approved {count}",
+        "DEFERRED": "Later {count}"
+      },
+      "label": {
+        "NEW": "To review",
+        "APPROVED": "Approved",
+        "DEFERRED": "Later"
+      },
+      "later": "Later",
+      "laterTitle": "Leave {title} for later",
+      "laterAll": "All for later",
+      "back": "Review again",
+      "backTitle": "Send {title} back to review",
+      "reapproval": "Edited after approval",
+      "reapprovalHelp": "Edited after it was approved, so it needs another look",
+      "failed": "That decision wasn't saved. Reload the page and try again.",
+      "guide": {
+        "review": "Approve each change or leave it for later. The final review opens when nothing is left to review.",
+        "ready": "Everything is decided. {count} approved change is ready for the final review. | Everything is decided. {count} approved changes are ready for the final review."
+      },
+      "empty": {
+        "NEW": "Nothing left to review.",
+        "APPROVED": "Nothing approved yet.",
+        "DEFERRED": "Nothing is left for later."
+      }
+    },
+    "finalReview": {
+      "open": "Final review ({count})",
+      "title": "Final review",
+      "body": "This approved change goes live when you publish. | These {count} approved changes go live together when you publish.",
+      "later": "{count} change left for later stays in the draft. | {count} changes left for later stay in the draft.",
+      "confirm": "Publish {count} change | Publish {count} changes"
+    },
+    "versions": {
+      "title": "Version history",
+      "help": "Every save of this page. Restoring one saves it to the draft again; nothing goes live until it's published.",
+      "current": "Current",
+      "live": "Live",
+      "restore": "Restore",
+      "confirmTitle": "Restore the version from {date}?",
+      "confirmBody": "It replaces what the draft has for this page now. Later saves stay in the history, so you can come back to them."
+    }
   },
   "home": {
     "workshop": {

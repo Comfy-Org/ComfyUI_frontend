@@ -1,134 +1,113 @@
 ---
-import type { SiteSubmission } from '@comfyorg/ingest-types'
-import { zSiteSubmission } from '@comfyorg/ingest-types/zod'
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import DraftChanges from '@/components/cms/DraftChanges.astro'
-import PublishPanel from '@/components/cms/PublishPanel.astro'
-import ApprovalsPanel from '@/components/cms/ApprovalsPanel.astro'
-import { siteAPI } from '@/lib/cms/admin'
+import AdminShell from '@/components/cms/AdminShell.astro'
+import { randomUUID } from 'node:crypto'
+import ContentList from '@/components/cms/ContentList.vue'
+import ContentEditor from '@/components/cms/editor/ContentEditor.vue'
+import NewContentPicker from '@/components/cms/editor/NewContentPicker.vue'
+import DraftQueue from '@/components/cms/DraftQueue.vue'
+import PublishHistory from '@/components/cms/PublishHistory.astro'
+import { resolveLocale } from '@/config/locales'
+import { draftChanges } from '@/lib/cms/admin'
+import { editorState, newFromTemplate } from '@/lib/cms/editor'
+import { buildQueue, contentRows } from '@/lib/cms/queue'
+import { loadStaging } from '@/lib/cms/staging'
+import { loadSubmissions } from '@/lib/cms/submissions'
+import { loadVersions } from '@/lib/cms/versions'
+
 const session = Astro.locals.site
 if (!session) return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
-const page = Astro.params.page ?? ''
-if (!['', 'changes', 'publish', 'approvals'].includes(page))
+const locale = resolveLocale(Astro.currentLocale)
+const page = Astro.params.page?.replace(/\/$/, '') ?? ''
+const editId = page.match(/^edit\/([0-9a-f-]{36})$/i)?.[1]
+if (!['', 'content', 'history', 'new'].includes(page) && !editId)
   return new Response('Not found', { status: 404 })
 const review = session.review
-let submissions: SiteSubmission[] = []
-let queueFailed = false
-if (page === 'approvals') {
-  const response = await siteAPI(
-    '/admin/api/site/submissions',
-    session.credential
-  )
-  const parsed = response.ok
-    ? zSiteSubmission.array().safeParse(await response.json())
+const findRecord = (uid: string | null | undefined) =>
+  review.draft.items.find((item) => item.uid === uid) ??
+  review.live.items.find((item) => item.uid === uid)
+const editRecord = editId ? findRecord(editId) : undefined
+if (editId && !editRecord) return new Response('Not found', { status: 404 })
+const template =
+  page === 'new' ? findRecord(Astro.url.searchParams.get('from')) : undefined
+const editing = editRecord
+  ? { state: editorState(editRecord), base: editRecord.data }
+  : template
+    ? { state: newFromTemplate(template, randomUUID()), base: template.data }
     : undefined
-  if (parsed?.success) submissions = parsed.data
-  else queueFailed = true
-}
-const button =
-  'rounded-full border border-white/20 px-5 py-3 text-sm transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-40'
-const currentPage = page || 'changes'
-const navigation = ['changes', 'publish', 'approvals']
+const liveRecord = editId
+  ? review.live.items.find((item) => item.uid === editId)
+  : undefined
+const isLive = Boolean(liveRecord && !liveRecord.deleted)
+const inDraft = draftChanges(review).some(({ uid }) => uid === editId)
+const noticeParam = Astro.url.searchParams.get('notice')
+const notice = (
+  ['saved', 'archived', 'restored', 'undone', 'versionRestored'] as const
+).find((value) => value === noticeParam)
+
+const [submissions, staging, versions] = await Promise.all([
+  loadSubmissions(session),
+  page === '' ? loadStaging(session) : undefined,
+  editId ? loadVersions(session, editId) : undefined
+])
+const queue = buildQueue(review, submissions ?? [])
+const rows = contentRows(review)
 ---
 
-<BaseLayout title={t('cmsAdmin.title')} description={t('cmsAdmin.title')}>
-  <div
-    class="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-8"
+<AdminShell
+  current={page === '' ? 'draft' : page === 'history' ? 'history' : 'content'}
+  draftCount={queue.length}
+  contentCount={rows.length}
+>
+  {!submissions && page === '' && <p
+    role="alert"
+    class="mb-5 rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
   >
-    <aside
-      class="self-start rounded-2xl border border-white/10 bg-primary-comfy-ink-light p-5 lg:sticky lg:top-24"
-      aria-label={t('cmsAdmin.title')}
-    >
-      <p class="mb-5 text-sm text-primary-comfy-canvas">
-        {t('cmsAdmin.title')}
-      </p>
-      <nav class="mb-6 grid gap-2" aria-label={t('cmsAdmin.title')}>
-        {Astro.locals.siteLocalAccess && <a
-          href="/admin/testers"
-          class="rounded-lg px-4 py-3 text-sm text-primary-comfy-yellow"
-          >{t('cmsTesters.title')}</a
-        >}
-        {navigation.map((item) => <a
-          href={`/admin/${item}/`}
-          aria-current={currentPage === item ? 'page' : undefined}
-          class:list={[
-            'rounded-lg px-4 py-3 text-sm transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow',
-            currentPage === item
-              ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow'
-              : 'text-primary-comfy-canvas'
-          ]}
-          >{t(`cmsAdmin.${item}`)}</a
-        >)}
-        <a
-          href="/hub/models/"
-          class="rounded-lg px-4 py-3 text-sm text-primary-comfy-canvas hover:bg-white/5"
-          >{t('cmsAdmin.hub')} →</a
-        >
-      </nav>
-      <div class="mb-5 rounded-xl border border-white/10 bg-site-bg-soft p-4">
-        <p class="mb-2 text-sm text-primary-comfy-yellow">
-          {t('cmsAdmin.draft')}: {review.draft.revision_id}
-        </p>
-        <p class="mb-2 text-xs text-primary-comfy-canvas">
-          {t('cmsAdmin.generation')}: {review.draft.generation}
-        </p>
-        <p class="text-sm break-all text-primary-comfy-canvas">
-          {t('cmsAdmin.live')}: {review.live.revision_id}
-        </p>
-      </div>
-      <form
-        data-astro-reload
-        method="post"
-        action="/admin/actions"
-        class="grid gap-3"
-      >
-        <input type="hidden" name="csrf" value={session.csrf} /><input
-          type="hidden"
-          name="action"
-          value="preview"
-        />
-        <label class="grid gap-2"
-          >{t('cmsAdmin.time')}<input
-            name="now"
-            type="text"
-            placeholder="2026-10-15T16:00:00Z"
-            class="w-full min-w-0 rounded-lg border border-white/20 bg-site-bg-soft p-3 text-sm focus-visible:outline-primary-comfy-yellow"
-        /></label>
-        <button name="view" value="DRAFT" class={button}>
-          {t('cmsAdmin.showDraft')}
-        </button
-        ><button name="view" value="LIVE" class={button}>
-          {t('cmsAdmin.showLive')}
-        </button>
-        <p class="text-xs leading-relaxed text-primary-comfy-canvas">
-          {t('cmsAdmin.timeHelp')}
-        </p>
-      </form>
-    </aside>
-    <section class="min-w-0" aria-labelledby="cms-admin-title">
-      <header class="mb-8">
-        <p
-          class="mb-3 text-xs tracking-widest text-primary-comfy-yellow uppercase"
-        >
-          {t('cmsAdmin.title')}
-        </p>
-        <h1 id="cms-admin-title" class="text-4xl">
-          {t(`cmsAdmin.${currentPage}`)}
-        </h1>
-        <p class="mt-3 max-w-2xl text-primary-comfy-canvas">
-          {t(`cmsAdmin.${currentPage}Help`)}
-        </p>
-      </header>
-      {(page === '' || page === 'changes') && <DraftChanges />}
-      {page === 'publish' && <PublishPanel button={button} />}
-      {page === 'approvals' && (
-        <ApprovalsPanel
-          button={button}
-          submissions={submissions}
-          queueFailed={queueFailed}
-        />
-      )}
-    </section>
-  </div>
-</BaseLayout>
+    {t('cmsAdmin.unavailable')}
+  </p>}
+  {page === '' && (
+    <DraftQueue
+      client:load
+      items={queue}
+      staging={staging ?? {}}
+      stagingSaved={staging !== undefined}
+      csrf={session.csrf}
+      canApply={review.can_apply}
+      canEdit={review.can_edit}
+      draftId={review.draft.revision_id}
+      generation={review.draft.generation}
+      locale={locale}
+    />
+  )}
+  {page === 'content' && (
+    <ContentList
+      client:load
+      rows={rows}
+      canEdit={review.can_edit}
+      locale={locale}
+    />
+  )}
+  {page === 'new' && !editing && (
+    <NewContentPicker client:load rows={rows} locale={locale} />
+  )}
+  {editing && (
+    <ContentEditor
+      client:load
+      initial={editing.state}
+      base={editing.base}
+      csrf={session.csrf}
+      canEdit={review.can_edit}
+      isLive={isLive}
+      published={Boolean(liveRecord)}
+      inDraft={inDraft}
+      versions={versions}
+      liveVersion={liveRecord?.edit_version}
+      notice={notice}
+      canUpload={Astro.locals.siteDemo === true}
+      locale={locale}
+    />
+  )}
+  {page === 'history' && (
+    <PublishHistory review={review} csrf={session.csrf} locale={locale} />
+  )}
+</AdminShell>

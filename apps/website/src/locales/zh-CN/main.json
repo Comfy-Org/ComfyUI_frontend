@@ -1,22 +1,409 @@
 {
   "cmsTesters": {
-    "title": "测试者邀请", "signIn": "CMS 测试者登录", "help": "输入管理员私下发送的一次性邀请码。访问权限最长有效七天。",
-    "code": "邀请码", "submit": "登录", "back": "管理", "notice": "仅用于本地测试，不是生产环境账户权限。请私下发送邀请码。撤销将在下一次请求时生效。后端审计目前记录的是共享测试账户。",
-    "copy": "请立即复制此邀请码；之后不会再次显示。请将其与登录网址一起私下发送。", "newCode": "新邀请码", "name": "测试者姓名", "access": "权限", "review": "仅查看", "edit": "编辑（不能发布）", "publish": "编辑和发布", "create": "创建邀请", "revoke": "撤销", "revoked": "已撤销", "expired": "已过期", "used": "已登录", "unused": "未使用", "expires": "到期时间：{date}"
+    "title": "测试者邀请",
+    "signIn": "CMS 测试者登录",
+    "help": "输入管理员私下发送的一次性邀请码。访问权限最长有效七天。",
+    "code": "邀请码",
+    "submit": "登录",
+    "back": "管理",
+    "notice": "仅用于本地测试，不是生产环境账户权限。请私下发送邀请码。撤销将在下一次请求时生效。后端审计目前记录的是共享测试账户。",
+    "copy": "请立即复制此邀请码；之后不会再次显示。请将其与登录网址一起私下发送。",
+    "newCode": "新邀请码",
+    "name": "测试者姓名",
+    "access": "权限",
+    "review": "仅查看",
+    "edit": "编辑（不能发布）",
+    "publish": "编辑和发布",
+    "create": "创建邀请",
+    "revoke": "撤销",
+    "revoked": "已撤销",
+    "expired": "已过期",
+    "used": "已登录",
+    "unused": "未使用",
+    "expires": "到期时间：{date}"
   },
   "cmsAdmin": {
+    "title": "Hub 管理",
+    "subtitle": "Comfy 内容管理",
     "localReview": "本地管理",
-    "localHelp": "使用本地审核专用的员工账号打开 CMS，不会更改生产账号或数据。",
-    "openAdmin": "打开网站管理",
-    "changesHelp": "审核与线上版本的差异。仅显示更改字段；删除项的数组索引对应线上版本，新增和修改项对应草稿。",
-    "publishHelp": "审核当前草稿并发布到线上，或恢复上一发布版本。",
-    "approvalsHelp": "审核提交到现有 Hub 的工作流，然后批准或拒绝。",
-    "fieldsChanged": "{count} 个字段更改",
-    "inspectChanges": "查看更改",
-    "added": "新增",
-    "removed": "删除",
-    "changed": "修改",
-    "title": "网站管理", "changes": "草稿更改", "publish": "发布管理", "approvals": "工作流审批", "preview": "预览", "live": "线上", "draft": "草稿", "exit": "退出", "now": "现在", "time": "预览时间（UTC）", "timeHelp": "请输入包含时区的 ISO 日期和时间。仅改变内容可见性，不改变基础设施。", "showDraft": "查看草稿网站", "showLive": "查看线上网站", "history": "发布历史", "publishDraft": "发布当前草稿", "revert": "恢复上一线上版本", "confirm": "我已审核并批准此操作", "emptyChanges": "当前草稿没有更改。", "emptyHistory": "尚无发布事件记录。", "emptyQueue": "没有待审批工作流。", "before": "线上记录", "after": "草稿记录", "applyOnly": "发布和审批需要 comfy_site.apply 权限。", "reviewNote": "审批更新现有 Hub 工作流的审核状态，不会发布 Comfy 草稿。", "approve": "批准", "reject": "拒绝", "owner": "所有者", "submitted": "提交时间", "listed": "已列出", "unlisted": "未列出", "queueLimit": "按时间顺序显示最多 100 个待审批项目。", "revision": "修订版本", "generation": "草稿代次", "actor": "操作者", "locales": "语言", "hub": "返回 Hub", "unavailable": "无法加载待审批项目，请重试。"
+    "localHelp": "使用本地审核专用的员工账号打开管理后台，不会更改生产账号或数据。",
+    "openAdmin": "打开 Hub 管理",
+    "hub": "返回 Hub",
+    "nav": {
+      "label": "管理分区",
+      "draft": "草稿",
+      "content": "全部内容",
+      "history": "发布历史",
+      "tools": "工具"
+    },
+    "live": "线上 · 版本 {revision}",
+    "previewDraft": "在网站上查看草稿",
+    "liveSite": "线上网站",
+    "applyOnly": "你可以审核，但发布和批准需要 comfy_site.apply 权限。",
+    "unavailable": "无法加载工作流提交，请刷新重试。",
+    "change": {
+      "new": "新增",
+      "updated": "已更新",
+      "removed": "已删除"
+    },
+    "kind": {
+      "MODEL": "模型",
+      "WORKFLOW": "工作流",
+      "APP": "应用"
+    },
+    "draft": {
+      "bulk": {
+        "reject": "拒绝 {count} 个",
+        "approve": "批准 {count} 个 | 全部批准 {count} 个"
+      },
+      "title": "草稿",
+      "help": "批准要上线的内容，最终审核后发布。",
+      "all": "全部",
+      "filter": {
+        "MODEL": "模型",
+        "WORKFLOW": "工作流",
+        "APP": "应用"
+      },
+      "filterLabel": "按类型筛选",
+      "search": "搜索标题、创作者或分享 ID",
+      "columns": {
+        "change": "更改",
+        "from": "来源",
+        "appears": "显示时间"
+      },
+      "catalogSource": "目录编辑",
+      "onPublish": "发布时",
+      "removedOnPublish": "发布时删除",
+      "hiddenUntil": "此前隐藏",
+      "emptyTitle": "全部处理完毕",
+      "emptyBody": "没有待审核内容。更改和工作流提交会出现在这里。",
+      "noMatches": "没有匹配的更改，请尝试其他筛选或搜索。",
+      "submissions": {
+        "title": "工作流投稿",
+        "help": "由创作者提交。先运行，再批准、留到稍后或拒绝。"
+      },
+      "team": {
+        "title": "内容更改",
+        "help": "由团队保存到草稿。批准、留到稍后，或在面板中撤销某项。"
+      }
+    },
+    "review": {
+      "position": "第 {index} 项，共 {total} 项",
+      "previous": "上一项更改",
+      "next": "下一项更改",
+      "close": "关闭",
+      "submitted": "提交于 {date}",
+      "runTitle": "批准前先运行",
+      "runAction": "在 Comfy Cloud 中运行",
+      "shareId": "分享 ID",
+      "listed": "在 Hub 中列出",
+      "unlisted": "未列出",
+      "seeOnPage": "在页面上查看",
+      "changesTitle": "网站上的变化",
+      "before": "之前",
+      "after": "之后",
+      "empty": "空",
+      "description": "描述",
+      "reject": "拒绝",
+      "copy": "复制分享 ID",
+      "copied": "已复制",
+      "hubCard": "在 Hub 上的显示效果",
+      "pending": "等待审批",
+      "noImage": "此投稿未附带图片",
+      "newTitle": "这会在网站上添加的内容"
+    },
+    "publish": {
+      "cancel": "取消"
+    },
+    "reject": {
+      "title": "拒绝“{title}”？",
+      "titleMany": "拒绝 {count} 个工作流？",
+      "body": "它会离开草稿，创作者可以修改后重新提交。",
+      "reason": "原因",
+      "reasons": {
+        "broken": "无法运行",
+        "description": "描述缺失或不清楚",
+        "outputs": "示例输出质量较低",
+        "duplicate": "与现有页面重复",
+        "other": "其他"
+      },
+      "note": "给创作者的备注",
+      "notePlaceholder": "重新提交前需要修改什么？",
+      "noteApi": "向创作者发送原因和备注的功能尚未接入。",
+      "confirm": "拒绝"
+    },
+    "history": {
+      "title": "发布历史",
+      "help": "每次发布和批准的操作人和时间。你可以将线上网站恢复到任意一次之前的发布。",
+      "revision": "版本 {revision}",
+      "liveNow": "当前线上",
+      "rollback": "回滚",
+      "rollbackTitle": "将网站回滚到上一次发布？",
+      "rollbackBody": "线上网站会恢复到上次发布之前的样子。这会保存为一次新的发布，你的草稿会保留。",
+      "restore": "恢复",
+      "restoreTitle": "恢复到修订版 {revision}？",
+      "restoreBody": "线上网站会恢复到修订版 {revision} 时的样子。这会作为一次新的发布保存，你的草稿保持不变。",
+      "restored": "恢复了修订版 {revision}",
+      "confirm": "回滚",
+      "by": "操作人 {actor}",
+      "action": {
+        "PUBLISH": "已发布",
+        "REVERT": "已回滚",
+        "APPROVE": "已批准工作流",
+        "REJECT": "已拒绝工作流"
+      },
+      "empty": "尚未发布任何内容。"
+    },
+    "content": {
+      "title": "全部内容",
+      "help": "当前 Hub 上的所有内容。打开页面即可在网站上查看。",
+      "search": "搜索标题、提供方或地址",
+      "view": "查看页面",
+      "edit": "编辑",
+      "inDraft": "草稿中有更改",
+      "hidden": "已关闭",
+      "appears": "{date} 显示",
+      "empty": "没有匹配的页面。",
+      "active": "使用中",
+      "archivedCount": "已归档 {count}",
+      "statusLabel": "显示",
+      "add": "添加内容",
+      "noArchived": "没有已归档的内容。",
+      "attentionCount": "需要处理 {count}",
+      "attentionHelp": "Hub 上缺少内容的页面。选择一个缺漏，即可批量处理同类问题。",
+      "gapLabel": "按缺少的内容筛选",
+      "allGood": "没有需要处理的内容。每个页面都具备 Hub 所需的内容。"
+    },
+    "preview": {
+      "card": {
+        "new": "新增",
+        "updated": "已更改",
+        "scheduled": "已排期"
+      },
+      "label": "预览控件",
+      "mode": "草稿预览",
+      "changes": "{count} 个页面更改",
+      "timeTravel": "时间穿越已开启",
+      "liveMode": "线上站点",
+      "liveSummary": "访客当前看到的内容",
+      "draftTab": "草稿",
+      "liveTab": "线上",
+      "modeLabel": "显示草稿或线上",
+      "now": "现在",
+      "asOf": "显示此时间的网站（UTC）",
+      "show": "显示",
+      "backToNow": "回到现在",
+      "jump": "跳到定时发布",
+      "language": "语言",
+      "changesButton": "更改",
+      "changesTitle": "本草稿中的更改",
+      "changesNote": "此草稿更改的页面。发布之前，访客看到的仍是线上网站。",
+      "toAdmin": "返回草稿",
+      "exit": "退出预览",
+      "editPage": "编辑此页面",
+      "pendingWorkflows": "{count} 个工作流等待审批 | {count} 个工作流等待审批",
+      "pendingHelp": "工作流经审批并发布后才会出现在 Hub 上。请在 Hub 管理后台审核。"
+    },
+    "demo": "示例数据演示",
+    "demoHelp": "这是使用示例数据运行的 Hub 管理演示。在这里的任何操作都不会更改 comfy.org，并且会不时重置。",
+    "editor": {
+      "newTitle": "新建{kind}",
+      "archived": "已归档",
+      "live": "已上线",
+      "previewPage": "预览页面",
+      "save": "保存到草稿",
+      "notice": {
+        "saved": "已保存到草稿。草稿发布后生效。",
+        "archived": "已在草稿中归档。草稿发布后将从 Hub 下线。",
+        "restored": "已在草稿中恢复。草稿发布后重新上线。",
+        "undone": "更改已撤销。它再次与线上网站一致。",
+        "versionRestored": "版本已恢复到草稿。草稿发布后上线。"
+      },
+      "goToDraft": "前往草稿",
+      "readOnly": "你可以查看，但保存更改需要 comfy_site.edit 权限。",
+      "error": {
+        "denied": "你没有编辑内容的权限。",
+        "invalid": "暂时无法保存：请检查名称、页面地址和封面。页面地址可能已被占用。",
+        "conflict": "你编辑时有人修改了草稿。请刷新获取最新内容后再编辑。",
+        "failed": "保存失败，请稍后再试。"
+      },
+      "details": "详情",
+      "detailsHelp": "访客在卡片和页面上看到的内容。",
+      "translationHelp": "中文站点的文字。留空则显示英文。",
+      "language": "语言",
+      "name": "名称",
+      "summary": "简介",
+      "provider": "提供方",
+      "author": "作者",
+      "tags": "标签",
+      "tagsPlaceholder": "例如 image, edit, fast",
+      "address": "页面地址",
+      "addressFixed": "页面创建后地址不能更改，以免链接失效。",
+      "problem": {
+        "name": "请填写名称。",
+        "slug": "请使用小写字母、数字和连字符。",
+        "cover": "请添加封面图片或视频。"
+      },
+      "cover": "封面",
+      "coverHelp": "显示在 Hub 卡片和页面顶部。",
+      "media": {
+        "image": "图片",
+        "video": "视频",
+        "kind": "媒体类型",
+        "placeholder": "https://media.comfy.org/…",
+        "drop": "拖放到此处上传",
+        "upload": "上传文件",
+        "orLink": "或粘贴链接",
+        "uploaded": "已上传的文件",
+        "remove": "移除文件",
+        "noStorage": "上传需要文件存储，目前尚未接入。请先粘贴链接。",
+        "problem": {
+          "type": "请使用图片或视频文件。",
+          "size": "目前文件最大为 3 MB。"
+        }
+      },
+      "visibility": "可见性",
+      "shown": "在 Hub 上显示",
+      "audience": "谁可以看到",
+      "everyone": "所有人",
+      "staff": "仅员工",
+      "appearsFrom": "显示时间（UTC）",
+      "appearsHelp": "留空则在草稿发布后立即显示。",
+      "archiveTitle": "归档",
+      "archiveHelp": "草稿发布后从 Hub 下线。可随时恢复。",
+      "restoreHelp": "此内容已归档。恢复后将在草稿发布时重新上线。",
+      "archive": "归档",
+      "restore": "恢复",
+      "unsaved": "有未保存的更改",
+      "discard": "放弃",
+      "examples": {
+        "title": "示例",
+        "help": "第一个示例会被预先加载到试用区。用箭头调整顺序。",
+        "add": "添加示例",
+        "empty": "暂无示例。",
+        "untitled": "未命名示例",
+        "first": "优先显示",
+        "up": "上移",
+        "down": "下移",
+        "remove": "删除示例",
+        "exampleTitle": "标题",
+        "prompt": "提示词",
+        "description": "描述"
+      },
+      "parameters": {
+        "title": "参数",
+        "help": "选择用户首先看到的参数。高级参数默认折叠，隐藏参数始终使用默认值。",
+        "name": "参数",
+        "default": "默认值",
+        "shownAs": "显示方式",
+        "required": "必填",
+        "noDefault": "无默认值",
+        "basic": "基础",
+        "advanced": "高级",
+        "hidden": "隐藏"
+      },
+      "new": {
+        "title": "添加内容",
+        "help": "选择一个已有内容作为起点。你会得到一份包含其设置和示例的副本，可直接修改。",
+        "kind": "类型",
+        "startFrom": "以此为起点"
+      },
+      "card": {
+        "title": "在 Hub 上",
+        "help": "访客看到的卡片，会随输入实时更新。",
+        "untitled": "未命名",
+        "noCover": "还没有封面"
+      }
+    },
+    "readiness": {
+      "title": "发布前检查",
+      "toCheck": "{count} 项待检查 | {count} 项待检查",
+      "help": "检查只会标出缺漏，不会阻止发布。可以在编辑器中修复，也可以直接发布。",
+      "flagged": "{count} 项更改仍有缺漏，仍可发布。 | {count} 项更改仍有缺漏，仍可发布。",
+      "passed": {
+        "page": "页面可以生成",
+        "name": "已有名称",
+        "summary": "已有描述",
+        "cover": "已有封面",
+        "examples": "已有示例"
+      },
+      "missing": {
+        "page": "无法用这些数据生成页面",
+        "name": "缺少名称",
+        "summary": "缺少描述",
+        "cover": "缺少封面",
+        "examples": "还没有示例"
+      },
+      "allPass": "可以发布：全部 {count} 项检查均已通过"
+    },
+    "undo": {
+      "undo": {
+        "action": "撤销更改",
+        "title": "撤销对 {title} 的更改？",
+        "body": "它会恢复为线上网站当前显示的内容。草稿中为它保存的内容将丢失。",
+        "confirm": "撤销更改"
+      },
+      "remove": {
+        "action": "从草稿中移除",
+        "title": "从草稿中移除 {title}？",
+        "body": "它从未发布过，因此会离开草稿，不会上线。",
+        "confirm": "移除"
+      },
+      "failed": "操作未成功。请刷新页面后重试。",
+      "sectionTitle": "未发布的更改",
+      "sectionHelp": "此页面有已保存到草稿但尚未上线的更改。"
+    },
+    "decision": {
+      "approve": "批准",
+      "approveTitle": "批准 {title}",
+      "rejectTitle": "拒绝 {title}"
+    },
+    "stage": {
+      "tabLabel": "按审核状态显示更改",
+      "tab": {
+        "NEW": "待审核 {count}",
+        "APPROVED": "已批准 {count}",
+        "DEFERRED": "稍后 {count}"
+      },
+      "label": {
+        "NEW": "待审核",
+        "APPROVED": "已批准",
+        "DEFERRED": "稍后"
+      },
+      "later": "稍后",
+      "laterTitle": "将 {title} 留到稍后",
+      "laterAll": "全部留到稍后",
+      "back": "重新审核",
+      "backTitle": "将 {title} 送回审核",
+      "reapproval": "批准后被编辑",
+      "reapprovalHelp": "批准后又被编辑，需要再看一次",
+      "failed": "该决定未能保存。请刷新页面后重试。",
+      "guide": {
+        "review": "批准每项更改或将其留到稍后。没有待审核内容后即可进行最终审核。",
+        "ready": "全部已决定。{count} 项已批准的更改可以进行最终审核。"
+      },
+      "empty": {
+        "NEW": "没有待审核的内容。",
+        "APPROVED": "还没有已批准的内容。",
+        "DEFERRED": "没有留到稍后的内容。"
+      }
+    },
+    "finalReview": {
+      "open": "最终审核（{count}）",
+      "title": "最终审核",
+      "body": "发布时这 {count} 项已批准的更改会一起上线。",
+      "later": "{count} 项留到稍后的更改会保留在草稿中。",
+      "confirm": "发布 {count} 项更改"
+    },
+    "versions": {
+      "title": "版本历史",
+      "help": "此页面的每次保存。恢复某个版本会再次保存到草稿；发布前不会上线。",
+      "current": "当前",
+      "live": "线上",
+      "restore": "恢复",
+      "confirmTitle": "恢复 {date} 的版本？",
+      "confirmBody": "它会替换草稿中此页面的当前内容。之后的保存仍保留在历史中，可以随时恢复。"
+    }
   },
   "about": {
     "careers": {

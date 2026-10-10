@@ -3805,12 +3805,9 @@ export const zPublishSiteContentCatalogBody = zContentCatalogPublish
 export const zPublishSiteContentCatalogResponse = zContentCatalogProjection
 
 export const zRevertSiteContentCatalogBody = z.object({
-  live_id: z.coerce
-    .bigint()
-    .gte(BigInt(1))
-    .max(BigInt('9223372036854775807'), {
-      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
+  live_id: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  })
 })
 
 /**

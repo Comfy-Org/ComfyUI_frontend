@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import type { APIRoute, APIContext } from 'astro'
 import { z } from 'astro/zod'
+import { demoMode, newDemoCredential } from '@/lib/cms/demo'
 import { TESTER_COOKIE } from '@/lib/cms/testers'
 import {
   SESSION_COOKIE,
@@ -29,19 +30,15 @@ export function isLocalAccess(
   )
 }
 
-export const POST: APIRoute = async (context) => {
-  if (
-    !isLocalAccess(context) ||
-    context.request.headers.get('origin') !== context.url.origin
-  )
-    return new Response('Not found', { status: 404 })
+async function localCredential() {
+  if (demoMode()) return newDemoCredential()
   let data: unknown
   try {
     data = JSON.parse(
       await readFile(process.env.SITE_CATALOG_LOCAL_CREDENTIAL_FILE!, 'utf8')
     )
   } catch {
-    return new Response('Local review account unavailable', { status: 503 })
+    return undefined
   }
   const parsed = z
     .object({
@@ -49,17 +46,23 @@ export const POST: APIRoute = async (context) => {
       expires_at: z.string().datetime({ offset: true })
     })
     .safeParse(data)
+  if (!parsed.success || Date.parse(parsed.data.expires_at) <= Date.now())
+    return null
+  return parsed.data.credential
+}
+
+export const POST: APIRoute = async (context) => {
   if (
-    !parsed.success ||
-    Date.parse(parsed.data.expires_at) <= Date.now() ||
-    !(await verifySiteSession(parsed.data.credential))
+    !(isLocalAccess(context) || demoMode()) ||
+    context.request.headers.get('origin') !== context.url.origin
   )
+    return new Response('Not found', { status: 404 })
+  const credential = await localCredential()
+  if (credential === undefined)
+    return new Response('Local review account unavailable', { status: 503 })
+  if (!credential || !(await verifySiteSession(credential)))
     return new Response('Access denied', { status: 403 })
-  context.cookies.set(
-    SESSION_COOKIE,
-    parsed.data.credential,
-    cookieOptions(context)
-  )
+  context.cookies.set(SESSION_COOKIE, credential, cookieOptions(context))
   context.cookies.set(CSRF_COOKIE, newCSRF(), cookieOptions(context))
   context.cookies.delete(TESTER_COOKIE, { path: '/' })
   return context.redirect('/admin/', 303)

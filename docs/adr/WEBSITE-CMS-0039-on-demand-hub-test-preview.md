@@ -51,18 +51,33 @@ local-development ingest authentication to the public internet.
 ## Consequences
 
 This is a local review implementation, not a production cutover or complete CMS.
-CMS mode now adds server-protected `/admin/` review, changes, publication history
-and legacy workflow approvals. Staff session credentials are verified by ingest
+CMS mode now adds a server-protected `/admin/` console with one Draft queue
+(catalog changes and legacy workflow submissions together), All content, and
+publication history with rollback. Publishing approves the included workflow
+submissions, then publishes the Draft; catalog changes still publish together
+until the backend can exclude single records. Staff session credentials are verified by ingest
 on every request; cookies select Draft/Live and an effective visibility clock
 but do not grant permissions. Mutation forms enforce Origin/CSRF and use native
 navigation so client islands do not retain a previous selection. Draft Preview
-shows a yellow full-width banner with timewarp/NOW, locale links and EXIT.
-Staff enter through a floating button and review in a sidebar/action-area layout
-using the regular website tokens. Field-level JSON-path diffs omit edit metadata
-and align array items rather than dumping whole records. The local-only sign-in
+shows a slim neutral bar with Draft/Live, a time picker that can jump to
+scheduled launches, language, a list of the Draft's changes, and Exit.
+Staff enter through a floating button and review in a sidebar/action-area layout.
+The admin and preview bar are work tools, so they take the developer platform's
+graphite palette and control scale (`--color-admin-*` tokens and the reka-ui
+primitives in `components/cms/ui`) rather than the marketing site's ink and yellow. Changes are grouped by the field an editor recognises,
+showing before and after values and highlighting added list items, rather than
+dumping whole records or JSON paths. The local-only sign-in
 page shares the website layout and remains inaccessible to forwarded visitors.
 Direct-loopback local review can use an isolated local staff account; that
 helper rejects forwarded requests and cannot be used on Vercel.
+
+A shareable design demo exists for review without any backend: a pull request
+labelled `cms-demo` builds its Vercel preview with `SITE_CATALOG_DEMO=1`, which
+answers the site API from the in-memory mock (`lib/cms/mock-ingest.ts`, the same
+one `pnpm dev:cms` serves locally) seeded with the public Hub records. Anyone
+with the link can enter through `/admin/local-access`; nothing reaches an
+ingest service, the state lives in one function instance and resets, and the
+mode is refused when `VERCEL_ENV` is `production`.
 
 Temporary ngrok tester invitations are available only in local dev. The owner
 creates/revokes one-use named review/edit/publish invitations on the loopback
@@ -71,7 +86,23 @@ opaque sessions are hashed in an ignored private sidecar, checked on every
 request, and expire within seven days or the parent credential's expiry.
 The backend audit still identifies the shared test account; this bridge is not
 production staff authentication. Ngrok request inspection is disabled.
-Show Live/Exit clears Preview and the simulated clock; only Draft has the banner.
+Preview keeps its banner in both Draft and Live, so a reviewer can compare the
+two on the same page; only Exit clears Preview and the simulated clock. The
+banner is shown on site pages only, never inside the admin, and in Draft it
+labels the Hub cards and links the draft adds, changes or schedules.
+
+Staff edit one item at a time on `/admin/edit/{uid}`, a form rather than
+in-place editing, and save it into the draft through
+`PUT /admin/api/site/items/{uid}` (`ContentCatalogSave`). New items start as a
+copy of an existing one at `/admin/new`, so every record keeps the fields the
+website renders; the server validates each save against the catalogue and page
+schemas before sending it, because one unreadable draft item would break the
+whole preview. Archiving is the same save with `deleted: true`. The editor
+writes three fields the ingest contract does not define yet and needs the
+backend to accept: `data.translations['zh-CN']` (name and summary),
+`data.formLayout` (each input as basic, advanced or hidden), and `target_id`
+on `/admin/api/site/revert`, which restores any earlier LIVE revision instead
+of only the previous one.
 
 Hosted account sign-in, complete preview evidence, localization editing, media versioning, backend Hub
 migration, runtime sitemap/Markdown/LLM files, publication validation,
