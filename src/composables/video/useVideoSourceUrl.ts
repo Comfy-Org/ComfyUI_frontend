@@ -74,20 +74,11 @@ export function useVideoSourceUrl(
     )
   }
 
-  function stripRandParam(url: string): string {
-    const [base, query] = url.split('?')
-    if (!query) return url
-    const params = new URLSearchParams(query)
-    params.delete('rand')
-    return `${base}?${params}`
-  }
-
   function resolveVideoUrl(): string | undefined {
     const source = resolveSourceNode()
     if (!source) return undefined
 
-    const rawOutputUrl = nodeOutputStore.getNodeImageUrls(source)?.[0]
-    const outputUrl = rawOutputUrl && stripRandParam(rawOutputUrl)
+    const outputUrl = nodeOutputStore.getNodeImageUrls(source)?.[0]
     const fileUrl = resolveFileWidgetVideoUrl(sourceFileWidgetValue(source))
 
     return source === node.value
