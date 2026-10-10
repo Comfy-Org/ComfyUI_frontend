@@ -162,7 +162,7 @@ function dragDrop(e: DragEvent) {
           hide-workspace-toggles
         />
         <SplitterGroup
-          class="h-full flex-1 border-none bg-secondary-background"
+          class="h-full min-w-0 flex-1 border-none bg-secondary-background"
           @keydown.capture="onResizeStart"
           @keyup="onResizeEnd"
           @focusout="onResizeEnd"
