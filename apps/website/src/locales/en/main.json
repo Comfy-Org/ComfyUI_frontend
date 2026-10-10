@@ -5193,8 +5193,7 @@
     },
     "backToApps": "Back to apps",
     "panel": {
-      "label": "Shot settings",
-      "newShot": "New shot"
+      "label": "Shot settings"
     },
     "section": {
       "output": "Format",
