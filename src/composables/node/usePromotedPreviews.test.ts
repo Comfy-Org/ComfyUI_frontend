@@ -250,6 +250,38 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toEqual([])
   })
 
+  it('renders the canvas image preview from interior node imgs without server outputs', () => {
+    const setup = createSetup()
+    const interiorNode = addInteriorNode(setup, { id: 10 })
+    const image = new Image()
+    image.src = 'data:image/png;base64,final'
+    interiorNode.imgs = [image]
+    exposePreview(setup, '10')
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+    expect(promotedPreviews.value).toMatchObject([
+      {
+        sourceNodeId: toNodeId(10),
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        urls: ['data:image/png;base64,final']
+      }
+    ])
+  })
+
+  it('does not use interior node imgs for non-canvas exposures', () => {
+    const setup = createSetup()
+    const interiorNode = addInteriorNode(setup, { id: 10 })
+    const image = new Image()
+    image.src = 'data:image/png;base64,final'
+    interiorNode.imgs = [image]
+    exposePreview(setup, '10', 'preview')
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+    expect(promotedPreviews.value).toEqual([])
+  })
+
   it('skips missing interior nodes', () => {
     const setup = createSetup()
     exposePreview(setup, '99')

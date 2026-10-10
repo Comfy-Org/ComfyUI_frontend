@@ -15,6 +15,7 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { syncLegacyPreviewWidgets } from '@/core/graph/subgraph/preview/legacyCanvasPreviews'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
@@ -267,6 +268,7 @@ export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   for (const parent of parents) {
     parent.expandToFitContent()
     parent.setDirtyCanvas(true, true)
+    syncLegacyPreviewWidgets(parent)
   }
   useCanvasStore().canvas?.setDirty(true, true)
 }
