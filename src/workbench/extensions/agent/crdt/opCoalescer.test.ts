@@ -55,7 +55,7 @@ describe('createOpCoalescer over the op sender', () => {
       workflowId: () => boundWorkflow,
       tab: 'tab-1',
       actor: () => 'human:test-user:tab-1',
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     coalescer = createOpCoalescer(sender.admit, sender.flush)

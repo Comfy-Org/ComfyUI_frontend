@@ -88,8 +88,11 @@ export interface OpSenderDeps {
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
   actor(): string
-  /** The follower's last observed doc sequence (stamps `base_version`). */
-  baseVersion(): number
+  /**
+   * The highest stamp counter in the follower's doc; each op's
+   * `base_version` and stamp are minted above it (a Lamport tick).
+   */
+  lamportFloor(): number
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -214,8 +217,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
   // One Lamport cursor per workflow, cleared only by that doc's reset: the
-  // observed sequence reads 0 between a subscribe and its ack, so only the
-  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
+  // observed floor moves only on remote frames and reads 0 until a subscribe
+  // seeds the doc, so only the cursor keeps a batch the host has not echoed
+  // yet, or a re-bound workflow's stamps, below this actor's next mint.
   const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
@@ -237,12 +241,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSerializationFailure = createReportBudget()
 
   function mintBaseVersion(workflowId: string | null): number {
-    const observed = deps.baseVersion()
-    if (workflowId === null) return observed
-    const lastMinted = lastMintedVersions.get(workflowId)
-    return lastMinted === undefined
-      ? observed
-      : Math.max(observed, lastMinted + 1)
+    const floor = deps.lamportFloor()
+    if (workflowId === null) return floor + 1
+    return Math.max(floor, lastMintedVersions.get(workflowId) ?? 0) + 1
   }
 
   function retire(batch: InFlight, answered: number): void {

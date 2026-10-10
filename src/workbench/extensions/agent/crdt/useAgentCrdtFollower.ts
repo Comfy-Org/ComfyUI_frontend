@@ -470,7 +470,7 @@ function startAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: ownActor,
-    baseVersion: () => bridge.lastSequence,
+    lamportFloor: () => bridge.follower.lamportFloor(),
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)

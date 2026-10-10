@@ -141,7 +141,7 @@ describe('createOpSender', () => {
   let transportUp: boolean
   let transportThrows: boolean
   let boundWorkflow: string | null
-  let observedSequence: number
+  let observedFloor: number
   let sender: ReturnType<typeof createOpSender>
   const unsubscribe = vi.fn(() => {
     resultListener = null
@@ -164,7 +164,7 @@ describe('createOpSender', () => {
     transportUp = true
     transportThrows = false
     boundWorkflow = WORKFLOW
-    observedSequence = 41
+    observedFloor = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -179,7 +179,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => observedSequence,
+      lamportFloor: () => observedFloor,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -198,8 +198,8 @@ describe('createOpSender', () => {
     for (const [index, op] of sent[0].ops.entries()) {
       expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
       expect(op.actor).toBe(ACTOR)
-      expect(op.base_version).toBe(41 + index)
-      expect(op.stamp).toEqual([41 + index, ACTOR])
+      expect(op.base_version).toBe(42 + index)
+      expect(op.stamp).toEqual([42 + index, ACTOR])
     }
   })
 
@@ -208,7 +208,7 @@ describe('createOpSender', () => {
     sender.admit([connect(2)])
     sender.flush()
 
-    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([42, 43])
   })
 
   it('restarts local operation versions after a document reset', () => {
@@ -216,7 +216,7 @@ describe('createOpSender', () => {
     sender.abortAll()
     sender.enqueue([addNode(2)])
 
-    expect(sent[1].ops[0].base_version).toBe(41)
+    expect(sent[1].ops[0].base_version).toBe(42)
   })
 
   it('a document reset restarts only the reset document, not every workflow visited', () => {
@@ -229,7 +229,7 @@ describe('createOpSender', () => {
     sender.admit([addNode(4)])
     // Back on wf-1 before its re-subscribe is acknowledged.
     boundWorkflow = WORKFLOW
-    observedSequence = 0
+    observedFloor = 0
     sender.admit([addNode(5)])
 
     expect(
@@ -238,8 +238,8 @@ describe('createOpSender', () => {
         versions: ops.map((op) => op.base_version)
       }))
     ).toEqual([
-      { workflowId: 'wf-2', versions: [41] },
-      { workflowId: WORKFLOW, versions: [43] }
+      { workflowId: 'wf-2', versions: [42] },
+      { workflowId: WORKFLOW, versions: [44] }
     ])
   })
 
@@ -255,7 +255,7 @@ describe('createOpSender', () => {
 
     expect(
       sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
-    ).toEqual([41, 42])
+    ).toEqual([42, 43])
     expect(settled.map(summarizeSettlement)).toEqual([
       { state: 'undeliverable', nodeIds: [2] }
     ])
@@ -274,9 +274,9 @@ describe('createOpSender', () => {
       versions: ops.map((op) => op.base_version)
     }))
     expect(minted).toEqual([
-      { workflowId: WORKFLOW, versions: [41] },
-      { workflowId: 'wf-2', versions: [41] },
-      { workflowId: WORKFLOW, versions: [42] }
+      { workflowId: WORKFLOW, versions: [42] },
+      { workflowId: 'wf-2', versions: [42] },
+      { workflowId: WORKFLOW, versions: [43] }
     ])
   })
 
@@ -284,7 +284,7 @@ describe('createOpSender', () => {
     sender.admit([addNode(1)])
     sender.admit([addNode(2)])
     boundWorkflow = 'wf-2'
-    observedSequence = 0
+    observedFloor = 0
     sender.admit([addNode(3)])
     boundWorkflow = WORKFLOW
     sender.admit([addNode(4)])
@@ -296,9 +296,9 @@ describe('createOpSender', () => {
         versions: ops.map((op) => op.base_version)
       }))
     ).toEqual([
-      { workflowId: WORKFLOW, versions: [41, 42] },
-      { workflowId: 'wf-2', versions: [0] },
-      { workflowId: WORKFLOW, versions: [43] }
+      { workflowId: WORKFLOW, versions: [42, 43] },
+      { workflowId: 'wf-2', versions: [1] },
+      { workflowId: WORKFLOW, versions: [44] }
     ])
   })
 
@@ -309,18 +309,18 @@ describe('createOpSender', () => {
 
     expect(
       sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
-    ).toEqual([41, 42, 43, 44])
+    ).toEqual([42, 43, 44, 45])
   })
 
-  it('mints from the observed sequence once the document advances past this actor', () => {
+  it('mints above the observed floor once the document advances past this actor', () => {
     sender.admit([addNode(1)])
-    observedSequence = 90
+    observedFloor = 90
     sender.admit([addNode(2)])
     sender.flush()
 
     expect(
       sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
-    ).toEqual([41, 90])
+    ).toEqual([42, 91])
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
@@ -798,7 +798,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled
     })
     localSender.enqueue([addNode(1)])
@@ -829,7 +829,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -857,7 +857,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -897,7 +897,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         if (shouldFail) throw new Error('listener boom')
       }
@@ -931,7 +931,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -987,7 +987,7 @@ describe('createOpSender', () => {
         workflowId: () => boundWorkflow,
         tab: TAB,
         actor: () => ACTOR,
-        baseVersion: () => 41,
+        lamportFloor: () => 41,
         onBatchSettled
       })
 
@@ -1018,7 +1018,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1040,7 +1040,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1191,7 +1191,7 @@ describe('createOpSender', () => {
       workflowId: () => workflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
@@ -1230,7 +1230,7 @@ describe('createOpSender', () => {
       workflowId: () => workflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
@@ -1268,7 +1268,7 @@ describe('createOpSender', () => {
       workflowId: () => WORKFLOW,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
           localSender.admit([addNode(3)])
@@ -1303,7 +1303,7 @@ describe('createOpSender', () => {
 
       expect(sent).toHaveLength(1)
       expect(nodeIdsOf(sent[0].ops)).toEqual([1, 2])
-      expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+      expect(sent[0].ops.map((op) => op.base_version)).toEqual([42, 43])
     }
   )
 
@@ -1315,7 +1315,7 @@ describe('createOpSender', () => {
       workflowId: () => WORKFLOW,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
     const operation = addNode(1)
@@ -1370,7 +1370,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
@@ -1398,7 +1398,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     localSender.enqueue([addNode(1)])
@@ -1447,7 +1447,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      lamportFloor: () => 41,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
           throw new Error('listener boom')

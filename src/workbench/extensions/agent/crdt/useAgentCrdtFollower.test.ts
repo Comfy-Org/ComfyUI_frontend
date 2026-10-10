@@ -41,6 +41,7 @@ const bridgeState = vi.hoisted(() => {
     lastSequence = 41
     follower = {
       updatesApplied: 0,
+      lamportFloor: () => 41,
       doc: {
         getMap: () => ({ toJSON: () => ({}) })
       }
@@ -722,6 +723,7 @@ describe('useAgentCrdtFollower', () => {
     // and clear applied state without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 7,
+      lamportFloor: () => 0,
       doc: { getMap: () => ({ toJSON: () => ({}) }) }
     }
     const initialFollower = bridge().follower
@@ -1174,7 +1176,11 @@ describe('useAgentCrdtFollower', () => {
         actor: 'agent:turn',
         seq: 43
       })
-      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
+      bridge().follower = {
+        updatesApplied: 0,
+        lamportFloor: () => 0,
+        doc: replacementDoc
+      }
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
       expect(
@@ -1408,6 +1414,22 @@ describe('useAgentCrdtFollower', () => {
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
+    unmount()
+  })
+
+  it('stamps human operations above the follower doc floor, not the host sequence', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+    bridge().lastSequence = 3
+    bridge().follower.lamportFloor = () => 50
+
+    enqueue([{ op: 'set_widget', node_id: '2', widget: 'steps', value: 4 }])
+    await Promise.resolve()
+
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+    expect(ops[0]).toMatchObject({
+      base_version: 51,
+      stamp: [51, expect.any(String)]
+    })
     unmount()
   })
 
