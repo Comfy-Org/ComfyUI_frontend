@@ -83,6 +83,7 @@ import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -576,12 +577,16 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     await useSessionCookie().ensureSessionCookie()
     sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE, 'ws-team')
     firebaseSignOut.mockResolvedValue()
+    const invalidateAssets = vi
+      .spyOn(useAssetsStore(), 'invalidateAll')
+      .mockResolvedValue()
 
     server.session = { userId: 'user-b' }
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
     expect(firebaseSignOut).toHaveBeenCalledOnce()
     expect(api.resetSocket).toHaveBeenCalledOnce()
+    expect(invalidateAssets).toHaveBeenCalledOnce()
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
@@ -973,9 +978,11 @@ describe('cloud API requests on the shared web session', () => {
       expect(response.status).toBe(status)
       expect(signedInAfterRefusal).toBe(sessionUser)
       expect(
-        ingest.requests.map(({ path, headers }) =>
-          path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-        )
+        ingest.requests
+          .filter(({ path }) => path !== '/api/assets')
+          .map(({ path, headers }) =>
+            path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+          )
       ).toEqual(tokens)
     }
   )

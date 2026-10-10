@@ -176,4 +176,39 @@ describe('AssetsSidebarTab reopen with the asset API', () => {
       'out-old.png'
     ])
   })
+
+  it('recovers older paging after the reopen request itself fails', async () => {
+    serveAssets(async () =>
+      Response.json({
+        assets: outputs,
+        total: 4,
+        has_more: true,
+        next_cursor: 'out-2'
+      })
+    )
+    const outputAssets = useAssetsStore().outputAssets
+    renderTab().unmount()
+    await vi.waitFor(() => expect(toValue(outputAssets.isLoading)).toBe(false))
+
+    serveAssets(async () => new Response(null, { status: 404 }))
+    renderTab().unmount()
+    await vi.waitFor(() => expect(toValue(outputAssets.hasMore)).toBe(false))
+
+    serveAssets(async () =>
+      Response.json({ assets: outputs, total: 4, has_more: true })
+    )
+    renderTab()
+    await vi.waitFor(() => expect(toValue(outputAssets.hasMore)).toBe(true))
+
+    serveAssets(async () =>
+      Response.json({ assets: [older], total: 4, has_more: false })
+    )
+    await outputAssets.loadMore()
+    expect(shownAssets()).toEqual([
+      'out-0.png',
+      'out-1.png',
+      'out-2.png',
+      'out-old.png'
+    ])
+  })
 })
