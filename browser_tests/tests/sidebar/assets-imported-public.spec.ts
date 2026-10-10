@@ -110,8 +110,9 @@ test.describe(
         url.searchParams.get('tags_any')?.split(',').includes('input')
       )
       expect(inputRequests.length).toBeGreaterThan(0)
-      for (const url of inputRequests)
-        expect(url.searchParams.get('include_public')).toBe('false')
+      expect(
+        inputRequests.map((url) => url.searchParams.get('include_public'))
+      ).toEqual(inputRequests.map(() => 'false'))
     })
 
     test('Generated tab omits published assets of other users', async ({
@@ -128,8 +129,9 @@ test.describe(
         url.searchParams.get('tags_any')?.split(',').includes('output')
       )
       expect(outputRequests.length).toBeGreaterThan(0)
-      for (const url of outputRequests)
-        expect(url.searchParams.get('include_public')).toBe('false')
+      expect(
+        outputRequests.map((url) => url.searchParams.get('include_public'))
+      ).toEqual(outputRequests.map(() => 'false'))
     })
   }
 )
