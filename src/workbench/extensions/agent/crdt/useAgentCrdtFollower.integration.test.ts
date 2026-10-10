@@ -12,6 +12,10 @@ import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import {
+  DOC_HOST_MINTED_SINK_UPDATE_B64,
+  DOC_HOST_MULTI_PLAYER_VERSION
+} from './__fixtures__/docHostMintedSink'
 import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
@@ -92,6 +96,44 @@ describe('useAgentCrdtFollower over a live graph', () => {
     } finally {
       view.unmount()
       host.destroy()
+    }
+  })
+
+  it(`projects a document minted by the cloud doc-host (comfy-multi-player ${DOC_HOST_MULTI_PLAYER_VERSION})`, async () => {
+    const graph = shallowRef<LGraph | null>(new LGraph())
+    const view = render(
+      defineComponent({
+        setup() {
+          useAgentCrdtFollower(
+            ref(WORKFLOW_ID),
+            () => null,
+            ref(true),
+            () => graph.value
+          )
+          return () => null
+        }
+      }),
+      { global: { plugins: [getActivePinia()!] } }
+    )
+
+    try {
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 1
+      })
+      deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
+      })
+      await nextTick()
+
+      expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')
+    } finally {
+      view.unmount()
     }
   })
 })
