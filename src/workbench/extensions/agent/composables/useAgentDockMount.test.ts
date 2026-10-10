@@ -9,6 +9,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
@@ -64,6 +65,50 @@ describe('useAgentDockMount', () => {
     await nextTick()
 
     expect(store.reportedExhaustionIdentity).toBeNull()
+  })
+
+  it('re-arms the credit-transition notice after scoped funds refill while closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    const identity = store.creditTransitionNotice?.identity
+    expect(identity).toBeDefined()
+    if (!identity) throw new Error('Expected a billing identity')
+    expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
