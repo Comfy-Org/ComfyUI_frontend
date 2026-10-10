@@ -287,7 +287,7 @@ watch(browseAll, (on) => on && resetFilters())
         :id="HUB_TOOLBAR_ID"
         ref="toolbar"
         data-testid="workshop-toolbar"
-        class="sticky top-20 z-30 -mx-1 mb-8 flex [border-image:conic-gradient(var(--color-page)_0_0)_fill_0/0/0_100vmax] scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 [border-image:conic-gradient(var(--color-page)_0_0)_fill_0/0/0_100vmax] max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <slot name="tabs" />
         <div
