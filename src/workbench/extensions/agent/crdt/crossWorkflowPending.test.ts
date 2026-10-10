@@ -1,4 +1,3 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -6,6 +5,7 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -45,9 +45,13 @@ const bridgeState = vi.hoisted(() => {
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
   transportUp: true,
-  attempts: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
-  sent: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
-  sendOps: vi.fn((workflowId: string, tab: string, ops: Op[]) => {
+  attempts: [] as Array<{
+    workflowId: string
+    tab: string
+    ops: readonly DocOp[]
+  }>,
+  sent: [] as Array<{ workflowId: string; tab: string; ops: readonly DocOp[] }>,
+  sendOps: vi.fn((workflowId: string, tab: string, ops: readonly DocOp[]) => {
     clientState.attempts.push({ workflowId, tab, ops })
     if (!clientState.transportUp) return false
     clientState.sent.push({ workflowId, tab, ops })
