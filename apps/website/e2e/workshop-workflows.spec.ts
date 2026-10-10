@@ -620,7 +620,7 @@ test('the examples below the form read and mark themselves like a model page', a
     name: /A softer finish for a leather sofa/
   })
   await expect(example).toHaveAttribute('aria-current', 'true')
-  await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
+  await expect(page.getByTestId('example-chosen')).toHaveCount(1)
 })
 
 test('the examples belong to the playground, not to Details or API', async ({

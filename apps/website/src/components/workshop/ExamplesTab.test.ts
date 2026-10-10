@@ -123,3 +123,13 @@ it('asks a video example for a frame it can paint before playback', () => {
     'https://media.example/clip.mp4#t=0.1'
   )
 })
+
+it('refuses a pick while the form it would fill is busy', async () => {
+  const user = userEvent.setup()
+  const preset = example({ id: 'busy', title: 'Busy' })
+  const { emitted } = render(ExamplesTab, {
+    props: { examples: [preset], galleryLabel: 'Gallery', disabled: true }
+  })
+  await user.click(screen.getByTestId('example-card'))
+  expect(emitted().open).toBeUndefined()
+})
