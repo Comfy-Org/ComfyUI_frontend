@@ -2,6 +2,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
@@ -62,8 +65,8 @@ const fetchTimeoutRejection = {
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
     mockDistribution.isCloud = false
+    installCloudApiAuth()
     // Reset api state
     api.user = 'test-user'
   })
@@ -343,6 +346,46 @@ describe('api.fetchApi', () => {
       expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
         'onAuthScheme'
       )
+    })
+  })
+
+  describe('auth provider', () => {
+    it.for([
+      {
+        name: 'anonymous request skips the 401 retry decision',
+        authHeader: null,
+        expectedAuthorization: null,
+        expectedRetryOn401: false,
+        expectedRetryDecisions: 0
+      },
+      {
+        name: 'authenticated request applies the header and retry decision',
+        authHeader: { Authorization: 'Bearer token' },
+        expectedAuthorization: 'Bearer token',
+        expectedRetryOn401: true,
+        expectedRetryDecisions: 1
+      }
+    ])('$name', async (row) => {
+      mockDistribution.isCloud = true
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi.fn().mockResolvedValue(row.authHeader),
+        shouldRetryOn401: vi.fn().mockResolvedValue(true),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+
+      await api.fetchApi('/test')
+
+      const [, init, retryOn401] = vi.mocked(provider.fetch).mock.calls[0]
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        row.expectedAuthorization
+      )
+      expect(retryOn401).toBe(row.expectedRetryOn401)
+      expect(provider.shouldRetryOn401).toHaveBeenCalledTimes(
+        row.expectedRetryDecisions
+      )
+      expect(global.fetch).not.toHaveBeenCalled()
     })
   })
 

@@ -2,10 +2,8 @@
   <div class="flex flex-col">
     <div class="show-export-formats relative">
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.exportModel'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.exportModel')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"

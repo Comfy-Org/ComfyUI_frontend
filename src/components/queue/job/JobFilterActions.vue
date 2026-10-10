@@ -14,7 +14,7 @@
       <Menu>
         <template #trigger>
           <Button
-            v-tooltip.top="filterTooltipConfig"
+            :tooltip="t('sideToolbar.queueProgressOverlay.filterBy')"
             variant="secondary"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
@@ -30,7 +30,7 @@
       <Menu>
         <template #trigger>
           <Button
-            v-tooltip.top="sortTooltipConfig"
+            :tooltip="t('sideToolbar.queueProgressOverlay.sortBy')"
             variant="secondary"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
@@ -42,7 +42,7 @@
       </Menu>
       <Button
         v-if="showAssetsAction"
-        v-tooltip.top="showAssetsTooltipConfig"
+        :tooltip="t('sideToolbar.queueProgressOverlay.showAssets')"
         variant="secondary"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
@@ -63,7 +63,6 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 const {
@@ -92,15 +91,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
-const filterTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.filterBy'))
-)
-const sortTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
-)
-const showAssetsTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.showAssets'))
-)
 const showAssetsAction = computed(() => !hideShowAssetsAction)
 const searchPlaceholderText = computed(
   () => searchPlaceholder ?? t('sideToolbar.queueProgressOverlay.searchJobs')

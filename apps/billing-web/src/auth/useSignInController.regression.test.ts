@@ -3,6 +3,8 @@
  * resolution chain instead of mocking @/config/firebase, so a regression in
  * account-core's own caching shows up here the way it would in the app.
  */
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+
 import { useSignInController } from '@/auth/useSignInController'
 
 const sdk = vi.hoisted(() => ({
@@ -45,6 +47,8 @@ vi.mock<unknown>(import('@/session/billingWebSession'), async () => {
   }
 })
 
+const FEATURES_URL = 'https://testcloud.comfy.org/api/features'
+
 const VALID_FIREBASE_CONFIG = {
   apiKey: 'api-key',
   authDomain: 'cloud.firebaseapp.com',
@@ -54,19 +58,13 @@ const VALID_FIREBASE_CONFIG = {
 
 describe('useSignInController identity availability, real account-core resolution', () => {
   it('reaches a fresh /api/features request on retryAvailability after a failed startup resolution', async () => {
-    const fetchImpl = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ firebase_config: VALID_FIREBASE_CONFIG }),
-          { status: 200 }
-        )
-      )
-    vi.stubGlobal('fetch', fetchImpl)
+    respondToFetch(FEATURES_URL, () =>
+      Response.json({ firebase_config: VALID_FIREBASE_CONFIG })
+    )
+    respondToFetch(FEATURES_URL, () => new Response('not json'), { times: 1 })
 
     const controller = useSignInController(() => undefined)
-    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
     // The startup fetch settling doesn't itself resolve `identity.value`:
     // let the rest of its promise chain (parsing, cache write) drain too.
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -74,7 +72,7 @@ describe('useSignInController identity availability, real account-core resolutio
 
     await controller.retryAvailability()
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(controller.available.value).toBe(true)
     await controller.signInWith('google')
     expect(controller.errorMessage.value).toBe('')

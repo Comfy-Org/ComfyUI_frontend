@@ -1,7 +1,9 @@
 <template>
-  <button
+  <Button
     v-if="isRecording"
-    v-tooltip.top="tip(t('load3d.menuBar.stopRecording'))"
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.stopRecording')"
     :class="chipClass"
     type="button"
     :aria-label="t('load3d.menuBar.stopRecording')"
@@ -9,7 +11,7 @@
   >
     <span class="size-2 animate-pulse rounded-full bg-red-500" />
     <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
-  </button>
+  </Button>
 
   <div
     v-else-if="hasRecording"
@@ -17,16 +19,18 @@
   >
     <Popover v-model:open="menuOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.videoRecordingTooltip'))"
-          class="flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="t('load3d.menuBar.videoRecordingTooltip')"
+          class="gap-1.5 px-1 py-0.5"
           type="button"
           :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
           data-testid="load3d-recording-duration"
         >
           <i class="icon-[lucide--film] size-4" />
           {{ formatDuration(recordingDuration ?? 0) }}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
@@ -56,20 +60,24 @@
         </button>
       </PopoverContent>
     </Popover>
-    <button
-      v-tooltip.top="tip(t('load3d.menuBar.deleteRecording'))"
-      class="flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.menuBar.deleteRecording')"
+      class="size-6"
       type="button"
       :aria-label="t('load3d.menuBar.deleteRecording')"
       @click="emit('clearRecording')"
     >
       <i class="icon-[lucide--x] size-3.5" />
-    </button>
+    </Button>
   </div>
 
-  <button
+  <Button
     v-else
-    v-tooltip.top="tip(t('load3d.menuBar.record'))"
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.record')"
     :class="chipClass"
     type="button"
     :aria-label="compact ? t('load3d.menuBar.record') : undefined"
@@ -77,7 +85,7 @@
   >
     <i class="icon-[lucide--video] size-4" />
     <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
@@ -86,10 +94,10 @@ import { useI18n } from 'vue-i18n'
 
 import {
   chipClass,
-  menuPanelClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { menuButtonClass } from '@/components/ui/menu/menuStyles'

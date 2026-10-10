@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -66,6 +66,19 @@ const currentJobName = computed(() => {
   return activeJob?.assetName || t('progressToast.downloadingModel')
 })
 
+const outcomeLabel = computed(() => {
+  if (failedJobs.value.length > 0)
+    return t('progressToast.downloadsFailed', {
+      count: failedJobs.value.length
+    })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  return t('progressToast.allDownloadsCompleted')
+})
+
+const announcement = computed(() =>
+  isInProgress.value ? t('progressToast.importingModels') : outcomeLabel.value
+)
+
 const completedCount = computed(
   () =>
     completedJobs.value.length +
@@ -111,7 +124,7 @@ async function cancelDownload(taskId: TaskId) {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -210,11 +223,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{
-                t('progressToast.downloadsFailed', {
-                  count: failedJobs.length
-                })
-              }}
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
@@ -222,7 +231,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('electronFileDownload.cancelled') }}
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
@@ -230,7 +239,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('progressToast.allDownloadsCompleted') }}
+              {{ outcomeLabel }}
             </span>
           </template>
         </div>
@@ -282,5 +291,5 @@ async function cancelDownload(taskId: TaskId) {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

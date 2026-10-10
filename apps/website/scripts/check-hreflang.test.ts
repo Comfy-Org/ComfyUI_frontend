@@ -16,19 +16,31 @@ it.for([
   {
     name: 'valid encoded links with copied public HTML',
     canonical: 'https://comfy.org/zh-CN/caf%C3%A9/',
+    switcher: true,
     status: 0,
+    inspected: '4 rendered language links checked',
     diagnostic: 'every cluster is reciprocal'
   },
   {
     name: 'wrong-origin canonical',
     canonical: 'https://other.example/zh-CN/caf%C3%A9/',
+    switcher: true,
     status: 1,
+    inspected: '4 rendered language links checked',
     diagnostic:
       '/zh-CN/café/: canonical must be https://comfy.org/zh-CN/caf%C3%A9/'
+  },
+  {
+    name: 'a build where the switcher renders no language link at all',
+    canonical: 'https://comfy.org/zh-CN/caf%C3%A9/',
+    switcher: false,
+    status: 1,
+    inspected: '0 rendered language links checked',
+    diagnostic: 'no page rendered a language link, so none of them were checked'
   }
 ])(
   'audits $name from the built site',
-  async ({ canonical, status, diagnostic }) => {
+  async ({ canonical, switcher, status, inspected, diagnostic }) => {
     const directory = await mkdtemp(join(tmpdir(), 'hreflang-canonical-'))
     onTestFinished(() => rm(directory, { recursive: true, force: true }))
     const pages = [
@@ -53,13 +65,16 @@ it.for([
           `<link rel="alternate" hreflang="${locale}" href="${href}">`
       )
       .join('')
+    const rendered = switcher
+      ? `<nav aria-label="Language"><a href="/caf%C3%A9/" hreflang="en">English</a><a href="/zh-CN/caf%C3%A9/" hreflang="zh-CN">中文</a></nav>`
+      : ''
     await Promise.all(
       pages.map(async ({ route, canonical }) => {
         const target = join(directory, 'dist', route)
         await mkdir(target, { recursive: true })
         await writeFile(
           join(target, 'index.html'),
-          `<link  rel="canonical"\n href="${canonical}">${links}`
+          `<link  rel="canonical"\n href="${canonical}">${links}${rendered}`
         )
       })
     )
@@ -89,6 +104,7 @@ it.for([
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(status)
     expect(result.stderr).toContain('[hreflang] 2 pages built')
+    expect(result.stderr).toContain(inspected)
     expect(result.stderr).toContain(diagnostic)
   }
 )
