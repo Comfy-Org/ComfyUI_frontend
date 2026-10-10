@@ -571,19 +571,41 @@ describe('ComfyApp', () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook: string) => {
-          if (hook === 'beforeConfigureGraph') {
-            throw new Error('bad extension')
-          }
-        }
+      const error = new Error('bad extension')
+      let releaseErrorHandling!: () => void
+      const errorHandling = new Promise<void>((resolve) => {
+        releaseErrorHandling = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenRejectOnce(error)
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('onGraphLoadError', error)
+        .thenReturnOnce(errorHandling)
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        true,
+        null,
+        { workflowNavigationId: 9 }
       )
-
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
-          workflowNavigationId: 9
-        })
-      ).resolves.toBe(false)
+      try {
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('onGraphLoadError', error)
+        )
+        expect(ChangeTracker.isLoadingGraph).toBe(true)
+      } finally {
+        releaseErrorHandling()
+        await load
+      }
+      await expect(load).resolves.toBe(false)
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
 
       expect(showDialog).toHaveBeenCalledOnce()
       expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
@@ -811,7 +833,12 @@ describe('ComfyApp', () => {
       await app.loadGraphData(other, false, false, secondWorkflow, {
         skipAssetScans: true
       })
-      releasePending()
+      try {
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      } finally {
+        releasePending()
+        await undoLoad
+      }
       await expect(undoLoad).resolves.toBeUndefined()
 
       expect(firstTracker.activeState).toEqual(changed)

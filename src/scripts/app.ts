@@ -1513,7 +1513,6 @@ export class ComfyApp {
         }
       }
     } catch (error) {
-      releaseGraphLoad()
       // This try wraps everything between `beforeLoadGraph` and
       // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
       // cloning, `validateWorkflow`, reroute-migration inspection, a
@@ -1524,7 +1523,11 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
-      await this.reportGraphLoadFailure(error)
+      try {
+        await this.reportGraphLoadFailure(error)
+      } finally {
+        releaseGraphLoad()
+      }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1737,7 +1740,11 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      this.pendingGraphLoads.delete(loadId)
+      for (const pendingLoadId of this.pendingGraphLoads) {
+        if (pendingLoadId <= loadId)
+          this.pendingGraphLoads.delete(pendingLoadId)
+      }
+      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
