@@ -102,16 +102,15 @@ test.describe(
               return // not JSON, ignore
             }
             if (typeof frame !== 'object' || frame === null) return
-            const { type, data } = frame as { type?: unknown; data?: unknown }
+            if (!('type' in frame) || frame.type !== 'doc_subscribe') return
             if (
-              type !== 'doc_subscribe' ||
-              typeof data !== 'object' ||
-              data === null
+              !('data' in frame) ||
+              typeof frame.data !== 'object' ||
+              frame.data === null ||
+              !('workflow_id' in frame.data)
             )
               return
-            const { workflow_id: workflowId } = data as {
-              workflow_id?: unknown
-            }
+            const workflowId = frame.data.workflow_id
             if (typeof workflowId === 'string') resolve(workflowId)
           })
         })
