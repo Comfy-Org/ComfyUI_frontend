@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -27,6 +27,14 @@ const outputs: AssetItem[] = Array.from({ length: 3 }, (_, i) => ({
   updated_at: new Date(3000 - i).toISOString()
 }))
 
+const newest: AssetItem = {
+  id: 'out-new',
+  name: 'out-new.png',
+  tags: ['output'],
+  created_at: new Date(4000).toISOString(),
+  updated_at: new Date(4000).toISOString()
+}
+
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 function renderTab() {
@@ -36,7 +44,9 @@ function renderTab() {
       directives: { tooltip: {} },
       stubs: {
         AssetsSidebarGridView: {
-          template: '<div data-testid="assets-grid" />'
+          props: ['assets'],
+          template:
+            '<ul data-testid="assets-grid"><li v-for="a in assets" :key="a.id">{{ a.name }}</li></ul>'
         },
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
@@ -48,6 +58,12 @@ function renderTab() {
 }
 
 const OUTPUT_TAGS = 'output,temp'
+
+function shownAssets() {
+  return within(screen.getByTestId('assets-grid'))
+    .queryAllByRole('listitem')
+    .map((item) => item.textContent)
+}
 
 function outputRequests() {
   return vi
@@ -93,15 +109,23 @@ describe('AssetsSidebarTab reopen with the asset API', () => {
     await vi.waitFor(() =>
       expect(outputRequests()).toHaveLength(requestsBeforeReopen + 1)
     )
-    expect(screen.getByTestId('assets-grid')).toBeVisible()
+    expect(shownAssets()).toEqual(['out-0.png', 'out-1.png', 'out-2.png'])
     expect(outputRequests().at(-1)?.get('limit')).toBe('10')
 
-    respond(Response.json({ assets: outputs, total: 6, has_more: true }))
+    respond(
+      Response.json({ assets: [newest, ...outputs], total: 7, has_more: true })
+    )
     serveAssets(async () =>
       Response.json({ assets: [], total: 6, has_more: false })
     )
     await useAssetsStore().outputAssets.loadMore()
 
     expect(outputRequests().at(-1)?.get('after')).toBe('out-2')
+    expect(shownAssets()).toEqual([
+      'out-new.png',
+      'out-0.png',
+      'out-1.png',
+      'out-2.png'
+    ])
   })
 })
