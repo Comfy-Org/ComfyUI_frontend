@@ -1045,12 +1045,13 @@ describe('Dynamic combo round-trip with widgets declared after the combo (#20609
   test('keeps a trailing advanced widget across a save/load round-trip in simple mode', () => {
     const graph = new LGraph()
     const node = addStartLoopLikeNode(graph)
-    setValue(node, 'mode.num_iterations', 2)
+    // 3 is non-default: a rebuild-at-default implementation must fail this.
+    setValue(node, 'mode.num_iterations', 3)
     setValue(node, 'cache_iterations', true)
 
     expect(widgetValues(reload(graph))).toEqual({
       mode: 'simple',
-      'mode.num_iterations': 2,
+      'mode.num_iterations': 3,
       cache_iterations: true
     })
   })
@@ -1063,10 +1064,11 @@ describe('Dynamic combo round-trip with widgets declared after the combo (#20609
     // simple option selected after visiting For.
     setValue(node, 'mode', 'For')
     setValue(node, 'mode', 'simple')
+    setValue(node, 'mode.num_iterations', 3)
 
     expect(widgetValues(reload(graph))).toEqual({
       mode: 'simple',
-      'mode.num_iterations': 2,
+      'mode.num_iterations': 3,
       cache_iterations: true
     })
   })
@@ -1075,11 +1077,12 @@ describe('Dynamic combo round-trip with widgets declared after the combo (#20609
     const graph = new LGraph()
     const node = addStartLoopLikeNode(graph)
     setValue(node, 'mode', 'For')
+    setValue(node, 'mode.num_iterations', 3)
     setValue(node, 'cache_iterations', true)
 
     expect(widgetValues(reload(graph))).toEqual({
       mode: 'For',
-      'mode.num_iterations': 2,
+      'mode.num_iterations': 3,
       cache_iterations: true
     })
   })
