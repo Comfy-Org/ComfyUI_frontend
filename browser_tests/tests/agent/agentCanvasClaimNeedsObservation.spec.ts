@@ -1,4 +1,4 @@
-import { mergeTests,expect } from '@playwright/test'
+import { mergeTests, expect } from '@playwright/test'
 import type { Page, WebSocketRoute } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
