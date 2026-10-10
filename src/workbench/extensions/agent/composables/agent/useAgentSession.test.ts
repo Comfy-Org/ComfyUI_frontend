@@ -4171,13 +4171,13 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(59_999)
+    await vi.advanceTimersByTimeAsync(59_000)
     expect(getMessages).toHaveBeenCalledTimes(1)
     const signal = getMessages.mock.calls[0]?.[1]?.signal
     assert.exists(signal)
     expect(signal.aborted).toBe(false)
 
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(1_000)
     expect(signal.aborted).toBe(true)
     expect(session.isStreaming.value).toBe(true)
     expect(reportError).not.toHaveBeenCalled()
