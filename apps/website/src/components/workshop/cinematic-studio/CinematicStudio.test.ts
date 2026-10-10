@@ -1121,7 +1121,9 @@ describe('CinematicStudio', () => {
     async ({ app, flag, open }) => {
       vi.mocked(useWorkshopFlag).mockImplementation((name) =>
         computed(() =>
-          name === 'workshop-reshoot-app-enabled' ? flag : name !== FULLSCREEN_FLAG
+          name === 'workshop-reshoot-app-enabled'
+            ? flag
+            : name !== FULLSCREEN_FLAG
         )
       )
       render(CinematicStudioPage, {
@@ -1685,7 +1687,11 @@ describe('CinematicStudio', () => {
       vi.mocked(useWorkshopFlag).mockImplementation((name) =>
         computed(() => name !== FULLSCREEN_FLAG || fullscreen)
       )
-      window.history.replaceState(null, '', `/hub/apps/cinematic-studio/${search}`)
+      window.history.replaceState(
+        null,
+        '',
+        `/hub/apps/cinematic-studio/${search}`
+      )
       const page = render(CinematicStudioPage, {
         props: { apps: appModels, models }
       })
