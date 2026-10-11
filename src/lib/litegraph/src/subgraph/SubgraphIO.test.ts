@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
@@ -242,7 +242,8 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       const { subgraph } = subgraphWithNode
       const innerNode = subgraph.nodes[0]
       const output = subgraph.outputs[0]
-      const first = output.connect(innerNode.outputs[0], innerNode)!
+      const first = output.connect(innerNode.outputs[0], innerNode)
+      assert.exists(first)
       output.linkIds.push(first.id)
 
       expect(() =>
@@ -275,7 +276,8 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       const unrelatedTarget = new LGraphNode('Unrelated Target')
       unrelatedTarget.addInput('in', '*')
       subgraph.add(unrelatedTarget)
-      const unrelatedLink = innerNode.connect(0, unrelatedTarget, 0)!
+      const unrelatedLink = innerNode.connect(0, unrelatedTarget, 0)
+      assert.exists(unrelatedLink)
       const output = subgraph.outputs[0]
       output.linkIds.push(unrelatedLink.id)
 
