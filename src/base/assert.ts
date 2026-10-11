@@ -35,8 +35,8 @@ export function hasRumAssertReporter(): boolean {
  * Reporters forward `message` to external telemetry, so it must be a static
  * description of the invariant. Never put user data (workflow names, paths,
  * prompts) in either `message` or `context`; both are forwarded to external
- * telemetry. Use only non-sensitive diagnostic values in `context` so they do
- * not affect grouping or deduplication.
+ * telemetry. Use only non-sensitive diagnostic values in `context`. Keep
+ * those values out of `message` to preserve grouping and deduplication.
  *
  * Returns `void`, not `asserts condition` — outside DEV this returns
  * normally even when `condition` is false, so callers must keep their own
