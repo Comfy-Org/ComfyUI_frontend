@@ -12,7 +12,7 @@ import { lintSnapshot } from '../server-fact-oxlint'
 
 const hookEventSchema = z.object({
   tool_name: z.string(),
-  tool_input: z.unknown(),
+  tool_input: z.unknown().optional(),
   cwd: z.string().optional()
 })
 

@@ -35,7 +35,7 @@ const zDownloadFileResult = z.object({
   hash: z.string().optional(),
   filename: z.string().optional(),
   asset_id: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   error: z.string().optional()
 })
 
