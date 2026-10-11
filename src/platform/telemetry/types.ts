@@ -649,6 +649,8 @@ export type AgentConsentOfferExit =
   | 'card_already_seen'
   /** Panel activation owns consent timing, so the automatic offer is dropped. */
   | 'activation_opened_panel'
+  /** The bounded panel-discovery window is complete and the panel is closed. */
+  | 'activation_window_complete'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */

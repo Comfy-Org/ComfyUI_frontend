@@ -69,6 +69,7 @@ const firstRunTookScreen = computed({
 })
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
+const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 
 function showFirstRunScreen(): void {
   firstRunScreenState.value = 'visible'
@@ -285,6 +286,14 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = user
     Object.assign(consentStore, { accepted: false, isChecking: false })
     agentStore.isOpen = false
+    const trackAgentConsentOfferExited = vi.fn()
+    vi.mocked(
+      (await import('@/platform/telemetry')).useTelemetry
+    ).mockReturnValue(
+      fromPartial<NonNullable<ReturnType<typeof useTelemetry>>>({
+        trackAgentConsentOfferExited
+      })
+    )
 
     await loadEntryAndSetup()
     await vi.waitFor(() =>
@@ -292,6 +301,13 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(agentStore.isVisible).toBe(true)
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('1')
+    if (user)
+      expect(trackAgentConsentOfferExited).toHaveBeenCalledWith({
+        exit: 'activation_opened_panel',
+        stage: 'offer',
+        retry_armed: false
+      })
   })
 
   it('waits for the general onboarding decision before activation', async () => {
@@ -309,6 +325,108 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
     )
+  })
+
+  it('opens again on the second visit and completes the discovery window', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    agentFlagEnabled.value = true
+    agentStore.isOpen = false
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+    )
+
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+  })
+
+  it('counts a visit when the persisted panel is already open', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: true, isChecking: false })
+    agentStore.isOpen = true
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
+  it('preserves a closed preference after the two-visit discovery window', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = false
+    const trackAgentConsentOfferExited = vi.fn()
+    vi.mocked(
+      (await import('@/platform/telemetry')).useTelemetry
+    ).mockReturnValue(
+      fromPartial<NonNullable<ReturnType<typeof useTelemetry>>>({
+        trackAgentConsentOfferExited
+      })
+    )
+    let finishConsentRead = (_: boolean) => {}
+    const consentRead = new Promise<boolean>((resolve) => {
+      finishConsentRead = resolve
+    })
+    vi.mocked(consentStore.load).mockReturnValueOnce(consentRead)
+    let decideStartup = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decideStartup = resolve
+    })
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+    finishConsentRead(false)
+    await consentRead
+    decideStartup(true)
+    await startupDecision
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).not.toHaveBeenCalled()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    expect(trackAgentConsentOfferExited).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+  })
+
+  it('keeps a second-visit panel closed when consent finishes after dismissal', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = true
+    let accept = () => {}
+    let finish = () => {}
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (onAccept) => {
+        accept = onAccept
+        await pending
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    agentStore.close('close_button')
+    accept()
+    finish()
+    await pending
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('does not reopen a dismissed activation panel after flag synchronization', async () => {
