@@ -3250,10 +3250,6 @@ describe('ComfyApp', () => {
         setPreviews,
         'the node-keyed write is gated: the visible graph has the same node ids'
       ).not.toHaveBeenCalled()
-      // A foreground row, because the absence assertion above also passes if
-      // the listener does nothing at all: the reviewer deleted the
-      // setNodePreviewsByExecutionId loop and all 558 tests in src/scripts
-      // stayed green.
       useWorkflowStore().activeWorkflow = workflowB
       previewHandler?.(
         new CustomEvent('b_preview_with_metadata', {
