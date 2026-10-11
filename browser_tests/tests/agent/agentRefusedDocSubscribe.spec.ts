@@ -53,9 +53,13 @@ test.describe(
       agent.finishTurn('Added a Load Image node.')
 
       await agent.expectTurnReportedFinished()
+      // Preserve the assistant reply: it can contain useful explanation or
+      // recovery guidance even when a canvas write was not observed. The
+      // browser-owned summary and glyph below are what prevent that reply
+      // from being presented as confirmed work.
       await expect(
         agent.panel.getByText('Added a Load Image node.').first()
-      ).toHaveCount(0)
+      ).toBeVisible()
       await expect(agent.workSummary).toContainText(
         'Changes not confirmed on your canvas'
       )
