@@ -459,6 +459,7 @@ export const zTopupQuoteResponse = z.object({
 
 /**
  * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export const zToolCallSummary = z.object({
   duration_ms: z.number().int().optional(),
@@ -4384,6 +4385,16 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  'agent-free-use-message-placement': z
+    .enum([
+      'control',
+      'top-banner',
+      'near-composer',
+      'above-input',
+      'inside-input'
+    ])
+    .optional()
+    .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
     .optional()
