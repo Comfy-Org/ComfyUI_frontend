@@ -1,3 +1,28 @@
+/src/platform/auth/                              @Comfy-Org/comfy_frontend_devs
+/src/platform/telemetry/                         @Comfy-Org/comfy_frontend_devs
+/src/platform/onboarding/                        @Comfy-Org/comfy_frontend_devs
+/src/platform/surveys/                           @Comfy-Org/comfy_frontend_devs
+/src/platform/secrets/                           @Comfy-Org/comfy_frontend_devs
+/src/platform/skills/                            @Comfy-Org/comfy_frontend_devs
+/src/platform/updates/                           @Comfy-Org/comfy_frontend_devs
+/src/platform/errorCatalog/                      @Comfy-Org/comfy_frontend_devs
+/src/platform/missingMedia/                      @Comfy-Org/comfy_frontend_devs
+/src/platform/missingModel/                      @Comfy-Org/comfy_frontend_devs
+/src/platform/nodeReplacement/                   @Comfy-Org/comfy_frontend_devs
+/src/platform/navigation/                        @Comfy-Org/comfy_frontend_devs
+/src/platform/remoteConfig/                      @Comfy-Org/comfy_frontend_devs
+/src/platform/support/                           @Comfy-Org/comfy_frontend_devs
+/src/platform/serverFacts/                       @Comfy-Org/comfy_frontend_devs
+/src/platform/tasks/                             @Comfy-Org/comfy_frontend_devs
+/src/composables/auth/                           @Comfy-Org/comfy_frontend_devs
+/src/composables/billing/                        @Comfy-Org/comfy_frontend_devs
+/src/stores/authStore.ts                         @Comfy-Org/comfy_frontend_devs
+/src/stores/authStore.test.ts                    @Comfy-Org/comfy_frontend_devs
+/src/stores/apiKeyAuthStore.ts                   @Comfy-Org/comfy_frontend_devs
+/src/stores/apiKeyAuthStore.integration.test.ts   @Comfy-Org/comfy_frontend_devs
+/src/stores/userStore.ts                         @Comfy-Org/comfy_frontend_devs
+/src/stores/userStore.test.ts                    @Comfy-Org/comfy_frontend_devs
+
 /src/platform/settings/                          @Comfy-Org/comfy_frontend_devs
 /src/platform/keybindings/                       @Comfy-Org/comfy_frontend_devs
 /src/platform/assets/                            @Comfy-Org/comfy_frontend_devs
@@ -291,3 +316,26 @@
 /src/services/hdrViewerService.test.ts           @Comfy-Org/comfy_frontend_devs
 /src/utils/hdrFormatUtil.ts                      @Comfy-Org/comfy_frontend_devs
 /src/utils/hdrFormatUtil.test.ts                 @Comfy-Org/comfy_frontend_devs
+
+/docs/architecture/domains/records/agent.domain.json @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/docs/architecture/domains/records/authentication.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/billing.domain.json @dante01yoon @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/workspace.domain.json @dante01yoon @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/telemetry.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/error-reporting.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/startup-tracing.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/onboarding-tours.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/surveys.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/secrets.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/skill-packs.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/release-notes.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/version-compatibility.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/error-catalog.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/missing-media.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/missing-models.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/node-replacement.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/navigation.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/remote-config.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/support-feedback.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/server-facts.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/tasks.domain.json @Comfy-Org/comfy_frontend_devs
