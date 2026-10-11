@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -10,7 +11,7 @@ const {
   disabled = false,
   class: className
 } = defineProps<{
-  class?: string
+  class?: HTMLAttributes['class']
   disabled?: boolean
   max?: number
   min?: number
