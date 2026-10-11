@@ -114,8 +114,8 @@
     "src/scripts/api.ts->src/services/dialogService.ts->src/stores/authStore.ts",
     "src/components/graph/widgets/TextPreviewWidget.vue->src/composables/node/useNodeProgressText.ts->src/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts->src/stores/executionStore.ts",
     "src/composables/canvas/useSelectedLiteGraphItems.ts->src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
-    "src/renderer/core/canvas/canvasStore.ts->src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts->src/utils/litegraphUtil.ts",
-    "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts"
+    "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts",
+    "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts->src/stores/subgraphNavigationStore.ts"
   ],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],
