@@ -48,6 +48,7 @@ const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
 
 const ROLE_VALUES: ReadonlySet<string> = new Set(['owner', 'member', 'admin'])
 const isRoleValue = (literal: string) => ROLE_VALUES.has(literal)
+const ROLE_FIELD = /(?:^r|R)ole$/
 const SERVER_TIERS: Record<SubscriptionTier, true> = {
   FREE: true,
   STANDARD: true,
@@ -62,7 +63,6 @@ const anyString = () => true
 
 const COMPARED_FACTS: ReadonlyMap<string, (literal: string) => boolean> =
   new Map([
-    ['role', isRoleValue],
     ['tier', isServerTier],
     ['billingStatus', anyString],
     ['subscriptionStatus', anyString],
@@ -577,7 +577,10 @@ function factComparison(node: Binary): FactComparison | undefined {
       : [leftLiteral, node.right]
   const field = factName(compared)
   if (literal === undefined || field === undefined) return undefined
-  return COMPARED_FACTS.get(field)?.(literal)
+  const isFactLiteral = ROLE_FIELD.test(field)
+    ? isRoleValue
+    : COMPARED_FACTS.get(field)
+  return isFactLiteral?.(literal)
     ? { field, literal, path: memberPath(compared) }
     : undefined
 }
@@ -632,7 +635,7 @@ export const noServerFactLiterals: Rule = {
           !ROLE_FALLBACK_OPERATORS.has(node.operator) ||
           literal === undefined ||
           !isRoleValue(literal) ||
-          factName(node.left) !== 'role' ||
+          !ROLE_FIELD.test(factName(node.left) ?? '') ||
           isInsidePendingFact(node)
         ) {
           return

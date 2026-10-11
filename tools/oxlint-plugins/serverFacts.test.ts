@@ -343,6 +343,8 @@ ruleTester.run('no-server-fact-literals', noServerFactLiterals, {
 const ok = result.status === 'ok'
 const fromUser = msg.role === 'user'
 const other = ch.role !== 'selection'
+const speaker = messageRole === 'assistant'
+const roleful = parole === 'owner'
 `
     },
     {
@@ -384,6 +386,25 @@ const isFixed = tier === 'free' || tier === 'founder'
       code: `const isOwner = 'owner' === workspace.role`,
       errors: [
         { messageId: 'compared', data: { field: 'role', literal: 'owner' } }
+      ]
+    },
+    {
+      name: 'a role field ending in Role compared or defaulted',
+      code: `
+const canManage = workspaceRole.value === 'owner'
+const isMember = 'member' === store.memberRole
+const effective = workspaceRole.value ?? 'owner'
+`,
+      errors: [
+        {
+          messageId: 'compared',
+          data: { field: 'workspaceRole', literal: 'owner' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'memberRole', literal: 'member' }
+        },
+        { messageId: 'roleFallback', data: { literal: 'owner' } }
       ]
     },
     {
