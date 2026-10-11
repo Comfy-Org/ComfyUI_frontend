@@ -56,7 +56,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed, useTemplateRef } from 'vue'
@@ -75,6 +74,7 @@ import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 import PasswordFields from './PasswordFields.vue'
 import TurnstileWidget from './TurnstileWidget.vue'

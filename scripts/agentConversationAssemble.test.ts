@@ -675,7 +675,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow("received 'reset_doc'")
+    ).toThrow('ops.1.op Invalid option')
   })
 
   it('refuses a non-object echoed op entry', () => {

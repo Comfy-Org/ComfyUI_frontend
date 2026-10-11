@@ -41,7 +41,6 @@ export function isStripeHostedCheckoutUrl(raw: string): boolean {
 
 const zTopUpCheckout = z.object({
   checkout_url: z
-    .string()
     .url()
     .refine(
       isStripeHostedCheckoutUrl,

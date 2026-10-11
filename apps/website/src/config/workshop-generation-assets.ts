@@ -7,17 +7,17 @@ import {
 
 const outputSchema = z.object({
   index: z.number().int().nonnegative(),
-  asset_id: z.string().uuid(),
+  asset_id: z.uuid(),
   kind: z.enum(['image', 'video', 'audio']),
   status: z.enum(['pending', 'saving', 'saved', 'failed', 'unavailable']),
   error_code: z.string().optional()
 })
 
 const savedRequestSchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.uuid(),
   provider: z.string(),
   model: z.string(),
-  created_at: z.string().datetime(),
+  created_at: z.iso.datetime(),
   status: z.enum(['IN_QUEUE', 'IN_PROGRESS', 'COMPLETED']),
   error_type: z.string().optional(),
   asset_save_status: z.enum([
@@ -40,11 +40,8 @@ const historySchema = z.object({
 // This endpoint is additive to the deployed ingest-types snapshot. Keep this
 // small boundary validator until that package's next generated contract sync.
 const accessSchema = z.object({
-  content_url: z
-    .string()
-    .url()
-    .refine((value) => new URL(value).protocol === 'https:'),
-  expires_at: z.string().datetime()
+  content_url: z.url().refine((value) => new URL(value).protocol === 'https:'),
+  expires_at: z.iso.datetime()
 })
 
 export type SavedGeneration = z.infer<typeof savedRequestSchema>
@@ -140,7 +137,7 @@ export async function getWorkshopGeneration(
   token: string,
   signal: AbortSignal
 ): Promise<SavedGeneration | undefined> {
-  if (!z.string().uuid().safeParse(requestId).success) return
+  if (!z.uuid().safeParse(requestId).success) return
   const separator = modelId.indexOf('/')
   const provider = modelId.slice(0, separator)
   const model = modelId.slice(separator + 1)

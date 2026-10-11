@@ -52,14 +52,14 @@ const zImageInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zImageCompareInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGECOMPARE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zBoundingBoxInputSpec = zBaseInputOptions.extend({
@@ -89,11 +89,11 @@ const zChartInputSpec = zBaseInputOptions.extend({
   name: z.string(),
   isOptional: z.boolean().optional(),
   chartType: z.enum(['bar', 'line']).optional(),
-  data: z.object({}).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   options: z
     .object({
       type: z.enum(['bar', 'line']).optional(),
-      data: z.object({}).optional()
+      data: z.record(z.string(), z.unknown()).optional()
     })
     .optional()
 })
@@ -259,9 +259,9 @@ const zOutputSpec = z.object({
 
 // Main node definition schema
 export const zComfyNodeDef = z.object({
-  inputs: z.record(zInputSpec),
+  inputs: z.record(z.string(), zInputSpec),
   outputs: z.array(zOutputSpec),
-  hidden: z.record(z.any()).optional(),
+  hidden: z.record(z.string(), z.any()).optional(),
 
   name: z.string(),
   display_name: z.string(),
