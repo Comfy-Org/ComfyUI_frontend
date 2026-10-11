@@ -4180,7 +4180,7 @@ export type CreateWorkspaceApiKeyResponse = {
    */
   description: string
   /**
-   * When the key expires (if set)
+   * The effective expiration timestamp, which may differ from the one requested: a key minted by an OAuth-authenticated session is capped to the OAuth refresh-token lifetime, so clients must read the lifetime they actually got from this field rather than assume the requested one. Absent only for first-party keys created with no expiry.
    */
   expires_at?: string
   /**
@@ -4210,7 +4210,7 @@ export type CreateWorkspaceApiKeyRequest = {
    */
   description?: string
   /**
-   * Optional expiration timestamp
+   * Optional expiration timestamp. Keys created by an OAuth-authenticated session (an access token issued by the Comfy OAuth server to a registered client) are always capped to the OAuth refresh-token lifetime (OAUTH_REFRESH_TOKEN_TTL, 30 days by default): omitting this field yields that cap, a longer value is reduced to it, and a shorter value is honoured as-is. Keys created by a first-party session (browser workspace JWT, Firebase) are unaffected and may still be created with no expiry.
    */
   expires_at?: string
   /**
