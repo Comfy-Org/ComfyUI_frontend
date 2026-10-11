@@ -25,8 +25,12 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     const panel = agentPanel.root
+    // A plain string, not a RegExp: the locale text goes into the pattern
+    // unescaped, so a `(`, `?` or `+` in a translation would change or break
+    // the match. Playwright's non-exact `name` already does a
+    // case-insensitive substring match, which is what this needs.
     const composer = panel.getByRole('textbox', {
-      name: new RegExp(enMessages.agent.placeholder.split(',')[0])
+      name: enMessages.agent.placeholder.split(',')[0]
     })
     const addToPrompt = panel.getByRole('button', {
       name: enMessages.agent.addToPrompt
@@ -74,6 +78,16 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     const addToPrompt = panel.getByLabel(enMessages.agent.addToPrompt, {
       exact: true
     })
+    // getByRole here and getByLabel above is not an inconsistency: each
+    // locator matches what its own component exposes, and swapping either one
+    // resolves 0 elements. `RunModePopover.vue` passes `:modal="false"` to
+    // `DropdownMenuRoot`, so opening it does not aria-hide the composer and
+    // the role locator keeps resolving — while its trigger's accessible name
+    // comes from a `<span>` text node with no `aria-label`, so getByLabel
+    // cannot find it at all. `ComposerAddMenu.vue` is the mirror image:
+    // modal by default, and its trigger carries
+    // `:aria-label="t('agent.addToPrompt')"`. If the run-mode popover ever
+    // becomes modal, this locator is what breaks first.
     const runMode = panel.getByRole('button', {
       name: enMessages.agent.runModeTriggerAsk,
       exact: true
