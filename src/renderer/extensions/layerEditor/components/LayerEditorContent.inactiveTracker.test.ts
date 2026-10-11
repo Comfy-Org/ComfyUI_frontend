@@ -32,16 +32,6 @@ vi.mock(
       })
   })
 )
-// fallow-ignore-next-line boundary-violation -- mirrors LayerEditorContent.vue's own import of this module
-vi.mock(
-  import('@/renderer/extensions/compositor/composables/compositorSession'),
-  () => ({ loadCompositorSession: vi.fn().mockResolvedValue(0) })
-)
-// fallow-ignore-next-line boundary-violation -- mirrors LayerEditorContent.vue's own import of this module
-vi.mock(
-  import('@/renderer/extensions/compositor/composables/useCompositorAutoSave'),
-  () => ({ useCompositorAutoSave: vi.fn(() => ({ stop: vi.fn() })) })
-)
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
