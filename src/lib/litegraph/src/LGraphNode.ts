@@ -2364,7 +2364,8 @@ export class LGraphNode
 
     // The reactive widget list may synchronously reject an unrenamable
     // duplicate name. Do not bind or restore a widget that did not survive.
-    if (!this.widgets.includes(widget)) return widget
+    const widgetIndex = this.widgets.indexOf(widget)
+    if (widgetIndex === -1) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2375,7 +2376,6 @@ export class LGraphNode
 
     if (widget.serialize === false) return widget
 
-    const widgetIndex = this.widgets.indexOf(widget)
     const positionalIndex =
       this.widgets
         .slice(0, widgetIndex + 1)
