@@ -4,7 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComponentWidgetStandardProps } from '@/scripts/domWidget'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -42,7 +42,7 @@ export function useTextPreviewWidget(
           const value =
             useWidgetValueStore().getWidget(
               widgetId(
-                resolveNodeRootGraphId(node, app.rootGraph.id),
+                resolveNodeRootGraphId(node, useApp().rootGraph.id),
                 node.id,
                 inputSpec.name
               )
@@ -52,7 +52,7 @@ export function useTextPreviewWidget(
             : value
         },
         setValue: (value: string | object) => {
-          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+          const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
             widgetId(graphId, node.id, inputSpec.name)
           )
