@@ -1,8 +1,10 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
@@ -14,6 +16,12 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryItems = shallowRef<AugmentedResultItem[]>([])
 
   async function onViewItem(item: JobListItem) {
+    const previewOutput = item.taskRef?.previewOutput
+    if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
+      openHdrViewer(resultItemUrl(previewOutput), previewOutput.filename)
+      return
+    }
+
     const tasks = getFilteredTasks()
     if (!tasks.length) return
 
@@ -33,7 +41,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!items.length) return
 
     galleryItems.value = items
-    const previewOutput = item.taskRef?.previewOutput
     galleryActiveIndex.value = findActiveIndex(
       items,
       previewOutput ? resultItemUrl(previewOutput) : undefined

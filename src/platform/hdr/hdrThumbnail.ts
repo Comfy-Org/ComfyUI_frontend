@@ -3,12 +3,10 @@ import { encodeJPEGMetadata } from '@monogrid/gainmap-js/libultrahdr'
 import * as THREE from 'three'
 
 import { gamutToSrgbMatrix } from '@/platform/hdr/colorGamut'
-import { computeLuminancePercentile } from '@/platform/hdr/hdrStats'
-import { loadHdrTexture, makeReader } from '@/platform/hdr/hdrTextureLoader'
+import { loadHdrTexture } from '@/platform/hdr/hdrTextureLoader'
 import { HDR_VIEWER_VERTEX_SHADER } from '@/platform/hdr/hdrViewerShader'
 
 const THUMBNAIL_SIZE = 256
-const EXPOSURE_PERCENTILE = 0.99
 const MAX_CONTENT_BOOST = 16
 const JPEG_QUALITY = 0.9
 
@@ -18,10 +16,9 @@ out vec4 frag_color;
 
 uniform sampler2D uImage;
 uniform mat3 uGamutToSRGB;
-uniform float uGain;
 
 void main() {
-  vec3 mapped = uGamutToSRGB * texture(uImage, vUv).rgb * uGain;
+  vec3 mapped = uGamutToSRGB * texture(uImage, vUv).rgb;
   frag_color = vec4(max(mapped, 0.0), 1.0);
 }
 `
@@ -34,18 +31,6 @@ self.onmessage = async ({
   } catch (error) {
     self.postMessage(error)
   }
-}
-
-function exposureGain(texture: THREE.DataTexture): number {
-  const { width, height, data } = texture.image
-  if (!data) return 1
-  const reference = computeLuminancePercentile(
-    makeReader(data, texture.type),
-    data.length,
-    data.length / (width * height),
-    EXPOSURE_PERCENTILE
-  )
-  return reference > 0 ? 1 / reference : 1
 }
 
 function contentBoost(pixels: Float32Array): number {
@@ -104,8 +89,7 @@ async function render(url: string, filename: string): Promise<Blob> {
         value: new THREE.Matrix3()
           .fromArray(gamutToSrgbMatrix(gamut))
           .transpose()
-      },
-      uGain: { value: exposureGain(texture) }
+      }
     }
   })
   const geometry = new THREE.PlaneGeometry(2, 2)

@@ -80,6 +80,7 @@ function mapOutputsToAssetItems({
       tags: ['output'],
       thumbnail_url: resultItemPreviewUrl(output),
       preview_url: resultItemUrl(output),
+      preview_id: output.previewId,
       user_metadata: {
         jobId,
         nodeId: output.nodeId,

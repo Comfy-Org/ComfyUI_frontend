@@ -213,7 +213,10 @@ import { GAMUT_NAMES } from '@/platform/hdr/colorGamut'
 import { toFullResolutionUrl } from '@/utils/hdrFormatUtil'
 import { histogramToPath } from '@/utils/histogramUtil'
 
-const { imageUrl } = defineProps<{ imageUrl: string }>()
+const { imageUrl, filename } = defineProps<{
+  imageUrl: string
+  filename?: string
+}>()
 
 const { t } = useI18n()
 const viewer = useHdrViewer()
@@ -260,10 +263,11 @@ function formatNum(value: number): string {
 }
 
 function handleDownload() {
-  downloadFile(toFullResolutionUrl(imageUrl))
+  downloadFile(toFullResolutionUrl(imageUrl), filename)
 }
 
 onMounted(() => {
-  if (containerRef.value) void viewer.mount(containerRef.value, imageUrl)
+  if (containerRef.value)
+    void viewer.mount(containerRef.value, imageUrl, filename)
 })
 </script>

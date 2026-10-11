@@ -12,13 +12,15 @@ const HdrViewerContent = defineAsyncComponent(
   () => import('@/components/hdr/HdrViewerContent.vue')
 )
 
-export function openHdrViewer(url: string) {
-  const fullResUrl = toFullResolutionUrl(url)
+export function openHdrViewer(
+  url: string,
+  filename = getImageFilenameFromUrl(toFullResolutionUrl(url))
+) {
   useDialogStore().showDialog({
     key: 'hdr-viewer',
-    title: getImageFilenameFromUrl(fullResUrl) ?? t('hdrViewer.title'),
+    title: filename ?? t('hdrViewer.title'),
     component: HdrViewerContent,
-    props: { imageUrl: fullResUrl },
+    props: { imageUrl: toFullResolutionUrl(url), filename },
     dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
   })
 }

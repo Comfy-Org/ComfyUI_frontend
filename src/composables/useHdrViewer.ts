@@ -227,7 +227,7 @@ export function useHdrViewer() {
     )
   }
 
-  async function mount(container: HTMLElement, url: string) {
+  async function mount(container: HTMLElement, url: string, filename?: string) {
     containerRef.value = container
     loading.value = true
     error.value = null
@@ -241,8 +241,10 @@ export function useHdrViewer() {
       attachInteractions(renderer!.domElement)
       viewport!.observeResize(container, resize)
 
-      const { texture: loaded, gamut: detectedGamut } =
-        await loadHdrTexture(url)
+      const { texture: loaded, gamut: detectedGamut } = await loadHdrTexture(
+        url,
+        filename
+      )
       if (!material || !mesh) {
         loaded.dispose()
         return

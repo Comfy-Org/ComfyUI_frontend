@@ -83,7 +83,8 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     subfolder: metadata?.subfolder ?? '',
     type: asset.tags.includes('temp') ? 'temp' : 'output',
     url,
-    previewUrl: asset.thumbnail_url ?? url
+    previewUrl: asset.thumbnail_url ?? url,
+    previewId: asset.preview_id ?? undefined
   }
 }
 

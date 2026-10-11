@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/services/hdrViewerService'))
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -159,5 +161,24 @@ describe('useResultGallery', () => {
 
     expect(galleryItems.value).toEqual(fullOutputs)
     expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('opens an HDR preview output in the HDR viewer instead of the gallery', async () => {
+    const exr = createResultItem('/api/view?filename=out.exr&subfolder=qa')
+    exr.filename = 'out.exr'
+    const task = createTask(exr)
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    await onViewItem(createJobViewItem('job-hdr', task))
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      '/api/view?filename=out.exr&subfolder=qa',
+      'out.exr'
+    )
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBe(-1)
   })
 })

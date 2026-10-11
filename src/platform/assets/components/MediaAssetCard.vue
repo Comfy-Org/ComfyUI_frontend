@@ -24,7 +24,7 @@
     <div
       class="relative aspect-square overflow-hidden p-0"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
       <div
@@ -99,7 +99,7 @@
             variant="overlay-white"
             size="icon"
             :aria-label="$t('hdrViewer.openInHdrViewer')"
-            @click.stop="handleOpenHdrViewer"
+            @click.stop="handleZoomClick"
           >
             <i class="icon-[lucide--sun] size-4" />
           </Button>
@@ -178,7 +178,6 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -275,7 +274,9 @@ const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(
+  () => isPreviewableMediaType(fileKind.value) || isHdr.value
+)
 
 // Get filename without extension
 const fileName = computed(() => {
@@ -365,10 +366,6 @@ const handleZoomClick = () => {
   if (asset && canInspect.value) {
     emit('zoom', asset)
   }
-}
-
-function handleOpenHdrViewer() {
-  if (asset) openHdrViewer(getAssetUrl(asset))
 }
 
 const handleImageLoaded = (width: number, height: number) => {

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
+import { CLIENT_PREVIEW_TAG } from '@/platform/assets/utils/attachPreview'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
@@ -18,7 +19,7 @@ const BASE_PARAMS = {
   include_public: false,
   limit: 100,
   sort: 'created_at',
-  tags_none: ['missing']
+  tags_none: ['missing', CLIENT_PREVIEW_TAG]
 } satisfies ListAssetsData['query']
 
 function assetsQueryInternal(

@@ -1,6 +1,7 @@
 import { toValue, watch } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import { attachPreview } from '@/platform/assets/utils/attachPreview'
 import {
   getAssetFileUrl,
@@ -37,10 +38,23 @@ function renderInWorker(url: string, filename: string) {
   }).finally(() => worker.terminate())
 }
 
+function withTabLock(name: string, task: () => Promise<void>) {
+  // Web Locks only exist in secure contexts, e.g. not on a plain-http LAN IP.
+  const locks = navigator.locks as LockManager | undefined
+  if (!locks) return task()
+  return locks.request(name, { ifAvailable: true }, (lock) =>
+    lock ? task() : undefined
+  )
+}
+
 async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   try {
-    const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
-    await attachPreview(asset, blob)
+    await withTabLock(`hdr-preview:${asset.id}`, async () => {
+      const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
+      // Another client may have attached a preview while this one rendered.
+      if (!lacksHdrPreview(await assetService.getAssetDetails(asset.id))) return
+      await attachPreview(asset, blob)
+    })
   } catch (error) {
     reportError(error, {
       errorType: 'error_generating_asset_preview',

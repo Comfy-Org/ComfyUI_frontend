@@ -111,6 +111,28 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).toHaveBeenCalledWith([keep])
   })
 
+  it('onDragDrop passes an untyped HDR file to an image filter as an image', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    const node = createNode()
+
+    useNodeDragAndDrop(node, {
+      onDrop,
+      fileFilter: (file) => file.type.startsWith('image/')
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({
+        files: [createFile('sky.exr', '')],
+        items: [{ kind: 'file' }]
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(onDrop).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'sky.exr', type: 'image/x-exr' })
+    ])
+  })
+
   it('onDragDrop returns false for invalid drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const node = createNode()

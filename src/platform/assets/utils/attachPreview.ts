@@ -1,6 +1,12 @@
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 
+/**
+ * Labels a preview the client uploaded. Core reserves the `preview` tag, so
+ * outside cloud the preview is stored as an output and lists filter it out.
+ */
+export const CLIENT_PREVIEW_TAG = 'fe-preview'
+
 export async function attachPreview(
   asset: { id: string; name: string },
   blob: Blob
@@ -10,7 +16,7 @@ export async function attachPreview(
   const uploaded = await assetService.uploadAssetFromBase64({
     data: await blobToDataUrl(blob),
     name: previewFilename,
-    tags: [isCloud ? 'preview' : 'output'],
+    tags: isCloud ? ['preview'] : ['output', CLIENT_PREVIEW_TAG],
     user_metadata: { filename: previewFilename }
   })
 

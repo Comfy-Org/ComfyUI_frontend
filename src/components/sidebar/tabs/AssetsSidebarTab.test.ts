@@ -10,7 +10,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
@@ -81,6 +83,8 @@ vi.mock<unknown>(
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+
+vi.mock(import('@/services/hdrViewerService'))
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
@@ -219,6 +223,29 @@ describe('AssetsSidebarTab context menu', () => {
     )
 
     expect(useMediaAssetActions().addWorkflow).toHaveBeenCalledWith(asset)
+  })
+
+  it('inspects an HDR output in the HDR viewer and offers it as a node', async () => {
+    const asset = { ...folderAsset, name: 'sky.exr' }
+    useAssetsStore().outputAssets.items = [asset]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'mediaAsset.actions.inspect' })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      getAssetFileUrl(asset),
+      'sky.exr'
+    )
   })
 
   it('does not offer insertion for an unloadable file', async () => {
