@@ -138,6 +138,7 @@ describe('toConcreteWidget', () => {
     expect(result).not.toBe(widget)
     expect(result).toBeInstanceOf(LegacyWidget)
     expect(result.name).toBe('custom')
+    expect(toConcreteWidget(widget, node)).toBe(result)
   })
 
   it('returns a concrete replacement when adoption would overwrite a fixed property', () => {

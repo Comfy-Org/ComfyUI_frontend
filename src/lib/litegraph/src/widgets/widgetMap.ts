@@ -76,6 +76,23 @@ export type WidgetTypeMap = {
 }
 
 const toWidgetClass = instantiateClass
+const concreteWidgetsBySource = new WeakMap<
+  IBaseWidget,
+  WeakMap<LGraphNode, IBaseWidget>
+>()
+
+function rememberConcreteWidget(
+  source: IBaseWidget,
+  node: LGraphNode,
+  concrete: IBaseWidget
+): void {
+  let widgetsByNode = concreteWidgetsBySource.get(source)
+  if (!widgetsByNode) {
+    widgetsByNode = new WeakMap()
+    concreteWidgetsBySource.set(source, widgetsByNode)
+  }
+  widgetsByNode.set(node, concrete)
+}
 
 function collectDescriptors(value: object) {
   const descriptors = new Map<PropertyKey, PropertyDescriptor>()
@@ -198,10 +215,18 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   node: LGraphNode,
   wrapLegacyWidgets = true
 ): WidgetTypeMap[TWidget['type']] | undefined {
+  const cached = wrapLegacyWidgets
+    ? concreteWidgetsBySource.get(widget)?.get(node)
+    : undefined
+  if (cached) return cached as WidgetTypeMap[TWidget['type']]
+
   const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
-  return concrete && wrapLegacyWidgets
-    ? adoptConcreteWidget(widget, concrete)
-    : concrete
+  const result =
+    concrete && wrapLegacyWidgets
+      ? adoptConcreteWidget(widget, concrete)
+      : concrete
+  if (result && wrapLegacyWidgets) rememberConcreteWidget(widget, node, result)
+  return result
 }
 
 function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(

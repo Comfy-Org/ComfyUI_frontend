@@ -738,42 +738,46 @@ describe('LGraphNode', () => {
   })
 
   describe('addCustomWidget', () => {
-    test('rejects registering the same widget instance twice', () => {
-      vi.stubEnv('DEV', true)
-      try {
-        const testNode = new LGraphNode('TestNode')
-        const widget = testNode.addWidget('number', 'value', 1, null)
+    test('idempotently registers the same widget instance twice', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = testNode.addWidget('number', 'value', 1, null)
 
-        expect(() => testNode.addCustomWidget(widget)).toThrow(
-          /widget source is already registered/
-        )
-        expect(testNode.widgets).toHaveLength(1)
-      } finally {
-        vi.unstubAllEnvs()
-      }
+      expect(testNode.addCustomWidget(widget)).toBe(widget)
+      expect(testNode.widgets).toEqual([widget])
     })
 
-    test('rejects the same non-extensible legacy widget source twice', () => {
-      vi.stubEnv('DEV', true)
-      try {
-        const testNode = new LGraphNode('TestNode')
-        const widget = Object.preventExtensions<IBaseWidget>({
-          type: 'number',
-          name: 'value',
-          value: 1,
-          options: {},
-          y: 0
-        })
+    test('reuses one wrapper for a non-extensible legacy widget source', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'value',
+        value: 1,
+        options: {},
+        y: 0
+      })
 
-        testNode.addCustomWidget(widget)
+      const first = testNode.addCustomWidget(widget)
+      const second = testNode.addCustomWidget(widget)
 
-        expect(() => testNode.addCustomWidget(widget)).toThrow(
-          /widget source is already registered/
-        )
-        expect(testNode.widgets).toHaveLength(1)
-      } finally {
-        vi.unstubAllEnvs()
-      }
+      expect(second).toBe(first)
+      expect(testNode.widgets).toEqual([first])
+    })
+
+    test('reuses the wrapper created by a direct legacy widget push', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'value',
+        value: 1,
+        options: {},
+        y: 0
+      })
+
+      testNode.widgets = [widget]
+      const installed = testNode.widgets[0]
+
+      expect(testNode.addCustomWidget(widget)).toBe(installed)
+      expect(testNode.widgets).toEqual([installed])
     })
 
     test('allows a removed widget source to be registered again', () => {
@@ -800,19 +804,14 @@ describe('LGraphNode', () => {
   })
 
   describe('removeOutput', () => {
-    test('rejects an out-of-bounds slot', () => {
-      vi.stubEnv('DEV', true)
-      try {
-        const testNode = new LGraphNode('TestNode')
-        testNode.addOutput('output1', 'number')
+    test('ignores an out-of-bounds or fractional slot', () => {
+      const testNode = new LGraphNode('TestNode')
+      testNode.addOutput('output1', 'number')
 
-        expect(() => testNode.removeOutput(-1)).toThrow(/out of bounds/)
-        expect(() => testNode.removeOutput(1)).toThrow(/out of bounds/)
-        expect(() => testNode.removeOutput(0.5)).toThrow(/out of bounds/)
-        expect(testNode.outputs).toHaveLength(1)
-      } finally {
-        vi.unstubAllEnvs()
-      }
+      expect(() => testNode.removeOutput(-1)).not.toThrow()
+      expect(() => testNode.removeOutput(1)).not.toThrow()
+      expect(() => testNode.removeOutput(0.5)).not.toThrow()
+      expect(testNode.outputs).toHaveLength(1)
     })
   })
 

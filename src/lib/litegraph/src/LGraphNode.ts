@@ -1,6 +1,5 @@
 import { toValue } from 'vue'
 
-import { assert } from '@/base/assert'
 import {
   createNodeShellState,
   setTrackedNodeState
@@ -393,11 +392,6 @@ const NAMED_SHAPES = {
  */
 
 const wireExecutionOrders = new WeakMap<LGraphNode, number>()
-const concreteWidgetsBySource = new WeakMap<
-  LGraphNode,
-  WeakMap<IBaseWidget, IBaseWidget>
->()
-
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
@@ -1983,15 +1977,7 @@ export class LGraphNode
    */
   removeOutput(slot: number): void {
     const { outputs } = this
-    const isValidSlot =
-      Number.isInteger(slot) && slot >= 0 && slot < outputs.length
-    assert(isValidSlot, 'LGraphNode.removeOutput: slot is out of bounds', {
-      slot,
-      nodeId: this.id,
-      nodeType: this.type,
-      outputCount: outputs.length
-    })
-    if (!isValidSlot) return
+    if (!Number.isInteger(slot) || slot < 0 || slot >= outputs.length) return
 
     // Only disconnect if node is part of a graph
     if (this.graph) {
@@ -2347,29 +2333,6 @@ export class LGraphNode
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
-    let widgetsBySource = concreteWidgetsBySource.get(this)
-    if (!widgetsBySource) {
-      widgetsBySource = new WeakMap()
-      concreteWidgetsBySource.set(this, widgetsBySource)
-    }
-
-    const previouslyRegistered = widgetsBySource.get(custom_widget)
-    const isDuplicateWidget =
-      previouslyRegistered !== undefined &&
-      this.widgets.includes(previouslyRegistered)
-    assert(
-      !isDuplicateWidget,
-      'LGraphNode.addCustomWidget: widget source is already registered',
-      {
-        nodeId: this.id,
-        nodeType: this.type
-      }
-    )
-    if (isDuplicateWidget) {
-      return previouslyRegistered as WidgetTypeMap[TPlainWidget['type']]
-    }
-    if (previouslyRegistered) widgetsBySource.delete(custom_widget)
-
     const widget = toConcreteWidget(custom_widget, this)
     const existingIndex = this.widgets.findIndex(
       (candidate) => candidate === widget || candidate === custom_widget
@@ -2379,7 +2342,10 @@ export class LGraphNode
     } else if (this.widgets[existingIndex] !== widget) {
       this.widgets[existingIndex] = widget
     }
-    widgetsBySource.set(custom_widget, widget)
+
+    // The reactive widget list may synchronously reject an unrenamable
+    // duplicate name. Do not bind or restore a widget that did not survive.
+    if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens

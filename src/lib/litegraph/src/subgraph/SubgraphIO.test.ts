@@ -220,24 +220,19 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
   )
 
   subgraphTest(
-    'rejects connecting when the output already has more than one link',
+    'drops dangling link ids before reconnecting an output',
     ({ subgraphWithNode }) => {
       const { subgraph } = subgraphWithNode
       const innerNode = subgraph.nodes[0]
 
       const output = subgraph.outputs[0]
       output.linkIds.push(toLinkId(998), toLinkId(999))
-      const linksBefore = [...output.linkIds]
 
-      vi.stubEnv('DEV', true)
-      try {
-        expect(() => output.connect(innerNode.outputs[0], innerNode)).toThrow(
-          /more than one existing link/
-        )
-        expect(output.linkIds).toEqual(linksBefore)
-      } finally {
-        vi.unstubAllEnvs()
-      }
+      expect(() =>
+        output.connect(innerNode.outputs[0], innerNode)
+      ).not.toThrow()
+      expect(output.linkIds).toEqual(output.getLinks().map(({ id }) => id))
+      expect(output.getLinks()).toHaveLength(1)
     }
   )
 })

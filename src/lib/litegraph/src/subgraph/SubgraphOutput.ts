@@ -46,25 +46,31 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
+    const existingLinks = this.getLinks()
+    const hasValidLinkCount = existingLinks.length <= 1
+    assert(
+      hasValidLinkCount,
+      'SubgraphOutput.connect: output has more than one existing link',
+      { existingLinkCount: existingLinks.length }
+    )
+    if (!hasValidLinkCount) return
+
+    // Serialized slots may retain ids for links that no longer exist. Repair
+    // that mirror before reconnecting so stale ids cannot block or survive.
+    this.linkIds.splice(
+      0,
+      this.linkIds.length,
+      ...existingLinks.map(({ id }) => id)
+    )
+
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
       false
     )
       return
 
-    const hasValidLinkCount = this.linkIds.length <= 1
-    assert(
-      hasValidLinkCount,
-      'SubgraphOutput.connect: output has more than one existing link',
-      {
-        outputName: this.name,
-        existingLinkCount: this.linkIds.length
-      }
-    )
-    if (!hasValidLinkCount) return
-
     // Link should not be present, but just in case, disconnect it
-    const existingLink = this.getLinks().at(0)
+    const existingLink = existingLinks.at(0)
     if (existingLink != null) {
       subgraph.beforeChange()
     }
