@@ -1506,5 +1506,26 @@ describe('assetsStore - reset() on identity change', () => {
         ])
       )
     })
+
+    it('does not reload assets when no account is signed in', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        new Response(
+          JSON.stringify({ assets: [], total: 0, has_more: false }),
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      )
+      const store = useAssetsStore()
+      await vi.waitFor(() =>
+        expect(toValue(store.outputAssets.isLoading)).toBe(false)
+      )
+      vi.mocked(api.fetchApi).mockClear()
+
+      store.reset({ signedIn: false })
+      await store.outputAssets.invalidate([])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
   })
 })

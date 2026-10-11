@@ -974,15 +974,17 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Drop every locally cached asset — outputs, inputs and the model inventory —
    * so the previous account's data stops rendering after an in-session
-   * identity change, aborting the previous identity's requests.
+   * identity change, aborting the previous identity's requests. Assets API
+   * lists reload in place, so they are only reloaded when an account is
+   * signed in to load them for.
    */
-  const reset = () => {
+  const reset = ({ signedIn = true }: { signedIn?: boolean } = {}) => {
     identityController.abort()
     identityController = new AbortController()
 
     rawInputAssets.value = []
     historyOutputs?.clear()
-    if (flags.assetsEnabled) void invalidateAll()
+    if (flags.assetsEnabled && signedIn) void invalidateAll()
 
     invalidateAllCategories()
     assetService.invalidateModelBuckets()

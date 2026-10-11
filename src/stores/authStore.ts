@@ -4,7 +4,7 @@ import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 
 import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
@@ -229,6 +229,9 @@ export const useAuthStore = defineStore('auth', () => {
     return shareId ? { share_id: shareId } : {}
   }
 
+  const isStoreCreated = (id: string) =>
+    getActivePinia()?.state.value[id] !== undefined
+
   /**
    * Drops the previous account's state when the signed-in identity changes
    * or signs out, whichever source (Firebase or the Desktop host) changed it.
@@ -250,8 +253,9 @@ export const useAuthStore = defineStore('auth', () => {
       useTeamWorkspaceStore().resetForIdentityChange()
       // The previous account's jobs and outputs are still rendered until they
       // are dropped; nothing else refetches on an identity change.
-      useQueueStore().reset()
-      useAssetsStore().reset()
+      if (isStoreCreated(useQueueStore.$id)) useQueueStore().reset()
+      if (isStoreCreated(useAssetsStore.$id))
+        useAssetsStore().reset({ signedIn: nextUserId !== null })
       invalidateRemoteConfig()
     }
 
