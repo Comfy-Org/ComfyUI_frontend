@@ -1,7 +1,13 @@
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
 import type { ISlotType, Positionable } from '../interfaces'
+
+let isGraphNode: (item: Positionable) => item is LGraphNode
+
+export function provideGraphNodeGuard(guard: typeof isGraphNode): void {
+  isGraphNode = guard
+}
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
@@ -57,7 +63,7 @@ export function findFirstNode(
   items: Iterable<Positionable>
 ): LGraphNode | undefined {
   for (const item of items) {
-    if (item instanceof LGraphNode) return item
+    if (isGraphNode(item)) return item
   }
 }
 

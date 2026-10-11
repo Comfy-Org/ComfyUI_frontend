@@ -51,7 +51,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
+import type { LGraph, Subgraph } from './LGraph'
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
@@ -122,7 +122,7 @@ import type {
 } from './types/slots'
 import type { Panel } from './types/panel'
 import { LiteGraph } from './litegraphInstance'
-import { Subgraph } from './LGraph'
+import { isSubgraph } from './subgraph/subgraphTypeGuards'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {
   createBounds,
@@ -155,7 +155,7 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
-import { findFreeSlotOfType } from './utils/collections'
+import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {
   computeLegacyWidgetShadow,
@@ -3442,10 +3442,7 @@ export class LGraphNode
       }
       disconnected = true
 
-      if (
-        link_info.target_id === SUBGRAPH_OUTPUT_ID &&
-        graph instanceof Subgraph
-      ) {
+      if (link_info.target_id === SUBGRAPH_OUTPUT_ID && isSubgraph(graph)) {
         const targetSlot = legacyArrayItem(
           graph.outputNode.slots,
           link_info.target_slot
@@ -4621,3 +4618,5 @@ export class LGraphNode
     ctx.fillStyle = originalFillStyle
   }
 }
+
+provideGraphNodeGuard((item): item is LGraphNode => item instanceof LGraphNode)

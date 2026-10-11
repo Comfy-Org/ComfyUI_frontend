@@ -13,7 +13,7 @@ import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {

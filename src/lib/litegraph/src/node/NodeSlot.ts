@@ -25,8 +25,15 @@ import {
   RenderShape
 } from '@/lib/litegraph/src/types/globalEnums'
 
-import { NodeInputSlot } from './NodeInputSlot'
 import { SlotBase } from './SlotBase'
+
+let isNodeInputSlot: (slot: NodeSlot) => boolean
+
+export function provideNodeInputSlotGuard(
+  guard: (slot: NodeSlot) => boolean
+): void {
+  isNodeInputSlot = guard
+}
 
 export interface IDrawOptions {
   colorContext: DefaultConnectionColors
@@ -293,7 +300,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
     } else if (this.shape === RenderShape.ARROW) {
       // Adjust arrow direction based on whether this is an input or output slot
-      const isInput = this instanceof NodeInputSlot
+      const isInput = isNodeInputSlot(this)
       if (isInput) {
         ctx.moveTo(x + 8, y)
         ctx.lineTo(x - 4, y - 4)
