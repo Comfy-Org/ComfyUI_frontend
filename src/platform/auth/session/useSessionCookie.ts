@@ -12,7 +12,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
-export class SessionCookieError extends Error {
+class SessionCookieError extends Error {
   constructor(
     message: string,
     public readonly code?: string
@@ -69,7 +69,9 @@ export const useSessionCookie = () => {
     const authStore = useAuthStore()
     const firebaseToken = await authStore.getIdToken()
     if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+      throw new SessionCookieError(
+        'No Firebase token available for session creation'
+      )
     }
 
     return { Authorization: `Bearer ${firebaseToken}` }
@@ -83,7 +85,7 @@ export const useSessionCookie = () => {
     const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
-      throw new Error('Session identity changed during creation')
+      throw new SessionCookieError('Session identity changed during creation')
     }
 
     const response = await createSessionWithHeader(authHeader)
@@ -114,12 +116,16 @@ export const useSessionCookie = () => {
       promise: sessionMutationTail
         .then(async () => {
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
-            throw new Error('Session identity changed before creation')
+            throw new SessionCookieError(
+              'Session identity changed before creation'
+            )
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
-            throw new Error('Session identity changed during creation')
+            throw new SessionCookieError(
+              'Session identity changed during creation'
+            )
           }
         })
         .finally(() => {
@@ -137,7 +143,9 @@ export const useSessionCookie = () => {
   const currentOwnerUidOrThrow = (): string => {
     const ownerUid = useAuthStore().currentUser?.uid
     if (!ownerUid) {
-      throw new Error('No authenticated user available for session creation')
+      throw new SessionCookieError(
+        'No authenticated user available for session creation'
+      )
     }
     return ownerUid
   }

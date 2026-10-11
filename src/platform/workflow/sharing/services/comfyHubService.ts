@@ -11,7 +11,7 @@ import {
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
 
-export class ComfyHubApiError extends Error {
+class ComfyHubApiError extends Error {
   constructor(
     message: string,
     public readonly code?: string
@@ -70,7 +70,7 @@ async function parseRequiredJson<T>(
   const payload = await response.json().catch(() => null)
   const parsed = parser.safeParse(payload)
   if (!parsed.success) {
-    throw new Error(fallbackMessage)
+    throw new ComfyHubApiError(fallbackMessage)
   }
 
   return parsed.data

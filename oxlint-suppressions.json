@@ -189,11 +189,6 @@
       "count": 21
     }
   },
-  "src/platform/auth/session/useSessionCookie.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
   "src/platform/cloud/oauth/oauthApi.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -237,11 +232,6 @@
   "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
-    }
-  },
-  "src/platform/workflow/sharing/services/comfyHubService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
     }
   },
   "src/platform/workflow/sharing/services/workflowShareService.ts": {

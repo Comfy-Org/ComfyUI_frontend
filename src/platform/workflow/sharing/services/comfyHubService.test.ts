@@ -228,7 +228,9 @@ describe('useComfyHubService', () => {
   })
 
   it('keeps the operation-specific fallback when the body carries no message', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValue(mockErrorResponse('', 502, 'Bad Gateway'))
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      mockErrorResponse('', 502, 'Bad Gateway')
+    )
 
     const service = useComfyHubService()
     await expect(service.fetchTagLabels()).rejects.toThrow(
