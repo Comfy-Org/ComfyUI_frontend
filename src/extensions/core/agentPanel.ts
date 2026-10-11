@@ -37,6 +37,38 @@ import {
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
+const AUTOMATIC_ACTIVATION_VISITS = 2
+
+function claimAutomaticActivationVisit(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    const priorVisits =
+      Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
+    if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
+
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, String(priorVisits + 1))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function automaticActivationVisitsComplete(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    return Number.isSafeInteger(storedVisits)
+      ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
+      : false
+  } catch {
+    // Storage failures must not turn into an unbounded automatic opener.
+    return true
+  }
+}
 
 function automaticConsentOfferScope(
   {
@@ -269,7 +301,12 @@ export function registerAgentPanelExtension(): void {
         agentPanelStore.suppressRestoredOpen()
         void withConsent(
           () => {
-            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (
+              !agentPanelStore.enabled ||
+              automaticActivationVisitsComplete() ||
+              agentPanelStore.isOpen
+            )
+              return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -296,8 +333,24 @@ export function registerAgentPanelExtension(): void {
         // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) offerConsentUnprompted()
-            else if (offerEligible()) withholdOffer('boot_undecided')
+            if (decided) {
+              // Once the discovery window is over, a closed panel is a
+              // persisted preference. Consent remains available from an
+              // already-open panel or explicit user action.
+              if (
+                automaticActivationVisitsComplete() &&
+                !agentPanelStore.isOpen
+              ) {
+                useTelemetry()?.trackAgentConsentOfferExited({
+                  exit: 'activation_window_complete',
+                  stage: 'startup',
+                  retry_armed: false
+                })
+                offerHeld.value = false
+                return
+              }
+              offerConsentUnprompted()
+            } else if (offerEligible()) withholdOffer('boot_undecided')
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -316,7 +369,7 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (!agentPanelStore.isOpen) {
+              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen) {
                 agentPanelStore.open('activation')
                 activationOpenedPanel = true
               }
