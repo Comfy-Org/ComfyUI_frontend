@@ -169,7 +169,7 @@ const targetNotice = computed(() => {
 })
 
 /**
- * "Your first few turns are free." is false for a viewer who has already spent
+ * "Try your first chat for free!" is false for a viewer who has already spent
  * their credits, and the exhausted paywall card sits in the same footer — so
  * the two would contradict each other on screen. Falling back to `control`
  * suppresses the notice without touching the assignment or its exposure: the

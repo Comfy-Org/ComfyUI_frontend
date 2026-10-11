@@ -42,7 +42,7 @@ describe('FreeUseNotice', () => {
     mount(placement)
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'Your first few turns are free.'
+      'Try your first chat for free!'
     )
     expect(screen.getByRole('link', { name: 'Learn more' })).toBeInTheDocument()
   })

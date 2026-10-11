@@ -685,7 +685,7 @@ describe('AgentPanelRoot first-use experience', () => {
     })
   })
 
-  // "Your first few turns are free." and the standing exhausted paywall would
+  // "Try your first chat for free!" and the standing exhausted paywall would
   // otherwise render in the same footer, contradicting each other.
   it('says nothing about free turns beside the exhausted paywall', async () => {
     placeFreeUseNotice()

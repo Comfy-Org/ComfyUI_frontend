@@ -5603,7 +5603,7 @@
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
-    "freeUseNotice": "Your first few turns are free.",
+    "freeUseNotice": "Try your first chat for free!",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
