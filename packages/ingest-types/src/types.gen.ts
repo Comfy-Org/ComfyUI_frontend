@@ -773,7 +773,7 @@ export type TopupQuoteResponse = {
 }
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
  * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
@@ -794,6 +794,19 @@ export type ToolCallSummary = {
    * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
    */
   job_id?: string
+  /**
+   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
+   */
+  produced_asset?: {
+    /**
+     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
+     */
+    hash: string
+    /**
+     * The server-assigned asset id recorded by the producing call.
+     */
+    id: string
+  }
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
