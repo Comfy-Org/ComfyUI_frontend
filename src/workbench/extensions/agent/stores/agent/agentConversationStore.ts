@@ -671,22 +671,20 @@ export const useAgentConversationStore = defineStore(
     function notifyCanvasCaughtUp(workflowId?: string): void {
       activeSlot.value?.transport.notifyCanvasCaughtUp(workflowId)
       for (const settledTransport of settledActiveTransports) {
+        const targetWorkflowId = settledTransport.targetWorkflowId()
         if (
-          areWorkflowIdsEquivalent(
-            settledTransport.targetWorkflowId(),
-            workflowId
-          )
+          targetWorkflowId === undefined ||
+          areWorkflowIdsEquivalent(targetWorkflowId, workflowId)
         )
           settledTransport.notifyCanvasCaughtUp(workflowId)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values()) {
+        const targetWorkflowId = entry.transport.targetWorkflowId()
         if (
-          areWorkflowIdsEquivalent(
-            entry.transport.targetWorkflowId(),
-            workflowId
-          )
+          targetWorkflowId === undefined ||
+          areWorkflowIdsEquivalent(targetWorkflowId, workflowId)
         )
           entry.transport.notifyCanvasCaughtUp(workflowId)
       }

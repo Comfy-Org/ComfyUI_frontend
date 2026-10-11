@@ -1207,6 +1207,28 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('does not reuse an extra observed frame to confirm a later write', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let outcomeCount = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'awaiting',
+      () => outcomeCount
+    )
+
+    transport.ingest(toolCall('add_node', 'running', 'write-1'))
+    outcomeCount += 2
+    transport.ingest(toolCall('add_node', 'success', 'write-1'))
+    transport.ingest(toolCall('add_node', 'success', 'write-2'))
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'streaming' }
+    ])
+  })
+
   // PM-1575 regression (finding #6, medium): a duplicate or redelivered
   // terminal frame for the same tool_call_id (e.g. a websocket retry) used
   // to overwrite the pending timer's map entry without clearing the
@@ -1273,17 +1295,20 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     transport.ingest(toolCall('add_node', 'success', 'write-b'))
     transport.notifyCanvasCaughtUp(workflowB)
 
-    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
-    expect(toolParts(message)[1]).toMatchObject({
-      state: 'done',
-      canvasConfirmed: true
-    })
+    expect(
+      emit.mock.calls.at(-1)?.[0].parts.filter((part) => part.type === 'tool')
+    ).toMatchObject([
+      { state: 'streaming' },
+      { state: 'done', canvasConfirmed: true }
+    ])
 
     transport.notifyCanvasCaughtUp(workflowA)
-    expect(toolParts(message)[0]).toMatchObject({
-      state: 'done',
-      canvasConfirmed: true
-    })
+    expect(
+      emit.mock.calls.at(-1)?.[0].parts.filter((part) => part.type === 'tool')
+    ).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
   })
 
   it('does not downgrade a confirmed write on terminal-frame redelivery', () => {

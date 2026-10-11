@@ -222,10 +222,7 @@ export function createAgentEventTransport(
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function claimCanvasSyncOutcome(): void {
-    canvasSyncOutcomeWatermark = Math.min(
-      getCanvasSyncOutcomeCount(),
-      canvasSyncOutcomeWatermark + 1
-    )
+    canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
   }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
@@ -261,8 +258,8 @@ export function createAgentEventTransport(
     for (const [part, pending] of pendingCanvasSync) {
       if (
         workflowId !== undefined &&
-        (pending.workflowId === undefined ||
-          !areWorkflowIdsEquivalent(pending.workflowId, workflowId))
+        pending.workflowId !== undefined &&
+        !areWorkflowIdsEquivalent(pending.workflowId, workflowId)
       )
         continue
       next = part
