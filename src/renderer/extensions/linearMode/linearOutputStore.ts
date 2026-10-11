@@ -29,16 +29,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
   const executedNodeIds = new Set<string>()
-  /**
-   * `jobId:nodeId` of every output already appended to the history.
-   *
-   * A reconnect replays the run's frames, and the first `executed` consumes the
-   * skeleton item and clears `currentSkeletonId`, so the replayed frame finds no
-   * skeleton and falls through to the create-directly branch below, appending a
-   * second copy of the same output. Keyed by job as well as node, because two
-   * jobs can be in flight at once and share node ids, which is the whole reason
-   * this PR exists.
-   */
+  /** `jobId:node` of outputs already appended, so a replayed `executed` is skipped. */
   const appendedOutputKeys = new Set<string>()
   const MAX_APPENDED_OUTPUT_KEYS = 500
 
@@ -128,7 +119,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
-    const outputKey = `${jobId}:${nodeId}`
+    const outputKey = `${jobId}:${detail.node}`
     if (appendedOutputKeys.has(outputKey)) return
     executedNodeIds.add(nodeId)
     if (raf) {

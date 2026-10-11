@@ -266,11 +266,31 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems).toHaveLength(2)
   })
 
-  // A reconnect replays the run's frames. The first `executed` consumes the
-  // skeleton and clears currentSkeletonId, so the replay found no skeleton and
-  // fell through to the create-directly branch, appending the same output a
-  // second time. Caught in CI by the browser spec at 2 image outputs; this pins
-  // it at the store level too.
+  // Node expansion (loop nodes and anything else expanding a subgraph) gives
+  // each expanded copy its own `node` while they all share one `display_node`,
+  // so keying the dedupe on the display id collapsed every iteration's output
+  // into the first. Core: execution.py sends
+  // "display_node": dynprompt.get_display_node_id(unique_id).
+  it('keeps one item per expanded copy sharing a display node', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    for (const [node, file] of [
+      ['9.0.1', 'iter1.png'],
+      ['9.0.2', 'iter2.png']
+    ] as const) {
+      store.onNodeExecuted('job-1', {
+        prompt_id: 'job-1',
+        node,
+        display_node: '9',
+        output: { images: [{ filename: file, subfolder: '', type: 'output' }] }
+      })
+    }
+
+    const images = store.inProgressItems.filter((i) => i.state === 'image')
+    expect(images, 'each loop iteration keeps its own output').toHaveLength(2)
+  })
+
   it('does not append a second copy when a reconnect replays executed', () => {
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
