@@ -336,6 +336,9 @@ describe('auth token priority chain', () => {
       vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
         new Error('Network error')
       )
+      vi.mocked(useTeamWorkspaceStore().initFailedAtDiscovery).mockReturnValue(
+        true
+      )
 
       await expect(store.getWorkspaceAuthToken()).resolves.toBe(
         'firebase-token'

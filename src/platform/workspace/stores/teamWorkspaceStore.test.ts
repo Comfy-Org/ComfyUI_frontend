@@ -319,6 +319,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
+      expect(store.initFailedAtDiscovery()).toBe(true)
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -465,6 +466,7 @@ describe('useTeamWorkspaceStore', () => {
         'No workspaces available'
       )
       expect(store.initState).toBe('error')
+      expect(store.initFailedAtDiscovery()).toBe(false)
     })
 
     it('does not activate a workspace when token exchange fails', async () => {
@@ -483,6 +485,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
       expect(store.activeWorkspaceId).toBeNull()
       expect(store.error).toEqual(new Error('Token exchange failed'))
+      expect(store.initFailedAtDiscovery()).toBe(false)
     })
   })
 

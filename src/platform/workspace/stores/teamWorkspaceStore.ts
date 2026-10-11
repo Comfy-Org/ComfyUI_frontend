@@ -184,6 +184,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   let initializationPromise: Promise<void> | null = null
   let pendingWorkspaceSwitch: Promise<void> | null = null
   let lastInitFailureAt: number | null = null
+  // Whether the last failed init failed while listing workspaces, before any
+  // workspace was resolved or activated.
+  let lastInitFailedAtDiscovery = false
 
   function isStaleIdentity(generation: number): boolean {
     return generation !== identityGeneration
@@ -326,6 +329,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const isApiKeySession = useCurrentUser().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
+      let discovering = false
       try {
         // An API-key credential is bound to exactly one workspace on the
         // server. There is no discovery, switching, or token exchange for it:
@@ -351,7 +355,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
           // Valid session exists - fetch workspace list and verify access
+          discovering = true
           const response = await workspaceApi.list()
+          discovering = false
           if (isStaleIdentity(generation)) return
           workspaces.value = sortWorkspaces(
             response.workspaces.map(createWorkspaceState)
@@ -393,7 +399,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         // 2. No valid session - fetch workspaces and pick default
+        discovering = true
         const response = await workspaceApi.list()
+        discovering = false
         if (isStaleIdentity(generation)) return
         workspaces.value = sortWorkspaces(
           response.workspaces.map(createWorkspaceState)
@@ -453,6 +461,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
           lastInitFailureAt = Date.now()
+          lastInitFailedAtDiscovery = discovering
           isFetchingWorkspaces.value = false
           throw e
         }
@@ -506,6 +515,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       }
     )
     return promise
+  }
+
+  /**
+   * Whether the last failed initialize() failed while listing workspaces,
+   * as opposed to an empty list, the workspace switch or its token exchange.
+   */
+  function initFailedAtDiscovery(): boolean {
+    return initState.value === 'error' && lastInitFailedAtDiscovery
   }
 
   /**
@@ -1047,6 +1064,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     pendingWorkspaceSwitch = null
     initializationPromise = null
     lastInitFailureAt = null
+    lastInitFailedAtDiscovery = false
     initState.value = 'uninitialized'
     workspaces.value = []
     mutableActiveWorkspaceId.value = null
@@ -1094,6 +1112,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Initialization & Cleanup
     initialize,
+    initFailedAtDiscovery,
     destroy,
     resetForIdentityChange,
     refreshWorkspaces,

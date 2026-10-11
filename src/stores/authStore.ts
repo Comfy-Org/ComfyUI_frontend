@@ -452,19 +452,25 @@ export const useAuthStore = defineStore('auth', () => {
         teamWorkspaceStore.initState === 'error')
     ) {
       const requestingIdentity = currentUserCredentialIdentity()
+      let initFailed = false
       try {
         await teamWorkspaceStore.initialize({ honorFailureCooldown: true })
       } catch {
-        // The account may have changed while initialization was in flight;
-        // never hand this request another account's credential.
-        if (currentUserCredentialIdentity() !== requestingIdentity)
-          return undefined
+        initFailed = true
+      }
+      // The account may have changed while initialization was in flight;
+      // never hand this request another account's credential.
+      if (currentUserCredentialIdentity() !== requestingIdentity)
+        return undefined
+      if (initFailed) {
         // A remote non-Cloud origin (e.g. a proxied self-hosted instance)
         // cannot reach cloud.comfy.org/api/workspaces: the browser blocks the
         // cross-origin request, so workspace discovery fails regardless of
         // retries. The signed-in user still has a valid Firebase ID token and
         // the backend resolves the personal workspace from it, so fall back
         // to it rather than sending no credential and 401ing node execution.
+        // Any later failure (switch or token exchange) sends no credential.
+        if (!teamWorkspaceStore.initFailedAtDiscovery()) return undefined
         return (await getIdToken()) ?? undefined
       }
     }

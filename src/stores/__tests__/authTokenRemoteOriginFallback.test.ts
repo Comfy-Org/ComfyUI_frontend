@@ -64,6 +64,9 @@ describe('getWorkspaceAuthToken remote-origin workspace init failure', () => {
     useWorkspaceAuthStore().destroy()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     useTeamWorkspaceStore().initState = 'uninitialized'
+    vi.mocked(useTeamWorkspaceStore().initFailedAtDiscovery).mockReturnValue(
+      true
+    )
     vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
       null
     )
@@ -110,6 +113,38 @@ describe('getWorkspaceAuthToken remote-origin workspace init failure', () => {
     )
 
     await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+    expect(otherUser.getIdToken).not.toHaveBeenCalled()
+  })
+
+  it('sends no credential when init fails after workspace discovery', async () => {
+    vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
+      new Error('Token exchange failed')
+    )
+    vi.mocked(useTeamWorkspaceStore().initFailedAtDiscovery).mockReturnValue(
+      false
+    )
+
+    await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+    expect(mockUser.getIdToken).not.toHaveBeenCalled()
+  })
+
+  it('returns no credential when the account changes during a successful init', async () => {
+    const otherUser = fromPartial<MockUser>({
+      uid: 'other-user-id',
+      email: 'other@example.com',
+      getIdToken: vi.fn().mockResolvedValue('other-firebase-token')
+    })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+      async () => {
+        for (const observer of authStateObservers) observer(otherUser)
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'other-workspace'
+        })
+      }
+    )
+
+    await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+    expect(useWorkspaceAuthStore().ensureWorkspaceToken).not.toHaveBeenCalled()
     expect(otherUser.getIdToken).not.toHaveBeenCalled()
   })
 
