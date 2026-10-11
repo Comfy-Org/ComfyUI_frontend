@@ -872,6 +872,26 @@ describe('LGraphNode', () => {
       testNode.removeOutput('0' as unknown as number)
       expect(testNode.outputs).toHaveLength(0)
     })
+
+    test('reindexes connected links after a digit-string slot removal', () => {
+      const graph = new LGraph()
+      const source = new LGraphNode('Source')
+      source.addOutput('first', 'number')
+      source.addOutput('removed', 'number')
+      source.addOutput('survivor', 'number')
+      const target = new LGraphNode('Target')
+      target.addInput('input', 'number')
+      graph.add(source)
+      graph.add(target)
+      const link = source.connect(2, target, 0)
+      expect(link).toBeDefined()
+      if (!link) throw new Error('expected connected link')
+
+      source.removeOutput('1' as unknown as number)
+
+      expect(link.origin_slot).toBe(1)
+      expect(source.outputs[1].links).toContain(link.id)
+    })
   })
 
   describe('getInputSlotPos', () => {
