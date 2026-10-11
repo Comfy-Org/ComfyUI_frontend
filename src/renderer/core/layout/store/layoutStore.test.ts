@@ -75,9 +75,6 @@ describe('layoutStore CRDT operations', () => {
 
     layoutStore.applyOperation(createOperation)
 
-    // A remote add can legitimately replay under an id whose layout entry a
-    // stale node's owner never cleared, so a second create for the same id
-    // must no-op rather than overwrite the existing layout.
     layoutStore.applyOperation({
       ...createOperation,
       layout: { ...layout, position: { x: 999, y: 999 } }
