@@ -27,7 +27,7 @@ type AdmissionTypeFor<Status extends AdmissionStatus> = Status extends 402
     : never
 
 /**
- * A denial an endpoint could actually return, discriminated on `status`.
+ * A status/type-checked admission-denial mock, discriminated on `status`.
  *
  * What it refuses: a status paired with the wrong `error.type`. What it does
  * NOT constrain: `reason`, which the generated type leaves free across all
