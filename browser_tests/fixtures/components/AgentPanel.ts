@@ -7,6 +7,7 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export class AgentPanel {
   public readonly activityRows: Locator
@@ -233,15 +234,7 @@ export class AgentPanel {
     await expect(this.workflowPicker).toHaveText(name)
   }
 
-  /**
-   * Denies EVERY turn with this admission denial for the rest of the test.
-   *
-   * Not one-shot. With a one-shot route, a client that wrongly auto-retried a
-   * non-retryable denial would have its retry succeed against the fixture's
-   * success handler and could replace the alert the caller is asserting on —
-   * so the one state that must not corrupt the assertions is the one a
-   * fallthrough allows.
-   */
+  /** Denies every turn POST with this admission denial for the rest of the test. */
   async rejectEveryTurn({
     status,
     body,
@@ -253,10 +246,9 @@ export class AgentPanel {
         return route.fallback()
       }
       await route.fulfill({
+        ...jsonRoute(body),
         status,
-        contentType: 'application/json',
-        headers: { 'Retry-After': String(retryAfterSeconds) },
-        body: JSON.stringify(body)
+        headers: { 'Retry-After': String(retryAfterSeconds) }
       })
     })
   }
