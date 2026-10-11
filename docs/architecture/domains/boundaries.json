@@ -461,6 +461,38 @@
         ]
       },
       {
+        "name": "hdr-viewer/domain",
+        "patterns": [
+          "src/renderer/hdr/colorGamut.ts",
+          "src/renderer/hdr/colorGamut.test.ts",
+          "src/renderer/hdr/hdrStats.ts",
+          "src/renderer/hdr/hdrStats.test.ts"
+        ]
+      },
+      {
+        "name": "hdr-viewer/application",
+        "patterns": ["src/composables/useHdrViewer.ts"]
+      },
+      {
+        "name": "hdr-viewer/infrastructure",
+        "patterns": [
+          "src/renderer/hdr/hdrViewerShader.ts",
+          "src/utils/hdrFormatUtil.ts",
+          "src/utils/hdrFormatUtil.test.ts"
+        ]
+      },
+      {
+        "name": "hdr-viewer/presentation",
+        "patterns": ["src/components/hdr/**"]
+      },
+      {
+        "name": "hdr-viewer/integration",
+        "patterns": [
+          "src/services/hdrViewerService.ts",
+          "src/services/hdrViewerService.test.ts"
+        ]
+      },
+      {
         "name": "image-compare/application",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
@@ -787,6 +819,22 @@
         ]
       },
       {
+        "name": "note-nodes/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts"
+        ]
+      },
+      {
+        "name": "note-nodes/integration",
+        "patterns": [
+          "src/extensions/core/noteNode.ts",
+          "src/lib/litegraph/src/widgets/MarkdownWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts"
+        ]
+      },
+      {
         "name": "painter/application",
         "patterns": ["src/composables/painter/**"]
       },
@@ -800,6 +848,18 @@
           "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
           "src/extensions/core/painter.ts",
           "src/lib/litegraph/src/widgets/PainterWidget.ts"
+        ]
+      },
+      {
+        "name": "prompt-authoring/domain",
+        "patterns": ["src/extensions/core/dynamicPrompts.test.ts"]
+      },
+      {
+        "name": "prompt-authoring/integration",
+        "patterns": [
+          "src/extensions/core/dynamicPrompts.ts",
+          "src/extensions/core/editAttention.ts",
+          "src/extensions/core/editAttention.test.ts"
         ]
       },
       {
@@ -856,6 +916,23 @@
           "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
           "src/scripts/ui/settings.ts",
           "src/scripts/ui/settings.test.ts"
+        ]
+      },
+      {
+        "name": "text-output-preview/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.test.ts"
+        ]
+      },
+      {
+        "name": "text-output-preview/integration",
+        "patterns": [
+          "src/extensions/core/saveText.ts",
+          "src/extensions/core/previewAny.ts",
+          "src/extensions/core/previewAny.test.ts",
+          "src/extensions/core/textPreviewWidgets.ts",
+          "src/extensions/core/textPreviewWidgets.test.ts"
         ]
       },
       {
@@ -1273,6 +1350,48 @@
         ]
       },
       {
+        "from": "hdr-viewer/domain",
+        "allow": ["hdr-viewer/domain", "unclassified"]
+      },
+      {
+        "from": "hdr-viewer/application",
+        "allow": [
+          "hdr-viewer/domain",
+          "hdr-viewer/application",
+          "hdr-viewer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "hdr-viewer/infrastructure",
+        "allow": [
+          "hdr-viewer/domain",
+          "hdr-viewer/application",
+          "hdr-viewer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "hdr-viewer/presentation",
+        "allow": [
+          "hdr-viewer/domain",
+          "hdr-viewer/application",
+          "hdr-viewer/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "hdr-viewer/integration",
+        "allow": [
+          "hdr-viewer/domain",
+          "hdr-viewer/application",
+          "hdr-viewer/infrastructure",
+          "hdr-viewer/presentation",
+          "hdr-viewer/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compare/application",
         "allow": ["image-compare/application", "unclassified"]
       },
@@ -1507,6 +1626,18 @@
         "allow": ["node-templates/integration", "unclassified"]
       },
       {
+        "from": "note-nodes/presentation",
+        "allow": ["note-nodes/presentation", "unclassified"]
+      },
+      {
+        "from": "note-nodes/integration",
+        "allow": [
+          "note-nodes/presentation",
+          "note-nodes/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "painter/application",
         "allow": ["painter/application", "unclassified"]
       },
@@ -1520,6 +1651,18 @@
           "painter/application",
           "painter/presentation",
           "painter/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "prompt-authoring/domain",
+        "allow": ["prompt-authoring/domain", "unclassified"]
+      },
+      {
+        "from": "prompt-authoring/integration",
+        "allow": [
+          "prompt-authoring/domain",
+          "prompt-authoring/integration",
           "unclassified"
         ]
       },
@@ -1562,6 +1705,18 @@
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "text-output-preview/presentation",
+        "allow": ["text-output-preview/presentation", "unclassified"]
+      },
+      {
+        "from": "text-output-preview/integration",
+        "allow": [
+          "text-output-preview/presentation",
+          "text-output-preview/integration",
           "unclassified"
         ]
       },
@@ -1759,6 +1914,11 @@
           "glsl-preview/domain",
           "glsl-preview/application",
           "glsl-preview/infrastructure",
+          "hdr-viewer/domain",
+          "hdr-viewer/application",
+          "hdr-viewer/infrastructure",
+          "hdr-viewer/presentation",
+          "hdr-viewer/integration",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -1777,11 +1937,17 @@
           "model-3d/presentation",
           "model-3d/integration",
           "node-templates/integration",
+          "note-nodes/presentation",
+          "note-nodes/integration",
+          "prompt-authoring/domain",
+          "prompt-authoring/integration",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "text-output-preview/presentation",
+          "text-output-preview/integration",
           "viewport-3d/domain",
           "viewport-3d/application",
           "viewport-3d/infrastructure",
