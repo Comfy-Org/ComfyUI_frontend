@@ -24,8 +24,6 @@ describe('useFreeUsePlacement', () => {
   beforeEach(() => {
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfig.value = {}
-    useAgentPanelStore().reportedFreeUseExposure = false
-    useAgentPanelStore().reportedFreeUseImpression = false
   })
 
   it('uses a known authenticated assignment and attributes it', async () => {
@@ -113,16 +111,11 @@ describe('useFreeUsePlacement', () => {
 
     expect(variant.value).toBe('control')
     expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
-    // Silently rendering `control` is exactly the state the early override
-    // resolve exists to avoid, so the typo has to be visible somewhere.
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('sidebar')
     )
   })
 
-  // AgentPanelRoot is rebuilt by a linear-mode toggle, a UI hide and a
-  // chat-history round trip while the panel stays open, so a per-instance
-  // record would re-report the same viewer.
   it('reports exposure and the impression once per panel open', () => {
     remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
     authenticatedRemoteConfigState.value = 'authenticated'
@@ -140,8 +133,6 @@ describe('useFreeUsePlacement', () => {
     expect(telemetry?.trackAgentFreeUseExposure).toHaveBeenCalledTimes(1)
     expect(telemetry?.trackAgentFreeUseNotice).toHaveBeenCalledTimes(1)
 
-    // `open()` is a no-op while the panel is already open, and `isOpen` is
-    // localStorage-backed, so a real open has to start from closed.
     useAgentPanelStore().isOpen = false
     useAgentPanelStore().open()
     useFreeUsePlacement().reportNotice({
@@ -153,8 +144,6 @@ describe('useFreeUsePlacement', () => {
     expect(telemetry?.trackAgentFreeUseNotice).toHaveBeenCalledTimes(2)
   })
 
-  // Dismissals and learn-more clicks are not impressions; collapsing them
-  // would lose the second dismissal of a notice that came back.
   it('does not deduplicate interactions other than the impression', () => {
     remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
     authenticatedRemoteConfigState.value = 'authenticated'

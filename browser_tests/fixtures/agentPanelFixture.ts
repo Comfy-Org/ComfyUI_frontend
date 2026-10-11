@@ -59,7 +59,7 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
-  /** Billing status layered over the panel default; see `mockBilling`. */
+  /** Replaces `mockBilling`'s default billing status. */
   billingStatus?: BillingStatusResponse
   beforeNavigate?: (page: Page) => Promise<void>
 }
@@ -89,7 +89,7 @@ async function mockAgentBoot(
     },
     objectInfo
   })
-  await mockBilling(page, billingStatus ? { billingStatus } : undefined)
+  await mockBilling(page, { billingStatus })
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,

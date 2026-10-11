@@ -80,9 +80,9 @@ export interface SubscriptionInfo {
   /** Agent funds across shared credits and the Agent-scoped balance. */
   agentHasFunds: boolean
   /**
-   * The Agent's own dedicated balance only: `false` once it is spent or if it
-   * was never granted, regardless of shared credits. Absent on rails and
-   * servers that do not report it, which reads as "unknown", not "granted".
+   * `scoped_has_funds.agent`: the Agent's own dedicated balance, regardless of
+   * shared credits. `false` once spent or never granted, `true` when billing is
+   * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
 }

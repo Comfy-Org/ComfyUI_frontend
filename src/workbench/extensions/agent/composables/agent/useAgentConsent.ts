@@ -13,7 +13,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
-import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/constants'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'

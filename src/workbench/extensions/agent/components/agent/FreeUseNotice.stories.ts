@@ -8,10 +8,7 @@ import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 import FreeUseNotice from './FreeUseNotice.vue'
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
-// The notice hides itself for good once dismissed, and the dismissal lives in
-// localStorage rather than in a prop, so a dismissal in one story would blank
-// every later snapshot. The key is account-scoped, hence the prefix sweep.
-function withFreshDismissal() {
+function clearFreeUseNoticeDismissals() {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(FREE_USE_NOTICE_DISMISSED_KEY)) {
       localStorage.removeItem(key)
@@ -30,12 +27,10 @@ const meta: Meta<typeof FreeUseNotice> = {
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
   args: { placement: 'top-banner', onNotice: fn() },
-  // DES-1221 cells b–e differ only in this prop, so the Controls panel walks
-  // the arms and the URL links any one of them.
   argTypes: {
     placement: { control: 'select', options: AGENT_FREE_USE_PLACEMENTS }
   },
-  decorators: [withFreshDismissal]
+  decorators: [clearFreeUseNoticeDismissals]
 }
 
 export default meta

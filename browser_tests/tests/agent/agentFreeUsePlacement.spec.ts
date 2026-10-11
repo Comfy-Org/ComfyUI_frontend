@@ -4,32 +4,24 @@ import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
 
-/**
- * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so the notice renders on `scoped_has_funds.agent` and nothing
- * else. `scoped_effective_has_funds` stays funded in both cases below, which is
- * exactly the cohort a paywall-derived gate got wrong: the grant is spent and
- * purchased credits are paying for every turn.
- */
-function billingStatus(grantHeld: boolean): BillingStatusResponse {
+// `scoped_effective_has_funds` stays funded in both cases, which is the cohort
+// a paywall-derived gate got wrong: the grant is spent and purchased credits
+// are paying for every turn.
+function billingStatus({
+  grantHeld
+}: {
+  grantHeld: boolean
+}): BillingStatusResponse {
   return {
-    is_active: true,
-    has_funds: true,
+    ...DEFAULT_BILLING_STATUS,
     scoped_effective_has_funds: { agent: true },
-    scoped_has_funds: { agent: grantHeld },
-    subscription_status: 'active',
-    subscription_tier: 'PRO',
-    subscription_duration: 'MONTHLY',
-    billing_status: 'paid',
-    max_seats: 1,
-    occupied_seats: 1,
-    team_credit_stop: null,
-    scheduled_change: null
+    scoped_has_funds: { agent: grantHeld }
   }
 }
 
@@ -47,7 +39,7 @@ test.describe(
       async ({ hostTelemetry, page }) => {
         await bootAgentApp(page, true, {
           features: { [FLAG]: PLACEMENT, enable_telemetry: true },
-          billingStatus: billingStatus(true)
+          billingStatus: billingStatus({ grantHeld: true })
         })
         const agentPanel = new AgentPanel(page)
 
@@ -58,9 +50,10 @@ test.describe(
         })
         await expect(notice).toBeVisible()
         await expect(notice).toContainText('Try your first chat for free!')
-        // `toContainText` is a substring match, so this catches the retired
-        // blanket-beta sentence coming back *alongside* the bounded one.
-        await expect(notice).not.toContainText('during BETA')
+        await expect(
+          notice,
+          'the retired blanket-beta sentence is not appended'
+        ).not.toContainText('during BETA')
         await expect(notice).toHaveAttribute('data-placement', PLACEMENT)
 
         const composer = agentPanel.root.getByTestId('agent-composer')
@@ -90,9 +83,6 @@ test.describe(
             }
           })
 
-        // The only PR-gated visual coverage of this surface: Chromatic runs on
-        // version-bump branches only, so the light-theme story exports are not
-        // a gate here. Element-level, so panel chrome cannot churn it.
         await expect(notice).toHaveScreenshot('agent-free-use-notice.png')
       }
     )
@@ -101,20 +91,18 @@ test.describe(
       hostTelemetry,
       page
     }) => {
+      const billingRead = page.waitForResponse('**/api/billing/status')
       await bootAgentApp(page, true, {
         features: { [FLAG]: PLACEMENT, enable_telemetry: true },
-        billingStatus: billingStatus(false)
+        billingStatus: billingStatus({ grantHeld: false })
       })
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
-      await expect(agentPanel.root.getByTestId('agent-composer')).toBeVisible()
-
-      await expect(
-        agentPanel.root.getByRole('note', { name: 'Free use notice' })
-      ).toBeHidden()
-      // Suppression is render-only: the arm still reports its exposure, so the
-      // denominator is unchanged whether or not this viewer was eligible.
+      // The gate reads `/billing/status`, so a notice that renders only after
+      // that response has to be given the chance to appear before the negative
+      // is believable; the exposure poll waits on remote config, not on this.
+      await billingRead
       await expect
         .poll(
           () =>
@@ -123,6 +111,12 @@ test.describe(
             ).length
         )
         .toBe(1)
+
+      await expect(
+        agentPanel.root.getByRole('note', { name: 'Free use notice' })
+      ).toBeHidden()
+      // Suppression is render-only: the arm still reports its exposure, so the
+      // denominator is unchanged whether or not this viewer was eligible.
       expect(
         hostTelemetry.filter(
           ({ event }) => event === 'app:agent_free_use_notice'

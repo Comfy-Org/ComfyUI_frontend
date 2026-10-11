@@ -350,9 +350,6 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
-    // The Agent's own granted allowance, independent of shared credits: this is
-    // the fact the free-use claim depends on, and an older server that omits it
-    // must read as unknown rather than as granted.
     it.for([
       { scopedHasFunds: undefined, expected: undefined },
       { scopedHasFunds: { agent: true }, expected: true },

@@ -71,7 +71,6 @@ const {
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
-  suppressFreeUseNotice = false,
   sessionId = null,
   currentChatReady = false,
   customTitle,
@@ -114,11 +113,6 @@ const {
    * composer; see AgentPanelRoot's `creditsExhausted` for why it exists.
    */
   creditsExhausted?: boolean
-  /**
-   * Render no free-use notice in any placement, whatever arm is assigned. The
-   * caller owns the policy; see AgentPanelRoot's `freeUseGrantActive`.
-   */
-  suppressFreeUseNotice?: boolean
   sessionId?: string | null
   currentChatReady?: boolean
   customTitle?: string
@@ -173,10 +167,6 @@ const targetNotice = computed(() => {
     return 'mismatch'
   return followsVisibleWorkflow ? 'following' : undefined
 })
-
-const noticePlacement = computed(() =>
-  suppressFreeUseNotice ? 'control' : freeUsePlacement
-)
 
 const panelStore = useAgentPanelStore()
 const { view } = storeToRefs(panelStore)
@@ -373,7 +363,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     />
 
     <FreeUseNotice
-      v-if="!showHistory && noticePlacement === 'top-banner'"
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
       placement="top-banner"
       @notice="emit('freeUseNotice', $event)"
     />
@@ -520,7 +510,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
-            v-if="noticePlacement === 'near-composer'"
+            v-if="freeUsePlacement === 'near-composer'"
             placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
@@ -568,14 +558,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             </template>
             <template #aboveInput>
               <FreeUseNotice
-                v-if="noticePlacement === 'above-input'"
+                v-if="freeUsePlacement === 'above-input'"
                 placement="above-input"
                 @notice="emit('freeUseNotice', $event)"
               />
             </template>
             <template #insideInput>
               <FreeUseNotice
-                v-if="noticePlacement === 'inside-input'"
+                v-if="freeUsePlacement === 'inside-input'"
                 placement="inside-input"
                 @notice="emit('freeUseNotice', $event)"
               />

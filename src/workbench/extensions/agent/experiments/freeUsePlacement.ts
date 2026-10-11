@@ -1,11 +1,14 @@
-import { computed, ref, watch } from 'vue'
+import { readonly, ref, watch } from 'vue'
 
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentFreeUseNoticeMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentFreeUseNoticeMetadata,
+  AgentFreeUseVariant
+} from '@/platform/telemetry/types'
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -14,15 +17,15 @@ import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
 
 export const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 
-export const FREE_USE_PLACEMENTS = [
+export const FREE_USE_VARIANTS = [
   'control',
   ...AGENT_FREE_USE_PLACEMENTS
 ] as const
 
-export type FreeUseVariant = (typeof FREE_USE_PLACEMENTS)[number]
+export type FreeUseVariant = AgentFreeUseVariant
 
 function isFreeUseVariant(value: unknown): value is FreeUseVariant {
-  return FREE_USE_PLACEMENTS.some((variant) => variant === value)
+  return FREE_USE_VARIANTS.some((variant) => variant === value)
 }
 
 export function useFreeUsePlacement() {
@@ -46,14 +49,11 @@ export function useFreeUsePlacement() {
     })
   }
 
-  // A QA override has to resolve ahead of the auth gate: `/features` can stay
-  // pending or fail outright, and a reviewer previewing an arm would otherwise
-  // sit in `control` with no way to tell the override was ignored.
   if (hasQaOverride) {
     if (isFreeUseVariant(override)) assigned.value = override
-    else if (import.meta.env.DEV)
+    else
       console.warn(
-        `[agent] ignoring unknown ${FREE_USE_PLACEMENT_FLAG} override ${JSON.stringify(override)}; expected one of ${FREE_USE_PLACEMENTS.join(', ')}`
+        `[agent] ignoring unknown ${FREE_USE_PLACEMENT_FLAG} override ${JSON.stringify(override)}; expected one of ${FREE_USE_VARIANTS.join(', ')}`
       )
   } else if (isAuthenticatedConfigLoaded.value) {
     assign()
@@ -65,12 +65,6 @@ export function useFreeUsePlacement() {
     })
   }
 
-  /**
-   * Withheld entirely while a QA override is forcing a placement: the analysis
-   * splits on the variant PostHog actually assigned, so an overridden session's
-   * exposure and interactions belong to no arm. `shown` is additionally
-   * reported once per panel open — see `reportedFreeUseImpression`.
-   */
   function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
     if (hasQaOverride) return
     if (metadata.action === 'shown') {
@@ -81,7 +75,7 @@ export function useFreeUsePlacement() {
   }
 
   return {
-    variant: computed<FreeUseVariant>(() => assigned.value),
+    variant: readonly(assigned),
     reportNotice
   }
 }

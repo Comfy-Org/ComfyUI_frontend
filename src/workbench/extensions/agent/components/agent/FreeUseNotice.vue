@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useStorage } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -9,7 +9,7 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
-import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/constants'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
@@ -24,30 +24,22 @@ const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
 const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
-// writeDefaults false: an account that resolves after mount would otherwise
-// plant `false` under the signed-out key on its way to its own.
-const dismissed = useStorage(
+const dismissed = useLocalStorage(
   () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
   false,
-  undefined,
   { writeDefaults: false }
 )
 
 /**
- * `useStorage` re-reads when its key getter changes, so the dismissal is only
- * authoritative once auth has settled on the account that owns the key.
- * Rendering before then flashes the notice at a viewer who had dismissed it and
- * reports an impression they did not choose to see.
+ * The storage key is account-scoped and re-read when the resolved id changes,
+ * so the dismissal is only authoritative once auth has settled.
  */
 const visible = computed(() => isAuthInitialized.value && !dismissed.value)
 
-let reportedShown = false
 watch(
   visible,
   (onScreen) => {
-    if (!onScreen || reportedShown) return
-    reportedShown = true
-    emit('notice', { action: 'shown', placement })
+    if (onScreen) emit('notice', { action: 'shown', placement })
   },
   { immediate: true }
 )

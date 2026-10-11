@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type {
@@ -8,31 +8,27 @@ import type {
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
 
+import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
-import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const PLACEMENTS = FREE_USE_PLACEMENTS.filter(
-  (variant) => variant !== 'control'
-)
+const PLACEMENTS = AGENT_FREE_USE_PLACEMENTS
 
 function mount(
   freeUsePlacement: FreeUseVariant,
-  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void,
-  creditsExhausted = false
+  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void
 ) {
   return render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
       freeUsePlacement,
-      creditsExhausted,
-      suppressFreeUseNotice: creditsExhausted,
       onFreeUseNotice
     },
     global: {
@@ -50,10 +46,9 @@ function notice() {
 }
 
 describe('AgentPanel free-use placement', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
+  // `control` is also how AgentPanelRoot expresses every suppression — an
+  // ineligible viewer, or an inline paywall on screen — so this one case
+  // covers the panel's whole side of that contract.
   it('shows no notice in the control arm', () => {
     mount('control')
 
@@ -66,8 +61,7 @@ describe('AgentPanel free-use placement', () => {
 
   // Each of the four slots re-emits `@notice` separately, so a slot that lost
   // its re-emit, or carries the wrong `placement` literal, would send no
-  // interactions while its exposure still counted. `getByRole` throws on a
-  // second match, so this also pins one notice per arm.
+  // interactions while its exposure still counted.
   it.for(PLACEMENTS)(
     'renders and reports exactly one notice at %s',
     (variant) => {
@@ -81,8 +75,6 @@ describe('AgentPanel free-use placement', () => {
     }
   )
 
-  // Visual ordering *within* a region is geometry a DOM test cannot see;
-  // `agentFreeUsePlacement.spec.ts` asserts that in a real browser.
   const REGIONS = [
     'agent-panel-footer',
     'agent-composer',
@@ -112,20 +104,6 @@ describe('AgentPanel free-use placement', () => {
     expect(notice()).toBeInTheDocument()
     expect(REGIONS.filter((region) => noticeIn(region))).toEqual(containing)
   })
-
-  it.for(PLACEMENTS)(
-    'says nothing about free turns at %s once credits are exhausted',
-    (variant) => {
-      const onFreeUseNotice = vi.fn()
-      mount(variant, onFreeUseNotice, true)
-
-      expect(
-        screen.getByTestId('agent-credits-exhausted-paywall')
-      ).toBeInTheDocument()
-      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
-      expect(onFreeUseNotice).not.toHaveBeenCalled()
-    }
-  )
 
   it('hides the top banner while chat history is open', async () => {
     mount('top-banner')

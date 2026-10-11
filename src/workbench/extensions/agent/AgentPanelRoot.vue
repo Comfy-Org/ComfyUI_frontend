@@ -75,6 +75,7 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import type { FreeUseVariant } from './experiments/freeUsePlacement'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -301,17 +302,25 @@ const creditsExhausted = computed(() => {
 })
 
 /**
- * Suppressed while the latest transcript entry is an unresolved inline card:
- * the two render the same copy. An older card may be scrolled away and must not
- * hide the standing recovery path after a later server-side refusal.
+ * The latest transcript entry is an inline Add credits card the user has not
+ * cleared. `conversationEntries` drops a paywall part once `resolvePaywalls`
+ * marks it resolved, so a part still present is a card still on screen — local
+ * UI state, independent of any `/billing/status` read.
+ *
+ * The standing surface is suppressed while one is up, because the two render
+ * the same copy. An older card may be scrolled away and must not hide the
+ * standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+const inlinePaywallPending = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  return !(
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
+})
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  return !inlinePaywallPending.value
 })
 
 const agentPanelStore = useAgentPanelStore()
@@ -1307,7 +1316,7 @@ const { copy } = useClipboard({ legacy: true })
 
 // DES-1221. Read while the panel is on screen, so the experiment's denominator
 // is the panel openers the hypothesis is about.
-const { variant: freeUsePlacement, reportNotice: onFreeUseNotice } =
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
@@ -1317,32 +1326,22 @@ const {
 
 /**
  * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders only while the server says that allowance still has
- * balance — `scoped_has_funds.agent`, which is `false` once the grant is spent
- * even where shared or purchased credits remain, and `false` when no grant was
- * ever issued. Inferring eligibility from paywall state instead would make the
- * claim to a spent-grant workspace that still has paid credits, which is the
- * cost PM-2005 and #20400 exist to correct.
- *
- * Fail-closed, deliberately: an absent field, an unsettled read, a rail that
- * does not report it, and an exhausted grant all read as not-eligible. The
- * exhaustion and credit-transition notices own the paid-state handoff.
- *
- * Suppression is render-only. The assignment and its exposure are untouched,
- * so an arm keeps its denominator whether or not this viewer was eligible.
- *
- * `=== true` is the whole gate: a null subscription is an unfinished read and
- * the legacy rail populates no scoped balance, so both already read as not
- * eligible without a separate loading or rail branch.
- *
- * `creditsExhausted` stays in the binding beside it. A 402 refusal renders the
- * inline card immediately while the status read refreshes only on the next
- * observed turn completion, so the client can hold a stale `true` here for as
- * long as that gap lasts, and the notice must not sit beside that card.
+ * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
+ * is the whole gate: an absent field, an unsettled read and a rail that reports
+ * no scoped balance all fail closed without a separate branch.
  */
 const freeUseGrantActive = computed(
   () => subscription.value?.agentScopedHasFunds === true
 )
+
+/**
+ * Render-only. The assignment and its exposure are untouched, so an arm keeps
+ * its denominator whether or not this viewer was eligible or had a card up.
+ */
+const freeUsePlacement = computed<FreeUseVariant>(() => {
+  if (!freeUseGrantActive.value) return 'control'
+  return inlinePaywallPending.value ? 'control' : freeUseVariant.value
+})
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1918,7 +1917,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :suppress-free-use-notice="!freeUseGrantActive || creditsExhausted"
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"

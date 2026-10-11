@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
@@ -12,11 +12,10 @@ import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-function signIn(id: string | null, authInitialized = true) {
+function signIn(id: string) {
   vi.mocked(useCurrentUser).mockReturnValue({
     ...useCurrentUser(),
-    isAuthInitialized: computed(() => authInitialized),
-    resolvedUserInfo: computed(() => (id === null ? null : { id }))
+    resolvedUserInfo: computed(() => ({ id }))
   })
 }
 
@@ -44,13 +43,6 @@ function mount(placement: AgentFreeUsePlacement = 'top-banner') {
 }
 
 describe('FreeUseNotice', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  // The copy and the link do not vary by placement — only `PLACEMENT_CLASSES`
-  // does — so one case covers them and the per-arm render is asserted in
-  // AgentPanel.freeUsePlacement.test.ts.
   it('carries the bounded copy and an explainer link', () => {
     mount()
 
@@ -102,9 +94,6 @@ describe('FreeUseNotice', () => {
     signIn('first-user')
     const first = mount()
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
-    expect(localStorage.getItem(freeUseNoticeDismissedKey('first-user'))).toBe(
-      'true'
-    )
     first.unmount()
 
     signIn('second-user')
@@ -117,9 +106,11 @@ describe('FreeUseNotice', () => {
   })
 
   // The dismissal key is account-scoped, so until auth settles the component is
-  // reading the signed-out key. Rendering then flashes the notice at a viewer
-  // who had dismissed it and reports an impression they did not choose to see.
-  it('waits for auth before rendering or reporting an impression', async () => {
+  // reading the signed-out key. Both halves matter, and each would pass the
+  // other's assertions: rendering before auth settles flashes the notice at
+  // someone who had dismissed it, while reading auth readiness once at mount
+  // hides it from every viewer whose account resolves later.
+  it('renders after auth settles, for a late user who had not dismissed it', async () => {
     const authInitialized = ref(false)
     const userId = ref<string | null>(null)
     vi.mocked(useCurrentUser).mockReturnValue({
@@ -129,20 +120,32 @@ describe('FreeUseNotice', () => {
         userId.value === null ? null : { id: userId.value }
       )
     })
-    localStorage.setItem(freeUseNoticeDismissedKey('late-user'), 'true')
+    localStorage.setItem(freeUseNoticeDismissedKey('dismissed-user'), 'true')
 
     const { emitted } = mount()
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
-    // No default planted under the signed-out key on the way to the real one.
     expect(
-      localStorage.getItem(freeUseNoticeDismissedKey(undefined))
+      localStorage.getItem(freeUseNoticeDismissedKey(undefined)),
+      'no default planted under the signed-out key on the way to the real one'
     ).toBeNull()
 
-    userId.value = 'late-user'
+    userId.value = 'dismissed-user'
     authInitialized.value = true
-    await vi.waitFor(() => expect(screen.queryByRole('note')).toBeNull())
+    await nextTick()
+
+    expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
+
+    // The notice appearing for an account that never dismissed it is the
+    // post-auth signal this case needs: without it, the absence asserted above
+    // is also what a gate that stopped re-reading after mount would produce.
+    userId.value = 'fresh-user'
+
+    expect(await screen.findByRole('note')).toBeInTheDocument()
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }]
+    ])
   })
 })

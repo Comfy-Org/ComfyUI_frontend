@@ -909,22 +909,18 @@ export const AGENT_FREE_USE_PLACEMENTS = [
   'inside-input'
 ] as const
 export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
 /**
  * Interactions with the notice itself. This event adds what the existing
  * outcome events cannot say: whether the notice was actually on screen in its
  * assigned arm, and what the viewer did with it.
  *
- * The arm lives on `app:agent_free_use_exposure` and nowhere else. The flag is
- * served by `/features` and evaluated server-side, so posthog-js never holds
- * it and cannot decorate `agent_message_sent` or the run events with a
- * `$feature/…` property the way the starter-prompt experiment does. Outcomes
- * are therefore joined to the exposure event by person. Per-event attribution
- * would need the arm threaded onto each outcome call site, which is a separate
- * change.
+ * The arm lives on `app:agent_free_use_exposure` and nowhere else; outcomes are
+ * joined to it by person. See the PR for that choice.
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'

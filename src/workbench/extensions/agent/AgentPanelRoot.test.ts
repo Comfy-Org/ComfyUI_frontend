@@ -622,14 +622,9 @@ describe('AgentPanelRoot first-use experience', () => {
 
   const reportFreeUseNotice = vi.fn()
 
-  function placeFreeUseNotice() {
-    // The claim is about the Agent's own granted allowance, so an eligible
-    // viewer still holds it. This suite's default is a workspace with no funds
-    // at all and no scoped balance reported, which is the state the notice must
-    // never appear in.
+  function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
     paywallAgentScopedHasFunds.value = true
-    reportFreeUseNotice.mockClear()
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
         variant: ref('top-banner'),
@@ -643,7 +638,7 @@ describe('AgentPanelRoot first-use experience', () => {
   }
 
   it('forwards free-use notice interactions to the experiment', async () => {
-    placeFreeUseNotice()
+    placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(
@@ -656,17 +651,11 @@ describe('AgentPanelRoot first-use experience', () => {
     ])
   })
 
-  /**
-   * `Try your first chat for free!` is only true while the Agent's own granted
-   * allowance still has balance. Inferring that from paywall state instead makes
-   * the claim to a spent-grant workspace that still has paid credits, to a
-   * returning viewer, and to every rail that reports no scoped balance.
-   */
   it.for([
     { label: 'the grant is spent but paid credits remain', scoped: false },
     { label: 'no scoped balance is reported at all', scoped: undefined }
   ])('says nothing about free turns when $label', async ({ scoped }) => {
-    placeFreeUseNotice()
+    placeFundedFreeUseNotice()
     paywallAgentScopedHasFunds.value = scoped
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -676,36 +665,15 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(reportFreeUseNotice).not.toHaveBeenCalled()
   })
 
-  it('says nothing about free turns beside an inline paywall', async () => {
-    placeFreeUseNotice()
-    paywallHasFunds.value = false
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByTestId('agent-credits-exhausted-paywall')
-
-    useAgentConversationStore().recordPaywall(
-      toTurnId('msg-paywall'),
-      'continue'
-    )
-    await vi.waitFor(() =>
-      expect(
-        screen.queryByTestId('agent-credits-exhausted-paywall')
-      ).not.toBeInTheDocument()
-    )
-    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
-
-    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
-  })
-
-  // A stale `true` is reachable: a 402 renders the inline card at once while
-  // the status read only refreshes on the next observed turn completion.
-  it('says nothing about free turns beside an inline paywall while the grant still reads funded', async () => {
-    placeFreeUseNotice()
+  // The real window: a 402 records an inline card and nothing refreshes
+  // `/billing/status`, so the grant still reads funded. Suppression therefore
+  // has to come from the transcript, not from a second billing term.
+  it('says nothing about free turns beside an inline paywall before billing status refreshes', async () => {
+    placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await freeUseNotice()
 
-    paywallHasFunds.value = false
     useAgentConversationStore().recordPaywall(
       toTurnId('msg-paywall'),
       'continue'
@@ -715,6 +683,22 @@ describe('AgentPanelRoot first-use experience', () => {
     await vi.waitFor(() =>
       expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
     )
+  })
+
+  it('shows the notice again once the card is cleared', async () => {
+    placeFundedFreeUseNotice()
+    const conversation = useAgentConversationStore()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await freeUseNotice()
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+
+    conversation.resolvePaywalls()
+
+    expect(await freeUseNotice()).toBeInTheDocument()
   })
 })
 
@@ -5173,14 +5157,12 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
-  // The layer is claimed in `onMounted`, which runs only after the whole setup
-  // completes, so a throw from any setup composable takes this one path.
   it('does not claim the minimap graph-activity layer when setup throws', () => {
     vi.mocked(useBillingContext).mockImplementationOnce(() => {
       throw new Error('setup failed')
     })
-    // Mounted without Testing Library, whose error handler lets a failed setup
-    // finish mounting; Vue itself aborts the mount.
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
     const app = createApp(AgentPanelRoot).use(i18n)
     expect(() => app.mount(document.createElement('div'))).toThrow(
       'setup failed'
