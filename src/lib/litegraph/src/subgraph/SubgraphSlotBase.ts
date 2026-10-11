@@ -1,4 +1,4 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -136,7 +136,7 @@ export abstract class SubgraphSlot
   }
 
   measure(): Readonly<Size> {
-    const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
+    const width = canvasClass._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot
     this.measurement.setValues(width + defaultHeight, defaultHeight)

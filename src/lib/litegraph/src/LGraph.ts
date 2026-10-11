@@ -108,7 +108,8 @@ import {
 } from './utils/namedValuesShadowDiffTelemetry'
 
 import type { DragAndScaleState } from './DragAndScale'
-import { LGraphCanvas } from './LGraphCanvas'
+import type { LGraphCanvas } from './LGraphCanvas'
+import { canvasClass } from './canvas/canvasClassAccess'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
@@ -941,7 +942,7 @@ export class LGraph
    * Attach Canvas to this graph
    */
   attachCanvas(canvas: LGraphCanvas): void {
-    if (!(canvas instanceof LGraphCanvas)) {
+    if (!(canvas instanceof canvasClass)) {
       throw new TypeError('attachCanvas expects an LGraphCanvas instance')
     }
 
