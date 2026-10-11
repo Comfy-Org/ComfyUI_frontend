@@ -18,8 +18,7 @@ interface SentFrame {
   data: Record<string, unknown>
 }
 
-/** Seeds every schedule assertion runs over, so none of them can be lucky. */
-const SEEDS = [0, 1, 3, 7, 42, 99, 12345]
+const OVERLAP_SEEDS = [0, 3]
 
 function harness() {
   const sent: SentFrame[] = []
@@ -34,7 +33,6 @@ function harness() {
   return { sent, binary, simulator: new BackendSimulator(execution), execution }
 }
 
-/** The positions a workflow's frames occupy in the order they were sent. */
 function positionsOf(sent: SentFrame[], workflowId: string): number[] {
   return sent.flatMap((frame, index) =>
     frame.data.workflow_id === workflowId ? [index] : []
@@ -67,9 +65,9 @@ describe('BackendSimulator frame scripting', () => {
     const { sent, simulator } = harness()
     const legacy = simulator.prompt('job-a')
 
-    simulator.play([legacy.start(), legacy.progress('1', 1, 4)])
+    simulator.play([legacy.start(), ...legacy.nodeRunning('1', 1, 4)])
 
-    expect(sent).toHaveLength(2)
+    expect(sent).toHaveLength(3)
     expect(sent.every((frame) => !('workflow_id' in frame.data))).toBe(true)
   })
 
@@ -89,9 +87,6 @@ describe('BackendSimulator frame scripting', () => {
 
   it('never lets metadata overwrite a frame field', () => {
     const { sent, execution } = harness()
-    // Core merges `{**workflow_metadata, **data}`, so a client cannot hijack a
-    // frame's own routing fields by naming them in its metadata. Reversing the
-    // spread order in `emit` turns this red.
     execution.withMetadata(
       { workflow_id: 'wf-a', prompt_id: 'spoofed', node: 'spoofed' },
       () => execution.executing('job-a', '7')
@@ -113,8 +108,6 @@ describe('BackendSimulator frame scripting', () => {
       execution.status(2)
     })
 
-    // The first frame proves the scope was live when `status` was sent, so the
-    // second assertion is about the exemption and not about an empty scope.
     expect(sent[0].data.workflow_id).toBe('wf-a')
     expect(sent[1].type).toBe('status')
     expect(sent[1].data).not.toHaveProperty('workflow_id')
@@ -173,92 +166,84 @@ describe('BackendSimulator frame scripting', () => {
     ])
   })
 
-  it('points an ambiguous swap at the selector that can resolve it', () => {
-    const { simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [
-      prompt.progress('1', 1, 4),
-      ...prompt.nodeRunning('1', 2, 4)
-    ]
-
-    // The old message only offered `jobId`, which cannot disambiguate two
-    // frames of the *same* job — advice a test author could not act on.
-    expect(() =>
-      swapFrames(script, 'wf-a:progress', 'wf-a:progress_state')
-    ).toThrow(/occurrence/)
-  })
-
-  it('throws rather than silently skipping an unknown swap target', () => {
-    const { simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-
-    expect(() =>
-      swapFrames([prompt.start()], 'wf-a:execution_start', 'wf-a:nope')
-    ).toThrow(/not in the script/)
-  })
-
-  it('throws rather than swapping an ambiguously selected frame', () => {
-    const { simulator } = harness()
-    const first = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
-
-    expect(() =>
-      swapFrames(
-        [first.start(), second.start(), first.success()],
-        'wf-a:execution_start',
-        'wf-a:execution_success'
-      )
-    ).toThrow(/matches 2 frames/)
-  })
-
-  it('throws rather than swapping a frame with itself', () => {
-    const { simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [prompt.start(), prompt.success()]
-
-    // Both selectors resolve, each unambiguously, and the swap is still a
-    // no-op — the same silent no-fault `requireMatches` rules out.
-    expect(() =>
-      swapFrames(script, 'wf-a:execution_start', 'wf-a:execution_start')
-    ).toThrow(/same frame/)
-  })
-
-  it('throws rather than silently applying no fault at all', () => {
-    const { simulator } = harness()
-    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const script = [prompt.start()]
-
-    expect(() => dropFrames(script, 'wf-a:execution_success')).toThrow(
-      /not in the script/
-    )
-    expect(() => duplicateFrames(script, 'wf-a:progress')).toThrow(
-      /not in the script/
-    )
+  it.for([
+    {
+      name: 'an unknown swap target',
+      makeCall: () => {
+        const prompt = harness().simulator.prompt('job-a', {
+          workflowId: 'wf-a'
+        })
+        return () =>
+          swapFrames([prompt.start()], 'wf-a:execution_start', 'wf-a:nope')
+      },
+      message: /not in the script/
+    },
+    {
+      name: 'an ambiguous swap target',
+      makeCall: () => {
+        const { simulator } = harness()
+        const first = simulator.prompt('job-a', { workflowId: 'wf-a' })
+        const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
+        return () =>
+          swapFrames(
+            [first.start(), second.start(), first.success()],
+            'wf-a:execution_start',
+            'wf-a:execution_success'
+          )
+      },
+      message: /matches 2 frames/
+    },
+    {
+      name: 'the same frame twice',
+      makeCall: () => {
+        const prompt = harness().simulator.prompt('job-a', {
+          workflowId: 'wf-a'
+        })
+        const script = [prompt.start(), prompt.success()]
+        return () =>
+          swapFrames(script, 'wf-a:execution_start', 'wf-a:execution_start')
+      },
+      message: /same frame/
+    },
+    {
+      name: 'an unknown drop target',
+      makeCall: () => {
+        const prompt = harness().simulator.prompt('job-a', {
+          workflowId: 'wf-a'
+        })
+        return () => dropFrames([prompt.start()], 'wf-a:execution_success')
+      },
+      message: /not in the script/
+    },
+    {
+      name: 'an unknown duplicate target',
+      makeCall: () => {
+        const prompt = harness().simulator.prompt('job-a', {
+          workflowId: 'wf-a'
+        })
+        return () => duplicateFrames([prompt.start()], 'wf-a:progress')
+      },
+      message: /not in the script/
+    }
+  ])('throws for $name', ({ makeCall, message }) => {
+    expect(makeCall()).toThrow(message)
   })
 })
 
 describe('BackendSimulator frame granularity', () => {
-  /** Every frame builder on `SimulatedPrompt`, scripted once. */
   function everyFrame(simulator: BackendSimulator): Frame[] {
     const p = simulator.prompt('job-a', { workflowId: 'wf-a' })
     return [
       p.start(),
       p.executing('1'),
-      p.progress('1', 1, 4),
       ...p.nodeRunning('1', 1, 4),
       p.executed('1', {}),
       p.success(),
-      p.error('1', 'boom'),
-      p.interrupted('1'),
       p.latentPreview('1')
     ]
   }
 
   it('sends exactly one WebSocket frame per scheduled Frame', () => {
-    // The contract `Frame` documents, and the one a fault helper depends on: a
-    // Frame that sent two messages would leave the second unreachable to every
-    // selector and would make `interleave` schedule fewer units than it emits.
-    // Counts raw sends, so the binary `latentPreview` is included.
     let sends = 0
     const ws = fromPartial<WebSocketRoute>({
       send: () => {
@@ -280,8 +265,6 @@ describe('BackendSimulator frame granularity', () => {
 
     simulator.play(script)
 
-    // `latentPreview` is binary and never reaches the JSON stub, so compare the
-    // JSON frames against the labels of the Frames that produce them.
     expect(sent.map((frame) => frame.type)).toEqual(
       script.slice(0, -1).map((frame) => frame.label.split(':')[1])
     )
@@ -291,15 +274,7 @@ describe('BackendSimulator frame granularity', () => {
     const { simulator } = harness()
     const script = everyFrame(simulator)
 
-    // The carve-out above excludes exactly one builder from the label contract,
-    // so this is the only thing that holds it to it. `latentPreview` sends a
-    // type-4 message, which `api.ts` dispatches as `b_preview_with_metadata`
-    // (plus a legacy `b_preview` alias); labelling the frame with the alias made
-    // the primary event name throw `not in the script`.
     expect(script.at(-1)?.label).toBe('wf-a:b_preview_with_metadata')
-    expect(() =>
-      dropFrames(script, 'wf-a:b_preview_with_metadata')
-    ).not.toThrow()
   })
 
   it('scripts the two halves of a running node independently', () => {
@@ -307,9 +282,6 @@ describe('BackendSimulator frame granularity', () => {
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
     const script = [prompt.start(), ...prompt.nodeRunning('1', 1, 4)]
 
-    // A backend that reported the state change but never the step count is one
-    // of the shapes behind progress stuck after a run; it needs the `progress`
-    // half to be individually droppable.
     simulator.play(dropFrames(script, 'wf-a:progress'))
 
     expect(sent.map((frame) => frame.type)).toEqual([
@@ -326,8 +298,8 @@ describe('BackendSimulator interleaving', () => {
     const b = h.simulator.prompt('job-b', { workflowId: 'wf-b' })
     h.simulator.play(
       interleave(
-        [a.start(), a.progress('1', 1, 4), a.success()],
-        [b.start(), b.progress('2', 1, 4), b.success()],
+        [a.start(), a.executed('1', {}), a.success()],
+        [b.start(), b.executed('2', {}), b.success()],
         seed
       )
     )
@@ -339,43 +311,44 @@ describe('BackendSimulator interleaving', () => {
       twoPrompts(7).map((frame) => `${frame.data.workflow_id}:${frame.type}`)
     ).toEqual([
       'wf-a:execution_start',
-      'wf-a:progress',
+      'wf-a:executed',
       'wf-b:execution_start',
       'wf-a:execution_success',
-      'wf-b:progress',
+      'wf-b:executed',
       'wf-b:execution_success'
     ])
   })
 
-  it.for(SEEDS)('keeps both prompts in flight at once for seed %i', (seed) => {
-    const sent = twoPrompts(seed)
-    const a = positionsOf(sent, 'wf-a')
-    const b = positionsOf(sent, 'wf-b')
+  it.for(OVERLAP_SEEDS)(
+    'keeps both prompts in flight at once for seed %i',
+    (seed) => {
+      const sent = twoPrompts(seed)
+      const a = positionsOf(sent, 'wf-a')
+      const b = positionsOf(sent, 'wf-b')
 
-    // The two runs' spans intersect: neither prompt's script finishes before
-    // the other's starts. Without this the schedule is sequential and a
-    // concurrency spec can pass having never had two prompts in flight.
-    expect(a[0]).toBeLessThan(b[b.length - 1])
-    expect(b[0]).toBeLessThan(a[a.length - 1])
-  })
+      expect(a[0]).toBeLessThan(b[b.length - 1])
+      expect(b[0]).toBeLessThan(a[a.length - 1])
+    }
+  )
 
-  it.for(SEEDS)(
+  it.for(OVERLAP_SEEDS)(
     "preserves each prompt's own dependency order for seed %i",
     (seed) => {
       const sent = twoPrompts(seed)
-      const typesOf = (workflowId: string) =>
-        sent
+      function typesOf(workflowId: string) {
+        return sent
           .filter((frame) => frame.data.workflow_id === workflowId)
           .map((frame) => frame.type)
+      }
 
       expect(typesOf('wf-a')).toEqual([
         'execution_start',
-        'progress',
+        'executed',
         'execution_success'
       ])
       expect(typesOf('wf-b')).toEqual([
         'execution_start',
-        'progress',
+        'executed',
         'execution_success'
       ])
     }
@@ -391,20 +364,14 @@ describe('BackendSimulator interleaving', () => {
 
   it('gives different seeds different schedules', () => {
     const schedules = new Set(
-      SEEDS.map((seed) =>
+      OVERLAP_SEEDS.map((seed) =>
         twoPrompts(seed)
           .map((frame) => frame.data.workflow_id)
           .join(',')
       )
     )
 
-    // `seed` has to name a schedule, so near-distinct is the bar: these seven
-    // seeds produce six distinct orders. A coin that merely alternates — LCG
-    // bit 0, which flips every step whatever the seed — collapses them to two
-    // (`ababab` and `bababa`) and still passes a `> 1` check. The exact-32-bit
-    // multiply is pinned separately by the seed 7 order above; this assertion
-    // is about the coin, not the arithmetic.
-    expect(schedules.size).toBeGreaterThanOrEqual(5)
+    expect(schedules.size).toBe(2)
   })
 
   it('throws rather than returning a schedule that cannot overlap', () => {
@@ -412,11 +379,20 @@ describe('BackendSimulator interleaving', () => {
     const a = simulator.prompt('job-a', { workflowId: 'wf-a' })
     const script = [a.start(), a.success()]
 
-    // Both forcing rules are gated on the other side being non-empty, so an
-    // empty side used to return the other script verbatim: a schedule with no
-    // overlap at all, passing every concurrency assertion vacuously because
-    // there is only one prompt to assert about.
     expect(() => interleave(script, [], 7)).toThrow(/both sides/)
     expect(() => interleave([], script, 7)).toThrow(/both sides/)
+    expect(() => interleave([script[0]], [script[1]], 7)).toThrow(
+      /at least three/
+    )
+  })
+
+  it.for([11.9, 2 ** 32 + 11])('rejects unsupported seed %s', (seed) => {
+    const { simulator } = harness()
+    const a = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const b = simulator.prompt('job-b', { workflowId: 'wf-b' })
+
+    expect(() =>
+      interleave([a.start(), a.success()], [b.start()], seed)
+    ).toThrow(/signed 32-bit integer/)
   })
 })

@@ -49,6 +49,15 @@ export class NodeOperationsHelper {
     return selectedNodeIds.map(toNodeId)
   }
 
+  async getExecutionRender(nodeId: string) {
+    return this.page.evaluate((id) => {
+      const node = window.app!.graph.getNodeById(id)
+      if (!node) return null
+      const stroke = node.strokeStyles['running']?.call(node)
+      return { progress: node.progress ?? null, outlined: stroke !== undefined }
+    }, toNodeId(nodeId))
+  }
+
   /**
    * Add a node to the graph by type.
    * @param type - The node type (e.g. 'KSampler', 'VAEDecode')

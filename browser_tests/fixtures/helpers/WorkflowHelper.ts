@@ -188,6 +188,14 @@ export class WorkflowHelper {
     })
   }
 
+  async getActiveWorkflowId(): Promise<string | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      return workflow?.activeState.id ?? workflow?.initialState.id ?? undefined
+    })
+  }
+
   async getActiveWorkflowActiveAppMode(): Promise<AppMode | null | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
@@ -222,26 +230,18 @@ export class WorkflowHelper {
     })
   }
 
-  /**
-   * `workflowStore.openWorkflow` registers the tab but never loads the graph,
-   * so going through the store leaves the canvas on whatever it already had.
-   * Clicking the sidebar entry is the path a user takes and the only one that
-   * puts the file's nodes on the canvas.
-   */
   async openPersistedWorkflow(workflowName: string): Promise<void> {
     const sidebar = this.comfyPage.menu.workflowsTab
+    const wasOpen = await sidebar.selectedTabButton.isVisible()
     await sidebar.open()
-    await sidebar.getPersistedItem(workflowName).click()
-    await sidebar.close()
+    await sidebar.getPersistedItem(workflowName, { exact: true }).click()
+    if (!wasOpen) await sidebar.close()
     await this.waitForWorkflowIdle()
-    await this.comfyPage.page.waitForFunction(
-      (name) =>
-        (
-          window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.path.endsWith(`${name}.json`) ?? false,
-      workflowName,
-      { timeout: 5000 }
-    )
+    await expect
+      .poll(async () =>
+        (await this.getActiveWorkflowPath())?.endsWith(`${workflowName}.json`)
+      )
+      .toBe(true)
     await this.comfyPage.vueNodes.waitForNodes()
   }
 

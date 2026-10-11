@@ -17,6 +17,10 @@ type RunOptions = {
   beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
+export function imageOutput(filename: string) {
+  return { images: [{ filename, subfolder: '', type: 'output' }] }
+}
+
 /**
  * Build a `NodeError` describing a single failed input on a KSampler node.
  * Shared between specs that surface validation rings via 400 responses.
@@ -70,12 +74,6 @@ export class ExecutionHelper {
     return this.ws
   }
 
-  /**
-   * Stamp `workflow_id` on every eligible JSON frame sent inside `fn`, the way
-   * core's `send_sync` spreads a prompt's `workflow_metadata` onto outgoing
-   * messages. Leave `workflowId` undefined to emit frames the way a core build
-   * without that support does — the legacy backend profile.
-   */
   withWorkflowId(workflowId: string | undefined, send: () => void): void {
     this.withMetadata(
       workflowId === undefined ? undefined : { workflow_id: workflowId },
@@ -83,42 +81,6 @@ export class ExecutionHelper {
     )
   }
 
-  /**
-   * The general form of {@link withWorkflowId}: core accepts an arbitrary
-   * `workflow_metadata` dict, so a scenario can set keys that collide with a
-   * frame's own fields and assert the frame still wins.
-   *
-   * The scope survives `await`s inside `fn`. A callback that returns a promise
-   * keeps the scope open until that promise settles, so frames emitted after an
-   * `await` are still stamped — returning the promise used to restore the
-   * previous scope immediately, silently unstamping (or mis-stamping) every
-   * frame after the first suspension point.
-   *
-   * The scope is ambient for as long as it is open, not lexical to `fn`: a frame
-   * emitted from anywhere while an async scope is pending is stamped with it.
-   * That is the point — it models core holding a prompt's `workflow_metadata`
-   * for the duration of the run — but it means an un-awaited scope keeps
-   * stamping, so always await the returned promise.
-   *
-   * **Exactly one scope may be open at a time, and a second one throws** —
-   * whether it overlaps an async scope or is nested inside `fn`. Without
-   * ambient async context two live scopes cannot be attributed to their
-   * prompts, and the wrong `workflow_id` on a frame is precisely the bug this
-   * harness exists to catch. Nesting used to slip past this guard and was
-   * worse than ambiguous: the inner scope's `finally` restored *its* saved
-   * value, so an outer scope that had already closed came back to life and
-   * stamped every later frame for the rest of the test. Await the first scope,
-   * or script the prompts as separate synchronous frames via
-   * `BackendSimulator`.
-   */
-  /**
-   * Stamp `metadata` on every eligible JSON frame sent inside `send`.
-   *
-   * Synchronous on purpose. The only caller sends one frame, and an async
-   * callback was the shape that let an outer scope come back to life and stamp
-   * every later frame for the rest of a test. Script prompts as separate
-   * frames through `BackendSimulator` instead of awaiting inside a scope.
-   */
   withMetadata(
     metadata: Record<string, unknown> | undefined,
     send: () => void
@@ -132,15 +94,6 @@ export class ExecutionHelper {
     }
   }
 
-  /**
-   * Metadata first so a frame's own fields always win on collision, matching
-   * core's `{**workflow_metadata, **data}`.
-   *
-   * Only frames carrying a `prompt_id` are stamped, which is core's own gate
-   * (`send_sync` checks `"prompt_id" in data`) rather than an event-name
-   * carve-out. `status` is exempt because it has no `prompt_id`, so the
-   * exemption cannot drift out of sync with the list of frame builders.
-   */
   private emit(type: string, data: Record<string, unknown>): void {
     const payload =
       this.metadata && 'prompt_id' in data
@@ -253,14 +206,7 @@ export class ExecutionHelper {
     this.emit('execution_start', { prompt_id: jobId, timestamp: Date.now() })
   }
 
-  /**
-   * Send `executing` WS event to signal which node is currently running.
-   *
-   * Shape matches the server: a node-start frame carries `display_node`
-   * (execution.py), the terminal `node: null` frame does not (main.py). The
-   * app reads `display_node || node`, so omitting it would silently exercise
-   * the fallback instead of the normal path.
-   */
+  /** Send `executing` WS event to signal which node is currently running. */
   executing(jobId: string, nodeId: string | null): void {
     this.emit('executing', {
       prompt_id: jobId,
@@ -334,13 +280,6 @@ export class ExecutionHelper {
     this.emit('progress', { prompt_id: jobId, node: nodeId, value, max })
   }
 
-  /**
-   * The `progress_state` payload for a single node in the `running` state.
-   *
-   * Exposed separately from {@link nodeRunning} so a caller that needs the two
-   * events as individually schedulable frames can send them itself without
-   * rebuilding this payload — see `SimulatedPrompt.nodeRunning`.
-   */
   runningNodeState(
     jobId: string,
     nodeId: string,
@@ -404,15 +343,7 @@ export class ExecutionHelper {
     this.status(0)
   }
 
-  /**
-   * Send `status` WS event to update queue count.
-   *
-   * Goes through {@link emit} like every other frame and comes out unstamped
-   * because it carries no `prompt_id` — core exempts it for exactly that
-   * reason: one server-wide socket serves every workflow, so a queue frame has
-   * no single owner. Routing it through `emit` is what makes the exemption
-   * testable; sending it directly would make any assertion about it vacuous.
-   */
+  /** Send `status` WS event to update queue count. */
   status(queueRemaining: number): void {
     this.emit('status', {
       status: { exec_info: { queue_remaining: queueRemaining } }
