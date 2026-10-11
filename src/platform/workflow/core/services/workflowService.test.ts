@@ -2527,19 +2527,17 @@ describe('useWorkflowService', () => {
     })
 
     it.for([
-      { case: 'was already open', unfetchableTabIndex: 1, hasDraft: false },
-      { case: 'holds a draft', unfetchableTabIndex: undefined, hasDraft: true }
+      { case: 'was already open', unfetchableTabIndex: 1, draft: null },
+      {
+        case: 'holds a draft',
+        unfetchableTabIndex: undefined,
+        draft: { data: '{}', updatedAt: 0, name: 'dup', isTemporary: false }
+      }
     ])(
       'keeps an unfetchable tab that $case',
-      async ({ unfetchableTabIndex, hasDraft }) => {
+      async ({ unfetchableTabIndex, draft }) => {
         setUpRetainedWithUnfetchable({ unfetchableTabIndex })
-        if (hasDraft)
-          vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue({
-            data: '{}',
-            updatedAt: Date.now(),
-            name: 'dup',
-            isTemporary: false
-          })
+        vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue(draft)
 
         await expect(
           useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
