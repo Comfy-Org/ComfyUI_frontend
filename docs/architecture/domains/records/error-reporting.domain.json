@@ -98,6 +98,22 @@
     {
       "path": "src/platform/telemetry/manualRefreshTracker.test.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/base/assert.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/base/assert.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -129,6 +145,13 @@
       "checks": [
         "src/platform/telemetry/imageFailureDiagnostics.test.ts",
         "src/platform/telemetry/manualRefreshTracker.test.ts"
+      ]
+    },
+    {
+      "name": "Assertions throw in DEV and delegate to the registered reporter otherwise; preload failures are parsed for reporting",
+      "checks": [
+        "src/base/assert.test.ts",
+        "src/utils/preloadErrorUtil.test.ts"
       ]
     }
   ],

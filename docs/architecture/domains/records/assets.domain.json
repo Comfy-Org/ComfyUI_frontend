@@ -426,6 +426,58 @@
     {
       "path": "src/composables/sidebarTabs/useAssetsSidebarTab.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/components/toast/ProgressToastItem.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/toast/ProgressToastItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/toast/ProgressToastItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useModelLibrarySidebarTab.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useModelLibrarySidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useProgressBarBackground.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/__tests__/eventUtils.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/eventUtils.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/eventUtils.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/loaderNodeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/requestUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/requestUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/AssetWidget.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],
@@ -497,6 +549,20 @@
         "src/platform/assets/composables/useNodeOutputsExport.test.ts",
         "src/platform/assets/utils/outputExportUtil.test.ts",
         "src/platform/assets/components/AssetExportProgressDialog.test.ts"
+      ]
+    },
+    {
+      "name": "Asset download progress toast item shows task progress and completion",
+      "checks": ["src/components/toast/ProgressToastItem.test.ts"]
+    },
+    {
+      "name": "Dropped assets and files are extracted from drag events, asset queries encode params, and the model library tab opens the asset browser when enabled",
+      "checks": [
+        "src/utils/eventUtils.test.ts",
+        "src/utils/__tests__/eventUtils.test.ts",
+        "src/utils/requestUtil.test.ts",
+        "src/composables/sidebarTabs/useModelLibrarySidebarTab.test.ts",
+        "src/platform/assets/composables/useMediaAssetActions.test.ts"
       ]
     }
   ],

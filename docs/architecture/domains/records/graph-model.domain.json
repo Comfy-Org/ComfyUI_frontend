@@ -446,6 +446,134 @@
     {
       "path": "src/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/stores/linkStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/linkStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/rerouteStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/rerouteStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDataStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDataStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/entityIdStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/entityIdStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/graphMetadataStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/graphMetadataStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/rekeyGraphId.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/clearNodeOwnedStoreState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/storeCollisionContracts.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/nodeId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/linkId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/linkId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/rerouteId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/rerouteId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/slotId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/slotId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/groupId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/graphScopeId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeIdentification.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeIdentification.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/linkTopology.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/rerouteChain.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/slotColors.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/rerouteNode.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/uuid.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/uuid.test.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -489,6 +617,27 @@
         "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
         "src/lib/litegraph/src/LGraphNode.geometry.test.ts",
         "src/lib/litegraph/src/geometryApiContracts.test.ts"
+      ]
+    },
+    {
+      "name": "Link, reroute, node data, entity id, and graph metadata stores stay partitioned by root and owning graph and reject identity collisions",
+      "checks": [
+        "src/stores/storeCollisionContracts.test.ts",
+        "src/stores/linkStore.test.ts",
+        "src/stores/rerouteStore.test.ts",
+        "src/stores/nodeDataStore.test.ts",
+        "src/stores/entityIdStore.test.ts",
+        "src/stores/graphMetadataStore.test.ts"
+      ]
+    },
+    {
+      "name": "Branded node, link, reroute, slot, and locator ids parse, compare, and reject malformed input",
+      "checks": [
+        "src/types/nodeId.test.ts",
+        "src/types/linkId.test.ts",
+        "src/types/rerouteId.test.ts",
+        "src/types/slotId.test.ts",
+        "src/types/nodeIdentification.test.ts"
       ]
     }
   ],

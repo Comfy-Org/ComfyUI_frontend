@@ -1,7 +1,7 @@
 {
   "id": "link-presentation",
   "capability": "Link presentation",
-  "description": "Per-link hidden state and labels, the reveal state for hidden links, link badge layout and drawing, and the transfer of presentation when links are replaced. The link presentation store itself lives outside this domain.",
+  "description": "Per-link hidden state and labels in the link presentation store, reveal state, badge layout and drawing, and transfer of presentation when links are replaced.",
   "modules": [
     {
       "path": "src/lib/litegraph/src/canvas/linkGeometry.ts",
@@ -38,6 +38,18 @@
     {
       "path": "src/lib/litegraph/src/canvas/linkBadges.ts",
       "role": "presentation"
+    },
+    {
+      "path": "src/stores/linkPresentationStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/linkPresentationStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/linkPresentation.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -58,6 +70,10 @@
         "src/lib/litegraph/src/canvas/linkBadges.test.ts",
         "src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts"
       ]
+    },
+    {
+      "name": "Link presentation store keeps hidden and label state per root graph and refuses cross-owner writes",
+      "checks": ["src/stores/linkPresentationStore.test.ts"]
     }
   ],
   "adrs": [

@@ -1,7 +1,7 @@
 {
   "id": "linear-mode",
   "capability": "App mode (linear mode) run surface",
-  "description": "The app-mode surface (linear mode in source names) that presents a workflow as a simple app: input controls and run button, output preview and output history, progress and run-error warnings, media drop zones, partner-node notices, welcome screen, mobile layout, and the AppInput and AppOutput wrappers the Vue node renderer uses for builder selection. App-mode state (appModeStore, useAppMode) and builder components live outside src/renderer and are not part of this record.",
+  "description": "App-mode workflow execution: state, the LinearView host, input and output presentation, run controls, history, and previews. Builder authoring belongs to app-builder.",
   "modules": [
     {
       "path": "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
@@ -182,6 +182,42 @@
     {
       "path": "src/renderer/extensions/linearMode/VideoPreview.vue",
       "role": "presentation"
+    },
+    {
+      "path": "src/components/appMode/AppModeToolbar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/appMode/AppModeToolbar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/appModeStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/appModeStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/views/LinearView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/LinearView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/__mocks__/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/appMode.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -217,6 +253,22 @@
         "browser_tests/tests/appModeWelcome.spec.ts",
         "browser_tests/tests/appModeMobileAssets.spec.ts"
       ]
+    },
+    {
+      "name": "App-mode toolbar offers workflow actions and enters the builder only when the graph has nodes",
+      "checks": ["src/components/appMode/AppModeToolbar.test.ts"]
+    },
+    {
+      "name": "App-mode store keeps selected inputs and outputs valid across workflow, subgraph, and node changes",
+      "checks": [
+        "src/stores/appModeStore.test.ts",
+        "browser_tests/tests/appModePruning.spec.ts",
+        "browser_tests/tests/appModeInputPersistence.spec.ts"
+      ]
+    },
+    {
+      "name": "App-mode view lays out controls, preview, builder, and mobile display",
+      "checks": ["src/views/LinearView.test.ts"]
     }
   ],
   "adrs": [

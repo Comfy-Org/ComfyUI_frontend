@@ -334,6 +334,10 @@
     {
       "path": "src/renderer/extensions/vueNodes/utils/eventUtils.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/composables/useVueFeatureFlags.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

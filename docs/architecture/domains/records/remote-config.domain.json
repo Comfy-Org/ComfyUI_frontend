@@ -26,6 +26,38 @@
     {
       "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/__mocks__/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useFeatureFlags.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/devFeatureFlagOverride.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/devFeatureFlagOverride.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/sessionFeatureFlagOverride.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/sessionFeatureFlagOverride.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/storybook/mocks/useFeatureFlags.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -39,6 +71,14 @@
     {
       "name": "Feature flags read remote config values and server feature flags",
       "checks": ["src/composables/useFeatureFlags.test.ts"]
+    },
+    {
+      "name": "Feature flags resolve from remote config with dev and session overrides",
+      "checks": [
+        "src/composables/useFeatureFlags.test.ts",
+        "src/utils/devFeatureFlagOverride.test.ts",
+        "src/utils/sessionFeatureFlagOverride.test.ts"
+      ]
     }
   ],
   "adrs": [],

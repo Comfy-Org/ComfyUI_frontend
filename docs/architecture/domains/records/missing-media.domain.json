@@ -46,6 +46,10 @@
     {
       "path": "src/platform/missingMedia/components/**",
       "role": "presentation"
+    },
+    {
+      "path": "src/stores/missingMediaPreviewRegression.test.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -67,6 +71,10 @@
         "src/platform/missingMedia/components/MissingMediaCard.test.ts",
         "browser_tests/tests/missingMediaFilePath.spec.ts"
       ]
+    },
+    {
+      "name": "Flagging missing media on workflow load leaves node previews intact",
+      "checks": ["src/stores/missingMediaPreviewRegression.test.ts"]
     }
   ],
   "adrs": [],

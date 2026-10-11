@@ -166,6 +166,14 @@
     {
       "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useRunButtonTelemetry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRunButtonTelemetry.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -210,6 +218,10 @@
         "src/platform/telemetry/utils/groupMissingNodesByPack.test.ts",
         "src/platform/telemetry/utils/normalizeEmail.test.ts"
       ]
+    },
+    {
+      "name": "Run button telemetry reports trigger source and shell context",
+      "checks": ["src/composables/useRunButtonTelemetry.test.ts"]
     }
   ],
   "adrs": [

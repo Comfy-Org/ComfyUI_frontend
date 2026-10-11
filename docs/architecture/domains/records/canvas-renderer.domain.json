@@ -102,6 +102,102 @@
     {
       "path": "src/renderer/core/canvas/litegraph/**",
       "role": "integration"
+    },
+    {
+      "path": "src/components/graph/CanvasBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/CanvasModeSelector.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/CanvasModeSelector.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/GraphCanvasMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/LinkOverlayCanvas.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/modals/ZoomControlsModal.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/modals/ZoomControlsModal.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/nodeProgressCanvasSync.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/nodeProgressCanvasSync.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/NodeSelectionModeBanner.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeSelectionModeBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeTooltip.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeTooltip.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionRectangle.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionRectangle.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/TitleEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/TitleEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/canvas/useFocusNode.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/canvas/useFocusNode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/canvas/visibleCanvasViewport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/canvas/visibleCanvasViewport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/element/useAbsolutePosition.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/element/useCanvasPositionConversion.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useZoomControls.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -139,6 +235,30 @@
         "src/renderer/core/canvas/litegraph/arrangeForLegacyRender.test.ts",
         "src/renderer/core/canvas/pathRenderer.test.ts",
         "browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts"
+      ]
+    },
+    {
+      "name": "Canvas overlays follow canvas interaction mode, zoom controls, and node picking",
+      "checks": [
+        "src/components/graph/CanvasModeSelector.test.ts",
+        "src/components/graph/modals/ZoomControlsModal.test.ts",
+        "src/components/graph/NodeSelectionModeBanner.test.ts",
+        "src/components/graph/SelectionRectangle.test.ts"
+      ]
+    },
+    {
+      "name": "Title editor, node tooltip, and execution progress sync track the LiteGraph canvas",
+      "checks": [
+        "src/components/graph/TitleEditor.test.ts",
+        "src/components/graph/NodeTooltip.test.ts",
+        "src/components/graph/nodeProgressCanvasSync.test.ts"
+      ]
+    },
+    {
+      "name": "Focusing a node frames it inside the visible canvas viewport",
+      "checks": [
+        "src/composables/canvas/useFocusNode.test.ts",
+        "src/composables/canvas/visibleCanvasViewport.test.ts"
       ]
     }
   ],

@@ -3,12 +3,30 @@
   "capability": "Keybindings",
   "description": "Key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, and the keybinding settings panel and edit dialogs. Commands, settings persistence, dialogs, and the bottom-panel shortcuts list remain external.",
   "modules": [
-    { "path": "src/platform/keybindings/types.ts", "role": "domain" },
-    { "path": "src/platform/keybindings/reserved.ts", "role": "domain" },
-    { "path": "src/platform/keybindings/defaults.ts", "role": "domain" },
-    { "path": "src/platform/keybindings/keyCombo.ts", "role": "domain" },
-    { "path": "src/platform/keybindings/keyCombo.test.ts", "role": "domain" },
-    { "path": "src/platform/keybindings/keybinding.ts", "role": "domain" },
+    {
+      "path": "src/platform/keybindings/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/reserved.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/defaults.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keybinding.ts",
+      "role": "domain"
+    },
     {
       "path": "src/platform/keybindings/escapeOverride.ts",
       "role": "application"
@@ -72,6 +90,10 @@
     {
       "path": "src/composables/useEditKeybindingDialog.ts",
       "role": "presentation"
+    },
+    {
+      "path": "src/utils/modalUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

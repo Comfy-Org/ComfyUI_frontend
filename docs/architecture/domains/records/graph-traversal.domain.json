@@ -1,0 +1,33 @@
+{
+  "id": "graph-traversal",
+  "capability": "Graph traversal and addressing",
+  "description": "Shared technical module for graph hierarchy traversal, node lookup, execution-path addressing, and input-source resolution. Its many functions and consumers remain a candidate for separating graph queries from execution addressing.",
+  "modules": [
+    {
+      "path": "src/utils/graphTraversalUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/graphTraversalUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__mocks__/graphTraversalUtil.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Graph traversal and addressing preserves its existing behavior",
+      "checks": ["src/utils/graphTraversalUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

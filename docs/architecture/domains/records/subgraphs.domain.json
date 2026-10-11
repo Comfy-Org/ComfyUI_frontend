@@ -186,6 +186,58 @@
     {
       "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumb.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumb.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumbItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.viewport.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/blueprintUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/subgraphIdSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/subgraphIdSchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/groupNodeConstants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/groupNode.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/groupNode.test.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],
@@ -216,6 +268,31 @@
       "checks": [
         "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
         "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts"
+      ]
+    },
+    {
+      "name": "Subgraph breadcrumb shows the navigation path and navigates between subgraph levels",
+      "checks": ["src/components/breadcrumb/SubgraphBreadcrumb.test.ts"]
+    },
+    {
+      "name": "Subgraph navigation keeps the navigation stack, route hash, and per-graph viewport in sync",
+      "checks": [
+        "src/stores/subgraphNavigationStore.test.ts",
+        "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+        "src/stores/subgraphNavigationStore.viewport.test.ts",
+        "browser_tests/tests/subgraph/subgraphNavigation.spec.ts",
+        "browser_tests/tests/subgraph/subgraphViewportRestore.spec.ts"
+      ]
+    },
+    {
+      "name": "Subgraph blueprints are addressed by the blueprint type prefix",
+      "checks": ["src/stores/subgraphStore.test.ts"]
+    },
+    {
+      "name": "Subgraph ids validate and legacy group nodes migrate with separators and links intact",
+      "checks": [
+        "src/schemas/subgraphIdSchema.test.ts",
+        "src/extensions/core/groupNode.test.ts"
       ]
     }
   ],

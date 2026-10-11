@@ -90,6 +90,122 @@
     {
       "path": "src/platform/workflow/utils/workflowExtractionUtil.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/components/common/WorkflowActionsDropdown.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/WorkflowActionsDropdown.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/UnloadWindowConfirmDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/WorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowOverflowMenu.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowOverflowMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabs.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabs.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/userFileStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/userFileStore.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useNewMenuItemIndicator.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useNewMenuItemIndicator.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowActionsMenu.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowActionsMenu.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/syncUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/changeTracker.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/changeTracker.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/defaultGraph.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/workflowMenuItem.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -123,6 +239,42 @@
     {
       "name": "Workflows extracted from job outputs and asset metadata reopen as documents",
       "checks": ["src/platform/workflow/utils/workflowExtractionUtil.test.ts"]
+    },
+    {
+      "name": "Workflow tabs open, close, reorder, and show per-tab state and overflow actions",
+      "checks": [
+        "src/components/topbar/WorkflowTabs.test.ts",
+        "src/components/topbar/WorkflowTab.test.ts",
+        "src/components/topbar/WorkflowOverflowMenu.test.ts"
+      ]
+    },
+    {
+      "name": "Workflows and apps sidebar tabs and the workflow actions dropdown expose workflow menu actions",
+      "checks": [
+        "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+        "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+        "src/components/common/WorkflowActionsDropdown.test.ts"
+      ]
+    },
+    {
+      "name": "User data files sync, load, save, rename, and delete through the userdata API",
+      "checks": ["src/stores/userFileStore.test.ts"]
+    },
+    {
+      "name": "Workflow tab activity tracks the editing tab and modified paths and prunes closed tabs",
+      "checks": ["src/stores/workflowTabActivityStore.test.ts"]
+    },
+    {
+      "name": "Workflow actions menu and new-item indicators reflect workflow and settings state; entity sync reconciles user files",
+      "checks": [
+        "src/composables/useWorkflowActionsMenu.test.ts",
+        "src/composables/useNewMenuItemIndicator.test.ts",
+        "src/platform/workflow/management/stores/workflowStore.test.ts"
+      ]
+    },
+    {
+      "name": "Change tracker records workflow state and drives undo and redo",
+      "checks": ["src/scripts/changeTracker.test.ts"]
     }
   ],
   "adrs": [],

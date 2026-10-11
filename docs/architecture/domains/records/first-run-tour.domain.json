@@ -74,6 +74,14 @@
     {
       "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/services/useNewUserService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/useNewUserService.test.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -99,6 +107,10 @@
         "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
         "browser_tests/tests/firstRunTourRolePins.spec.ts"
       ]
+    },
+    {
+      "name": "New-user detection reads install settings and draft history and runs deferred first-run callbacks once",
+      "checks": ["src/services/useNewUserService.test.ts"]
     }
   ],
   "adrs": [],

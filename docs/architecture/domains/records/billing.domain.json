@@ -562,6 +562,98 @@
     {
       "path": "src/platform/workspace/utils/workspaceCheckoutTelemetry.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/components/common/UserCredit.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/UserCredit.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/credit/CreditTopUpOption.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/credit/CreditTopUpOption.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/CreditsPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/CreditsPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UsageLogsTable.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UsageLogsTable.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/TopbarSubscribeButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/TopbarSubscribeButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/services/customerEventsService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/customerEventsService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/__mocks__/customerEventsService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/__tests__/mockBillingContext.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/config/billingWeb.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/billingWeb.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/storybook/mocks/useBillingContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/storybook/mocks/useBillingCapabilities.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -629,6 +721,31 @@
         "src/composables/billing/useNextInvoice.test.ts",
         "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts"
       ]
+    },
+    {
+      "name": "Credits panel, usage logs, and legacy top-up dialog show balances and start top-ups",
+      "checks": [
+        "src/components/dialog/content/setting/CreditsPanel.test.ts",
+        "src/components/dialog/content/setting/UsageLogsTable.test.ts",
+        "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+        "src/components/ui/credit-slider/CreditSlider.test.ts"
+      ]
+    },
+    {
+      "name": "Topbar subscribe button routes to subscription checkout",
+      "checks": ["src/components/topbar/TopbarSubscribeButton.test.ts"]
+    },
+    {
+      "name": "Customer events service pages credit and API-usage events with re-mint retry and formats them for usage logs",
+      "checks": ["src/services/customerEventsService.test.ts"]
+    },
+    {
+      "name": "The shared billing-context fixture drives workspace billing operation tests",
+      "checks": ["src/platform/workspace/stores/billingOperationStore.test.ts"]
+    },
+    {
+      "name": "Hosted billing web URL and destination normalization accept only known destinations",
+      "checks": ["src/config/billingWeb.test.ts"]
     }
   ],
   "adrs": [

@@ -6,6 +6,10 @@
     {
       "path": "src/platform/serverFacts/**",
       "role": "domain"
+    },
+    {
+      "path": "src/utils/__tests__/serverFactGate.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -15,6 +19,10 @@
     {
       "name": "pendingServerFact returns its value and requires a backend ticket id",
       "checks": ["src/platform/serverFacts/pendingServerFact.test.ts"]
+    },
+    {
+      "name": "Server-fact gates render only the fact under perturbation",
+      "checks": ["src/platform/workspace/composables/useMembersPanel.test.ts"]
     }
   ],
   "adrs": [

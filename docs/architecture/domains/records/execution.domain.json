@@ -42,6 +42,98 @@
     {
       "path": "src/stores/nodeOutputStore.workflowSwitch.test.ts",
       "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.promotion.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeErrorFlagSync.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useNodeErrorFlagSync.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useBrowserTabTitle.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useBrowserTabTitle.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useProgressFavicon.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useViewErrorsInGraph.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useViewErrorsInGraph.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowStatusDismissal.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowStatusDismissal.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__tests__/executionErrorTestUtils.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/__tests__/nodeErrorHelpers.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/errorSeverityClassification.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/errorSeverityClassification.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/executionErrorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/executionErrorUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/missingResourceAbsorption.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/missingResourceAbsorption.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeOutputUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeOutputUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/objectUrlUtil.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -67,6 +159,31 @@
     {
       "name": "Live job previews replace and revoke object URLs per job",
       "checks": ["src/stores/jobPreviewStore.test.ts"]
+    },
+    {
+      "name": "Execution and validation errors are classified, absorbed into missing-resource state, and flagged on nodes",
+      "checks": [
+        "src/utils/executionErrorUtil.test.ts",
+        "src/utils/errorSeverityClassification.test.ts",
+        "src/utils/missingResourceAbsorption.test.ts",
+        "src/composables/graph/useNodeErrorFlagSync.test.ts"
+      ]
+    },
+    {
+      "name": "Editing widgets, links, and promoted inputs clears the matching node errors",
+      "checks": [
+        "src/composables/graph/useErrorClearingHooks.test.ts",
+        "src/composables/graph/useErrorClearingHooks.promotion.test.ts"
+      ]
+    },
+    {
+      "name": "Execution status surfaces in the browser tab title, workflow status dismissal, error navigation, and input-preview outputs",
+      "checks": [
+        "src/composables/useBrowserTabTitle.test.ts",
+        "src/composables/useWorkflowStatusDismissal.test.ts",
+        "src/composables/useViewErrorsInGraph.test.ts",
+        "src/utils/nodeOutputUtil.test.ts"
+      ]
     }
   ],
   "adrs": [],
