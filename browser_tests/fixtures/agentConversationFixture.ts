@@ -44,7 +44,7 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
   agentHumanAddBlueprint,
-  agentNestedSubgraphDefinitions
+  agentNestedSubgraphDefinition
 } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
@@ -854,29 +854,10 @@ export class AgentConversationHarness {
     )
   }
 
-  /**
-   * Push one host-minted subgraph definition that nests another, in the map
-   * form a raw host update leaves. The follower has to project it back out of
-   * the document, which is the path a local paste never touches.
-   *
-   * @returns the outer definition id the follower should register.
-   */
-  pushNestedDefinition(): string {
-    const fixture = agentNestedSubgraphDefinitions()
-    const outer = fixture.definitions.subgraphs.at(0)
-    if (!outer) {
-      throw new Error('nested subgraph fixture is missing its outer definition')
-    }
-    const inner = outer.definitions?.subgraphs?.at(0)
-    if (!inner) {
-      throw new Error('nested subgraph fixture is incomplete')
-    }
-    const { frame, outerId } = this.host.seedNestedDefinition(
-      { ...outer, definitions: undefined },
-      inner
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
     )
-    this.hostSocket.send(frame)
-    return outerId
   }
 
   // A frontend-only node added the way a person actually adds one: the node
