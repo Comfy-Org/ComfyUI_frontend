@@ -32,6 +32,16 @@ vi.mock<unknown>(
   })
 )
 
+vi.mock(
+  import('@/platform/assets/composables/useGeneratedPreviewLookup'),
+  () => ({
+    useGeneratedPreviewLookup: () => (filename, assetId) =>
+      assetId
+        ? `/api/assets/${assetId}-preview/content`
+        : `/by-name/${filename}`
+  })
+)
+
 const AssetsListItemStub = defineComponent({
   name: 'AssetsListItem',
   props: {
@@ -67,6 +77,7 @@ const i18n = createI18n({
 })
 
 type TestPreviewOutput = {
+  id?: string
   filename: string
   mediaType: string
   url: string
@@ -253,6 +264,19 @@ describe('JobAssetsList', () => {
     const stubRoot = container.querySelector('.assets-list-item-stub')!
     expect(stubRoot.getAttribute('data-preview-url')).toBe(preview.previewUrl)
     expect(stubRoot.getAttribute('data-preview-url')).not.toBe(preview.url)
+  })
+
+  it("uses an HDR job's own generated preview by asset id", () => {
+    const preview = { ...createPreviewOutput('img.exr'), id: 'exr-asset' }
+    const { container } = renderJobAssetsList({
+      jobs: [buildJob({ taskRef: createTaskRef(preview) })]
+    })
+
+    expect(
+      container
+        .querySelector('.assets-list-item-stub')!
+        .getAttribute('data-preview-url')
+    ).toBe('/api/assets/exr-asset-preview/content')
   })
 
   it('emits viewItem on double-click for completed jobs with preview', async () => {

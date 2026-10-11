@@ -187,6 +187,33 @@ describe('ImagePreview', () => {
     )
   })
 
+  it('shows each grid HDR output its own preview when filenames collide', () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [
+        { filename: 'img.exr', subfolder: 'qa8/a', type: 'output', id: 'a' },
+        { filename: 'img.exr', subfolder: 'qa8/b', type: 'output', id: 'b' }
+      ]
+    })
+
+    renderImagePreview({
+      nodeId: '1',
+      imageUrls: [
+        '/api/view?filename=img.exr&subfolder=qa8%2Fa&type=output',
+        '/api/view?filename=img.exr&subfolder=qa8%2Fb&type=output'
+      ]
+    })
+
+    expect(
+      screen
+        .getAllByRole('img', { name: 'img.exr' })
+        .map((img) => img.getAttribute('src'))
+    ).toEqual([
+      '/api/assets/a-preview/content',
+      '/api/assets/b-preview/content'
+    ])
+  })
+
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({
       imageUrls: ['/api/view?filename=out.exr&type=output']

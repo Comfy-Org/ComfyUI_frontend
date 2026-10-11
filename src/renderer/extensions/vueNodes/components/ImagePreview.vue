@@ -37,7 +37,7 @@
         <HdrPreviewImage
           v-else
           :filename="getImageFilenameFromUrl(imageUrls[index])"
-          :asset-id="outputAssetId(imageUrls[index])"
+          :asset-id="outputAssetIds[index]"
           class="size-full"
         >
           <div
@@ -98,7 +98,7 @@
       <HdrPreviewImage
         v-if="!imageError && currentImageIsHdr"
         :filename="getImageFilenameFromUrl(currentImageUrl)"
-        :asset-id="outputAssetId(currentImageUrl)"
+        :asset-id="outputAssetIds[currentIndex]"
         class="absolute inset-0"
       >
         <div
@@ -320,6 +320,7 @@ function outputAssetId(url: string): string | undefined {
         (output.subfolder ?? '') === (params.get('subfolder') ?? '')
     )?.id
 }
+const outputAssetIds = computed(() => imageUrls.map(outputAssetId))
 
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined

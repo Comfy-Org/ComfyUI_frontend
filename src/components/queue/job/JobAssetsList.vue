@@ -349,7 +349,7 @@ function getPreviewOutput(job: JobListItem) {
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
   if (preview && isHdrImageFilename(preview.filename)) {
-    return findGeneratedPreviewUrl(preview.filename)
+    return findGeneratedPreviewUrl(preview.filename, preview.id)
   }
   if (preview && (isImageResult(preview) || isVideoResult(preview))) {
     return resultItemPreviewUrl(preview)

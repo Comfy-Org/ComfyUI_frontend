@@ -13,6 +13,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -276,5 +277,27 @@ describe('useNodeOutputsExport', () => {
     expect(
       within(dialog).getAllByTestId('output-thumbnail-placeholder')
     ).toHaveLength(2)
+  })
+
+  it('creates the preview lookup once, not on every dialog open', async () => {
+    const node = nodeWithOutputs([
+      { filename: 'a.png', type: 'output' },
+      { filename: 'b.png', type: 'output' }
+    ])
+    const { showOutputsExportDialog } = mountComposable()
+    const user = userEvent.setup()
+
+    for (let open = 0; open < 2; open++) {
+      showOutputsExportDialog(node)
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Download Assets'
+      })
+      await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+    }
+
+    expect(useGeneratedPreviewLookup).toHaveBeenCalledOnce()
   })
 })

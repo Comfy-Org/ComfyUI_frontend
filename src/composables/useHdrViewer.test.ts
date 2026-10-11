@@ -27,12 +27,14 @@ describe('useHdrViewer', () => {
     })
     vi.mocked(loadHdrTexture).mockRejectedValue(new Error('stop'))
 
-    await useHdrViewer().mount(
+    const viewer = useHdrViewer()
+    await viewer.mount(
       document.createElement('div'),
       '/api/assets/abc/content',
       'sky.hdr'
     )
 
+    expect(viewer.error.value).toBe('stop')
     expect(loadHdrTexture).toHaveBeenCalledWith(
       '/api/assets/abc/content',
       'sky.hdr'

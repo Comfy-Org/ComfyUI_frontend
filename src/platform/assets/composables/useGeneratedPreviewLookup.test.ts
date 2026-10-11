@@ -43,6 +43,12 @@ describe('useGeneratedPreviewLookup', () => {
     expect(find('sky.exr', 'run-b')).toBe('/run-b-preview.jpg')
   })
 
+  it('finds nothing for an id that is not loaded, even if the filename is', () => {
+    const find = withAssets([], [exr('run-a', 'sky.exr', '/run-a-preview.jpg')])
+
+    expect(find('sky.exr', 'not-loaded')).toBe('')
+  })
+
   it('falls back to the filename without an id', () => {
     const find = withAssets([], [exr('run-a', 'sky.exr', '/run-a-preview.jpg')])
 
