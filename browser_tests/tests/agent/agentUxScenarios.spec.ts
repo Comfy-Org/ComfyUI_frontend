@@ -14,20 +14,26 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
     const suggestions = agentPanel.suggestedPrompts
     await expect(suggestions.nth(compactCount)).toBeAttached()
     const total = await suggestions.count()
+    expect(
+      total,
+      'Starter prompt count must exceed the compact limit'
+    ).toBeGreaterThan(compactCount)
 
     await test.step('Resize to 459px, just below the breakpoint', async () => {
       await agentPanel.resizeTo(459)
-      for (let index = 0; index < total; index++) {
-        if (index < compactCount)
-          await expect.soft(suggestions.nth(index)).toBeVisible()
-        else await expect.soft(suggestions.nth(index)).toBeHidden()
-      }
+      await expect(agentPanel.suggestedPromptVisibility()).resolves.toEqual([
+        true,
+        true,
+        true,
+        ...Array.from({ length: total - compactCount }, () => false)
+      ])
     })
 
     await test.step('Resize to 460px, the expanded breakpoint', async () => {
       await agentPanel.resizeTo(460)
-      for (let index = 0; index < total; index++)
-        await expect.soft(suggestions.nth(index)).toBeVisible()
+      await expect(agentPanel.suggestedPromptVisibility()).resolves.toEqual(
+        Array.from({ length: total }, () => true)
+      )
     })
   })
 

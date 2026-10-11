@@ -338,6 +338,12 @@ export class AgentPanel {
     await expect(target).toHaveCSS('width', `${width}px`)
   }
 
+  async suggestedPromptVisibility(): Promise<boolean[]> {
+    return this.suggestedPrompts.evaluateAll((buttons) =>
+      buttons.map((button) => getComputedStyle(button).display !== 'none')
+    )
+  }
+
   async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
     await expect
       .poll(async () => {
