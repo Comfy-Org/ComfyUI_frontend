@@ -167,12 +167,6 @@ describe('ComfyApi realtime socket reset', () => {
   })
 
   it('exposes the executing ids during dispatch and clears them after', async () => {
-    // The `executing` event carries only a node id for extension
-    // compatibility, so the store reads prompt_id and workflow_id off this
-    // field during the synchronous dispatch. Nothing pinned either half:
-    // turning the `finally` into a no-op left every api and executionStore
-    // test green, and a field left set would attribute the next frame to a
-    // stale prompt.
     await api.resetSocket()
     const socket = FakeWebSocket.instances[0]
     socket.simulateOpen()

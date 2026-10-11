@@ -918,9 +918,6 @@ export class ComfyApp {
         detail.display_node || detail.node
       )
       if (!executionId) return
-      // Outputs are keyed by a locator resolved against the visible graph, so
-      // a job finishing in another tab would otherwise write its result onto
-      // the same-numbered node of the tab in front.
       if (
         !useExecutionStore().belongsToActiveWorkflow(
           detail.prompt_id,

@@ -8,17 +8,15 @@ import type {
 import { api } from '@/scripts/api'
 import { zeroUuid } from '@/utils/uuid'
 
-// Tests for the workflow_metadata field api.queuePrompt sends; fetchApi is stubbed.
 const WORKFLOW_ID = '0199e3a3-6c01-7000-8000-c1a1f7a8d9b2'
 const EMPTY_PROMPT: ComfyApiWorkflow = {}
 
-// A real `Response`, so the stub cannot drift out of shape with the contract
-// `queuePrompt` reads. A fresh one per test: a Response body reads once.
-const promptResponse = (): Response =>
-  Response.json(
+function promptResponse(): Response {
+  return Response.json(
     { prompt_id: 'p1', number: 1, node_errors: {} },
     { status: 200 }
   )
+}
 
 function workflow(id?: string): ComfyWorkflowJSON {
   return {
