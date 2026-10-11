@@ -19,4 +19,15 @@ describe('openHdrViewer', () => {
     })
     expect(options.dialogComponentProps?.size).toBe('full')
   })
+
+  it('titles and labels a by-id URL with the given filename', () => {
+    openHdrViewer('/api/assets/abc/content', 'sky.hdr')
+
+    const options = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)![0]
+    expect(options.title).toBe('sky.hdr')
+    expect(options.props).toMatchObject({
+      imageUrl: '/api/assets/abc/content',
+      filename: 'sky.hdr'
+    })
+  })
 })

@@ -13,6 +13,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -21,6 +22,19 @@ import { useNodeOutputsExport } from './useNodeOutputsExport'
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(
+  import('@/platform/assets/composables/useGeneratedPreviewLookup'),
+  () => ({
+    useGeneratedPreviewLookup: vi.fn(
+      () => (_filename: string | undefined, assetId?: string) =>
+        assetId === 'sky-asset'
+          ? '/api/assets/sky-preview/content'
+          : assetId
+            ? ''
+            : '/api/assets/filename-match/content'
+    )
+  })
+)
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn(),
   downloadFileAsBlob: vi.fn()
@@ -233,5 +247,57 @@ describe('useNodeOutputsExport', () => {
       })
     ])
     expect(useAssetExportStore().exportList).toEqual([])
+  })
+
+  it('shows HDR outputs by their own generated preview, or a placeholder without one', async () => {
+    const node = nodeWithOutputs([
+      {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output',
+        id: 'sky-asset'
+      },
+      {
+        filename: 'sky.exr',
+        subfolder: 'other',
+        type: 'output',
+        id: 'other-sky'
+      },
+      { filename: 'sky.exr', subfolder: 'third', type: 'output' },
+      { filename: 'a.png', type: 'output' }
+    ])
+
+    const { dialog } = await openExportDialog(node)
+
+    const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
+    expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
+      '/api/assets/sky-preview/content',
+      expect.stringContaining('filename=a.png')
+    ])
+    expect(
+      within(dialog).getAllByTestId('output-thumbnail-placeholder')
+    ).toHaveLength(2)
+  })
+
+  it('creates the preview lookup once, not on every dialog open', async () => {
+    const node = nodeWithOutputs([
+      { filename: 'a.png', type: 'output' },
+      { filename: 'b.png', type: 'output' }
+    ])
+    const { showOutputsExportDialog } = mountComposable()
+    const user = userEvent.setup()
+
+    for (let open = 0; open < 2; open++) {
+      showOutputsExportDialog(node)
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Download Assets'
+      })
+      await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+    }
+
+    expect(useGeneratedPreviewLookup).toHaveBeenCalledOnce()
   })
 })

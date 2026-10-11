@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
+
 import HdrViewerContent from './HdrViewerContent.vue'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadFile: vi.fn() }))
@@ -137,5 +139,26 @@ describe('HdrViewerContent', () => {
     await userEvent.click(toggle)
 
     expect(viewer.checkerboard.value).toBe(false)
+  })
+
+  it('loads and downloads a by-id URL under the given filename', async () => {
+    const user = userEvent.setup()
+    render(HdrViewerContent, {
+      props: { imageUrl: '/api/assets/abc/content', filename: 'sky.hdr' },
+      global: { plugins: [i18n] }
+    })
+
+    const { mount } = holder.viewer as { mount: ReturnType<typeof vi.fn> }
+    expect(mount).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      '/api/assets/abc/content',
+      'sky.hdr'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Download' }))
+    expect(downloadFile).toHaveBeenCalledWith(
+      '/api/assets/abc/content',
+      'sky.hdr'
+    )
   })
 })

@@ -116,4 +116,29 @@ describe('unflattenOutputAssets', () => {
       'later-id'
     ])
   })
+
+  it('carries each output asset preview id into the grouped outputs', () => {
+    const assets = [
+      {
+        id: 'exr-id',
+        job_id: 'job-id',
+        name: 'out.exr',
+        size: 1,
+        tags: ['output'],
+        preview_id: 'preview-id',
+        preview_url: '/api/assets/preview-id/content',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z'
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.allOutputs?.[0]).toMatchObject({
+      assetId: 'exr-id',
+      previewId: 'preview-id',
+      url: '/api/assets/preview-id/content'
+    })
+  })
 })

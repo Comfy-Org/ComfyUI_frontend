@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getGeneratedPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -188,6 +189,29 @@ describe('resolveOutputAssetItems', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0].id).toBe('asset-a')
+  })
+
+  it('keeps the linked preview of an output so an HDR child shows it', async () => {
+    const output = {
+      ...createOutput({
+        filename: 'out.exr',
+        assetId: 'exr-id',
+        url: '/api/assets/preview-id/content'
+      }),
+      previewId: 'preview-id'
+    }
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const [child] = await resolveOutputAssetItems(metadata)
+
+    expect(child.preview_id).toBe('preview-id')
+    expect(getGeneratedPreviewUrl(child)).toBe('/api/assets/preview-id/content')
   })
 
   it('synthesizes an item id when the output carries an empty asset id', async () => {

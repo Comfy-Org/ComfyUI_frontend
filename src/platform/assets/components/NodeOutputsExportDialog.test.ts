@@ -12,11 +12,11 @@ const items = [
   { name: 'shot_003.exr', thumbnailUrl: '/api/view?filename=shot_003.exr' }
 ]
 
-function renderDialog() {
+function renderDialog(dialogItems = items) {
   const onExport = vi.fn<(selectedIndices: number[]) => void>()
   const onCancel = vi.fn<() => void>()
   render(NodeOutputsExportDialog, {
-    props: { items, onExport, onCancel },
+    props: { items: dialogItems, onExport, onCancel },
     global: { plugins: [i18n] }
   })
   return { onExport, onCancel, user: userEvent.setup() }
@@ -72,6 +72,18 @@ describe('NodeOutputsExportDialog', () => {
     await fireEvent.error(secondThumbnail)
 
     expect(screen.getAllByTestId('output-thumbnail')).toHaveLength(2)
+    expect(screen.getAllByTestId('output-thumbnail-placeholder')).toHaveLength(
+      1
+    )
+  })
+
+  it('shows a placeholder for an output with no thumbnail', () => {
+    renderDialog([
+      { name: 'shot_001.exr', thumbnailUrl: '' },
+      { name: 'shot_002.png', thumbnailUrl: '/api/view?filename=shot_002.png' }
+    ])
+
+    expect(screen.getAllByTestId('output-thumbnail')).toHaveLength(1)
     expect(screen.getAllByTestId('output-thumbnail-placeholder')).toHaveLength(
       1
     )

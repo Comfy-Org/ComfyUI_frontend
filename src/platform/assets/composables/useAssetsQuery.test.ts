@@ -383,3 +383,15 @@ describe('useAssetsQuery loadMore pagination', () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
   })
 })
+
+describe('useAssetsQuery hidden assets', () => {
+  it('excludes missing assets and client-uploaded previews from every list', async () => {
+    await createList('hidden', ['a'])
+
+    const [url] = fetchApiMock.mock.calls[0]
+    const tagsNone = new URL(url, 'http://localhost').searchParams.get(
+      'tags_none'
+    )
+    expect(tagsNone?.split(',').sort()).toEqual(['fe-preview', 'missing'])
+  })
+})
