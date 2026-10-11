@@ -20,8 +20,6 @@ const SETTING_ID = 'Comfy.AgentPanel.ConsentOfferDeclined'
 
 describe('consentOfferDeclined', () => {
   beforeEach(() => {
-    vi.mocked(api.getSettings).mockReset()
-    vi.mocked(api.storeSetting).mockReset()
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
   })
 
