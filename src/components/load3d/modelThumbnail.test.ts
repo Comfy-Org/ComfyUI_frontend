@@ -390,7 +390,7 @@ describe('generateModelThumbnail', () => {
     createLoad3d.mockReturnValue(instance)
     isAssetPreviewSupported.mockReturnValue(true)
     const blob = new Blob(['thumbnail'], { type: 'image/png' })
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(blob))
+    vi.mocked(fetch).mockResolvedValue(new Response(blob))
 
     await generateModelThumbnail('/model.glb', 'model.glb')
     await vi.waitFor(() => expect(persistThumbnail).toHaveBeenCalledOnce())
