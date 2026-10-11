@@ -1,6 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -29,8 +27,7 @@ describe('TopbarBadge', () => {
   ) {
     const result = render(TopbarBadge, {
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: { tooltip: Tooltip }
+        plugins: [i18n]
       },
       props: {
         badge: { ...exampleBadge, ...badge },

@@ -124,7 +124,15 @@
       "text": "Text",
       "image": "Image",
       "video": "Video",
-      "audio": "Audio"
+      "audio": "Audio",
+      "output": {
+        "text": "text",
+        "image": "image",
+        "video": "video",
+        "audio": "audio",
+        "3d": "3D",
+        "other": "other"
+      }
     },
     "models": {
       "heading": "Models"
@@ -537,7 +545,7 @@
         "show": "Show {n} workflows",
         "noResults": "No matches"
       },
-      "models": "Model",
+      "models": "Models",
       "categories": "CATEGORIES",
       "docs": "Read docs",
       "tryNow": "Try now",

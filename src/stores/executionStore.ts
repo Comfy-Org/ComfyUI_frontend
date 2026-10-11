@@ -31,7 +31,7 @@ import type {
   ProgressWsMessage
 } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -328,7 +328,10 @@ export const useExecutionStore = defineStore('execution', () => {
     if (executionIdToLocatorCache.has(executionId)) {
       return executionIdToLocatorCache.get(executionId)
     }
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    const locatorId = executionIdToNodeLocatorId(
+      useApp().rootGraph,
+      executionId
+    )
     executionIdToLocatorCache.set(executionId, locatorId)
     return locatorId
   }

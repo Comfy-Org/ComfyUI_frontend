@@ -31,15 +31,22 @@
               )
             "
           />
-          <i
+          <Tooltip
             v-if="
               command.keybindings.some(
                 (binding) => binding.combo.isBrowserReserved
               )
             "
-            v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-            class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-          />
+          >
+            <TooltipTrigger as-child>
+              <i
+                class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
+              />
+            </TooltipTrigger>
+            <TooltipContent>{{
+              $t('g.browserReservedKeybindingTooltip')
+            }}</TooltipContent>
+          </Tooltip>
           {{ command.label }}
         </div>
       </TableCell>
@@ -62,7 +69,7 @@
         >
           <Button
             v-if="command.keybindings.length === 1"
-            v-tooltip="$t('g.edit')"
+            :tooltip="$t('g.edit')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.edit')"
@@ -71,7 +78,7 @@
             <i class="icon-[lucide--pencil]" />
           </Button>
           <Button
-            v-tooltip="$t('g.addNewKeybinding')"
+            :tooltip="$t('g.addNewKeybinding')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.addNewKeybinding')"
@@ -80,7 +87,7 @@
             <i class="icon-[lucide--plus]" />
           </Button>
           <Button
-            v-tooltip="$t('g.reset')"
+            :tooltip="$t('g.reset')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.reset')"
@@ -90,7 +97,7 @@
             <i class="icon-[lucide--rotate-ccw]" />
           </Button>
           <Button
-            v-tooltip="$t('g.delete')"
+            :tooltip="$t('g.delete')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.delete')"
@@ -121,7 +128,7 @@
           </div>
           <div class="flex flex-row">
             <Button
-              v-tooltip="$t('g.edit')"
+              :tooltip="$t('g.edit')"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.edit')"
@@ -130,7 +137,7 @@
               <i class="icon-[lucide--pencil]" />
             </Button>
             <Button
-              v-tooltip="$t('g.removeKeybinding')"
+              :tooltip="$t('g.removeKeybinding')"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.removeKeybinding')"
@@ -153,6 +160,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 

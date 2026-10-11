@@ -1,3 +1,5 @@
+import type { Locator } from '@playwright/test'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -5,6 +7,8 @@ import {
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { DraftPayloadV2 } from '@/platform/workflow/persistence/base/draftTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -14,6 +18,54 @@ test.describe(
   () => {
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test.describe('Boolean drafts', () => {
+      test.use({ initialSettings: { 'Comfy.Workflow.Persist': true } })
+
+      for (const { action, toggleValue } of [
+        { action: 'click', toggleValue: (toggle: Locator) => toggle.click() },
+        {
+          action: 'Enter',
+          toggleValue: (toggle: Locator) => toggle.press('Enter')
+        }
+      ]) {
+        test(`keeps a toggle-only ${action} edit after reload`, async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('inputs/boolean_input')
+          await comfyPage.workflow.waitForDraftPersisted()
+          await comfyPage.workflow.reloadAndWaitForApp()
+          const toggle = comfyPage.vueNodes
+            .getNodeByTitle('Boolean')
+            .getByRole('switch')
+          await expect(toggle).toBeChecked()
+
+          await toggleValue(toggle)
+          await expect(toggle).not.toBeChecked()
+
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(() => {
+                return Object.keys(localStorage).some((key) => {
+                  if (!key.startsWith('Comfy.Workflow.Draft.v2:')) return false
+                  const payload: DraftPayloadV2 = JSON.parse(
+                    localStorage.getItem(key)!
+                  )
+                  const workflow: ComfyWorkflowJSON = JSON.parse(payload.data)
+                  return workflow.nodes.some(
+                    (node) =>
+                      node.type === 'PrimitiveBoolean' &&
+                      Object.values(node.widgets_values ?? {})[0] === false
+                  )
+                })
+              })
+            )
+            .toBe(true)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect(toggle).not.toBeChecked()
+        })
+      }
     })
 
     test('an emptied text widget remains empty after save and reopen', async ({

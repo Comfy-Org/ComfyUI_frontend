@@ -49,10 +49,7 @@
       :active-workflow="workflowStore.activeWorkflow"
     />
     <Button
-      v-tooltip="{
-        value: $t('sideToolbar.newBlankWorkflow'),
-        showDelay: 300
-      }"
+      :tooltip="$t('sideToolbar.newBlankWorkflow')"
       class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
       variant="muted-textonly"
       size="icon"
@@ -77,7 +74,7 @@
       />
       <Button
         v-if="isCloud || isNightly"
-        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        :tooltip="$t('actionbar.feedbackTooltip')"
         variant="muted-textonly"
         size="icon"
         class="size-6 shrink-0 rounded-sm p-0"

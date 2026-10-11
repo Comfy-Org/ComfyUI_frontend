@@ -1,27 +1,18 @@
 <template>
   <template v-if="!sceneHasImage || hdriPath">
-    <button
-      v-tooltip.bottom="
-        tip(
-          hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
-        )
-      "
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="fileActionLabel"
+      tooltip-side="bottom"
       :class="actionClass(false)"
       type="button"
-      :aria-label="
-        compact
-          ? hdriPath
-            ? t('load3d.hdri.changeFile')
-            : t('load3d.hdri.uploadFile')
-          : undefined
-      "
+      :aria-label="compact ? fileActionLabel : undefined"
       @click="hdriFileRef?.click()"
     >
       <i class="icon-[lucide--upload] size-4" />
-      <span v-if="!compact">{{
-        hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
-      }}</span>
-    </button>
+      <span v-if="!compact">{{ fileActionLabel }}</span>
+    </Button>
     <input
       ref="hdriFileRef"
       type="file"
@@ -32,8 +23,11 @@
   </template>
 
   <template v-if="hdriPath">
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.label'))"
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.hdri.label')"
+      tooltip-side="bottom"
       :class="actionClass(hdriEnabled)"
       :aria-pressed="hdriEnabled"
       type="button"
@@ -42,9 +36,12 @@
     >
       <i class="icon-[lucide--globe] size-4" />
       <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
-    </button>
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.showAsBackground'))"
+    </Button>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.hdri.showAsBackground')"
+      tooltip-side="bottom"
       :class="actionClass(hdriShowAsBackground)"
       :aria-pressed="hdriShowAsBackground"
       type="button"
@@ -53,9 +50,12 @@
     >
       <i class="icon-[lucide--image] size-4" />
       <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
-    </button>
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.removeFile'))"
+    </Button>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.hdri.removeFile')"
+      tooltip-side="bottom"
       :class="actionClass(false)"
       type="button"
       :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
@@ -63,7 +63,7 @@
     >
       <i class="icon-[lucide--x] size-4" />
       <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
-    </button>
+    </Button>
   </template>
 </template>
 
@@ -71,13 +71,14 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { actionClass, tip } from '@/components/load3d/menubar/menuBarStyles'
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
-import { useToast } from '@/components/ui/toast/toastStore'
 
 const { compact = false, sceneHasImage = false } = defineProps<{
   compact?: boolean
@@ -93,6 +94,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const hdriPath = computed(() => config.value?.hdri?.hdriPath ?? '')
+const fileActionLabel = computed(() =>
+  hdriPath.value ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
+)
 const hdriEnabled = computed(() => config.value?.hdri?.enabled ?? false)
 const hdriShowAsBackground = computed(
   () => config.value?.hdri?.showAsBackground ?? false
