@@ -56,7 +56,8 @@ import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
+import type { LGraphCanvas } from './LGraphCanvas'
+import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
@@ -660,7 +661,7 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) =>
           colorOption.color === this.color &&
           colorOption.bgcolor === this.bgcolor
@@ -2170,7 +2171,7 @@ export class LGraphNode
     function compute_text_size(text: string | undefined, fontStyle: string) {
       const value = text ?? ''
       return (
-        LGraphCanvas._measureText?.(value, fontStyle) ??
+        canvasClass._measureText?.(value, fontStyle) ??
         font_size * value.length * 0.6
       )
     }

@@ -10,7 +10,8 @@ import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
 import type { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
+import type { LGraphCanvas } from './LGraphCanvas'
+import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
@@ -124,7 +125,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
-    const { pale_blue } = LGraphCanvas.node_colors
+    const { pale_blue } = canvasClass.node_colors
     this.color = pale_blue.groupcolor
   }
 
@@ -140,7 +141,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) => colorOption.groupcolor === this.color
       ) ?? null
     )
@@ -460,19 +461,19 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
         }
       },
       null,
-      { content: 'Title', callback: LGraphCanvas.onShowPropertyEditor },
+      { content: 'Title', callback: canvasClass.onShowPropertyEditor },
       {
         content: 'Color',
         has_submenu: true,
-        callback: LGraphCanvas.onMenuNodeColors
+        callback: canvasClass.onMenuNodeColors
       },
       {
         content: 'Font size',
         property: 'font_size',
-        callback: LGraphCanvas.onShowPropertyEditor
+        callback: canvasClass.onShowPropertyEditor
       },
       null,
-      { content: 'Remove', callback: LGraphCanvas.onMenuNodeRemove }
+      { content: 'Remove', callback: canvasClass.onMenuNodeRemove }
     ]
   }
 

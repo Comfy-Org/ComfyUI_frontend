@@ -1,6 +1,7 @@
 import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
+import { provideCanvasClass } from './canvas/canvasClassAccess'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
@@ -9111,3 +9112,5 @@ defineDeprecatedProperty(
   'applyNodePositions',
   'LGraphCanvas.repositionNodesVueMode is deprecated. Use applyNodePositions instead.'
 )
+
+provideCanvasClass(LGraphCanvas)
