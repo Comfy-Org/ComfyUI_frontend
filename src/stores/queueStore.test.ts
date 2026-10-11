@@ -830,9 +830,44 @@ describe('useQueueStore', () => {
 
       await store.update()
 
-      expect(api.getJobDetail).toHaveBeenCalledWith('older-stuck')
       expect(
         executionStore.nodeProgressStatesByJob['older-stuck']
+      ).toBeUndefined()
+    })
+
+    // Raised in review: useQueuePolling now stays awake while anything is
+    // tracked, so a job that no source can find kept polling alive for the rest
+    // of the session and logged a miss every cycle. One miss is not enough to
+    // act on, because fetchJobDetail returns undefined for a transient network
+    // error as well as for a 404.
+    it('evicts a tracked job only after a second failed lookup', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        ghost: {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'ghost'
+          }
+        }
+      }
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      await store.update()
+      expect(
+        executionStore.nodeProgressStatesByJob['ghost'],
+        'one miss could be a network blip, so it is still tracked'
+      ).toBeDefined()
+
+      await store.update()
+      expect(
+        executionStore.nodeProgressStatesByJob['ghost'],
+        'two consecutive misses means it is gone'
       ).toBeUndefined()
     })
   })

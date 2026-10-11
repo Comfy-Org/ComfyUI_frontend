@@ -530,10 +530,6 @@ export const useExecutionStore = defineStore('execution', () => {
     })
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
-    // This job's flag, not the visible job's. Before the gate existed a
-    // background interrupt also set activeJobId so the two coincided; now
-    // clearing activeJobId's flag wipes the visible run's "waiting for a
-    // machine" state and leaves the interrupted job's own flag set.
     clearInitializationByJobId(jobId)
     if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
       // The job is finished either way, so its own records have to be released
@@ -601,7 +597,13 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     progressCoalescer.cancel()
-    if (e.detail == null) cancelPendingProgressStateUpdates()
+    if (e.detail == null) {
+      // Per job: the snapshots are keyed by job now, so clearing the whole map
+      // here would discard a background job's pending frame that arrived in the
+      // same tick as the visible job's terminal `executing`.
+      if (raw) pendingProgressStates.delete(raw.prompt_id)
+      else cancelPendingProgressStateUpdates()
+    }
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
@@ -721,14 +723,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Graph id of the active workflow, or null when it has none.
-   *
-   * `LoadedComfyWorkflow` types both states as present, but the running store
-   * does not always honour that, and this is read from a watcher and from a
-   * computed now — so a missing state has to return null rather than throw and
-   * take unrelated features down with it.
-   */
-  /**
    * Graph id of a workflow: the id carried by the workflow's own JSON, which
    * every copy of that content shares, so it identifies the content and not
    * the tab holding it.
@@ -745,6 +739,18 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function activeWorkflowGraphId(): string | null {
     return graphIdOf(workflowStore.activeWorkflow) ?? null
+  }
+
+  /**
+   * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
+   * as "no id yet" and replaces on configure and on clear. Treating it as a
+   * real id would make every workflow still carrying it match every other one
+   * on the graph-id leg, which is the leak this gate exists to stop. The queue
+   * side does not send it, but core falls back to the id inside
+   * `extra_pnginfo.workflow`, so it still arrives on the wire.
+   */
+  function workflowIdOrUndefined(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
   }
 
   /**
@@ -769,18 +775,6 @@ export const useExecutionStore = defineStore('execution', () => {
    * to be consulted first. QA hit this with three unsaved copies of the default
    * graph, where every tab rendered every other tab's outputs.
    */
-  /**
-   * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
-   * as "no id yet" and replaces on configure and on clear. Treating it as a
-   * real id would make every workflow still carrying it match every other one
-   * on the graph-id leg, which is the leak this gate exists to stop. The queue
-   * side does not send it, but core falls back to the id inside
-   * `extra_pnginfo.workflow`, so it still arrives on the wire.
-   */
-  function workflowIdOrUndefined(id: string | undefined): string | undefined {
-    return !id || id === zeroUuid ? undefined : id
-  }
-
   function messageMatchesActiveWorkflow(
     jobId: JobId,
     rawMessageWorkflowId: string | undefined
@@ -1151,12 +1145,11 @@ export const useExecutionStore = defineStore('execution', () => {
     // this feature already shipped once, so defer to the same resolver the
     // handlers use, and require ownership to be resolvable rather than adopting
     // a job we cannot place.
-    const matchedJobId =
-      Object.keys(nodeProgressStatesByJob.value).findLast(
-        (jobId) =>
-          canResolveWorkflowOwnership(jobId, undefined) &&
-          messageMatchesActiveWorkflow(jobId, undefined)
-      ) ?? null
+    const matchedJobId = Object.keys(nodeProgressStatesByJob.value).findLast(
+      (jobId) =>
+        canResolveWorkflowOwnership(jobId, undefined) &&
+        messageMatchesActiveWorkflow(jobId, undefined)
+    )
 
     if (matchedJobId) {
       nodeProgressStates.value =

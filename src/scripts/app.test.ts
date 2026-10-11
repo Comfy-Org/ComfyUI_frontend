@@ -3254,6 +3254,28 @@ describe('ComfyApp', () => {
         setPreviews,
         'the node-keyed write is gated: the visible graph has the same node ids'
       ).not.toHaveBeenCalled()
+      // A foreground row, because the absence assertion above also passes if
+      // the listener does nothing at all: the reviewer deleted the
+      // setNodePreviewsByExecutionId loop and all 558 tests in src/scripts
+      // stayed green.
+      useWorkflowStore().activeWorkflow = workflowB
+      previewHandler?.(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob(),
+            nodeId: '1',
+            displayNodeId: '1',
+            parentNodeId: '1',
+            realNodeId: '1',
+            jobId: 'job-b',
+            workflowId: workflowBId
+          }
+        })
+      )
+      expect(
+        setPreviews,
+        "and applied once that job's own tab is in front"
+      ).toHaveBeenCalled()
       // But the job-keyed one must still happen. The queue panel reads the
       // running job's thumbnail from here, and linearOutputStore re-applies the
       // last latent preview when the user switches back to that tab.

@@ -371,8 +371,6 @@ describe('executionStore terminal-job recovery', () => {
     // a job whose terminal frame was dropped before any progress_state arrived
     // was in no tracked collection and its badge stayed Running for the
     // session.
-    // Must be a background job: a visible one is tracked through activeJobId,
-    // which execution_start only sets for the workflow in front.
     const jobId = 'job-no-progress'
     store.registerJobWorkflowIdMapping(jobId, WORKFLOW_B_ID)
     store.storeJob({

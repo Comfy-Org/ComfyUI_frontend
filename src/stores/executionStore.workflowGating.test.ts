@@ -349,10 +349,6 @@ describe('executionStore workflow gating', () => {
       expect(store.activeJobId).toBe('job-a')
     })
 
-    // Read out of Comfy-Org/cloud at 968df21: a user cancel is synthesised by
-    // the gateway rather than forwarded from the worker, so it arrives as
-    // { synthetic, reason, prompt_id, workflow_id } with none of the node
-    // fields core always sends. Raised in review on #20045.
     it('handles a gateway-synthesised cancel with no node fields', () => {
       queueJobFrom('job-b', workflowB)
       fire('progress_state', {
@@ -1163,11 +1159,9 @@ describe('executionStore workflow gating', () => {
       expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(true)
     })
 
-    // Raised in review on #20045. The queue side refuses to send the sentinel
-    // as workflow_metadata, but merged core falls back to the id inside
-    // extra_pnginfo.workflow, so a graph still on LGraph's default id has it
-    // stamped onto its frames anyway. Compared as a real id it matches nothing,
-    // so the tab's own frames were rejected.
+    // Core falls back to the id inside extra_pnginfo.workflow, so a graph still
+    // on LGraph's default id has the sentinel stamped onto its frames. Compared
+    // as a real id it matches nothing, so the tab's own frames were rejected.
     it('does not reject a frame whose only id is the all-zero sentinel', () => {
       useWorkflowStore().activeWorkflow = workflowA
 
@@ -1235,6 +1229,97 @@ describe('executionStore workflow gating', () => {
 
       expect(store.activeJobId).toBeNull()
       expect(store.isIdle).toBe(true)
+    })
+  })
+
+  // Round 9 findings: each of these pins one line that was previously provable
+  // only by deleting it and watching nothing happen.
+  describe('per-job state that a neighbouring job must not disturb', () => {
+    it('keeps a background pending snapshot when the visible job ends', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      queueJobFrom('job-b', workflowB)
+      fire('execution_start', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        timestamp: 1
+      })
+
+      // B's frame and A's terminal `executing` land in the same tick.
+      const handler = apiEventHandlers.get('progress_state')
+      assert.exists(handler)
+      handler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: WORKFLOW_B_ID,
+            nodes: { '1': nodeState('job-b', '1', 'running', 6) }
+          }
+        })
+      )
+      fireExecuting(null, { prompt_id: 'job-a', workflow_id: WORKFLOW_A_ID })
+      vi.advanceTimersToNextFrame()
+
+      expect(
+        store.nodeProgressStatesByJob['job-b'],
+        "A ending must not drop B's pending snapshot"
+      ).toBeDefined()
+    })
+
+    it('clears only the interrupted job initializing flag', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      queueJobFrom('job-b', workflowB)
+      fire('notification', { id: 'job-a', value: 'Waiting for a machine' })
+      fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
+      expect(store.isJobInitializing('job-a')).toBe(true)
+      expect(store.isJobInitializing('job-b')).toBe(true)
+      // Set directly rather than via execution_start, which would clear A's own
+      // initializing flag and make the assertion below vacuous.
+      store.activeJobId = 'job-a'
+
+      fire('execution_interrupted', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 2
+      })
+
+      expect(
+        store.isJobInitializing('job-a'),
+        'the visible run is still waiting for a machine'
+      ).toBe(true)
+      expect(store.isJobInitializing('job-b')).toBe(false)
+    })
+  })
+
+  describe('the all-zero sentinel, one row per normalization', () => {
+    it('leaves a sentinel-only frame unresolvable, so activeJobId rejects it', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('execution_start', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        timestamp: 1
+      })
+
+      // Fails without the normalization in canResolveWorkflowOwnership: the
+      // sentinel would make the frame look resolvable and the graph-id leg
+      // would then compare it.
+      expect(store.belongsToActiveWorkflow('job-x', zeroUuid)).toBe(false)
+    })
+
+    it('adopts an unmapped job stamped with the sentinel', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+
+      // Fails without the normalization in messageMatchesActiveWorkflow: the
+      // sentinel would be compared against A's real graph id and lose.
+      fire('execution_start', {
+        prompt_id: 'job-fresh',
+        workflow_id: zeroUuid,
+        timestamp: 1
+      })
+
+      expect(store.activeJobId).toBe('job-fresh')
     })
   })
 

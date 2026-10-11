@@ -379,6 +379,12 @@ export const useQueueStore = defineStore('queue', () => {
     'cancelled'
   ])
 
+  /**
+   * Consecutive failed `/jobs/{id}` lookups per tracked job, for the eviction
+   * rule in {@link reconcileTrackedJobs}.
+   */
+  const missedJobLookups = new Map<JobId, number>()
+
   async function reconcileTrackedJobs(
     activeJobIds: Set<JobId>,
     history: JobListItem[]
@@ -391,11 +397,27 @@ export const useQueueStore = defineStore('queue', () => {
     const details = await Promise.all(
       unresolvedJobIds.map((jobId) => api.getJobDetail(jobId))
     )
-    for (const detail of details) {
-      if (detail && terminalStatuses.has(detail.status)) {
-        terminalJobIds.add(detail.id)
+    unresolvedJobIds.forEach((jobId, index) => {
+      const detail = details[index]
+      if (detail) {
+        missedJobLookups.delete(jobId)
+        if (terminalStatuses.has(detail.status)) terminalJobIds.add(detail.id)
+        return
       }
-    }
+      // Absent from the queue, from this page of history, and from
+      // /jobs/{id}. Such a job is not running, and leaving it tracked keeps
+      // useQueuePolling awake for the rest of the session, refetching and
+      // logging a miss every cycle. fetchJobDetail returns undefined for a
+      // transient network error as well as for a 404, so evict on the second
+      // consecutive miss rather than the first.
+      const misses = (missedJobLookups.get(jobId) ?? 0) + 1
+      if (misses >= 2) {
+        missedJobLookups.delete(jobId)
+        terminalJobIds.add(jobId)
+      } else {
+        missedJobLookups.set(jobId, misses)
+      }
+    })
     executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
   }
 
