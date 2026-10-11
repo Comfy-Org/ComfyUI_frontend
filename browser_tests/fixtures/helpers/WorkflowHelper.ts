@@ -4,10 +4,13 @@ import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
-import type { DraftPayloadV2 } from '@/platform/workflow/persistence/base/draftTypes'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -70,20 +73,31 @@ export class WorkflowHelper {
     )
   }
 
-  getDraftWorkflows(): Promise<ComfyWorkflowJSON[]> {
-    return this.comfyPage.page.evaluate(() => {
-      const workflows: ComfyWorkflowJSON[] = []
+  async getDraftWorkflows(): Promise<ComfyWorkflowJSON[]> {
+    const workflows = await this.comfyPage.page.evaluate(() => {
+      const workflows: unknown[] = []
       for (const key of Object.keys(localStorage)) {
         if (!key.startsWith('Comfy.Workflow.Draft.v2:')) continue
         const rawPayload = localStorage.getItem(key)
         if (rawPayload === null) continue
 
-        const payload: DraftPayloadV2 = JSON.parse(rawPayload)
-        const workflow: ComfyWorkflowJSON = JSON.parse(payload.data)
+        const payload: unknown = JSON.parse(rawPayload)
+        if (
+          typeof payload !== 'object' ||
+          payload === null ||
+          !('data' in payload) ||
+          typeof payload.data !== 'string'
+        ) {
+          throw new Error('Draft payload has no workflow JSON')
+        }
+        const workflow: unknown = JSON.parse(payload.data)
         workflows.push(workflow)
       }
       return workflows
     })
+    return workflows.map((workflow) =>
+      zComfyWorkflow.or(zComfyWorkflow1).parse(workflow)
+    )
   }
 
   /** Waits for V2 draft index recency, not payload content freshness. */

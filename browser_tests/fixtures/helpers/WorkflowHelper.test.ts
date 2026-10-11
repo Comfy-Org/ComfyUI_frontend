@@ -78,4 +78,14 @@ describe('WorkflowHelper draft workflows', () => {
 
     await expect(workflow.getDraftWorkflows()).rejects.toThrow(SyntaxError)
   })
+
+  it.for([
+    { name: 'payload', rawPayload: 'null' },
+    { name: 'payload data', rawPayload: '{"data":false}' },
+    { name: 'workflow', rawPayload: '{"data":"null"}' }
+  ])('rejects a wrong-shaped $name', async ({ rawPayload }) => {
+    localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:invalid', rawPayload)
+
+    await expect(workflow.getDraftWorkflows()).rejects.toThrow()
+  })
 })
