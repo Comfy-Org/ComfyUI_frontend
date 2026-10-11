@@ -273,7 +273,7 @@ async function fetchComfyNodesPage(
     if (!parsed.success) return null
 
     return {
-      nodes: (parsed.data.comfy_nodes ?? []),
+      nodes: parsed.data.comfy_nodes ?? [],
       totalPages: parsed.data.totalNumberOfPages ?? 1
     }
   } catch {
