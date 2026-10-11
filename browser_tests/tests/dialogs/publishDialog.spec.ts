@@ -398,6 +398,10 @@ test.describe('Publish dialog - layout', () => {
         await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
         await expect(publishDialog.describeStep).toBeVisible()
         await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
+        await comfyPage.page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur()
+        })
         await comfyPage.toast.closeToasts()
         await comfyPage.canvas.evaluate((el) => {
           el.style.visibility = 'hidden'
