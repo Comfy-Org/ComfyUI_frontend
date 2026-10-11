@@ -944,12 +944,7 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Deliberately ungated. A sign-in, subscription or credit problem belongs
-      // to the account rather than to one workflow, and the store's
-      // handleAccountPreconditionError returns before recording the error, so
-      // this dialog is the only signal the user ever gets. Gating it made a
-      // background run fail silently: no dialog, no badge, and nothing to find
-      // on the tab afterwards.
+      // Account-scoped, so not gated by the visible workflow.
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type,
         exceptionMessage: detail.exception_message
