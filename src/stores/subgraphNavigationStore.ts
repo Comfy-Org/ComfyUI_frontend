@@ -18,7 +18,7 @@ import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -154,7 +154,7 @@ export const useSubgraphNavigationStore = defineStore(
         isCurrent: () => getActiveGraphId() === graphId,
         run: () => {
           if (!canvas.graph?.nodes.length) return
-          useLitegraphService().fitView()
+          useLitegraphServiceAccess().fitView()
         }
       })
     }
