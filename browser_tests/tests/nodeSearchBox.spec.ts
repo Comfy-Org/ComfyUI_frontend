@@ -86,6 +86,18 @@ test.describe('Node search box', { tag: '@node' }, () => {
       .toHaveLength(initialSamplers.length + 1)
   })
 
+  test('One Escape closes the search while results are listed', async ({
+    comfyPage
+  }) => {
+    await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.searchBox.typeQuery('KSampler')
+    await expect(comfyPage.searchBox.resultsListbox).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+
+    await expect(comfyPage.searchBox.input).toBeHidden()
+  })
+
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.disconnectEdge()

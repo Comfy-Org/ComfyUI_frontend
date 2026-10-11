@@ -47,6 +47,7 @@
             v-else
             v-model:filter-visible="filterVisible"
             :filters="nodeFilters"
+            @keydown.escape="!$event.isComposing && closeDialog()"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
