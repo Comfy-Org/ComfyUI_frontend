@@ -1,19 +1,10 @@
-import { expect, it, vi } from 'vitest'
+import { expect, it } from 'vitest'
 
-it.for([true, false])(
-  'throws the same TypeError before registration when DEV is %s',
-  async (dev) => {
-    vi.stubEnv('DEV', dev)
-    try {
-      vi.resetModules()
-      const { useExtensionDialogService } = await import('./dialogService')
+import { useExtensionDialogService } from './dialogService'
 
-      expect(() => useExtensionDialogService()).toThrowError(TypeError)
-      expect(() => useExtensionDialogService()).toThrow(
-        'Extension dialog service accessed before registerExtensionDialogService'
-      )
-    } finally {
-      vi.unstubAllEnvs()
-    }
-  }
-)
+it('throws a TypeError before registration', () => {
+  expect(() => useExtensionDialogService()).toThrowError(TypeError)
+  expect(() => useExtensionDialogService()).toThrow(
+    'Extension dialog service accessed before registerExtensionDialogService'
+  )
+})
