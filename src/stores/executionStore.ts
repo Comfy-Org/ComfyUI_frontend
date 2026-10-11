@@ -598,9 +598,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
     progressCoalescer.cancel()
     if (e.detail == null) {
-      // Per job: the snapshots are keyed by job now, so clearing the whole map
-      // here would discard a background job's pending frame that arrived in the
-      // same tick as the visible job's terminal `executing`.
       if (raw) pendingProgressStates.delete(raw.prompt_id)
       else cancelPendingProgressStateUpdates()
     }
