@@ -27,6 +27,14 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
+vi.mock(
+  import('@/platform/assets/composables/useGeneratedPreviewLookup'),
+  () => ({
+    useGeneratedPreviewLookup: () => (_filename, assetId) =>
+      assetId ? `/api/assets/${assetId}-preview/content` : ''
+  })
+)
+
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 const i18n = createI18n({
@@ -157,6 +165,26 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download images' })
     ).not.toBeInTheDocument()
+  })
+
+  it("shows an HDR output's own preview when another folder has the same filename", () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [
+        { filename: 'img.exr', subfolder: 'qa8/b', type: 'output', id: 'b' },
+        { filename: 'img.exr', subfolder: 'qa8/a', type: 'output', id: 'a' }
+      ]
+    })
+
+    renderImagePreview({
+      nodeId: '1',
+      imageUrls: ['/api/view?filename=img.exr&subfolder=qa8%2Fa&type=output']
+    })
+
+    expect(screen.getByRole('img', { name: 'img.exr' })).toHaveAttribute(
+      'src',
+      '/api/assets/a-preview/content'
+    )
   })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {

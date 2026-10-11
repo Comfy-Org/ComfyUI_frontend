@@ -16,8 +16,11 @@ import { computed } from 'vue'
 
 import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 
-const { filename } = defineProps<{ filename: string | undefined }>()
+const { filename, assetId } = defineProps<{
+  filename: string | undefined
+  assetId?: string
+}>()
 
 const findGeneratedPreviewUrl = useGeneratedPreviewLookup()
-const previewUrl = computed(() => findGeneratedPreviewUrl(filename))
+const previewUrl = computed(() => findGeneratedPreviewUrl(filename, assetId))
 </script>

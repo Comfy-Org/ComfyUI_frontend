@@ -37,6 +37,7 @@
         <HdrPreviewImage
           v-else
           :filename="getImageFilenameFromUrl(imageUrls[index])"
+          :asset-id="outputAssetId(imageUrls[index])"
           class="size-full"
         >
           <div
@@ -97,6 +98,7 @@
       <HdrPreviewImage
         v-if="!imageError && currentImageIsHdr"
         :filename="getImageFilenameFromUrl(currentImageUrl)"
+        :asset-id="outputAssetId(currentImageUrl)"
         class="absolute inset-0"
       >
         <div
@@ -305,6 +307,20 @@ const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
+/** The asset id of the output at this URL; its filename can match another folder's file. */
+function outputAssetId(url: string): string | undefined {
+  const node = nodeId ? resolveNode(nodeId) : undefined
+  if (!node) return undefined
+  const params = new URL(url, location.href).searchParams
+  return nodeOutputStore
+    .getNodeOutputs(node)
+    ?.images?.find(
+      (output) =>
+        output.filename === params.get('filename') &&
+        (output.subfolder ?? '') === (params.get('subfolder') ?? '')
+    )?.id
+}
+
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
