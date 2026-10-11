@@ -156,8 +156,11 @@ export function agentNestedSubgraphDefinitions(): NestedSubgraphDefinitions {
           ],
           widgets: [],
           // The outer's only interior node is an instance of the inner
-          // definition, so the inner must be registered for the outer to
-          // configure at all.
+          // definition. The outer does NOT need the inner registered in order
+          // to configure — `LGraph.createSubgraphs` builds it either way and
+          // marks this node `has_errors` when the inner is missing, which is
+          // exactly why the spec asserts on this node rather than only on the
+          // registry.
           nodes: [
             {
               id: 1,

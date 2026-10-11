@@ -83,6 +83,29 @@ test.describe(
           )
           .toEqual([])
 
+        // Registration alone is not the behaviour #18148 fixed — ORDER is.
+        // If the outer is configured before the inner, the outer's interior
+        // node becomes a `has_errors` placeholder and the inner type is
+        // registered straight afterwards, so the poll above and the title
+        // assertion below both still pass while the user gets a subgraph whose
+        // interior is broken. This is the assertion that fails on that.
+        await expect
+          .poll(
+            () =>
+              page.evaluate(
+                (outerId) =>
+                  window
+                    .app!.graph.subgraphs.get(outerId)
+                    ?.nodes.map((node) => ({
+                      type: node.type,
+                      hasErrors: Boolean(node.has_errors)
+                    })) ?? null,
+                NESTED_OUTER_ID
+              ),
+            { timeout: 15_000 }
+          )
+          .toEqual([{ type: NESTED_INNER_ID, hasErrors: false }])
+
         const nodeId = await agentConversation.addNodeOfType(
           NESTED_OUTER_ID,
           [300, 300]

@@ -879,10 +879,6 @@ export class AgentConversationHarness {
     return outerId
   }
 
-  hostNestedDefinitionIds(outerId: string): string[] {
-    return this.host.nestedDefinitionIds(outerId)
-  }
-
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
