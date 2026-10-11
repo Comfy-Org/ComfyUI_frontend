@@ -4352,6 +4352,11 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
 export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
 
 /**
+ * Default workflow JSON
+ */
+export const zGetDefaultWorkflowResponse = z.record(z.unknown())
+
+/**
  * Embedding names
  */
 export const zGetEmbeddingsResponse = z.array(z.string())
