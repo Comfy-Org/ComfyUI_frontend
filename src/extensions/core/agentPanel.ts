@@ -455,8 +455,7 @@ export function registerAgentPanelExtension(): void {
                 return
               }
               offerConsentUnprompted()
-            }
-            else if (offerEligible()) withholdOffer('boot_undecided')
+            } else if (offerEligible()) withholdOffer('boot_undecided')
             else {
               // An undecided boot that is also ineligible reported nothing at
               // all: `boot_undecided` is gated on eligibility, so the forfeited
