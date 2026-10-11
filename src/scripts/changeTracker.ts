@@ -26,6 +26,14 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
+import {
+  bindCanvasTracker,
+  canCaptureCanvas,
+  invalidateCanvasTracker,
+  isCanvasCaptureBlocked,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from './canvasTrackerOwnership'
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
@@ -307,38 +315,29 @@ function reportCanvasMismatchCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  /**
-   * The tracker whose workflow graph is currently loaded on the canvas.
-   * `null` permits capture before the first workflow binding; `false` blocks
-   * capture while the canvas is being replaced or after a failed load.
-   */
-  private static canvasTracker: ChangeTracker | null | false = null
 
   static bindCanvasTracker(tracker: ChangeTracker) {
-    ChangeTracker.canvasTracker = tracker
+    bindCanvasTracker(tracker)
   }
 
   static invalidateCanvasTracker() {
-    ChangeTracker.canvasTracker = false
+    invalidateCanvasTracker()
   }
 
   static isCanvasOwner(tracker: ChangeTracker): boolean {
-    return ChangeTracker.canvasTracker === tracker
+    return isCanvasOwner(tracker)
   }
 
   static canCaptureCanvas(tracker: ChangeTracker): boolean {
-    return (
-      ChangeTracker.canvasTracker === null ||
-      ChangeTracker.canvasTracker === tracker
-    )
+    return canCaptureCanvas(tracker)
   }
 
   private static isCanvasCaptureBlocked(): boolean {
-    return ChangeTracker.canvasTracker === false
+    return isCanvasCaptureBlocked()
   }
 
   static resetCanvasTrackerForTest() {
-    ChangeTracker.canvasTracker = null
+    resetCanvasTrackerForTest()
     reportedCanvasMismatchCalls.clear()
   }
   /**
