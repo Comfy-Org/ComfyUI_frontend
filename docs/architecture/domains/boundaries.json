@@ -200,6 +200,81 @@
         ]
       },
       {
+        "name": "camera-authoring/domain",
+        "patterns": [
+          "src/extensions/core/cameraInfo/types.ts",
+          "src/extensions/core/cameraInfo/cameraTransform.ts",
+          "src/extensions/core/cameraInfo/cameraTransform.test.ts",
+          "src/extensions/core/cameraInfo/lookThroughDragMath.ts",
+          "src/extensions/core/cameraInfo/lookThroughDragMath.test.ts",
+          "src/extensions/core/cameraInfo/handles/types.ts",
+          "src/extensions/core/cameraInfo/handles/orbitDragMath.ts",
+          "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
+          "src/extensions/core/cameraInfo/handles/rollDragMath.ts",
+          "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
+          "src/extensions/core/cameraAngle/types.ts",
+          "src/extensions/core/cameraAngle/cameraAngleMath.ts",
+          "src/extensions/core/cameraAngle/cameraAngleMath.test.ts"
+        ]
+      },
+      {
+        "name": "camera-authoring/application",
+        "patterns": [
+          "src/extensions/core/cameraInfo/widgetBridge.ts",
+          "src/extensions/core/cameraInfo/widgetBridge.test.ts",
+          "src/extensions/core/cameraInfo/CameraInfoViewport.ts",
+          "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
+          "src/extensions/core/cameraAngle/widgetBridge.ts",
+          "src/extensions/core/cameraAngle/widgetBridge.test.ts",
+          "src/extensions/core/cameraAngle/CameraAngleViewport.ts",
+          "src/extensions/core/cameraAngle/CameraAngleViewport.test.ts",
+          "src/composables/useCameraInfo.ts",
+          "src/composables/useCameraInfo.test.ts",
+          "src/composables/useCameraAngle.ts",
+          "src/composables/useCameraAngle.test.ts"
+        ]
+      },
+      {
+        "name": "camera-authoring/infrastructure",
+        "patterns": [
+          "src/extensions/core/cameraInfo/CameraInfoOverlay.ts",
+          "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
+          "src/extensions/core/cameraInfo/subjectCameraPreview.ts",
+          "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
+          "src/extensions/core/cameraInfo/handles/CameraHandle.ts",
+          "src/extensions/core/cameraInfo/handles/CameraHandle.test.ts",
+          "src/extensions/core/cameraInfo/handles/OrbitHandles.ts",
+          "src/extensions/core/cameraInfo/handles/OrbitHandles.test.ts",
+          "src/extensions/core/cameraInfo/handles/RollHandle.ts",
+          "src/extensions/core/cameraInfo/handles/RollHandle.test.ts",
+          "src/extensions/core/cameraInfo/handles/TargetHandle.ts",
+          "src/extensions/core/cameraInfo/handles/TargetHandle.test.ts",
+          "src/extensions/core/cameraInfo/handles/handlePicking.ts",
+          "src/extensions/core/cameraInfo/handles/handlePicking.test.ts",
+          "src/extensions/core/cameraInfo/handles/pointerInteraction.ts",
+          "src/extensions/core/cameraInfo/handles/pointerInteraction.test.ts",
+          "src/extensions/core/cameraAngle/SubjectBox.ts",
+          "src/extensions/core/cameraAngle/SubjectBox.test.ts",
+          "src/extensions/core/cameraAngle/orbitGizmos.ts",
+          "src/extensions/core/cameraAngle/orbitGizmos.test.ts"
+        ]
+      },
+      {
+        "name": "camera-authoring/presentation",
+        "patterns": [
+          "src/components/cameraInfo/**",
+          "src/components/cameraAngle/**"
+        ]
+      },
+      {
+        "name": "camera-authoring/integration",
+        "patterns": [
+          "src/extensions/core/cameraInfo.ts",
+          "src/extensions/core/cameraAngle.ts",
+          "src/extensions/core/cameraAngle.test.ts"
+        ]
+      },
+      {
         "name": "cloud/domain",
         "patterns": [
           "src/platform/cloud/onboarding/sso/ssoEntryQuery.ts",
@@ -478,6 +553,53 @@
         ]
       },
       {
+        "name": "light-authoring/domain",
+        "patterns": [
+          "src/types/lightInfo.ts",
+          "src/extensions/core/lightInfo/types.ts",
+          "src/extensions/core/lightInfo/lightsValue.ts",
+          "src/extensions/core/lightInfo/lightsValue.test.ts",
+          "src/extensions/core/lightInfo/lightTransform.ts",
+          "src/extensions/core/lightInfo/lightTransform.test.ts"
+        ]
+      },
+      {
+        "name": "light-authoring/application",
+        "patterns": [
+          "src/extensions/core/lightInfo/LightInfoViewport.ts",
+          "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
+          "src/components/lightInfo/useLightInfo.ts",
+          "src/components/lightInfo/useLightInfo.test.ts"
+        ]
+      },
+      {
+        "name": "light-authoring/infrastructure",
+        "patterns": [
+          "src/extensions/core/lightInfo/LightInfoOverlay.ts",
+          "src/extensions/core/lightInfo/LightInfoOverlay.test.ts"
+        ]
+      },
+      {
+        "name": "light-authoring/presentation",
+        "patterns": [
+          "src/components/lightInfo/LightInfo.vue",
+          "src/components/lightInfo/LightInfo.test.ts",
+          "src/components/lightInfo/LightInfoLightEditor.vue",
+          "src/components/lightInfo/LightInfoViewportToolbar.vue"
+        ]
+      },
+      {
+        "name": "light-authoring/integration",
+        "patterns": [
+          "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
+          "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
+          "src/extensions/core/lightInfo.ts",
+          "src/extensions/core/lightInfo.test.ts"
+        ]
+      },
+      {
         "name": "mask-editor/domain",
         "patterns": ["src/extensions/core/maskeditor/**"]
       },
@@ -524,6 +646,129 @@
         "patterns": [
           "src/renderer/extensions/minimap/MiniMap.vue",
           "src/renderer/extensions/minimap/MiniMapPanel.vue"
+        ]
+      },
+      {
+        "name": "model-3d/domain",
+        "patterns": [
+          "src/extensions/core/load3d/constants.ts",
+          "src/extensions/core/load3d/constants.test.ts",
+          "src/extensions/core/load3d/nodeTypes.ts",
+          "src/extensions/core/load3d/nodeTypes.test.ts",
+          "src/extensions/core/load3d/cameraFromMatrices.ts",
+          "src/extensions/core/load3d/cameraFromMatrices.test.ts",
+          "src/extensions/core/load3d/model3dOutput.ts",
+          "src/extensions/core/load3d/model3dOutput.test.ts"
+        ]
+      },
+      {
+        "name": "model-3d/application",
+        "patterns": [
+          "src/composables/useLoad3d.ts",
+          "src/composables/useLoad3d.test.ts",
+          "src/composables/useLoad3dDrag.ts",
+          "src/composables/useLoad3dDrag.test.ts",
+          "src/composables/useLoad3dViewer.ts",
+          "src/composables/useLoad3dViewer.test.ts",
+          "src/services/load3dService.ts",
+          "src/services/load3dService.test.ts",
+          "src/components/load3d/modelThumbnail.ts",
+          "src/components/load3d/modelThumbnail.test.ts"
+        ]
+      },
+      {
+        "name": "model-3d/infrastructure",
+        "patterns": [
+          "src/extensions/core/load3d/Load3d.ts",
+          "src/extensions/core/load3d/Load3d.test.ts",
+          "src/extensions/core/load3d/createLoad3d.ts",
+          "src/extensions/core/load3d/createLoad3d.test.ts",
+          "src/extensions/core/load3d/Load3dUtils.ts",
+          "src/extensions/core/load3d/Load3dUtils.test.ts",
+          "src/extensions/core/load3d/AnimationManager.ts",
+          "src/extensions/core/load3d/AnimationManager.test.ts",
+          "src/extensions/core/load3d/GizmoManager.ts",
+          "src/extensions/core/load3d/GizmoManager.test.ts",
+          "src/extensions/core/load3d/HDRIManager.ts",
+          "src/extensions/core/load3d/HDRIManager.test.ts",
+          "src/extensions/core/load3d/LoaderManager.ts",
+          "src/extensions/core/load3d/LoaderManager.test.ts",
+          "src/extensions/core/load3d/RecordingManager.ts",
+          "src/extensions/core/load3d/RecordingManager.test.ts",
+          "src/extensions/core/load3d/SceneModelManager.ts",
+          "src/extensions/core/load3d/SceneModelManager.test.ts",
+          "src/extensions/core/load3d/ModelAdapter.ts",
+          "src/extensions/core/load3d/ModelAdapter.test.ts",
+          "src/extensions/core/load3d/MeshModelAdapter.ts",
+          "src/extensions/core/load3d/MeshModelAdapter.test.ts",
+          "src/extensions/core/load3d/MeshModelAdapter.obj.test.ts",
+          "src/extensions/core/load3d/PointCloudModelAdapter.ts",
+          "src/extensions/core/load3d/PointCloudModelAdapter.test.ts",
+          "src/extensions/core/load3d/SplatModelAdapter.ts",
+          "src/extensions/core/load3d/SplatModelAdapter.test.ts",
+          "src/extensions/core/load3d/ModelExporter.ts",
+          "src/extensions/core/load3d/ModelExporter.test.ts",
+          "src/extensions/core/load3d/loader/**",
+          "src/extensions/core/load3d/quadWireframe/**"
+        ]
+      },
+      {
+        "name": "model-3d/presentation",
+        "patterns": [
+          "src/components/load3d/Load3D.vue",
+          "src/components/load3d/Load3D.test.ts",
+          "src/components/load3d/Load3DAdvanced.vue",
+          "src/components/load3d/Load3DAdvanced.test.ts",
+          "src/components/load3d/Load3DControls.vue",
+          "src/components/load3d/Load3DControls.test.ts",
+          "src/components/load3d/Load3DMenuBar.vue",
+          "src/components/load3d/Load3DMenuBar.test.ts",
+          "src/components/load3d/Load3DScene.vue",
+          "src/components/load3d/Load3DScene.test.ts",
+          "src/components/load3d/Load3dViewerContent.vue",
+          "src/components/load3d/Load3dViewerContent.test.ts",
+          "src/components/load3d/formatAnimationTime.ts",
+          "src/components/load3d/formatAnimationTime.test.ts",
+          "src/components/load3d/load3dViewerDialog.ts",
+          "src/components/load3d/controls/**",
+          "src/components/load3d/menubar/AnimationMenuStrip.vue",
+          "src/components/load3d/menubar/AnimationMenuStrip.test.ts",
+          "src/components/load3d/menubar/CameraMenuGroup.vue",
+          "src/components/load3d/menubar/CameraMenuGroup.test.ts",
+          "src/components/load3d/menubar/GizmoMenuGroup.vue",
+          "src/components/load3d/menubar/GizmoMenuGroup.test.ts",
+          "src/components/load3d/menubar/HdriMenuGroup.vue",
+          "src/components/load3d/menubar/HdriMenuGroup.test.ts",
+          "src/components/load3d/menubar/LightMenuGroup.vue",
+          "src/components/load3d/menubar/LightMenuGroup.test.ts",
+          "src/components/load3d/menubar/ModelMenuGroup.vue",
+          "src/components/load3d/menubar/ModelMenuGroup.test.ts",
+          "src/components/load3d/menubar/RecordMenuControl.vue",
+          "src/components/load3d/menubar/RecordMenuControl.test.ts",
+          "src/components/load3d/menubar/SceneMenuGroup.vue",
+          "src/components/load3d/menubar/SceneMenuGroup.test.ts",
+          "src/components/load3d/menubar/usePopoverExclusivity.ts",
+          "src/components/load3d/menubar/usePopoverExclusivity.test.ts"
+        ]
+      },
+      {
+        "name": "model-3d/integration",
+        "patterns": [
+          "src/extensions/core/load3d/Load3DConfiguration.ts",
+          "src/extensions/core/load3d/Load3DConfiguration.test.ts",
+          "src/extensions/core/load3d/load3dSerialize.ts",
+          "src/extensions/core/load3d/load3dSerialize.test.ts",
+          "src/extensions/core/load3d/exportMenuHelper.ts",
+          "src/extensions/core/load3d/exportMenuHelper.test.ts",
+          "src/extensions/core/load3d.ts",
+          "src/extensions/core/load3d.test.ts",
+          "src/extensions/core/load3dLazy.ts",
+          "src/extensions/core/load3dLazy.test.ts",
+          "src/extensions/core/load3dPreviewExtensions.ts",
+          "src/extensions/core/load3dPreviewExtensions.test.ts",
+          "src/extensions/core/saveMesh.ts",
+          "src/extensions/core/saveMesh.test.ts",
+          "src/extensions/core/load3dAdvanced.ts"
         ]
       },
       {
@@ -603,6 +848,59 @@
           "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
           "src/scripts/ui/settings.ts",
           "src/scripts/ui/settings.test.ts"
+        ]
+      },
+      {
+        "name": "viewport-3d/domain",
+        "patterns": [
+          "src/extensions/core/load3d/interfaces.ts",
+          "src/extensions/core/load3d/load3dViewport.ts",
+          "src/extensions/core/load3d/load3dViewport.test.ts"
+        ]
+      },
+      {
+        "name": "viewport-3d/application",
+        "patterns": [
+          "src/extensions/core/load3d/EventManager.ts",
+          "src/extensions/core/load3d/EventManager.test.ts",
+          "src/extensions/core/load3d/Viewport3d.ts",
+          "src/extensions/core/load3d/Viewport3d.test.ts"
+        ]
+      },
+      {
+        "name": "viewport-3d/infrastructure",
+        "patterns": [
+          "src/renderer/three/**",
+          "src/extensions/core/load3d/CameraManager.ts",
+          "src/extensions/core/load3d/CameraManager.test.ts",
+          "src/extensions/core/load3d/ControlsManager.ts",
+          "src/extensions/core/load3d/ControlsManager.test.ts",
+          "src/extensions/core/load3d/LightingManager.ts",
+          "src/extensions/core/load3d/LightingManager.test.ts",
+          "src/extensions/core/load3d/SceneManager.ts",
+          "src/extensions/core/load3d/SceneManager.test.ts",
+          "src/extensions/core/load3d/ViewHelperManager.ts",
+          "src/extensions/core/load3d/ViewHelperManager.test.ts",
+          "src/extensions/core/load3d/load3dRenderLoop.ts",
+          "src/extensions/core/load3d/load3dRenderLoop.test.ts",
+          "src/extensions/core/load3d/load3dContextMenuGuard.ts",
+          "src/extensions/core/load3d/load3dContextMenuGuard.test.ts"
+        ]
+      },
+      {
+        "name": "viewport-3d/presentation",
+        "patterns": [
+          "src/components/load3d/ViewportWidgetShell.vue",
+          "src/components/load3d/ViewportWidgetShell.test.ts",
+          "src/components/load3d/menubar/menuBarStyles.ts"
+        ]
+      },
+      {
+        "name": "viewport-3d/integration",
+        "patterns": [
+          "src/extensions/core/load3d/createViewport3d.ts",
+          "src/composables/useViewportNodeWiring.ts",
+          "src/composables/useViewportNodeWiring.test.ts"
         ]
       },
       {
@@ -830,6 +1128,48 @@
         ]
       },
       {
+        "from": "camera-authoring/domain",
+        "allow": ["camera-authoring/domain", "unclassified"]
+      },
+      {
+        "from": "camera-authoring/application",
+        "allow": [
+          "camera-authoring/domain",
+          "camera-authoring/application",
+          "camera-authoring/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "camera-authoring/infrastructure",
+        "allow": [
+          "camera-authoring/domain",
+          "camera-authoring/application",
+          "camera-authoring/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "camera-authoring/presentation",
+        "allow": [
+          "camera-authoring/domain",
+          "camera-authoring/application",
+          "camera-authoring/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "camera-authoring/integration",
+        "allow": [
+          "camera-authoring/domain",
+          "camera-authoring/application",
+          "camera-authoring/infrastructure",
+          "camera-authoring/presentation",
+          "camera-authoring/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "cloud/domain",
         "allow": ["cloud/domain", "unclassified"]
       },
@@ -1009,6 +1349,48 @@
         ]
       },
       {
+        "from": "light-authoring/domain",
+        "allow": ["light-authoring/domain", "unclassified"]
+      },
+      {
+        "from": "light-authoring/application",
+        "allow": [
+          "light-authoring/domain",
+          "light-authoring/application",
+          "light-authoring/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "light-authoring/infrastructure",
+        "allow": [
+          "light-authoring/domain",
+          "light-authoring/application",
+          "light-authoring/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "light-authoring/presentation",
+        "allow": [
+          "light-authoring/domain",
+          "light-authoring/application",
+          "light-authoring/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "light-authoring/integration",
+        "allow": [
+          "light-authoring/domain",
+          "light-authoring/application",
+          "light-authoring/infrastructure",
+          "light-authoring/presentation",
+          "light-authoring/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "mask-editor/domain",
         "allow": ["mask-editor/domain", "unclassified"]
       },
@@ -1067,6 +1449,48 @@
           "minimap/domain",
           "minimap/application",
           "minimap/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "model-3d/domain",
+        "allow": ["model-3d/domain", "unclassified"]
+      },
+      {
+        "from": "model-3d/application",
+        "allow": [
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "model-3d/infrastructure",
+        "allow": [
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "model-3d/presentation",
+        "allow": [
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "model-3d/integration",
+        "allow": [
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/infrastructure",
+          "model-3d/presentation",
+          "model-3d/integration",
           "unclassified"
         ]
       },
@@ -1130,6 +1554,48 @@
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "viewport-3d/domain",
+        "allow": ["viewport-3d/domain", "unclassified"]
+      },
+      {
+        "from": "viewport-3d/application",
+        "allow": [
+          "viewport-3d/domain",
+          "viewport-3d/application",
+          "viewport-3d/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "viewport-3d/infrastructure",
+        "allow": [
+          "viewport-3d/domain",
+          "viewport-3d/application",
+          "viewport-3d/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "viewport-3d/presentation",
+        "allow": [
+          "viewport-3d/domain",
+          "viewport-3d/application",
+          "viewport-3d/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "viewport-3d/integration",
+        "allow": [
+          "viewport-3d/domain",
+          "viewport-3d/application",
+          "viewport-3d/infrastructure",
+          "viewport-3d/presentation",
+          "viewport-3d/integration",
           "unclassified"
         ]
       },
@@ -1268,6 +1734,11 @@
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
+          "camera-authoring/domain",
+          "camera-authoring/application",
+          "camera-authoring/infrastructure",
+          "camera-authoring/presentation",
+          "camera-authoring/integration",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
@@ -1283,16 +1754,31 @@
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
+          "light-authoring/domain",
+          "light-authoring/application",
+          "light-authoring/infrastructure",
+          "light-authoring/presentation",
+          "light-authoring/integration",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
           "minimap/presentation",
+          "model-3d/domain",
+          "model-3d/application",
+          "model-3d/infrastructure",
+          "model-3d/presentation",
+          "model-3d/integration",
           "node-templates/integration",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "viewport-3d/domain",
+          "viewport-3d/application",
+          "viewport-3d/infrastructure",
+          "viewport-3d/presentation",
+          "viewport-3d/integration",
           "webcam-capture/integration",
           "workflow-deployment/domain",
           "workflow-deployment/application",
