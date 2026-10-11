@@ -110,9 +110,6 @@ const toRegistryPack = memoize(
   (algoliaNode: AlgoliaNodePack) => algoliaNode.id
 )
 
-const getHitKey = (algoliaNode: AlgoliaNodePack): string | undefined =>
-  algoliaNode.objectID ?? algoliaNode.id
-
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
@@ -126,25 +123,22 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    const packQuery = (queryText: string): SearchQuery => ({
-      query: queryText,
-      indexName: 'nodes_index',
-      attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-      ...rest,
-      hitsPerPage: pageSize,
-      page: pageNumber
-    })
+    function packQuery(queryText: string): SearchQuery {
+      return {
+        query: queryText,
+        indexName: 'nodes_index',
+        attributesToRetrieve: RETRIEVE_ATTRIBUTES,
+        ...rest,
+        hitsPerPage: pageSize,
+        page: pageNumber
+      }
+    }
 
-    const requests: SearchQuery[] = [packQuery(query)]
-
-    // Pasted `owner/repo` slugs and unsegmented compound names return zero hits
-    // against an index that segments neither, so retry the query in rewritten
-    // forms to fill slots the raw query left empty. First page only: pages are
-    // concatenated by the caller, so re-running this per page would re-append
-    // hits already listed above.
+    // First page only: useRegistrySearch concatenates pages, so later pages
+    // would re-append these hits.
     const fallbackQueries =
       pageNumber === 0 ? buildPackSearchFallbacks(query) : []
-    requests.push(...fallbackQueries.map(packQuery))
+    const requests: SearchQuery[] = [query, ...fallbackQueries].map(packQuery)
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
@@ -164,27 +158,20 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       strategy: 'none'
     })
 
-    const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
-    const fallbackResults = results.slice(
-      1,
+    const [nodePacks, ...fallbackResults] = results.slice(
+      0,
       1 + fallbackQueries.length
     ) as SearchResponse<AlgoliaNodePack>[]
-    const querySuggestions = (shouldQuerySuggestions
-      ? (results[1 + fallbackQueries.length] as
-          | SearchResponse<NodesIndexSuggestion>
-          | undefined)
-      : undefined) ?? { hits: [] }
+    const querySuggestions = results[1 + fallbackQueries.length] as
+      | SearchResponse<NodesIndexSuggestion>
+      | undefined
 
-    // The raw query's ranking is authoritative, so fallbacks only fill in hits
-    // it missed -- they never reorder or displace a raw hit -- and are capped
-    // so a rescued search still returns at most a page's worth of packs.
     const mergedHits = [...nodePacks.hits]
-    const seenHitKeys = new Set(nodePacks.hits.map(getHitKey))
+    const seenHitKeys = new Set(nodePacks.hits.map((hit) => hit.objectID))
     for (const hit of fallbackResults.flatMap((result) => result.hits)) {
       if (mergedHits.length >= pageSize) break
-      const hitKey = getHitKey(hit)
-      if (seenHitKeys.has(hitKey)) continue
-      seenHitKeys.add(hitKey)
+      if (seenHitKeys.has(hit.objectID)) continue
+      seenHitKeys.add(hit.objectID)
       mergedHits.push(hit)
     }
 

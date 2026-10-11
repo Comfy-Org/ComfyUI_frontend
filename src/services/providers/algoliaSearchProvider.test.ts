@@ -210,228 +210,44 @@ describe('useAlgoliaSearchProvider', () => {
       expect(mockSearchClient.search).toHaveBeenCalledTimes(2)
     })
 
-    it('should fire a tokenized fallback query for a compound name that yields zero primary hits', async () => {
-      const mockAlgoliaResults = {
-        results: [
-          { hits: [] }, // Primary query: raw compound query, no hits
-          {
-            hits: [
-              {
-                objectID: 'algolia-1',
-                id: 'euler-discrete-scheduler',
-                name: 'ComfyUI-EulerFlowMatchingDiscreteScheduler',
-                description: 'A scheduler pack',
-                publisher_id: 'publisher-1',
-                total_install: 10,
-                comfy_nodes: []
-              }
-            ]
-          }, // Tokenized fallback query
-          { hits: [] } // Query suggestions
-        ]
+    it.for(['id', 'objectID'])(
+      'should take the pack id from a hit that has only %s',
+      async (idField) => {
+        mockSearchClient.search.mockResolvedValue({
+          results: [
+            {
+              hits: [
+                {
+                  [idField]: 'single-id',
+                  name: 'Pack',
+                  publisher_id: 'pub',
+                  total_install: 0,
+                  comfy_nodes: []
+                }
+              ]
+            },
+            { hits: [] }
+          ]
+        })
+
+        const provider = useAlgoliaSearchProvider()
+        const result = await provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+
+        expect(result.nodePacks[0].id).toBe('single-id')
       }
+    )
 
-      mockSearchClient.search.mockResolvedValue(mockAlgoliaResults)
-
-      const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('EulerDiscreteScheduler', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [
-          expect.objectContaining({
-            query: 'EulerDiscreteScheduler',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            query: 'Euler Discrete Scheduler',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            indexName: 'nodes_index_query_suggestions'
-          })
-        ],
-        strategy: 'none'
-      })
-
-      expect(result.nodePacks).toHaveLength(1)
-      expect(result.nodePacks[0].id).toBe('euler-discrete-scheduler')
-    })
-
-    it('should not fire a tokenized fallback query when tokenization does not change the query', async () => {
-      mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: [] }, { hits: [] }]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      await provider.searchPacks('flux upscale', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      // Only the primary query and suggestions query -- no fallback
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [
-          expect.objectContaining({ indexName: 'nodes_index' }),
-          expect.objectContaining({
-            indexName: 'nodes_index_query_suggestions'
-          })
-        ],
-        strategy: 'none'
-      })
-    })
-
-    it('should dedupe a hit returned by both the primary and tokenized fallback query', async () => {
-      const sharedHit = {
-        objectID: 'algolia-1',
-        id: 'shared-pack',
-        name: 'ComfyUI-EulerDiscreteScheduler',
-        description: 'A scheduler pack',
-        publisher_id: 'publisher-1',
-        total_install: 10,
-        comfy_nodes: []
-      }
-      const fallbackOnlyHit = {
-        objectID: 'algolia-2',
-        id: 'fallback-only-pack',
-        name: 'Another Euler Pack',
-        description: 'Also a scheduler pack',
-        publisher_id: 'publisher-1',
-        total_install: 5,
-        comfy_nodes: []
-      }
-
-      mockSearchClient.search.mockResolvedValue({
-        results: [
-          { hits: [sharedHit] }, // Primary query already found it
-          { hits: [sharedHit, fallbackOnlyHit] }, // Fallback query re-finds it plus one new hit
-          { hits: [] }
-        ]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('EulerDiscreteScheduler', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(result.nodePacks).toHaveLength(2)
-      expect(result.nodePacks.map((pack) => pack.id)).toEqual([
-        'shared-pack',
-        'fallback-only-pack'
-      ])
-    })
-
-    it('should handle missing objectID by using id field', async () => {
-      const mockAlgoliaResults = {
-        results: [
-          {
-            hits: [
-              {
-                id: 'pack-id-only',
-                name: 'Pack without objectID',
-                // ... other required fields
-                publisher_id: 'pub',
-                total_install: 0,
-                comfy_nodes: []
-              }
-            ]
-          },
-          { hits: [] }
-        ]
-      }
-
-      mockSearchClient.search.mockResolvedValue(mockAlgoliaResults)
-
-      const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(result.nodePacks[0].id).toBe('pack-id-only')
-    })
-
-    it('should fall back to objectID when id field is missing from a hit', async () => {
-      const mockAlgoliaResults = {
-        results: [
-          {
-            hits: [
-              {
-                objectID: 'objectID-only',
-                name: 'Pack without id',
-                publisher_id: 'pub',
-                total_install: 0,
-                comfy_nodes: []
-              }
-            ]
-          },
-          { hits: [] }
-        ]
-      }
-
-      mockSearchClient.search.mockResolvedValue(mockAlgoliaResults)
-
-      const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(result.nodePacks[0].id).toBe('objectID-only')
-    })
-
-    it('should not fire a tokenized fallback query for an empty query', async () => {
-      mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: [] }]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      await provider.searchPacks('', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [expect.objectContaining({ indexName: 'nodes_index' })],
-        strategy: 'none'
-      })
-    })
-
-    it('should not fire a tokenized fallback query for a whitespace-only query', async () => {
-      mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: [] }, { hits: [] }]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      await provider.searchPacks('   ', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      // Only the primary query and suggestions query -- tokenizing
-      // whitespace-only input yields '', so no fallback is fired
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [
-          expect.objectContaining({ indexName: 'nodes_index' }),
-          expect.objectContaining({
-            indexName: 'nodes_index_query_suggestions'
-          })
-        ],
-        strategy: 'none'
-      })
-    })
-
-    it('should propagate an Algolia API error raised while the tokenized fallback query is in flight', async () => {
+    it('rejects when the Algolia request fails so the gateway can fail over', async () => {
       const algoliaError = new Error('Algolia request failed')
       mockSearchClient.search.mockRejectedValue(algoliaError)
 
       const provider = useAlgoliaSearchProvider()
 
       await expect(
-        provider.searchPacks('EulerDiscreteScheduler', {
+        provider.searchPacks('euler-discrete-scheduler', {
           pageSize: 10,
           pageNumber: 0
         })
@@ -465,7 +281,7 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('EulerDiscreteScheduler', {
+      const result = await provider.searchPacks('euler-discrete-scheduler', {
         pageSize: 10,
         pageNumber: 0
       })
@@ -501,7 +317,7 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('EulerDiscreteScheduler', {
+      const result = await provider.searchPacks('euler-discrete-scheduler', {
         pageSize: 3,
         pageNumber: 0
       })
@@ -513,39 +329,6 @@ describe('useAlgoliaSearchProvider', () => {
         'fallback-0',
         'fallback-1'
       ])
-    })
-
-    it('should fire owner-stripped and tokenized fallback queries for a pasted repo slug', async () => {
-      mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: [] }, { hits: [] }, { hits: [] }, { hits: [] }]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      await provider.searchPacks('kijai/comfyui-KJNodes', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [
-          expect.objectContaining({
-            query: 'kijai/comfyui-KJNodes',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            query: 'comfyui-KJNodes',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            query: 'comfyui KJ Nodes',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            indexName: 'nodes_index_query_suggestions'
-          })
-        ],
-        strategy: 'none'
-      })
     })
 
     it('should merge hits from every fallback query in order, deduped', async () => {
@@ -562,7 +345,7 @@ describe('useAlgoliaSearchProvider', () => {
         results: [
           { hits: [hit('primary')] },
           { hits: [hit('primary'), hit('owner-stripped')] },
-          { hits: [hit('owner-stripped'), hit('tokenized')] },
+          { hits: [hit('owner-stripped'), hit('separator-split')] },
           { hits: [] }
         ]
       })
@@ -576,35 +359,29 @@ describe('useAlgoliaSearchProvider', () => {
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
         'primary',
         'owner-stripped',
-        'tokenized'
+        'separator-split'
       ])
     })
 
-    // Pages are concatenated into one list by useRegistrySearch, so re-running
-    // the fallback per page would re-append hits already shown on page 0.
-    it('should not fire fallback queries beyond the first page', async () => {
+    it('reads query suggestions from the response after the fallback queries', async () => {
       mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: [] }, { hits: [] }]
+        results: [
+          { hits: [] },
+          { hits: [] },
+          { hits: [] },
+          { hits: [{ query: 'comfyui kjnodes', popularity: 7 }] }
+        ]
       })
 
       const provider = useAlgoliaSearchProvider()
-      await provider.searchPacks('kijai/comfyui-KJNodes', {
+      const result = await provider.searchPacks('kijai/comfyui-KJNodes', {
         pageSize: 10,
-        pageNumber: 1
+        pageNumber: 0
       })
 
-      expect(mockSearchClient.search).toHaveBeenCalledWith({
-        requests: [
-          expect.objectContaining({
-            query: 'kijai/comfyui-KJNodes',
-            indexName: 'nodes_index'
-          }),
-          expect.objectContaining({
-            indexName: 'nodes_index_query_suggestions'
-          })
-        ],
-        strategy: 'none'
-      })
+      expect(result.querySuggestions).toEqual([
+        { query: 'comfyui kjnodes', popularity: 7 }
+      ])
     })
   })
 

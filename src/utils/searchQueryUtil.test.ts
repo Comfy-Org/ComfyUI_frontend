@@ -2,131 +2,109 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildPackSearchFallbacks,
-  stripRepoOwner,
-  tokenizeCompoundWords
+  splitOnSeparators,
+  stripRepoOwner
 } from '@/utils/searchQueryUtil'
 
-describe('tokenizeCompoundWords', () => {
-  it('splits camelCase transitions', () => {
-    expect(tokenizeCompoundWords('eulerDiscreteScheduler')).toBe(
-      'euler Discrete Scheduler'
-    )
+describe('splitOnSeparators', () => {
+  it.for([
+    { input: 'euler_discrete_scheduler', expected: 'euler discrete scheduler' },
+    { input: 'euler-discrete-scheduler', expected: 'euler discrete scheduler' },
+    {
+      input: 'ComfyUI-Euler_DiscreteScheduler',
+      expected: 'ComfyUI Euler DiscreteScheduler'
+    },
+    {
+      input: 'comfyui-seedvr2_videoupscaler',
+      expected: 'comfyui seedvr2 videoupscaler'
+    },
+    { input: 'qwen3-vl', expected: 'qwen3 vl' },
+    { input: 'comfyui-47064894', expected: 'comfyui 47064894' },
+    { input: 'euler  discrete', expected: 'euler discrete' },
+    { input: '--euler-discrete--', expected: 'euler discrete' }
+  ])('splits "$input" into "$expected"', ({ input, expected }) => {
+    expect(splitOnSeparators(input)).toBe(expected)
   })
 
-  it('splits PascalCase transitions', () => {
-    expect(tokenizeCompoundWords('EulerDiscreteScheduler')).toBe(
-      'Euler Discrete Scheduler'
-    )
-  })
-
-  it('splits snake_case on underscores', () => {
-    expect(tokenizeCompoundWords('euler_discrete_scheduler')).toBe(
-      'euler discrete scheduler'
-    )
-  })
-
-  it('splits kebab-case on hyphens', () => {
-    expect(tokenizeCompoundWords('euler-discrete-scheduler')).toBe(
-      'euler discrete scheduler'
-    )
-  })
-
-  it('splits input with mixed separators and casing', () => {
-    expect(tokenizeCompoundWords('ComfyUI-Euler_DiscreteScheduler')).toBe(
-      'Comfy UI Euler Discrete Scheduler'
-    )
-  })
-
-  it('keeps a trailing all-caps acronym run intact', () => {
-    expect(tokenizeCompoundWords('SDXL')).toBe('SDXL')
-  })
-
-  it('splits an acronym run from a following capitalized word', () => {
-    expect(tokenizeCompoundWords('ComfyUI')).toBe('Comfy UI')
-    expect(tokenizeCompoundWords('XMLHttpRequest')).toBe('XML Http Request')
-  })
-
-  it('keeps a version-bearing model name whole', () => {
-    expect(tokenizeCompoundWords('seedvr2')).toBe('seedvr2')
-    expect(tokenizeCompoundWords('qwen3')).toBe('qwen3')
-    expect(tokenizeCompoundWords('automatic1111')).toBe('automatic1111')
-  })
-
-  it('keeps a lowercase suffix attached to its version digits', () => {
-    expect(tokenizeCompoundWords('hunyuan3d')).toBe('hunyuan3d')
-    expect(tokenizeCompoundWords('minimax h3')).toBe('minimax h3')
-  })
-
-  it('splits a capitalized word following a digit run', () => {
-    expect(tokenizeCompoundWords('v2Turbo')).toBe('v2 Turbo')
-  })
-
-  it('splits an alphanumeric run that a separator already broke up', () => {
-    expect(tokenizeCompoundWords('qwen3-vl')).toBe('qwen3 vl')
-    expect(tokenizeCompoundWords('comfyui-47064894')).toBe('comfyui 47064894')
-  })
-
-  it('is a no-op on already space-separated input', () => {
-    expect(tokenizeCompoundWords('euler discrete scheduler')).toBe(
-      'euler discrete scheduler'
-    )
-  })
-
-  it('returns an empty string for empty input', () => {
-    expect(tokenizeCompoundWords('')).toBe('')
-  })
-
-  it('returns a single word unchanged', () => {
-    expect(tokenizeCompoundWords('scheduler')).toBe('scheduler')
-  })
-
-  it('trims leading and trailing separators', () => {
-    expect(tokenizeCompoundWords('--euler-discrete--')).toBe('euler discrete')
+  it.for([
+    'ComfyUI',
+    'LoRA',
+    'KSampler',
+    'IPAdapter',
+    'Hunyuan3D',
+    'EulerDiscreteScheduler',
+    'SDXL',
+    'seedvr2',
+    'hunyuan3d',
+    'sd1.5',
+    'minimax h3',
+    'euler discrete scheduler',
+    'scheduler',
+    ''
+  ])('leaves %j unchanged', (input) => {
+    expect(splitOnSeparators(input)).toBe(input)
   })
 })
 
 describe('stripRepoOwner', () => {
-  it('drops the owner segment of a repo slug', () => {
-    expect(stripRepoOwner('kijai/comfyui-kjnodes')).toBe('comfyui-kjnodes')
+  it.for([
+    { query: 'kijai/comfyui-kjnodes', expected: 'comfyui-kjnodes' },
+    { query: 'github.com/kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
+    {
+      query: 'https://github.com/kijai/ComfyUI-KJNodes',
+      expected: 'ComfyUI-KJNodes'
+    },
+    {
+      query: 'https://www.github.com/kijai/ComfyUI-KJNodes',
+      expected: 'ComfyUI-KJNodes'
+    },
+    { query: 'owner/repo/tree/main', expected: 'repo/tree/main' }
+  ])('strips "$query" to "$expected"', ({ query, expected }) => {
+    expect(stripRepoOwner(query)).toBe(expected)
   })
 
-  it('keeps a slug that has no owner segment', () => {
-    expect(stripRepoOwner('comfyui-kjnodes')).toBe('comfyui-kjnodes')
-  })
-
-  it('drops only the first segment of a deeper path', () => {
-    expect(stripRepoOwner('owner/repo/tree/main')).toBe('repo/tree/main')
-  })
-
-  it('keeps a query whose slash is not an owner boundary', () => {
-    expect(stripRepoOwner('image to video')).toBe('image to video')
-    expect(stripRepoOwner('upscale / restore')).toBe('upscale / restore')
-    expect(stripRepoOwner('/leading-slash')).toBe('/leading-slash')
-    expect(stripRepoOwner('trailing-slash/')).toBe('trailing-slash/')
+  it.for([
+    'comfyui-kjnodes',
+    'image to video',
+    'upscale / restore',
+    '/leading-slash',
+    'trailing-slash/',
+    'SD1.5/SDXL'
+  ])('keeps %j unchanged', (query) => {
+    expect(stripRepoOwner(query)).toBe(query)
   })
 })
 
 describe('buildPackSearchFallbacks', () => {
-  it('yields the owner-stripped slug and its tokenized form', () => {
-    expect(buildPackSearchFallbacks('kijai/comfyui-KJNodes')).toEqual([
-      'comfyui-KJNodes',
-      'comfyui KJ Nodes'
-    ])
+  it.for([
+    {
+      query: 'kijai/comfyui-KJNodes',
+      expected: ['comfyui-KJNodes', 'comfyui KJNodes']
+    },
+    {
+      query: 'https://github.com/kijai/ComfyUI-KJNodes',
+      expected: ['ComfyUI-KJNodes', 'ComfyUI KJNodes']
+    },
+    {
+      query: 'euler-discrete-scheduler',
+      expected: ['euler discrete scheduler']
+    },
+    { query: 'kijai/kjnodes', expected: ['kjnodes'] }
+  ])('yields $expected for "$query"', ({ query, expected }) => {
+    expect(buildPackSearchFallbacks(query)).toEqual(expected)
   })
 
-  it('yields only the tokenized form when there is no owner segment', () => {
-    expect(buildPackSearchFallbacks('EulerDiscreteScheduler')).toEqual([
-      'Euler Discrete Scheduler'
-    ])
-  })
-
-  it('yields nothing for a query that needs no rewriting', () => {
-    expect(buildPackSearchFallbacks('flux upscale')).toEqual([])
-    expect(buildPackSearchFallbacks('seedvr2')).toEqual([])
-    expect(buildPackSearchFallbacks('')).toEqual([])
-  })
-
-  it('does not repeat a candidate that both rewrites agree on', () => {
-    expect(buildPackSearchFallbacks('kijai/kjnodes')).toEqual(['kjnodes'])
+  it.for([
+    'flux upscale',
+    'seedvr2',
+    'ComfyUI',
+    'LoRA',
+    'EulerDiscreteScheduler',
+    'sd1.5',
+    '',
+    '   ',
+    'gguf '
+  ])('yields nothing for %j', (query) => {
+    expect(buildPackSearchFallbacks(query)).toEqual([])
   })
 })
