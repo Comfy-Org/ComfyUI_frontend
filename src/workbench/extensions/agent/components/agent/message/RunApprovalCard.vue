@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
 import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
 const { part, answering = false } = defineProps<{
   part: RunApprovalPart
   answering?: boolean
 }>()
+const boundWorkflowId = inject(agentBoundWorkflowIdKey, ref(undefined))
+const hideWorkflowName = computed(
+  () => !!boundWorkflowId.value && part.workflowId === boundWorkflowId.value
+)
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  shown: [askId: string, workflowId: string | null]
 }>()
+
+onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
 
 const { t } = useI18n()
 const workflowLabel = computed(
@@ -29,19 +37,37 @@ const workflowLabel = computed(
     class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="m-0 font-medium text-base-foreground">
-        {{ t('agent.runApproval.lead') }}
+      <p class="m-0 text-base-foreground">
+        {{
+          t(
+            hideWorkflowName
+              ? 'agent.runApproval.leadBound'
+              : 'agent.runApproval.lead'
+          )
+        }}
       </p>
-      <ul class="m-0 min-w-0 list-disc pl-5 text-muted-foreground">
+      <ul
+        v-if="!hideWorkflowName"
+        class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
+      >
         <li>
-          <button
+          <Button
             v-if="part.workflowId"
             type="button"
-            class="max-w-full cursor-pointer border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-inherit underline underline-offset-2 transition-colors hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
-            @click="emit('openWorkflow', part.workflowId, part.workflowName)"
+            variant="link"
+            size="unset"
+            class="max-w-full justify-start text-left font-normal wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
+            @click="
+              emit(
+                'openWorkflow',
+                part.askId,
+                part.workflowId,
+                part.workflowName
+              )
+            "
           >
             {{ workflowLabel }}
-          </button>
+          </Button>
           <span v-else class="wrap-break-word underline underline-offset-2">
             {{ workflowLabel }}
           </span>

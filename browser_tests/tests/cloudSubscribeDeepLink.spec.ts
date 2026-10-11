@@ -4,6 +4,7 @@ import type { PreviewSubscribeResponse } from '@comfyorg/ingest-types'
 import type { BillingPlansResponse } from '@/platform/workspace/api/workspaceApi'
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import {
   DEFAULT_TEAM_MEMBERS,
   LEGACY_PERSONAL_BILLING_STATUS
@@ -14,23 +15,16 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+const CREATOR_MONTHLY_PLAN = createPlan({
+  slug: 'creator-monthly',
+  tier: 'CREATOR',
+  duration: 'MONTHLY',
+  priceCents: 2000,
+  monthlyCredits: 2400
+})
+
 const CREATOR_MONTHLY_PLANS = {
-  plans: [
-    {
-      slug: 'creator-monthly',
-      tier: 'CREATOR',
-      duration: 'MONTHLY',
-      price_cents: 2000,
-      credits_cents: 2400,
-      max_seats: 1,
-      availability: { available: true },
-      seat_summary: {
-        seat_count: 1,
-        total_cost_cents: 2000,
-        total_credits_cents: 2400
-      }
-    }
-  ]
+  plans: [CREATOR_MONTHLY_PLAN]
 } satisfies BillingPlansResponse
 
 const CREATOR_MONTHLY_PREVIEW = {
@@ -40,20 +34,9 @@ const CREATOR_MONTHLY_PREVIEW = {
   effective_at: '2026-08-24T00:00:00Z',
   cost_today_cents: 2000,
   cost_next_period_cents: 2000,
-  credits_today_cents: 2400,
-  credits_next_period_cents: 2400,
-  new_plan: {
-    slug: 'creator-monthly',
-    tier: 'CREATOR',
-    duration: 'MONTHLY',
-    price_cents: 2000,
-    credits_cents: 2400,
-    seat_summary: {
-      seat_count: 1,
-      total_cost_cents: 2000,
-      total_credits_cents: 2400
-    }
-  }
+  credits_today_cents: CREATOR_MONTHLY_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_MONTHLY_PLAN.credits_cents,
+  new_plan: CREATOR_MONTHLY_PLAN
 } satisfies PreviewSubscribeResponse
 
 test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {

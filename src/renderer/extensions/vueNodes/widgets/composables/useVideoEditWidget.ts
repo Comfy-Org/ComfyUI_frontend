@@ -8,7 +8,7 @@ import type {
   InputSpec as InputSpecV2,
   VideoEditInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useVideoEditWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IVideoEditWidget => {

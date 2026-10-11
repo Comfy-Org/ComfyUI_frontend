@@ -1,19 +1,15 @@
-import { html, parseFragment } from 'parse5'
+import { parseFragment } from 'parse5'
 import type { DefaultTreeAdapterTypes } from 'parse5'
 import { defineComponent, h } from 'vue'
-import type { PropType, VNodeChild } from 'vue'
+import type { PropType } from 'vue'
+
+import {
+  hasUnsafeUrlCharacters,
+  safeHttpsUrl,
+  toSafeVNodes
+} from './safeMarkup'
 
 const ALLOWED_TAGS = new Set(['a', 'br', 'code', 'li', 'ol', 'span', 'strong'])
-const BLOCKED_TAGS = new Set([
-  'embed',
-  'iframe',
-  'math',
-  'object',
-  'script',
-  'style',
-  'svg',
-  'template'
-])
 const ALLOWED_CLASSES = new Set([
   'text-primary-comfy-yellow',
   'text-white',
@@ -26,12 +22,12 @@ type RichTextRootTag = 'div' | 'h2' | 'h3' | 'p' | 'span'
 
 function sanitizeHref(value: string): string | undefined {
   const href = value.trim()
-  if (/[^\S ]/.test(href)) return
+  if (safeHttpsUrl(href)) return href
+  if (hasUnsafeUrlCharacters(href)) return undefined
 
   try {
     const url = new URL(href, HREF_BASE)
     if (url.protocol === 'mailto:' && /^mailto:/i.test(href)) return href
-    if (/^https:\/\//i.test(href)) return href
     if (href.startsWith('/') && url.origin === HREF_BASE.origin) return href
   } catch {
     return undefined
@@ -71,18 +67,7 @@ function sanitizeAttrs(
   return sanitized
 }
 
-function toVNodes(node: DefaultTreeAdapterTypes.ChildNode): VNodeChild[] {
-  if ('value' in node) return [node.value]
-  if (!('tagName' in node)) return []
-  if (node.namespaceURI !== html.NS.HTML || BLOCKED_TAGS.has(node.tagName)) {
-    return []
-  }
-
-  const children = node.childNodes.flatMap(toVNodes)
-  if (!ALLOWED_TAGS.has(node.tagName)) return children
-
-  return [h(node.tagName, sanitizeAttrs(node), children)]
-}
+const policy = { allowedTags: ALLOWED_TAGS, attrs: sanitizeAttrs }
 
 export default defineComponent({
   name: 'SafeRichText',
@@ -96,6 +81,12 @@ export default defineComponent({
   },
   setup(props, { attrs }) {
     return () =>
-      h(props.as, attrs, parseFragment(props.html).childNodes.flatMap(toVNodes))
+      h(
+        props.as,
+        attrs,
+        parseFragment(props.html).childNodes.flatMap((node) =>
+          toSafeVNodes(node, policy)
+        )
+      )
   }
 })

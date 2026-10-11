@@ -1,56 +1,82 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+
+import type { AssetPreviewMode } from '../../../types/assetPreview'
+import AssetHoverPreview from './AssetHoverPreview.vue'
+import AssetThumbnail from './AssetThumbnail.vue'
 
 const {
   name,
   previewUrl,
-  uploading = false
+  mediaUrl,
+  mediaKind,
+  uploading = false,
+  highlighted = false
 } = defineProps<{
   name: string
   previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
   uploading?: boolean
+  highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
+const previewMode = defineModel<AssetPreviewMode>('previewMode', {
+  default: 'closed'
+})
 
-const kind = computed(() => getMediaTypeFromFilename(name))
-
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-const kindIconClass = computed(() =>
-  kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
-)
+const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
 </script>
 
 <template>
   <span
-    class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background px-2.5 text-xs/4 font-medium text-base-foreground"
+    data-testid="agent-attachment-chip"
+    :data-attachment-name="name"
+    :data-highlighted="highlighted || undefined"
+    role="group"
+    :aria-label="name"
+    class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
   >
-    <span
-      v-if="uploading"
-      :aria-label="$t('agent.uploading')"
-      class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-    />
-    <!-- Only an image kind renders its preview: a server thumbnail for an
-         audio or 3D asset would repaint the broken-image chip this fixed. -->
-    <img
-      v-else-if="previewUrl && kind === 'image'"
-      :src="previewUrl"
-      :alt="name"
-      class="size-3.5 shrink-0 rounded-sm object-cover"
-    />
-    <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
-    <span class="max-w-32 truncate">{{ name }}</span>
-    <button
-      type="button"
-      :aria-label="$t('agent.remove')"
-      class="flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 text-muted-foreground transition-colors hover:text-base-foreground"
-      @click="emit('remove')"
+    <AssetHoverPreview
+      v-model:mode="previewMode"
+      :name
+      :preview-url
+      :media-url
+      :media-kind
     >
-      <span class="icon-[lucide--x] size-3.5 shrink-0" />
-    </button>
+      <AssetThumbnail
+        :name
+        :preview-url
+        :media-kind
+        variant="tray"
+        class="size-full"
+      />
+      <span
+        v-if="kind === 'video' && previewUrl"
+        aria-hidden="true"
+        class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80 text-base-foreground"
+      >
+        <span class="icon-[lucide--play] size-3" />
+      </span>
+      <span
+        v-if="uploading"
+        role="status"
+        :aria-label="$t('agent.uploading')"
+        class="absolute inset-0 flex items-center justify-center bg-base-background/60"
+      >
+        <span
+          class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
+        />
+      </span>
+    </AssetHoverPreview>
+    <TagRemoveButton
+      :label="$t('agent.removeAsset', { name })"
+      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
+      @click="emit('remove')"
+    />
   </span>
 </template>

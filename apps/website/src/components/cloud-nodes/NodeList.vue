@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import type { PackNode } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { PackNode } from '@/data/cloudNodes'
+import type { Locale } from '@/i18n/translations'
 
-import { useNodesByCategory } from '../../composables/useNodesByCategory'
-import { t } from '../../i18n/translations'
+import { useNodesByCategory } from '@/composables/useNodesByCategory'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', nodes } = defineProps<{
   locale?: Locale
   nodes: readonly PackNode[]
 }>()
+const { t } = translationsFor(locale)
 
 const { groupedNodes } = useNodesByCategory(() => nodes)
 </script>
@@ -20,7 +21,7 @@ const { groupedNodes } = useNodesByCategory(() => nodes)
     <summary
       class="cursor-pointer list-none text-sm font-semibold text-primary-comfy-canvas"
     >
-      {{ t('cloudNodes.card.nodesHeading', locale) }}
+      {{ t('cloudNodes.card.nodesHeading') }}
     </summary>
 
     <div class="mt-4 flex flex-col gap-5">

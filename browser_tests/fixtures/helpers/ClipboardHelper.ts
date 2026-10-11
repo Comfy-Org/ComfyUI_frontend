@@ -6,10 +6,9 @@ import type { Locator, Page } from '@playwright/test'
 import type { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 
-function readFilePayload(filePath: string) {
+function readFilePayload(filePath: string, fileName = basename(filePath)) {
   const buffer = readFileSync(filePath)
   const bufferArray = [...new Uint8Array(buffer)]
-  const fileName = basename(filePath)
   const fileType = getMimeType(fileName)
 
   return { bufferArray, fileName, fileType }
@@ -69,6 +68,7 @@ async function interceptNextFilePaste(
 
 type PasteFileOptions = {
   mode?: 'keyboard' | 'direct'
+  fileName?: string
 }
 
 export class ClipboardHelper {
@@ -85,11 +85,22 @@ export class ClipboardHelper {
     await this.keyboard.ctrlSend('KeyV', locator ?? null)
   }
 
+  async readText(): Promise<string> {
+    return await this.page.evaluate(() => navigator.clipboard.readText())
+  }
+
+  async writeText(text: string): Promise<void> {
+    await this.page.evaluate(
+      (clipboardText) => navigator.clipboard.writeText(clipboardText),
+      text
+    )
+  }
+
   async pasteFile(
     filePath: string,
-    { mode = 'keyboard' }: PasteFileOptions = {}
+    { mode = 'keyboard', fileName }: PasteFileOptions = {}
   ): Promise<void> {
-    const payload = readFilePayload(filePath)
+    const payload = readFilePayload(filePath, fileName)
 
     if (mode === 'keyboard') {
       await interceptNextFilePaste(this.page, payload)

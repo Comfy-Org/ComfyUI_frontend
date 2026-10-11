@@ -18,12 +18,16 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
-  rootGraph: null as LGraph | null
+  rootGraph: null as LGraph | null,
+  get rootGraphOrUndefined() {
+    return this.rootGraph ?? undefined
+  }
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
@@ -43,7 +47,6 @@ function createPanelI18n() {
 }
 
 const panelStubs = {
-  Button: { template: '<button><slot /></button>' },
   EditableText: true,
   Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
   TabErrors: true,
@@ -82,7 +85,7 @@ function renderPanel(
 
   const canvasStore = useCanvasStore()
   canvasStore.currentGraph = currentGraph
-  canvasStore.selectedItems = [markRaw(node)]
+  setCanvasSelection([markRaw(node)])
 
   const rightSidePanelStore = useRightSidePanelStore()
   rightSidePanelStore.activeTab = activeTab
@@ -227,7 +230,7 @@ describe('RightSidePanel global parameters tab', () => {
 
     const canvasStore = useCanvasStore()
     canvasStore.currentGraph = rootGraph
-    canvasStore.selectedItems = []
+    setCanvasSelection([])
 
     const rightSidePanelStore = useRightSidePanelStore()
     rightSidePanelStore.activeTab = 'parameters'

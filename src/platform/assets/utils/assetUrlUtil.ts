@@ -58,7 +58,9 @@ export function getAssetSubfolder(asset: AssetItem): string {
  * Id of the assets-API asset holding this item's own file. A card grouped per
  * job carries the job id as its `id` and keeps its own asset id in metadata.
  */
-function getAssetContentId(asset: AssetItem): string {
+export function getAssetContentId(
+  asset: Pick<AssetItem, 'id' | 'user_metadata'>
+): string {
   return getOutputAssetMetadata(asset.user_metadata)?.assetId || asset.id
 }
 
@@ -69,10 +71,22 @@ function getAssetContentId(asset: AssetItem): string {
  * is needed and a preview that is only a thumbnail is never mistaken for the
  * file. Otherwise the item came from the history API, whose `preview_url`
  * already points at the file, with a `/view` URL as fallback.
+ *
+ * `disposition: 'inline'` asks the assets-API content endpoint to serve the
+ * file for in-page rendering (e.g. a `<video>` source) instead of its
+ * default `attachment` disposition, which browsers try to save rather than
+ * play. It has no effect on the history-backed fallback, whose `/view`
+ * endpoint has no such distinction.
  */
-export function getAssetFileUrl(asset: AssetItem): string {
+export function getAssetFileUrl(
+  asset: AssetItem,
+  options?: { disposition?: 'inline' | 'attachment' }
+): string {
   if (useFeatureFlags().flags.assetsEnabled) {
-    return api.apiURL(`/assets/${getAssetContentId(asset)}/content`)
+    const query = options?.disposition
+      ? `?disposition=${options.disposition}`
+      : ''
+    return api.apiURL(`/assets/${getAssetContentId(asset)}/content${query}`)
   }
   return asset.preview_url || getAssetUrl(asset)
 }

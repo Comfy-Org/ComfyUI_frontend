@@ -6,7 +6,6 @@ import {
   OUTPUT_TTL_MS,
   formatElapsed,
   isExpired,
-  runGate,
   transition
 } from './workshop-run'
 
@@ -68,44 +67,6 @@ describe('run transition', () => {
   })
 })
 
-describe('runGate', () => {
-  const base = {
-    signedIn: true,
-    credits: 100,
-    creditsPerRun: 24,
-    policyDisabled: false,
-    unavailable: false
-  }
-
-  it('is ready when signed in with enough credits', () => {
-    expect(runGate(base)).toBe('ready')
-  })
-
-  it('refuses to run a model whose price is unknown', () => {
-    expect(runGate({ ...base, creditsPerRun: undefined })).toBe('unavailable')
-  })
-
-  it('asks for sign in before anything account related', () => {
-    expect(runGate({ ...base, signedIn: false, credits: 0 })).toBe('signedOut')
-  })
-
-  it('prefers the policy block over buying credits', () => {
-    expect(runGate({ ...base, policyDisabled: true, credits: 0 })).toBe(
-      'policy'
-    )
-  })
-
-  it('blocks on credits below the per-run price', () => {
-    expect(runGate({ ...base, credits: 23 })).toBe('noCredits')
-  })
-
-  it('reports an unavailable model regardless of session', () => {
-    expect(runGate({ ...base, signedIn: false, unavailable: true })).toBe(
-      'unavailable'
-    )
-  })
-})
-
 describe('formatElapsed', () => {
   it('formats minutes and zero-padded seconds', () => {
     expect(formatElapsed(0)).toBe('0:00')
@@ -113,27 +74,7 @@ describe('formatElapsed', () => {
   })
 })
 
-describe('runGate for teams and model lifecycles', () => {
-  const base = {
-    signedIn: true,
-    credits: 100,
-    creditsPerRun: 24,
-    policyDisabled: false,
-    unavailable: false
-  }
-
-  it('hands a member without credits to the owner instead of checkout', () => {
-    expect(runGate({ ...base, credits: 0, role: 'member' })).toBe(
-      'memberNoCredits'
-    )
-    expect(runGate({ ...base, credits: 0, role: 'owner' })).toBe('noCredits')
-  })
-
-  it('treats a deprecated model as unavailable', () => {
-    expect(runGate({ ...base, modelStatus: 'deprecated' })).toBe('unavailable')
-    expect(runGate({ ...base, modelStatus: 'degraded' })).toBe('ready')
-  })
-
+describe('isExpired', () => {
   it('expires an output at the end of its ttl', () => {
     const running = transition(IDLE, { type: 'start', at: 1_000 })
     const done = transition(running, {

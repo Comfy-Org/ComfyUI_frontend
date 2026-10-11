@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import BrandButton from '../common/BrandButton.vue'
-import SectionLabel from '../common/SectionLabel.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 
 interface ButtonProps {
   label: string

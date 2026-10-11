@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { computed, isReactive } from 'vue'
 
-import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 describe('slot label reactivity (regression #16642)', () => {

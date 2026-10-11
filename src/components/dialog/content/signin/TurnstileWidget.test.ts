@@ -17,31 +17,34 @@ const { sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/vue/TurnstileWidget'), async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    default: defineComponent({
-      props: {
-        siteKey: String,
-        theme: String,
-        expiredMessage: String,
-        failedMessage: String,
-        loader: Function,
-        token: String,
-        unavailable: Boolean
-      },
-      emits: ['update:token', 'update:unavailable'],
-      setup(props, { expose, emit }) {
-        sharedProps.value = props
-        sharedEmit.value = emit
-        expose({ reset: sharedReset })
-        return () => h('div', { 'data-testid': 'shared-turnstile' })
-      }
-    })
+vi.mock<unknown>(
+  import('@comfyorg/account-ui/auth/TurnstileWidget'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      default: defineComponent({
+        props: {
+          siteKey: String,
+          theme: String,
+          expiredMessage: String,
+          failedMessage: String,
+          loader: Function,
+          token: String,
+          unavailable: Boolean
+        },
+        emits: ['update:token', 'update:unavailable'],
+        setup(props, { expose, emit }) {
+          sharedProps.value = props
+          sharedEmit.value = emit
+          expose({ reset: sharedReset })
+          return () => h('div', { 'data-testid': 'shared-turnstile' })
+        }
+      })
+    }
   }
-})
+)
 
-vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: vi.fn()
 }))
 

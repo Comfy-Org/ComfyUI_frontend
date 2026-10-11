@@ -1,26 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
+import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188/api${path}`)
-)
-const mockFlags = vi.hoisted(() => ({ assetsEnabled: false }))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: mockApiURL }
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
@@ -84,7 +82,7 @@ describe('getAssetUrl', () => {
 describe('getAssetFileUrl', () => {
   describe('with the assets API enabled', () => {
     beforeEach(() => {
-      mockFlags.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     })
 
     it('addresses the file by asset id without any path inference', () => {
@@ -132,13 +130,17 @@ describe('getAssetFileUrl', () => {
         'http://localhost:8188/api/assets/asset-model/content'
       )
     })
+
+    it('requests an inline disposition when asked, for in-page playback', () => {
+      const asset = createAsset({ id: 'asset-1' })
+
+      expect(getAssetFileUrl(asset, { disposition: 'inline' })).toBe(
+        'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+      )
+    })
   })
 
   describe('with history-backed assets', () => {
-    beforeEach(() => {
-      mockFlags.assetsEnabled = false
-    })
-
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

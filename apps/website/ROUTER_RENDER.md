@@ -5,7 +5,7 @@ For setup, account concurrency overrides and image-first test commands, see
 
 `src/config/router-render.ts` is the browser-safe execution boundary. The model
 page's Run button and `scripts/router-render.ts` use it. The script wrapper reads
-`COMFY_KEY`; browser callers pass a credential or an async credential getter.
+`COMFY_API_KEY`; browser callers pass a credential or an async credential getter.
 
 The public `router_render` / `router_for_model` / `router_get_*` names follow the
 requested shared API contract. Internal TypeScript helpers use camelCase.
@@ -116,7 +116,7 @@ paid generation.
 ```sh
 pnpm --filter @comfyorg/website test:router-models
 
-# Set COMFY_KEY in the environment, not as a command-line argument.
+# Set COMFY_API_KEY in the environment, not as a command-line argument.
 PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:router-models \
   --execute --concurrency 16 --starts-per-second 2
 

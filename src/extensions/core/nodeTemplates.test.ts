@@ -3,31 +3,15 @@ import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
-import type { useDialogService } from '@/services/dialogService'
+import { app } from '@/scripts/app'
 
-const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
-  async () => {
-    const { createExtensionCapture } =
-      await import('@/utils/__tests__/extensionTestUtils')
-    return {
-      extensions: createExtensionCapture(),
-      getUserData: vi.fn(),
-      reportErrorMock: vi.fn()
-    }
-  }
-)
+const getUserData = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
-vi.mock(import('@/services/dialogService'), () => ({
-  useDialogService: () =>
-    fromPartial<ReturnType<typeof useDialogService>>({ prompt: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
@@ -37,12 +21,7 @@ vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({ getUserData, storeUserData: vi.fn() })
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    registerExtension: extensions.registerExtension,
-    canvas: { selected_nodes: {} }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/scripts/ui'), () => ({
   ComfyDialog: fromAny(
@@ -70,6 +49,7 @@ const response = createDeferred<{
 getUserData.mockReturnValue(response.promise)
 
 await import('./nodeTemplates')
+const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
   const error = new Error('invalid template JSON')
@@ -80,6 +60,7 @@ it('reports invalid persisted node templates before falling back to empty', asyn
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'graph',
       errorType: 'failure_loading_node_templates',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -91,7 +72,6 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     })
   })
 
-  const extension = extensions.getExtension('Comfy.NodeTemplates')
   if (!extension.getCanvasMenuItems) {
     throw new Error('Comfy.NodeTemplates does not register canvas menu items')
   }

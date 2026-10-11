@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({
@@ -197,11 +198,12 @@ test.describe('Background Image Upload', () => {
     })
     await uploadButton.hover()
 
-    const uploadTooltip = comfyPage.page.locator('.p-tooltip:visible')
+    const tooltips = new Tooltip(comfyPage.page)
+    const uploadTooltip = tooltips.named('Upload')
     await expect(uploadTooltip).toBeVisible()
 
-    // Move away to hide tooltip
     await comfyPage.page.locator('body').hover()
+    await expect(uploadTooltip).toBeHidden()
 
     // Set a background to enable clear button
     const urlInput = backgroundImageSetting.getByRole('textbox')
@@ -214,8 +216,7 @@ test.describe('Background Image Upload', () => {
     })
     await clearButton.hover()
 
-    const clearTooltip = comfyPage.page.locator('.p-tooltip:visible')
-    await expect(clearTooltip).toBeVisible()
+    await expect(tooltips.named('Clear')).toBeVisible()
   })
 
   test('should maintain reactive updates between URL input and clear button state', async ({

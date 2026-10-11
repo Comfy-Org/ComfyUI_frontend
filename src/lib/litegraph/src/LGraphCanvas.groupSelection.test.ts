@@ -314,6 +314,19 @@ describe('LGraphCanvas group selection', () => {
       expect(nodeA.selected).toBe(true)
       expect(nodeB.selected).toBe(true)
     })
+
+    it('ignores a foreign group with the same id', () => {
+      canvas.select(group)
+      const foreignGroup = new LGraphGroup('Foreign', group.id)
+      foreignGroup.selected = true
+
+      const ctrlEvent = { ctrlKey: true } as CanvasPointerEvent
+      canvas.processSelect(foreignGroup, ctrlEvent)
+
+      expect(group.selected).toBe(true)
+      expect(canvas.selectedItems.has(group)).toBe(true)
+      expect(foreignGroup.selected).toBe(true)
+    })
   })
 
   describe('deselect with groupSelectChildren disabled', () => {

@@ -10,7 +10,7 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
@@ -181,7 +181,7 @@ async function updateFiles(files: File[]) {
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
       :on-load-more="() => outputAssets.loadMore()"
-      :can-load-more="outputAssets.hasMore"
+      :can-load-more="toValue(outputAssets.hasMore)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

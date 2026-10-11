@@ -3,15 +3,16 @@
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
          on top of the content area — outside it, attached with no gap (DES QA). -->
     <div class="flex justify-center">
-      <SelectButton
-        v-model="planMode"
-        :options="planScopeOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        unstyled
-        :pt="planScopeButtonPt"
-      />
+      <ToggleGroup v-model="planMode" type="single" :allow-empty="false">
+        <ToggleGroupItem
+          v-for="option in planScopeOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:bg-base-background hover:opacity-100 data-[state=on]:bg-base-background data-[state=on]:opacity-100"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <!-- Content well: a borderless base-background area (DES-197 "Personal Plan,
@@ -60,16 +61,18 @@
       <!-- Billing-cycle toggle: drives both the personal tier cards and the
            team credit slider (team monthly halves the yearly discount). -->
       <div class="flex justify-center">
-        <SelectButton
+        <ToggleGroup
           v-model="currentBillingCycle"
-          :options="billingCycleOptions"
-          option-label="label"
-          option-value="value"
+          type="single"
           :allow-empty="false"
-          unstyled
-          :pt="toggleButtonPt"
+          class="rounded-lg bg-secondary-background p-1.5"
         >
-          <template #option="{ option }">
+          <ToggleGroupItem
+            v-for="option in billingCycleOptions"
+            :key="option.value"
+            :value="option.value"
+            class="h-8 min-w-44 px-5 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+          >
             <div class="flex items-center gap-2">
               <span>{{ option.label }}</span>
               <div
@@ -83,8 +86,8 @@
                 }}
               </div>
             </div>
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
@@ -427,15 +430,15 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
   amountForBillingCycle,
   hasActivePaidPlan,
@@ -446,12 +449,13 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -534,7 +538,6 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -561,49 +564,6 @@ interface PricingTierConfig {
   featuresHeader: string
   features: string[]
   isPopular?: boolean
-}
-
-// Billing-cycle toggle: the active option is a solid white pill (DES-197).
-const toggleButtonPt = {
-  root: {
-    class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        // min-w keeps Yearly (with its discount badge) and Monthly the same
-        // width so the active pill doesn't resize when toggling (DES QA).
-        'h-8 min-w-44 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        context.active
-          ? 'bg-base-foreground text-base-background'
-          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2 ' }
-  }
-}
-
-// Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
-// not the solid white of the billing toggle (DES-197 2951:592113).
-const planScopeButtonPt = {
-  // No pill container (DES "Plan Type Tabs" 2812:818371 has no bg) — just the
-  // tabs, so the active base-background tab sits flush on top of the content area.
-  root: {
-    class: 'flex gap-1'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        'h-8 px-4 rounded-t-md transition cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        // Inactive tab is the active tab at half opacity (DES QA) — same fill
-        // and text, faded as one, not a separate muted colour.
-        context.active
-          ? 'bg-base-background text-base-foreground'
-          : 'bg-base-background text-base-foreground opacity-50 hover:opacity-100'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2' }
-  }
 }
 
 const allPlanScopeOptions: PlanScopeOption[] = [
@@ -668,6 +628,7 @@ const {
   isTeamPlan,
   subscription,
   subscriptionStatus,
+  teamCreditStops,
   currentTeamCreditStop
 } = useBillingContext()
 
@@ -688,8 +649,6 @@ watch(
   },
   { immediate: true }
 )
-
-const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const scheduledPlanChange = useScheduledPlanChange()
@@ -862,10 +821,8 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
-// The catalog grant for the selected duration is authoritative; the static
-// per-month figure is only the pre-resolve (loading / OSS) fallback.
 const creditsForTier = (tier: PricingTierConfig): number =>
-  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
   amountForCurrentCycle(tier.pricing.credits)
 
 const videoEstimateForTier = (tier: PricingTierConfig): number =>
@@ -949,7 +906,7 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]

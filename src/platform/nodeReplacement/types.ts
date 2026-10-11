@@ -24,3 +24,19 @@ export interface NodeReplacement {
 }
 
 export type NodeReplacementResponse = Record<string, NodeReplacement[]>
+
+export type MissingNodeType =
+  | string
+  // Primarily used by group nodes.
+  | {
+      type: string
+      nodeId?: string | number
+      cnrId?: string
+      hint?: string
+      action?: {
+        text: string
+        callback: () => void
+      }
+      isReplaceable?: boolean
+      replacement?: NodeReplacement
+    }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import type { GridPack, PackNode } from '../data/cloudNodes'
+import type { GridPack, PackNode } from '@/data/cloudNodes'
 
 import { useFilteredPacks } from './useFilteredPacks'
 

@@ -48,6 +48,7 @@ Reference docs (read if you need full context):
    - `comfyPage.canvasOps.resetView()` for view reset
    - `test.use({ initialSettings })` for starting settings; `comfyPage.settings.setSetting()` for runtime changes under test
    - Component page objects in `browser_tests/fixtures/components/`
+   - `comfyPage.toast` (`ToastHelper`) for toasts. Flag any `getByText` or `getByRole('alert' | 'status').filter({ hasText })` on a toast's copy: `Toaster` repeats it in a live region, so strict mode resolves two elements. Use `comfyPage.toast.withText()` or a kind locator such as `toastErrors`. Also flag raw `getByTestId('toast')` or `[data-toast-kind]` locators in specs. Tests without `comfyPage` destructure the `toast` fixture
 
 9. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
 

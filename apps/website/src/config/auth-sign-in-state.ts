@@ -6,21 +6,24 @@
  */
 import {
   authErrorMessage,
-  classifyAuthError,
-  unauthorizedDomainMessage
-} from '@comfyorg/account/firebaseAuthError'
+  classifyAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
 import type {
-  AuthCopyLocale,
-  AuthErrorClassification
-} from '@comfyorg/account/firebaseAuthError'
+  AuthErrorClassification,
+  AuthErrorCopy
+} from '@comfyorg/account-core/firebaseAuthError'
 
-import type { TranslationKey } from '../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'
 
 export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
+  /** Leaving for Cloud's SSO start; held until the page unloads. */
+  | { readonly step: 'redirecting' }
   | {
       readonly step: 'minting'
       readonly email: string
@@ -48,25 +51,53 @@ export type AuthSignInEvent =
   | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
   | { readonly type: 'signInAbandoned' }
+  | { readonly type: 'ssoRedirected' }
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
+const authErrorCodes = Object.keys(en.auth.errors).filter(
+  (code) => code !== 'generic' && code !== 'signupBlocked'
+)
+
+/** This host's own auth-error table, keyed the way the package resolver reads it. */
+function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
+  const { t } = translationsFor(locale)
+  return {
+    ...Object.fromEntries(
+      authErrorCodes.map((code) => [code, t(`auth.errors.${code}`)])
+    ),
+    generic: t('auth.errors.generic'),
+    signupBlocked: t('auth.errors.signupBlocked')
+  }
+}
+
 /**
- * The copy for a failed attempt, from the package tables the cloud app's
- * own strings are pinned to. Only the unauthorized-domain line needs this
- * host's values.
+ * The copy for a failed attempt, resolved from this host's own i18n. The
+ * account package supplies the classification and resolution rules; the
+ * strings live here. Only the unauthorized-domain line needs this host's
+ * runtime values.
  */
 export function signInErrorMessage(
   classification: AuthErrorClassification,
-  locale: AuthCopyLocale,
+  locale: Locale,
   hostname: string
 ): string {
+  const { t } = translationsFor(locale)
   return classification.kind === 'unauthorized-domain'
-    ? unauthorizedDomainMessage(
-        { domain: hostname, email: SUPPORT_EMAIL },
-        locale
-      )
-    : authErrorMessage(classification, locale)
+    ? t('toastMessages.unauthorizedDomain', {
+        domain: hostname,
+        email: SUPPORT_EMAIL
+      })
+    : authErrorMessage(classification, localizedAuthErrorCopy(locale))
+}
+
+/** An attempt the page must not start over, sign out under, or remount during. */
+export function isAttemptInFlight(state: AuthSignInState): boolean {
+  return (
+    state.step === 'pending' ||
+    state.step === 'minting' ||
+    state.step === 'redirecting'
+  )
 }
 
 export function authSignInTransition(
@@ -76,7 +107,7 @@ export function authSignInTransition(
   switch (event.type) {
     case 'signInStarted':
       // One popup at a time: a second click while pending changes nothing.
-      return state.step === 'pending' || state.step === 'minting'
+      return isAttemptInFlight(state)
         ? state
         : { step: 'pending', provider: event.provider }
     case 'credentialSucceeded':
@@ -118,13 +149,12 @@ export function authSignInTransition(
         ? { step: 'minting', email: state.email, origin: 'interactive' }
         : state
     case 'signedOut':
-      return state.step === 'pending' || state.step === 'minting'
-        ? state
-        : { step: 'idle' }
+      return isAttemptInFlight(state) ? state : { step: 'idle' }
     case 'signInAbandoned':
-      // Drop an attempt a flag flip invalidated; leave settled states alone.
-      return state.step === 'pending' || state.step === 'minting'
-        ? { step: 'idle' }
-        : state
+      // Drop an attempt a flag flip invalidated, or an SSO redirect the
+      // back-forward cache restored; leave settled states alone.
+      return isAttemptInFlight(state) ? { step: 'idle' } : state
+    case 'ssoRedirected':
+      return state.step === 'pending' ? { step: 'redirecting' } : state
   }
 }

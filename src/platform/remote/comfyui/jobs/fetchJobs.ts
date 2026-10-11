@@ -8,7 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { JobId } from '@/schemas/apiSchema'
+import type { JobId } from '@/platform/remote/comfyui/execution/types'
 
 import type {
   JobAssetsResult,
@@ -268,4 +268,25 @@ export async function extractWorkflow(
   })
 
   return validated ?? undefined
+}
+
+/**
+ * Extracts the API-format graph a job stores at: workflow.prompt
+ *
+ * Jobs submitted through the API embed no editor workflow, leaving the
+ * API-format prompt as the only graph they store. Returns undefined whenever
+ * an embedded workflow exists so those submissions are always used as-is,
+ * never re-derived. The prompt itself is returned unvalidated — callers gate
+ * it with `app.isApiJson` before loading it.
+ */
+export function extractApiPrompt(job: JobDetail | undefined): unknown {
+  const parsed = zWorkflowContainer.safeParse(job?.workflow)
+  if (!parsed.success) return undefined
+
+  const embeddedWorkflow = parsed.data.extra_data?.extra_pnginfo?.workflow
+  if (embeddedWorkflow !== undefined && embeddedWorkflow !== null) {
+    return undefined
+  }
+
+  return parsed.data.prompt
 }

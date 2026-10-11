@@ -1,3 +1,6 @@
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -295,7 +298,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
           name: blueprintName
         })
-        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await expect(comfyPage.toast.visibleToasts).toHaveCount(1, {
+          timeout: 5000
+        })
         await comfyPage.toast.closeToasts(1)
 
         const { searchBoxV2 } = comfyPage
@@ -404,6 +409,118 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(
         comfyPage.page.locator('[data-node-id][data-ghost]')
       ).toHaveCount(0)
+    })
+  })
+
+  test.describe('Nested dynamic input types', () => {
+    test('Input filter surfaces a type nested in a DynamicCombo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
+      await searchBoxV2.applyTypeFilter('input', 'IMAGE')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+
+    test('Input filter surfaces a type nested three levels deep', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
+      await searchBoxV2.applyTypeFilter('input', 'MASK')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+
+    for (const side of ['input', 'output'] as const) {
+      test(`Dynamic control wrappers are not offered as ${side} filter values`, async ({
+        comfyPage
+      }) => {
+        const { searchBoxV2 } = comfyPage
+
+        await searchBoxV2.open()
+        await searchBoxV2.typeFilterButton(side).click()
+        await searchBoxV2.filterOptions.first().waitFor({ state: 'visible' })
+
+        const offered = await searchBoxV2.filterOptions.allTextContents()
+        expect(offered.length).toBeGreaterThan(0)
+        expect(offered.filter((t) => /COMFY_\w+_V3/.test(t))).toEqual([])
+      })
+    }
+
+    /** Drag the default graph's existing IMAGE link (VAE Decode -> Save Image)
+     * off its input and release it on empty canvas. */
+    async function releaseImageLinkOnCanvas(comfyPage: ComfyPage) {
+      // The default graph is wider than the viewport; fit it so the Save Image
+      // input is actually on screen before dragging from it.
+      await fitToViewInstant(comfyPage)
+
+      const saveImage = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      )[0]
+      const imageInput = await saveImage.getInput(0)
+
+      await comfyPage.canvasOps.dragAndDrop(
+        await imageInput.getPosition(),
+        DefaultGraphPositions.emptySpace
+      )
+    }
+
+    /** Whether the node has a connected socket of `type`, whatever its index. */
+    async function hasConnectedInputOfType(
+      node: Awaited<ReturnType<typeof dynamicComboNode>>,
+      type: string
+    ) {
+      return await node.comfyPage.page.evaluate(
+        ([nodeId, type]) => {
+          const graphNode = window.app!.canvas.graph!.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          return graphNode.findInputByType(type)?.slot.link != null
+        },
+        [node.id, type] as const
+      )
+    }
+
+    async function dynamicComboNode(comfyPage: ComfyPage) {
+      const [node] = await comfyPage.nodeOps.getNodeRefsByType(
+        'DevToolsNodeWithDynamicCombo'
+      )
+      return node
+    }
+
+    test('Link release via the search box connects through a combo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await releaseImageLinkOnCanvas(comfyPage)
+
+      await expect(searchBoxV2.dialog).toBeVisible()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      await searchBoxV2.results.first().click()
+      await expect(searchBoxV2.dialog).toBeHidden()
+
+      const target = await dynamicComboNode(comfyPage)
+      const combo = await target.getWidgetByName('combo')
+
+      // IMAGE lives under option3, which is not the default selection, so the
+      // node only has an IMAGE socket if the reveal ran.
+      expect(await combo.getValue()).toBe('option3')
+      expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
     })
   })
 })

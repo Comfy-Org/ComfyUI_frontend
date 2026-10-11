@@ -32,9 +32,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { getExecutionContext } from './getExecutionContext'
 
@@ -157,9 +155,7 @@ describe('getExecutionContext', () => {
 
   describe('template detection', () => {
     it('detects a regular template by name', () => {
-      Object.assign(useWorkflowTemplatesStore(), {
-        knownTemplateNames: new Set(['flux-dev'])
-      })
+      useWorkflowTemplatesStore().knownTemplateNames = new Set(['flux-dev'])
       useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'flux-dev',
         fullFilename: 'flux-dev.json'
@@ -172,9 +168,9 @@ describe('getExecutionContext', () => {
     })
 
     it('detects an app mode template whose name ends with .app', () => {
-      Object.assign(useWorkflowTemplatesStore(), {
-        knownTemplateNames: new Set(['templates-qwen_multiangle.app'])
-      })
+      useWorkflowTemplatesStore().knownTemplateNames = new Set([
+        'templates-qwen_multiangle.app'
+      ])
       // getFilenameDetails strips ".app.json" as a compound extension, yielding
       // filename = "templates-qwen_multiangle" — the previous code would fail here.
       useWorkflowStore().activeWorkflow = fromPartial({
@@ -189,9 +185,7 @@ describe('getExecutionContext', () => {
     })
 
     it('does not flag a non-template workflow as a template', () => {
-      Object.assign(useWorkflowTemplatesStore(), {
-        knownTemplateNames: new Set(['flux-dev'])
-      })
+      useWorkflowTemplatesStore().knownTemplateNames = new Set(['flux-dev'])
       useWorkflowStore().activeWorkflow = fromPartial({
         filename: 'my-custom-workflow',
         fullFilename: 'my-custom-workflow.json'

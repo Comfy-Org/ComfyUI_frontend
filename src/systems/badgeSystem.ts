@@ -223,13 +223,9 @@ function gatherSources(node: LGraphNode): BadgeSources {
         }
       : null,
     badgeModes: {
-      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode,
-      lifecycle: settingStore.get(
-        'Comfy.NodeBadge.NodeLifeCycleBadgeMode'
-      ) as NodeBadgeMode,
-      source: settingStore.get(
-        'Comfy.NodeBadge.NodeSourceBadgeMode'
-      ) as NodeBadgeMode
+      id: settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode'),
+      lifecycle: settingStore.get('Comfy.NodeBadge.NodeLifeCycleBadgeMode'),
+      source: settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode')
     },
     colors: {
       fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,

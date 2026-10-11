@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent } from 'vue'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
-
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { AuthStoreError } from '@/stores/authStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -13,66 +16,20 @@ import { useResubscribe as createResubscribe } from './useResubscribe'
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
-  canReactivatePlan: true,
-  toastAdd: vi.fn()
+  canReactivatePlan: true
 }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return state.shouldUseWorkspaceBilling
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canReactivate: {
-        get value() {
-          return state.canReactivate
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return {
-            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-          }
-        }
-      },
-      canReactivatePlan: {
-        get value() {
-          return state.canReactivatePlan
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: state.toastAdd })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -100,29 +57,43 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => state.shouldUseWorkspaceBilling
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    }))
+    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
+    const canReactivate = ref(true)
+    useBillingCapabilities().canReactivate = computed(() => canReactivate.value)
+
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    canReactivate.value = false
     state.canReactivatePlan = false
 
     await handleResubscribe()
 
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
-    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(isResubscribing.value).toBe(false)
   })
 
   it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
@@ -130,7 +101,7 @@ describe('useResubscribe', () => {
 
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
-    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(isResubscribing.value).toBe(false)
   })
 
@@ -138,7 +109,7 @@ describe('useResubscribe', () => {
     // The legacy rail resolves can_reactivate false while the workspace may
     // still reactivate; this composable must follow the derived policy. Which
     // rail produces which value is covered in useWorkspaceUI.test.ts.
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
@@ -150,7 +121,7 @@ describe('useResubscribe', () => {
   it('refuses whenever the policy denies it', async () => {
     // Behaviour change: the old gate short-circuited on the legacy rail and ran
     // no membership check, so a denial there never reached this branch.
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = false
     const { handleResubscribe } = useResubscribe()
 
@@ -169,6 +140,13 @@ describe('useResubscribe', () => {
       stage: 'started',
       outcome: 'pending',
       source: 'settings_billing_panel'
+    })
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel',
+      duration_ms: expect.any(Number)
     })
   })
 
@@ -196,9 +174,12 @@ describe('useResubscribe', () => {
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(1)
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'success',
+        title: 'subscription.resubscribeSuccess'
+      })
+    ])
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
@@ -210,18 +191,16 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Resubscribe failed for person@example.com'
-      })
-    )
+    expect(useToast().error).toHaveBeenCalledWith('g.error', {
+      description: 'Resubscribe failed for person@example.com'
+    })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
       source: 'settings_billing_panel',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(isResubscribing.value).toBe(false)
   })

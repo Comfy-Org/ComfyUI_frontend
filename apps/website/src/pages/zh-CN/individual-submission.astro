@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import PlansPricingCta from '../../components/individual-submission/PlansPricingCta.vue'
-import HeroSection from '../../components/legal/HeroSection.vue'
-import { getRoutes } from '../../config/routes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import PlansPricingCta from '@/components/individual-submission/PlansPricingCta.vue'
+import HeroSection from '@/components/legal/HeroSection.vue'
+import { getRoutes } from '@/config/routes'
 
 const routes = getRoutes('zh-CN')
 ---
@@ -24,15 +24,14 @@ const routes = getRoutes('zh-CN')
           Standard</strong
         >、
         <strong class="font-semibold text-primary-comfy-yellow italic">
-          Creator</strong
-        >
+          Creator</strong>
         和
         <strong class="font-semibold text-primary-comfy-yellow italic">
           Pro</strong
         >，以及我们全新的
         <strong class="font-semibold text-primary-comfy-yellow italic">
-          Teams</strong
-        > 套餐，可让多位用户共享账单。
+          Teams</strong>
+        套餐，可让多位用户共享账单。
       </p>
 
       <PlansPricingCta href={routes.pricing} label="查看套餐与价格 →" />

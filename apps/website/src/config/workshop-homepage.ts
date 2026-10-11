@@ -1,4 +1,4 @@
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import { toBrowseModel } from './workshop'
 import { featuredWorkshopModels } from './workshop-featured'

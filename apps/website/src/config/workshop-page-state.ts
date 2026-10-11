@@ -37,14 +37,27 @@ export function workshopExampleState(
   example: PlaygroundExample
 ) {
   const schema = workshopPageSchema(model, example)
+  const exampleState = exampleValues(schema, example)
+  const seeded = applyRouterDefaultInputs(model, schema, exampleState)
+  // The example owns every field it sets, including the indexed siblings of
+  // those fields (reference_image_url_2, …): an authored page default must not
+  // top up a media list the example already provides with template files.
+  const provided = new Set(Object.keys(example.values).map(baseFieldName))
   return {
     schema,
-    values: applyRouterDefaultInputs(
-      model,
-      schema,
-      exampleValues(schema, example)
-    )
+    values: {
+      ...seeded,
+      ...Object.fromEntries(
+        schema
+          .filter((field) => provided.has(baseFieldName(field.name)))
+          .map((field) => [field.name, exampleState[field.name]])
+      )
+    }
   }
+}
+
+function baseFieldName(name: string): string {
+  return name.replace(/_\d+$/, '')
 }
 
 /** The exact form state a model page presents before the visitor changes it. */

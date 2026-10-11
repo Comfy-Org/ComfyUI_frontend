@@ -11,10 +11,11 @@ import type {
   PartState
 } from '../../../services/agent/agentMessageParts'
 import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
-import { formatDurationCompact } from '../../../utils/formatDuration'
 
-const { parts } = defineProps<{
+const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
+  /** The turn is still running, so a newly mounted row is a real arrival. */
+  live?: boolean
 }>()
 
 const { t } = useI18n()
@@ -34,23 +35,43 @@ function glyphOf(row: ActivityRow): string {
     : toolGlyph(row.name, row.state, row.ok)
 }
 
+function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (row.name === 'load_skill' && row.skill) {
+    const label =
+      row.state === 'streaming'
+        ? 'agent.toolLoadingSkill'
+        : row.ok === false
+          ? 'agent.toolFailedSkill'
+          : 'agent.toolLoadedSkill'
+    return t(label, { skill: row.skill })
+  }
+  return toolLabel(row.name, row.state, t)
+}
+
 // Every part object is rebuilt on each token, so a settled row is only
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
-    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}:${row.durationMs}`
-    : `think:${row.state}:${row.durationMs}:${row.text}`
+    ? JSON.stringify([
+        'tool',
+        row.name,
+        row.skill,
+        row.state,
+        row.ok,
+        row.count
+      ])
+    : `think:${row.state}:${row.text}`
 }
 </script>
 
 <template>
-  <div role="list" class="flex flex-col">
+  <div role="list" data-testid="agent-activity-trace" class="flex flex-col">
     <div
       v-for="(row, index) in rows"
       :key="index"
-      v-memo="[rowSignature(row), index === rows.length - 1]"
+      v-memo="[rowSignature(row), index === rows.length - 1, live]"
       role="listitem"
-      class="flex gap-2 px-2"
+      :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
         <span
@@ -72,8 +93,8 @@ function rowSignature(row: ActivityRow): string {
           >{{ row.text || t('agent.thinking') }}</span
         >
         <template v-else>
-          <span :class="labelClass(row.state)">{{
-            toolLabel(row.name, row.state, t)
+          <span :class="cn(labelClass(row.state), 'truncate')">{{
+            labelOf(row)
           }}</span>
           <span
             v-if="row.count > 1"
@@ -81,11 +102,6 @@ function rowSignature(row: ActivityRow): string {
             >×{{ row.count }}</span
           >
         </template>
-        <span
-          v-if="row.durationMs !== undefined"
-          class="mt-0.5 ml-auto shrink-0 font-mono text-xs/4 text-muted-foreground"
-          >{{ formatDurationCompact(row.durationMs) }}</span
-        >
       </div>
     </div>
   </div>

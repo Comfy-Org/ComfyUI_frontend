@@ -1,14 +1,6 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyApp } from '@/scripts/app'
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    registerExtension: vi.fn(),
-    ui: { settings: { addSetting: vi.fn() } }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 import {
   addWeightToParentheses,

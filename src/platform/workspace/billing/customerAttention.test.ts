@@ -26,12 +26,32 @@ describe('needsCustomerAttention', () => {
       true
     ],
     [
+      'claims a checkout the server parked on the customer for a card',
+      { phase: 'awaiting_payment_method' },
+      true
+    ],
+    [
+      'claims an invoice the server parked on the customer for their bank',
+      { phase: 'awaiting_invoice_payment' },
+      true
+    ],
+    [
+      'leaves a phase the server is still working alone',
+      { phase: 'in_progress' },
+      false
+    ],
+    [
       'claims an operation support must reconcile',
       { status: 'reconciliation_needed' },
       true
     ],
     ['leaves a merely processing operation alone', {}, false],
-    ['leaves a settled operation alone', { status: 'succeeded' }, false]
+    ['leaves a settled operation alone', { status: 'succeeded' }, false],
+    [
+      'leaves a settled operation alone once its verification link is stale',
+      { status: 'succeeded', actionUrl: 'https://verify.example' },
+      false
+    ]
   ] as const)('%s', ([, operation, expected]) => {
     expect(needsCustomerAttention({ ...processing, ...operation })).toBe(
       expected

@@ -18,7 +18,6 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
-const mockSerialize = vi.fn(() => ({ nodes: [] }))
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
@@ -29,27 +28,13 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: () => mockSerialize()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    staticUrls: {
-      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-    }
-  }))
-}))
 
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
@@ -120,10 +105,7 @@ describe('ErrorNodeCard.vue', () => {
       global: {
         plugins: [PrimeVue, i18n, getActivePinia()!],
         stubs: {
-          TransitionCollapse: { template: '<div><slot /></div>' },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
-          }
+          TransitionCollapse: { template: '<div><slot /></div>' }
         }
       }
     })

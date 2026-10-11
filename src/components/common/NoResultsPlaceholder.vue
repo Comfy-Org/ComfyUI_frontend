@@ -22,7 +22,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '../ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
 const props = defineProps<{
   class?: string

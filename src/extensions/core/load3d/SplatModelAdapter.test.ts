@@ -22,7 +22,7 @@ vi.mock(import('@sparkjsdev/spark'), async () => {
     SplatMesh: fromAny(
       class extends three.Object3D {
         initialized = Promise.resolve()
-        dispose = splatMeshSpies.dispose
+        override dispose = splatMeshSpies.dispose
         getBoundingBox = splatMeshSpies.getBoundingBox
 
         constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {

@@ -1,36 +1,37 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import Button from '../../components/ui/button/Button.vue'
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 
-const included = t('platform.builderEnterprise.included', locale)
-const notIncluded = t('platform.builderEnterprise.notIncluded', locale)
-const enterpriseOnly = t('platform.builderEnterprise.enterpriseOnly', locale)
+const included = t('platform.builderEnterprise.included')
+const notIncluded = t('platform.builderEnterprise.notIncluded')
+const enterpriseOnly = t('platform.builderEnterprise.enterpriseOnly')
 
 const features = [
   {
-    label: t('platform.builderEnterprise.customNodes.label', locale),
+    label: t('platform.builderEnterprise.customNodes.label'),
     builder: included,
     managed: included
   },
   {
-    label: t('platform.builderEnterprise.teamSharing.label', locale),
+    label: t('platform.builderEnterprise.teamSharing.label'),
     builder: notIncluded,
     managed: enterpriseOnly
   },
   {
-    label: t('platform.builderEnterprise.governance.label', locale),
+    label: t('platform.builderEnterprise.governance.label'),
     builder: notIncluded,
     managed: enterpriseOnly
   },
   {
-    label: t('platform.builderEnterprise.pythonDependencies.label', locale),
+    label: t('platform.builderEnterprise.pythonDependencies.label'),
     builder: included,
     managed: included
   }
@@ -40,10 +41,10 @@ const features = [
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.builderEnterprise.heading', locale) }}
+      {{ t('platform.builderEnterprise.heading') }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.builderEnterprise.subtitle', locale) }}
+          {{ t('platform.builderEnterprise.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -58,13 +59,13 @@ const features = [
           >
             <tr>
               <th class="p-3">
-                {{ t('platform.builderEnterprise.feature', locale) }}
+                {{ t('platform.builderEnterprise.feature') }}
               </th>
               <th class="p-3">
-                {{ t('platform.products.builder.title', locale) }}
+                {{ t('platform.products.builder.title') }}
               </th>
               <th class="p-3">
-                {{ t('enterprise.managedBuilds.heading', locale) }}
+                {{ t('enterprise.managedBuilds.heading') }}
               </th>
             </tr>
           </thead>
@@ -87,7 +88,7 @@ const features = [
 
     <div class="mt-8 flex justify-center">
       <Button as="a" :href="routes.managedBuilds" variant="outline">
-        {{ t('enterprise.managedBuilds.explore', locale) }}
+        {{ t('enterprise.managedBuilds.explore') }}
       </Button>
     </div>
   </section>

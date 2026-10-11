@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   TreeExplorerDragAndDropData,
   TreeExplorerNode,
@@ -23,26 +25,21 @@ beforeEach(() => {
   )
 })
 
-const {
-  mockAddNodeOnGraph,
-  mockToggleNodeOnEvent,
-  captureRoot,
-  getRoot,
-  resetRoot
-} = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode | null = null
-  return {
-    mockAddNodeOnGraph: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    captureRoot: (root: TreeExplorerNode) => {
-      capturedRoot = root
-    },
-    getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
-    resetRoot: () => {
-      capturedRoot = null
+const { mockToggleNodeOnEvent, captureRoot, getRoot, resetRoot } = vi.hoisted(
+  () => {
+    let capturedRoot: TreeExplorerNode | null = null
+    return {
+      mockToggleNodeOnEvent: vi.fn(),
+      captureRoot: (root: TreeExplorerNode) => {
+        capturedRoot = root
+      },
+      getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
+      resetRoot: () => {
+        capturedRoot = null
+      }
     }
   }
-})
+)
 
 const mockFolderNodeDef = fromPartial<ComfyNodeDefImpl>({
   name: 'MyFolder',
@@ -82,9 +79,7 @@ const mockBookmarkedRoot: TreeNode = {
   ]
 }
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -115,24 +110,6 @@ vi.mock<unknown>(import('@/components/common/CustomizationDialog.vue'), () => ({
 vi.mock<unknown>(import('@/components/node/NodePreview.vue'), () => ({
   default: { name: 'NodePreview', template: '<div />' }
 }))
-
-vi.mock<unknown>(
-  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'),
-  () => ({
-    default: { name: 'NodeTreeFolder', template: '<div />', props: ['node'] }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'),
-  () => ({
-    default: {
-      name: 'NodeTreeLeaf',
-      template: '<div />',
-      props: ['node', 'openNodeHelp']
-    }
-  })
-)
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
@@ -167,7 +144,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('moves bookmark when a node is dragged onto a folder and is bookmarked', async () => {
@@ -182,10 +159,10 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().toggleBookmark)
-      ).toHaveBeenCalledWith(mockLeafNodeDef)
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().toggleBookmark).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('is a no-op when the dragged node carries no data', async () => {
@@ -199,9 +176,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().addBookmark)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).not.toHaveBeenCalled()
     })
   })
 
@@ -213,7 +188,9 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await leafNode?.handleClick?.call(leafNode, mockEvent)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockLeafNodeDef)
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
     })
 
     it('toggles node expansion when a folder node is clicked', async () => {
@@ -240,10 +217,33 @@ describe('NodeBookmarkTreeExplorer', () => {
         data: mockFolderNodeDef
       })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).toHaveBeenCalledWith(mockFolderNodeDef)
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).toHaveBeenCalledWith(
+        mockFolderNodeDef
+      )
     })
+
+    it.for([
+      { userBlueprint: false, deletes: false },
+      { userBlueprint: true, deletes: true }
+    ])(
+      'offers blueprint delete on a leaf when user blueprint is $userBlueprint',
+      async ({ userBlueprint, deletes }) => {
+        vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(
+          undefined
+        )
+        vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(
+          userBlueprint
+        )
+        const root = await renderAndGetRoot()
+        const leafNode = root.children?.[0]?.children?.[0]
+
+        await leafNode?.handleDelete?.call(leafNode)
+
+        expect(
+          vi.mocked(useSubgraphStore().deleteBlueprint).mock.calls
+        ).toEqual(deletes ? [[mockLeafNodeDef.name]] : [])
+      }
+    )
 
     it('is a no-op when node data is missing', async () => {
       const root = await renderAndGetRoot()
@@ -251,9 +251,7 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await folderNode?.handleDelete?.call({ ...folderNode, data: undefined })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).not.toHaveBeenCalled()
     })
   })
 })

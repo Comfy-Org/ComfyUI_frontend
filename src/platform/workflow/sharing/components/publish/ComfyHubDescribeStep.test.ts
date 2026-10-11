@@ -39,16 +39,6 @@ function renderStep(
         $t: (key: string) => key
       },
       stubs: {
-        Input: {
-          template:
-            '<input data-testid="name-input" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-          props: ['modelValue']
-        },
-        Textarea: {
-          template:
-            '<textarea data-testid="description-input" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-          props: ['modelValue']
-        },
         TagsInput: {
           template:
             '<div data-testid="tags-input" :data-disabled="disabled ? \'true\' : \'false\'"><slot :is-empty="!modelValue || modelValue.length === 0" /></div>',
@@ -73,10 +63,6 @@ function renderStep(
         },
         TagsInputInput: {
           template: '<input data-testid="tags-input-input" />'
-        },
-        Button: {
-          template:
-            '<button data-testid="toggle-suggestions" type="button"><slot /></button>'
         }
       }
     }
@@ -98,7 +84,9 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const nameInput = screen.getByTestId('publish-name-input')
-    const descInput = screen.getByTestId('description-input')
+    const descInput = screen.getByRole('textbox', {
+      name: 'comfyHubPublish.workflowDescription'
+    })
 
     await userEvent.clear(nameInput)
     await userEvent.type(nameInput, 'New workflow')
@@ -116,7 +104,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -131,7 +119,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -148,7 +136,7 @@ describe('ComfyHubDescribeStep', () => {
     const { container } = renderStep({}, { 'onUpdate:tags': onUpdateTags })
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const suggestionButtons = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
@@ -165,7 +153,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -180,17 +168,19 @@ describe('ComfyHubDescribeStep', () => {
     const { container } = renderStep()
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const defaultSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
     expect(defaultSuggestions).toHaveLength(10)
     expect(container.textContent).toContain('comfyHubPublish.showMoreTags')
 
-    await userEvent.click(screen.getByTestId('toggle-suggestions'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'comfyHubPublish.showMoreTags' })
+    )
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const allSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )

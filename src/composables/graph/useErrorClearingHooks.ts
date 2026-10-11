@@ -20,7 +20,6 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -63,17 +62,8 @@ type OriginalCallbacks = {
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
 
-function getRootGraph(): LGraph | null {
-  try {
-    const rootGraph: unknown = Reflect.get(app, 'rootGraph')
-    return rootGraph instanceof LiteGraph.LGraph ? rootGraph : null
-  } catch {
-    return null
-  }
-}
-
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return String(nodeId)
 
   return (
@@ -94,7 +84,7 @@ function installNodeHooks(node: LGraphNode): void {
     node.onConnectionsChange,
     function (type, slotIndex: number | undefined, isConnected) {
       if (type !== NodeSlotType.INPUT || slotIndex === undefined) return
-      const rootGraph = getRootGraph()
+      const rootGraph = app.rootGraphOrUndefined
       if (!rootGraph) return
       const slotName = node.inputs.at(slotIndex)?.name
       if (!slotName) return
@@ -104,7 +94,7 @@ function installNodeHooks(node: LGraphNode): void {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
       queueMicrotask(() => {
-        if (!getRootGraph() || ChangeTracker.isLoadingGraph) return
+        if (!app.rootGraphOrUndefined || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
       })
@@ -114,7 +104,7 @@ function installNodeHooks(node: LGraphNode): void {
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
     function (name, newValue, _oldValue, widget) {
-      const rootGraph = getRootGraph()
+      const rootGraph = app.rootGraphOrUndefined
       if (!rootGraph) return
       const hostExecId = getExecutionIdByNode(rootGraph, node)
       if (!hostExecId) return
@@ -177,7 +167,7 @@ function scanNodeErrorTargets(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!getRootGraph()) return
+  if (!app.rootGraphOrUndefined) return
 
   if (node.isSubgraphNode()) {
     scanNode(node)
@@ -192,7 +182,7 @@ function scanNodeErrorTargets(
 }
 
 function getActiveExecutionId(node: LGraphNode): string | null {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode, so an active node added inside a
@@ -220,7 +210,7 @@ function scanSingleNodeModelsAndTypes(
   pendingVerifications?: Promise<void>[],
   signal?: AbortSignal
 ): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return
   const execId = getActiveExecutionId(node)
   if (!execId) return
@@ -271,11 +261,11 @@ function scanSingleNodeMedia(
   pendingVerifications?: Promise<void>[],
   signal?: AbortSignal
 ): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return
   if (!getActiveExecutionId(node)) return
 
-  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node, isCloud)
+  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
@@ -299,7 +289,7 @@ function scanSingleNodeMedia(
 function isModelCandidateStillMissingAndActive(
   candidate: MissingModelCandidate
 ): boolean {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!isMissingCandidateActive(rootGraph, candidate)) return false
   if (!rootGraph || candidate.nodeId == null) return true
 
@@ -335,11 +325,11 @@ async function verifyAndAddPendingModels(
   // Capture rootGraph at scan time so a late verification for workflow
   // A cannot leak into workflow B after a switch — execution IDs (esp.
   // root-level like "1") collide across workflows.
-  const rootGraphAtScan = getRootGraph()
+  const rootGraphAtScan = app.rootGraphOrUndefined
   const ownersAtScan = new Map(
     pending.map((candidate) => [
       candidate,
-      candidate.nodeId == null || rootGraphAtScan === null
+      candidate.nodeId == null || rootGraphAtScan === undefined
         ? null
         : getNodeByExecutionId(rootGraphAtScan, String(candidate.nodeId))
     ])
@@ -349,7 +339,7 @@ async function verifyAndAddPendingModels(
     if (
       signal?.aborted ||
       !rootGraphAtScan ||
-      getRootGraph() !== rootGraphAtScan
+      app.rootGraphOrUndefined !== rootGraphAtScan
     )
       return
     const verified = pending.filter(
@@ -370,7 +360,7 @@ async function verifyAndAddPendingMedia(
   pending: MissingMediaCandidate[],
   signal?: AbortSignal
 ): Promise<void> {
-  const rootGraphAtScan = getRootGraph()
+  const rootGraphAtScan = app.rootGraphOrUndefined
   const ownersAtScan = new Map(
     pending.map((candidate) => [
       candidate,
@@ -380,11 +370,11 @@ async function verifyAndAddPendingMedia(
     ])
   )
   try {
-    await verifyMediaCandidates(pending, { isCloud, signal })
+    await verifyMediaCandidates(pending, { signal })
     if (
       signal?.aborted ||
       !rootGraphAtScan ||
-      getRootGraph() !== rootGraphAtScan
+      app.rootGraphOrUndefined !== rootGraphAtScan
     )
       return
     const verified = pending.filter(
@@ -406,7 +396,8 @@ function scanAddedNode(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (getRootGraph() !== rootGraph || ChangeTracker.isLoadingGraph) return
+  if (app.rootGraphOrUndefined !== rootGraph || ChangeTracker.isLoadingGraph)
+    return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
 }
@@ -420,7 +411,7 @@ async function runAddedNodeScan(
 
   try {
     await Promise.resolve()
-    if (signalAborted(signal) || getRootGraph() !== rootGraph) return
+    if (signalAborted(signal) || app.rootGraphOrUndefined !== rootGraph) return
     scanAddedNode(rootGraph, node, (target) =>
       scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
     )
@@ -428,7 +419,7 @@ async function runAddedNodeScan(
     // Paste/drop handlers need another microtask to mark upload state before
     // media detection reads the widget value.
     await Promise.resolve()
-    if (signalAborted(signal) || getRootGraph() !== rootGraph) return
+    if (signalAborted(signal) || app.rootGraphOrUndefined !== rootGraph) return
     scanAddedNode(rootGraph, node, (target) =>
       scanSingleNodeMedia(target, pendingVerifications, signal)
     )
@@ -450,7 +441,7 @@ function scheduleAddedNodeScan(
   node: LGraphNode,
   pendingScans: Map<LGraphNode, Set<PendingScanControl>>
 ): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
 
@@ -494,7 +485,7 @@ function handleNodeModeChange(
   oldMode: number,
   newMode: number
 ): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return
 
   const wasInactive = isNodeInactive(oldMode)
@@ -524,7 +515,7 @@ function handleNodeModeChange(
 }
 
 function scanAncestorSubgraphHosts(execId: string): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return
   for (const ancestorId of getParentExecutionIds(execId)) {
     if (!isExecutionPathActive(rootGraph, ancestorId)) continue
@@ -558,7 +549,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
 
 /** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
-  const rootGraph = getRootGraph()
+  const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph || ChangeTracker.isLoadingGraph) return
 
   const mediaStore = useMissingMediaStore()
@@ -595,7 +586,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     rescanHost: (subgraphNode) =>
       scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
     removeHostWidgetCandidate: (subgraphNode, widgetName) => {
-      const rootGraph = getRootGraph()
+      const rootGraph = app.rootGraphOrUndefined
       if (!rootGraph) return
       const executionId = getExecutionIdByNode(rootGraph, subgraphNode)
       if (!executionId) return
@@ -618,9 +609,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   // `node:before-removed` covers both single removals and graph.clear();
   // `node:removed` fires only from LGraph.remove.
-  const onNodeRemoved = ({
-    detail: { node, successor }
-  }: NodeBeforeRemovedEvent) => {
+  const onNodeRemoved = ({ detail: { node } }: NodeBeforeRemovedEvent) => {
     if (disposed) return
     for (const scan of pendingScans.get(node) ?? []) scan.cancel()
     // Derive the execution ID from the graph the hook is installed on plus
@@ -628,10 +617,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors are
     // keyed; without this, removal falls back to the local ID and misses
     // subgraph entries.
-    if (!successor) {
-      const execId = getRemovedNodeExecutionId(graph, node.id)
-      removeNodeErrors(node, execId)
-    }
+    const execId = getRemovedNodeExecutionId(graph, node.id)
+    removeNodeErrors(node, execId)
     scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)
     promotionErrors.detachNode(node)

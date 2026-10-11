@@ -10,10 +10,6 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: true
-}))
-
 vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
@@ -93,8 +89,7 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledTimes(1)
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledWith(
       expect.anything(),
-      inputNode,
-      true
+      inputNode
     )
   })
 
@@ -181,6 +176,12 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeId: '50',
         nodeType: 'LoadImage',
         widgetName: 'outer_image',
+        promotedSources: [
+          {
+            executionId: '50:100',
+            widgetName: 'image'
+          }
+        ],
         mediaType: 'image',
         name: deletedValue,
         isMissing: true

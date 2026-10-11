@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth'
 import type {
   AccountCredential,
   SessionResult
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 
 import { createBalanceReader } from './workshop-balance'
@@ -188,6 +188,20 @@ describe('createBalanceReader', () => {
       expect.objectContaining({ uid: 'uid-1' }),
       expect.objectContaining({ workspaceId: 'ws-1' })
     )
+  })
+
+  it('settles on the unauthorized error when the re-mint rejects', async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    session.remint.mockRejectedValueOnce(new Error('mint unavailable'))
+    const reader = createBalanceReader(
+      session,
+      BALANCE_URL,
+      vi.fn<typeof fetch>(async () => balanceResponse({}, 401))
+    )
+
+    await reader.refresh()
+
+    expect(reader.getState()).toEqual({ status: 'error', unauthorized: true })
   })
 
   it('settles on the error state when the retry also fails', async () => {

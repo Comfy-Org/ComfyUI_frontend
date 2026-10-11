@@ -33,10 +33,12 @@ function makeViewportStub() {
     cameraManager: { activeCamera: new THREE.PerspectiveCamera() },
     controlsManager: { controls: { enabled: true } },
     viewHelperManager: { visibleViewHelper: vi.fn() },
-    renderer: {
+    rendererView: {
       setViewport: vi.fn(),
       setScissor: vi.fn(),
-      setScissorTest: vi.fn(),
+      setScissorTest: vi.fn()
+    },
+    renderer: {
       setClearColor: vi.fn(),
       clear: vi.fn(),
       render: vi.fn()
@@ -171,12 +173,6 @@ describe('CameraInfoViewport gizmo visibility', () => {
 
     viewport.setGizmosVisible(true)
     expect(viewport.orbitHandles.isVisible()).toBe(true)
-  })
-
-  it('reveals the target handle in target transform mode', () => {
-    viewport.setTransformGizmoMode('target')
-
-    expect(viewport.targetHandle.isVisible()).toBe(true)
   })
 
   it('enables the camera handle for camera-rotate in quaternion mode', () => {

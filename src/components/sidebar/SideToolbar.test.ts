@@ -15,7 +15,6 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 import SideToolbar from './SideToolbar.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().$patch({

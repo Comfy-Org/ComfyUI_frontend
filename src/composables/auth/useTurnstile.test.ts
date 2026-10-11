@@ -6,12 +6,8 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: {} }
-}))
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { getServerFeature: vi.fn() }
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/utils/devFeatureFlagOverride'), () => ({
   getDevOverride: vi.fn()
 }))
@@ -20,17 +16,16 @@ vi.mock(import('@/config/turnstile'), () => ({
 }))
 
 const mockedDevOverride = vi.mocked(getDevOverride)
-const mockedGetServerFeature = vi.mocked(api.getServerFeature)
 const mockedSiteKey = vi.mocked(getTurnstileSiteKey)
 
 // The resolution rules themselves (normalizeTurnstileMode, isTurnstileEnabled,
-// useTurnstileGate) live in @comfyorg/account and are tested there; this
+// useTurnstileGate) live in @comfyorg/account-core and are tested there; this
 // suite covers their binding to this app's config sources.
 describe('useTurnstile', () => {
   beforeEach(() => {
     remoteConfig.value = {}
     mockedDevOverride.mockReturnValue(undefined)
-    mockedGetServerFeature.mockReturnValue('off')
+    vi.mocked(api.getServerFeature).mockReturnValue('off')
     mockedSiteKey.mockReturnValue('site-key')
   })
 
@@ -38,7 +33,7 @@ describe('useTurnstile', () => {
     it('prefers the dev override over remote config and the server feature', () => {
       mockedDevOverride.mockReturnValue('enforce')
       remoteConfig.value = { signup_turnstile: 'shadow' }
-      mockedGetServerFeature.mockReturnValue('off')
+      vi.mocked(api.getServerFeature).mockReturnValue('off')
 
       expect(useTurnstile().mode.value).toBe('enforce')
     })
@@ -50,10 +45,10 @@ describe('useTurnstile', () => {
     })
 
     it('falls back to the server feature flag (default off) when nothing else is set', () => {
-      mockedGetServerFeature.mockReturnValue('enforce')
+      vi.mocked(api.getServerFeature).mockReturnValue('enforce')
 
       expect(useTurnstile().mode.value).toBe('enforce')
-      expect(mockedGetServerFeature).toHaveBeenCalledWith(
+      expect(api.getServerFeature).toHaveBeenCalledWith(
         'signup_turnstile',
         'off'
       )

@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Визуализирует итоговое видео 1080p из черновика Seedance 2.5. В итоговом видео сохраняются сцена и движение черновика, а также используются его промпт, референсы, длительность, соотношение сторон и настройка аудио.",
+    "display_name": "ByteDance Seedance 2.5: из черновика в финальное видео",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Выход draft_task_id узла Seedance 2.5, запущенного с моделью Seedance 2.5 Draft, либо вставленный ID задачи черновика. Установите управление seed в этом узле на fixed, иначе при следующем запуске будет создан новый черновик вместо повторного использования просмотренного. Черновик можно визуализировать в течение 7 дней после его создания."
+      },
+      "watermark": {
+        "name": "водяной знак",
+        "tooltip": "Добавлять ли водяной знак к видео."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Генерируйте видео с помощью Seedance 2.0, используя изображение первого кадра и, при необходимости, последнего кадра.",
     "display_name": "ByteDance Seedance 2.0: от первого и последнего кадра к видео",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и дешёвая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр 480p, чей draft_task_id позволяет визуализировать итоговое видео 1080p в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
       },
       "model_duration": {
         "name": "длительность"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID задачи запуска Seedance 2.5 Draft. Подключите его к узлу Seedance 2.5 Draft to Final Video, чтобы визуализировать итоговое видео 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и дешёвая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр 480p, чей draft_task_id позволяет визуализировать итоговое видео 1080p в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
       },
       "model_auto_downscale": {
         "name": "автоматическое уменьшение масштаба"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и дешёвая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр 480p, чей draft_task_id позволяет визуализировать итоговое видео 1080p в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID задачи запуска Seedance 2.5 Draft. Подключите его к узлу Seedance 2.5 Draft to Final Video, чтобы визуализировать итоговое видео 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод в mp4/mov; Seedance 2.0 — максимальное качество и 4K; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр 480p, чей draft_task_id позволяет визуализировать итоговое видео 1080p в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
       },
       "model_duration": {
         "name": "длительность"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID задачи запуска Seedance 2.5 Draft. Подключите его к узлу Seedance 2.5 Draft to Final Video, чтобы визуализировать итоговое видео 1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Разделяет изображение на фоновую пластину и до 16 прозрачных слоёв с возможностью перемещения, каждый со своим порядком наложения, ограничивающей рамкой, именем и описанием.",
-    "display_name": "ByteDance Seedream 5.0 Pro Разделение Слоёв",
+    "display_name": "ByteDance Seedream 5.0 Pro: разделение на слои (устаревшее)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Готовый к редактированию документ слоёв для Create Layered Image: базовая пластина плюс каждый элемент как отдельный именованный слой, обрезанный по содержимому, в своей позиции и порядке наложения. Подключайте напрямую или расширяйте с помощью Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Разделяет изображение на фоновую основу и до 16 перемещаемых прозрачных слоёв, каждый из которых имеет порядок наложения, ограничивающий прямоугольник, имя и описание.",
+    "display_name": "ByteDance Seedream 5.0: разделение на слои",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "размер"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Базовое изображение (фоновая основа), поверх которого накладываются слои."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Прозрачность базового изображения (1 = прозрачное, согласно соглашению LoadImage); в настоящее время всегда полностью непрозрачное."
+      },
+      "2": {
+        "name": "слои",
+        "tooltip": "Прозрачные слои, упорядоченные снизу вверх. Режим полного холста: размещаются на чёрном холсте размером с основу в позиции их ограничивающего прямоугольника. Режим минимального размера: обрезаются по своему ограничивающему прямоугольнику, привязываются к верхнему левому углу и дополняются до размера наибольшего слоя."
+      },
+      "3": {
+        "name": "маски",
+        "tooltip": "Прозрачность каждого слоя, выровненная по индексам с пакетом layers (1 = прозрачное, согласно соглашению LoadImage). Для композитинга в стиле ImageCompositeMasked сначала добавьте InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "По одному прямоугольнику размещения на слой, с выравниванием индексов по пакету layers (подавайте оба, а также masks, в Layers From Bounding Boxes, чтобы восстановить размещение каждого слоя): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] — это область содержимого слоя в пределах его собственной рамки; на холсте она размещается в позиции прямоугольника со смещением на это значение."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Готовый к редактированию документ слоёв для Create Layered Image: базовая основа и каждый элемент в виде отдельного именованного, плотно обрезанного слоя в его фактической позиции и порядке наложения. Подключите напрямую или дополните с помощью Add Layer."
       }
     }
   },
@@ -4773,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+        "tooltip": "Код языка ISO 639-1 (например, 'en', 'es', 'ja'). Оставьте пустым для автоматического определения."
       },
       "model": {
         "name": "model",
@@ -4843,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "Код языка по ISO-639-1 или ISO-639-3 (например, 'en', 'es', 'fra'). Оставьте пустым для автоматического определения."
+        "tooltip": "Код языка ISO 639-1 (например, 'en', 'es', 'ja'). Оставьте пустым для автоматического определения."
       },
       "model": {
         "name": "model",
@@ -4851,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5002,7 +5080,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Пустое латентное видео Cosmos",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5063,7 +5141,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Пустой латент изображения Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5082,7 +5160,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Пустой HunyuanLatentVideo",
+    "display_name": "Пустой латент Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5104,7 +5182,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Пустой HunyuanVideo 1.5 latent",
+    "display_name": "Пустой латент Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5143,7 +5221,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "Пустой LTXVLatentVideo",
+    "display_name": "Пустое латентное видео LTXV",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5182,7 +5260,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Пустой латент Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета",
@@ -5323,7 +5401,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Пустая латентная структура Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5427,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Конец цикла",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "При включении возвращает output_value из каждой итерации; иначе возвращает только последнюю итерацию."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Значение, отправляемое из узла «Конец цикла» обратно в «Начало цикла» для следующей итерации."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Значение, возвращаемое узлом «Конец цикла». В соответствии с accumulate возвращается последняя итерация или все итерации."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Подключите выходы, которые должны выполняться на каждой итерации. Их значения не возвращаются."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "выходы",
+        "tooltip": "output_value последней итерации или значения, накопленные за все итерации при включённом accumulate."
       }
     }
   },
@@ -5720,6 +5825,52 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Создаёт изображение с помощью FLUX 3 по промпту или редактирует и объединяет до 10 референсных изображений. Ссылайтесь на референсы в промпте как на изображение 1, изображение 2 и так далее.",
+    "display_name": "Flux 3 Изображение",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' использует первое референсное изображение или выбирает соотношение сторон из промпта."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Необязательные рамки из Create Bounding Boxes, размещающие объекты или текст в выводе. Позиции задаются относительно холста, поэтому укажите соотношение сторон вывода."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "grounding": {
+        "name": "привязка",
+        "tooltip": "Позволить модели изучить промпт с помощью веб-поиска и поиска изображений перед генерацией."
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "Необязательные референсные изображения: всего до 10, размером не менее 256x256 пикселей каждое."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Что нужно создать или какое редактирование выполнить. Перед генерацией промпт интерпретируется и расширяется."
+      },
+      "resolution": {
+        "name": "разрешение",
+        "tooltip": "Размер вывода при выбранном соотношении сторон: 0.75K — около 0,6 мегапикселя, 1K — 1 МП, 1.5K — 2,4 МП, 2K — 4,2 МП, 4K — 16,8 МП."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Допуск модерации: 0 — самый строгий уровень."
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Сид, определяющий, следует ли перезапускать ноду; FLUX 3 выбирает собственный сид, поэтому фактические результаты недетерминированы независимо от этого значения."
       }
     },
     "outputs": {
@@ -6825,6 +6976,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Генерирует текстовые ответы с помощью моделей Gemini от Google. Укажите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Генерируйте видео со звуком по текстовому промпту с помощью модели Google Gemini Omni Flash. Дополнительно можно добавить референсные изображения и/или видео для направления или редактирования результата. Опишите желаемую длительность (3-10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7199,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Получить элемент из списка",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7268,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон выходного видео."
+        "tooltip": "Соотношение сторон выходного видео. Игнорируется при наличии входного изображения: видео использует соотношение сторон изображения."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7287,11 +7490,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Текстовое описание желаемого видео. Необязательно для grok-imagine-video-1.5, если предоставлено входное изображение."
+        "tooltip": "Текстовое описание желаемого видео. Необязательно для моделей grok-imagine-video-1.5 при наличии входного изображения."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "Разрешение выходного видео. 1080p доступно только для grok-imagine-video-1.5."
+        "tooltip": "Разрешение выходного видео. 1080p недоступно для grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -7597,6 +7800,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Анимирует изображение в видео с синхронизированными диалогом и звуком с помощью HeyGen Video 1.0. Изображение используется как первый кадр.",
+    "display_name": "HeyGen Video 1.0: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Создаёт видео с синхронизированными диалогом и звуком по текстовому запросу с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в запросе как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Анимируйте любое изображение человека в синхронизированное с губами говорящee видео (HeyGen Avatar IV). Управляйте им с помощью текстового сценария или собственного аудио.",
     "display_name": "HeyGen Talking Photo",
@@ -7876,6 +8140,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Редактирует или объединяет до 5 референсных изображений по текстовому запросу с помощью модели Tencent Hunyuan Image.",
+    "display_name": "Tencent HY Image: Редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Создаёт изображения из текстового запроса с помощью модели Tencent Hunyuan Image.",
+    "display_name": "Tencent HY Image: Текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -7993,7 +8338,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Масштабирование латента Hunyuan Video 1.5 с моделью",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -8129,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Редактирует или объединяет до 5 изображений по текстовому запросу с помощью Ideogram 4.5. Повторно отрисовывает всё изображение и может изменять его размер или соотношение сторон; используйте Ideogram 4.5 Precise Edit, чтобы сохранить неизменённые пиксели без изменений.",
+    "display_name": "Ideogram 4.5: редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_size": {
+        "name": "размер"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Генерирует изображения с помощью P-Image, быстрого текст-в-изображение модели от Ideogram. Сильная типографика и фотореализм; поддерживает структурированные JSON-подписи Ideogram 4.0 для точного текста, цветов и макета.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8168,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Запрос, по которому фактически было сгенерировано изображение (переписанная структурированная подпись при работе prompt_upsampling, иначе ваш запрос). Используйте его с prompt_upsampling OFF и тем же сидом для воспроизведения этого изображения."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Редактирует изображение по текстовому запросу с помощью точного редактирования Ideogram 4.5: изменяется только то, что указано в запросе, нетронутые пиксели остаются идентичными, а результат сохраняет размер изображения 1 (изображения размером более ~4 MP сначала масштабируются в меньшую сторону). Поддерживает до 4 референсных изображений.",
+    "display_name": "Ideogram 4.5: точное редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Создаёт изображения по текстовому запросу с помощью Ideogram 4.5.",
+    "display_name": "Ideogram 4.5: текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_size": {
+        "name": "размер"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Структурированное описание, по которому было сгенерировано изображение. Чтобы воспроизвести изображение, передайте его обратно, установив magic_prompt в значение 'off' и указав тот же сид."
       }
     }
   },
@@ -8331,12 +8776,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Преобразует sRGB, линейный Rec.709, HDR (Rec.2020 HLG) и HDR PQ (Rec.2020 PQ). Линейный 1.0 использует тот же опорный белый 203 нит, что и sRGB; HLG использует опорный дисплей 1000 нит. Линейный вывод и преобразования из линейного формата в HDR сохраняют расширенные значения без тонального отображения. Вывод SDR и преобразование PQ в HLG выполняют тональное отображение избыточной яркости для всего пакета и сжимают цвета вне цветового охвата. Преобразования вычисляются в float32 и возвращают промежуточные устройство и dtype. Прямой альфа-канал не преобразуется по цвету.",
+    "description": "Преобразует sRGB, линейный Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 и HDR ACEScct. LogC3 использует кривую EI 800 с первичными цветами Rec.709, а значения кодов ограничиваются диапазоном [0, 1]. ACEScct использует первичные цвета AP1 и белую точку D60 с адаптацией Брэдфорда к D65. Для сохранения в EXR преобразуйте LogC3 или ACEScct в линейное пространство. Линейное 1.0 использует ту же опорную точку белого 203 нит, что и sRGB; HLG использует эталонный дисплей яркостью 1000 нит. Выходы Linear и ACEScct сохраняют расширенные значения. Преобразования из линейного пространства в HDR сохраняют светлые участки без тонального отображения; выходы HLG и PQ отсекают отрицательные каналы. Вывод SDR и преобразование PQ в HLG выполняют тональное отображение избыточной яркости для всего пакета и сжимают цвета вне цветового охвата. Преобразования вычисляются в float32 и возвращают промежуточные device и dtype. Прямой альфа-канал не подвергается цветовому преобразованию.",
     "display_name": "Преобразовать цветовое пространство изображения",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Цветовое пространство выходных пикселей. Установите для узла сохранения то же цветовое пространство."
+        "tooltip": "Цветовое пространство выходных пикселей. Установите в узле сохранения то же цветовое пространство. Перед сохранением EXR преобразуйте LogC3 или ACEScct в линейное пространство, а перед сохранением видео — в sRGB/HDR/HDR PQ."
       },
       "image": {
         "name": "image"
@@ -9058,6 +9503,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Извлекает значение ключа из первого допустимого объекта JSON в тексте, включая блоки кода Markdown.",
     "display_name": "Извлечь строку из JSON",
     "inputs": {
       "json_string": {
@@ -10435,7 +10881,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Пустое латентное аудио",
+    "display_name": "Пустое латентное аудио LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11623,6 +12069,73 @@
       "1": {
         "name": "тексты",
         "tooltip": "Список текстовых подписей."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -13088,6 +13601,10 @@
       "ultra_mode": {
         "name": "ультра-режим",
         "tooltip": "Выполняет дополнительный проход уточнения для более точной геометрии с более мелкими деталями поверхности."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Разрешение ultra-прохода: 2k запускает его при 2048³, 4k — при 4096³ для максимальной детализации поверхности. Для 4k требуется meshy-7.1 или новее. Используется только при включённом ultra_mode."
       }
     },
     "outputs": {
@@ -13154,6 +13671,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Запускает дополнительный проход уточнения при 2048³ для более точной геометрии с более детализированной поверхностью."
       }
     },
     "outputs": {
@@ -13295,6 +13816,10 @@
       "ultra_mode": {
         "name": "ультра-режим",
         "tooltip": "Выполняет дополнительный проход уточнения для более точной геометрии с более мелкими деталями поверхности."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Разрешение ultra-прохода: 2k запускает его при 2048³, 4k — при 4096³ для максимальной детализации поверхности. Для 4k требуется meshy-7.1 или новее. Используется только при включённом ultra_mode."
       }
     },
     "outputs": {
@@ -14053,6 +14578,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: разреженные объёмные проходы уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и краёв при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = быстрее всего, 9 = максимальная детализация."
@@ -14083,6 +14612,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: разреженные объёмные проходы уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и краёв при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16645,7 +17178,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Насколько глубоко модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются в зависимости от модели: GPT-6 Astra low-max, GPT-5.6 none-max (без minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
+        "tooltip": "Насколько тщательно модель рассуждает перед ответом. 'default' оставляет выбор за моделью. Поддерживаемые уровни различаются в зависимости от модели: GPT-6 Astra low-max, GPT-6 Sol/Luna и GPT-5.6 none-max (без minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 не поддерживает рассуждения. Неподдерживаемые уровни отклоняются до отправки запроса."
       },
       "truncation": {
         "name": "усечение",
@@ -16805,40 +17338,6 @@
       "file": {
         "name": "файл",
         "tooltip": "Входные файлы для включения в качестве контекста для модели. Пока принимает только текстовые (.txt) и PDF (.pdf) файлы."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "Генерация видео и аудио OpenAI.",
-    "display_name": "OpenAI Sora - Видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "duration": {
-        "name": "длительность"
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт",
-        "tooltip": "Направляющий текст; может быть пустым, если присутствует входное изображение."
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Сид для определения, должен ли узел перезапускаться; фактические результаты недетерминированы независимо от сида."
-      },
-      "size": {
-        "name": "размер"
       }
     },
     "outputs": {
@@ -17276,7 +17775,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Кондиционирование Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18019,8 +18518,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
-        "name": "контроль после генерации"
+      "control_after_generate": {
+        "name": "управление после генерации"
       },
       "value": {
         "name": "значение"
@@ -18050,6 +18549,93 @@
     "inputs": {
       "value": {
         "name": "значение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaImageToVideoNode": {
+    "description": "Анимирует изображение в видео с помощью видеомоделей Pruna, с возможностью указать последний кадр, сгенерированный звук или аудиодорожку.",
+    "display_name": "Pruna P-Video-2: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Генерирует видео из текстового промпта с помощью видеомоделей Pruna, с возможностью добавить сгенерированный звук или аудиодорожку для управления видео.",
+    "display_name": "Pruna P-Video-2: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
       }
     },
     "outputs": {
@@ -18112,6 +18698,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
@@ -18151,6 +18741,10 @@
         "name": "prompt",
         "tooltip": "Текстовое описание желаемого SVG-результата."
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "До 4 референсных изображений для направления генерации."
@@ -18166,9 +18760,34 @@
       }
     }
   },
+  "QwenImage21Cache": {
+    "description": "Позволяет задать устройство и квантизацию KV-кэша; по умолчанию модель использует параметр auto. Квантизация может ускорить рабочие процессы редактирования при нехватке памяти ",
+    "display_name": "Кэш Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto использует свободную VRAM, затем RAM. cpu (RAM) предварительно загружается параллельно с вычислениями и почти не влияет на скорость. off пересчитывает префикс на каждом шаге: это медленнее, но это единственный способ исключить кэш."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Точность хранения. default — без потерь. int8 уменьшает кэш вдвое при точности примерно bf16, int4 — вчетверо, но примерно удваивает ошибку на каждом шаге."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "изображение"
       },
@@ -18180,6 +18799,9 @@
       },
       "model_patch": {
         "name": "патч_модели"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "интенсивность"
@@ -18799,7 +19421,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с согласованным стилем и всегда требуют style_id или style_references; recraftv4_1_flash — самая быстрая и дешёвая модель, которая вообще не поддерживает стили."
       },
       "model_size": {
         "name": "size"
@@ -21787,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "контроль после генерации"
+      "control_after_generate": {
+        "name": "управление после генерации"
       },
       "seed": {
         "name": "seed"
@@ -22518,7 +23140,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_Пустое латентное изображение",
+    "display_name": "Пустое латентное изображение Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -22561,7 +23183,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_Этап C_VAE Кодирование",
+    "display_name": "Кодирование VAE этапа C Stable Cascade",
     "inputs": {
       "compression": {
         "name": "сжатие"
@@ -22698,6 +23320,52 @@
       "2": {
         "name": "латентный",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Начало цикла",
+    "inputs": {
+      "cache_iterations": {
+        "name": "кэшировать итерации",
+        "tooltip": "Повторно использует неизменённые результаты итераций из предыдущих запусков. Отключите, чтобы выполнить все итерации заново."
+      },
+      "initial_iteration_value": {
+        "name": "начальное значение итерации",
+        "tooltip": "Значение, доступное как current_iteration_value на первой итерации."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Режим итераций цикла."
+      },
+      "mode_num_iterations": {
+        "name": "количество итераций"
+      },
+      "parent_iteration": {
+        "name": "родительская итерация",
+        "tooltip": "Подключите iteration_index из внешнего Start Loop, чтобы вложить этот цикл."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "индекс итерации",
+        "tooltip": "Индекс текущей итерации цикла."
+      },
+      "1": {
+        "name": "первая",
+        "tooltip": "Истина во время первой итерации цикла."
+      },
+      "2": {
+        "name": "последняя",
+        "tooltip": "Истинно на последней итерации цикла."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Текущий элемент списка при использовании режима списка. None в режимах Simple и For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Значение, передаваемое между итерациями, для текущей итерации: initial_iteration_value на первой итерации, затем next_iteration_value из End Loop на каждой последующей итерации."
       }
     }
   },
@@ -23477,8 +24145,71 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Кодирование текста Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "Необязательные эталонные изображения, которые видит текстовый энкодер и которые добавляются к latent-последовательности как чистые кадры. Последующие изображения изменяются до размера первого, и сэмплируемый latent должен соответствовать его размеру."
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Без VAE изображения влияют на текстовый энкодер только через визуальную башню."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Кодирование текста Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Эталонные изображения, обрабатываемые текстовым кодировщиком и вставляемые в последовательность как VAE-латенты."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Эталонные изображения масштабируются примерно до размера resolution x resolution пикселей, с кратностью 32 и сохранением соотношения сторон. 0 сохраняет каждое эталонное изображение в исходном размере, округлённом до кратного 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "отрицательный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латент",
+        "tooltip": "Пустой латент размера первого эталонного изображения для соответствия сэмплингу, поскольку любой другой размер смещает редактирование."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Кодирование текста Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23500,7 +24231,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Кодирование текста Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23576,6 +24307,10 @@
       "max_length": {
         "name": "максимальная длина"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с помощью головы multi-token-prediction чекпойнта. Без весов MTP не действует. auto адаптирует глубину черновой генерации; 2-5 фиксирует её. Выход при сэмплировании сохраняет корректное распределение, но отличается от вывода без MTP при том же seed."
+      },
       "prompt": {
         "name": "запрос"
       },
@@ -23603,6 +24338,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный запрос в шаблоне чата модели. Игнорируется, если не используется шаблон по умолчанию."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -23619,6 +24358,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рассуждения",
         "tooltip": null
       }
     }
@@ -23637,6 +24380,10 @@
       },
       "max_length": {
         "name": "максимальная длина"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с помощью головы предсказания нескольких токенов контрольной точки. Не действует без весов MTP. auto адаптирует глубину черновика; 2–5 фиксирует её. Сэмплированный результат сохраняет корректное распределение, но отличается от результата без MTP при том же seed."
       },
       "prompt": {
         "name": "подсказка"
@@ -23665,6 +24412,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный запрос в шаблоне чата модели. Игнорируется, если не используется шаблон по умолчанию."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -23681,6 +24432,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рассуждения",
         "tooltip": null
       }
     }
@@ -24153,7 +24908,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Кондиционирование Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24175,7 +24930,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Этап формы Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24203,7 +24958,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Этап текстуры Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24896,6 +25651,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по изображению в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из изображения в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "идентификатор задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по виду спереди и от одного до трёх видов слева, сзади и справа в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из нескольких ракурсов в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по текстовому запросу в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Текст в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель серии Tripo P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -25697,7 +26638,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Декодирование Hunyuan 3D VAE",
     "inputs": {
       "num_chunks": {
         "name": "количество_частей"
@@ -26005,7 +26946,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Декодирование формы Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26026,7 +26967,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Декодирование структуры Trellis2 VAE",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26046,7 +26987,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Декодирование текстуры Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -28073,6 +29014,10 @@
       "positive": {
         "name": "положительный"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "Заполняет кадры дополнения для обусловливания изображения этим изображением вместо серого, закрепляя идентичность без фиксации кадров (дополнение против дрейфа в стиле SVI, используемое такими моделями, как ID-V2V)."
+      },
       "start_image": {
         "name": "начальное_изображение"
       },
@@ -29002,6 +29947,10 @@
         "name": "abc",
         "tooltip": "Подключите генератор ABC или укажите отредактированную партитуру. Оставьте пустым, чтобы автоматически использовать режим off."
       },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Авторегрессионное управление стилем и текстом песни. 1.0 отключает CFG, как в процессе ABC. Используйте 1.01, чтобы соответствовать исходному управлению в выключенном режиме."
+      },
       "clip": {
         "name": "clip"
       },
@@ -29049,8 +29998,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Применяет Fun ControlNet для Z-Image или Qwen Image 2.1, загруженный с помощью «Загрузить патч модели».",
+    "display_name": "Применить Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "изображение"
       },
@@ -29065,6 +30018,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "интенсивность"

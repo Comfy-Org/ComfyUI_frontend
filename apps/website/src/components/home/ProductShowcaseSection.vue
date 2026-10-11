@@ -3,50 +3,60 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import NodeBadge from '../common/NodeBadge.vue'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import NodeBadge from '@/components/common/NodeBadge.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import LottieScene from './LottieScene.vue'
-import VideoMaskScene from './VideoMaskScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
+const routes = getRoutes(locale)
 
 interface Feature {
   title: string
   description: string
+  cta: string
+  href?: string
   lottie?: string
-  maskScene?: string
+  video?: { src: string; poster?: string }
 }
 
 const features: Feature[] = [
   {
-    title: t('showcase.feature1.title', locale),
-    description: t('showcase.feature1.description', locale),
+    title: t('showcase.feature1.title'),
+    description: t('showcase.feature1.description'),
+    cta: t('showcase.feature1.cta'),
+    href: routes.download,
     // Vector scene from Comfy-Org/comfy-website-animations, replacing the
     // node-workflow.webm capture this slide used to play.
     lottie: '/animations/scene-1/scene-01.json'
   },
   {
-    title: t('showcase.feature2.title', locale),
-    description: t('showcase.feature2.description', locale),
-    // Replaces ui-overview.webm. Source ships 22MB of PNGs embedded as base64;
-    // extracted to external WebP, which is why this is 804KB rather than 29MB.
-    lottie: '/animations/scene-2/scene-02.json'
+    title: t('showcase.feature2.title'),
+    description: t('showcase.feature2.description'),
+    cta: t('showcase.feature2.cta'),
+    href: routes.agent,
+    video: {
+      src: 'https://media.comfy.org/website/comfy-agent/homepage-agent-cut-03.mp4'
+    }
   },
   {
-    title: t('showcase.feature3.title', locale),
-    description: t('showcase.feature3.description', locale),
-    // Replaces video-showcase.webm. Not Lottie: the source is a bespoke player
-    // driving real <video> layers behind animated rounded-rect masks, ported
-    // into VideoMaskScene.
-    maskScene: '/animations/scene-3/scene-03.json'
+    title: t('showcase.feature3.title'),
+    description: t('showcase.feature3.description'),
+    cta: t('showcase.feature3.cta'),
+    href: routes.platformComfyApi,
+    video: {
+      src: 'https://media.comfy.org/website/comfy-api/homepage-api-cut-04.mp4'
+    }
   }
 ]
 
 const badgeSegments = [
-  { text: t('showcase.badgeHow', locale) },
+  { text: t('showcase.badgeHow') },
   { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' },
-  { text: t('showcase.badgeWorks', locale) }
+  { text: t('showcase.badgeWorks') }
 ]
 
 const activeIndex = ref(0)
@@ -67,10 +77,10 @@ useIntersectionObserver(sectionRef, ([entry]) => {
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
       <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
-        {{ t('showcase.subtitle1', locale) }}
+        {{ t('showcase.subtitle1') }}
       </p>
       <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
-        {{ t('showcase.subtitle2', locale) }}
+        {{ t('showcase.subtitle2') }}
       </p>
     </div>
 
@@ -87,7 +97,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           "
         >
           <div
-            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-transparency-white-t4"
           >
             <template v-for="(feature, i) in features" :key="feature.title">
               <LottieScene
@@ -101,16 +111,20 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   )
                 "
               />
-              <VideoMaskScene
-                v-else-if="feature.maskScene"
-                :src="feature.maskScene"
-                :active="activeIndex === i"
-                :class="
-                  cn(
-                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
+              <!-- Mounted only while active so an idle tab never loads or
+                plays its video. -->
+              <VideoPlayer
+                v-else-if="feature.video && activeIndex === i"
+                :locale
+                :src="feature.video.src"
+                :poster="feature.video.poster"
+                :aria-label="feature.title"
+                autoplay
+                lazy-autoplay
+                loop
+                hide-controls
+                fit="contain"
+                class="absolute inset-0 aspect-auto size-full rounded-none border-0"
               />
             </template>
           </div>
@@ -129,17 +143,25 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               class="size-full animate-border-spin overflow-hidden rounded-4xl p-0.5"
             >
               <div
-                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-transparency-white-t4"
               >
                 <LottieScene
                   v-if="feature.lottie"
                   :src="feature.lottie"
                   class="size-full"
                 />
-                <VideoMaskScene
-                  v-else-if="feature.maskScene"
-                  :src="feature.maskScene"
-                  class="size-full"
+                <VideoPlayer
+                  v-else-if="feature.video"
+                  :locale
+                  :src="feature.video.src"
+                  :poster="feature.video.poster"
+                  :aria-label="feature.title"
+                  autoplay
+                  lazy-autoplay
+                  loop
+                  hide-controls
+                  fit="contain"
+                  class="aspect-auto size-full rounded-none border-0"
                 />
               </div>
             </div>
@@ -171,8 +193,10 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               class="hidden self-center lg:block"
               aria-hidden="true"
             />
-            <button
-              type="button"
+            <component
+              :is="activeIndex === i && feature.href ? 'a' : 'button'"
+              :href="activeIndex === i ? feature.href : undefined"
+              :type="activeIndex === i && feature.href ? undefined : 'button'"
               :class="
                 cn(
                   'w-full cursor-pointer rounded-5xl p-8 text-left transition-colors duration-300',
@@ -222,9 +246,21 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   >
                     {{ f.description }}
                   </p>
+                  <span
+                    :class="
+                      cn(
+                        'col-start-1 row-start-2 mt-6 inline-flex h-10 w-fit items-center justify-center rounded-2xl border border-primary-comfy-ink px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-ink uppercase transition-opacity duration-300 md:text-sm',
+                        activeIndex === i
+                          ? 'opacity-100'
+                          : 'invisible opacity-0'
+                      )
+                    "
+                  >
+                    {{ feature.cta }}
+                  </span>
                 </div>
               </div>
-            </button>
+            </component>
           </div>
         </template>
       </div>

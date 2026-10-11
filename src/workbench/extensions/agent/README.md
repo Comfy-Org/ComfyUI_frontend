@@ -13,7 +13,7 @@ enabled, the panel has an open intent, and the current user and workspace have
 accepted Agent consent. Development mode enables the feature flag; consent is
 still required. A restored open intent cannot bypass consent.
 
-On first use, click **Ask Comfy Agent**, then **Start using Comfy Agent**.
+On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under
 `Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
 Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
@@ -22,6 +22,24 @@ Switching user or workspace invalidates the cached acceptance and loads the new
 scope. Desktop/Local sign-in continuation authenticates before saving; this
 branch currently mounts the Agent extension only in Cloud builds (FE-1931 owns
 the remaining distribution entry points).
+
+## First-use tour
+
+After consent succeeds, the first Agent open starts a four-card tour of the
+panel, composer, graph and chat history. **Next** advances through the cards;
+**Done** on the last card, **Skip** on any card and Escape once a card is on
+screen all dismiss the tour and mark it complete.
+
+Completion is device-local in `localStorage`, scoped to the authenticated user
+and active workspace; with either unresolved there is no scope to record, so no
+tour is shown at all. It does not sync through Global Settings. A different
+user or workspace on the same device gets its own tour. The legacy unscoped
+completion flag is adopted once by the current scope, then removed.
+
+The tour waits rather than marking itself complete when its target is not yet
+available. It is also deferred while App Mode is active or another onboarding
+tour owns the overlay; returning to graph mode or finishing the other tour lets
+the Agent tour appear.
 
 ## CRDT follower
 

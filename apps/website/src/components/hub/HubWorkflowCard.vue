@@ -4,10 +4,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { resolveTemplateLogos } from '../../lib/hub/model-logos'
-import { hubCreatorUrl } from '../../lib/hub/routes'
-import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
+import { resolveTemplateLogos } from '@/lib/hub/model-logos'
+import { hubCreatorUrl } from '@/lib/hub/routes'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale } from '@/i18n/translations'
 import HubTypeBadge from './HubTypeBadge.vue'
 import TagRow from './TagRow.vue'
 
@@ -125,7 +125,7 @@ function openCard() {
     @click="openCard"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
       <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
       <div
@@ -289,9 +289,7 @@ function openCard() {
           >
             {{ authorName.charAt(0).toUpperCase() }}
           </span>
-          <span class="ppformula-text-center-sm truncate text-sm">{{
-            authorName
-          }}</span>
+          <span class="truncate text-sm">{{ authorName }}</span>
         </a>
         <a
           :href="href"
@@ -305,7 +303,7 @@ function openCard() {
             class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/pill-trigger:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
-              <span class="ppformula-text-center relative leading-none">{{
+              <span class="relative inline-block leading-none">{{
                 tryNowLabel
               }}</span>
             </span>

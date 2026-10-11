@@ -1,4 +1,4 @@
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import type {
   ComfyWorkflowJSON,
   WorkflowId

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-describe.sequential('registered LiteGraph type cleanup', () => {
-  it('tracks a singleton registered after a module reset', async () => {
+describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
+  it('clears registrations from a singleton created after a module reset', async ({
+    onTestFinished
+  }) => {
     vi.resetModules()
     const { LGraphNode, LiteGraph } =
       await import('@/lib/litegraph/src/litegraph')
@@ -10,13 +12,12 @@ describe.sequential('registered LiteGraph type cleanup', () => {
       class ResetModuleNode extends LGraphNode {}
     )
     expect(LiteGraph.registered_node_types['test/reset-module']).toBeDefined()
-  })
 
-  it('clears registrations from the new singleton', async () => {
-    const { litegraph } = await import('@/lib/litegraph/src/litegraphInstance')
-    expect(
-      litegraph().registered_node_types['test/reset-module']
-    ).toBeUndefined()
+    onTestFinished(() => {
+      expect(
+        LiteGraph.registered_node_types['test/reset-module']
+      ).toBeUndefined()
+    })
   })
 })
 
@@ -61,9 +62,8 @@ describe('unit test network guard', () => {
     expect(await response.text()).toBe('delegated')
   })
 
-  it('lets a test stub its own fetch', async () => {
-    const stub = vi.fn().mockResolvedValue(new Response('ok'))
-    vi.stubGlobal('fetch', stub)
+  it('restores the guard when the automatic reset clears a configured fetch', async () => {
+    vi.mocked(fetch).mockImplementation(async () => new Response('ok'))
 
     await expect(fetch('https://example.com/thing')).resolves.toBeInstanceOf(
       Response
@@ -72,9 +72,7 @@ describe('unit test network guard', () => {
       window.fetch('https://example.com/thing')
     ).resolves.toBeInstanceOf(Response)
 
-    // A test that stubs fetch owns restoring it. Unstubbing here proves the
-    // guard is what sits underneath, rather than having been overwritten.
-    vi.unstubAllGlobals()
+    vi.mocked(fetch).mockReset()
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
     )

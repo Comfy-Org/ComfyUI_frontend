@@ -38,6 +38,14 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops browser-extension messaging noise', () => {
+    const event = createErrorEvent(
+      'Error: Invalid call to runtime.sendMessage(). Tab not found.'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it.for([
     [
       'a Chrome touchmove intervention',
@@ -53,6 +61,10 @@ describe('rumBeforeSend', () => {
     ],
     [
       'a failed <img> load surfaced as an uncaught event',
+      'Uncaught {"type":"error","isTrusted":true,"currentTarget":null,"target":"[HTMLImageElement]"}'
+    ],
+    [
+      'a failed <img> load without the bracketed target',
       'Uncaught {"isTrusted":true,"target":"HTMLImageElement"}'
     ],
     [
@@ -77,15 +89,14 @@ describe('rumBeforeSend', () => {
     [
       'a deliberate report whose text mentions HTMLImageElement',
       'Thumbnail decode failed for an HTMLImageElement supplied by the node pack'
+    ],
+    [
+      'an uncaught Error whose text mentions HTMLImageElement',
+      'Uncaught Error: HTMLImageElement cache initialization failed'
     ]
   ])(
     'keeps first-party errors that merely name a matched noise term: %s',
     ([, message]) => {
-      // These carry a matched substring ('HTMLImageElement') but not the
-      // `Uncaught {…}` shape the resource-load matcher targets, so the
-      // anchored predicate must let them through. An unanchored
-      // `includes('HTMLImageElement')` drops all three — that is the
-      // regression this case exists to catch.
       const event = createErrorEvent(
         message,
         'at render (https://cloud.comfy.org/assets/app.js:1:2)'
@@ -96,10 +107,8 @@ describe('rumBeforeSend', () => {
   )
 
   it('still drops the uncaught-event shape the img matcher targets', () => {
-    // The other half of the pair above: anchoring must not stop the matcher
-    // from catching the noise it was written for.
     const event = createErrorEvent(
-      'Uncaught {"isTrusted":true,"target":"HTMLImageElement"}',
+      'Uncaught {"type":"error","isTrusted":true,"currentTarget":null,"target":"[HTMLImageElement]"}',
       'at render (https://cloud.comfy.org/assets/app.js:1:2)'
     )
 

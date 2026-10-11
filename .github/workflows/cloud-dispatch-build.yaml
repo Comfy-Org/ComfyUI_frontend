@@ -23,15 +23,13 @@ name: Cloud Frontend Build Dispatch
 
 on:
   push:
+    branches: ['**']
+    tags-ignore: ['**']
   pull_request:
     types: [labeled]
   workflow_dispatch:
 
 permissions: {}
-
-concurrency:
-  group: cloud-dispatch-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   dispatch:
@@ -41,11 +39,18 @@ jobs:
     # For pull_request events, only run when a preview label is added.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'push' || github.event.deleted == false) &&
       (github.event_name != 'pull_request' ||
-       (github.event.pull_request.head.repo.fork == false &&
+       (github.event.pull_request.head.repo.full_name == github.repository &&
         github.event.action == 'labeled' &&
         contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)))
+    # Keep skipped label events out of the lane. Do not cancel an accepted run:
+    # retain the running dispatch and coalesce queued pushes to the newest one.
+    concurrency:
+      group: cloud-dispatch-${{ github.event.pull_request.head.ref || github.ref_name }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -82,10 +87,13 @@ jobs:
             REF="${GITHUB_SHA}"
             BRANCH="${GITHUB_REF_NAME}"
 
-            if [ "${BRANCH}" = "main" ] || [[ "${BRANCH}" == cloud/* ]]; then
+            if [ "${BRANCH}" = "main" ] || [[ "${BRANCH}" =~ ^cloud/[0-9]+\.[0-9]+$ ]]; then
               # Existing testcloud/staging/release path: no PR context.
               PR_NUMBER=""
               VARIANT=""
+            elif [[ "${BRANCH}" =~ ^cloud/[0-9] ]]; then
+              echo "::error::Unrecognized cloud release branch '${BRANCH}'; expected cloud/x.y"
+              exit 1
             else
               # Feature-branch push: dispatch only when the branch has an open PR
               # carrying a preview label, so we keep that PR's preview env fresh

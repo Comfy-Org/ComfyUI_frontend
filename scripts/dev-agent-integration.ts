@@ -105,6 +105,7 @@ async function run(options: Options): Promise<number> {
       PROJECT_ROOT,
       {
         ...process.env,
+        DEV_AGENT_DATA_DIR: '',
         DEV_AGENT_SESSION_TOKEN: token,
         DEV_AGENT_URL: agentUrl,
         DEV_SERVER_COMFYUI_URL: options.comfyUrl,

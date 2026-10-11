@@ -2,82 +2,96 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { addToast, removeAllToasts } from '../../config/auth-toast-state'
+import { authToast, dismissAllAuthToasts } from '@/config/auth-toast-state'
 import AuthToast from './AuthToast.vue'
 
-beforeEach(removeAllToasts)
+beforeEach(dismissAllAuthToasts)
+
+function shownToasts() {
+  return screen.queryAllByRole('alert')
+}
 
 describe('AuthToast', () => {
-  it('shows a message raised before the host mounted', () => {
-    addToast({ severity: 'error', summary: 'Error', detail: 'Too early' })
+  it('shows a toast raised before the host mounted', async () => {
+    authToast.error('Error', { description: 'Too early' })
 
     render(AuthToast)
 
-    expect(screen.getByRole('alert').textContent).toContain('Too early')
+    await vi.waitFor(() =>
+      expect(shownToasts()[0]).toHaveTextContent('Too early')
+    )
   })
 
-  it('dismisses a message with a life only once that many milliseconds pass', async () => {
+  it('dismisses a toast with a duration once that many milliseconds pass', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    authToast.success('Signed out', { duration: 5000 })
     render(AuthToast)
-    addToast({
-      severity: 'success',
-      summary: 'Signed out',
-      detail: 'Bye',
-      life: 5000
-    })
-    await screen.findByRole('alert')
 
     await vi.advanceTimersByTimeAsync(4999)
-    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(shownToasts()).toHaveLength(1)
 
     await vi.advanceTimersByTimeAsync(1)
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(shownToasts()).toHaveLength(0)
   })
 
-  it('keeps a message without a life until it is closed', async () => {
+  it('keeps a toast without a duration until it is closed', async () => {
     render(AuthToast)
-    addToast({ severity: 'error', summary: 'Error', detail: 'Sticky' })
-    await screen.findByRole('alert')
+    authToast.error('Error', { description: 'Sticky' })
+    await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
 
     await vi.advanceTimersByTimeAsync(60_000)
-    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(shownToasts()).toHaveLength(1)
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(shownToasts()).toHaveLength(0)
   })
 
-  it('closing early cancels the pending auto-dismiss', async () => {
+  it('keeps toasts open when Escape is pressed', async () => {
     render(AuthToast)
-    addToast({ severity: 'success', summary: 'Ok', detail: 'a', life: 5000 })
-    await screen.findByRole('alert')
+    authToast.error('Error', { description: 'Sticky' })
+    await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
 
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Close' }))
-    addToast({ severity: 'success', summary: 'Ok', detail: 'b' })
-    await screen.findByRole('alert')
-    await vi.advanceTimersByTimeAsync(5000)
+    await userEvent.setup().keyboard('{Escape}')
+
+    expect(shownToasts()).toHaveLength(1)
+  })
+
+  it('keeps toast text selectable', async () => {
+    render(AuthToast)
+    authToast.error('Error', { description: 'Copy me' })
+    await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
+
+    expect(shownToasts()[0].style.userSelect).not.toBe('none')
+  })
+
+  it('times out a later toast after the user closed the last one', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(AuthToast)
+    authToast.error('Error', { description: 'Sticky' })
+    await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
+
+    await user.hover(shownToasts()[0])
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    authToast.success('Signed out', { duration: 1000 })
+    await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(shownToasts()).toHaveLength(0)
+  })
+
+  it.for([
+    ['error', 'assertive'],
+    ['warning', 'assertive'],
+    ['success', 'polite']
+  ] as const)('announces a %s toast %sly', async ([kind, politeness]) => {
+    render(AuthToast)
+    authToast[kind]('Title', { description: 'Description' })
 
     expect(
-      screen.getByRole('alert').textContent,
-      'the first message timer must not remove whatever is showing later'
-    ).toContain('b')
-  })
-
-  it.for(['success', 'warn', 'error', 'info'] as const)(
-    'announces the %s severity so styling and assistive tech can tell them apart',
-    async (severity) => {
-      render(AuthToast)
-      addToast({ severity, summary: 'S', detail: 'D' })
-      const alert = await screen.findByRole('alert')
-
-      expect(alert.getAttribute('data-severity')).toBe(severity)
-    }
-  )
-
-  it('announces assertively and atomically like PrimeVue', async () => {
-    render(AuthToast)
-    addToast({ severity: 'error', summary: 'S', detail: 'D' })
-    const alert = await screen.findByRole('alert')
-
-    expect(alert.getAttribute('aria-live')).toBe('assertive')
-    expect(alert.getAttribute('aria-atomic')).toBe('true')
+      await screen.findByText('Title. Description', {
+        selector: `[aria-live="${politeness}"] > p`
+      })
+    ).toBeInTheDocument()
   })
 })

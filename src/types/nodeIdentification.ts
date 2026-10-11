@@ -1,8 +1,36 @@
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const ENCODED_ROOT_LOCATOR_PREFIX = '~root:'
+const ENCODED_SUBGRAPH_LOCATOR_PREFIX = '~subgraph:'
+
+interface ParsedNodeLocatorId {
+  subgraphUuid: string | null
+  localNodeId: NodeId
+}
+
+function decodeNodeId(value: string): NodeId | null {
+  try {
+    const decoded = decodeURIComponent(value)
+    return encodeURIComponent(decoded) === value ? toNodeId(decoded) : null
+  } catch {
+    return null
+  }
+}
+
+function parseEncodedSubgraphLocator(id: string): ParsedNodeLocatorId | null {
+  const encodedLocator = id.slice(ENCODED_SUBGRAPH_LOCATOR_PREFIX.length)
+  const separatorIndex = encodedLocator.indexOf(':')
+  if (separatorIndex === -1) return null
+
+  const subgraphUuid = encodedLocator.slice(0, separatorIndex)
+  if (!UUID_PATTERN.test(subgraphUuid)) return null
+
+  const localNodeId = decodeNodeId(encodedLocator.slice(separatorIndex + 1))
+  return localNodeId !== null ? { subgraphUuid, localNodeId } : null
+}
 
 /**
  * A globally unique identifier for nodes that maintains consistency across
@@ -68,9 +96,18 @@ export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
  * @param id The NodeLocatorId to parse
  * @returns The subgraph UUID and local node ID, or null if invalid
  */
-export function parseNodeLocatorId(
-  id: string
-): { subgraphUuid: string | null; localNodeId: NodeId } | null {
+export function parseNodeLocatorId(id: string): ParsedNodeLocatorId | null {
+  if (id.startsWith(ENCODED_ROOT_LOCATOR_PREFIX)) {
+    const localNodeId = decodeNodeId(
+      id.slice(ENCODED_ROOT_LOCATOR_PREFIX.length)
+    )
+    return localNodeId !== null ? { subgraphUuid: null, localNodeId } : null
+  }
+
+  if (id.startsWith(ENCODED_SUBGRAPH_LOCATOR_PREFIX)) {
+    return parseEncodedSubgraphLocator(id)
+  }
+
   const parts = id.split(':')
 
   if (parts.length === 1) {
@@ -95,24 +132,32 @@ export function parseNodeLocatorId(
  * Create a NodeLocatorId from components
  * @param subgraphUuid The UUID of the immediate containing subgraph
  * @param localNodeId The local node ID within that subgraph
- * @returns A properly formatted NodeLocatorId
+ * @returns A locator that encodes local IDs that are not plain segments, or
+ * `null` when the containing subgraph ID is not a UUID
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId | null {
   const nodeId = requireNodeIdSegment(localNodeId)
-  if (!nodeId) return null
   if (subgraphUuid && !UUID_PATTERN.test(subgraphUuid)) return null
 
-  if (!subgraphUuid) return String(nodeId) as NodeLocatorId
+  if (nodeId) {
+    if (!subgraphUuid) return String(nodeId) as NodeLocatorId
 
-  return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+    return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+  }
+
+  const encodedNodeId = encodeURIComponent(String(localNodeId))
+  return subgraphUuid
+    ? (`${ENCODED_SUBGRAPH_LOCATOR_PREFIX}${subgraphUuid}:${encodedNodeId}` as NodeLocatorId)
+    : (`${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId)
 }
+
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse
@@ -145,6 +190,30 @@ export function createNodeExecutionId(
   return nodeIdSegments
     ? nodeExecutionIdFromString(nodeIdSegments.join(':'))
     : null
+}
+
+/**
+ * Create a `NodeExecutionId` for a single, already-local node id, tolerating
+ * a colon inside it.
+ *
+ * `createNodeExecutionId` treats every array element as one path SEGMENT and
+ * rejects a colon inside any of them, because colon is the separator between
+ * segments once they are joined. That is the right contract for a real
+ * multi-segment path, but it is too strict for the single-id, no-ancestor
+ * case some callers hit: a node materialized at the root graph can have a
+ * raw id that itself contains colons for reasons that have nothing to do
+ * with subgraph-path encoding (comfy-multi-player's `insert_workflow`
+ * remapped ids, e.g. `insert:<opId>:root:node:<originalId>`, PM-1580).
+ * There is no ancestor segment to disambiguate such an id from, so nothing
+ * is lost by keeping it whole rather than rejecting it outright.
+ */
+export function createLeafNodeExecutionId(
+  nodeId: SerializedNodeId
+): NodeExecutionId | null {
+  const strict = createNodeExecutionId([nodeId])
+  if (strict) return strict
+  const bare = parseNodeId(nodeId)
+  return bare ? (bare as unknown as NodeExecutionId) : null
 }
 
 export function tryNormalizeNodeExecutionId(

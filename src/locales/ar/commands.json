@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "سير عمل جديد فارغ"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "إعادة تشغيل الإعداد الأولي"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },

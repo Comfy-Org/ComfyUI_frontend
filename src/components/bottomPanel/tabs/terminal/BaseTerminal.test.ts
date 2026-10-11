@@ -1,5 +1,5 @@
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
@@ -93,13 +93,7 @@ function renderBaseTerminal(props: Record<string, unknown> = {}) {
   return render(BaseTerminal, {
     props,
     global: {
-      plugins: [getActivePinia()!, i18n],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>',
-          props: ['icon', 'severity', 'size']
-        }
-      }
+      plugins: [getActivePinia()!, i18n]
     }
   })
 }

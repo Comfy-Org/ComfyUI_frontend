@@ -16,8 +16,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SharedTurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
-import { loadTurnstile } from '@comfyorg/account/turnstileScript'
+import SharedTurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
+import { loadTurnstile } from '@comfyorg/account-core/turnstileScript'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

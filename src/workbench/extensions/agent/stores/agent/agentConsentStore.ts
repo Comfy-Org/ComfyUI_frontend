@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  webSessionRequests,
+  webSessionSend
+} from '@/platform/auth/session/webSessionFetch'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,
@@ -89,15 +93,16 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     return session === sessionId && currentIdentity() === identity
   }
 
-  async function requireAuthHeader(sessionId: number, identity: string) {
-    const authHeader = await authStore.getWorkspaceAuthHeader()
+  async function requireAuth(sessionId: number, identity: string) {
+    const send = webSessionRequests() ? await webSessionSend() : undefined
+    const auth = send ?? (await authStore.getWorkspaceAuthHeader())
     if (!stillOwns(sessionId, identity)) return null
-    if (!authHeader) {
+    if (!auth) {
       throw new AgentConsentAuthenticationError(
         'Comfy account authentication is required'
       )
     }
-    return authHeader
+    return auth
   }
 
   async function readConsent(
@@ -105,12 +110,9 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     identity: string
   ): Promise<boolean> {
     try {
-      const authHeader = await requireAuthHeader(sessionId, identity)
-      if (!authHeader) return false
-      const stored = await getGlobalSetting(
-        AGENT_CONSENT_SETTING_ID,
-        authHeader
-      )
+      const auth = await requireAuth(sessionId, identity)
+      if (!auth) return false
+      const stored = await getGlobalSetting(AGENT_CONSENT_SETTING_ID, auth)
       if (!stillOwns(sessionId, identity)) return false
       if (loadedIdentity.value === identity) return accepted.value
 
@@ -155,11 +157,11 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
     const sessionId = session
     try {
-      const authHeader = await requireAuthHeader(sessionId, identity)
-      if (!authHeader) return false
+      const auth = await requireAuth(sessionId, identity)
+      if (!auth) return false
       await setGlobalSetting(
         { key: AGENT_CONSENT_SETTING_ID, value: true },
-        authHeader
+        auth
       )
       if (!stillOwns(sessionId, identity)) return false
 

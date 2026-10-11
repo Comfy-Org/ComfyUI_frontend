@@ -24,12 +24,17 @@ export const apiTransport: DocFrameTransport = {
  * `doc_ops` batch `DocFrameClient.send` just serialised, on the main thread,
  * for a value nothing reads.
  */
-function traceableFrame(frame: string): unknown {
-  if (!isCrdtDebugEnabled()) return frame
+function traceableFrame(frame: string): Record<string, unknown> | null {
+  if (!isCrdtDebugEnabled()) return null
   try {
-    return JSON.parse(frame)
+    const parsed: unknown = JSON.parse(frame)
+    return parsed !== null &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null
   } catch {
-    return frame
+    return null
   }
 }
 
@@ -37,9 +42,11 @@ export function createLoggedTransport(): DocFrameTransport {
   return {
     send(frame) {
       const delivered = apiTransport.send(frame)
+      const parsed = traceableFrame(frame)
       wireLog.trace('ws_out', 'outbound frame', {
         delivered,
-        frame: traceableFrame(frame)
+        frame: parsed,
+        ...(parsed === null ? { unparsed_chars: frame.length } : {})
       })
       return delivered
     },
