@@ -5,8 +5,8 @@
     :class="
       cn('flex w-full gap-2', align === 'center' ? 'items-center' : 'items-end')
     "
-    @pointerdown.stop
-    @click.stop
+    @pointerdown="stopUnlessSelectionModifier"
+    @click="stopUnlessSelectionModifier"
   >
     <Button
       variant="textonly"
@@ -15,7 +15,7 @@
       :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
       :loading="loading"
       :disabled="failed"
-      @click.stop="togglePlayPause"
+      @click="togglePlayPauseUnlessSelectionModifier"
     >
       <i
         v-if="!isPlaying"
@@ -223,8 +223,20 @@ const {
   barCount
 })
 
+function hasSelectionModifier(event: MouseEvent) {
+  return event.shiftKey || event.metaKey || event.ctrlKey
+}
+
+function stopUnlessSelectionModifier(event: MouseEvent) {
+  if (!hasSelectionModifier(event)) event.stopPropagation()
+}
+
+function togglePlayPauseUnlessSelectionModifier(event: MouseEvent) {
+  if (!hasSelectionModifier(event)) togglePlayPause()
+}
+
 function onWaveformClick(event: MouseEvent) {
-  if (failed.value) return
+  if (failed.value || hasSelectionModifier(event)) return
   handleWaveformClick(event)
 }
 
