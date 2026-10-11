@@ -311,14 +311,15 @@ export class AgentPanel {
   }
 
   /**
-   * Drags the resize handle until the panel root is exactly `width` wide.
+   * Drags the resize handle until `target` is exactly `width` wide.
    *
-   * The root is the element the Agent container queries resolve against, so a
-   * test asserting a breakpoint has to measure it rather than the outer dock.
+   * Defaults to the panel root, the element the Agent container queries resolve
+   * against, so a breakpoint test measures what the CSS measures. Pass
+   * `dockedPanel` to size the outer dock the user drags instead.
    */
-  async resizeTo(width: number): Promise<void> {
+  async resizeTo(width: number, target: Locator = this.root): Promise<void> {
     const [panelBox, handleBox] = await Promise.all([
-      this.root.boundingBox(),
+      target.boundingBox(),
       this.resizeHandle.boundingBox()
     ])
     if (!panelBox || !handleBox) {
@@ -334,7 +335,7 @@ export class AgentPanel {
       handleY
     )
     await this.page.mouse.up()
-    await expect(this.root).toHaveCSS('width', `${width}px`)
+    await expect(target).toHaveCSS('width', `${width}px`)
   }
 
   async expectPanelSize(expected: { x: number; width: number }): Promise<void> {

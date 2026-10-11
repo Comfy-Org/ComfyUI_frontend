@@ -74,6 +74,26 @@ describe('EmptyState', () => {
     ])
   })
 
+  it('reports only the suggestions a narrow panel leaves visible', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+    const buttons = screen.getAllByRole('button')
+    // jsdom does not evaluate container queries; hide the overflow as the
+    // compact breakpoint does.
+    buttons.slice(3).forEach((button) => (button.style.display = 'none'))
+
+    await user.click(buttons[0])
+
+    expect(emitted().insert).toEqual([
+      [
+        LOCAL_PROMPTS[0].text,
+        expect.objectContaining({ promptId: 'slot_1', promptCount: 3 })
+      ]
+    ])
+  })
+
   it.for([
     {
       locale: 'en',

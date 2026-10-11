@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -63,6 +63,20 @@ onMounted(() => {
     emit('rendered', effectiveAssignment.value)
 })
 
+const promptList = useTemplateRef<HTMLElement>('promptList')
+
+/**
+ * Suggestions the viewer could actually see. A narrow panel hides the overflow
+ * with a container query, so the set's length overstates what was on screen.
+ */
+function visiblePromptCount(): number {
+  const buttons = promptList.value?.querySelectorAll('button')
+  if (!buttons) return prompts.value.length
+  return Array.from(buttons).filter(
+    (button) => getComputedStyle(button).display !== 'none'
+  ).length
+}
+
 /**
  * One emit per click, carrying the slot's stable id rather than its text. Fires
  * on click only — not on render or focus — so the count is a count of choices.
@@ -74,7 +88,7 @@ function onPromptClick(prompt: string, index: number): void {
     starterPromptAttribution(
       prompt,
       index,
-      prompts.value.length,
+      visiblePromptCount(),
       promptLocale.value,
       shouldAttributeExperiment.value ? effectiveAssignment.value : undefined
     )
@@ -106,6 +120,7 @@ const promptIcons = [
         </p>
       </div>
       <div
+        ref="promptList"
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
       >
