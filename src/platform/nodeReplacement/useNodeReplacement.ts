@@ -151,42 +151,37 @@ function planReplacementTopology(
 }
 
 /**
- * Reads the old node's value for `oldInputName`, preferring a live widget of
- * that name so the read does not depend on `widgets_values` indexing. Only
- * missing-node placeholders reach here (`replaceNodesInPlace` selects on
- * `last_serialization`, which litegraph sets only for them), and they carry
- * just the `UNKNOWN…` widgets synthesised by `errorNodeWidgets` — so today the
- * name match never hits and every replacement takes the positional fallback.
- *
- * That fallback indexes by full widget position, the basis `old_widget_ids`
- * uses: `LGraphNode.serialize` writes `widgets_values[i]` from the unfiltered
- * widget index, leaving an empty slot for each `serialize: false` widget.
+ * Prefers the name-keyed `widgets_values_named`, which every workflow saved
+ * with a compacted `widgets_values` also carries. Older workflows have only
+ * the positional array, padded with an empty slot per `serialize: false`
+ * widget, so `old_widget_ids` indexes it by full widget position.
  */
 function readOldWidgetValue(
-  oldNode: LGraphNode,
+  serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
   oldInputName: string
 ): TWidgetValue | undefined {
-  const liveWidget = oldNode.widgets?.find((w) => w.name === oldInputName)
-  if (liveWidget) return liveWidget.value
+  const named = serialized.widgets_values_named
+  if (named) {
+    return Object.hasOwn(named, oldInputName) ? named[oldInputName] : undefined
+  }
 
-  const widgetsValues = oldNode.last_serialization?.widgets_values
-  if (!oldWidgetIds || !widgetsValues) return undefined
+  if (!oldWidgetIds || !serialized.widgets_values) return undefined
 
   const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
   if (oldWidgetIdx === -1) return undefined
 
-  return widgetsValues[oldWidgetIdx]
+  return serialized.widgets_values[oldWidgetIdx]
 }
 
 function transferWidgetValue(
-  oldNode: LGraphNode,
+  serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
   oldInputName: string,
   newNode: LGraphNode,
   newInputName: string
 ): void {
-  const oldValue = readOldWidgetValue(oldNode, oldWidgetIds, oldInputName)
+  const oldValue = readOldWidgetValue(serialized, oldWidgetIds, oldInputName)
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
@@ -393,7 +388,7 @@ function replaceWithMapping(
       if ('old_id' in inputMap) {
         if (isDotNotation(inputMap.new_id)) continue
         transferWidgetValue(
-          node,
+          serialized,
           replacement.old_widget_ids,
           inputMap.old_id,
           newNode,

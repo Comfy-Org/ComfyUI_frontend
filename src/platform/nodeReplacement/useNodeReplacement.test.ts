@@ -1880,16 +1880,35 @@ describe('useNodeReplacement', () => {
   })
 
   describe('widget value provenance', () => {
-    it('indexes a padded widgets_values by full widget position', () => {
+    const legacyPadded: TWidgetValue[] = []
+    legacyPadded[0] = 'lanczos'
+    legacyPadded[2] = 2.0
+
+    it.for([
+      {
+        name: 'indexes a legacy padded widgets_values by full widget position',
+        serialized: { widgets_values: legacyPadded },
+        expected: 2.0
+      },
+      {
+        name: 'reads widgets_values_named instead of a compacted widgets_values',
+        serialized: {
+          widgets_values: ['lanczos', 3.5],
+          widgets_values_named: { upscale_method: 'lanczos', scale_by: 3.5 }
+        },
+        expected: 3.5
+      },
+      {
+        name: 'skips the transfer when widgets_values_named lacks the input',
+        serialized: {
+          widgets_values: ['lanczos', 3.5, 9],
+          widgets_values_named: { upscale_method: 'lanczos' }
+        },
+        expected: 0
+      }
+    ])('$name', ({ serialized, expected }) => {
       const placeholder = createPlaceholderNode(1, 'PaddedNode')
-      // `LGraphNode.serialize` keys widgets_values by unfiltered widget index,
-      // so a `serialize: false` widget at position 1 leaves the slot empty.
-      const paddedValues: TWidgetValue[] = []
-      paddedValues[0] = 'lanczos'
-      paddedValues[2] = 2.0
-      placeholder.last_serialization!.widgets_values = paddedValues
-      // Real placeholders carry only errorNodeWidgets' UNKNOWN_N widgets,
-      // which never match a mapping's real input name.
+      Object.assign(placeholder.last_serialization!, serialized)
       Object.assign(placeholder, {
         widgets: [
           { name: 'UNKNOWN', value: 'lanczos', type: 'string' },
@@ -1918,48 +1937,7 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets![0].value).toBe(2.0)
-    })
-
-    it('reads the old node live widget rather than indexing widgets_values', () => {
-      const placeholder = createPlaceholderNode(1, 'LiveWidgetNode')
-      // Compacted widgets_values: the serialize:false entry is absent, so
-      // position-based indexing would miss scale_by entirely.
-      placeholder.last_serialization!.widgets_values = ['lanczos', 3.5]
-      Object.assign(placeholder, {
-        widgets: [
-          { name: 'upscale_method', value: 'lanczos', type: 'combo' },
-          {
-            name: 'preview',
-            value: 'unsaved',
-            type: 'string',
-            serialize: false
-          },
-          { name: 'scale_by', value: 4.25, type: 'number' }
-        ]
-      })
-
-      const graph = createMockGraph([placeholder])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
-
-      const newNode = createNewNode([], [], [{ name: 'scale_by', value: 0 }])
-      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-
-      const { replaceNodesInPlace } = useNodeReplacement()
-      replaceNodesInPlace([
-        makeMissingNodeType('LiveWidgetNode', {
-          new_node_id: 'ImageScaleBy',
-          old_node_id: 'LiveWidgetNode',
-          old_widget_ids: ['upscale_method', 'preview', 'scale_by'],
-          input_mapping: [{ new_id: 'scale_by', old_id: 'scale_by' }],
-          output_mapping: null
-        })
-      ])
-
-      expect(newNode.widgets![0].value).toBe(4.25)
+      expect(newNode.widgets![0].value).toBe(expected)
     })
   })
 })
