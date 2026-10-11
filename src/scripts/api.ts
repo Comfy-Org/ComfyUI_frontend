@@ -35,6 +35,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -1665,18 +1666,27 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
-      {
-        method: 'POST',
-        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
-        ...options
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`
+    const resp = await this.fetchApi(route, {
+      method: 'POST',
+      body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
+      ...options
+    })
+    if (resp.status !== 200) {
+      const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      reportError(new Error(message), {
+        errorType: 'userdata_store_failure',
+        surface: 'platform',
+        tags: {
+          status: resp.status,
+          overwrite: options.overwrite ?? true,
+          full_info: options.full_info ?? false
+        },
+        context: { file, route }
+      })
+      if (options.throwOnError !== false) {
+        throw new Error(message)
       }
-    )
-    if (resp.status !== 200 && options.throwOnError !== false) {
-      throw new Error(
-        `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
-      )
     }
 
     return resp
