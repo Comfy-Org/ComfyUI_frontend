@@ -53,6 +53,8 @@ type RuntimeExecutionError = Omit<
   traceback?: ExecutionErrorWsMessage['traceback'] | null
 }
 
+type WorkflowOwnership = 'active' | 'foreign' | 'unresolved'
+
 interface ExecutionNodeInfo {
   title?: string | null
   type?: string | null
@@ -749,6 +751,14 @@ export const useExecutionStore = defineStore('execution', () => {
     return !id || id === zeroUuid ? undefined : id
   }
 
+  function compareWorkflowOwner(
+    owner: string | undefined,
+    active: string | undefined
+  ): WorkflowOwnership {
+    if (!owner || !active) return 'unresolved'
+    return owner === active ? 'active' : 'foreign'
+  }
+
   /**
    * Determines whether a WebSocket execution message belongs to the currently
    * active workflow tab, so a job started in another open workflow cannot leak
@@ -770,30 +780,28 @@ export const useExecutionStore = defineStore('execution', () => {
   function resolveWorkflowOwnership(
     jobId: JobId,
     rawMessageWorkflowId?: string
-  ): 'active' | 'foreign' | 'unresolved' {
+  ): WorkflowOwnership {
     const messageWorkflowId = workflowIdOrUndefined(rawMessageWorkflowId)
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return 'unresolved'
 
-    const mappedInstance = jobIdToWorkflowInstanceId.get(jobId)
-    if (mappedInstance && activeWorkflow.instanceId) {
-      return mappedInstance === activeWorkflow.instanceId ? 'active' : 'foreign'
-    }
+    const instanceOwnership = compareWorkflowOwner(
+      jobIdToWorkflowInstanceId.get(jobId),
+      activeWorkflow.instanceId
+    )
+    if (instanceOwnership !== 'unresolved') return instanceOwnership
 
-    const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
-    if (mappedPath && activeWorkflow.path) {
-      return mappedPath === activeWorkflow.path ? 'active' : 'foreign'
-    }
+    const pathOwnership = compareWorkflowOwner(
+      jobIdToSessionWorkflowPath.value.get(jobId),
+      activeWorkflow.path
+    )
+    if (pathOwnership !== 'unresolved') return pathOwnership
 
     const activeId = workflowIdOrUndefined(activeWorkflowGraphId() ?? undefined)
-    if (activeId) {
-      const ownerId =
-        messageWorkflowId ??
-        workflowIdOrUndefined(jobIdToWorkflowId.value.get(jobId))
-      if (ownerId) return ownerId === activeId ? 'active' : 'foreign'
-    }
-
-    return 'unresolved'
+    const ownerId =
+      messageWorkflowId ??
+      workflowIdOrUndefined(jobIdToWorkflowId.value.get(jobId))
+    return compareWorkflowOwner(ownerId, activeId)
   }
 
   /**
@@ -1454,7 +1462,6 @@ export const useExecutionStore = defineStore('execution', () => {
     ensureSessionWorkflowPath,
     getWorkflowStatus,
     clearWorkflowStatus,
-    rewriteSessionWorkflowPaths,
     belongsToActiveWorkflow
   }
 })
