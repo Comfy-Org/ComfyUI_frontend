@@ -338,7 +338,10 @@ const selectionFilters = computed<
   if (rootFilter.value) {
     selected.push({ filterDef: rootSelectionFilter, value: rootFilter.value })
   }
-  if (selectedCategory.value !== DEFAULT_CATEGORY) {
+  if (
+    selectedCategory.value !== DEFAULT_CATEGORY &&
+    selectedCategory.value !== rootFilter.value
+  ) {
     selected.push({
       filterDef: categorySelectionFilter,
       value: selectedCategory.value

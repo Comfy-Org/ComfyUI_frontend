@@ -310,6 +310,43 @@ describe('NodeSearchContent', () => {
       expect(texts).toContain('KSampler')
       expect(texts).toContain('KSampler Advanced')
     })
+
+    it('should keep whole-root results when searching with the auto-expanded root selected', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({
+          name: 'CustomNodeA',
+          display_name: 'Custom Node A',
+          category: 'animation',
+          python_module: 'custom_nodes.ext_a'
+        }),
+        createMockNodeDef({
+          name: 'CustomNodeB',
+          display_name: 'Custom Node B',
+          category: 'video',
+          python_module: 'custom_nodes.ext_b'
+        })
+      ])
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Extensions')
+
+      // The sidebar wraps the root-filtered categories under a single group
+      // and emits autoExpand with the root key, so the selected category
+      // becomes the active root itself. In the searched path the category
+      // filter must stay off in that case, or its prefix normalization
+      // matches nothing and the whole root goes empty.
+      const input = screen.getByRole('combobox')
+      await user.type(input, 'Custom')
+
+      await waitFor(() => {
+        expect(screen.queryAllByTestId('node-item')).toHaveLength(2)
+      })
+      const texts = screen
+        .queryAllByTestId('node-item')
+        .map((i) => i.textContent)
+      expect(texts).toContain('Custom Node A')
+      expect(texts).toContain('Custom Node B')
+    })
   })
 
   describe('search and category interaction', () => {
