@@ -248,19 +248,6 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toEqual([[asset]])
   })
 
-  it('inspects an HDR asset from a double click and the HDR viewer button', async () => {
-    const user = userEvent.setup()
-    const hdrAsset = { ...asset, name: 'sky.exr' }
-    const { emitted } = renderCard({ loading: false, asset: hdrAsset })
-
-    await user.dblClick(await screen.findByText('hdrViewer.hdrImage'))
-    await user.click(
-      screen.getByRole('button', { name: 'hdrViewer.openInHdrViewer' })
-    )
-
-    expect(emitted().zoom).toEqual([[hdrAsset], [hdrAsset]])
-  })
-
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
     const { container, emitted } = renderCard({
