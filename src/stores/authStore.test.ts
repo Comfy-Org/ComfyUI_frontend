@@ -1206,6 +1206,25 @@ describe('useAuthStore', () => {
       )
       expect(token).toBeUndefined()
     })
+
+    it('reports a repeated non-network token failure for the same user only once', async () => {
+      const authError = new FirebaseError(
+        firebaseAuth.AuthErrorCodes.USER_DISABLED,
+        'User account is disabled.'
+      )
+      mockUser.getIdToken.mockRejectedValue(authError)
+
+      await store.getIdToken()
+      await store.getIdToken()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(authError, {
+        errorType: 'auth_id_token_fetch_failure',
+        surface: 'auth'
+      })
+      expect(console.warn).toHaveBeenCalledWith(authError)
+      expect(console.error).not.toHaveBeenCalledWith(authError)
+    })
   })
 
   describe('getAuthHeader', () => {

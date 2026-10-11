@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
@@ -10,7 +11,10 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
     try {
       return await api.getSystemStats()
     } catch (err) {
-      console.error('Error fetching system stats:', err)
+      reportError(err, {
+        errorType: 'system_stats_fetch_failure',
+        surface: 'platform'
+      })
       throw err
     }
   }

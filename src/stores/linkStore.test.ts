@@ -1,13 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 import { useLinkStore } from './linkStore'
+
+vi.mock(import('@/platform/telemetry/assertFailureReporter'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -51,6 +54,10 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(rejected.graphId).toBe(graphB.owningGraphId)
     expect(console.error).toHaveBeenCalledOnce()
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Link store target slot conflict',
+      { linkId: toLinkId(2), targetSlotKey: 'graph-a:9:2' }
+    )
   })
 
   it('queries and protects a subgraph-output target slot', () => {
@@ -190,6 +197,14 @@ describe('useLinkStore', () => {
       registeredIncumbent
     )
     expect(store.getInputSlotLink(graphA, toNodeId(8), 1)?.id).toBe(toLinkId(2))
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Link store ownership conflict',
+      {
+        linkId: toLinkId(2),
+        incumbentGraphId: graphA.owningGraphId,
+        owningGraphId: graphA.owningGraphId
+      }
+    )
   })
 
   it('never answers target queries from floating links', () => {
