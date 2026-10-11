@@ -13,6 +13,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [

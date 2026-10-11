@@ -486,3 +486,11 @@ export const noServerFactLiterals: Rule = {
     }
   }
 }
+
+export default {
+  meta: { name: 'comfy' },
+  rules: {
+    'no-capability-recombination': noCapabilityRecombination,
+    'no-server-fact-literals': noServerFactLiterals
+  }
+}
