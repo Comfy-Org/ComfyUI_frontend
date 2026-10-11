@@ -3,7 +3,6 @@ import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/com
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { LightInfoEntry } from '@/types/lightInfo'
-import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {
@@ -22,9 +21,7 @@ import type {
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
-export interface NodeBindable {
-  setNodeId(nodeId: NodeId): void
-}
+export type { NodeBindable } from '../utils/type'
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string
