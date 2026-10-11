@@ -970,9 +970,7 @@ export class ComfyApi extends EventTarget {
         new Error(`Failed to open WebSocket to ${wsHost} (${reason})`),
         { errorType: 'websocket_construction_failure', surface: 'platform' }
       )
-      if (!isReconnect) {
-        this._pollQueue()
-      }
+      this._pollQueue()
       return
     }
     this.socket = socket

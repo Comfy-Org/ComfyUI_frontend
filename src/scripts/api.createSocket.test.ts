@@ -214,6 +214,19 @@ describe('createSocket WebSocket host', () => {
     expect(promptRequests()).toBe(1)
   })
 
+  it('resumes polling when a reconnect fails to construct', async () => {
+    await api.init()
+    dispatchToLatestSocket('open')
+
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
+    dispatchToLatestSocket('close')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(api.socket).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(promptRequests()).toBe(1)
+  })
+
   it('keeps polling when a replaced socket opens late', async () => {
     await api.init()
     window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
