@@ -4,14 +4,18 @@ import { useStorage } from '@vueuse/core'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
 
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
+import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
-const FREE_USE_DOCS_URL = 'https://docs.comfy.org/get_started/cloud'
+// The Agent page states the free initial allowance and what happens after it;
+// the Cloud introduction this used to point at explains neither, so a reader
+// could not learn the notice's terms from it.
+const FREE_USE_DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 
 const PLACEMENT_CLASSES = {
   'top-banner': 'px-4 py-3',
@@ -23,7 +27,11 @@ const PLACEMENT_CLASSES = {
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
-const dismissed = useStorage(FREE_USE_NOTICE_DISMISSED_KEY, false)
+const { resolvedUserInfo } = useCurrentUser()
+const dismissed = useStorage(
+  () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
+  false
+)
 
 onMounted(() => {
   if (!dismissed.value) emit('notice', { action: 'shown', placement })
