@@ -822,6 +822,45 @@ describe('LGraphNode', () => {
 
       expect(testNode.widgets).toHaveLength(1)
     })
+
+    test('rebuilds a wrapper removed directly through the widgets view', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'value',
+        value: 1,
+        options: {},
+        y: 0
+      })
+      testNode.widgets = [widget]
+      const first = testNode.widgets[0]
+
+      testNode.widgets.splice(0, 1)
+      widget.value = 2
+      const second = testNode.addCustomWidget(widget)
+
+      expect(second).not.toBe(first)
+      expect(second.value).toBe(2)
+    })
+
+    test('keeps a wrapped legacy widget during an in-place reorder', () => {
+      const testNode = new LGraphNode('TestNode')
+      const source = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'wrapped',
+        value: 1,
+        options: {},
+        y: 0
+      })
+      testNode.widgets = [source]
+      const wrapped = testNode.widgets[0]
+      const other = testNode.addWidget('number', 'other', 2, null)
+
+      testNode.widgets[1] = wrapped
+      testNode.widgets[0] = other
+
+      expect(testNode.widgets).toEqual([other, wrapped])
+    })
   })
 
   describe('removeInput', () => {
@@ -832,9 +871,17 @@ describe('LGraphNode', () => {
       expect(() => testNode.removeInput(-1)).not.toThrow()
       expect(() => testNode.removeInput(1)).not.toThrow()
       expect(() => testNode.removeInput(0.5)).not.toThrow()
+      expect(() => testNode.removeInput('' as unknown as number)).not.toThrow()
+      expect(() => testNode.removeInput(' ' as unknown as number)).not.toThrow()
+      expect(() =>
+        testNode.removeInput('0x0' as unknown as number)
+      ).not.toThrow()
+      expect(() =>
+        testNode.removeInput('0e0' as unknown as number)
+      ).not.toThrow()
       expect(testNode.inputs).toHaveLength(1)
 
-      testNode.removeInput('0')
+      testNode.removeInput('0' as unknown as number)
       expect(testNode.inputs).toHaveLength(0)
     })
   })
@@ -847,9 +894,19 @@ describe('LGraphNode', () => {
       expect(() => testNode.removeOutput(-1)).not.toThrow()
       expect(() => testNode.removeOutput(1)).not.toThrow()
       expect(() => testNode.removeOutput(0.5)).not.toThrow()
+      expect(() => testNode.removeOutput('' as unknown as number)).not.toThrow()
+      expect(() =>
+        testNode.removeOutput(' ' as unknown as number)
+      ).not.toThrow()
+      expect(() =>
+        testNode.removeOutput('0x0' as unknown as number)
+      ).not.toThrow()
+      expect(() =>
+        testNode.removeOutput('0e0' as unknown as number)
+      ).not.toThrow()
       expect(testNode.outputs).toHaveLength(1)
 
-      testNode.removeOutput('0')
+      testNode.removeOutput('0' as unknown as number)
       expect(testNode.outputs).toHaveLength(0)
     })
   })

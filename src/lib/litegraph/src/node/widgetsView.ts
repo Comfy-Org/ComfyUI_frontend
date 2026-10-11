@@ -33,6 +33,7 @@ interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
   present: boolean
+  committedWidgets: Set<IBaseWidget>
   commit: (widgets: IBaseWidget[]) => void
   reporter?: WidgetRefusalReporter
 }
@@ -147,6 +148,44 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
+function dedupeRepeatedWrappedSources(
+  node: LGraphNode,
+  originalWidgets: readonly IBaseWidget[],
+  widgets: IBaseWidget[]
+): void {
+  const originalSources = originalWidgets.map((widget) =>
+    getConcreteWidgetSource(widget, node)
+  )
+  const seenWrappedSources = new Set<IBaseWidget>()
+  const uniqueWidgets = widgets.filter((widget, index) => {
+    const source = originalSources[index]
+    const wasRawWrappedSource =
+      originalWidgets[index] === source && widget !== source
+    if (!wasRawWrappedSource) {
+      if (source !== widget) seenWrappedSources.add(source)
+      return true
+    }
+    if (seenWrappedSources.has(source)) return false
+    seenWrappedSources.add(source)
+    return true
+  })
+  if (uniqueWidgets.length !== widgets.length) {
+    widgets.splice(0, widgets.length, ...uniqueWidgets)
+  }
+}
+
+function updateCommittedWidgets(
+  node: LGraphNode,
+  widgets: readonly IBaseWidget[]
+): void {
+  const state = states.get(node)
+  if (!state) return
+  for (const previous of state.committedWidgets) {
+    if (!widgets.includes(previous)) forgetConcreteWidget(previous, node)
+  }
+  state.committedWidgets = new Set(widgets)
+}
+
 export function wasWidgetRefused(
   node: LGraphNode,
   widget: IBaseWidget
@@ -200,6 +239,7 @@ export function refuseAmbiguousNodeWidgets(
 function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
+  const originalWidgets = [...widgets]
 
   const concreteWidgets = widgets.map((widget) => {
     const unreadable = isWidgetNameUnreadable(widget)
@@ -217,17 +257,8 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   // A non-adoptable legacy source may be pushed again after its wrapper is
   // already present. Keep one wrapper without disturbing temporary duplicate
   // concrete objects used by array reordering.
-  const seenWrappedSources = new Set<IBaseWidget>()
-  const uniqueWidgets = widgets.filter((widget) => {
-    const source = getConcreteWidgetSource(widget, node)
-    if (source === widget) return true
-    if (seenWrappedSources.has(source)) return false
-    seenWrappedSources.add(source)
-    return true
-  })
-  if (uniqueWidgets.length !== widgets.length) {
-    widgets.splice(0, widgets.length, ...uniqueWidgets)
-  }
+  dedupeRepeatedWrappedSources(node, originalWidgets, widgets)
+  updateCommittedWidgets(node, widgets)
 
   if (!graphId) return
 
@@ -275,6 +306,7 @@ export function initializeWidgetsView(node: LGraphNode): void {
     target,
     view: createArrayMutationView(target, () => commit(target)),
     present: false,
+    committedWidgets: new Set(),
     commit
   }
   states.set(node, state)

@@ -46,8 +46,9 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
-    const targetSlot = this.parent.slots.indexOf(this)
-    const getExistingLinks = () => {
+    const getExistingLinks = (): LLink[] | undefined => {
+      const targetSlot = this.parent.slots.indexOf(this)
+      if (targetSlot === -1) return
       const seen = new Set<LLink['id']>()
       return this.linkIds.flatMap((id) => {
         if (seen.has(id)) return []
@@ -62,17 +63,17 @@ export class SubgraphOutput extends SubgraphSlot {
         return [link]
       })
     }
-    const hasValidLinkCount = (links: readonly LLink[]) => {
-      const isValid = links.length <= 1
+    const reportLinkCount = (links: readonly LLink[]) => {
       assert(
-        isValid,
+        links.length <= 1,
         'SubgraphOutput.connect: output has more than one existing link',
         { existingLinkCount: links.length }
       )
-      return isValid
     }
 
-    if (!hasValidLinkCount(getExistingLinks())) return
+    const linksBeforeHook = getExistingLinks()
+    if (!linksBeforeHook) return
+    reportLinkCount(linksBeforeHook)
 
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
@@ -82,13 +83,16 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Re-read after the extension hook because it may mutate topology.
     const existingLinks = getExistingLinks()
-    if (!hasValidLinkCount(existingLinks)) return
+    if (!existingLinks) return
+    reportLinkCount(existingLinks)
     const existingLink = existingLinks.at(0)
-    const canonicalLinkIds = existingLinks.map(({ id }) => id)
+    const extraLinks = existingLinks.slice(1)
+    const canonicalLinkIds = existingLink ? [existingLink.id] : []
     const mirrorNeedsRepair =
       canonicalLinkIds.length !== this.linkIds.length ||
       canonicalLinkIds.some((id, index) => this.linkIds[index] !== id)
-    const changeStarted = existingLink != null || mirrorNeedsRepair
+    const changeStarted =
+      existingLink != null || extraLinks.length > 0 || mirrorNeedsRepair
     if (changeStarted) {
       subgraph.beforeChange()
     }
@@ -97,6 +101,9 @@ export class SubgraphOutput extends SubgraphSlot {
     // Repair the mirror only after the hook approves and inside the change.
     if (mirrorNeedsRepair) {
       this.linkIds.splice(0, this.linkIds.length, ...canonicalLinkIds)
+    }
+    for (const extraLink of extraLinks) {
+      extraLink.disconnect(subgraph, 'input')
     }
 
     const linkId = mintLinkId(
