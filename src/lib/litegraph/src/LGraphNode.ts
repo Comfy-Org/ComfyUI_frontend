@@ -163,7 +163,7 @@ import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTeleme
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
+import { getConcreteWidgetSource, toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -2347,7 +2347,10 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
     const existingIndex = this.widgets.findIndex(
-      (candidate) => candidate === widget || candidate === custom_widget
+      (candidate) =>
+        candidate === widget ||
+        candidate === custom_widget ||
+        getConcreteWidgetSource(candidate, this) === custom_widget
     )
     if (existingIndex === -1) {
       this.widgets.push(widget)

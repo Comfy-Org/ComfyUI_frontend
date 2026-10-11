@@ -155,7 +155,17 @@ function dedupeRepeatedWrappedSources(
   )
   const installedWrappedSources = new Set(
     originalWidgets.flatMap((widget, index) =>
-      widget === originalSources[index] ? [] : [originalSources[index]]
+      widget === originalSources[index] ||
+      widget.type !== originalSources[index].type
+        ? []
+        : [originalSources[index]]
+    )
+  )
+  const refreshedSources = new Set(
+    originalWidgets.flatMap((widget, index) =>
+      widget === originalSources[index] && widget !== widgets[index]
+        ? [originalSources[index]]
+        : []
     )
   )
   const acceptedRawSources = new Set<IBaseWidget>()
@@ -163,6 +173,10 @@ function dedupeRepeatedWrappedSources(
     const source = originalSources[index]
     const wasRawWrappedSource =
       originalWidgets[index] === source && widget !== source
+    const wasStaleWrapper =
+      originalWidgets[index] !== source &&
+      originalWidgets[index].type !== source.type
+    if (wasStaleWrapper && refreshedSources.has(source)) return false
     if (!wasRawWrappedSource) return true
     if (installedWrappedSources.has(source) || acceptedRawSources.has(source))
       return false

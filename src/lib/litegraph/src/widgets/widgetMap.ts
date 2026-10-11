@@ -225,7 +225,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   const cached = wrapLegacyWidgets
     ? node.widgets?.find(
         (candidate) =>
-          sourcesByConcreteWidget.get(candidate)?.get(node) === widget
+          sourcesByConcreteWidget.get(candidate)?.get(node) === widget &&
+          candidate.type === widget.type
       )
     : undefined
   if (cached) return cached as WidgetTypeMap[TWidget['type']]

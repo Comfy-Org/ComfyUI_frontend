@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { BooleanWidget } from '@/lib/litegraph/src/widgets/BooleanWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -196,6 +197,25 @@ describe('widgets view', () => {
     node.addCustomWidget(source)
 
     expect(node.widgets).toEqual([other, wrapped])
+  })
+
+  it('refreshes a wrapper when its source type changes', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+    const original = node.addCustomWidget(source)
+
+    source.type = 'toggle'
+    const refreshed = node.addCustomWidget(source)
+
+    expect(refreshed).not.toBe(original)
+    expect(refreshed).toBeInstanceOf(BooleanWidget)
+    expect(node.widgets).toEqual([refreshed])
   })
 
   it.for(
