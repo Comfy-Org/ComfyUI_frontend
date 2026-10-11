@@ -12,10 +12,13 @@ export function useGeneratedPreviewLookup() {
       ]
     : []
 
-  return (filename: string | undefined): string => {
+  /** An asset id identifies the file exactly; a filename can collide across folders. */
+  return (filename: string | undefined, assetId?: string): string => {
     const asset = assetLists
       .flatMap((list) => toValue(list.items))
-      .find(({ hash, name }) => hash === filename || name === filename)
+      .find(({ id, hash, name }) =>
+        assetId ? id === assetId : hash === filename || name === filename
+      )
     return asset ? getGeneratedPreviewUrl(asset) : ''
   }
 }

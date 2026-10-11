@@ -13,7 +13,6 @@ import { createI18n } from 'vue-i18n'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -248,7 +247,7 @@ describe('AssetsSidebarTab context menu', () => {
     )
 
     expect(openHdrViewer).toHaveBeenCalledWith(
-      getAssetFileUrl(asset),
+      expect.stringMatching(/\/view\?filename=sky\.exr&type=output$/),
       'sky.exr'
     )
   })

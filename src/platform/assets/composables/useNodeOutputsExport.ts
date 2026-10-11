@@ -28,7 +28,6 @@ export function useNodeOutputsExport() {
   const dialogStore = useDialogStore()
   const { downloadFiles } = useAssetDownload()
   const { startZipExport } = useAssetZipExport()
-  const findGeneratedPreviewUrl = useGeneratedPreviewLookup()
 
   function getDownloadableOutputs(node: LGraphNode): DownloadableOutput[] {
     return (nodeOutputStore.getNodeOutputs(node)?.images ?? []).filter(
@@ -41,9 +40,12 @@ export function useNodeOutputsExport() {
   }
 
   /** The backend can't render EXR/HDR thumbnails; use their generated preview, if any. */
-  function thumbnailUrl(output: DownloadableOutput): string {
+  function thumbnailUrl(
+    output: DownloadableOutput,
+    findGeneratedPreviewUrl: ReturnType<typeof useGeneratedPreviewLookup>
+  ): string {
     if (isHdrImageFilename(output.filename)) {
-      return findGeneratedPreviewUrl(output.filename)
+      return findGeneratedPreviewUrl(output.filename, output.id)
     }
     return getGridThumbnailUrl(outputFileUrl(output))
   }
@@ -55,6 +57,8 @@ export function useNodeOutputsExport() {
   function showOutputsExportDialog(node: LGraphNode): void {
     const outputs = getDownloadableOutputs(node)
     if (outputs.length === 0) return
+    // Looked up when the dialog opens, after the assets feature flag has settled.
+    const findGeneratedPreviewUrl = useGeneratedPreviewLookup()
 
     dialogService.showSmallLayoutDialog({
       key: EXPORT_DIALOG_KEY,
@@ -63,7 +67,7 @@ export function useNodeOutputsExport() {
       props: {
         items: outputs.map((output) => ({
           name: output.filename,
-          thumbnailUrl: thumbnailUrl(output)
+          thumbnailUrl: thumbnailUrl(output, findGeneratedPreviewUrl)
         })),
         onCancel: closeExportDialog,
         onExport: (selectedIndices: number[]) => {

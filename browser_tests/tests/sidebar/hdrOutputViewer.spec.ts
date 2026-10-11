@@ -83,9 +83,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
         .getByTestId(TestIds.sidebar.toolbar)
         .getByRole('button', { name: 'Job History', exact: true })
         .click()
-      const row = comfyPage.page
-        .getByTestId(TestIds.queue.jobAssetsList)
-        .locator('[data-job-id="hdr-job"]')
+      const row = comfyPage.queuePanel.jobRow('hdr-job')
 
       const requested = waitForSubfolderExr(comfyPage.page)
       await row.dblclick()

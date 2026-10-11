@@ -13,6 +13,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -24,8 +25,10 @@ vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(
   import('@/platform/assets/composables/useGeneratedPreviewLookup'),
   () => ({
-    useGeneratedPreviewLookup: () => (filename: string | undefined) =>
-      filename === 'sky.exr' ? '/api/assets/sky-preview/content' : ''
+    useGeneratedPreviewLookup: vi.fn(
+      () => (_filename: string | undefined, assetId?: string) =>
+        assetId === 'sky-asset' ? '/api/assets/sky-preview/content' : ''
+    )
   })
 )
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -244,12 +247,29 @@ describe('useNodeOutputsExport', () => {
 
   it('shows HDR outputs by their generated preview, or a placeholder without one', async () => {
     const node = nodeWithOutputs([
-      { filename: 'sky.exr', subfolder: 'renders', type: 'output' },
-      { filename: 'dusk.exr', type: 'output' },
+      {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output',
+        id: 'sky-asset'
+      },
+      {
+        filename: 'sky.exr',
+        subfolder: 'other',
+        type: 'output',
+        id: 'other-sky'
+      },
       { filename: 'a.png', type: 'output' }
     ])
 
-    const { dialog } = await openExportDialog(node)
+    const { showOutputsExportDialog } = mountComposable()
+    expect(useGeneratedPreviewLookup).not.toHaveBeenCalled()
+
+    showOutputsExportDialog(node)
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Download Assets'
+    })
+    expect(useGeneratedPreviewLookup).toHaveBeenCalledOnce()
 
     const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
     expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
