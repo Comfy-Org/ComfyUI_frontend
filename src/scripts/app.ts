@@ -965,9 +965,6 @@ export class ComfyApp {
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
-      // Before the gate: this one is keyed by job rather than by the visible
-      // graph, and a background run needs it for its queue-panel thumbnail and
-      // for linearOutputStore's re-apply when the user switches back.
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId)) {
         releaseSharedObjectUrl(blobUrl)
