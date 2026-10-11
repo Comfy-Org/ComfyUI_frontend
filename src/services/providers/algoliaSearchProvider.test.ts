@@ -322,7 +322,6 @@ describe('useAlgoliaSearchProvider', () => {
         pageNumber: 0
       })
 
-      // 1 primary hit + at most 2 fallback hits to stay within pageSize 3
       expect(result.nodePacks).toHaveLength(3)
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
         'primary-0',

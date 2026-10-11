@@ -6,7 +6,7 @@ const REPO_OWNER_PREFIX =
 const WORD_SEPARATORS = /[\s_-]+/
 
 export function stripRepoOwner(query: string): string {
-  return REPO_OWNER_PREFIX.exec(query.trim())?.[1] ?? query
+  return REPO_OWNER_PREFIX.exec(query)?.[1] ?? query
 }
 
 export function splitOnSeparators(input: string): string {
