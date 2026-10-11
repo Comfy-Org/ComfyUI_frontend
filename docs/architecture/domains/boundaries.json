@@ -2,6 +2,56 @@
   "boundaries": {
     "zones": [
       {
+        "name": "extension-manager/domain",
+        "patterns": [
+          "src/workbench/extensions/manager/types/**",
+          "src/workbench/extensions/manager/utils/**"
+        ]
+      },
+      {
+        "name": "extension-manager/application",
+        "patterns": [
+          "src/workbench/extensions/manager/composables/**",
+          "src/workbench/extensions/manager/stores/**"
+        ]
+      },
+      {
+        "name": "extension-manager/infrastructure",
+        "patterns": ["src/workbench/extensions/manager/services/**"]
+      },
+      {
+        "name": "extension-manager/presentation",
+        "patterns": ["src/workbench/extensions/manager/components/**"]
+      },
+      {
+        "name": "glsl-preview/domain",
+        "patterns": [
+          "src/renderer/glsl/glslUtils.ts",
+          "src/renderer/glsl/glslUtils.test.ts"
+        ]
+      },
+      {
+        "name": "glsl-preview/application",
+        "patterns": [
+          "src/renderer/glsl/glslPreviewUtils.ts",
+          "src/renderer/glsl/useGLSLPreview.ts",
+          "src/renderer/glsl/useGLSLPreview.test.ts",
+          "src/renderer/glsl/glslPreviewStoreContract.test.ts",
+          "src/renderer/glsl/useGLSLUniforms.ts",
+          "src/renderer/glsl/useGLSLUniforms.test.ts",
+          "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts"
+        ]
+      },
+      {
+        "name": "glsl-preview/infrastructure",
+        "patterns": [
+          "src/renderer/glsl/useGLSLRenderer.ts",
+          "src/renderer/glsl/useGLSLRenderer.test.ts",
+          "src/renderer/glsl/sharedGLContext.ts",
+          "src/renderer/glsl/sharedGLContext.test.ts"
+        ]
+      },
+      {
         "name": "image-compare/application",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
@@ -90,6 +140,30 @@
         ]
       },
       {
+        "name": "minimap/domain",
+        "patterns": ["src/renderer/extensions/minimap/types.ts"]
+      },
+      {
+        "name": "minimap/application",
+        "patterns": ["src/renderer/extensions/minimap/composables/**"]
+      },
+      {
+        "name": "minimap/infrastructure",
+        "patterns": [
+          "src/renderer/extensions/minimap/data/**",
+          "src/renderer/extensions/minimap/minimapCanvasRenderer.ts",
+          "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
+          "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts"
+        ]
+      },
+      {
+        "name": "minimap/presentation",
+        "patterns": [
+          "src/renderer/extensions/minimap/MiniMap.vue",
+          "src/renderer/extensions/minimap/MiniMapPanel.vue"
+        ]
+      },
+      {
         "name": "painter/application",
         "patterns": ["src/composables/painter/**"]
       },
@@ -135,6 +209,59 @@
       }
     ],
     "rules": [
+      {
+        "from": "extension-manager/domain",
+        "allow": ["extension-manager/domain", "unclassified"]
+      },
+      {
+        "from": "extension-manager/application",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-manager/infrastructure",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-manager/presentation",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "glsl-preview/domain",
+        "allow": ["glsl-preview/domain", "unclassified"]
+      },
+      {
+        "from": "glsl-preview/application",
+        "allow": [
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "glsl-preview/infrastructure",
+        "allow": [
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "unclassified"
+        ]
+      },
       {
         "from": "image-compare/application",
         "allow": ["image-compare/application", "unclassified"]
@@ -230,6 +357,37 @@
         ]
       },
       {
+        "from": "minimap/domain",
+        "allow": ["minimap/domain", "unclassified"]
+      },
+      {
+        "from": "minimap/application",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "minimap/infrastructure",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "minimap/presentation",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "painter/application",
         "allow": ["painter/application", "unclassified"]
       },
@@ -280,6 +438,17 @@
       {
         "from": "unclassified",
         "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "extension-manager/presentation",
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "minimap/presentation",
           "workflow-templates/domain",
           "workflow-templates/application",
           "workflow-templates/infrastructure",

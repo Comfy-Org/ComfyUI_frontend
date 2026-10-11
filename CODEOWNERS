@@ -141,3 +141,7 @@
 # Domain architecture contracts and enforcement
 /docs/architecture/domains/                       @christian-byrne @Comfy-Org/comfy_frontend_devs
 /tools/architecture/                              @christian-byrne @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/glsl-preview.domain.json @jtydhr88 @christian-byrne @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/extension-manager.domain.json @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/minimap.domain.json @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/minimap/                 @Comfy-Org/comfy_frontend_devs
