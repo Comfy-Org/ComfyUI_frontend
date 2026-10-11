@@ -2,6 +2,137 @@
   "boundaries": {
     "zones": [
       {
+        "name": "assets/domain",
+        "patterns": [
+          "src/platform/assets/constants/**",
+          "src/platform/assets/fixtures/**",
+          "src/platform/assets/importSources/**",
+          "src/platform/assets/mappings/**",
+          "src/platform/assets/schemas/**",
+          "src/platform/assets/types/**",
+          "src/platform/assets/mediaAssetFilterOptions.ts",
+          "src/platform/assets/utils/assetFilterUtils.property.test.ts",
+          "src/platform/assets/utils/assetFilterUtils.test.ts",
+          "src/platform/assets/utils/assetFilterUtils.ts",
+          "src/platform/assets/utils/assetMetadataUtils.test.ts",
+          "src/platform/assets/utils/assetMetadataUtils.ts",
+          "src/platform/assets/utils/assetSortUtils.property.test.ts",
+          "src/platform/assets/utils/assetSortUtils.test.ts",
+          "src/platform/assets/utils/assetSortUtils.ts",
+          "src/platform/assets/utils/assetTypeUtil.ts",
+          "src/platform/assets/utils/categoryLabel.ts",
+          "src/platform/assets/utils/importSourceUtil.ts",
+          "src/platform/assets/utils/marqueeSelectionUtil.property.test.ts",
+          "src/platform/assets/utils/marqueeSelectionUtil.test.ts",
+          "src/platform/assets/utils/marqueeSelectionUtil.ts",
+          "src/platform/assets/utils/outputAssetCountUtil.ts",
+          "src/platform/assets/utils/outputKeyUtil.ts"
+        ]
+      },
+      {
+        "name": "assets/application",
+        "patterns": [
+          "src/platform/assets/composables/openModelLibraryBrowser.ts",
+          "src/platform/assets/composables/useAssetBrowser.perf.test.ts",
+          "src/platform/assets/composables/useAssetBrowser.test.ts",
+          "src/platform/assets/composables/useAssetBrowser.ts",
+          "src/platform/assets/composables/useAssetBrowserDialog.stories.ts",
+          "src/platform/assets/composables/useAssetBrowserDialog.test.ts",
+          "src/platform/assets/composables/useAssetBrowserDialog.ts",
+          "src/platform/assets/composables/useAssetBrowserDialog.unregistered.test.ts",
+          "src/platform/assets/composables/useAssetDownload.ts",
+          "src/platform/assets/composables/useAssetFilterOptions.test.ts",
+          "src/platform/assets/composables/useAssetFilterOptions.ts",
+          "src/platform/assets/composables/useAssetGridSelection.test.ts",
+          "src/platform/assets/composables/useAssetGridSelection.ts",
+          "src/platform/assets/composables/useAssetSelection.property.test.ts",
+          "src/platform/assets/composables/useAssetSelection.test.ts",
+          "src/platform/assets/composables/useAssetSelection.ts",
+          "src/platform/assets/composables/useAssetSelectionStore.test.ts",
+          "src/platform/assets/composables/useAssetSelectionStore.ts",
+          "src/platform/assets/composables/useAssetZipExport.ts",
+          "src/platform/assets/composables/useAssetsUrlLoader.test.ts",
+          "src/platform/assets/composables/useAssetsUrlLoader.ts",
+          "src/platform/assets/composables/useMediaAssetActions.test.ts",
+          "src/platform/assets/composables/useMediaAssetActions.ts",
+          "src/platform/assets/composables/useMediaAssetFilterStore.ts",
+          "src/platform/assets/composables/useMediaAssetFiltering.test.ts",
+          "src/platform/assets/composables/useMediaAssetFiltering.ts",
+          "src/platform/assets/composables/useMediaAssetGalleryStore.test.ts",
+          "src/platform/assets/composables/useMediaAssetGalleryStore.ts",
+          "src/platform/assets/composables/useModelUpload.ts",
+          "src/platform/assets/composables/useNodeOutputsExport.test.ts",
+          "src/platform/assets/composables/useNodeOutputsExport.ts",
+          "src/platform/assets/composables/useOutputStacks.property.test.ts",
+          "src/platform/assets/composables/useOutputStacks.test.ts",
+          "src/platform/assets/composables/useOutputStacks.ts",
+          "src/platform/assets/composables/useUploadModelWizard.test.ts",
+          "src/platform/assets/composables/useUploadModelWizard.ts",
+          "src/platform/assets/composables/__mocks__/**",
+          "src/platform/assets/utils/clearDeletedAssetWidgetValues.test.ts",
+          "src/platform/assets/utils/clearDeletedAssetWidgetValues.ts",
+          "src/platform/assets/utils/clearNodePreviewCacheForValues.test.ts",
+          "src/platform/assets/utils/clearNodePreviewCacheForValues.ts",
+          "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.test.ts",
+          "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
+          "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts",
+          "src/platform/assets/utils/resolveModelNodeFromAsset.ts",
+          "src/stores/assetsStore.test.ts",
+          "src/stores/assetsStore.ts",
+          "src/stores/assetDownloadStore.test.ts",
+          "src/stores/assetDownloadStore.ts",
+          "src/stores/assetExportStore.test.ts",
+          "src/stores/assetExportStore.ts",
+          "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
+          "src/stores/workspace/assetsSidebarBadgeStore.ts"
+        ]
+      },
+      {
+        "name": "assets/infrastructure",
+        "patterns": [
+          "src/platform/assets/composables/media/**",
+          "src/platform/assets/composables/useAssetsQuery.test.ts",
+          "src/platform/assets/composables/useAssetsQuery.ts",
+          "src/platform/assets/composables/useModelTypes.ts",
+          "src/platform/assets/services/**",
+          "src/platform/assets/utils/assetDragUtil.test.ts",
+          "src/platform/assets/utils/assetDragUtil.ts",
+          "src/platform/assets/utils/assetPreviewUtil.test.ts",
+          "src/platform/assets/utils/assetPreviewUtil.ts",
+          "src/platform/assets/utils/assetUrlUtil.test.ts",
+          "src/platform/assets/utils/assetUrlUtil.ts",
+          "src/platform/assets/utils/outputAssetUtil.test.ts",
+          "src/platform/assets/utils/outputAssetUtil.ts",
+          "src/platform/assets/utils/outputExportUtil.test.ts",
+          "src/platform/assets/utils/outputExportUtil.ts",
+          "src/platform/assets/utils/__mocks__/**"
+        ]
+      },
+      {
+        "name": "assets/presentation",
+        "patterns": [
+          "src/platform/assets/components/**",
+          "src/platform/assets/utils/mediaIconUtil.test.ts",
+          "src/platform/assets/utils/mediaIconUtil.ts",
+          "src/components/sidebar/tabs/AssetsSidebarTab.test.ts",
+          "src/components/sidebar/tabs/AssetsSidebarTab.vue",
+          "src/components/sidebar/tabs/AssetsSidebarGridView.test.ts",
+          "src/components/sidebar/tabs/AssetsSidebarGridView.vue",
+          "src/components/sidebar/tabs/AssetsSidebarListView.stories.ts",
+          "src/components/sidebar/tabs/AssetsSidebarListView.test.ts",
+          "src/components/sidebar/tabs/AssetsSidebarListView.vue"
+        ]
+      },
+      {
+        "name": "assets/integration",
+        "patterns": [
+          "src/platform/assets/utils/createAssetWidget.test.ts",
+          "src/platform/assets/utils/createAssetWidget.ts",
+          "src/composables/sidebarTabs/useAssetsSidebarTab.test.ts",
+          "src/composables/sidebarTabs/useAssetsSidebarTab.ts"
+        ]
+      },
+      {
         "name": "audio/application",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/composables/audio/**",
@@ -318,6 +449,43 @@
         ]
       },
       {
+        "name": "keybindings/domain",
+        "patterns": [
+          "src/platform/keybindings/types.ts",
+          "src/platform/keybindings/reserved.ts",
+          "src/platform/keybindings/defaults.ts",
+          "src/platform/keybindings/keyCombo.ts",
+          "src/platform/keybindings/keyCombo.test.ts",
+          "src/platform/keybindings/keybinding.ts"
+        ]
+      },
+      {
+        "name": "keybindings/application",
+        "patterns": [
+          "src/platform/keybindings/escapeOverride.ts",
+          "src/platform/keybindings/escapeOverride.test.ts",
+          "src/platform/keybindings/keybindingStore.ts",
+          "src/platform/keybindings/keybindingStore.test.ts",
+          "src/platform/keybindings/keybindingService.ts",
+          "src/platform/keybindings/keybindingService.canvas.test.ts",
+          "src/platform/keybindings/keybindingService.dialog.test.ts",
+          "src/platform/keybindings/keybindingService.escape.test.ts",
+          "src/platform/keybindings/keybindingService.registerUserKeybindings.test.ts",
+          "src/platform/keybindings/presetService.ts",
+          "src/platform/keybindings/presetService.test.ts",
+          "src/platform/keybindings/__fixtures__/registerCoreKeybindingCommands.ts"
+        ]
+      },
+      {
+        "name": "keybindings/presentation",
+        "patterns": [
+          "src/components/dialog/content/setting/KeybindingPanel.vue",
+          "src/components/dialog/content/setting/KeybindingPanel.test.ts",
+          "src/components/dialog/content/setting/keybinding/**",
+          "src/composables/useEditKeybindingDialog.ts"
+        ]
+      },
+      {
         "name": "mask-editor/domain",
         "patterns": ["src/extensions/core/maskeditor/**"]
       },
@@ -390,8 +558,159 @@
         ]
       },
       {
+        "name": "settings/domain",
+        "patterns": [
+          "src/platform/settings/types.ts",
+          "src/platform/settings/constants/agent.ts",
+          "src/platform/settings/constants/canvasNavigation.ts",
+          "src/platform/settings/constants/canvasNavigation.test.ts"
+        ]
+      },
+      {
+        "name": "settings/application",
+        "patterns": [
+          "src/platform/settings/constants/coreSettings.ts",
+          "src/platform/settings/constants/errorSystemSettings.test.ts",
+          "src/platform/settings/settingStore.ts",
+          "src/platform/settings/settingStore.test.ts",
+          "src/platform/settings/missingWarningVisibility.ts",
+          "src/platform/settings/missingWarningVisibility.test.ts",
+          "src/platform/settings/composables/useSettingSearch.ts",
+          "src/platform/settings/composables/useSettingSearch.test.ts",
+          "src/platform/settings/composables/useSettingsDialog.ts",
+          "src/platform/settings/composables/useSettingsDialog.test.ts",
+          "src/platform/settings/composables/useSettingsDialog.unregistered.test.ts",
+          "src/platform/settings/composables/__mocks__/useSettingsDialog.ts"
+        ]
+      },
+      {
+        "name": "settings/infrastructure",
+        "patterns": [
+          "src/platform/settings/globalSettingsApi.ts",
+          "src/platform/settings/globalSettingsApi.test.ts"
+        ]
+      },
+      {
+        "name": "settings/presentation",
+        "patterns": [
+          "src/platform/settings/composables/useSettingUI.ts",
+          "src/platform/settings/composables/useSettingUI.test.ts",
+          "src/platform/settings/composables/useSettingsHeaderCollapse.ts",
+          "src/platform/settings/components/**",
+          "src/components/dialog/content/setting/SettingItem.test.ts"
+        ]
+      },
+      {
+        "name": "settings/integration",
+        "patterns": [
+          "src/platform/settings/composables/useLitegraphSettings.ts",
+          "src/platform/settings/composables/useLitegraphSettings.test.ts",
+          "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
+          "src/platform/settings/composables/useSettingsUrlLoader.ts",
+          "src/platform/settings/composables/useSettingsUrlLoader.test.ts",
+          "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
+          "src/scripts/ui/settings.ts",
+          "src/scripts/ui/settings.test.ts"
+        ]
+      },
+      {
         "name": "webcam-capture/integration",
         "patterns": ["src/extensions/core/webcamCapture.ts"]
+      },
+      {
+        "name": "workflow-deployment/domain",
+        "patterns": [
+          "src/platform/workflow/deploy/constants.ts",
+          "src/platform/workflow/deploy/utils/**"
+        ]
+      },
+      {
+        "name": "workflow-deployment/application",
+        "patterns": ["src/platform/workflow/deploy/composables/**"]
+      },
+      {
+        "name": "workflow-deployment/presentation",
+        "patterns": ["src/platform/workflow/deploy/components/**"]
+      },
+      {
+        "name": "workflow-persistence/domain",
+        "patterns": [
+          "src/platform/workflow/persistence/base/draftTypes.ts",
+          "src/platform/workflow/persistence/base/draftCacheV2.ts",
+          "src/platform/workflow/persistence/base/draftCacheV2.test.ts",
+          "src/platform/workflow/persistence/base/draftCacheV2.collision.test.ts",
+          "src/platform/workflow/persistence/base/draftCacheV2.property.test.ts",
+          "src/platform/workflow/persistence/base/hashUtil.ts",
+          "src/platform/workflow/persistence/base/hashUtil.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-persistence/application",
+        "patterns": [
+          "src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts",
+          "src/platform/workflow/persistence/composables/useWorkflowAutoSave.test.ts",
+          "src/platform/workflow/persistence/stores/**"
+        ]
+      },
+      {
+        "name": "workflow-persistence/infrastructure",
+        "patterns": [
+          "src/platform/workflow/persistence/base/storageIO.ts",
+          "src/platform/workflow/persistence/base/storageIO.test.ts",
+          "src/platform/workflow/persistence/base/storageKeys.ts",
+          "src/platform/workflow/persistence/base/storageKeys.test.ts",
+          "src/platform/workflow/persistence/composables/useWorkflowTabState.ts",
+          "src/platform/workflow/persistence/composables/useWorkflowTabState.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-persistence/integration",
+        "patterns": [
+          "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts",
+          "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-sharing/domain",
+        "patterns": [
+          "src/platform/workflow/sharing/types/**",
+          "src/platform/workflow/sharing/schemas/**",
+          "src/platform/workflow/sharing/constants/**",
+          "src/platform/workflow/sharing/utils/normalizeTags.ts",
+          "src/platform/workflow/sharing/utils/normalizeTags.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-sharing/application",
+        "patterns": [
+          "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
+          "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
+          "src/platform/workflow/sharing/composables/lazyShareDialog.ts",
+          "src/platform/workflow/sharing/composables/useShareDialog.ts",
+          "src/platform/workflow/sharing/composables/useShareFlowContext.ts",
+          "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
+          "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.test.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubPublishDialog.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubProfileGate.test.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.test.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
+          "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-sharing/infrastructure",
+        "patterns": ["src/platform/workflow/sharing/services/**"]
+      },
+      {
+        "name": "workflow-sharing/presentation",
+        "patterns": [
+          "src/platform/workflow/sharing/utils/validateFileSize.ts",
+          "src/platform/workflow/sharing/composables/useAssetSections.ts",
+          "src/platform/workflow/sharing/composables/useSliderFromMouse.ts",
+          "src/platform/workflow/sharing/components/**"
+        ]
       },
       {
         "name": "workflow-templates/domain",
@@ -423,6 +742,48 @@
       }
     ],
     "rules": [
+      {
+        "from": "assets/domain",
+        "allow": ["assets/domain", "unclassified"]
+      },
+      {
+        "from": "assets/application",
+        "allow": [
+          "assets/domain",
+          "assets/application",
+          "assets/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "assets/infrastructure",
+        "allow": [
+          "assets/domain",
+          "assets/application",
+          "assets/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "assets/presentation",
+        "allow": [
+          "assets/domain",
+          "assets/application",
+          "assets/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "assets/integration",
+        "allow": [
+          "assets/domain",
+          "assets/application",
+          "assets/infrastructure",
+          "assets/presentation",
+          "assets/integration",
+          "unclassified"
+        ]
+      },
       {
         "from": "audio/application",
         "allow": ["audio/application", "audio/infrastructure", "unclassified"]
@@ -635,6 +996,27 @@
         ]
       },
       {
+        "from": "keybindings/domain",
+        "allow": ["keybindings/domain", "unclassified"]
+      },
+      {
+        "from": "keybindings/application",
+        "allow": [
+          "keybindings/domain",
+          "keybindings/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/presentation",
+        "allow": [
+          "keybindings/domain",
+          "keybindings/application",
+          "keybindings/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "mask-editor/domain",
         "allow": ["mask-editor/domain", "unclassified"]
       },
@@ -718,8 +1100,134 @@
         ]
       },
       {
+        "from": "settings/domain",
+        "allow": ["settings/domain", "unclassified"]
+      },
+      {
+        "from": "settings/application",
+        "allow": [
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "settings/infrastructure",
+        "allow": [
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "settings/presentation",
+        "allow": [
+          "settings/domain",
+          "settings/application",
+          "settings/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "settings/integration",
+        "allow": [
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "settings/presentation",
+          "settings/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "webcam-capture/integration",
         "allow": ["webcam-capture/integration", "unclassified"]
+      },
+      {
+        "from": "workflow-deployment/domain",
+        "allow": ["workflow-deployment/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-deployment/application",
+        "allow": [
+          "workflow-deployment/domain",
+          "workflow-deployment/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-deployment/presentation",
+        "allow": [
+          "workflow-deployment/domain",
+          "workflow-deployment/application",
+          "workflow-deployment/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-persistence/domain",
+        "allow": ["workflow-persistence/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-persistence/application",
+        "allow": [
+          "workflow-persistence/domain",
+          "workflow-persistence/application",
+          "workflow-persistence/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-persistence/infrastructure",
+        "allow": [
+          "workflow-persistence/domain",
+          "workflow-persistence/application",
+          "workflow-persistence/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-persistence/integration",
+        "allow": [
+          "workflow-persistence/domain",
+          "workflow-persistence/application",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-sharing/domain",
+        "allow": ["workflow-sharing/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-sharing/application",
+        "allow": [
+          "workflow-sharing/domain",
+          "workflow-sharing/application",
+          "workflow-sharing/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-sharing/infrastructure",
+        "allow": [
+          "workflow-sharing/domain",
+          "workflow-sharing/application",
+          "workflow-sharing/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-sharing/presentation",
+        "allow": [
+          "workflow-sharing/domain",
+          "workflow-sharing/application",
+          "workflow-sharing/presentation",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-templates/domain",
@@ -755,6 +1263,11 @@
       {
         "from": "unclassified",
         "allow": [
+          "assets/domain",
+          "assets/application",
+          "assets/infrastructure",
+          "assets/presentation",
+          "assets/integration",
           "audio/application",
           "audio/infrastructure",
           "audio/presentation",
@@ -775,12 +1288,31 @@
           "glsl-preview/domain",
           "glsl-preview/application",
           "glsl-preview/infrastructure",
+          "keybindings/domain",
+          "keybindings/application",
+          "keybindings/presentation",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
           "minimap/presentation",
           "node-templates/integration",
+          "settings/domain",
+          "settings/application",
+          "settings/infrastructure",
+          "settings/presentation",
+          "settings/integration",
           "webcam-capture/integration",
+          "workflow-deployment/domain",
+          "workflow-deployment/application",
+          "workflow-deployment/presentation",
+          "workflow-persistence/domain",
+          "workflow-persistence/application",
+          "workflow-persistence/infrastructure",
+          "workflow-persistence/integration",
+          "workflow-sharing/domain",
+          "workflow-sharing/application",
+          "workflow-sharing/infrastructure",
+          "workflow-sharing/presentation",
           "workflow-templates/domain",
           "workflow-templates/application",
           "workflow-templates/infrastructure",
