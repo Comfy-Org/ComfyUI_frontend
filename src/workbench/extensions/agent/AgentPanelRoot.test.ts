@@ -10550,12 +10550,14 @@ describe('AgentPanelRoot workflow binding', () => {
 
   // An id-less origin gets the same protection as a bound one: the turn belongs
   // to the tab instance that started it, and that instance is no longer open.
-  it.for(['a bound saved tab', 'an unbound temporary tab'])(
-    'cancels and restores the draft when %s closes during preparation',
-    async (originKind) => {
-      const isTemporaryOrigin = originKind === 'an unbound temporary tab'
-      const origin = makeTab(isTemporaryOrigin ? undefined : 'wf-origin')
-      if (isTemporaryOrigin) Object.assign(origin, { isTemporary: true })
+  it.for([
+    { name: 'a bound saved tab', boundId: 'wf-origin', isTemporary: false },
+    { name: 'an unbound temporary tab', boundId: undefined, isTemporary: true }
+  ])(
+    'cancels and restores the draft when $name closes during preparation',
+    async ({ boundId, isTemporary }) => {
+      const origin = makeTab(boundId)
+      Object.assign(origin, { isTemporary })
       origin.activeState = fromPartial<ComfyWorkflowJSON>({
         id: 'origin-draft'
       })

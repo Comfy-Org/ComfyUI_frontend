@@ -1530,10 +1530,7 @@ const { submit: onSend } = useAgentDraftSubmission({
       origin:
         originContext === undefined
           ? null
-          : {
-              tabPath: originContext.tabPath,
-              instanceId: originContext.instanceId
-            }
+          : { instanceId: originContext.instanceId }
     }
     const selectionWorkflow = selectedTarget.value
     try {

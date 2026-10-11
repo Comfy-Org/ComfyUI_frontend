@@ -85,13 +85,13 @@ export interface WorkflowTurnContext {
 
 /**
  * Workflow lookup context: omitted resolves the currently selected target,
- * `null` pins the absence of a target, and `{ tabPath, instanceId }` pins its
+ * `null` pins the absence of a target, and `{ instanceId }` pins its
  * identity. A send captures this before preparation so later selections cannot
  * change which workflow owns the turn. The instance, not the path, is the
  * identity: a tab that closes mid-send can be replaced by another tab at the
  * same path, and that replacement is a different turn target.
  */
-export type TurnOrigin = { tabPath: string; instanceId: string } | null
+export type TurnOrigin = { instanceId: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -1197,10 +1197,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined
         ? null
-        : {
-            tabPath: originContext.tabPath,
-            instanceId: originContext.instanceId
-          }
+        : { instanceId: originContext.instanceId }
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {

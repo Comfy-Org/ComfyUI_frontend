@@ -181,7 +181,9 @@ const pathFor = (
   origin: TurnOrigin | undefined,
   activePath: string | undefined
 ): string | undefined =>
-  origin === null ? undefined : (origin?.tabPath ?? activePath)
+  origin === null
+    ? undefined
+    : (origin?.instanceId.replace(/^instance-/, '') ?? activePath)
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
