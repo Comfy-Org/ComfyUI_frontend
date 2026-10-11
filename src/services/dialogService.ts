@@ -514,9 +514,10 @@ export function registerExtensionDialogService(
 }
 
 export function useExtensionDialogService(): ExtensionDialogService {
-  const message =
-    'Extension dialog service accessed before registerExtensionDialogService'
-  if (!extensionDialogService) throw new TypeError(message)
+  if (!extensionDialogService)
+    throw new TypeError(
+      'Extension dialog service accessed before registerExtensionDialogService'
+    )
 
   return extensionDialogService
 }
