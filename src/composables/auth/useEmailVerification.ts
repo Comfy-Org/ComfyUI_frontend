@@ -3,11 +3,11 @@ import { FirebaseError } from 'firebase/app'
 import { sendEmailVerification } from 'firebase/auth'
 import { computed, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const PASSWORD_PROVIDER_ID = 'password'
@@ -45,7 +45,7 @@ function useEmailVerificationInternal() {
   const authStore = useAuthStore()
   const currentUser = computed(() => authStore.currentUser)
   const { flags } = useFeatureFlags()
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   // Bumped after an in-place `User.reload()` so computeds that read the mutated
   // firebase user object (whose reference does not change) re-evaluate.
@@ -66,7 +66,7 @@ function useEmailVerificationInternal() {
     void reloadTick.value
     const user = currentUser.value
     if (!user) return false
-    if (user.emailVerified !== false) return false
+    if (user.emailVerified) return false
     return isPasswordUser.value
   })
 
@@ -100,7 +100,7 @@ function useEmailVerificationInternal() {
 
   async function refresh(): Promise<void> {
     const user = currentUser.value
-    if (!user || user.emailVerified || isRefreshing) return
+    if (!user || isRefreshing) return
 
     isRefreshing = true
     try {
@@ -114,7 +114,8 @@ function useEmailVerificationInternal() {
       }
     } catch (error) {
       reportError(error, {
-        errorType: 'email_verification_refresh_failure'
+        errorType: 'email_verification_refresh_failure',
+        surface: 'auth'
       })
     } finally {
       isRefreshing = false
@@ -142,22 +143,18 @@ function useEmailVerificationInternal() {
         window.clearTimeout(cooldownTimeout)
         canResend.value = true
       }
-      toastStore.add({
-        severity: 'error',
-        summary: t('auth.emailVerification.resendFailed'),
-        detail: isRateLimited
+      toast.error(t('auth.emailVerification.resendFailed'), {
+        description: isRateLimited
           ? t('auth.emailVerification.cooldownMessage')
           : t('auth.emailVerification.resendFailedDetail'),
-        life: 5000
+        duration: 5000
       })
       return
     }
 
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.emailVerification.resentSuccess'),
-      detail: t('auth.emailVerification.resentSuccessDetail'),
-      life: 5000
+    toast.success(t('auth.emailVerification.resentSuccess'), {
+      description: t('auth.emailVerification.resentSuccessDetail'),
+      duration: 5000
     })
     await refresh()
   }

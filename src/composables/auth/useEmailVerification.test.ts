@@ -1,35 +1,33 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
+import { sendEmailVerification } from 'firebase/auth'
+import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
 const mocks = vi.hoisted(() => ({
-  authStore: { currentUser: null as FakeUser | null },
   flags: { emailVerificationNudgeEnabled: true },
   isCloud: { current: true },
-  toast: { add: vi.fn() },
-  sendEmailVerification: vi.fn(),
   reportError: vi.fn()
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => mocks.authStore
+vi.mock(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () =>
+    fromPartial<ReturnType<typeof useFeatureFlags>>({ flags: mocks.flags })
 }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mocks.flags })
-}))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud.current
   }
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => mocks.toast
-}))
-vi.mock('firebase/auth', () => ({
-  sendEmailVerification: mocks.sendEmailVerification
-}))
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('firebase/auth'), { spy: true })
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
@@ -50,6 +48,14 @@ function makeUser(overrides: Partial<FakeUser> = {}): FakeUser {
   }
 }
 
+function signIn(user: FakeUser | null) {
+  useAuthStore().currentUser = user && fromPartial<User>(user)
+}
+
+function toastsOfKind(kind: 'success' | 'error') {
+  return useToast().toasts.filter((toast) => toast.kind === kind)
+}
+
 let scope: EffectScope | undefined
 
 async function loadComposable() {
@@ -60,12 +66,11 @@ async function loadComposable() {
 }
 
 beforeEach(() => {
+  stubFirebaseAuthHarness()
   localStorage.clear()
-  mocks.authStore.currentUser = null
   mocks.flags.emailVerificationNudgeEnabled = true
   mocks.isCloud.current = true
-  mocks.toast.add.mockReset()
-  mocks.sendEmailVerification.mockReset()
+  vi.mocked(sendEmailVerification).mockReset()
   mocks.reportError.mockReset()
 })
 
@@ -77,29 +82,31 @@ afterEach(() => {
 describe('useEmailVerification', () => {
   describe('needsEmailVerification / provider filtering', () => {
     it('flags an unverified password user', async () => {
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
       const { needsEmailVerification, isNudgeVisible } = await loadComposable()
       expect(needsEmailVerification.value).toBe(true)
       expect(isNudgeVisible.value).toBe(true)
     })
 
     it('ignores SSO (google.com) users', async () => {
-      mocks.authStore.currentUser = makeUser({
-        providerData: [{ providerId: 'google.com' }]
-      })
+      signIn(
+        makeUser({
+          providerData: [{ providerId: 'google.com' }]
+        })
+      )
       const { needsEmailVerification, isNudgeVisible } = await loadComposable()
       expect(needsEmailVerification.value).toBe(false)
       expect(isNudgeVisible.value).toBe(false)
     })
 
     it('ignores an already-verified user', async () => {
-      mocks.authStore.currentUser = makeUser({ emailVerified: true })
+      signIn(makeUser({ emailVerified: true }))
       const { needsEmailVerification } = await loadComposable()
       expect(needsEmailVerification.value).toBe(false)
     })
 
     it('ignores signed-out state', async () => {
-      mocks.authStore.currentUser = null
+      signIn(null)
       const { needsEmailVerification } = await loadComposable()
       expect(needsEmailVerification.value).toBe(false)
     })
@@ -107,14 +114,14 @@ describe('useEmailVerification', () => {
 
   describe('visibility gating', () => {
     it('renders nothing when the feature flag is off', async () => {
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
       mocks.flags.emailVerificationNudgeEnabled = false
       const { isNudgeVisible } = await loadComposable()
       expect(isNudgeVisible.value).toBe(false)
     })
 
     it('renders nothing outside cloud', async () => {
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
       mocks.isCloud.current = false
       const { isNudgeVisible } = await loadComposable()
       expect(isNudgeVisible.value).toBe(false)
@@ -123,7 +130,7 @@ describe('useEmailVerification', () => {
 
   describe('dismissal', () => {
     it('hides the nudge for the rest of the session and persists it', async () => {
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
       const { isNudgeVisible, dismiss } = await loadComposable()
       expect(isNudgeVisible.value).toBe(true)
 
@@ -136,7 +143,7 @@ describe('useEmailVerification', () => {
     })
 
     it('re-prompts a dismissal from an earlier session', async () => {
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
       localStorage.setItem('Comfy.EmailVerificationNudge.DismissedAt', '1')
       const { isNudgeVisible } = await loadComposable()
       expect(isNudgeVisible.value).toBe(true)
@@ -153,7 +160,7 @@ describe('useEmailVerification', () => {
         .mockImplementation(() => {
           throw new DOMException('blocked', 'SecurityError')
         })
-      mocks.authStore.currentUser = makeUser()
+      signIn(makeUser())
 
       const { isNudgeVisible, dismiss } = await loadComposable()
       expect(isNudgeVisible.value).toBe(true)
@@ -172,57 +179,54 @@ describe('useEmailVerification', () => {
     })
 
     it('sends a verification email with a continue URL and toasts success', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockResolvedValue(undefined)
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockResolvedValue(undefined)
       const { resend, canResend } = await loadComposable()
 
       await resend()
 
-      expect(mocks.sendEmailVerification).toHaveBeenCalledWith(
-        mocks.authStore.currentUser,
+      expect(sendEmailVerification).toHaveBeenCalledWith(
+        useAuthStore().currentUser,
         { url: window.location.origin }
       )
-      expect(mocks.toast.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(toastsOfKind('success')).toHaveLength(1)
       expect(canResend.value).toBe(false)
     })
 
     it('maps auth/too-many-requests to a cooldown message', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockRejectedValue(
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockRejectedValue(
         new FirebaseError('auth/too-many-requests', 'slow down')
       )
       const { resend } = await loadComposable()
 
       await resend()
 
-      expect(mocks.toast.add).toHaveBeenCalledWith(
+      expect(toastsOfKind('error')).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Too many requests. Please wait a moment before trying again.'
+          description:
+            'Too many requests. Please wait a moment before trying again.'
         })
-      )
+      ])
     })
 
     it('shows a generic error for other failures', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockRejectedValue(new Error('network'))
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockRejectedValue(new Error('network'))
       const { resend } = await loadComposable()
 
       await resend()
 
-      expect(mocks.toast.add).toHaveBeenCalledWith(
+      expect(toastsOfKind('error')).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Something went wrong. Please try again in a moment.'
+          description: 'Something went wrong. Please try again in a moment.'
         })
-      )
+      ])
     })
 
     it('re-enables the button immediately after a non-rate-limit failure', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockRejectedValue(new Error('network'))
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockRejectedValue(new Error('network'))
       const { resend, canResend } = await loadComposable()
 
       await resend()
@@ -231,8 +235,8 @@ describe('useEmailVerification', () => {
     })
 
     it('keeps the button disabled after a rate-limit failure', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockRejectedValue(
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockRejectedValue(
         new FirebaseError('auth/too-many-requests', 'slow down')
       )
       const { resend, canResend } = await loadComposable()
@@ -243,23 +247,23 @@ describe('useEmailVerification', () => {
     })
 
     it('does not show an error toast when a post-send refresh fails', async () => {
-      mocks.authStore.currentUser = makeUser({
-        reload: vi.fn().mockRejectedValue(new Error('offline'))
-      })
-      mocks.sendEmailVerification.mockResolvedValue(undefined)
+      signIn(
+        makeUser({
+          reload: vi.fn().mockRejectedValue(new Error('offline'))
+        })
+      )
+      vi.mocked(sendEmailVerification).mockResolvedValue(undefined)
       const { resend } = await loadComposable()
 
       await resend()
 
-      expect(mocks.toast.add).toHaveBeenCalledTimes(1)
-      expect(mocks.toast.add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(toastsOfKind('success')).toHaveLength(1)
+      expect(toastsOfKind('error')).toEqual([])
     })
 
     it('re-enables the button after the cooldown elapses', async () => {
-      mocks.authStore.currentUser = makeUser()
-      mocks.sendEmailVerification.mockResolvedValue(undefined)
+      signIn(makeUser())
+      vi.mocked(sendEmailVerification).mockResolvedValue(undefined)
       const { resend, canResend } = await loadComposable()
 
       await resend()
@@ -277,7 +281,7 @@ describe('useEmailVerification', () => {
           user.emailVerified = true
         })
       })
-      mocks.authStore.currentUser = user
+      signIn(user)
       const { needsEmailVerification, refresh } = await loadComposable()
       expect(needsEmailVerification.value).toBe(true)
 
@@ -294,7 +298,7 @@ describe('useEmailVerification', () => {
           user.emailVerified = true
         })
       })
-      mocks.authStore.currentUser = user
+      signIn(user)
       const { needsEmailVerification, dismiss } = await loadComposable()
       dismiss()
 
@@ -306,7 +310,7 @@ describe('useEmailVerification', () => {
 
     it('does not reload the user on focus while the feature is disabled', async () => {
       const user = makeUser()
-      mocks.authStore.currentUser = user
+      signIn(user)
       mocks.flags.emailVerificationNudgeEnabled = false
       await loadComposable()
 
@@ -318,15 +322,18 @@ describe('useEmailVerification', () => {
 
     it('reports a reload failure to telemetry instead of surfacing it', async () => {
       const reloadFailure = new Error('offline')
-      mocks.authStore.currentUser = makeUser({
-        reload: vi.fn().mockRejectedValue(reloadFailure)
-      })
+      signIn(
+        makeUser({
+          reload: vi.fn().mockRejectedValue(reloadFailure)
+        })
+      )
       const { refresh } = await loadComposable()
 
       await expect(refresh()).resolves.toBeUndefined()
 
       expect(mocks.reportError).toHaveBeenCalledWith(reloadFailure, {
-        errorType: 'email_verification_refresh_failure'
+        errorType: 'email_verification_refresh_failure',
+        surface: 'auth'
       })
     })
 
@@ -340,7 +347,7 @@ describe('useEmailVerification', () => {
             })
         )
       })
-      mocks.authStore.currentUser = user
+      signIn(user)
       const { refresh } = await loadComposable()
 
       const first = refresh()

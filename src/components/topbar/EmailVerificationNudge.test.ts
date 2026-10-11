@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { useEmailVerification } from '@/composables/auth/useEmailVerification'
 import enMessages from '@/locales/en/main.json'
 
 import EmailVerificationNudge from './EmailVerificationNudge.vue'
@@ -16,7 +18,7 @@ const h = vi.hoisted(() => ({
   } | null
 }))
 
-vi.mock('@/composables/auth/useEmailVerification', async () => {
+vi.mock(import('@/composables/auth/useEmailVerification'), async () => {
   const { ref } = await import('vue')
   h.composable = {
     isNudgeVisible: ref(false),
@@ -24,7 +26,10 @@ vi.mock('@/composables/auth/useEmailVerification', async () => {
     resend: vi.fn(),
     dismiss: vi.fn()
   }
-  return { useEmailVerification: () => h.composable }
+  return {
+    useEmailVerification: () =>
+      fromPartial<ReturnType<typeof useEmailVerification>>(h.composable!)
+  }
 })
 
 function renderNudge() {

@@ -41,6 +41,7 @@ const defaultFlags: FeatureFlags = {
   v1PaymentRecovery: false,
   freeTierJobAllowanceEnabled: false,
   signupTurnstileMode: 'off',
+  emailVerificationNudgeEnabled: false,
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
   assetsEnabled: false,
