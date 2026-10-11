@@ -463,12 +463,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }

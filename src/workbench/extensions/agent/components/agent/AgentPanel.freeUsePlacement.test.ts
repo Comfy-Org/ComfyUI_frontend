@@ -113,9 +113,7 @@ describe('AgentPanel free-use placement', () => {
     mount(variant)
 
     expect(notice()).toBeInTheDocument()
-    for (const region of REGIONS) {
-      expect(Boolean(noticeIn(region))).toBe(containing.includes(region))
-    }
+    expect(REGIONS.filter((region) => noticeIn(region))).toEqual(containing)
   })
 
   it.for(PLACEMENTS)(
