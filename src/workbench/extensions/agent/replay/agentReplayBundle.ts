@@ -5,7 +5,7 @@ const zIsoDate = z.string().datetime({ offset: true })
 
 export const AGENT_REPLAY_BUNDLE_VERSION = 'agent-replay-bundle.v1' as const
 
-export const zAgentReplayFidelity = z
+const zAgentReplayFidelity = z
   .object({
     complete: z.boolean(),
     level: z.enum(['full', 'degraded']),
@@ -55,7 +55,7 @@ const zReplayEntry = z.discriminatedUnion('kind', [
   })
 ])
 
-export const zAgentReplayBundleV1 = z
+const zAgentReplayBundleV1 = z
   .object({
     schema_version: z.literal(AGENT_REPLAY_BUNDLE_VERSION),
     replay_id: z.string().uuid(),
@@ -114,7 +114,7 @@ export const zAgentReplayBundleV1 = z
         })
   })
 
-export type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleV1>
+type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleV1>
 
 export type AgentReplayBundleResult =
   | { ok: true; bundle: AgentReplayBundleV1 }
