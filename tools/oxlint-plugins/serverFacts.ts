@@ -203,7 +203,13 @@ const FUNCTION_TYPES: ReadonlySet<string> = new Set([
   'FunctionExpression',
   'FunctionDeclaration'
 ])
-const COMPARISON_OPERATORS: ReadonlySet<string> = new Set([
+const REFERENCE_TYPES: ReadonlySet<string> = new Set([
+  'Identifier',
+  'MemberExpression',
+  'CallExpression'
+])
+const BOOLEAN_OPERATORS: ReadonlySet<string> = new Set([
+  '!',
   '===',
   '!==',
   '==',
@@ -266,29 +272,38 @@ function literalKind(value: unknown): ValueKind {
   return value === null ? 'opaque' : 'other'
 }
 
+function valueBranches(expression: AstNode): AstNode[] | undefined {
+  if (expression.type === 'LogicalExpression') {
+    return [expression.left, expression.right]
+  }
+  return expression.type === 'ConditionalExpression'
+    ? [expression.consequent, expression.alternate]
+    : undefined
+}
+
+function operatorOf(expression: AstNode): string | undefined {
+  return expression.type === 'UnaryExpression' ||
+    expression.type === 'BinaryExpression'
+    ? expression.operator
+    : undefined
+}
+
+function leafKind(expression: AstNode, isCapability: IsCapability): ValueKind {
+  if (expression.type === 'Literal') return literalKind(expression.value)
+  if (REFERENCE_TYPES.has(expression.type)) {
+    return isCapability(expression) ? 'boolean' : 'opaque'
+  }
+  return BOOLEAN_OPERATORS.has(operatorOf(expression) ?? '')
+    ? 'boolean'
+    : 'other'
+}
+
 function valueKind(node: AstNode, isCapability: IsCapability): ValueKind {
   const expression = unwrap(node)
-  const kindOf = (side: AstNode) => valueKind(side, isCapability)
-  switch (expression.type) {
-    case 'Literal':
-      return literalKind(expression.value)
-    case 'Identifier':
-    case 'MemberExpression':
-    case 'CallExpression':
-      return isCapability(expression) ? 'boolean' : 'opaque'
-    case 'UnaryExpression':
-      return expression.operator === '!' ? 'boolean' : 'other'
-    case 'BinaryExpression':
-      return COMPARISON_OPERATORS.has(expression.operator) ? 'boolean' : 'other'
-    case 'LogicalExpression':
-      return joinKinds([expression.left, expression.right].map(kindOf))
-    case 'ConditionalExpression':
-      return joinKinds(
-        [expression.consequent, expression.alternate].map(kindOf)
-      )
-    default:
-      return 'other'
-  }
+  const branches = valueBranches(expression)
+  return branches
+    ? joinKinds(branches.map((branch) => valueKind(branch, isCapability)))
+    : leafKind(expression, isCapability)
 }
 
 const READ_THROUGH_CALLS: ReadonlySet<string> = new Set(['toValue', 'unref'])
@@ -654,22 +669,24 @@ function returnedBy(statement: AstNode): AstNode | null | undefined {
   return returnedBy(statement.body[0])
 }
 
+type Branch = AstNode | null | undefined
+
+// What a ternary or an `if` picks when `test` is its whole condition.
+function conditionBranches(test: AstNode): Branch[] | undefined {
+  const { parent } = test
+  if (parent?.type === 'ConditionalExpression' && parent.test === test) {
+    return [parent.consequent, parent.alternate]
+  }
+  if (parent?.type !== 'IfStatement' || parent.test !== test) return undefined
+  const { consequent, alternate } = parent
+  return alternate === null
+    ? [returnedBy(consequent)]
+    : [returnedBy(consequent), returnedBy(alternate)]
+}
+
 // `role === 'owner' ? t('owner') : t('member')` picks copy, not a gate.
 function selectsLabel(node: AstNode): boolean {
-  const { parent } = node
-  if (parent?.type === 'ConditionalExpression') {
-    return (
-      parent.test === node &&
-      isLabel(parent.consequent) &&
-      isLabel(parent.alternate)
-    )
-  }
-  return (
-    parent?.type === 'IfStatement' &&
-    parent.test === node &&
-    isLabel(returnedBy(parent.consequent)) &&
-    (parent.alternate === null || isLabel(returnedBy(parent.alternate)))
-  )
+  return conditionBranches(node)?.every(isLabel) ?? false
 }
 
 function isInsideSortComparator(node: AstNode): boolean {
@@ -705,20 +722,9 @@ function isBooleanLiteral(node: AstNode | null | undefined): boolean {
 // A branch that returns `true` or `false` turns the condition into one step of
 // a composed gate, so only branches that pick a value read the status as is.
 function branchesOnValue(test: AstNode): boolean {
-  const { parent } = test
-  if (parent?.type === 'ConditionalExpression') {
-    return (
-      parent.test === test &&
-      !isBooleanLiteral(parent.consequent) &&
-      !isBooleanLiteral(parent.alternate)
-    )
-  }
   return (
-    parent?.type === 'IfStatement' &&
-    parent.test === test &&
-    !isBooleanLiteral(returnedBy(parent.consequent)) &&
-    (parent.alternate === null ||
-      !isBooleanLiteral(returnedBy(parent.alternate)))
+    conditionBranches(test)?.every((branch) => !isBooleanLiteral(branch)) ??
+    false
   )
 }
 
