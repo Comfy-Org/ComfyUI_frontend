@@ -774,6 +774,7 @@ export type TopupQuoteResponse = {
 
 /**
  * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
   /**
@@ -2414,7 +2415,7 @@ export type OAuthRegisterRequest = {
    */
   response_types?: Array<'code'>
   /**
-   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
+   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server grants the published scope lists of `comfy-mcp` and, when active, `comfy-router`, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
    *
    */
   scope?: string | null
@@ -10201,6 +10202,15 @@ export type GetFeaturesResponses = {
    * Success
    */
   200: {
+    /**
+     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
+     */
+    'agent-free-use-message-placement'?:
+      | 'control'
+      | 'top-banner'
+      | 'near-composer'
+      | 'above-input'
+      | 'inside-input'
     /**
      * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
      */
