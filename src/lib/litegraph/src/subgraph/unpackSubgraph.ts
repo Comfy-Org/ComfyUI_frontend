@@ -7,7 +7,7 @@ import type { Point } from '../interfaces'
 import type { INodeInputSlot } from '../types/slots'
 import type { LGraph } from '../LGraph'
 import { LGraphNode } from '../LGraphNode'
-import { LiteGraph } from '../litegraph'
+import { LiteGraph } from '../litegraphInstance'
 import type { ISerialisedNode } from '../types/serialisation'
 
 export type UnpackedTargetInput =

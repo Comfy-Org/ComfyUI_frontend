@@ -6,7 +6,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'

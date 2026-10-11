@@ -11,7 +11,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 

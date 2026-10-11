@@ -6,7 +6,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'

@@ -17,9 +17,11 @@ declare global {
  * The barrel constructs the singleton and calls {@link registerLiteGraphInstance}.
  */
 let instance: LiteGraphGlobal | null = null
+export let LiteGraph: LiteGraphGlobal
 
 export function registerLiteGraphInstance(value: LiteGraphGlobal): void {
   instance = value
+  LiteGraph = value
   globalThis.__COMFY_LITEGRAPH_INSTANCE__ = value
 }
 

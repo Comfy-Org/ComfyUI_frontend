@@ -144,7 +144,7 @@ import type {
   PanelWidgetCallback,
   PanelWidgetOptions
 } from './types/panel'
-import { LiteGraph } from './litegraph'
+import { LiteGraph } from './litegraphInstance'
 import {
   containsRect,
   createBounds,

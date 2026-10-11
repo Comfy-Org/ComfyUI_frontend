@@ -145,7 +145,8 @@ import type {
 } from './interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 import type { LinkNetwork } from './types/linkNetwork'
-import { LiteGraph, SubgraphNode } from './litegraph'
+import { LiteGraph } from './litegraphInstance'
+import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
   alignOutsideContainer,
   alignToContainer,

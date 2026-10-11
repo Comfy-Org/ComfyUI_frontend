@@ -22,7 +22,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {

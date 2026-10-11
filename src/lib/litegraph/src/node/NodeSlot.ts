@@ -15,7 +15,8 @@ import type {
   INodeOutputSlot,
   ISubgraphInput
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'

@@ -120,7 +120,8 @@ import type {
   INodeSlotContextItem
 } from './types/slots'
 import type { Panel } from './types/panel'
-import { LiteGraph, Subgraph } from './litegraph'
+import { LiteGraph } from './litegraphInstance'
+import { Subgraph } from './LGraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {
   createBounds,
