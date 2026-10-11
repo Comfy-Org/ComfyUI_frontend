@@ -291,6 +291,33 @@ function valueKind(node: AstNode, isCapability: IsCapability): ValueKind {
   }
 }
 
+const READ_THROUGH_CALLS: ReadonlySet<string> = new Set(['toValue', 'unref'])
+
+function projectedField(node: AstNode): string | undefined {
+  const expression = unwrap(node)
+  if (expression.type === 'CallExpression') {
+    const [argument] = expression.arguments
+    return expression.arguments.length === 1 &&
+      READ_THROUGH_CALLS.has(factName(expression.callee) ?? '')
+      ? projectedField(argument)
+      : undefined
+  }
+  return expression.type === 'MemberExpression'
+    ? factName(expression)
+    : undefined
+}
+
+// `const canRun = computed(() => toValue(ctx.value.canRun))` re-exposes a
+// server `can*` fact under its own name, so it is that fact.
+function passesFieldThrough(name: string, init: AstNode): boolean {
+  const values = boundValues(init)
+  return (
+    CAPABILITY_BINDING.test(name) &&
+    values.length > 0 &&
+    values.every((value) => projectedField(value) === name)
+  )
+}
+
 function referenceName(node: AstNode): string | undefined {
   const expression = unwrap(node)
   if (expression.type === 'Identifier') return expression.name
@@ -512,6 +539,10 @@ export const noCapabilityRecombination: Rule = {
     const trackBinding = (name: string, init: AstNode) => {
       if (isCapabilitySourceCall(init)) {
         capabilityObjects.add(name)
+        return
+      }
+      if (passesFieldThrough(name, init)) {
+        capabilityBindings.add(name)
         return
       }
       if (!containsCapability(init)) return

@@ -120,6 +120,17 @@ const f = canTopUp.value && !isHiddenOnSection.value
 `
     },
     {
+      name: 'a can-named local that renames or computes another field',
+      code: `
+const canManage = computed(() => permissions.value.canManageSubscription)
+const canClose = computed(() => toValue(dialog.value.canClose) && isDirty.value)
+const canEdit = computed(() => format(state.value.canEdit))
+const a = canManage.value && hasSeats.value
+const b = canClose.value || hasSeats.value
+const c = canEdit.value && hasSeats.value
+`
+    },
+    {
       name: 'a step, layout or presentation seeded once from a capability',
       code: `
 const { canTopUp } = useBillingCapabilities()
@@ -295,6 +306,18 @@ const permissions = computed(() => ({
   canInvite: canInviteMembers.value
 }))
 const show = permissions.value.canInvite && hasSeats.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a can-named fact re-exposed under its own name, then composed',
+      code: `
+const canAccessFeatures = computed(() =>
+  toValue(activeContext.value.canAccessFeatures)
+)
+const canRun = computed(
+  () => canAccessFeatures.value && (!isFreeTier.value || quotaPermitted.value)
+)
 `,
       errors: [{ messageId: 'combined', data: { operator: '&&' } }]
     },
