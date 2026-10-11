@@ -2,7 +2,7 @@
   <div>
     <Dialog v-model:open="visible">
       <DialogPortal>
-        <DialogOverlay v-reka-z-index class="items-start" />
+        <DialogOverlay v-reka-z-index />
         <DialogContent
           v-reka-z-index
           :class="
