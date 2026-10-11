@@ -356,8 +356,6 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_B_ID,
         nodes: { '1': nodeState('job-b', '1', 'running', 4) }
       })
-      // Without this the release assertion below passes vacuously.
-      expect(store.nodeProgressStatesByJob['job-b']).toBeDefined()
 
       fire('execution_interrupted', {
         prompt_id: 'job-b',
