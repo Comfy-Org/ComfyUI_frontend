@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { NodeProperty } from '@/types/nodeProperty'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetValue } from '@/types/widgetValue'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 import { serializedProxyWidgetTupleSchema } from './promotionSchema'
@@ -32,7 +32,7 @@ const proxyWidgetErrorQuarantinePropertySchema = z.array(
 export type ProxyWidgetErrorQuarantineEntry = Omit<
   z.infer<typeof proxyWidgetErrorQuarantineEntrySchema>,
   'hostValue'
-> & { hostValue?: TWidgetValue }
+> & { hostValue?: WidgetValue }
 
 export function parseProxyWidgetErrorQuarantine(
   property: NodeProperty | undefined

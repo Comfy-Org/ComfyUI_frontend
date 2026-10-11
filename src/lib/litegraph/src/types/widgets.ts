@@ -4,7 +4,7 @@ import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { LightInfoEntry } from '@/types/lightInfo'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {
   WidgetSurfaces,
