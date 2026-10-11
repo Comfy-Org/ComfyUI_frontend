@@ -665,6 +665,46 @@
     "switchToOutputs": "Zu Ausgaben wechseln",
     "viewApp": "App anzeigen"
   },
+  "cameraAngle": {
+    "cameraView": "Kamera",
+    "cameraViewTooltip": "Bewegen Sie die Kamera um das Motiv herum",
+    "faces": {
+      "back": "HINTEN",
+      "bottom": "UNTEN",
+      "left": "LINKS",
+      "right": "RECHTS",
+      "top": "OBEN"
+    },
+    "hidePreview": "Einstellungsvorschau ausblenden",
+    "horizontal": {
+      "back": "Hinten",
+      "backLeft": "Hinten links",
+      "backRight": "Hinten rechts",
+      "front": "Vorne",
+      "frontLeft": "Vorne links",
+      "frontRight": "Vorne rechts",
+      "left": "Linke Seite",
+      "right": "Rechte Seite"
+    },
+    "horizontalLabel": "Horizontaler Winkel",
+    "objectView": "Objekt",
+    "objectViewTooltip": "Blicken Sie durch die Kamera und drehen Sie das Motiv",
+    "preview": "Vorschau",
+    "showPreview": "Einstellungsvorschau anzeigen",
+    "vertical": {
+      "elevated": "Erhöht",
+      "eyeLevel": "Augenhöhe",
+      "highAngle": "Draufsicht",
+      "lowAngle": "Untersicht"
+    },
+    "verticalLabel": "Vertikaler Winkel",
+    "zoom": {
+      "closeUp": "Nahaufnahme",
+      "medium": "Halbtotale",
+      "wide": "Totale"
+    },
+    "zoomLabel": "Einstellungsgröße"
+  },
   "clipboard": {
     "errorMessage": "Kopieren in die Zwischenablage fehlgeschlagen",
     "errorNotSupported": "Clipboard-API wird von Ihrem Browser nicht unterstützt",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Assets werden exportiert",
     "noExportsInQueue": "Keine {filter}-Exporte in der Queue",
     "preparingExport": "Export wird vorbereitet...",
-    "retryDownload": "Download erneut versuchen"
+    "retryDownload": "Download erneut versuchen",
+    "unsupportedDownloadUrl": "Nicht unterstützte Export-Download-URL"
   },
   "feedback": {
     "title": "Feedback teilen"
@@ -3658,7 +3699,8 @@
     "importingModels": "Modelle werden importiert",
     "noImportsInQueue": "Keine {filter} in der Queue",
     "pending": "Ausstehend",
-    "progressCount": "{completed} von {total}"
+    "progressCount": "{completed} von {total}",
+    "taskUnavailable": "Die Download-Aufgabe ist nicht mehr verfügbar."
   },
   "queue": {
     "completedIn": "Abgeschlossen in {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "Guthaben konnte nicht abgerufen werden: {error}",
     "failedToFetchLogs": "Serverprotokolle konnten nicht abgerufen werden",
     "failedToFetchSubscription": "Abonnementstatus konnte nicht abgerufen werden: {error}",
+    "failedToInitializeCameraAngleViewer": "Der Kameraansicht-Viewer konnte nicht initialisiert werden. Versuchen Sie, die Seite neu zu laden.",
     "failedToInitializeCameraInfoViewer": "Camera-Info-Viewer konnte nicht initialisiert werden. Versuchen Sie, die Seite neu zu laden.",
     "failedToInitializeLoad3dViewer": "3D-Viewer konnte nicht initialisiert werden",
     "failedToInitiateCreditPurchase": "Credit-Kauf konnte nicht gestartet werden: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "Der Ersteller des Workspace kann den von ihm erstellten Workspace nicht verlassen",
       "deleteWorkspace": "Workspace löschen",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Sie können diesen Workspace nach Ablauf Ihres Plans am {date} löschen.",
       "deleteWorkspaceDisabledTooltip": "Kündigen Sie zuerst das aktive Abonnement Ihres Workspace",
       "editWorkspace": "Workspace-Details bearbeiten",
       "leaveWorkspace": "Workspace verlassen"

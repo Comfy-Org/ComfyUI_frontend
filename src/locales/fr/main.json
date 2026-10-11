@@ -665,6 +665,46 @@
     "switchToOutputs": "Passer aux sorties",
     "viewApp": "Voir l’application"
   },
+  "cameraAngle": {
+    "cameraView": "Caméra",
+    "cameraViewTooltip": "Déplacer la caméra autour du sujet",
+    "faces": {
+      "back": "ARRIÈRE",
+      "bottom": "DESSOUS",
+      "left": "GAUCHE",
+      "right": "DROITE",
+      "top": "DESSUS"
+    },
+    "hidePreview": "Masquer l’aperçu du plan",
+    "horizontal": {
+      "back": "Arrière",
+      "backLeft": "Arrière gauche",
+      "backRight": "Arrière droit",
+      "front": "Face",
+      "frontLeft": "Avant gauche",
+      "frontRight": "Avant droit",
+      "left": "Côté gauche",
+      "right": "Côté droit"
+    },
+    "horizontalLabel": "Angle horizontal",
+    "objectView": "Objet",
+    "objectViewTooltip": "Regarder à travers la caméra et tourner le sujet",
+    "preview": "Aperçu",
+    "showPreview": "Afficher l’aperçu du plan",
+    "vertical": {
+      "elevated": "En hauteur",
+      "eyeLevel": "À hauteur des yeux",
+      "highAngle": "Plongée",
+      "lowAngle": "Contre-plongée"
+    },
+    "verticalLabel": "Angle vertical",
+    "zoom": {
+      "closeUp": "Gros plan",
+      "medium": "Plan moyen",
+      "wide": "Plan large"
+    },
+    "zoomLabel": "Taille du plan"
+  },
   "clipboard": {
     "errorMessage": "Échec de la copie dans le presse-papiers",
     "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Exportation des ressources",
     "noExportsInQueue": "Aucune exportation {filter} en file d’attente",
     "preparingExport": "Préparation de l’export...",
-    "retryDownload": "Réessayer le téléchargement"
+    "retryDownload": "Réessayer le téléchargement",
+    "unsupportedDownloadUrl": "URL de téléchargement d’exportation non prise en charge"
   },
   "feedback": {
     "title": "Partager un retour"
@@ -3658,7 +3699,8 @@
     "importingModels": "Importation des modèles",
     "noImportsInQueue": "Aucun {filter} dans la file d’attente",
     "pending": "En attente",
-    "progressCount": "{completed} sur {total}"
+    "progressCount": "{completed} sur {total}",
+    "taskUnavailable": "La tâche de téléchargement n’est plus disponible."
   },
   "queue": {
     "completedIn": "Terminé en {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "Échec de la récupération du solde : {error}",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
     "failedToFetchSubscription": "Échec de la récupération du statut d'abonnement : {error}",
+    "failedToInitializeCameraAngleViewer": "Échec de l’initialisation de la visionneuse d’angle de caméra. Essayez de recharger la page.",
     "failedToInitializeCameraInfoViewer": "Impossible d’initialiser la visionneuse d’informations de la caméra. Essayez de recharger la page.",
     "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D",
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "Le créateur de l'espace de travail ne peut pas quitter l'espace qu'il a créé",
       "deleteWorkspace": "Supprimer l’espace de travail",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Vous pourrez supprimer cet espace de travail après la fin de votre forfait, le {date}",
       "deleteWorkspaceDisabledTooltip": "Annulez d’abord l’abonnement actif de votre espace de travail",
       "editWorkspace": "Modifier les détails de l’espace de travail",
       "leaveWorkspace": "Quitter l’espace de travail"

@@ -665,6 +665,46 @@
     "switchToOutputs": "切换到输出",
     "viewApp": "查看应用"
   },
+  "cameraAngle": {
+    "cameraView": "相机",
+    "cameraViewTooltip": "围绕主体移动相机",
+    "faces": {
+      "back": "背面",
+      "bottom": "底部",
+      "left": "左侧",
+      "right": "右侧",
+      "top": "顶部"
+    },
+    "hidePreview": "隐藏镜头预览",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左后方",
+      "backRight": "右后方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左侧",
+      "right": "右侧"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "对象",
+    "objectViewTooltip": "透过相机查看并旋转主体",
+    "preview": "预览",
+    "showPreview": "显示镜头预览",
+    "vertical": {
+      "elevated": "较高视角",
+      "eyeLevel": "平视",
+      "highAngle": "高角度",
+      "lowAngle": "低角度"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "特写",
+      "medium": "中景",
+      "wide": "远景"
+    },
+    "zoomLabel": "景别"
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "正在导出资源",
     "noExportsInQueue": "队列中没有{filter}导出",
     "preparingExport": "正在准备导出...",
-    "retryDownload": "重试下载"
+    "retryDownload": "重试下载",
+    "unsupportedDownloadUrl": "不支持的导出下载 URL"
   },
   "feedback": {
     "title": "分享反馈"
@@ -3658,7 +3699,8 @@
     "importingModels": "正在导入模型",
     "noImportsInQueue": "队列中没有 {filter}",
     "pending": "待处理",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "下载任务已不再可用。"
   },
   "queue": {
     "completedIn": "{duration} 后完成",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
+    "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
     "failedToInitializeCameraInfoViewer": "初始化相机信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "工作区创建者无法离开他们创建的工作区",
       "deleteWorkspace": "删除工作区",
+      "deleteWorkspaceAfterPlanEndsTooltip": "你的套餐将于 {date} 结束，届时可删除此工作区",
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
