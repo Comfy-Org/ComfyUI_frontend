@@ -15,19 +15,8 @@ async function saveAndOpenPublishDialog(
   dialog: PublishDialog,
   workflowName: string
 ): Promise<void> {
+  await comfyPage.workflow.setupWorkflowsDirectory({})
   await comfyPage.menu.topbar.saveWorkflow(workflowName)
-  const overwriteDialog = comfyPage.page
-    .getByRole('dialog')
-    .filter({ hasText: 'Overwrite' })
-  // Bounded wait: point-in-time isVisible() can miss dialogs that open
-  // slightly after saveWorkflow() resolves.
-  try {
-    await overwriteDialog.waitFor({ state: 'visible', timeout: 500 })
-    await comfyPage.confirmDialog.click('overwrite')
-  } catch {
-    // No overwrite dialog — workflow name was unique.
-  }
-
   await dialog.open()
 }
 
