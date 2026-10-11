@@ -1,13 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
 
@@ -15,21 +19,19 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode<unknown> | null = null
+  let capturedRoot: TreeExplorerNode | null = null
   return {
-    captureRoot: (root: TreeExplorerNode<unknown>) => {
+    captureRoot: (root: TreeExplorerNode) => {
       capturedRoot = root
     },
     getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -42,11 +44,9 @@ const {
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
-vi.mock('@/services/nodeOrganizationService', () => ({
+vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
   DEFAULT_SORTING_ID: 'sort',
   nodeOrganizationService: {
@@ -58,65 +58,25 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    visibleNodeDefs: [],
-    nodeSearchService: { searchNode: mockSearchNode }
-  })
-}))
-
-vi.mock('@/stores/nodeBookmarkStore', () => ({
-  useNodeBookmarkStore: () => ({
-    bookmarks: []
-  })
-}))
-
-vi.mock('@/stores/workspace/nodeHelpStore', () => ({
-  useNodeHelpStore: () => ({
-    currentHelpNode: ref(null),
-    isHelpOpen: ref(false),
-    openHelp: vi.fn(),
-    closeHelp: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: vi.fn()
-  })
-}))
-
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: vi.fn(),
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
     name: 'TreeExplorer',
     template: '<div data-testid="tree-explorer" />',
     props: ['root', 'expandedKeys'],
-    setup(props: { root: TreeExplorerNode<unknown> }) {
+    setup(props: { root: TreeExplorerNode }) {
       captureRoot(props.root)
     }
   }
 }))
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template: '<input data-testid="search-input" />',
-    props: ['modelValue', 'placeholder'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
-
-vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/NodeBookmarkTreeExplorer.vue'), () => ({
   default: {
     name: 'NodeBookmarkTreeExplorer',
     template: '<div />',
@@ -124,14 +84,14 @@ vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('./SidebarTabTemplate.vue', () => ({
+vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
     name: 'SidebarTabTemplate',
     template: '<div><slot name="header" /><slot name="body" /></div>'
   }
 }))
 
-vi.mock('@/components/common/SearchFilterChip.vue', () => ({
+vi.mock<unknown>(import('@/components/common/SearchFilterChip.vue'), () => ({
   default: {
     name: 'SearchFilterChip',
     template:
@@ -140,7 +100,7 @@ vi.mock('@/components/common/SearchFilterChip.vue', () => ({
   }
 }))
 
-vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
+vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   default: {
     name: 'NodeSearchFilter',
     template:
@@ -148,10 +108,7 @@ vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
   }
 }))
 
-vi.mock('primevue/divider', () => ({
-  default: { name: 'Divider', template: '<div />' }
-}))
-vi.mock('primevue/popover', () => ({
+vi.mock<unknown>(import('@/components/common/ImperativePopover.vue'), () => ({
   default: {
     name: 'Popover',
     template: '<div><slot /></div>',
@@ -173,12 +130,18 @@ const mockNode = fromPartial<ComfyNodeDefImpl>({
 describe('NodeLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.NodeLibrary.Bookmarks.V2': [] }
+    })
+    vi.spyOn(NodeSearchService.prototype, 'searchNode').mockImplementation(
+      mockSearchNode
+    )
   })
 
   function renderComponent() {
     return render(NodeLibrarySidebarTab, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         stubs: { teleport: true }
       }
     })
@@ -199,7 +162,47 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('offers delete only on user blueprint rows', async () => {
+    const blueprint = fromPartial<ComfyNodeDefImpl>({
+      name: 'SubgraphBlueprint.Mine',
+      display_name: 'Mine'
+    })
+    vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+    vi.mocked(useSubgraphStore().isUserBlueprint).mockImplementation(
+      (name) => name === blueprint.name
+    )
+    mockOrganizeNodes.mockReturnValue({
+      key: 'root',
+      label: 'Root',
+      children: [
+        { key: 'blueprint', label: 'Mine', leaf: true, data: blueprint },
+        { key: 'leaf', label: 'Leaf', leaf: true, data: mockNode }
+      ]
+    })
+
+    renderComponent()
+    await nextTick()
+
+    const root = getRoot()
+    const blueprintRow = root.children?.[0]
+    const nodeRow = root.children?.[1]
+    expect(nodeRow?.handleDelete).toBeUndefined()
+    await blueprintRow?.handleDelete?.call(blueprintRow)
+    expect(useSubgraphStore().deleteBlueprint).toHaveBeenCalledWith(
+      blueprint.name
+    )
+  })
+
+  it('closes node help when the panel unmounts', () => {
+    const { unmount } = renderComponent()
+    useNodeHelpStore().openHelp(mockNode)
+
+    unmount()
+
+    expect(useNodeHelpStore().isHelpOpen).toBe(false)
   })
 
   it('adds and removes filters', async () => {
@@ -208,6 +211,7 @@ describe('NodeLibrarySidebarTab', () => {
     await nextTick()
 
     // Add filter by clicking the mocked search filter
+    await user.click(screen.getByRole('button', { name: 'g.filter' }))
     const searchFilter = screen.getByTestId('node-search-filter')
     await user.click(searchFilter)
     await nextTick()

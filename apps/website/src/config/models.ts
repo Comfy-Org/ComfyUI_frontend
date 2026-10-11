@@ -14,6 +14,11 @@ type ModelDirectory =
   | 'latent_upscale_models'
   | 'upscale_models'
   | 'style_models'
+  | 'geometry_estimation'
+  | 'background_removal'
+  | 'detection'
+  | 'frame_interpolation'
+  | 'optical_flow'
   | 'partner_nodes'
 
 export interface Model {
@@ -29,6 +34,7 @@ export interface Model {
   readonly hubSlug?: string
   readonly featured: boolean
   readonly workflowCount: number
+  readonly whatIsBacklinkUrl?: string
 }
 
 export const models: readonly Model[] = (

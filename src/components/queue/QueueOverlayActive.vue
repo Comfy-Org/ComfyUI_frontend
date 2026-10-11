@@ -5,11 +5,12 @@
         class="relative h-2 w-full overflow-hidden rounded-full border border-interface-stroke bg-interface-panel-surface"
       >
         <div
-          class="absolute inset-0 h-full rounded-full transition-[width]"
+          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
           :style="totalProgressStyle"
         />
         <div
-          class="absolute inset-0 h-full rounded-full transition-[width]"
+          data-testid="queue-progress-node-fill"
+          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
           :style="currentNodeProgressStyle"
         />
       </div>
@@ -44,7 +45,7 @@
           </span>
           <Button
             v-if="runningCount > 0"
-            v-tooltip.top="cancelJobTooltip"
+            :tooltip="t('sideToolbar.queueProgressOverlay.cancelJobTooltip')"
             variant="destructive"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
@@ -65,7 +66,7 @@
           </span>
           <Button
             v-if="queuedCount > 0"
-            v-tooltip.top="clearQueueTooltip"
+            :tooltip="t('sideToolbar.queueProgressOverlay.clearQueueTooltip')"
             variant="destructive"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
@@ -91,11 +92,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   totalProgressStyle: Record<string, string>
@@ -115,10 +114,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const cancelJobTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.cancelJobTooltip'))
-)
-const clearQueueTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
-)
 </script>

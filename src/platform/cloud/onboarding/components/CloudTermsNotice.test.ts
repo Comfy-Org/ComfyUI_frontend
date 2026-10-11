@@ -73,7 +73,7 @@ describe('CloudTermsNotice', () => {
     const inSentence = (needle: string) =>
       screen.getByText((_, element) => {
         if (element?.tagName !== 'P') return false
-        return (element.textContent ?? '').replace(/\s+/g, ' ').includes(needle)
+        return element.textContent.replace(/\s+/g, ' ').includes(needle)
       })
 
     expect(inSentence(LONG_LOCALE.auth.login.termsText)).toBeInTheDocument()
@@ -95,7 +95,7 @@ describe('CloudTermsNotice', () => {
     expect(
       screen.getByText((_, element) => {
         if (element?.tagName !== 'P') return false
-        const text = (element.textContent ?? '').replace(/\s+/g, ' ')
+        const text = element.textContent.replace(/\s+/g, ' ')
         return text.includes(`${LONG_LOCALE.auth.login.privacyLink}.`)
       }),
       'the trailing period lives in the template, outside the four keys, so a reflow can drop it unnoticed'

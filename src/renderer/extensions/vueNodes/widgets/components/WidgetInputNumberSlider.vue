@@ -4,7 +4,8 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-component-node-widget-background-hovered'
+          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-component-node-widget-background-hovered',
+          useWidgetHeight()
         )
       "
     >
@@ -16,30 +17,32 @@
         :aria-label="widget.name"
         @update:model-value="updateLocalValue"
       />
-      <InputNumber
-        :key="timesEmptied"
-        :model-value="modelValue"
-        v-bind="filteredProps"
+      <NumberField
+        v-model="modelValue"
         :step="stepValue"
-        :min-fraction-digits="precision"
-        :max-fraction-digits="precision"
-        :aria-label="widget.name"
-        size="small"
-        pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
-        class="w-16"
-        :pt="sliderNumberPt"
-        @update:model-value="handleNumberInputUpdate"
-      />
+        :min="widget.options?.min"
+        :max="widget.options?.max"
+        :disabled="widget.options?.disabled"
+        :format-options="{
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision
+        }"
+        class="h-auto w-16 shrink-0 bg-transparent hover:bg-transparent"
+      >
+        <NumberFieldInput :aria-label="widget.name" class="text-xs" />
+      </NumberField>
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   STANDARD_EXCLUDED_PROPS,
@@ -47,7 +50,6 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
-import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -57,18 +59,8 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const timesEmptied = ref(0)
-
 const updateLocalValue = (newValue: number[] | undefined): void => {
   if (newValue?.length) modelValue.value = newValue[0]
-}
-
-const handleNumberInputUpdate = (newValue: number | undefined) => {
-  if (newValue !== undefined) {
-    updateLocalValue([newValue])
-    return
-  }
-  timesEmptied.value += 1
 }
 
 const filteredProps = computed(() =>
@@ -80,16 +72,4 @@ const precision = typeof p === 'number' && p >= 0 ? p : undefined
 
 // Calculate the step value based on precision or widget options
 const stepValue = useNumberStepCalculation(widget.options, precision, true)
-
-const sliderNumberPt = useNumberWidgetButtonPt({
-  roundedLeft: true,
-  roundedRight: true
-})
 </script>
-
-<style scoped>
-:deep(.p-inputnumber-button.p-disabled .pi),
-:deep(.p-inputnumber-button.p-disabled .p-icon) {
-  color: var(--color-node-icon-disabled) !important;
-}
-</style>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via useForwardPropsEmits */
 import type { DialogRootEmits, DialogRootProps } from 'reka-ui'
 import { DialogRoot, useForwardPropsEmits } from 'reka-ui'
 

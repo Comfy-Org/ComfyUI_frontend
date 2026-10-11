@@ -144,7 +144,8 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
+    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
@@ -219,7 +220,7 @@ function useWorkspaceUIInternal() {
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
     const showCreditsColumn =
-      flags.billingControlEnabled &&
+      flags.memberCreditLimitsEnabled &&
       workspaceType.value === 'team' &&
       workspaceRole.value === 'owner'
     if (!showCreditsColumn) return base
@@ -242,13 +243,10 @@ function useWorkspaceUIInternal() {
     () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
-  // A workspace can't be deleted while its subscription is active and not yet
-  // cancelled — the owner must cancel first. Both settings panels read this so
-  // their menus can't desync on a billing-flag change.
-  const isDeleteDisabled = computed(
-    () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
-  )
+  // The server refuses deleting a workspace until its plan has ended, and a
+  // cancelled plan stays active until cancel_at. Both settings panels read
+  // this so their menus can't desync on a billing-flag change.
+  const isDeleteDisabled = computed(() => canAccessSubscriptionFeatures.value)
 
   const deleteDisabledTooltipKey = computed(() =>
     isDeleteDisabled.value ? uiConfig.value.workspaceMenuDisabledTooltip : null
@@ -264,7 +262,7 @@ function useWorkspaceUIInternal() {
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isSubscriptionCancelled,
     isTeamPlanCancelled,

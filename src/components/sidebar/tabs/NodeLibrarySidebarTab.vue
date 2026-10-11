@@ -6,7 +6,8 @@
     >
       <template #tool-buttons>
         <Button
-          v-tooltip.bottom="$t('g.newFolder')"
+          :tooltip="$t('g.newFolder')"
+          tooltip-side="bottom"
           class="new-folder-button"
           variant="muted-textonly"
           size="icon"
@@ -16,25 +17,28 @@
           <i class="icon-[lucide--folder-plus] size-4" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
           @click="groupingPopover?.toggle($event)"
         >
-          <i :class="[selectedGroupingIcon, 'size-4']" />
+          <i :class="cn(selectedGroupingIcon, 'size-4')" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
           @click="sortingPopover?.toggle($event)"
         >
-          <i :class="[selectedSortingIcon, 'size-4']" />
+          <i :class="cn(selectedSortingIcon, 'size-4')" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.resetView')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
@@ -43,7 +47,8 @@
           <i class="icon-[lucide--filter-x] size-4" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('menu.refresh')"
+          :tooltip="$t('menu.refresh')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('menu.refresh')"
@@ -62,7 +67,7 @@
               class="justify-start"
               @click="selectGrouping(option.id)"
             >
-              <i :class="[option.icon, 'size-4']" />
+              <i :class="cn(option.icon, 'size-4')" />
               {{ $t(option.label) }}
             </Button>
           </div>
@@ -78,38 +83,38 @@
               class="justify-start"
               @click="selectSorting(option.id)"
             >
-              <i :class="[option.icon, 'size-4']" />
+              <i :class="cn(option.icon, 'size-4')" />
               {{ $t(option.label) }}
             </Button>
           </div>
         </Popover>
       </template>
       <template #header>
-        <div class="px-2 2xl:px-4">
-          <div class="flex items-center gap-1">
-            <SearchInput
-              ref="searchBoxRef"
-              v-model="searchQuery"
-              data-testid="node-library-search"
-              class="node-lib-search-box"
-              :placeholder="
-                $t('g.searchPlaceholder', { subject: $t('g.nodes') })
-              "
-              @search="handleSearch"
-            />
+        <SidebarTopArea>
+          <SearchInput
+            ref="searchBoxRef"
+            v-model="searchQuery"
+            data-testid="node-library-search"
+            class="node-lib-search-box"
+            :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
+            @search="handleSearch"
+          />
+          <template #actions>
             <Button
-              variant="textonly"
+              variant="secondary"
               size="icon"
-              class="filter-button shrink-0"
+              class="filter-button"
               :aria-label="$t('g.filter')"
               @click="(e: Event) => searchFilter?.toggle(e)"
             >
-              <i class="pi pi-filter" />
+              <i class="icon-[lucide--list-filter] size-4" />
             </Button>
-          </div>
+          </template>
+        </SidebarTopArea>
+        <div class="px-4">
           <div
             v-if="filters?.length"
-            class="search-filters flex flex-wrap gap-2 pt-2"
+            class="search-filters flex flex-wrap gap-2 pb-2"
           >
             <SearchFilterChip
               v-for="filter in filters"
@@ -130,13 +135,13 @@
         <div>
           <NodeBookmarkTreeExplorer
             ref="nodeBookmarkTreeExplorerRef"
-            :filtered-node-defs="filteredNodeDefs"
-            :open-node-help="openHelp"
+            :filtered-node-defs
+            :open-node-help="openNodeHelp"
           />
-          <Divider
+          <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            type="dashed"
-            class="m-2"
+            role="separator"
+            class="m-2 border-0 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -144,11 +149,77 @@
             class="node-lib-tree-explorer"
             :root="renderedRoot"
           >
-            <template #folder="{ node }">
-              <NodeTreeFolder :node="node" />
-            </template>
             <template #node="{ node }">
-              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
+              <TreeExplorerTreeNode :node>
+                <template #before-label>
+                  <Badge v-if="node.data?.experimental" severity="primary">
+                    {{ $t('g.experimental') }}
+                  </Badge>
+                  <Badge v-if="node.data?.deprecated" severity="danger">
+                    {{ $t('g.deprecated') }}
+                  </Badge>
+                </template>
+                <template v-if="node.data" #actions>
+                  <template
+                    v-if="subgraphStore.isUserBlueprint(node.data.name)"
+                  >
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
+                      :aria-label="$t('g.delete')"
+                      @click.stop="
+                        void subgraphStore.deleteBlueprint(node.data.name)
+                      "
+                    >
+                      <i class="icon-[lucide--trash-2] size-4" />
+                    </Button>
+                    <Button
+                      variant="muted-textonly"
+                      size="icon-sm"
+                      :aria-label="$t('g.edit')"
+                      @click.stop="
+                        void subgraphStore.editBlueprint(node.data.name)
+                      "
+                    >
+                      <i class="icon-[lucide--square-pen] size-4" />
+                    </Button>
+                  </template>
+                  <template v-else>
+                    <Button
+                      variant="muted-textonly"
+                      size="icon-sm"
+                      :aria-label="$t('icon.bookmark')"
+                      @click.stop="
+                        void nodeBookmarkStore.toggleBookmark(node.data)
+                      "
+                    >
+                      <i
+                        :class="
+                          cn(
+                            nodeBookmarkStore.isBookmarked(node.data)
+                              ? 'pi pi-bookmark-fill'
+                              : 'pi pi-bookmark',
+                            'size-3.5'
+                          )
+                        "
+                      />
+                    </Button>
+                    <Button
+                      :tooltip="$t('g.learnMore')"
+                      tooltip-side="bottom"
+                      variant="muted-textonly"
+                      size="icon-sm"
+                      :aria-label="$t('g.learnMore')"
+                      @click.stop="openNodeHelp(node.data)"
+                    >
+                      <i class="pi pi-question size-3.5" />
+                    </Button>
+                  </template>
+                </template>
+              </TreeExplorerTreeNode>
+            </template>
+            <template #preview="{ node }">
+              <NodePreview v-if="node.data" :node-def="node.data" />
             </template>
           </TreeExplorer>
         </div>
@@ -157,37 +228,37 @@
 
     <NodeHelpPage v-else :node="currentHelpNode!" @close="closeHelp" />
   </div>
-  <div id="node-library-node-preview-container" />
 </template>
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { Ref } from 'vue'
 import {
   computed,
   getCurrentInstance,
-  h,
   nextTick,
   onMounted,
-  ref,
-  render
+  onUnmounted,
+  ref
 } from 'vue'
 
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import { renderNodePreview } from '@/components/node/renderNodePreview'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
-import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
-import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useTelemetry } from '@/platform/telemetry'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -200,6 +271,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type {
   GroupingStrategyId,
@@ -207,6 +279,7 @@ import type {
 } from '@/types/nodeOrganizationTypes'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 
@@ -215,6 +288,7 @@ const appContext = instance.appContext
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 const nodeHelpStore = useNodeHelpStore()
+const subgraphStore = useSubgraphStore()
 const commandStore = useCommandStore()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -244,6 +318,16 @@ const searchQuery = ref<string>('')
 
 const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
 const { openHelp, closeHelp } = nodeHelpStore
+
+onUnmounted(closeHelp)
+
+function openNodeHelp(nodeDef: ComfyNodeDefImpl) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'node_library_help_button',
+    element_group: 'node_library'
+  })
+  openHelp(nodeDef)
+}
 
 const groupingOptions = computed(() =>
   nodeOrganizationService.getGroupingStrategies().map((strategy) => ({
@@ -296,12 +380,14 @@ const root = computed(() => {
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
+  const fillNodeInfo = (
+    node: TreeNode<ComfyNodeDefImpl>
+  ): TreeExplorerNode<ComfyNodeDefImpl> => {
     const children = node.children?.map(fillNodeInfo)
 
     return {
       key: node.key,
-      label: node.leaf ? node.data.display_name : node.label,
+      label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon() {
@@ -312,12 +398,8 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       children,
       draggable: node.leaf,
       renderDragPreview(container) {
-        const vnode = h(NodePreview, { nodeDef: node.data })
-        vnode.appContext = appContext
-        render(vnode, container)
-        return () => {
-          render(null, container)
-        }
+        if (!node.data) return
+        return renderNodePreview(container, node.data, appContext)
       },
       handleClick(e: MouseEvent) {
         const nodeDef = this.data
@@ -328,7 +410,16 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         } else {
           toggleNodeOnEvent(e, this)
         }
-      }
+      },
+      ...(node.leaf &&
+      node.data &&
+      subgraphStore.isUserBlueprint(node.data.name)
+        ? {
+            async handleDelete() {
+              if (this.data) await subgraphStore.deleteBlueprint(this.data.name)
+            }
+          }
+        : {})
     }
   }
   return fillNodeInfo(root.value)

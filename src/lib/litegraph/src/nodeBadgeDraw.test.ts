@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
@@ -43,13 +43,12 @@ describe('registerBadgeRowsProvider', () => {
   })
 
   it('keeps the installed provider when a conflicting registration fails', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     register(firstProvider)
     const disposeConflict = register(secondProvider)
     disposeConflict()
 
     expect(badgeRows(node)).toBe(firstRows)
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'A badge rows provider is already registered'
     )
   })
@@ -71,10 +70,10 @@ describe('registerBadgeRowsProvider', () => {
 })
 
 describe('badgeDrawObjects', () => {
-  it('joins core parts into one badge in id, lifecycle, source order', () => {
+  it('joins core parts in their projected order', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('lifecycle', '[BETA]'),
       coreRow('id', '#5'),
+      coreRow('lifecycle', '[BETA]'),
       coreRow('source', 'my-pack')
     ])
 
@@ -86,8 +85,8 @@ describe('badgeDrawObjects', () => {
 
   it('truncates the joined core text', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('source', 'a'.repeat(40)),
-      coreRow('id', '#5')
+      coreRow('id', '#5'),
+      coreRow('source', 'a'.repeat(40))
     ])
 
     expect(badges[0].text).toHaveLength(31)

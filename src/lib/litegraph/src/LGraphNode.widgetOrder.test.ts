@@ -126,7 +126,7 @@ describe('LGraphNode widget ordering', () => {
       ])
     })
 
-    it('restores positional values for widgets created after configure', () => {
+    it('does not retain positional restoration after configure', () => {
       node.configure({
         id: 1,
         type: 'TestNode',
@@ -141,9 +141,7 @@ describe('LGraphNode widget ordering', () => {
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})
 
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        30, 12345
-      ])
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
     })
   })
 
@@ -206,20 +204,47 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
     })
 
-    it('restores delayed widgets by name and preserves the wire roundtrip', () => {
+    it('does not restore delayed widgets by name', () => {
       node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
 
       node.addWidget('number', 'seed', 0, null, {})
       node.addWidget('number', 'steps', 0, null, {})
       node.serialize_widgets = true
 
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        12345, 30
-      ])
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
       expect(node.serialize()).toMatchObject({
-        widgets_values: [12345, 30],
-        widgets_values_named: { seed: 12345, steps: 30 }
+        widgets_values: [0, 0],
+        widgets_values_named: { seed: 0, steps: 0 }
       })
+    })
+
+    it('clears restoration when onConfigure throws', () => {
+      node.onConfigure = () => {
+        throw new Error('configure failed')
+      }
+
+      expect(() =>
+        node.configure(mockNode(undefined, { seed: 12345 }))
+      ).toThrow('configure failed')
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets![0].value).toBe(0)
+    })
+
+    it('clears restoration when widget assignment throws', () => {
+      const widget = node.addWidget('number', 'seed', 0, null, {})
+      Object.defineProperty(widget, 'value', {
+        configurable: true,
+        set() {
+          throw new Error('restore failed')
+        }
+      })
+
+      expect(() => node.configure(mockNode([12345]))).toThrow('restore failed')
+      node.widgets = []
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets[0].value).toBe(0)
     })
 
     it('should support restoration even when order has changed', () => {
@@ -234,6 +259,31 @@ describe('LGraphNode widget ordering', () => {
       node2.configure(node.serialize())
 
       expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('restores an object widget value, snapshotted by value rather than by reference', () => {
+      const saved = {
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      }
+      node.addWidget('videoedit', 'video_edit', saved, null, {})
+      node.serialize_widgets = true
+
+      const serialised = node.serialize()
+      expect(serialised.widgets_values_named!.video_edit).toStrictEqual(saved)
+
+      const live = node.widgets![0].value as typeof saved
+      live.trim.start_time = 99
+      live.crop.width = 999
+
+      const restored = new LGraphNode('TestNode2')
+      restored.addWidget('videoedit', 'video_edit', {}, null, {})
+      restored.configure(serialised)
+
+      expect(restored.widgets![0].value).toStrictEqual({
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      })
     })
 
     it('should support specifying order for legacy workflows', () => {

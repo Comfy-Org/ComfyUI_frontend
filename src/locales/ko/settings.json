@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "문제 탭에 누락된 모델 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 모델 파일이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "라이브 미리보기 방식",
     "options": {
@@ -335,10 +339,6 @@
     "name": "버전 업데이트 표시",
     "tooltip": "새 모델과 주요 신규 기능에 대한 업데이트를 표시합니다."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "포인터 클릭 드리프트 지연",
-    "tooltip": "포인터 버튼을 누른 후, 포인터 움직임을 무시할 수 있는 최대 시간(밀리초)입니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "포인터 클릭 드리프트 (최대 거리)",
     "tooltip": "버튼을 누른 상태에서 포인터가 이 거리보다 더 많이 움직이면, 클릭이 아닌 드래그로 간주됩니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
@@ -461,8 +461,13 @@
   "Comfy_Workflow_Persist": {
     "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "누락된 모델 경고 표시"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "문제 탭에 누락된 미디어 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 입력 이미지, 비디오 및 오디오가 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "문제 탭에 누락된 노드 표시",
+    "tooltip": "비활성화하면 누락된 노드 팩이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다. 설치될 때까지 워크플로를 실행할 수 없습니다."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"

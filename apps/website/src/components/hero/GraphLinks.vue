@@ -3,7 +3,7 @@ import { useElementVisibility, useRafFn } from '@vueuse/core'
 
 import { computed, onMounted, ref, useId, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { ElementKey } from './graphLayout'
 import { FLOW, PORTS, portPoint } from './graphLayout'
 
@@ -172,7 +172,7 @@ const sweeps = computed(() =>
          scale uniformly and `vector-effect` is unnecessary here — it is also
          underspecified in combination with dashing. -->
     <g class="wire-sweep">
-      <template v-for="(d, i) in links" :key="`sweep-${i}`">
+      <template v-for="(_, i) in links" :key="`sweep-${i}`">
         <use
           v-for="band in bands"
           :key="`sweep-${i}-${band}`"

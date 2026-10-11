@@ -6,7 +6,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
@@ -19,11 +19,12 @@ export const useLitegraphSettings = () => {
   watch(
     [
       () => settingStore.get('Comfy.Graph.CanvasInfo'),
-      () => canvasStore.canvas
+      () => canvasStore.canvas,
+      () => canvasStore.isPickingNodes
     ],
-    ([canvasInfoEnabled, canvas]) => {
+    ([canvasInfoEnabled, canvas, picking]) => {
       if (canvas) {
-        canvas.show_info = canvasInfoEnabled
+        canvas.show_info = canvasInfoEnabled && !picking
         canvas.draw(false, true)
       }
     },
@@ -129,10 +130,6 @@ export const useLitegraphSettings = () => {
     CanvasPointer.doubleClickTime = settingStore.get(
       'Comfy.Pointer.DoubleClickTime'
     )
-  })
-
-  watchEffect(() => {
-    CanvasPointer.bufferTime = settingStore.get('Comfy.Pointer.ClickBufferTime')
   })
 
   watchEffect(() => {

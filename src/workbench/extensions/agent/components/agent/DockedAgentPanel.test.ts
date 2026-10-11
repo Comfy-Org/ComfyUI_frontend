@@ -1,140 +1,298 @@
-import { render, screen } from '@testing-library/vue'
-import { createI18n } from 'vue-i18n'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { SubscriptionInfo } from '@/composables/billing/types'
+import { i18n } from '@/i18n'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-const loaderState = vi.hoisted(() => ({ reject: false }))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
+vi.mock(import('@/platform/telemetry/reportError'))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: vi.fn()
-}))
-
-vi.mock(
-  '@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue',
-  async () => {
-    const { defineComponent, h } = await import('vue')
-    return {
-      __esModule: true,
-      default: defineComponent({
-        name: 'AgentPanelRoot',
-        setup() {
-          if (loaderState.reject) {
-            throw new Error('agent panel body failed')
-          }
-          return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
-        }
-      })
-    }
-  }
+const fetchApi = vi.hoisted(() =>
+  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
+beforeEach(() => {
+  vi.spyOn(api, 'fetchApi').mockImplementation(fetchApi)
+})
 
-function renderPanel(options: { onAppError?: (error: unknown) => void } = {}) {
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: { en: enMessages }
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
   })
+}
+
+const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
+
+vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
+  const { defineComponent, h, onUnmounted } = await import('vue')
+  return {
+    __esModule: true,
+    default: defineComponent({
+      name: 'AgentPanelRoot',
+      setup() {
+        rootLiveness.live++
+        rootLiveness.maxLive = Math.max(rootLiveness.maxLive, rootLiveness.live)
+        onUnmounted(() => {
+          rootLiveness.live--
+        })
+        return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
+      }
+    })
+  }
+})
+
+function openPanel() {
+  const store = useAgentPanelStore()
+  store.enabled = true
+  store.consentAccepted = true
+  store.isOpen = true
+  return store
+}
+
+function renderPanel() {
   return render(DockedAgentPanel, {
-    global: {
-      plugins: [i18n],
-      config: options.onAppError ? { errorHandler: options.onAppError } : {}
-    }
+    global: { plugins: [i18n] }
   })
 }
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    window.innerWidth = 1024
     localStorage.clear()
-    loaderState.reject = false
+    fetchApi.mockReset()
+    fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
     vi.mocked(reportError).mockClear()
+    rootLiveness.live = 0
+    rootLiveness.maxLive = 0
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({
+          hasFunds: false,
+          agentHasFunds: false
+        })
+      )
+    })
   })
 
-  it('renders nothing while the feature flag is off, even with a stored open state', () => {
-    localStorage.setItem('Comfy.AgentPanel.open', 'true')
+  it('docks the panel at the store width when enabled and open', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(container.style.width).toBe(`${store.width}px`)
+    expect(container).toHaveClass('docked-agent-panel')
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
+  })
+
+  it('keeps the panel usable as an overlay when the dock cannot fit', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    const root = await screen.findByTestId('agent-panel-root-stub')
+    window.innerWidth = 400
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(store.isVisible).toBe(true)
+    expect(container.style.width).toBe('400px')
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+    expect(screen.getByTestId('agent-panel-root-stub')).toBe(root)
+    expect(rootLiveness.maxLive).toBe(1)
+  })
+
+  it('restores the server run mode when the panel initializes', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
+    )
+    openPanel()
+    renderPanel()
+
+    const runMode = useAgentRunModeStore()
+    await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
+    expect(runMode.creditLimit).toBe(25)
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
+  })
+
+  it('reports non-404 run mode load failures', async () => {
+    fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+    openPanel()
+    renderPanel()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_run_mode_load_failure'
+      })
+    )
+  })
+
+  it('publishes its width for portaled overlays only while docked', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
+
+    store.isOpen = false
+    await nextTick()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+  })
+
+  it('does not mount the Agent root until the panel opens', async () => {
+    const store = openPanel()
+    store.isOpen = false
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
-  })
-
-  it('renders nothing while the panel is closed', () => {
-    const store = useAgentPanelStore()
-    store.enabled = true
-    renderPanel()
-
-    expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
-  })
-
-  it('keeps the landmark named while the panel body is still loading', () => {
-    const store = useAgentPanelStore()
-    store.enabled = true
-    store.isOpen = true
-    renderPanel()
-
-    // No awaits: the async panel body has not resolved yet, so the Suspense
-    // fallback is what names the complementary landmark.
     expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
-    screen.getByRole('complementary', { name: 'Comfy Agent' })
-    screen.getByRole('heading', { name: 'Comfy Agent' })
-  })
 
-  it('retires the fallback title once the panel body resolves', async () => {
-    const store = useAgentPanelStore()
-    store.enabled = true
     store.isOpen = true
-    renderPanel()
-
-    await screen.findByTestId('agent-panel-root-stub')
-    // The resolved body owns agent-panel-title (pinned in
-    // AgentPanelRoot.test.ts); the fallback title must leave with the fallback
-    // so the id never appears twice.
-    expect(screen.queryByRole('heading')).toBeNull()
-  })
-
-  it('docks the panel when enabled and open', async () => {
-    const store = useAgentPanelStore()
-    store.enabled = true
-    store.isOpen = true
-    renderPanel()
     await nextTick()
 
-    screen.getByTestId('docked-agent-panel')
-    await screen.findByTestId('agent-panel-root-stub')
+    expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
   })
 
-  it('lets a runtime error inside the resolved panel propagate instead of calling it a load failure', async () => {
-    loaderState.reject = true
-    const appErrors: unknown[] = []
-    const store = useAgentPanelStore()
-    store.enabled = true
-    store.isOpen = true
-    renderPanel({ onAppError: (error) => appErrors.push(error) })
-
-    // The chunk resolved; the failure came from the panel's own setup. It
-    // must reach the app-level handler untouched, and must NOT be reported
-    // or rendered as a load failure.
-    await vi.waitFor(() => expect(appErrors).toHaveLength(1))
-    expect(screen.queryByText('The agent panel failed to load.')).toBeNull()
-    expect(reportError).not.toHaveBeenCalled()
-  })
-
-  it('undocks when the flag turns off while open', async () => {
-    const store = useAgentPanelStore()
-    store.enabled = true
-    store.isOpen = true
-    renderPanel()
-    await nextTick()
-    expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
-
+  it('renders nothing while the feature is disabled', () => {
+    const store = openPanel()
     store.enabled = false
-    await nextTick()
+    renderPanel()
+
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+  })
+
+  it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
+    // Wide enough that the upper bound is the panel max, not the viewport.
+    // Restored below: leaving it set makes every later test in this file
+    // depend on execution order.
+    const realInnerWidth = window.innerWidth
+    onTestFinished(() => {
+      window.innerWidth = realInnerWidth
+    })
+    window.innerWidth = 1920
+    const store = openPanel()
+    const user = userEvent.setup()
+    renderPanel()
+
+    const handle = screen.getByTestId('agent-panel-resize-handle')
+    handle.setPointerCapture = () => {}
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: handle,
+      coords: { x: 800, y: 10 }
+    })
+    await user.pointer({ coords: { x: 750, y: 10 } })
+    expect(store.width).toBe(470)
+
+    await user.pointer({ coords: { x: -2000, y: 10 } })
+    expect(store.width).toBe(960)
+
+    await user.pointer({ coords: { x: 3000, y: 10 } })
+    expect(store.width).toBe(420)
+
+    await fireEvent(handle, new Event('lostpointercapture'))
+    await user.pointer({ coords: { x: 800, y: 10 } })
+    expect(store.width).toBe(420)
+  })
+
+  it.for(['pointerup', 'pointercancel'] as const)(
+    'stops resizing on document %s',
+    async (terminationEvent) => {
+      window.innerWidth = 1920
+      const store = openPanel()
+      const user = userEvent.setup()
+      renderPanel()
+
+      const handle = screen.getByTestId('agent-panel-resize-handle')
+      handle.setPointerCapture = () => {}
+      await user.pointer({
+        keys: '[MouseLeft>]',
+        target: handle,
+        coords: { x: 800, y: 10 }
+      })
+      await user.pointer({ coords: { x: 750, y: 10 } })
+      expect(store.width).toBe(470)
+
+      await fireEvent(document, new PointerEvent(terminationEvent))
+      await user.pointer({ coords: { x: 700, y: 10 } })
+
+      expect(store.width).toBe(470)
+    }
+  )
+
+  it('settles to one live root and the live turn survives both mode switches through rehydration', async () => {
+    openPanel()
+    const linearMode = ref(false)
+    const GraphHost = defineComponent({
+      components: { DockedAgentPanel },
+      setup: () => ({ linearMode }),
+      template: `<div v-show="!linearMode"><DockedAgentPanel v-if="!linearMode" /></div>`
+    })
+    const DualHostHarness = defineComponent({
+      components: { GraphHost, DockedAgentPanel },
+      setup: () => ({ linearMode }),
+      template: `
+        <GraphHost />
+        <DockedAgentPanel v-if="linearMode" />
+      `
+    })
+
+    render(DualHostHarness, { global: { plugins: [i18n] } })
+    await screen.findByTestId('agent-panel-root-stub')
+    expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
+
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    conversation.startTurn('turn-live' as TurnId)
+    expect(conversation.activeTurnId).toBe('turn-live')
+
+    linearMode.value = true
+    await nextTick()
+    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
+    expect(rootLiveness.maxLive).toBe(1)
+    expect(rootLiveness.live).toBe(1)
+    expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBe('turn-live')
+
+    linearMode.value = false
+    await nextTick()
+    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
+    expect(rootLiveness.live).toBe(1)
+    expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBe('turn-live')
   })
 })

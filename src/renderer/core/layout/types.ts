@@ -117,6 +117,8 @@ interface OperationMeta {
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
   actor?: string
+  /** Originating semantic op identity when applied by a remote follower. */
+  opId?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID

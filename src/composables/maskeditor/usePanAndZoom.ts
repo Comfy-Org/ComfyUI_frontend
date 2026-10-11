@@ -62,19 +62,15 @@ export function usePanAndZoom() {
   }
 
   const invalidatePanZoom = async (): Promise<void> => {
-    if (
-      !image.value?.width ||
-      !image.value?.height ||
-      !pan_offset.value ||
-      !zoom_ratio.value
-    ) {
+    const currentImage = image.value
+    if (!currentImage?.width || !currentImage.height || !zoom_ratio.value) {
       console.warn('Missing required properties for pan/zoom')
       return
     }
 
     const styles = calculatePanZoomStyles(
-      image.value.width,
-      image.value.height,
+      currentImage.width,
+      currentImage.height,
       zoom_ratio.value,
       pan_offset.value
     )
@@ -96,11 +92,11 @@ export function usePanAndZoom() {
     }
     if (rgbCanvas.value) {
       if (
-        rgbCanvas.value.width !== image.value.width ||
-        rgbCanvas.value.height !== image.value.height
+        rgbCanvas.value.width !== currentImage.width ||
+        rgbCanvas.value.height !== currentImage.height
       ) {
-        rgbCanvas.value.width = image.value.width
-        rgbCanvas.value.height = image.value.height
+        rgbCanvas.value.width = currentImage.width
+        rgbCanvas.value.height = currentImage.height
       }
 
       rgbCanvas.value.style.width = styles.containerWidth
@@ -134,11 +130,6 @@ export function usePanAndZoom() {
   }
 
   const handleSingleTouchPan = async (touch: Touch): Promise<void> => {
-    if (lastTouchPoint.value === null) {
-      lastTouchPoint.value = { x: touch.clientX, y: touch.clientY }
-      return
-    }
-
     pan_offset.value = calculateSingleTouchPan(
       lastTouchPoint.value,
       { x: touch.clientX, y: touch.clientY },
@@ -235,10 +226,8 @@ export function usePanAndZoom() {
   const handleTouchEnd = (event: TouchEvent): void => {
     event.preventDefault()
 
-    const lastTouch = event.touches[0]
-
-    if (lastTouch) {
-      lastTouchPoint.value = touchToPoint(lastTouch)
+    if (event.touches.length > 0) {
+      lastTouchPoint.value = touchToPoint(event.touches[0])
     } else {
       isTouchZooming.value = false
       lastTouchMidPoint.value = { x: 0, y: 0 }

@@ -1,23 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import type { SecretMetadata } from '../types'
-import { useSecrets } from './useSecrets'
-
-const mockAdd = vi.fn()
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockAdd })
-}))
+import type { SecretErrorCode, SecretMetadata } from '../types'
+import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock(import('../api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
   listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
@@ -25,13 +19,32 @@ vi.mock('../api/secretsApi', () => ({
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string
+      public readonly code?: SecretErrorCode
     ) {
       super(message)
       this.name = 'SecretsApiError'
     }
   }
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSecrets(): ReturnType<typeof useSecretsComposable> {
+  let result!: ReturnType<typeof useSecretsComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSecretsComposable()
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -78,11 +91,13 @@ describe('useSecrets', () => {
       await fetchSecrets()
 
       expect(secrets.value).toEqual([])
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Network error'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Network error',
+          kind: 'error',
+          title: 'g.error'
+        })
+      ])
     })
   })
 
@@ -124,11 +139,13 @@ describe('useSecrets', () => {
       await deleteSecret(secret)
 
       expect(secrets.value).toHaveLength(1)
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Delete failed'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Delete failed',
+          kind: 'error',
+          title: 'g.error'
+        })
+      ])
     })
   })
 
@@ -172,7 +189,7 @@ describe('useSecrets', () => {
       await fetchProviders()
 
       expect(availableProviders.value).toBeNull()
-      expect(mockAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

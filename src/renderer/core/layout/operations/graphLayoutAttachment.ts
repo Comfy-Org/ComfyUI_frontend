@@ -25,10 +25,9 @@ interface LayoutAttachment<TId> {
   id: TId
 }
 
-const nodeAttachments = new WeakMap<
-  LGraphNode,
-  LayoutAttachment<LGraphNode['id']>
->()
+type NodeLayoutAttachment = LayoutAttachment<LGraphNode['id']>
+
+const nodeAttachments = new WeakMap<LGraphNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
   UUID,
   Map<LGraphNode['id'], WeakRef<LGraphNode>>
@@ -66,6 +65,7 @@ interface NodeGeometryProjection {
   positionView: LegacyPoint
   renderedSize: LegacySize
   renderedSizeDirty: boolean
+  storedRect: Float64Array
   size: LegacySize
   sizeView: LegacySize
 }
@@ -74,8 +74,6 @@ const nodeGeometryProjections = new WeakMap<
   LGraphNode,
   NodeGeometryProjection
 >()
-const storedRectScratch = new Float64Array(4)
-
 function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
   const existing = nodeGeometryProjections.get(node)
   if (existing) return existing
@@ -95,6 +93,7 @@ function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
     }),
     renderedSize: [0, 0],
     renderedSizeDirty: true,
+    storedRect: new Float64Array(4),
     size,
     sizeView: createMutationView(size, {
       commit: () => commitNodeSize(node),
@@ -184,10 +183,10 @@ function commitNodePosition(node: LGraphNode): void {
     layoutStore.readNodeRect(
       attachment.graphId,
       attachment.id,
-      storedRectScratch
+      projection.storedRect
     ) &&
-    storedRectScratch[0] === position.x &&
-    storedRectScratch[1] === position.y
+    projection.storedRect[0] === position.x &&
+    projection.storedRect[1] === position.y
   )
     return
 
@@ -217,13 +216,20 @@ function commitNodeSize(node: LGraphNode): void {
     layoutStore.readNodeRect(
       attachment.graphId,
       attachment.id,
-      storedRectScratch
+      projection.storedRect
     ) &&
-    storedRectScratch[2] === projection.size[0] &&
-    storedRectScratch[3] === projection.size[1]
+    projection.storedRect[2] === projection.size[0] &&
+    projection.storedRect[3] === projection.size[1]
   )
     return
 
+  // A direct resize is authoritative over the previous DOM measurement. Drop
+  // that measurement before deriving the rendered size so the node can shrink;
+  // ResizeObserver reports the content's new size after layout settles.
+  ;(layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
+    attachment.graphId,
+    attachment.id
+  )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -295,7 +301,7 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
 function transferableNodeAttachment(
   node: LGraphNode,
   replacement: LGraphNode
-): LayoutAttachment<LGraphNode['id']> | undefined {
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (
     !attachment ||
@@ -343,7 +349,9 @@ export function transferLayoutAttachment(
   return true
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+function takeNodeLayoutAttachment(
+  node: LGraphNode
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
@@ -352,11 +360,18 @@ export function detachNodeLayout(node: LGraphNode): void {
   layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
   projection.layoutRef = undefined
   nodeAttachments.delete(node)
-  if (!deleteNodeAttachmentOwner(graphId, node)) return
+  return deleteNodeAttachmentOwner(graphId, node)
+    ? { graphId, id: nodeId }
+    : undefined
+}
+
+export function detachNodeLayout(node: LGraphNode): void {
+  const attachment = takeNodeLayoutAttachment(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    graphId,
-    nodeId,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
     type: 'deleteNode'
   })
 }

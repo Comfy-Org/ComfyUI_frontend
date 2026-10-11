@@ -11,8 +11,7 @@ import type {
   ImageRef
 } from '@/stores/maskEditorDataStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { useApp } from '@/scripts/appInstance'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -56,7 +55,7 @@ export function useMaskEditorSaver() {
 
       updateNodeWithServerReferences(sourceNode, outputData)
 
-      app.canvas.setDirty(true)
+      useApp().canvas.setDirty(true)
     } catch (error) {
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
@@ -248,7 +247,7 @@ export function useMaskEditorSaver() {
       )
     }
 
-    if (!data?.name) {
+    if (!data.name) {
       throw new Error(
         `Upload response missing 'name' for ${layer.ref.filename}`
       )
@@ -271,13 +270,15 @@ export function useMaskEditorSaver() {
     const mainImg = await loadImageFromUrl(dataUrl)
     node.imgs = [mainImg]
 
-    app.canvas.setDirty(true)
+    useApp().canvas.setDirty(true)
   }
 
   function updateNodeWithServerReferences(
     node: LGraphNode,
     outputData: EditorOutputData
   ): void {
+    if (!node.graph) return
+
     const mainRef = outputData.paintedMaskedImage.ref
 
     writeImageWidgetValue(
@@ -286,12 +287,14 @@ export function useMaskEditorSaver() {
     )
 
     node.imgs = undefined
-    const annotatedPath = createAnnotatedPath(mainRef.filename, {
-      subfolder: mainRef.subfolder,
-      rootFolder: isResultItemType(mainRef.type) ? mainRef.type : undefined
-    })
-    nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
-    node.graph?.setDirtyCanvas(true)
+    nodeOutputStore.replaceNodeOutputImages(node, [
+      {
+        filename: mainRef.filename,
+        subfolder: mainRef.subfolder,
+        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+      }
+    ])
+    node.graph.setDirtyCanvas(true)
   }
 
   function loadImageFromUrl(url: string): Promise<HTMLImageElement> {

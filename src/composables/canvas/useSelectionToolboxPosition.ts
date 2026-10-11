@@ -1,4 +1,4 @@
-import { useElementBounding, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
@@ -59,6 +59,15 @@ export function useSelectionToolboxPosition(
   const lgCanvas = canvasStore.getCanvas()
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+
+  useEventListener(
+    lgCanvas.canvas,
+    'litegraph:dragging-items-changed',
+    (event: CustomEvent<{ dragging: boolean }>) => {
+      isDraggingLiteGraphItems.value = event.detail.dragging
+    }
+  )
 
   // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
@@ -72,10 +81,9 @@ export function useSelectionToolboxPosition(
 
   // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
+    return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
   /**
@@ -100,9 +108,6 @@ export function useSelectionToolboxPosition(
     // Get bounds for all selected items
     const allBounds: ReadOnlyRect[] = []
     for (const item of selectableItems) {
-      // Skip items without valid IDs
-      if (item.id == null) continue
-
       if (item instanceof LGraphNode || item instanceof LGraphGroup) {
         allBounds.push(getSelectionBounds(item))
       }
@@ -150,23 +155,23 @@ export function useSelectionToolboxPosition(
     }
   })
 
-  // Watch for selection changes
+  const handleSelectionMembershipChange = () => {
+    if (!moreOptionsRestorePending.value && !moreOptionsSelectionSignature)
+      return
+
+    moreOptionsRestorePending.value = false
+    moreOptionsWasOpenBeforeDrag = false
+    moreOptionsSelectionSignature = moreOptionsOpen.value
+      ? buildSelectionSignature(canvasStore)
+      : null
+  }
+
   watch(
-    () => canvasStore.getCanvas().state.selectionChanged,
-    (changed) => {
-      if (changed) {
-        if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
-          moreOptionsRestorePending.value = false
-          moreOptionsWasOpenBeforeDrag = false
-          if (!moreOptionsOpen.value) {
-            moreOptionsSelectionSignature = null
-          } else {
-            moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-          }
-        }
-        updateSelectionBounds()
-        canvasStore.getCanvas().state.selectionChanged = false
-      }
+    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    ([selectedItems], [previousSelectedItems]) => {
+      if (selectedItems !== previousSelectedItems)
+        handleSelectionMembershipChange()
+      updateSelectionBounds()
     },
     { immediate: true }
   )
@@ -175,7 +180,7 @@ export function useSelectionToolboxPosition(
     (v) => {
       if (v) {
         moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-      } else if (!canvasStore.canvas?.state?.draggingItems) {
+      } else if (!isDraggingLiteGraphItems.value) {
         moreOptionsSelectionSignature = null
         if (moreOptionsRestorePending.value)
           moreOptionsRestorePending.value = false

@@ -1,12 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
+import type { OptionalProps, Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  OptionalProps,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
@@ -20,10 +19,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
 
-  /**
-   * @deprecated Reads return the store-derived link id. Assigning null
-   * disconnects through the store; other assignments are ignored.
-   */
+  /** @deprecated Read-only compatibility view of the store-derived link id. */
   get link(): LinkId | null {
     warnDeprecated(
       'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
@@ -33,13 +29,14 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   set link(value: LinkId | null) {
     warnDeprecated(
-      'Assignment to input.link is deprecated; null disconnects through the link store. Mutate via node.connect() / node.disconnectInput().'
+      'Assignment to input.link is deprecated. Use node.connect() / node.disconnectInput().'
     )
+    if (value !== null) return
+
     const slot = indexOf(this)
-    if (slot === -1) return
-    if (value === null) {
-      this._node.disconnectInput(slot)
-    }
+    const { graph } = this._node
+    if (!graph || slot === -1) return
+    this._node.disconnectInput(slot)
   }
 
   get isWidgetInputSlot(): boolean {

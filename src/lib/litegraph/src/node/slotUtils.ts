@@ -1,9 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
-import type {
-  IWidgetInputSlot,
-  SharedIntersection
-} from '@/lib/litegraph/src/interfaces'
+import type { SharedIntersection } from '@/lib/litegraph/src/interfaces'
+import type { IWidgetInputSlot } from '@/lib/litegraph/src/types/slots'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -94,7 +92,7 @@ export function outputAsSerialisable(
         : null
     : serialisesLegacyLinkPresence(slot)
       ? slot._serialiseLinkIds([])
-      : (slot.links ?? null)
+      : null
 
   return {
     ...shallowCloneCommonProps(slot),
