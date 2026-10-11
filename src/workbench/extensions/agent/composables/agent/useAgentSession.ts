@@ -68,6 +68,7 @@ interface SentAttachment {
   ref: string
   name: string
   previewUrl?: string
+  mediaUrl?: string
 }
 
 interface SentTag {
@@ -1046,9 +1047,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
         name,
         previewUrl,
+        mediaUrl,
         ref
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),

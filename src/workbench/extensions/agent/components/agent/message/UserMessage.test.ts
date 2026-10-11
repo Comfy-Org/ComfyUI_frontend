@@ -163,16 +163,19 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
+        {
+          name: 'clip.mp4',
+          ref: 'upload_clip.mp4',
+          previewUrl: 'blob:poster',
+          mediaUrl: 'blob:video'
+        }
       ]
     })
 
     expect(stubbedAssets()).toEqual([
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
       {
-        url: expect.stringContaining(
-          '/view?filename=upload_clip.mp4&type=input'
-        ),
+        url: 'blob:video',
         filename: 'upload_clip.mp4',
         kind: 'video',
         label: 'clip.mp4'

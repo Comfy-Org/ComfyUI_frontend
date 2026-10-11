@@ -27,6 +27,7 @@ type AttachmentKind = 'image' | 'video' | 'audio'
 export interface UserAttachment {
   name: string
   previewUrl?: string
+  mediaUrl?: string
   ref?: string
   id?: string
   kind?: AttachmentKind

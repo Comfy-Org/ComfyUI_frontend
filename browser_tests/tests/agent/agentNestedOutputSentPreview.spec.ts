@@ -38,7 +38,7 @@ const REPRESENTATIVE_VIDEO = {
 }
 
 test(
-  'sends a nested video output by its asset id, not its display name',
+  'renders a nested video output from its media URL, not its display name',
   { tag: ['@cloud', '@agent'] },
   async ({ page, workflowSelection, promptHistory }) => {
     // The boot fixture already routed `/api/assets` to an empty list, so these
