@@ -291,6 +291,27 @@ describe('linearOutputStore', () => {
     expect(images, 'each loop iteration keeps its own output').toHaveLength(2)
   })
 
+  // Broke three outputHistory specs when the key was node-only: the same node
+  // reporting different files is a second output, not a replay. What identifies
+  // a replay is that the frame is identical, so the key carries the files.
+  it('keeps both when one node reports two different outputs', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail('job-1', [
+        { filename: 'second.png', subfolder: '', type: 'output' }
+      ])
+    )
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image'),
+      'same node, different files, so both are real outputs'
+    ).toHaveLength(2)
+  })
+
   it('does not append a second copy when a reconnect replays executed', () => {
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
