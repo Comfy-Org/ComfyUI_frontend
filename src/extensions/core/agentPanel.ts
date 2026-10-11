@@ -435,8 +435,10 @@ export function registerAgentPanelExtension(): void {
         // and because that function has to stay synchronous: four callers
         // re-drive this chain, and an await before `autoShowInFlight` is set
         // and the one-shot key is burned is a window for a second card.
+        const refusalIdentity = consentStore.identity
         Promise.all([whenStartupDecided(), consentOfferDeclined()])
           .then(([decided, declined]) => {
+            if (consentStore.identity !== refusalIdentity) return
             if (declined) {
               // Not transient and never retried, so the hold goes with it: the
               // offer is not owed any more, this page load or any later one.
