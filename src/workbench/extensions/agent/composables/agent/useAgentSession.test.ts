@@ -4604,6 +4604,35 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.draft).toEqual(draftSnapshot)
   })
 
+  it('(h9b) a saved tab whose cloud id did not resolve is not flagged unbound', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({
+          tabPath: 'workflows/saved.json',
+          instanceId: 'instance-saved',
+          isTemporary: false
+        }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+    useAgentConversationStore().setThreadId('th-9')
+
+    await session.sendMessage('add a text input node')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body).not.toHaveProperty('workflowId')
+    expect(body).not.toHaveProperty('currentTabUnbound')
+    expect(body).not.toHaveProperty('draft')
+  })
+
   // Once a workflow has been bound this session (turn 1's ack), a still-
   // unbound tab must NOT keep re-minting: the second turn falls back to
   // today's pre-existing behaviour (no signal at all) rather than asking

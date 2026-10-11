@@ -972,9 +972,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   // current_tab_unbound's own contract (see its generated doc comment) is
-  // a tab-level fact: this tab has no cloud id yet. wfContext with no id
-  // is exactly that (a saved tab whose cloud id failed to resolve makes
-  // wfContext undefined entirely instead - see targetWorkflowTurnContext).
+  // a tab-level fact: this tab has no cloud id yet. A temporary wfContext
+  // with no id is exactly that; a saved tab whose cloud id failed to resolve
+  // also has no id, but is not a tab to mint for.
   //
   // boundWorkflowId === null narrows WHEN we assert that fact, and is a
   // client-side policy choice, not part of the field's own meaning: the
@@ -995,6 +995,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): boolean {
     return (
       wfContext !== undefined &&
+      wfContext.isTemporary &&
       wfContext.id === undefined &&
       boundWorkflowId === null
     )
