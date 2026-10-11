@@ -342,7 +342,11 @@ beforeEach(() => {
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBilling.type),
-      billingStatus: computed(() => paywallBilling.status),
+      canAccessSubscriptionFeatures: computed(
+        () =>
+          paywallBilling.status !== 'paused' &&
+          paywallBilling.status !== 'payment_failed'
+      ),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -1320,7 +1324,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
         subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
         tier,
         type: computed(() => 'workspace'),
-        billingStatus: computed(() => 'paid'),
+        canAccessSubscriptionFeatures: computed(() => true),
         fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )

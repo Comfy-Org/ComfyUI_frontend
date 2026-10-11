@@ -159,7 +159,7 @@ const {
   subscription,
   tier: subscriptionTier,
   type: billingType,
-  billingStatus,
+  canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
@@ -292,8 +292,7 @@ const billingSignalsTrusted = computed(
     consentAccepted.value &&
     billingType.value === 'workspace' &&
     capabilityReadSettled.value &&
-    billingStatus.value !== 'paused' &&
-    billingStatus.value !== 'payment_failed'
+    canAccessSubscriptionFeatures.value
 )
 const creditsExhausted = computed(() => {
   if (!billingSignalsTrusted.value) return false
