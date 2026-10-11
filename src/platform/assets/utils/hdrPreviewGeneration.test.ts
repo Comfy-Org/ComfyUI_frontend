@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -66,7 +66,9 @@ function watchNewAssets() {
     hasMore: ref(false),
     invalidate
   })
-  generatePreviewsForNewAssets(list)
+  const scope = effectScope()
+  scope.run(() => generatePreviewsForNewAssets(list))
+  onTestFinished(() => scope.stop())
   return { items, invalidate }
 }
 
