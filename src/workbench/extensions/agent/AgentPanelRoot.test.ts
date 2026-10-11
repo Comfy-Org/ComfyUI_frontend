@@ -5173,32 +5173,28 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
-  it.for([
-    ['useBillingContext', useBillingContext],
-    ['useFreeUsePlacement', useFreeUsePlacement]
-  ] as const)(
-    'does not claim the minimap graph-activity layer when %s throws in setup',
-    ([, composable]) => {
-      vi.mocked(composable).mockImplementationOnce(() => {
-        throw new Error('setup failed')
+  // The layer is claimed in `onMounted`, which runs only after the whole setup
+  // completes, so a throw from any setup composable takes this one path.
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useBillingContext).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed setup
+    // finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
       })
-      // Mounted without Testing Library, whose error handler lets a failed
-      // setup finish mounting; Vue itself aborts the mount.
-      const app = createApp(AgentPanelRoot).use(i18n)
-      expect(() => app.mount(document.createElement('div'))).toThrow(
-        'setup failed'
-      )
-
-      renderWithSelectedTarget().unmount()
-
-      expect(reportError).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'minimap_decoration_layer_duplicate'
-        })
-      )
-    }
-  )
+    )
+  })
 
   it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
     workflowStore.activeWorkflow = addTab('workflows/current.json')

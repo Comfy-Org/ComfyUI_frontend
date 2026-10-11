@@ -60,9 +60,6 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  // `control` is one of the five arms, so reporting the not-enrolled fallback
-  // as `control` would file non-enrolled clients into the control cohort and
-  // overstate the experiment's denominator.
   it.for([
     { label: 'absent', served: undefined },
     { label: 'unknown', served: 'sidebar' }
@@ -95,8 +92,6 @@ describe('useFreeUsePlacement', () => {
     expect(useTelemetry()?.trackAgentFreeUseNotice).not.toHaveBeenCalled()
   })
 
-  // `/features` can stay pending or fail outright. Waiting on it would leave a
-  // reviewer in `control` with no sign the override was read at all.
   it('applies a QA override before authenticated config loads', () => {
     vi.mocked(getSessionOverride).mockReturnValue('top-banner')
 

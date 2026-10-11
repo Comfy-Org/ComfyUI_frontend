@@ -13,8 +13,8 @@ import type {
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
