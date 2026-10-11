@@ -70,6 +70,8 @@ async function expectHdrViewerLoaded(comfyPage: ComfyPage) {
   await expect(comfyPage.page.getByRole('dialog')).toHaveCount(1)
 }
 
+// History-mode routing to the viewer; the assets-mode by-id URL is pinned in
+// AssetsSidebarTab.test.ts.
 test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
   test.describe('from job history', () => {
     test.use({ initialSettings: { 'Comfy.Queue.QPOV2': true } })

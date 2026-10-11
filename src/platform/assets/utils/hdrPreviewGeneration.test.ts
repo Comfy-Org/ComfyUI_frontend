@@ -5,7 +5,6 @@ import { ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { attachPreview } from '@/platform/assets/utils/attachPreview'
-import { reportError } from '@/platform/telemetry/reportError'
 import type { PagedList } from '@/utils/pagedList'
 
 import { generatePreviewsForNewAssets } from './hdrPreviewGeneration'
@@ -115,19 +114,16 @@ describe('generatePreviewsForNewAssets', () => {
     expect(attachPreview).not.toHaveBeenCalled()
   })
 
-  it('reports a failed asset lookup and still refreshes the list', async () => {
+  it('still generates a preview when the asset lookup fails', async () => {
     stubGrantingLocks()
-    const lookupError = new Error('asset lookup failed')
-    vi.mocked(assetService.getAssetDetails).mockRejectedValue(lookupError)
+    vi.mocked(assetService.getAssetDetails).mockRejectedValue(
+      new Error('asset lookup failed')
+    )
 
     await addAndSettle(exrAsset())
 
-    expect(reportError).toHaveBeenCalledWith(
-      lookupError,
-      expect.objectContaining({ errorType: 'error_generating_asset_preview' })
-    )
-    expect(workersStarted).toBe(0)
-    expect(attachPreview).not.toHaveBeenCalled()
+    expect(workersStarted).toBe(1)
+    expect(attachPreview).toHaveBeenCalledOnce()
   })
 
   it('lets one tab render while another waits and then reuses its preview', async () => {

@@ -45,8 +45,10 @@ function withTabLock(name: string, task: () => Promise<void>) {
   return locks.request(name, task)
 }
 
+/** Best effort: a failed lookup must not cost the asset its only preview attempt. */
 async function gainedPreview(asset: AssetItem): Promise<boolean> {
-  return !lacksHdrPreview(await assetService.getAssetDetails(asset.id))
+  const details = await assetService.getAssetDetails(asset.id).catch(() => null)
+  return !!details && !lacksHdrPreview(details)
 }
 
 async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {

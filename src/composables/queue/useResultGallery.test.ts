@@ -188,11 +188,14 @@ describe('useResultGallery', () => {
     exr.filename = 'out.exr'
     const task = createTask(exr, [image, exr])
 
-    const { galleryItems, onViewItem } = useResultGallery(() => [task])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
 
     await onViewItem(createJobViewItem('job-mixed', task))
 
     expect(galleryItems.value).toEqual([image])
+    expect(galleryActiveIndex.value).toBe(0)
     expect(openHdrViewer).not.toHaveBeenCalled()
   })
 
