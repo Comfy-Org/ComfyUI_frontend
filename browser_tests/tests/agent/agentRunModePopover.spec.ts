@@ -62,13 +62,18 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     const panel = agentPanel.root
-    // The modal menu makes the composer subtree inert while it is open, so a
-    // role locator intentionally stops resolving the trigger at that point.
-    // Keep the trigger's DOM identity to inspect its disclosure state through
-    // the complete closed → open → closed transition.
-    const addToPrompt = panel.locator(
-      `button[aria-label="${enMessages.agent.addToPrompt}"]`
-    )
+    // Deliberately NOT getByRole: while the modal menu is open the composer
+    // subtree leaves the accessibility tree, and Playwright's role engine
+    // excludes anything hidden from it — so a role locator resolves 0 elements
+    // exactly when this case needs to read `aria-expanded="true"`. getByLabel
+    // matches the `aria-label` attribute directly and keeps resolving, so it
+    // carries the trigger through the whole closed → open → closed transition.
+    // Measured, both arms, rather than assumed: an ancestor `aria-hidden` (and
+    // `display: none`) takes getByRole to 0 while getByLabel stays at 1 and
+    // still reads the attribute.
+    const addToPrompt = panel.getByLabel(enMessages.agent.addToPrompt, {
+      exact: true
+    })
     const runMode = panel.getByRole('button', {
       name: enMessages.agent.runModeTriggerAsk,
       exact: true
