@@ -416,26 +416,48 @@ describe('executionStore workflow gating', () => {
       ).toBeUndefined()
     })
 
-    it('execution_error from another workflow leaves active state alone but clears its initializing flag', () => {
-      queueJobFrom('job-b', workflowB)
-      fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
-      expect(store.isJobInitializing('job-b')).toBe(true)
+    // Two branches: a node error goes through handleExecutionError, a
+    // service-level error (no node_id, e.g. "Job has stagnated") through
+    // handleServiceLevelError. Each releases the background job's records
+    // separately, and the service-level release was previously untested, so
+    // deleting it left the whole suite green.
+    it.for([
+      { kind: 'a node error', nodeId: '1' as string | null },
+      { kind: 'a service-level error', nodeId: null }
+    ])(
+      '$kind from another workflow releases that job and leaves the visible one alone',
+      ({ nodeId }) => {
+        queueJobFrom('job-b', workflowB)
+        fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
+        expect(store.isJobInitializing('job-b')).toBe(true)
+        fire('progress_state', {
+          prompt_id: 'job-b',
+          workflow_id: WORKFLOW_B_ID,
+          nodes: { '1': nodeState('job-b', '1', 'running', 2) }
+        })
+        expect(store.nodeProgressStatesByJob['job-b']).toBeDefined()
 
-      fire('execution_error', {
-        prompt_id: 'job-b',
-        workflow_id: WORKFLOW_B_ID,
-        timestamp: 2,
-        node_id: '1',
-        node_type: 'TestNode',
-        exception_message: 'fail',
-        exception_type: 'Error',
-        traceback: [],
-        executed: []
-      })
+        fire('execution_error', {
+          prompt_id: 'job-b',
+          workflow_id: WORKFLOW_B_ID,
+          timestamp: 2,
+          node_id: nodeId,
+          node_type: 'TestNode',
+          exception_message: 'fail',
+          exception_type: 'Error',
+          traceback: [],
+          executed: []
+        })
 
-      expect(store.activeJobId).toBe('job-a')
-      expect(store.isJobInitializing('job-b')).toBe(false)
-    })
+        expect(store.activeJobId, 'the visible run is untouched').toBe('job-a')
+        expect(store.isJobInitializing('job-b')).toBe(false)
+        expect(
+          store.nodeProgressStatesByJob['job-b'],
+          "the failed background job's own records are released"
+        ).toBeUndefined()
+        expect(store.queuedJobs['job-b']).toBeUndefined()
+      }
+    )
 
     it('does not reset the active workflow when a stamped background error arrives before storeJob', () => {
       fire('execution_error', {
