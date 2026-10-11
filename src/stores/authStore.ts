@@ -992,8 +992,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (isCloud || !flags.partnerNodeTokenEnabled) return
     const credential = isDesktopHostSignedIn()
       ? await desktopHostTabToken()
-      : await currentUser.value?.getIdToken().catch(() => undefined)
+      : await revokingFirebaseIdToken()
     void partnerNodeTokens.revokeLogin(credential)
+  }
+
+  const revokingFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const token = await user?.getIdToken().catch(() => undefined)
+    return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
   const logout = async (): Promise<void> =>

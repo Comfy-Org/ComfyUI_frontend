@@ -290,6 +290,21 @@ describe('sign-out', () => {
     expect(fetchRequests(MINT_URL)).toHaveLength(2)
   })
 
+  it('does not revoke with the previous account credential when the account changes mid-lookup', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    useAuthStore().currentUser = fromPartial<User>({
+      uid: 'user-a',
+      getIdToken: async () => {
+        signInFirebase('user-b', 'firebase-id-token-b')
+        return 'firebase-id-token'
+      }
+    })
+
+    await useAuthStore().logout()
+
+    expect(revokeBearers()).not.toContain('Bearer firebase-id-token')
+  })
+
   it('revokes nothing on a workspace switch', async () => {
     vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
     signInFirebase()
