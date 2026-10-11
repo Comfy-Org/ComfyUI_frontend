@@ -8,7 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { widget, rootClass } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
-    'name' | 'label' | 'borderStyle'
+    'name' | 'label' | 'displayLabel' | 'borderStyle'
   >
   rootClass?: string
   noBorder?: boolean
@@ -38,7 +38,7 @@ const borderStyle = computed(() =>
       class="content-center-safe truncate"
     >
       <template v-if="widget.name">
-        {{ widget.label || widget.name }}
+        {{ widget.displayLabel ?? (widget.label || widget.name) }}
       </template>
     </div>
     <!-- basis-full grow -->

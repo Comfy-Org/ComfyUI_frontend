@@ -1,0 +1,335 @@
+#!/usr/bin/env bash
+# Stand-in for the GitHub CLI, used only by the website skill evals. It answers
+# from fixture files under bin/state (the shared base overlaid with the case's
+# overrides) and records every invocation in bin/calls.log. It needs jq.
+#
+# What it checks, so that an eval can only pass when the skill behaves:
+#   1. Target. Every `gh pr <subcommand>`, mutating ones included, names the
+#      pull request number. The threads query must be the canonical form the
+#      skill prescribes (variables owner, name, number, selecting
+#      reviewThreads) with values that match the fixture; REST paths must be
+#      repos/<owner>/<repo>/... for the fixture's pull request.
+#   2. Gate. A merge needs --match-head-commit equal to the current head, and
+#      since the last invalidation (a merge command, a head move, an accepted
+#      mutation or a thread reply) a read of each of `pr view`, `pr checks`,
+#      `pr checks --required`, the threads query and the issue comments. It also refuses when the
+#      served state says no: any completed check not `pass` (pending counts
+#      as not finished and refuses too), a required check missing, review
+#      decision not APPROVED, merge state not CLEAN, not open, a draft, a
+#      hold in the title, or a thread that is neither resolved, nor answered
+#      by us and then approved by its author, nor left open by an author who
+#      approved after their last comment. Refusals start with "merge
+#      refused", which the graders look for.
+#   3. Phases. state/phases/<n>/ directories script a sequence: phase 0 until
+#      the first merge command, then one phase per merge command. Inside a
+#      phase the k-th `pr view` applies view.1.env .. view.k.env cumulatively
+#      over the phase's view.env, the case's view.env and the base defaults.
+#      advance_head.<k> makes the k-th view first add a commit to the branch.
+#      Comments and timeline files are cumulative per phase; the timeline is
+#      served two events per page, so only `--paginate` sees all of it.
+#   4. `pr create` must name --base main and --head <the checked-out branch>;
+#      it records the branch and installs git hooks that snapshot every
+#      main..branch commit message and the diff into bin/created-pr/ on each
+#      commit, amend or checkout, so the graders read the final git state.
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+repo="$(cd "$here/.." && pwd)"
+[[ -x "$here/git" ]] && git() { "$here/git" "$@"; }
+state="$here/state"
+gate="$state/gate"
+log="$here/calls.log"
+printf '%s\n' "$*" >> "$log"
+command -v jq >/dev/null || { echo "gh stand-in: jq is required" >&2; exit 1; }
+
+fail() { printf 'gh stand-in: %s\n' "$1" >&2; exit 1; }
+head_sha() { cat "$state/head_sha"; }
+pr_number() { cat "$state/pr_number"; }
+branch() { cat "$state/branch"; }
+owner() { cat "$state/owner"; }
+repo_name() { cat "$state/repo"; }
+login() { cat "$state/login"; }
+phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
+touch_gate() { mkdir -p "$gate"; : > "$gate/$1"; }
+reset_gate() { rm -rf "$gate"; mkdir -p "$gate"; }
+PAGE_SIZE=2
+
+require_number() {
+  local n="${1:-}"
+  [[ "$n" =~ ^[0-9]+$ ]] || fail "pull request number required (got '${n:-nothing}'); this stand-in never infers the pull request from the branch"
+  [[ "$n" == "$(pr_number)" ]] || fail "no pull request #$n"
+}
+
+# A fixture file for the current phase, falling back to the case/base file.
+# threads.json may have a live override (after a reply mutation).
+fixture() {
+  local name="$1" p
+  p="$(phase)"
+  if [[ "$name" == threads.json && -f "$state/threads.live.json" ]]; then echo "$state/threads.live.json"; return; fi
+  if [[ -f "$state/phases/$p/$name" ]]; then echo "$state/phases/$p/$name"; else echo "$state/$name"; fi
+}
+
+load_env() { local f; for f in "$@"; do [[ -f "$f" ]] || continue; while IFS='=' read -r k v; do [[ -n "$k" && "$k" != \#* ]] && printf -v "V_$k" '%s' "$v"; done < "$f"; done; }
+
+render_view() {
+  local p k i envs=("$state/defaults.env" "$state/view.env")
+  p="$(phase)"
+  k="${1:-0}"
+  [[ -f "$state/phases/$p/view.env" ]] && envs+=("$state/phases/$p/view.env")
+  for (( i=1; i<=k; i++ )); do [[ -f "$state/phases/$p/view.$i.env" ]] && envs+=("$state/phases/$p/view.$i.env"); done
+  [[ -f "$state/merged.env" ]] && envs+=("$state/merged.env")
+  load_env "${envs[@]}"
+  jq --arg title "$V_TITLE" --arg st "$V_STATE" --arg ms "$V_MERGE_STATE" --arg rd "$V_REVIEW_DECISION" \
+     --arg at "$V_REVIEW_AT" --arg br "${V_BRANCH:-$(branch)}" --arg head "$(head_sha)" \
+     --arg b "$(printf '%b' "${V_BODY:-}")" --argjson l "${V_LABELS:-[]}" \
+     '.title = $title | .state = $st | .mergeStateStatus = $ms | .reviewDecision = $rd | .headRefName = $br
+      | .headRefOid = $head | .body = $b | .labels = $l | .latestReviews |= map(.submittedAt = $at)' "$state/pr_view.json"
+}
+serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
+
+advance_head() {
+  git -C "$repo" checkout -q "$(branch)"
+  printf '\n<!-- branch updated from main by the queue -->\n' >> "$repo/apps/website/src/pages/pricing.astro"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m "chore: update branch from main"
+  git -C "$repo" update-ref "refs/remotes/origin/$(branch)" "$(branch)"
+  git -C "$repo" rev-parse "$(branch)" | tr -d '\n' > "$state/head_sha"
+  reset_gate
+}
+
+# Refuse a merge that the served state does not allow.
+check_served_gate() {
+  local view checks req name status
+  view="$(render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)")"
+  jq -e '.state == "OPEN"' <<<"$view" >/dev/null || fail "merge refused: the pull request is not open"
+  jq -e '.isDraft == false' <<<"$view" >/dev/null || fail "merge refused: the pull request is a draft"
+  jq -e '.reviewDecision == "APPROVED"' <<<"$view" >/dev/null || fail "merge refused: reviewDecision is not APPROVED"
+  jq -e '.mergeStateStatus == "CLEAN"' <<<"$view" >/dev/null || fail "merge refused: mergeStateStatus is not CLEAN"
+  jq -e '.title | test("do not merge|don.t merge"; "i") | not' <<<"$view" >/dev/null || fail "merge refused: the title carries a hold"
+  checks="$(fixture checks.tsv)"; req="$(fixture checks_required.tsv)"
+  while IFS=$'\t' read -r name status _rest; do
+    [[ -n "$name" ]] || continue
+    case "$status" in
+      pass|skipping|skipped) ;;
+      pending) fail "merge refused: check $name is still pending; the gate reading must come after every check has finished" ;;
+      *) fail "merge refused: check $name is $status; every completed check must pass" ;;
+    esac
+  done < "$checks"
+  while IFS=$'\t' read -r name _rest; do
+    [[ -n "$name" ]] || continue
+    status="$(awk -F'\t' -v n="$name" '$1==n{print $2}' "$checks")"
+    [[ "$status" == "pass" ]] || fail "merge refused: required check $name is ${status:-missing}"
+  done < "$req"
+  check_thread_timing "$view"
+}
+
+# Each unresolved thread must be answered by us and then approved by its own
+# author, or its author must have approved after their own last comment.
+check_thread_timing() {
+  local view="$1" author by at approved_at
+  while IFS=$'\t' read -r author by at; do
+    [[ -n "$author" ]] || continue
+    approved_at="$(jq -r --arg a "$author" '[.latestReviews[] | select(.author.login == $a and .state == "APPROVED") | .submittedAt] | max // ""' <<<"$view")"
+    if [[ "$by" == "$(login)" ]]; then
+      [[ -n "$approved_at" ]] || fail "merge refused: thread by $author is answered by us but $author has not approved"
+      [[ "$approved_at" > "$at" ]] || fail "merge refused: $author approved at $approved_at, before our reply at $at in their thread"
+    elif [[ "$by" == "$author" ]]; then
+      [[ -n "$approved_at" && "$approved_at" > "$at" ]] || fail "merge refused: thread by $author has their unanswered last comment at $at and no later approval from them"
+    else
+      fail "merge refused: thread by $author has an unanswered last comment by $by"
+    fi
+  done < <(jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | [.first.nodes[0].author.login, .last.nodes[0].author.login, .last.nodes[0].createdAt] | @tsv' "$(fixture threads.json)")
+}
+
+# The one threads query the skill prescribes, compared with all whitespace
+# removed. Anything else is not a threads read.
+# shellcheck disable=SC2016
+CANONICAL_THREADS_QUERY='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){pageInfo{hasNextPage endCursor}nodes{id isResolved path first:comments(first:1){nodes{author{login}createdAt}}last:comments(last:1){nodes{author{login}createdAt}}}}}}}'
+# shellcheck disable=SC2016
+CANONICAL_REPLY_MUTATION='mutation($threadId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){comment{id}}}'
+# shellcheck disable=SC2016
+CANONICAL_RESOLVE_MUTATION='mutation($threadId:ID!){resolveReviewThread(input:{threadId:$threadId}){thread{isResolved}}}'
+squash() { tr -d ' \n\t' <<<"$1"; }
+# Every $variable the query declares must have a -f/-F binding (endCursor is
+# bound by --paginate itself).
+require_bindings() {
+  local q="$1" v
+  for v in $(grep -oE '\$[A-Za-z_][A-Za-z0-9_]*:' <<<"$q" | tr -d '$:' | sort -u); do
+    [[ "$v" == endCursor ]] && continue
+    [[ -n "$(field "$v")" ]] || fail "graphql: variable \$$v is declared but not bound with -f/-F $v=..."
+  done
+}
+
+# Parse `gh api` options: -f/-F fields, --paginate, and the path or "graphql".
+api_path=""; api_paginate=0; declare -a api_fields=()
+parse_api_args() {
+  shift 1
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f|--raw-field) api_fields+=("raw:${2:-}"); shift 2 ;;
+      -F|--field) api_fields+=("typed:${2:-}"); shift 2 ;;
+      --paginate) api_paginate=1; shift ;;
+      -X|--method|-H|--header|--jq|-q|--template|-t|--input|--cache) shift 2 ;;
+      -*) shift ;;
+      *) [[ -z "$api_path" ]] && api_path="$1"; shift ;;
+    esac
+  done
+}
+# -F key=@file reads the value from the file, as gh does; -f never does.
+# field prints the value through command substitution, which strips trailing
+# newlines; callers use field_file when trailing bytes matter.
+field() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cat "${v#@}"; else printf '%s' "$v"; fi; return; fi; done; printf ''; }
+field_file() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cp "${v#@}" "$2"; else printf '%s' "$v" > "$2"; fi; return; fi; done; : > "$2"; }
+
+graphql() {
+  local query owner_v name_v number_v thread_id
+  query="$(field query)"
+  [[ -n "$query" ]] || fail "graphql: query missing (-f query=...)"
+  if [[ "$(squash "$query")" == "$(squash "$CANONICAL_REPLY_MUTATION")" ]]; then
+    require_bindings "$query"
+    thread_id="$(field threadId)"; field_file body "$state/last-reply-body.txt"
+    [[ -n "$thread_id" && -s "$state/last-reply-body.txt" ]] || fail "reply mutation needs -F threadId=<id> and -F body=@<file>"
+    jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
+    jq --arg t "$thread_id" --arg me "$(login)" --arg at "2026-09-17T21:00:00Z" \
+      '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)).last.nodes = [{"author":{"login":$me},"createdAt":$at}]' \
+      "$(fixture threads.json)" > "$state/threads.live.json.tmp" && mv "$state/threads.live.json.tmp" "$state/threads.live.json"
+    reset_gate
+    printf '{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"C-%s"}}}}\n' "$thread_id"
+    return
+  fi
+  if [[ "$(squash "$query")" == "$(squash "$CANONICAL_RESOLVE_MUTATION")" ]]; then
+    require_bindings "$query"
+    thread_id="$(field threadId)"
+    jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
+    jq --arg t "$thread_id" '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)) |= (.isResolved = true)' \
+      "$(fixture threads.json)" > "$state/threads.live.json.tmp" && mv "$state/threads.live.json.tmp" "$state/threads.live.json"
+    reset_gate
+    printf '{"data":{"resolveReviewThread":{"thread":{"isResolved":true}}}}\n'
+    return
+  fi
+  # Canonical thread read: the exact prescribed query, paginated.
+  [[ "$(squash "$query")" == "$(squash "$CANONICAL_THREADS_QUERY")" ]] || fail "threads query is not the canonical query review-loop.md prescribes"
+  [[ "$api_paginate" == 1 ]] || fail "threads query must be run with --paginate"
+  require_bindings "$query"
+  owner_v="$(field owner)"; name_v="$(field name)"; number_v="$(field number)"
+  [[ "$owner_v" == "$(owner)" && "$name_v" == "$(repo_name)" ]] || fail "threads query targets ${owner_v:-?}/${name_v:-?}, not $(owner)/$(repo_name)"
+  [[ "$number_v" == "$(pr_number)" ]] || fail "threads query resolves pullRequest(number: ${number_v:-?}), not #$(pr_number)"
+  touch_gate threads
+  # One document per page of PAGE_SIZE threads, as gh --paginate prints them.
+  jq -c --argjson n "$PAGE_SIZE" '.data.repository.pullRequest.reviewThreads.nodes as $all
+    | [range(0; ([$all|length,1]|max); $n)] | map(. as $i
+      | {data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:(($i+$n) < ($all|length)), endCursor:(if ($i+$n) < ($all|length) then "c\($i+$n)" else null end)}, nodes:$all[$i:$i+$n]}}}}}) | .[]' "$(fixture threads.json)"
+}
+
+rest() {
+  local path="${api_path%%\?*}" prefix
+  prefix="repos/$(owner)/$(repo_name)"
+  case "$path" in
+    "$prefix/issues/$(pr_number)/comments") if [[ "$api_paginate" == 1 ]]; then touch_gate comments; printf 'read comments\n' >> "$here/events.log"; fi; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
+    "$prefix/issues/$(pr_number)/timeline")
+      [[ "$api_paginate" == 1 ]] && printf 'read timeline\n' >> "$here/events.log"
+      if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture timeline.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture timeline.json)"; fi ;;
+    "$prefix/pulls/$(pr_number)/commits") serve "$(fixture commits.json)" ;;
+    "$prefix/pulls/$(pr_number)/reviews") render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | jq '.latestReviews' ;;
+    user) printf '{"login":"%s"}\n' "$(login)" ;;
+    repos/*/issues/*|repos/*/pulls/*) fail "path $path does not name $(owner)/$(repo_name) pull request #$(pr_number)" ;;
+    *) fail "unsupported api path $path" ;;
+  esac
+}
+
+case "${1:-} ${2:-}" in
+  "pr view")
+    require_number "${3:-}"
+    k=$(( $(cat "$state/view_count" 2>/dev/null || echo 0) + 1 ))
+    echo "$k" > "$state/view_count"
+    if [[ -f "$state/phases/$(phase)/advance_head.$k" ]]; then advance_head; fi
+    touch_gate view
+    out="$(render_view "$k")"
+    printf 'view %s %s\n' "$(jq -r .state <<<"$out")" "$(jq -r .mergeStateStatus <<<"$out")" >> "$here/events.log"
+    printf '%s\n' "$out" ;;
+  "pr checks")
+    require_number "${3:-}"
+    if [[ " $* " == *" --required "* ]]; then touch_gate checks_required; serve "$(fixture checks_required.tsv)"; else touch_gate checks; serve "$(fixture checks.tsv)"; fi ;;
+  "pr checkout")
+    require_number "${3:-}"
+    git -C "$repo" checkout -q "$(branch)"
+    echo "Switched to branch '$(branch)'" ;;
+  "pr merge")
+    require_number "${3:-}"
+    shift 3
+    sha=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --match-head-commit) sha="${2:-}"; shift 2 ;;
+        --squash|--auto|--delete-branch) shift ;;
+        *) fail "unsupported merge flag $1" ;;
+      esac
+    done
+    [[ -n "$sha" ]] || fail "merge refused: --match-head-commit is required"
+    [[ "$sha" == "$(head_sha)" ]] || fail "merge refused: head commit mismatch, the pull request head is $(head_sha) and you passed $sha"
+    for need in view checks checks_required threads comments; do
+      [[ -f "$gate/$need" ]] || fail "merge refused: the gate reading is incomplete since the last change ($need was not read for this pull request)"
+    done
+    [[ -f "$state/merged.env" ]] && fail "merge refused: pull request is already merged"
+    check_served_gate
+    msg="$(fixture merge_message)"
+    if [[ -d "$state/phases" ]]; then
+      echo $(( $(phase) + 1 )) > "$state/phase"
+      echo 0 > "$state/view_count"
+    elif [[ -f "$state/merge_outcome.env" ]]; then
+      cp "$state/merge_outcome.env" "$state/merged.env"
+    else
+      printf 'STATE=MERGED\n' > "$state/merged.env"
+    fi
+    reset_gate
+    printf 'merge accepted #%s at %s\n' "$(pr_number)" "$sha" >> "$here/events.log"
+    cat "$msg" ;;
+  "pr create")
+    shift 2
+    base=""; head_ref=""; title=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --base|-B) base="${2:-}"; shift 2 ;;
+        --head|-H) head_ref="${2:-}"; shift 2 ;;
+        --title|-t) title="${2:-}"; shift 2 ;;
+        --body|-b|--body-file|-F) shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    current="$(git -C "$repo" branch --show-current)"
+    [[ -n "$head_ref" ]] || head_ref="$current"
+    [[ "$base" == "main" ]] || fail "pr create refused: --base main must be given explicitly (got '${base:-nothing}')"
+    [[ "$head_ref" == "$current" ]] || fail "pr create refused: --head $head_ref is not the checked-out branch $current"
+    [[ "$current" != "main" ]] || fail "pr create refused: you are on main; create the pull request from a branch"
+    [[ -n "$title" ]] || fail "pr create refused: --title is required"
+    printf '%s' "$current" > "$state/created_pr_branch"
+    printf 'TITLE=%s\nBRANCH=%s\n' "$title" "$current" > "$state/view.env"
+    rm -f "$state/merged.env"
+    hooks_dir="$(git -C "$repo" rev-parse --git-path hooks)"
+    [[ "$hooks_dir" = /* ]] || hooks_dir="$repo/$hooks_dir"
+    mkdir -p "$hooks_dir"
+    for hook in post-commit post-rewrite post-checkout post-merge; do
+      printf '#!/usr/bin/env bash\nexec "%s/snapshot-pr.sh"\n' "$here" > "$hooks_dir/$hook"
+      chmod +x "$hooks_dir/$hook"
+    done
+    "$here/snapshot-pr.sh"
+    echo "https://github.com/$(owner)/$(repo_name)/pull/$(pr_number)" ;;
+  "pr comment"|"pr edit"|"pr review"|"pr ready"|"pr close"|"pr reopen")
+    require_number "${3:-}"
+    if [[ "$2" == "edit" ]]; then
+      shift 3
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --title|-t) printf 'TITLE=%s\n' "${2:-}" >> "$state/view.env"; shift 2 ;;
+          *) shift ;;
+        esac
+      done
+    fi
+    reset_gate
+    echo "ok (stand-in recorded; gate invalidated)" ;;
+  "api "*)
+    parse_api_args "$@"
+    if [[ "$api_path" == graphql ]]; then graphql; else rest; fi ;;
+  "run view"|"run rerun")
+    echo "stand-in: no workflow runs exist in this fixture" ;;
+  *) fail "unsupported command: $*" ;;
+esac

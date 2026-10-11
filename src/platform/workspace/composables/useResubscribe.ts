@@ -1,13 +1,11 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 /**
@@ -19,22 +17,16 @@ export function useResubscribe() {
   const toast = useToast()
   const { resubscribe } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate } = useBillingCapabilities()
-  const { permissions } = useWorkspaceUI()
+  const { canReactivatePlan } = useWorkspaceUI()
 
   const isResubscribing = ref(false)
 
   async function handleResubscribe() {
-    if (
-      shouldUseWorkspaceBilling.value &&
-      !(isCloud
-        ? canReactivate.value
-        : permissions.value.canManageSubscriptionLifecycle)
-    ) {
-      return
-    }
+    if (!canReactivatePlan.value) return
 
     const source = 'settings_billing_panel' as const
+    const startedAt = Date.now()
+    const isWorkspaceResubscribe = shouldUseWorkspaceBilling.value
 
     useTelemetry()?.trackResubscribeClicked({ source })
     // Emitted before the awaited call so a failure always has a preceding
@@ -54,19 +46,16 @@ export function useResubscribe() {
       // tab, which isn't terminal — its `succeeded` is emitted later, from
       // useSubscription.ts's pending-checkout recovery, once a status poll
       // confirms the payment actually went through.
-      if (shouldUseWorkspaceBilling.value) {
+      if (isWorkspaceResubscribe) {
         useTelemetry()?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source
+          source,
+          duration_ms: Date.now() - startedAt
         })
       }
-      toast.add({
-        severity: 'success',
-        summary: t('subscription.resubscribeSuccess'),
-        life: 5000
-      })
+      toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
     } catch (error) {
       const detail =
         error instanceof Error && error.message.trim()
@@ -77,13 +66,12 @@ export function useResubscribe() {
         stage: 'failed',
         outcome: 'failure',
         source,
-        failure_category: categorizeBillingApiError(error)
+        failure_category: categorizeBillingApiError(error),
+        ...(isWorkspaceResubscribe && {
+          duration_ms: Date.now() - startedAt
+        })
       })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail
-      })
+      toast.error(t('g.error'), { description: detail })
     } finally {
       isResubscribing.value = false
     }

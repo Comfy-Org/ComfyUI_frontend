@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Model } from '../config/models'
+import type { Model } from '@/config/models'
 import { buildModelFaqs, modelFaqJsonLd } from './modelFaq'
 
 const localModel: Model = {

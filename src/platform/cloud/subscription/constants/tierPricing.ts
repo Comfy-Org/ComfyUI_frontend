@@ -1,3 +1,5 @@
+import type { BillingTierKey } from '@comfyorg/account-core/billing'
+import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -7,9 +9,14 @@ export type { IngestSubscriptionTier }
 
 export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
 
-export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
+export type TierKey = BillingTierKey
 
-const TIER_TO_KEY: Record<RegistrySubscriptionTier, TierKey> = {
+// Self-serve personal-plan tiers only. TEAM and ENTERPRISE are workspace-level
+// and sales-managed respectively, and intentionally have no catalog key (see
+// toTierKey/isSalesManagedTier below).
+type CatalogTier = Exclude<RegistrySubscriptionTier, 'TEAM' | 'ENTERPRISE'>
+
+const TIER_TO_KEY: Record<CatalogTier, TierKey> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
@@ -36,9 +43,20 @@ export const TIER_PRICING: Record<
   Exclude<TierKey, 'free' | 'founder'>,
   TierPricing
 > = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 380 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 670 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
+  standard: { ...TIER_CATALOG.standard, videoEstimate: 380 },
+  creator: { ...TIER_CATALOG.creator, videoEstimate: 670 },
+  pro: { ...TIER_CATALOG.pro, videoEstimate: 1915 }
+}
+
+const MONTHS_PER_YEAR = 12
+
+// Annual plans grant the whole year up front (catalog `*-annual` credit_grant
+// is 12x the monthly grant), so a yearly cycle shows the year's total.
+export function amountForBillingCycle(
+  monthlyAmount: number,
+  isYearly: boolean
+): number {
+  return isYearly ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
 }
 
 interface TierFeatures {
@@ -64,9 +82,7 @@ export const DEFAULT_TIER_KEY: TierKey = 'standard'
 //     ['FREE'] would be accepted as FREE and a null toString would throw.
 //   - own-property rather than `in`, which walks the prototype chain and would
 //     return an inherited function for 'constructor' or 'toString'.
-function isRegistrySubscriptionTier(
-  tier: unknown
-): tier is RegistrySubscriptionTier {
+function isRegistrySubscriptionTier(tier: unknown): tier is CatalogTier {
   return (
     typeof tier === 'string' &&
     Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
@@ -79,6 +95,66 @@ export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
   return isRegistrySubscriptionTier(tier) ? TIER_TO_KEY[tier] : null
 }
 
+// Enterprise plans are intentionally absent from the self-serve catalog, so a
+// scheduled change to one cannot be resolved through `plans` and carries no
+// tier to read. The slug is the only signal on that path; everywhere a tier
+// exists, compare it to 'ENTERPRISE' directly.
+export function isEnterprisePlanSlug(slug: string | null | undefined): boolean {
+  return slug?.toLowerCase().startsWith('enterprise') === true
+}
+
+// A tier the frontend cannot map to its catalog and that is not one of the
+// workspace-level tiers it knows about. Price and feature claims must never be
+// borrowed for a plan we cannot identify (FE-1662 story 6).
+export function isUnknownTier(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  if (tier == null || tier === 'TEAM' || tier === 'ENTERPRISE') return false
+  return toTierKey(tier) === null
+}
+
+// Enterprise and unrecognized tiers share one presentation: no catalog price,
+// benefits, or pricing surfaces. The server hides their lifecycle capabilities
+// (billing-api hideLifecycleCapabilities); this helper only drives rendering.
+// Where a sales conversation starts. Shared by the pricing table's footnote
+// and the ended-plan Contact sales actions so the destination cannot drift.
+export const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+
+export function isSalesManagedTier(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  return tier === 'ENTERPRISE' || isUnknownTier(tier)
+}
+
+// An Enterprise end date is an agreed ending — an operator pilot term or a
+// sales-mediated cancellation, deliberately not distinguished (FE-2035) —
+// often set months before the plan lapses. It is not self-serve news, so the
+// workspace keeps its plainly-active presentation until the end date is this
+// close; only then does the muted ending notice appear. Strictly ENTERPRISE:
+// self-serve plans never consult this window, and neither do unrecognized
+// tiers — sales-managed contracts are Enterprise-only today, and per
+// isUnknownTier's contract an unidentifiable plan must not borrow claims.
+export const ENTERPRISE_ENDING_NOTICE_DAYS = 14
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+// Wall-clock comparison; callers feed `now` from a coarse reactive clock so a
+// long-lived session still crosses into the window without a data refresh.
+// The window is deliberately unbounded below — a passed end date counts as
+// "within" — because the backend reconciles on read: cloud's
+// common/repository/billing/subscription.go:55 transitions a canceled row
+// whose cancel_at has passed into ended on first load and returns no active
+// subscription, so canAccessSubscriptionFeatures gates every caller first.
+export function isWithinEnterpriseEndingNotice(
+  endDate: string | null | undefined,
+  now: number = Date.now()
+): boolean {
+  if (!endDate) return false
+  const end = new Date(endDate).getTime()
+  if (Number.isNaN(end)) return false
+  return end - now <= ENTERPRISE_ENDING_NOTICE_DAYS * MS_PER_DAY
+}
+
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
 // key is not a usable test for "is on a paid plan".
 export function hasActivePaidPlan(
@@ -88,7 +164,7 @@ export function hasActivePaidPlan(
 }
 
 const FOUNDER_MONTHLY_PRICE = 20
-const FOUNDER_MONTHLY_CREDITS = 5460
+const FOUNDER_MONTHLY_CREDITS = 5461
 
 export function getTierPrice(tierKey: TierKey, isYearly = false): number {
   if (tierKey === 'free') return 0
@@ -100,7 +176,7 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 export function getTierCredits(tierKey: TierKey): number | null {
   if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
-  return TIER_PRICING[tierKey].credits
+  return TIER_PRICING[tierKey]?.credits
 }
 
 export function getTierFeatures(tierKey: TierKey): TierFeatures {

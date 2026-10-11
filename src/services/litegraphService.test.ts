@@ -1,48 +1,45 @@
-import { createTestingPinia } from '@pinia/testing'
 import { cloneDeep } from 'es-toolkit'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: undefined },
-  ComfyApp: class {}
-}))
+vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWidgetStore } from '@/stores/widgetStore'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
-    Reflect.set(app, 'canvas', undefined)
+    app.canvas.ds.visible_area.set([10, 20, 200, 100])
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
 
     expect(center).toEqual([0, 0])
   })
 
-  it('returns origin when canvas exists but ds.visible_area is missing', () => {
-    Reflect.set(app, 'canvas', { ds: {} })
+  it.for<{
+    dpr: number
+    visibleArea: [number, number, number, number]
+    center: [number, number]
+  }>([
+    { dpr: 1, visibleArea: [10, 20, 200, 100], center: [110, 70] },
+    { dpr: 2, visibleArea: [0, 0, 800, 600], center: [400, 300] }
+  ])(
+    'returns the CSS-pixel visible-area centre at DPR $dpr',
+    ({ dpr, visibleArea, center }) => {
+      app.canvas.dpr = dpr
+      app.canvas.ds.visible_area.set(visibleArea)
 
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([0, 0])
-  })
-
-  it('returns the visible-area centre once the canvas is ready', () => {
-    Reflect.set(app, 'canvas', {
-      ds: { visible_area: [10, 20, 200, 100] }
-    })
-
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([110, 70])
-  })
+      expect(useLitegraphService().getCanvasCenter()).toEqual(center)
+    }
+  )
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {
@@ -77,7 +74,6 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mergeBundledSlotText('stale bundled label')
     mergeCustomNodesI18n({
       en: {
@@ -92,7 +88,6 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(nodeName)
     mergeCustomNodesI18n({})
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
@@ -133,7 +128,6 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     i18n.global.mergeLocaleMessage('en', {
       nodeDefs: {
         [nodeName]: {
@@ -150,7 +144,6 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(nodeName)
     i18n.global.locale.value = 'en'
     i18n.global.setLocaleMessage('zh', cloneDeep(zhMessages))
     i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
@@ -170,5 +163,62 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
     expect(node?.widgets?.[0]?.label).toBe('Live Seed Label')
     expect(seed?.localized_name).toBe('Live Seed Label')
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
+  })
+})
+
+describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
+  const nodeName = 'TestFrozenCustomWidget'
+  const widgetType = 'FROZEN_CUSTOM_WIDGET'
+  let retainedWidget: IBaseWidget
+
+  beforeEach(async () => {
+    useWidgetStore().registerCustomWidgets({
+      [widgetType]: (node, inputName) => {
+        retainedWidget = Object.preventExtensions({
+          name: inputName,
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0
+        })
+        node.widgets ??= []
+        node.widgets.push(retainedWidget)
+        return retainedWidget
+      }
+    })
+    await useLitegraphService().registerNodeDef(nodeName, {
+      name: nodeName,
+      display_name: 'Test Frozen Custom Widget',
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      input: {
+        required: {
+          custom: [
+            widgetType,
+            {
+              display_name: 'Live Custom Label',
+              default: 0,
+              advanced: true,
+              hidden: true
+            }
+          ]
+        }
+      },
+      output: [],
+      output_name: [],
+      output_node: false
+    })
+  })
+
+  it('applies metadata to the concrete widget stored on the node', () => {
+    const node = LiteGraph.createNode(nodeName)
+    const widget = node?.widgets?.[0]
+
+    expect(widget).not.toBe(retainedWidget)
+    expect(widget?.label).toBe('Live Custom Label')
+    expect(widget?.options.advanced).toBe(true)
+    expect(widget?.options.hidden).toBe(true)
+    expect(widget?.hidden).toBe(true)
   })
 })

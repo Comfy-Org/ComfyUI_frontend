@@ -1,14 +1,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 /**
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
@@ -17,7 +20,7 @@ import { useDialogService } from '@/services/dialogService'
  * Plan & Credits panel menu.
  */
 export function useWorkspaceMenuItems() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { billingStatus, isFreeTier, subscription } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canCancel } = useBillingCapabilities()
@@ -25,17 +28,17 @@ export function useWorkspaceMenuItems() {
     permissions,
     uiConfig,
     isInPersonalWorkspace,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
+  const { showCancelSubscriptionFlow } = useBillingDialogs()
   const {
-    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
 
   function editWorkspace() {
     void showEditWorkspaceDialog()
@@ -71,21 +74,35 @@ export function useWorkspaceMenuItems() {
       return canCancel.value && !isFreeTier.value
     return (
       permissions.value.canManageSubscriptionLifecycle &&
-      (isActiveSubscription.value ||
+      (canAccessSubscriptionFeatures.value ||
         ((billingStatus.value === 'payment_failed' ||
           billingStatus.value === 'paused') &&
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
-      !isFreeTier.value
+      !isFreeTier.value &&
+      !isSalesManagedTier(subscription.value?.tier)
     )
   })
 
+  // Deleting a workspace requires cancelling its plan first, and an Enterprise
+  // plan only ends through sales — so Delete would be a permanently disabled
+  // dead end. Hidden entirely per DES-782.
   const canDeleteWorkspace = computed(
     () =>
-      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
+      permissions.value.canManageSubscription &&
+      !isInPersonalWorkspace.value &&
+      subscription.value?.tier !== 'ENTERPRISE'
   )
 
   const deleteTooltip = computed(() => {
+    const planEndDate = formatSubscriptionDate(
+      subscription.value?.endDate,
+      locale.value
+    )
+    if (isDeleteDisabled.value && isSubscriptionCancelled.value && planEndDate)
+      return t('workspacePanel.menu.deleteWorkspaceAfterPlanEndsTooltip', {
+        date: planEndDate
+      })
     const key = deleteDisabledTooltipKey.value
     return key ? t(key) : undefined
   })

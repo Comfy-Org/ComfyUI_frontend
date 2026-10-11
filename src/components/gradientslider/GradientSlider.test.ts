@@ -40,14 +40,14 @@ describe('GradientSlider', () => {
 
   it('renders slider root with track and thumb', () => {
     const { container } = renderSlider({ modelValue: 0 })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-slider-impl]')).toBeInTheDocument()
     expect(screen.getByRole('slider', { hidden: true })).toBeInTheDocument()
   })
 
   it('does not render SliderRange', () => {
     const { container } = renderSlider({ modelValue: 50 })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const range = container.querySelector('[data-slot="slider-range"]')
     expect(range).not.toBeInTheDocument()
   })

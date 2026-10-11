@@ -1,0 +1,37 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import HeroSection from '@/templates/cloud-nodes/HeroSection.vue'
+import SetupSection from '@/templates/cloud-nodes/SetupSection.vue'
+import ModelsSection from '@/templates/cloud-nodes/ModelsSection.vue'
+import HowItWorksSection from '@/templates/cloud-nodes/HowItWorksSection.vue'
+import WhySection from '@/templates/cloud-nodes/WhySection.vue'
+import FAQSection from '@/templates/cloud-nodes/FAQSection.vue'
+import ClosingCtaSection from '@/templates/cloud-nodes/ClosingCtaSection.vue'
+import { absoluteUrl } from '@/utils/jsonLd'
+---
+
+<BaseLayout
+  title={Astro.locals.t('cloudNodesLaunch.meta.title')}
+  description={Astro.locals.t('cloudNodesLaunch.meta.description')}
+  breadcrumbs={[
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: Astro.locals.t('breadcrumb.cloudNodes') }
+  ]}
+>
+  <HeroSection locale="en" client:load />
+  <SetupSection locale="en" />
+  <ModelsSection locale="en" client:visible />
+  <HowItWorksSection locale="en" />
+  <WhySection locale="en" />
+  <ProductCardsSection
+    locale="en"
+    label-key="products.labelProducts"
+    cta-variant="underlineLink"
+  />
+  <FAQSection client:visible locale="en" />
+  <ClosingCtaSection locale="en" />
+</BaseLayout>

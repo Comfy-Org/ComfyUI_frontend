@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
-import { hasActivePaidPlan, toTierKey } from './tierPricing'
+import {
+  ENTERPRISE_ENDING_NOTICE_DAYS,
+  hasActivePaidPlan,
+  isEnterprisePlanSlug,
+  isSalesManagedTier,
+  isUnknownTier,
+  isWithinEnterpriseEndingNotice,
+  toTierKey
+} from './tierPricing'
 
 describe('toTierKey', () => {
   it('maps every personal-catalog tier to its key', () => {
@@ -57,5 +65,82 @@ describe('hasActivePaidPlan', () => {
     expect(hasActivePaidPlan('FREE')).toBe(false)
     expect(hasActivePaidPlan(null)).toBe(false)
     expect(hasActivePaidPlan(undefined)).toBe(false)
+  })
+})
+
+describe('isEnterprisePlanSlug', () => {
+  it('matches enterprise slugs in either case', () => {
+    expect(isEnterprisePlanSlug('enterprise_monthly')).toBe(true)
+    expect(isEnterprisePlanSlug('ENTERPRISE_ANNUAL')).toBe(true)
+  })
+
+  it('rejects catalog slugs and absent values', () => {
+    expect(isEnterprisePlanSlug('team-monthly')).toBe(false)
+    expect(isEnterprisePlanSlug(null)).toBe(false)
+    expect(isEnterprisePlanSlug(undefined)).toBe(false)
+  })
+})
+
+describe('isUnknownTier', () => {
+  it('flags only tiers outside the catalog and the workspace-level set', () => {
+    expect(isUnknownTier('GALACTIC' as unknown as IngestSubscriptionTier)).toBe(
+      true
+    )
+    expect(isUnknownTier('PRO')).toBe(false)
+    expect(isUnknownTier('TEAM')).toBe(false)
+    expect(isUnknownTier('ENTERPRISE')).toBe(false)
+    expect(isUnknownTier(null)).toBe(false)
+    expect(isUnknownTier(undefined)).toBe(false)
+  })
+})
+
+describe('isSalesManagedTier', () => {
+  it('covers Enterprise and unrecognised tiers, nothing else', () => {
+    expect(isSalesManagedTier('ENTERPRISE')).toBe(true)
+    expect(
+      isSalesManagedTier('GALACTIC' as unknown as IngestSubscriptionTier)
+    ).toBe(true)
+    expect(isSalesManagedTier('PRO')).toBe(false)
+    expect(isSalesManagedTier('TEAM')).toBe(false)
+    expect(isSalesManagedTier(null)).toBe(false)
+  })
+})
+
+describe('isWithinEnterpriseEndingNotice', () => {
+  const NOW = new Date('2026-09-03T12:00:00Z').getTime()
+  const DAY = 24 * 60 * 60 * 1000
+
+  function daysFromNow(days: number): string {
+    return new Date(NOW + days * DAY).toISOString()
+  }
+
+  it('stays outside the window while the end date is far off', () => {
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(30), NOW)).toBe(false)
+    expect(
+      isWithinEnterpriseEndingNotice(
+        daysFromNow(ENTERPRISE_ENDING_NOTICE_DAYS + 1),
+        NOW
+      )
+    ).toBe(false)
+  })
+
+  it('enters the window at the threshold and stays in until the end', () => {
+    expect(
+      isWithinEnterpriseEndingNotice(
+        daysFromNow(ENTERPRISE_ENDING_NOTICE_DAYS),
+        NOW
+      )
+    ).toBe(true)
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(1), NOW)).toBe(true)
+  })
+
+  it('counts a passed end date as within; ended handling gates upstream', () => {
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(-5), NOW)).toBe(true)
+  })
+
+  it('treats missing or invalid dates as no notice at all', () => {
+    expect(isWithinEnterpriseEndingNotice(null, NOW)).toBe(false)
+    expect(isWithinEnterpriseEndingNotice(undefined, NOW)).toBe(false)
+    expect(isWithinEnterpriseEndingNotice('not-a-date', NOW)).toBe(false)
   })
 })

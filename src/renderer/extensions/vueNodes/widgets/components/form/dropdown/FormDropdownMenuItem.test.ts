@@ -17,12 +17,12 @@ const intersectionCallbacks = vi.hoisted(
   () => [] as Array<(entries: Array<{ isIntersecting: boolean }>) => void>
 )
 
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: (name: string) => mockFindServerPreviewUrl(name),
   isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useIntersectionObserver: (
     _ref: unknown,
     cb: (entries: Array<{ isIntersecting: boolean }>) => void

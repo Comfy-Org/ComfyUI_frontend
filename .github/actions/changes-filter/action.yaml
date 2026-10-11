@@ -1,16 +1,28 @@
-# Outputs default to 'true' for non-pull_request events (push, merge_group):
-# granular path filtering is a PR-only optimization. This avoids the silent
-# skip footgun where a job gated on e.g. `app-website-changes == 'true'`
-# would never run on push.
+# Outputs default to 'true' for non-pull_request events: granular path filtering
+# is a PR-only optimization. This avoids the silent skip footgun where a job
+# gated on e.g. `app-website-changes == 'true'` would never run on push.
 #
-# Shared dependency files (root package.json, pnpm-lock.yaml,
+# merge_group.base_sha can be the preceding queued candidate, excluding its
+# changes from the diff. HEADGREEN can merge earlier entries based on this
+# candidate's checks alone, so queue candidates must run every check.
+#
+# Shared dependency files (.nvmrc, root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
 # output so a lockfile bump correctly invalidates each granular gate. They
 # are NOT folded into docs-changes.
 #
 # Two paths-filter steps are needed because predicate-quantifier=every is
-# required for the negated globs in `should-run` but breaks multi-pattern
-# OR filters like `docs:` and `deps:`.
+# required for the negated globs in the `should-run*` outputs but breaks
+# multi-pattern OR filters like `docs:` and `deps:`.
+#
+# `should-run-unit`, `should-run-e2e`, and `should-run-source` narrow
+# `should-run` by the kind of test file a PR touches. Vitest owns `**/*.test.ts`
+# everywhere (playwright.config.ts ignores that suffix) plus `**/__mocks__/**`,
+# which no non-test source imports, and Playwright owns
+# `browser_tests/**/*.spec.ts` plus its snapshots, plans, and configs. Helper
+# and fixture files under `browser_tests/` stay relevant to every output: unit
+# tests import fixture data from there, and the ecosystem matrix imports
+# `browser_tests/assets/default.json` and `vitest.setup.ts`.
 #
 # Requires the caller to have checked out the repository.
 
@@ -21,67 +33,112 @@ description: >
 
 outputs:
   should-run:
-    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
+    description: >
+      Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.relevant == 'true' }}
+  should-run-unit:
+    description: >
+      `should-run`, minus Playwright specs, snapshots, plans, and configs.
+      Gates Vitest.
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.unit == 'true' }}
+  should-run-e2e:
+    description: >
+      `should-run`, minus `**/*.test.ts` and `**/__mocks__/**`. Gates
+      Playwright suites, including the perf project.
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.e2e == 'true' }}
+  should-run-source:
+    description: >
+      `should-run`, minus both test-file sets. Gates jobs that only consume
+      built or imported source: ecosystem matrix, size data, dist scans.
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.source == 'true' }}
   app-website-changes:
-    description: 'Shared deps or `apps/website/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
-  app-desktop-changes:
-    description: 'Shared deps or `apps/desktop-ui/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_desktop == 'true' }}
+    description: 'Shared deps, `apps/website/**`, or website e2e workflow support changed.'
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
+  app-billing-web-changes:
+    description: 'Shared deps, `apps/billing-web/**`, or a billing-web workflow changed.'
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
   packages-changes:
     description: 'Shared deps or `packages/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
   storybook-changes:
-    description: 'Shared deps or `.storybook/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
+    description: 'Shared deps, `.storybook/**`, `build/**`, or `vite.config.mts` changed.'
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
   docs-changes:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.docs == 'true' }}
   dependency-changes:
-    description: 'Root `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' }}
+    description: 'Root `.nvmrc`, `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
+    value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' }}
 
 runs:
   using: composite
   steps:
+    - name: Decide whether to evaluate paths
+      id: mode
+      shell: bash
+      env:
+        EVALUATE: ${{ github.event_name == 'pull_request' }}
+      run: echo "evaluate=$EVALUATE" >> "$GITHUB_OUTPUT"
+
     - name: Filter typed changes
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ steps.mode.outputs.evaluate == 'true' }}
       id: filter
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         filters: |
           app_website:
             - 'apps/website/**'
-          app_desktop:
-            - 'apps/desktop-ui/**'
+            - '.github/workflows/ci-website-e2e.yaml'
+            - 'scripts/cicd/prepare-website-e2e-report.sh'
+            - 'scripts/cicd/check-website-e2e-result.sh'
+          app_billing_web:
+            - 'apps/billing-web/**'
+            - '.github/workflows/ci-billing-web-unit.yaml'
+            - '.github/workflows/ci-billing-web-e2e.yaml'
           app_frontend:
             - 'src/**'
           packages:
             - 'packages/**'
           storybook:
             - '.storybook/**'
+            - 'build/**'
+            - 'vite.config.mts'
           docs:
             - 'docs/**'
             - '**/*.md'
           deps:
+            - '.nvmrc'
             - 'package.json'
             - 'pnpm-lock.yaml'
             - 'pnpm-workspace.yaml'
 
     - name: Filter relevant changes
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ steps.mode.outputs.evaluate == 'true' }}
       id: relevant
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         predicate-quantifier: 'every'
         filters: |
-          relevant:
+          relevant: &relevant
             - '**'
             - '!apps/**'
             - '!docs/**'
             - '!.storybook/**'
             - '!**/*.md'
+          unit: &unit
+            - *relevant
+            - '!browser_tests/**/*.spec.ts'
+            - '!browser_tests/**/*-snapshots/**'
+            - '!browser_tests/specs/**'
+            - '!playwright*.config.ts'
+          e2e:
+            - *relevant
+            - '!**/*.test.ts'
+            - '!**/__mocks__/**'
+          source:
+            - *unit
+            - '!**/*.test.ts'
+            - '!**/__mocks__/**'

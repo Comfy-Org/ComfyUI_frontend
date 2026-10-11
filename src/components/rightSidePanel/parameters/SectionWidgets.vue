@@ -89,36 +89,15 @@ function setDraggableState() {
   const list = new DraggableList(container, '.draggable-item')
 
   list.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
+    if (!this.draggableItem) return
+    const { items, oldPosition } = this.getReorderedItems(this.draggableItem)
 
     if (oldPosition === -1) {
       console.error('[SectionWidgets] draggableItem not found in items')
       return
     }
 
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      if (typeof reorderedItems[index] === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
+    const newPosition = items.indexOf(this.draggableItem)
 
     emit('reorder', { fromIndex: oldPosition, toIndex: newPosition })
   }

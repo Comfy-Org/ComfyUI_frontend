@@ -6,10 +6,17 @@ import { computed, ref, watchEffect } from 'vue'
 import { resolveNodeDefText, t } from '@/i18n'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
+import {
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
+} from '@/schemas/nodeDef/searchableSlotTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  transformNodeDefV1ToV2,
+  transformInputSpecV1ToV2
+} from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
@@ -23,7 +30,6 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -98,6 +104,7 @@ export class ComfyNodeDefImpl
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
   readonly inputTypes: string[]
+  readonly outputTypes: string[]
 
   /**
    * Raw `/object_info` text, kept unresolved so `display_name` and
@@ -188,7 +195,16 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
-    this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
+    this.inputTypes = uniq(
+      Object.values(this.inputs).flatMap(collectSearchableInputTypes)
+    )
+    this.outputTypes = uniq(
+      collectSearchableOutputTypes(
+        this.outputs,
+        this.inputs,
+        obj.output_matchtypes
+      )
+    )
   }
 
   /**
@@ -298,7 +314,7 @@ interface BuildNodeDefTreeOptions {
 export function buildNodeDefTree(
   nodeDefs: ComfyNodeDefImpl[],
   options: BuildNodeDefTreeOptions = {}
-): TreeNode {
+): TreeNode<ComfyNodeDefImpl> {
   const { pathExtractor } = options
   const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
     nodeDef.nodePath.split('/')
@@ -317,7 +333,7 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
     output_name: [],
     output_is_list: [],
     output_node: false
-  } as ComfyNodeDefV1)
+  })
 }
 
 /**
@@ -375,23 +391,26 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
   })
 
-  const nodeDefs = computed(() => {
-    const subgraphStore = useSubgraphStore()
-    // Blueprints first for discoverability in the node library sidebar
-    return [
-      ...subgraphStore.subgraphBlueprints,
-      ...Object.values(nodeDefsByName.value)
-    ]
-  })
+  const blueprintNodeDefs = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const blueprintNodeDefsByName = computed<
+    ReadonlyMap<string, ComfyNodeDefImpl>
+  >(() => blueprintNodeDefs.value)
+  function registerBlueprintNodeDef(nodeDef: ComfyNodeDefImpl) {
+    blueprintNodeDefs.value.set(nodeDef.name, nodeDef)
+  }
+  function removeBlueprintNodeDef(name: string) {
+    blueprintNodeDefs.value.delete(name)
+  }
+  // Blueprints first for discoverability in the node library sidebar
+  const nodeDefs = computed(() => [
+    ...blueprintNodeDefs.value.values(),
+    ...Object.values(nodeDefsByName.value)
+  ])
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
-      for (const input of Object.values(nodeDef.inputs)) {
-        types.add(input.type)
-      }
-      for (const output of nodeDef.outputs) {
-        types.add(output.type)
-      }
+      for (const type of nodeDef.inputTypes) types.add(type)
+      for (const type of nodeDef.outputTypes) types.add(type)
     }
     return types
   })
@@ -434,8 +453,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
   }
+  function removeNodeDef(nodeName: string) {
+    delete nodeDefsByName.value[nodeName]
+  }
+  function getNodeDefByName(nodeName: string): ComfyNodeDefImpl | undefined {
+    return nodeDefsByName.value[nodeName]
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
+    const nodeTypeName = node.constructor.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef
@@ -449,7 +474,20 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       const nodeDef = fromLGraphNode(node)
       if (!nodeDef) return undefined
 
-      return nodeDef.inputs[widgetName]
+      if (Object.hasOwn(nodeDef.inputs, widgetName))
+        return nodeDef.inputs[widgetName]
+      const resolved = resolveDynamicInputSpec(
+        nodeDef.input,
+        widgetName,
+        (name) => node.widgets?.find((widget) => widget.name === name)?.value
+      )
+      return (
+        resolved &&
+        transformInputSpecV1ToV2(resolved.spec, {
+          name: widgetName,
+          isOptional: resolved.isOptional
+        })
+      )
     }
     // A subgraph node's widget is a promoted input named after its slot; resolve
     // the interior source and read its real spec instead of fabricating one.
@@ -533,6 +571,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   return {
     nodeDefsByName,
+    blueprintNodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
     allNodeDefsByDisplayName,
@@ -549,6 +588,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
+    removeNodeDef,
+    registerBlueprintNodeDef,
+    removeBlueprintNodeDef,
+    getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
     registerNodeDefFilter,
@@ -587,8 +630,10 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const nodeDefStore = useNodeDefStore()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     return nodeNamesByFrequency.value
-      .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
-      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
+      .flatMap((nodeName: string) => {
+        const nodeDef = nodeDefStore.getNodeDefByName(nodeName)
+        return nodeDef ? [nodeDef] : []
+      })
       .slice(0, topNodeDefLimit.value)
   })
 

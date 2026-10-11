@@ -5,61 +5,57 @@
     @mouseleave="handleMouseLeave"
     @pointerdown.stop
   >
-    <Load3DScene
-      v-if="node"
-      :initialize-load3d="initializeLoad3d"
-      :cleanup="cleanup"
-      :loading="loading"
-      :loading-message="loadingMessage"
-      :on-model-drop="isPreview ? undefined : handleModelDrop"
-      :is-preview="isPreview"
-    />
-    <div class="pointer-events-none absolute top-0 left-0 size-full">
-      <Load3DMenuBar
-        v-model:scene-config="sceneConfig"
-        v-model:model-config="modelConfig"
-        v-model:camera-config="cameraConfig"
-        v-model:light-config="lightConfig"
-        v-model:is-recording="isRecording"
-        v-model:has-recording="hasRecording"
-        v-model:recording-duration="recordingDuration"
-        :can-use-gizmo="canUseGizmo"
-        :can-use-lighting="canUseLighting"
-        :can-export="canExport"
-        :can-use-hdri="canUseHdri"
-        :can-use-background-image="canUseBackgroundImage"
-        :can-fit-to-viewer="canFitToViewer"
-        :can-center-camera-on-model="canCenterCameraOnModel"
-        :node="node as LGraphNode"
-        :enable-viewer="enable3DViewer"
-        :can-use-recording="canUseRecording && !isPreview"
-        :material-modes="materialModes"
-        :has-skeleton="hasSkeleton"
-        :source-format="sourceFormat"
-        @update-background-image="handleBackgroundImageUpdate"
-        @update-hdri-file="handleHDRIFileUpdate"
-        @export-model="handleExportModel"
-        @fit-to-viewer="handleFitToViewer"
-        @center-camera="handleCenterCameraOnModel"
-        @toggle-gizmo="handleToggleGizmo"
-        @set-gizmo-mode="handleSetGizmoMode"
-        @reset-gizmo-transform="handleResetGizmoTransform"
-        @start-recording="handleStartRecording"
-        @stop-recording="handleStopRecording"
-        @export-recording="handleExportRecording"
-        @clear-recording="handleClearRecording"
+    <Load3DMenuBar
+      v-model:scene-config="sceneConfig"
+      v-model:model-config="modelConfig"
+      v-model:camera-config="cameraConfig"
+      v-model:light-config="lightConfig"
+      v-model:is-recording="isRecording"
+      v-model:has-recording="hasRecording"
+      v-model:recording-duration="recordingDuration"
+      v-model:playing="playing"
+      v-model:selected-speed="selectedSpeed"
+      v-model:selected-animation="selectedAnimation"
+      v-model:animation-progress="animationProgress"
+      :animations="animations"
+      :animation-duration="animationDuration"
+      :can-use-gizmo="canUseGizmo"
+      :can-use-lighting="canUseLighting"
+      :can-export="canExport"
+      :can-use-hdri="canUseHdri"
+      :can-use-background-image="canUseBackgroundImage"
+      :can-fit-to-viewer="canFitToViewer"
+      :can-center-camera-on-model="canCenterCameraOnModel"
+      :node="node as LGraphNode"
+      :enable-viewer="enable3DViewer"
+      :can-use-recording="canUseRecording && !isPreview"
+      :material-modes="materialModes"
+      :has-skeleton="hasSkeleton"
+      :source-format="sourceFormat"
+      @update-background-image="handleBackgroundImageUpdate"
+      @update-hdri-file="handleHDRIFileUpdate"
+      @export-model="handleExportModel"
+      @fit-to-viewer="handleFitToViewer"
+      @center-camera="handleCenterCameraOnModel"
+      @toggle-gizmo="handleToggleGizmo"
+      @set-gizmo-mode="handleSetGizmoMode"
+      @reset-gizmo-transform="handleResetGizmoTransform"
+      @start-recording="handleStartRecording"
+      @stop-recording="handleStopRecording"
+      @export-recording="handleExportRecording"
+      @clear-recording="handleClearRecording"
+      @seek="handleSeek"
+    >
+      <Load3DScene
+        v-if="node"
+        :initialize-load3d="initializeLoad3d"
+        :cleanup="cleanup"
+        :loading="loading"
+        :loading-message="loadingMessage"
+        :on-model-drop="isPreview ? undefined : handleModelDrop"
+        :is-preview="isPreview"
       />
-      <AnimationControls
-        v-if="animations && animations.length > 0"
-        v-model:animations="animations"
-        v-model:playing="playing"
-        v-model:selected-speed="selectedSpeed"
-        v-model:selected-animation="selectedAnimation"
-        v-model:animation-progress="animationProgress"
-        v-model:animation-duration="animationDuration"
-        @seek="handleSeek"
-      />
-    </div>
+    </Load3DMenuBar>
   </div>
 </template>
 
@@ -69,7 +65,6 @@ import type { Ref } from 'vue'
 
 import Load3DMenuBar from '@/components/load3d/Load3DMenuBar.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
-import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -2,11 +2,70 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
 
+test.describe(
+  'Plain legacy widgets',
+  { tag: ['@vue-nodes', '@widget'] },
+  () => {
+    test('renders widgets added through legacy APIs and direct mutation', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.clearGraph()
+      const nodeId = toNodeId(
+        await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode(
+            'DevToolsNodeWithLegacyWidget',
+            undefined,
+            { pos: [400, 200] }
+          )!
+          window.app!.graph.add(node)
+          node.addCustomWidget({
+            name: 'after_attach',
+            type: 'legacy_test',
+            value: 0,
+            options: {},
+            y: 0,
+            draw() {}
+          })
+          node.widgets!.push({
+            name: 'direct_push',
+            type: 'legacy_test',
+            value: 0,
+            options: {},
+            y: 0,
+            draw() {}
+          })
+          return String(node.id)
+        })
+      )
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((id) => {
+            const node = window.app!.graph.getNodeById(id)
+            return (
+              node?.widgets?.filter((widget) =>
+                ['legacy_widget', 'after_attach', 'direct_push'].includes(
+                  widget.name
+                )
+              ).length ?? 0
+            )
+          }, nodeId)
+        )
+        .toBe(3)
+
+      const node = comfyPage.vueNodes.getNodeLocator(nodeId)
+      await expect(
+        node.getByTestId(TestIds.widgets.widget).locator('canvas')
+      ).toHaveCount(3)
+    })
+  }
+)
+
 test('@vue-nodes In App Mode, widget width updates with panel size', async ({
-  comfyPage,
-  comfyMouse
+  comfyPage
 }) => {
   let legacyNodeId = toNodeId(10)
 
@@ -56,16 +115,14 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     const initialRenderedWidth = await getRenderedWidth()
     const initialWidgetWidth = await getWidgetWidth()
 
-    const gutter = comfyPage.page.getByRole('separator')
-
-    await expect(gutter).toBeVisible()
-    await comfyMouse.dragElementBy(gutter, { x: -200 })
+    await expect(comfyPage.appMode.rightPanelResizeHandle).toBeVisible()
+    await comfyPage.appMode.resizeRightPanelBy(-200)
     await expect.poll(getRenderedWidth).toBeGreaterThan(initialRenderedWidth)
     await expect.poll(getWidgetWidth).toBeGreaterThan(initialWidgetWidth)
     const intermediateRenderedWidth = await getRenderedWidth()
     const intermediateWidgetWidth = await getWidgetWidth()
 
-    await comfyMouse.dragElementBy(gutter, { x: 100 })
+    await comfyPage.appMode.resizeRightPanelBy(100)
     await expect.poll(getRenderedWidth).toBeLessThan(intermediateRenderedWidth)
     await expect.poll(getWidgetWidth).toBeLessThan(intermediateWidgetWidth)
   })

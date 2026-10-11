@@ -144,7 +144,8 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
+    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
@@ -169,7 +170,8 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate } = useBillingCapabilities()
+  const { canReactivate, canSubscribeSelfServe, snapshotAuthoritative } =
+    useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
@@ -185,16 +187,40 @@ function useWorkspaceUIInternal() {
   // legacy_stripe workspaces have no capability projection row, so the
   // server-resolved can_reactivate is false for them and cannot gate the
   // action; that rail stays on the membership check.
+  //
+  // Every reactivation surface reads this — the affordances and the handlers
+  // that execute them. They must not diverge: an affordance shown on a
+  // condition the handler does not share offers an action that silently fails,
+  // and the reverse hides a working one.
   const canReactivatePlan = computed(() =>
     isCloud && shouldUseWorkspaceBilling.value
       ? canReactivate.value
       : permissions.value.canManageSubscriptionLifecycle
   )
 
+  // Whether the self-serve pricing catalog applies to this workspace at all.
+  // The server resolves can_subscribe_self_serve false for sales-managed tiers
+  // (Enterprise, unrecognized), so every pricing-table entry point — menu
+  // items, settings links, and the ?pricing= deep link — reads this one value.
+  // Same rail split as canReactivatePlan: legacy_stripe has no capability
+  // projection row and stays on the membership check.
+  //
+  // Opening the catalog is navigation, not a billing write — every checkout
+  // endpoint enforces its own policy — so an absent snapshot falls back to
+  // membership rather than stranding a self-serve owner with no route to a
+  // plan. This mirrors canTopUp, which already fails open for owners.
+  const canOpenPricingSurface = computed(() => {
+    if (!isCloud || !shouldUseWorkspaceBilling.value)
+      return permissions.value.canManageSubscription
+    return snapshotAuthoritative.value
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription
+  })
+
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
     const showCreditsColumn =
-      flags.billingControlEnabled &&
+      flags.memberCreditLimitsEnabled &&
       workspaceType.value === 'team' &&
       workspaceRole.value === 'owner'
     if (!showCreditsColumn) return base
@@ -217,13 +243,10 @@ function useWorkspaceUIInternal() {
     () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
-  // A workspace can't be deleted while its subscription is active and not yet
-  // cancelled — the owner must cancel first. Both settings panels read this so
-  // their menus can't desync on a billing-flag change.
-  const isDeleteDisabled = computed(
-    () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
-  )
+  // The server refuses deleting a workspace until its plan has ended, and a
+  // cancelled plan stays active until cancel_at. Both settings panels read
+  // this so their menus can't desync on a billing-flag change.
+  const isDeleteDisabled = computed(() => canAccessSubscriptionFeatures.value)
 
   const deleteDisabledTooltipKey = computed(() =>
     isDeleteDisabled.value ? uiConfig.value.workspaceMenuDisabledTooltip : null
@@ -233,12 +256,13 @@ function useWorkspaceUIInternal() {
     // Permissions and config
     permissions,
     canReactivatePlan,
+    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isSubscriptionCancelled,
     isTeamPlanCancelled,

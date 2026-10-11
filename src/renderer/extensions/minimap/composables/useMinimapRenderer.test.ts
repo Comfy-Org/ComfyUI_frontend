@@ -7,7 +7,7 @@ import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/us
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@/renderer/extensions/minimap/minimapCanvasRenderer', () => ({
+vi.mock(import('@/renderer/extensions/minimap/minimapCanvasRenderer'), () => ({
   renderMinimapToCanvas: vi.fn()
 }))
 
@@ -100,7 +100,7 @@ describe('useMinimapRenderer', () => {
     renderer.renderMinimap()
 
     expect(mockContext.clearRect).toHaveBeenCalledWith(0, 0, 250, 200)
-    expect(vi.mocked(renderMinimapToCanvas)).not.toHaveBeenCalled()
+    expect(renderMinimapToCanvas).not.toHaveBeenCalled()
   })
 
   it('should only render when redraw is needed', () => {
@@ -135,16 +135,16 @@ describe('useMinimapRenderer', () => {
 
     // First render (needsFullRedraw is true by default)
     renderer.renderMinimap()
-    expect(vi.mocked(renderMinimapToCanvas)).toHaveBeenCalledTimes(1)
+    expect(renderMinimapToCanvas).toHaveBeenCalledTimes(1)
 
     // Second render without changes (should not render)
     renderer.renderMinimap()
-    expect(vi.mocked(renderMinimapToCanvas)).toHaveBeenCalledTimes(1)
+    expect(renderMinimapToCanvas).toHaveBeenCalledTimes(1)
 
     // Set update flag and render again
     updateFlagsRef.value.nodes = true
     renderer.renderMinimap()
-    expect(vi.mocked(renderMinimapToCanvas)).toHaveBeenCalledTimes(2)
+    expect(renderMinimapToCanvas).toHaveBeenCalledTimes(2)
   })
 
   it('should update minimap with bounds and viewport callbacks', () => {

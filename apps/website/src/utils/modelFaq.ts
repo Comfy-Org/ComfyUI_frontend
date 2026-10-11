@@ -1,6 +1,6 @@
-import type { Model } from '../config/models'
-import { t } from '../i18n/translations'
-import type { Locale, TranslationKey } from '../i18n/translations'
+import type { Model } from '@/config/models'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import type { JsonLdNode } from './jsonLd'
 import { getFaqPricingAnswer, getWhatIsDescription } from './modelSeoCopy'
 
@@ -10,7 +10,14 @@ export interface ModelFaq {
   readonly answer: string
 }
 
-const dirDescriptionKeys: Record<Model['directory'], TranslationKey> = {
+// Values are `| undefined` because `directory` is a generated string asserted to
+// ModelDirectory without runtime validation, so a new upstream directory reaches
+// this lookup as a miss. Keys stay exhaustive: Record still requires every known
+// directory to be listed.
+const dirDescriptionKeys: Record<
+  Model['directory'],
+  TranslationKey | undefined
+> = {
   diffusion_models: 'models.dirDescription.diffusion_models',
   checkpoints: 'models.dirDescription.checkpoints',
   loras: 'models.dirDescription.loras',
@@ -23,81 +30,65 @@ const dirDescriptionKeys: Record<Model['directory'], TranslationKey> = {
   latent_upscale_models: 'models.dirDescription.latent_upscale_models',
   style_models: 'models.dirDescription.style_models',
   model_patches: 'models.dirDescription.model_patches',
-  partner_nodes: 'models.dirDescription.partner_nodes'
-}
-
-function fill(
-  template: string,
-  values: Readonly<Record<string, string>>
-): string {
-  return Object.entries(values).reduce(
-    (result, [key, value]) => result.replaceAll(`{${key}}`, value),
-    template
-  )
+  partner_nodes: 'models.dirDescription.partner_nodes',
+  geometry_estimation: 'models.dirDescription.geometry_estimation',
+  background_removal: 'models.dirDescription.background_removal',
+  detection: 'models.dirDescription.detection',
+  frame_interpolation: 'models.dirDescription.frame_interpolation',
+  optical_flow: 'models.dirDescription.optical_flow'
 }
 
 export function buildModelFaqs(
   model: Model,
   locale: Locale = 'en'
 ): readonly ModelFaq[] {
-  const values = {
-    name: model.displayName,
-    count: String(model.workflowCount)
-  }
-  const templates = fill(
-    t(
-      model.workflowCount === 1
-        ? 'models.faq.templates.singular'
-        : 'models.faq.templates.plural',
-      locale
-    ),
+  const { t } = translationsFor(locale)
+  const values = { name: model.displayName, count: model.workflowCount }
+  const templates = t(
+    model.workflowCount === 1
+      ? 'models.faq.templates.singular'
+      : 'models.faq.templates.plural',
     values
   )
-  const howToUse = fill(
-    t(
-      model.docsUrl
-        ? 'models.faq.howToUse.withDocs'
-        : 'models.faq.howToUse.withoutDocs',
-      locale
-    ),
+  const howToUse = t(
+    model.docsUrl
+      ? 'models.faq.howToUse.withDocs'
+      : 'models.faq.howToUse.withoutDocs',
     { ...values, templates, url: model.docsUrl ?? '' }
   )
 
   return [
     {
       id: 'what-is',
-      question: fill(t('models.faq.whatIs.question', locale), values),
+      question: t('models.faq.whatIs.question', values),
       answer: getWhatIsDescription(
         model,
         t(
           dirDescriptionKeys[model.directory] ??
             'models.dirDescription.default',
-          locale
+          {}
         ),
         locale
       )
     },
     {
       id: 'how-to-use',
-      question: fill(t('models.faq.howToUse.question', locale), values),
+      question: t('models.faq.howToUse.question', values),
       answer: howToUse
     },
     {
       id: 'workflow-count',
-      question: fill(t('models.faq.workflowCount.question', locale), values),
-      answer: fill(
-        t(
-          model.workflowCount === 1
-            ? 'models.faq.workflowCount.singular'
-            : 'models.faq.workflowCount.plural',
-          locale
-        ),
+      question: t('models.faq.workflowCount.question', values),
+      answer: t(
+        model.workflowCount === 1
+          ? 'models.faq.workflowCount.singular'
+          : 'models.faq.workflowCount.plural',
         values
       )
     },
     {
       id: 'is-free',
-      question: fill(t('models.faq.isFree.question', locale), values),
+      question: t('models.faq.isFree.question', values),
       answer: getFaqPricingAnswer(model, locale)
     }
   ]

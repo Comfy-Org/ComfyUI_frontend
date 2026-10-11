@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-vi.mock('axios')
+vi.mock(import('axios'))
 
 describe('getFolderPaths', () => {
   it('returns legacy API response when available', async () => {

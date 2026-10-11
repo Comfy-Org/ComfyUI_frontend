@@ -85,9 +85,15 @@ async function startFlow(id: string) {
 
 ## 4. Derive everything derivable
 
-Do not store `isOpening`, `canTransition`, `isLast`, or a second copy of data
-that already exists. If a `computed` can name it, do not put it in a `ref` and
-keep it in sync by hand — the sync is where the bugs live.
+Do not store `isOpening`, `isLast`, or a second copy of data that already
+exists. If a `computed` can name it, do not put it in a `ref` and keep it in
+sync by hand — the sync is where the bugs live.
+
+This covers state the feature owns. A server fact (a permission, role, tier,
+plan status, seat count, readiness or server timestamp) is not derivable here.
+Render the field the API returns. If the API does not return it, ask the
+backend for it. See
+[ADR-API-SERVER-FACTS-0042](../adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md).
 
 ## 5. Reserve effects for synchronising with the outside
 
@@ -103,6 +109,30 @@ keep it in sync by hand — the sync is where the bugs live.
 - pointer target changed → recalculate steps
 - success changed → advance the workflow
 - an effect that writes state a second effect reads
+
+### Keep rendering out of implicit dependency collection
+
+Never call canvas `draw()` or `setDirty()` from `watchEffect`. Rendering reads
+large amounts of state; if any of it becomes reactive, Vue records those reads
+as dependencies and later rendering writes can create a redraw feedback loop.
+Use `watch` with an explicit source list when an effect must invalidate or draw
+the canvas:
+
+```ts
+watch(
+  [() => settings.linkMode, () => canvasStore.canvas],
+  ([linkMode, canvas]) => {
+    if (!canvas) return
+    canvas.links_render_mode = linkMode
+    canvas.setDirty(false, true)
+  },
+  { immediate: true }
+)
+```
+
+The same principle applies to whole-graph walks and DOM measurement: make their
+triggers explicit so incidental reads cannot silently widen when internals are
+made reactive.
 
 If two effects communicate through shared state, that is a transition wearing a
 disguise. Put it in the reducer.

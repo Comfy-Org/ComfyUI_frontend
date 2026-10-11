@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -15,7 +14,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
@@ -26,9 +25,10 @@ import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -63,7 +63,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const { nodes } = this.activeState
       //Instanceof doesn't function as nodes are serialized
       function isSubgraphNode(node: ComfyNode) {
-        return node && subgraphs.some((s) => s.id === node.type)
+        return subgraphs.some((s) => s.id === node.type)
       }
       if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
       const errors: Record<SerializedNodeId, NodeError> = {}
@@ -112,7 +112,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
      */
     private extractMetadataToWorkflowExtra(): void {
       if (!this.activeState) return
-      const subgraph = this.activeState.definitions?.subgraphs?.[0]
+      const subgraph = this.activeState.definitions?.subgraphs[0]
       if (!subgraph?.extra) return
 
       const sgExtra = subgraph.extra as Record<string, unknown>
@@ -180,11 +180,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
   }
   const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
-  const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const nodeDefStore = useNodeDefStore()
   const canvasStore = useCanvasStore()
-  const subgraphBlueprints = computed(() => [
-    ...subgraphDefCache.value.values()
-  ])
   async function fetchSubgraphs() {
     async function loadBlueprint(options: {
       path: string
@@ -264,10 +261,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subgraphStore.loadFailure'),
-        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`
+      useToast().error(t('subgraphStore.loadFailure'), {
+        description:
+          errors.length > 3
+            ? `x${errors.length}`
+            : errors
+                .map((e) => getErrorMessage(e) ?? t('g.unknownError'))
+                .join(', ')
       })
     }
   }
@@ -277,7 +277,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     name: string = workflow.filename
   ) {
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
-    if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
@@ -290,13 +289,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const workflowExtra = workflow.initialState.extra
     const description =
       workflowExtra?.BlueprintDescription ??
-      workflow.initialState?.definitions?.subgraphs[0].description ??
+      workflow.initialState.definitions?.subgraphs[0].description ??
       'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const subgraphDefCategory =
-      workflow.initialState.definitions?.subgraphs?.[0]?.category
+      workflow.initialState.definitions?.subgraphs[0]?.category
     const subgraphDefEssentialsCategory =
-      workflow.initialState.definitions?.subgraphs?.[0]?.essentials_category
+      workflow.initialState.definitions?.subgraphs[0]?.essentials_category
     const category = subgraphDefCategory
       ? `Subgraph Blueprints/${subgraphDefCategory}`
       : 'Subgraph Blueprints'
@@ -314,8 +313,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       essentials_category: subgraphDefEssentialsCategory,
       ...overrides
     }
-    const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)
-    subgraphDefCache.value.set(name, nodeDefImpl)
+    nodeDefStore.registerBlueprintNodeDef(new ComfyNodeDefImpl(nodedefv1))
     subgraphCache[name] = workflow
   }
   async function publishSubgraph(providedName?: string) {
@@ -353,7 +351,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         defaultValue: subgraphNode.title
       }))
     if (!name) return
-    if (subgraphDefCache.value.has(name) && !(await confirmOverwrite(name)))
+    if (
+      nodeDefStore.blueprintNodeDefsByName.has(BLUEPRINT_TYPE_PREFIX + name) &&
+      !(await confirmOverwrite(name))
+    )
       //User has chosen not to overwrite.
       return
 
@@ -371,11 +372,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
-    useToastStore().add({
-      severity: 'success',
-      summary: t('subgraphStore.publishSuccess'),
-      detail: t('subgraphStore.publishSuccessMessage'),
-      life: 4000
+    useToast().success(t('subgraphStore.publishSuccess'), {
+      description: t('subgraphStore.publishSuccessMessage'),
+      duration: 4000
     })
   }
   async function editBlueprint(nodeType: string) {
@@ -401,10 +400,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (!(name in subgraphCache)) throw new Error('not yet loaded')
 
     if (isGlobalBlueprint(name)) {
-      useToastStore().add({
-        severity: 'warn',
-        summary: t('subgraphStore.cannotDeleteGlobal'),
-        life: 4000
+      useToast().warning(t('subgraphStore.cannotDeleteGlobal'), {
+        duration: 4000
       })
       return
     }
@@ -421,7 +418,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
     await subgraphCache[name].delete()
     delete subgraphCache[name]
-    subgraphDefCache.value.delete(name)
+    nodeDefStore.removeBlueprintNodeDef(nodeType)
   }
   function isSubgraphBlueprint(
     workflow: unknown
@@ -430,7 +427,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   function isGlobalBlueprint(name: string): boolean {
-    const nodeDef = subgraphDefCache.value.get(name)
+    const nodeDef = nodeDefStore.blueprintNodeDefsByName.get(
+      BLUEPRINT_TYPE_PREFIX + name
+    )
     return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 
@@ -448,7 +447,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     isGlobalBlueprint,
     isSubgraphBlueprint,
     isUserBlueprint,
-    publishSubgraph,
-    subgraphBlueprints
+    publishSubgraph
   }
 })

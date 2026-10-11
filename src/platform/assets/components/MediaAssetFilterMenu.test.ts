@@ -2,11 +2,12 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import MediaAssetFilterButton from '@/platform/assets/components/MediaAssetFilterButton.vue'
-import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
+import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const i18n = createI18n({
   legacy: false,
@@ -26,7 +27,7 @@ function renderMenu({
   const onMediaTypeUpdate = vi.fn()
   const onDateUpdate = vi.fn()
   const TestHost = defineComponent({
-    components: { MediaAssetFilterButton, MediaAssetFilterMenu },
+    components: { MediaAssetFilterBar },
     setup: () => ({
       dateFilter,
       mediaTypeFilters,
@@ -34,19 +35,20 @@ function renderMenu({
       onMediaTypeUpdate
     }),
     template: `
-      <MediaAssetFilterButton>
-        <MediaAssetFilterMenu
-          :media-type-filters="mediaTypeFilters"
-          :date-filter="dateFilter"
-          @update:media-type-filters="onMediaTypeUpdate"
-          @update:date-filter="onDateUpdate"
-        />
-      </MediaAssetFilterButton>
+      <MediaAssetFilterBar
+        search-query=""
+        sort-by="newest"
+        view-mode="grid"
+        :media-type-filters="mediaTypeFilters"
+        :date-filter="dateFilter"
+        @update:media-type-filters="onMediaTypeUpdate"
+        @update:date-filter="onDateUpdate"
+      />
     `
   })
 
   const utils = render(TestHost, {
-    global: { plugins: [i18n] }
+    global: { plugins: [i18n], directives: { tooltip: {} } }
   })
   return {
     ...utils,
@@ -80,6 +82,10 @@ const dateLabels = [
 ]
 
 describe('MediaAssetFilterMenu', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+  })
+
   it('focuses the filter search when the menu opens', async () => {
     const { user } = renderMenu()
     await openMenu(user)

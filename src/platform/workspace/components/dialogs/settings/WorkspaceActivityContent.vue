@@ -1,9 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
-    <div
-      ref="tableContainer"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
-    >
+    <div ref="tableContainer" class="flex min-h-0 flex-1 flex-col">
       <Table class="min-h-0 flex-1 px-4">
         <TableHeader class="sticky top-0 z-10 bg-base-background">
           <TableRow
@@ -204,7 +201,6 @@ import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type {
@@ -213,6 +209,7 @@ import type {
 } from '@/platform/workspace/composables/useWorkspaceActivity'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -235,7 +232,7 @@ const selfUserId = computed(() =>
   canViewTeamUsage.value ? null : (resolvedUserInfo.value?.id ?? '')
 )
 
-const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
+const fullActivityUrl = computed(() => platformLink('/profile/usage'))
 
 const {
   page,
