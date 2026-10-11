@@ -418,9 +418,10 @@ function disconnectOrphanedPromotion(
   if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length) return
   for (const host of hosts(graph)) {
     const link = host.graph && inputLink(host.graph, host.id, slot)
-    if (link?.origin_id !== SUBGRAPH_INPUT_ID) continue
+    if (!link) continue
     host.disconnectInput(slot)
-    disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
+    if (link.origin_id === SUBGRAPH_INPUT_ID)
+      disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
   }
 }
 
