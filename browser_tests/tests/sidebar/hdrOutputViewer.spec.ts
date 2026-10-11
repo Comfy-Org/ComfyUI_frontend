@@ -1,12 +1,12 @@
-import { expect, mergeTests } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   createRouteMockJob,
   jobsRouteFixture,
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
+import { HdrViewerDialog } from '@e2e/fixtures/components/HdrViewerDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -52,19 +52,6 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
   ]
 })
 
-function hdrViewer(comfyPage: ComfyPage) {
-  return comfyPage.page.getByRole('dialog').filter({ hasText: 'sky.exr' })
-}
-
-async function expectHdrViewerLoaded(comfyPage: ComfyPage) {
-  const viewer = hdrViewer(comfyPage)
-  // Statistics only render once the texture has decoded.
-  await expect(viewer.getByText('Resolution', { exact: true })).toBeVisible()
-  await expect(viewer.getByRole('alert')).toBeHidden()
-  // The image lightbox would be a second dialog.
-  await expect(comfyPage.page.getByRole('dialog')).toHaveCount(1)
-}
-
 // History-mode routing to the viewer; the assets-mode by-id URL is pinned in
 // AssetsSidebarTab.test.ts.
 test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
@@ -80,7 +67,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
         .click()
       const row = comfyPage.queuePanel.jobRow('hdr-job')
       await row.dblclick()
-      await expectHdrViewerLoaded(comfyPage)
+      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
     })
   })
 
@@ -91,7 +78,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
       const tab = comfyPage.menu.assetsTab
       await tab.open()
       await tab.getAssetCardByName('sky').dblclick()
-      await expectHdrViewerLoaded(comfyPage)
+      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
     })
 
     test('opens a generated HDR card from Inspect asset', async ({
@@ -101,7 +88,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
       await tab.open()
       await tab.rightClickAsset('sky')
       await comfyPage.contextMenu.clickMenuItemExact('Inspect asset')
-      await expectHdrViewerLoaded(comfyPage)
+      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
     })
   })
 })
