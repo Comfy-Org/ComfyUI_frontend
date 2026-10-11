@@ -14,7 +14,10 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  providePromoteRecommendedWidgets,
+  useCanvasStore
+} from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
@@ -714,3 +717,5 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     )
   )
 }
+
+providePromoteRecommendedWidgets(promoteRecommendedWidgets)
