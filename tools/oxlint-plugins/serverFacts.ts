@@ -77,6 +77,9 @@ const EQUALITY_OPERATORS: ReadonlySet<string> = new Set([
 ])
 const ROLE_FALLBACK_OPERATORS: ReadonlySet<string> = new Set(['??', '||'])
 const SERVER_MESSAGE_NAME = /message$/i
+// Text matching is reported where the receiver is a server execution or API
+// error; elsewhere `message` is usually a browser or library error.
+const SERVER_MESSAGE_FILE = /(?:^|\/)src\/platform\/errorCatalog\//
 
 export const GUIDANCE =
   "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
@@ -727,6 +730,9 @@ export const noServerFactLiterals: Rule = {
     }
   },
   create(context) {
+    const matchesServerMessages = SERVER_MESSAGE_FILE.test(
+      context.filename.replaceAll('\\', '/')
+    )
     return {
       BinaryExpression(node) {
         const comparison = factComparison(node)
@@ -754,6 +760,7 @@ export const noServerFactLiterals: Rule = {
       CallExpression(node) {
         const callee = unwrap(node.callee)
         if (
+          !matchesServerMessages ||
           callee.type !== 'MemberExpression' ||
           callee.computed ||
           callee.property.name !== 'includes' ||

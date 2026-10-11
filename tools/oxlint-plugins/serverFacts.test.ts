@@ -415,6 +415,14 @@ const isFixed = tier === 'free' || tier === 'founder'
 `
     },
     {
+      name: 'a browser or library error message outside the error catalog',
+      filename: 'src/services/audioService.ts',
+      code: `
+const known = err instanceof Error && err.message.includes('already registered')
+const vue = messages.some((message) => message.includes('is not a function'))
+`
+    },
+    {
       name: 'includes on a list of messages',
       code: `const seen = messageIds.includes(id)`
     }
@@ -588,8 +596,12 @@ const ended = subscriptionStatus.value === 'ended' ? true : isCancelled.value
     },
     {
       name: 'a server error message matched as text',
-      code: `const oom = error.message.includes('CUDA')`,
-      errors: [{ messageId: 'messageMatch' }]
+      filename: 'src/platform/errorCatalog/runtimeErrorMatcher.ts',
+      code: `
+const oom = error.message.includes('CUDA')
+const blocked = (message: string) => message.includes('content policy')
+`,
+      errors: [{ messageId: 'messageMatch' }, { messageId: 'messageMatch' }]
     }
   ]
 })
