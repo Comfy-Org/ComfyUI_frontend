@@ -7,7 +7,10 @@ import {
   within
 } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
@@ -85,6 +88,8 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 vi.mock(import('@/services/hdrViewerService'))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
@@ -244,6 +249,40 @@ describe('AssetsSidebarTab context menu', () => {
 
     expect(openHdrViewer).toHaveBeenCalledWith(
       getAssetFileUrl(asset),
+      'sky.exr'
+    )
+  })
+
+  it('opens a grouped HDR output by its own asset id when assets are enabled', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    await nextTick()
+    const asset = {
+      ...folderAsset,
+      name: 'sky.exr',
+      preview_url: '/api/view?filename=sky_preview.jpg&type=output',
+      user_metadata: { ...folderAsset.user_metadata, assetId: 'sky-asset' }
+    }
+    useAssetsStore().outputAssets = {
+      items: [asset],
+      hasMore: false,
+      isLoading: false,
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => {}),
+      invalidate: vi.fn(async () => {})
+    }
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      expect.stringMatching(/\/assets\/sky-asset\/content$/),
       'sky.exr'
     )
   })

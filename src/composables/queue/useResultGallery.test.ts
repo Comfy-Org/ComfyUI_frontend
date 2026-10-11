@@ -2,11 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 vi.mock(import('@/services/hdrViewerService'))
-vi.mock(import('@/services/jobOutputCache'), { spy: true })
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { openHdrViewer } from '@/services/hdrViewerService'
-import { getOutputsForTask } from '@/services/jobOutputCache'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -184,16 +182,30 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(-1)
   })
 
+  it('opens a job with HDR and image outputs in the gallery on its images', async () => {
+    const image = createResultItem('image.png')
+    const exr = createResultItem('/api/view?filename=out.exr')
+    exr.filename = 'out.exr'
+    const task = createTask(exr, [image, exr])
+
+    const { galleryItems, onViewItem } = useResultGallery(() => [task])
+
+    await onViewItem(createJobViewItem('job-mixed', task))
+
+    expect(galleryItems.value).toEqual([image])
+    expect(openHdrViewer).not.toHaveBeenCalled()
+  })
+
   it('does not open a slower gallery request over a later HDR selection', async () => {
     const image = createResultItem('image.png')
     const exr = createResultItem('/api/view?filename=out.exr')
     exr.filename = 'out.exr'
-    const imageTask = createTask(image)
+    const imageJob = createMockJob('slow-image-job', 2)
+    const imageTask = new TaskItemImpl(imageJob, {}, [image])
+    let resolveFullOutputs!: (task: TaskItemImpl) => void
+    imageTask.loadFullOutputs = () =>
+      new Promise((resolve) => (resolveFullOutputs = resolve))
     const hdrTask = createTask(exr)
-    let resolveOutputs!: (outputs: AugmentedResultItem[]) => void
-    vi.mocked(getOutputsForTask).mockReturnValueOnce(
-      new Promise((resolve) => (resolveOutputs = resolve))
-    )
 
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
       () => [imageTask, hdrTask]
@@ -201,7 +213,7 @@ describe('useResultGallery', () => {
 
     const imageView = onViewItem(createJobViewItem('job-image', imageTask))
     await onViewItem(createJobViewItem('job-hdr', hdrTask))
-    resolveOutputs([image])
+    resolveFullOutputs(new TaskItemImpl(imageJob, {}, [image, image]))
     await imageView
 
     expect(openHdrViewer).toHaveBeenCalledOnce()

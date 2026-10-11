@@ -14,16 +14,8 @@ import { resultItemUrl } from '@/utils/resultItemUrl'
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<AugmentedResultItem[]>([])
-  let latestView = 0
 
   async function onViewItem(item: JobListItem) {
-    const view = ++latestView
-    const previewOutput = item.taskRef?.previewOutput
-    if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
-      openHdrViewer(resultItemUrl(previewOutput), previewOutput.filename)
-      return
-    }
-
     const tasks = getFilteredTasks()
     if (!tasks.length) return
 
@@ -33,14 +25,22 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       : null
 
     // Request was superseded by a newer one
-    if ((targetOutputs === null && targetTask) || view !== latestView) return
+    if (targetOutputs === null && targetTask) return
 
     // Use target's outputs if available, otherwise fall back to all previews
-    const items = targetOutputs?.length
+    const outputs = targetOutputs?.length
       ? targetOutputs
       : tasks.map((t) => t.previewOutput).filter((o) => !!o)
+    // The gallery can't render HDR; a job with only HDR outputs opens the viewer.
+    const items = outputs.filter((o) => !isHdrImageFilename(o.filename))
 
-    if (!items.length) return
+    const previewOutput = targetTask?.previewOutput
+    if (!items.length) {
+      if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
+        openHdrViewer(resultItemUrl(previewOutput), previewOutput.filename)
+      }
+      return
+    }
 
     galleryItems.value = items
     galleryActiveIndex.value = findActiveIndex(
