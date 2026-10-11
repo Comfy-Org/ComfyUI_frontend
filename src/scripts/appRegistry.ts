@@ -13,6 +13,10 @@ export function registerApp(app: ComfyApp) {
 }
 
 export function useApp(): ComfyApp {
-  assert(instance, 'ComfyApp accessed before registerApp')
+  if (!instance) {
+    const message = 'ComfyApp accessed before registerApp'
+    assert(false, message)
+    throw new TypeError(message)
+  }
   return instance
 }
