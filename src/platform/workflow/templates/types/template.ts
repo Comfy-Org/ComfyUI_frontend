@@ -1,3 +1,5 @@
+import type { TemplateInput } from '../schemas/templateSchema'
+
 export interface LogoInfo {
   /** Provider name(s) matching index_logo.json. String for single, array for stacked logos. */
   provider: string | string[]
@@ -7,6 +9,7 @@ export interface LogoInfo {
 
 export interface TemplateInfo {
   name: string
+  io?: { inputs?: TemplateInput[] }
   /**
    * Optional title which is used as the fallback if the name is not in the locales dictionary.
    */

@@ -1,6 +1,7 @@
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -39,7 +40,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -52,9 +53,21 @@ import type {
   InputSpec,
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyApp, app } from '@/scripts/app'
-import { $el } from '@/scripts/ui'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec as InputSpecV1
+} from '@/schemas/nodeDefSchema'
+import {
+  getInputSpecType,
+  zDynamicGroupInputSpec
+} from '@/schemas/nodeDefSchema'
+import { useApp } from '@/scripts/appInstance'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
+import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -70,11 +83,11 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
-  isImageNode,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -82,7 +95,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -183,7 +195,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -257,12 +269,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (useApp().dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (useApp().lastExecutionError?.node_id == this.id) {
         return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
@@ -274,6 +286,19 @@ export const useLitegraphService = () => {
   function addNodeInput(node: LGraphNode, inputSpec: InputSpec) {
     addInputSocket(node, inputSpec)
     addInputWidget(node, inputSpec, { dynamic: true })
+  }
+
+  function validateDynamicGroupWidgets(inputData: InputSpecV1, name: string) {
+    const { template } = zDynamicGroupInputSpec.parse(inputData)[1]
+    const fields = { ...template.required, ...template.optional }
+    for (const [field, spec] of Object.entries(fields)) {
+      if (
+        !widgetStore.widgets.has(spec[1]?.widgetType ?? getInputSpecType(spec))
+      )
+        throw new TypeError(
+          `DynamicGroup field '${name}.${field}' requires a registered widget`
+        )
+    }
   }
 
   /**
@@ -301,40 +326,37 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
+    const inputData = transformInputSpecV2ToV1(widgetInputSpec)
+    if (widgetInputSpec.type === 'COMFY_DYNAMICGROUP_V3')
+      validateDynamicGroupWidgets(inputData, inputName)
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result =
-      widgetConstructor(
-        node,
-        inputName,
-        transformInputSpecV2ToV1(widgetInputSpec),
-        app
-      ) ?? {}
-    const { minWidth = 1, minHeight = 1 } = result
-    const returnedWidget = result.widget
+    const result = widgetConstructor(node, inputName, inputData, useApp())
+    const wrappedResult = result && !('type' in result) ? result : undefined
+    const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
+    const returnedWidget = result && 'type' in result ? result : result?.widget
+    if (returnedWidget) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      returnedWidget.options ??= {}
+    }
     const widget =
-      returnedWidget &&
-      (node.widgets?.find(
+      (node.widgets ?? []).find(
         (candidate) =>
           candidate === returnedWidget ||
           (!widgetsBefore.has(candidate) &&
-            candidate.name === returnedWidget.name)
-      ) ??
-        toConcreteWidget(returnedWidget, node))
+            (!returnedWidget || candidate.name === returnedWidget.name))
+      ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
+    if (!widget) return
 
-    if (widget) {
-      widget.label = resolveLabel(
-        widget.label ?? widgetInputSpec.display_name ?? inputName
-      )
-      widget.options ??= {}
-      Object.assign(widget.options, {
-        advanced: inputSpec.advanced,
-        hidden: inputSpec.hidden
-      })
-      if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
-      if (dynamic) widget.tooltip = inputSpec.tooltip
-    }
+    widget.label = resolveLabel(
+      widget.label ?? widgetInputSpec.display_name ?? inputName
+    )
+    Object.assign(widget.options, {
+      advanced: inputSpec.advanced
+    })
+    if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
+    if (dynamic) widget.tooltip = inputSpec.tooltip
 
-    if (!widget?.options?.socketless) {
+    if (!widget.options.socketless) {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
@@ -352,9 +374,10 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     // Use input_order if available to ensure consistent widget ordering
-    //@ts-expect-error was ComfyNode.nodeData as ComfyNodeDefImpl
-    const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
-    const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+    const orderedInputSpecs = getOrderedInputSpecs(
+      node.constructor.nodeData ?? {},
+      inputs
+    )
 
     // Create sockets and widgets in the determined order
     for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
@@ -418,7 +441,7 @@ export const useLitegraphService = () => {
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       constructor() {
-        super(app.rootGraph, subgraph, instanceData)
+        super(useApp().rootGraph, subgraph, instanceData)
 
         subgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
@@ -502,7 +525,7 @@ export const useLitegraphService = () => {
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,
-          this.widgets ?? [],
+          this.widgets,
           data.widgets_values ?? []
         )
 
@@ -680,10 +703,9 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.addAlert(
+              toast.warning(
                 t('toastMessages.errorCopyImage', {
-                  // @ts-expect-error fixme ts strict error
-                  error: error.message ?? error
+                  error: getErrorMessage(error) ?? t('g.unknownError')
                 })
               )
             }
@@ -736,29 +758,20 @@ export const useLitegraphService = () => {
       })
 
       // prevent conflict of clipspace content
-      if (!ComfyApp.clipspace_return_node) {
+      if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
           callback: () => {
-            ComfyApp.copyToClipspace(this)
+            copyToClipspace(this)
           }
         })
 
-        if (ComfyApp.clipspace != null) {
+        if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
             callback: markCoreMediaMenuCallback(() => {
-              ComfyApp.pasteFromClipspace(this)
+              pasteFromClipspace(this)
             }, 'input')
-          })
-        }
-
-        if (isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor | Image Canvas',
-            callback: markCoreMediaMenuCallback(() => {
-              useMaskEditor().openMaskEditor(this)
-            }, 'preview')
           })
         }
       }
@@ -866,8 +879,8 @@ export const useLitegraphService = () => {
     const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
-      // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      const originalResult: unknown = origNodeOnKeyDown?.call(this, e)
+      if (originalResult === false) {
         return false
       }
 
@@ -878,19 +891,16 @@ export const useLitegraphService = () => {
       let handled = false
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const imageIndex = this.imageIndex
+        if (imageIndex === undefined) return
         if (e.key === 'ArrowLeft') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex -= 1
-        } else if (e.key === 'ArrowRight') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex += 1
+          this.imageIndex = imageIndex - 1
+        } else {
+          this.imageIndex = imageIndex + 1
         }
-        // @ts-expect-error fixme ts strict error
         this.imageIndex %= this.imgs.length
 
-        // @ts-expect-error fixme ts strict error
         if (this.imageIndex < 0) {
-          // @ts-expect-error fixme ts strict error
           this.imageIndex = this.imgs.length + this.imageIndex
         }
         handled = true
@@ -949,29 +959,26 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!graph || !node) return null
+    const graph = useWorkflowStore().activeSubgraph ?? useApp().graph
+    if (!node) return null
 
     graph.add(node, addOptions)
     return node
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const visibleArea = app.canvas?.ds?.visible_area
-    if (!visibleArea) {
-      return [0, 0]
-    }
+    if (!useApp().isGraphReady) return [0, 0]
+    const visibleArea = useApp().canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
-    return [x + w / dpi / 2, y + h / dpi / 2]
+    return [x + w / 2, y + h / 2]
   }
 
   function goToNode(nodeId: SerializedNodeId) {
     const parsedNodeId = parseNodeId(nodeId)
     if (!parsedNodeId) return
-    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
+    const graphNode = useApp().canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
-    app.canvas.animateToBounds(graphNode.boundingRect)
+    useApp().canvas.animateToBounds(graphNode.boundingRect)
   }
 
   function ensureBounds(nodes: LGraphNode[]) {
@@ -1001,7 +1008,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    canvas.ds.fitToBounds(bounds, {
+      viewport: visibleCanvasViewport(canvas)
+    })
     canvas.setDirty(true, true)
   }
 

@@ -9,45 +9,6 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('NodeDef Migration', () => {
-  it('should transform a plain object to V2 format', () => {
-    const plainObject = {
-      required: {
-        intInput: ['INT', { min: 0, max: 100, default: 50 }],
-        stringInput: ['STRING', { default: 'Hello', multiline: true }]
-      },
-      optional: {
-        booleanInput: [
-          'BOOLEAN',
-          { default: true, labelOn: 'Yes', labelOff: 'No' }
-        ],
-        floatInput: ['FLOAT', { min: 0, max: 1, step: 0.1 }]
-      },
-      hidden: {
-        someHiddenValue: 42
-      }
-    } as ComfyNodeDefV1['input']
-
-    const nodeDef: ComfyNodeDefV1 = {
-      name: 'TestNode',
-      display_name: 'Test Node',
-      category: 'Testing',
-      python_module: 'test_module',
-      description: 'A test node',
-      input: plainObject,
-      output: ['INT'],
-      output_is_list: [false],
-      output_name: ['intOutput'],
-      output_node: false
-    }
-
-    const result = transformNodeDefV1ToV2(nodeDef)
-
-    expect(result).toBeDefined()
-    expect(result.inputs).toBeDefined()
-    expect(result.outputs).toBeDefined()
-    expect(result.hidden).toBeDefined()
-  })
-
   it('should correctly transform required input specs', () => {
     const plainObject = {
       required: {
@@ -229,6 +190,28 @@ describe('NodeDef Migration', () => {
     expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
   })
 
+  it('should default a dynamic combo with no supplied options to an empty options array', () => {
+    // Synthetic subgraph-blueprint nodedefs (subgraphStore.ts) promote a
+    // boundary input's type into a bare [type, undefined] tuple.
+    const result = transformInputSpecV1ToV2(
+      ['COMFY_DYNAMICCOMBO_V3', undefined],
+      { name: 'model' }
+    )
+
+    expect(result.type).toBe('COMFY_DYNAMICCOMBO_V3')
+    expect(result.options).toEqual([])
+  })
+
+  it('should transform an input spec without options', () => {
+    const result = transformInputSpecV1ToV2(['PREVIEW_3D'], { name: 'image' })
+
+    expect(result).toEqual({
+      type: 'PREVIEW_3D',
+      name: 'image',
+      isOptional: false
+    })
+  })
+
   it('should preserve chartType across a V2 to V1 round trip', () => {
     const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
       name: 'chartInput'
@@ -243,12 +226,12 @@ describe('NodeDef Migration', () => {
   })
 
   it('should not transform hidden fields', () => {
-    const plainObject = {
+    const plainObject: NonNullable<ComfyNodeDefV1['input']> = {
       hidden: {
         someHiddenValue: 42,
         anotherHiddenValue: { nested: 'object' }
       }
-    } as ComfyNodeDefV1['input']
+    }
 
     const nodeDef: ComfyNodeDefV1 = {
       name: 'TestNode',
@@ -265,7 +248,6 @@ describe('NodeDef Migration', () => {
 
     const result = transformNodeDefV1ToV2(nodeDef)
 
-    // @ts-expect-error fixme ts strict error
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
     expect(result.hidden?.anotherHiddenValue).toEqual({ nested: 'object' })

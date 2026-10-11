@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('../providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -60,13 +60,6 @@ function renderComponent(props: {
     props,
     global: {
       plugins: [i18n],
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
       directives: {
         tooltip: () => {}
       }
@@ -205,7 +198,7 @@ describe('SecretListItem', () => {
       const secret = createMockSecret()
       const { container } = renderComponent({ secret, loading: true })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
       expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
     })
 
@@ -214,10 +207,10 @@ describe('SecretListItem', () => {
       const { container } = renderComponent({ secret, loading: true })
 
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
         container.querySelector('.pi-pen-to-square')
       ).not.toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
       expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
     })
 
@@ -226,10 +219,10 @@ describe('SecretListItem', () => {
       const { container } = renderComponent({ secret, loading: false })
 
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
         container.querySelector('.pi-pen-to-square')
       ).toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
       expect(container.querySelector('.pi-trash')).toBeInTheDocument()
     })
   })

@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ProductsSection from './ProductsSection.vue'
 
 describe('ProductsSection', () => {
@@ -10,26 +9,32 @@ describe('ProductsSection', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     const cardLinks = [
-      ['platform.products.serverless.title', '/platform/comfy-api'],
-      ['platform.products.models.title', '/platform/models'],
-      ['platform.products.builder.title', '/platform/builder']
+      ['platform.products.serverless.title', '/platform/comfy-api/'],
+      ['platform.products.models.title', '/platform/router/'],
+      ['platform.products.builder.title', '/platform/builder/']
     ] as const
     for (const [key, href] of cardLinks) {
       expect(
-        screen.getByRole('link', { name: t(key, 'en') }).getAttribute('href')
+        screen
+          .getByRole('link', { name: t(key, {}, { locale: 'en' }) })
+          .getAttribute('href')
       ).toBe(href)
     }
   })
 
-  it('marks Models API as coming soon and links to its detail page', () => {
+  it('links Comfy Router to its detail page without a coming-soon badge', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    expect(screen.getByText(t('nav.badgeComingSoon', 'en'))).toBeTruthy()
     expect(
-      screen.getByText(t('platform.products.models.learnMore', 'en'))
+      screen.queryByText(t('nav.badgeComingSoon', {}, { locale: 'en' }))
+    ).toBeNull()
+    expect(
+      screen.getByText(
+        t('platform.products.models.learnMore', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(
-      screen.getAllByText(t('platform.hero.getStarted', 'en'))
+      screen.getAllByText(t('platform.hero.getStarted', {}, { locale: 'en' }))
     ).toHaveLength(2)
   })
 

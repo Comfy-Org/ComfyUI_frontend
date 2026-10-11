@@ -73,7 +73,7 @@ interface Window {
    * (e.g. `ws.example.com`, not `wss://ws.example.com`).
    */
   __COMFY_API_WS_HOST__?: string
-  __CONFIG__: {
+  __CONFIG__?: {
     gtm_container_id?: string
     ga_measurement_id?: string
     mixpanel_token?: string

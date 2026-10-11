@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "オンボーディングを再生"
+  },
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
   },
@@ -277,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "サブグラフの検索エイリアスを設定"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "実験的: AssetAPIを有効化"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "キャンバスパフォーマンス"

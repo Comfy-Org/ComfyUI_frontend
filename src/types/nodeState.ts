@@ -1,8 +1,8 @@
+import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type {
-  INodeFlags,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import type {
   LGraphEventMode,
   RenderShape,

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { customerStorySchema } from '../content/customers.schema'
-import { nextStory, sortStories, storySlug, toCardProps } from './customers'
+import { customerStorySchema } from '@/content/customers.schema'
+import {
+  filterAndSortCustomerCards,
+  nextStory,
+  sortStories,
+  storySlug,
+  toCardProps
+} from './customers'
 
 const validFrontmatter = {
   title:
@@ -11,6 +17,7 @@ const validFrontmatter = {
   cover:
     'https://media.comfy.org/website/customers/series-entertainment/cover.webp',
   order: 0,
+  dateAdded: '2026-07-01',
   sections: [
     { id: 'intro', label: 'INTRO' },
     { id: 'the-problem', label: 'THE PROBLEM' }
@@ -122,7 +129,74 @@ describe('toCardProps', () => {
       slug: 'series-entertainment',
       title: validFrontmatter.title,
       category: validFrontmatter.category,
-      cover: validFrontmatter.cover
+      cover: validFrontmatter.cover,
+      description: validFrontmatter.description,
+      dateAdded: validFrontmatter.dateAdded
     })
   })
+})
+
+describe('filterAndSortCustomerCards', () => {
+  it.for([
+    { field: 'title', query: 'projection', titles: ['Projection mapping'] },
+    { field: 'category', query: 'public art', titles: ['Projection mapping'] },
+    { field: 'company', query: 'black math', titles: ['Studio film'] },
+    { field: 'description', query: 'material', titles: ['Studio film'] },
+    {
+      field: 'spaced company',
+      query: ' Black \t Math ',
+      titles: ['Studio film']
+    }
+  ] as const)('matches the $field', ({ query, titles }) => {
+    const cards = [
+      {
+        title: 'Projection mapping',
+        category: 'PUBLIC ART',
+        description: 'Domes and facades.',
+        date: '2026-07-01'
+      },
+      {
+        title: 'Studio film',
+        category: 'CASE STUDY',
+        description: 'Material generation.',
+        company: 'Black Math',
+        date: '2026-07-01'
+      }
+    ]
+
+    const results = filterAndSortCustomerCards(
+      cards,
+      query,
+      'latest',
+      (card) => card.date
+    )
+
+    expect(results.map((card) => card.title)).toEqual(titles)
+  })
+
+  it.for([
+    { sort: 'latest', titles: ['new', 'tie-a', 'tie-b', 'old'] },
+    { sort: 'oldest', titles: ['old', 'tie-a', 'tie-b', 'new'] }
+  ] as const)(
+    'preserves curated order for tied dates when sorting $sort',
+    ({ sort, titles }) => {
+      const cards = [
+        { title: 'tie-a', date: '2026-07-01' },
+        { title: 'new', date: '2026-10-02' },
+        { title: 'tie-b', date: '2026-07-01' },
+        { title: 'old', date: '2026-04-23' }
+      ].map((card) => ({ ...card, category: 'STORY', description: '' }))
+      const original = [...cards]
+
+      const results = filterAndSortCustomerCards(
+        cards,
+        '',
+        sort,
+        (card) => card.date
+      )
+
+      expect(results.map((card) => card.title)).toEqual(titles)
+      expect(cards).toEqual(original)
+    }
+  )
 })

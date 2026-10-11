@@ -4,18 +4,19 @@ import { ChevronRight } from '@lucide/vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchGallery } from './types'
 
-import Badge from '../../components/ui/badge/Badge.vue'
-import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import IconButton from '../../components/ui/icon-button/IconButton.vue'
-import { t } from '../../i18n/translations'
+import Badge from '@/components/ui/badge/Badge.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 // The cards sit well below the fold; defer their videos until the section
 // nears the viewport instead of fetching all of them during first paint.
@@ -35,13 +36,13 @@ const { stop } = useIntersectionObserver(
 <template>
   <section
     ref="sectionRef"
-    class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(gallery.headingKey, locale) }}
+        {{ t(gallery.headingKey) }}
       </h2>
     </div>
 
@@ -50,7 +51,7 @@ const { stop } = useIntersectionObserver(
     >
       <article v-for="card in gallery.cards" :key="card.id">
         <div
-          class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
+          class="group relative block aspect-19/10 overflow-hidden rounded-4.5xl bg-black/40"
         >
           <video
             v-if="card.media.kind === 'video'"
@@ -83,7 +84,7 @@ const { stop } = useIntersectionObserver(
             class="absolute inset-x-8 top-8 flex items-start justify-end"
           >
             <div
-              class="group-hover:bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:text-primary-comfy-ink"
+              class="flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink"
             >
               <span
                 class="inline-block size-6 bg-current"
@@ -103,8 +104,8 @@ const { stop } = useIntersectionObserver(
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
-                  ? t('modelLaunch.tagFree', locale)
-                  : t('modelLaunch.tagPremium', locale)
+                  ? t('modelLaunch.tagFree')
+                  : t('modelLaunch.tagPremium')
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
@@ -124,7 +125,7 @@ const { stop } = useIntersectionObserver(
                 'rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
                 gallery.ctaVariant === 'accent'
                   ? 'bg-primary-comfy-yellow hover:opacity-90'
-                  : 'hover:bg-primary-comfy-yellow bg-primary-warm-gray'
+                  : 'bg-primary-warm-gray hover:bg-primary-comfy-yellow'
               )
             "
           >
@@ -149,8 +150,8 @@ const { stop } = useIntersectionObserver(
           <CopyTextButton
             class="-mr-2 -mb-2"
             :value="card.prompt[locale] || card.prompt.en"
-            :label="t('modelLaunch.copyPrompt', locale)"
-            :copied-label="t('ui.copied', locale)"
+            :label="t('modelLaunch.copyPrompt')"
+            :copied-label="t('ui.copied')"
           />
         </div>
       </article>

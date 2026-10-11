@@ -1,14 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { GalleriaProps } from 'primevue/galleria'
-import { describe, expect, it } from 'vitest'
-import { defineComponent } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 import WidgetGalleria from './WidgetGalleria.vue'
-import type { GalleryImage, GalleryValue } from './WidgetGalleria.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
@@ -16,414 +13,225 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      'Gallery image': 'Gallery image'
+      g: {
+        imageGallery: 'Image gallery',
+        galleryImage: 'Gallery image',
+        galleryImagePosition: 'Gallery image {index} of {total}',
+        galleryThumbnailPosition: 'Gallery thumbnail {index} of {total}',
+        previousImage: 'Previous image',
+        nextImage: 'Next image'
+      }
     }
   }
 })
 
-const GalleriaStub = defineComponent({
-  name: 'Galleria',
-  props: {
-    value: { type: Array, default: () => [] },
-    showThumbnails: { type: Boolean, default: false },
-    showItemNavigators: { type: Boolean, default: false },
-    activeIndex: { type: Number, default: 0 },
-    circular: { type: Boolean, default: false },
-    autoPlay: { type: Boolean, default: false },
-    transitionInterval: { type: Number, default: 0 },
-    pt: { type: Object, default: () => ({}) }
-  },
-  emits: ['update:activeIndex'],
-  template: `<div data-testid="galleria"
-    class="max-w-full"
-    :data-value="JSON.stringify(value)"
-    :data-show-thumbnails="String(showThumbnails)"
-    :data-show-item-navigators="String(showItemNavigators)"
-    :data-active-index="String(activeIndex)"
-    :data-circular="String(circular)"
-    :data-auto-play="String(autoPlay)"
-    :data-transition-interval="String(transitionInterval)"
-    :data-pt="JSON.stringify(pt)"
-  ><button data-testid="galleria-set-index" @click="$emit('update:activeIndex', 2)">set</button></div>`
-})
+const images = [
+  'https://example.com/one.jpg',
+  'https://example.com/two.jpg',
+  'https://example.com/three.jpg'
+]
 
-// Test data constants for better test isolation
-const TEST_IMAGES_SMALL: readonly string[] = Object.freeze([
-  'https://example.com/image0.jpg',
-  'https://example.com/image1.jpg',
-  'https://example.com/image2.jpg'
-])
-
-const TEST_IMAGES_SINGLE: readonly string[] = Object.freeze([
-  'https://example.com/single.jpg'
-])
-
-const TEST_IMAGE_OBJECTS: readonly GalleryImage[] = Object.freeze([
-  {
-    itemImageSrc: 'https://example.com/image0.jpg',
-    thumbnailImageSrc: 'https://example.com/thumb0.jpg',
-    alt: 'Test image 0'
-  },
-  {
-    itemImageSrc: 'https://example.com/image1.jpg',
-    thumbnailImageSrc: 'https://example.com/thumb1.jpg',
-    alt: 'Test image 1'
-  }
-])
-
-function getGalleriaElement(): HTMLElement {
-  return screen.getByTestId('galleria')
-}
-
-function getGalleriaProp(name: string): string | null {
-  return getGalleriaElement().getAttribute(`data-${name}`)
-}
-
-function getGalleriaValue(): unknown[] {
-  return JSON.parse(getGalleriaProp('value') ?? '[]')
-}
-
-function getGalleriaPt(): Record<string, unknown> {
-  return JSON.parse(getGalleriaProp('pt') ?? '{}')
-}
-
-// Helper functions outside describe blocks for better clarity
-function createGalleriaWidget(
-  value: GalleryValue = [],
-  options: Partial<GalleriaProps> = {}
-) {
-  return createMockWidget<GalleryValue>({
-    value,
-    name: 'test_galleria',
-    type: 'array',
-    options
-  })
-}
-
-function renderComponent(
-  widget: SimplifiedWidget<GalleryValue>,
-  modelValue: GalleryValue
-) {
+function renderGallery(value: string[] = images, options: IWidgetOptions = {}) {
   return render(WidgetGalleria, {
-    global: {
-      plugins: [i18n],
-      stubs: { Galleria: GalleriaStub }
+    global: { plugins: [i18n] },
+    attrs: {
+      widget: createMockWidget({
+        value,
+        name: 'gallery',
+        type: 'galleria',
+        options
+      })
     },
-    props: {
-      widget,
-      modelValue
+    props: { modelValue: value }
+  })
+}
+
+describe('WidgetGalleria', () => {
+  it.for([
+    { name: 'null', value: null },
+    { name: 'a non-array value', value: 'not-an-array' },
+    { name: 'an array without image URLs', value: [null, 1, ''] }
+  ])('renders an empty gallery for persisted $name', ({ value }) => {
+    render(WidgetGalleria, {
+      global: { plugins: [i18n] },
+      props: { modelValue: value }
+    })
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('renders the active image and thumbnails with accessible labels', () => {
+    renderGallery()
+
+    expect(
+      screen.getByRole('region', { name: 'Image gallery' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toHaveAttribute('src', images[0])
+    expect(
+      screen.getAllByRole('button', { name: /Gallery thumbnail/ })
+    ).toHaveLength(3)
+  })
+
+  it('moves between images and disables navigation at the bounds', async () => {
+    const user = userEvent.setup()
+    renderGallery()
+
+    const previous = screen.getByRole('button', { name: 'Previous image' })
+    const next = screen.getByRole('button', { name: 'Next image' })
+    expect(previous).toBeDisabled()
+
+    await user.click(next)
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toHaveAttribute('src', images[1])
+
+    await user.click(next)
+    expect(next).toBeDisabled()
+
+    await user.click(previous)
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toHaveAttribute('src', images[1])
+  })
+
+  it('selects an image from its thumbnail', async () => {
+    const user = userEvent.setup()
+    renderGallery()
+
+    const thumbnail = screen.getByRole('button', {
+      name: 'Gallery thumbnail 3 of 3'
+    })
+    await user.click(thumbnail)
+
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 3 of 3' })
+    ).toHaveAttribute('src', images[2])
+    expect(thumbnail).toHaveAttribute('aria-current', 'true')
+    expect(
+      screen.getByRole('button', { name: 'Gallery thumbnail 1 of 3' })
+    ).not.toHaveAttribute('aria-current')
+  })
+
+  it('moves a single thumbnail tab stop with Arrow, Home, and End keys', async () => {
+    const user = userEvent.setup()
+    renderGallery()
+    const thumbnails = screen.getAllByRole('button', {
+      name: /Gallery thumbnail/
+    })
+
+    expect(thumbnails.map((thumbnail) => thumbnail.tabIndex)).toEqual([
+      0, -1, -1
+    ])
+
+    thumbnails[0].focus()
+    await user.keyboard('{ArrowRight}')
+    expect(thumbnails[1]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toHaveAttribute('src', images[1])
+
+    await user.keyboard('{End}')
+    expect(thumbnails[2]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 3 of 3' })
+    ).toHaveAttribute('src', images[2])
+
+    await user.keyboard('{Home}')
+    expect(thumbnails[0]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toHaveAttribute('src', images[0])
+  })
+
+  it('does not render internal widget metadata on the gallery root', () => {
+    renderGallery()
+
+    expect(screen.getByRole('region')).not.toHaveAttribute('widget')
+  })
+
+  it('clamps the active image when the image list shrinks and recovers after emptying', async () => {
+    const user = userEvent.setup()
+    const gallery = renderGallery()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Gallery thumbnail 3 of 3' })
+    )
+    await gallery.rerender({ modelValue: images.slice(0, 2) })
+
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 2' })
+    ).toHaveAttribute('src', images[1])
+
+    await gallery.rerender({ modelValue: [] })
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+
+    await gallery.rerender({ modelValue: images })
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toHaveAttribute('src', images[0])
+  })
+
+  it('ignores stale PrimeVue options while rendering schema images', async () => {
+    vi.useFakeTimers()
+    const options = {
+      serialize: true,
+      showThumbnails: false,
+      showItemNavigators: false,
+      autoPlay: true,
+      circular: true,
+      transitionInterval: 1000
     }
-  })
-}
+    renderGallery(images, options)
 
-function createImageStrings(count: number): string[] {
-  return Array.from(
-    { length: count },
-    (_, i) => `https://example.com/image${i}.jpg`
-  )
-}
-
-// Factory function that takes images, creates widget internally, renders
-function renderGalleria(
-  images: GalleryValue,
-  options: Partial<GalleriaProps> = {}
-) {
-  const widget = createGalleriaWidget(images, options)
-  return renderComponent(widget, images)
-}
-
-describe('WidgetGalleria Image Display', () => {
-  describe('Component Rendering', () => {
-    it('renders galleria component', () => {
-      renderGalleria([...TEST_IMAGES_SMALL])
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('displays empty gallery when no images provided', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
-
-    it('handles null or undefined value gracefully', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
+    expect(
+      screen.getByRole('button', { name: 'Previous image' })
+    ).toBeDisabled()
+    expect(
+      screen.getAllByRole('button', { name: /Gallery thumbnail/ })
+    ).toHaveLength(3)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toHaveAttribute('src', images[0])
   })
 
-  describe('String Array Input', () => {
-    it('converts string array to image objects', () => {
-      const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
-      renderComponent(widget, [...TEST_IMAGES_SMALL])
+  it('hides controls for a single image', () => {
+    renderGallery([images[0]])
 
-      const value = getGalleriaValue()
-
-      expect(value).toHaveLength(3)
-      expect(value[0]).toEqual({
-        itemImageSrc: 'https://example.com/image0.jpg',
-        thumbnailImageSrc: 'https://example.com/image0.jpg',
-        alt: 'Image 0'
-      })
-    })
-
-    it('handles single string image', () => {
-      const widget = createGalleriaWidget([...TEST_IMAGES_SINGLE])
-      renderComponent(widget, [...TEST_IMAGES_SINGLE])
-
-      const value = getGalleriaValue()
-
-      expect(value).toHaveLength(1)
-      expect(value[0]).toEqual({
-        itemImageSrc: 'https://example.com/single.jpg',
-        thumbnailImageSrc: 'https://example.com/single.jpg',
-        alt: 'Image 0'
-      })
-    })
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.getByRole('img')).toHaveAttribute('src', images[0])
   })
 
-  describe('Object Array Input', () => {
-    it('preserves image objects as-is', () => {
-      const widget = createGalleriaWidget([...TEST_IMAGE_OBJECTS])
-      renderComponent(widget, [...TEST_IMAGE_OBJECTS])
-
-      const value = getGalleriaValue()
-
-      expect(value).toEqual([...TEST_IMAGE_OBJECTS])
+  it('localizes the complete image and thumbnail positions', () => {
+    const translated = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          g: {
+            galleryImage: 'Image',
+            galleryImagePosition: '{total} images, number {index}',
+            galleryThumbnailPosition: '{total} previews, number {index}',
+            previousImage: 'Previous',
+            nextImage: 'Next'
+          }
+        }
+      }
+    })
+    render(WidgetGalleria, {
+      global: { plugins: [translated] },
+      props: { modelValue: images }
     })
 
-    it('handles mixed object properties', () => {
-      const images: GalleryImage[] = [
-        { src: 'https://example.com/image1.jpg', alt: 'First' },
-        { itemImageSrc: 'https://example.com/image2.jpg' },
-        { thumbnailImageSrc: 'https://example.com/thumb3.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      const value = getGalleriaValue()
-
-      expect(value).toEqual(images)
-    })
-  })
-
-  describe('Thumbnail Display', () => {
-    it('shows thumbnails when multiple images present', () => {
-      renderGalleria([...TEST_IMAGES_SMALL])
-
-      expect(getGalleriaProp('show-thumbnails')).toBe('true')
-    })
-
-    it('hides thumbnails for single image', () => {
-      renderGalleria([...TEST_IMAGES_SINGLE])
-
-      expect(getGalleriaProp('show-thumbnails')).toBe('false')
-    })
-
-    it('respects widget option to hide thumbnails', () => {
-      renderGalleria([...TEST_IMAGES_SMALL], {
-        showThumbnails: false
-      })
-
-      expect(getGalleriaProp('show-thumbnails')).toBe('false')
-    })
-
-    it('shows thumbnails when explicitly enabled for multiple images', () => {
-      renderGalleria([...TEST_IMAGES_SMALL], {
-        showThumbnails: true
-      })
-
-      expect(getGalleriaProp('show-thumbnails')).toBe('true')
-    })
-  })
-
-  describe('Navigation Buttons', () => {
-    it('shows navigation buttons when multiple images present', () => {
-      renderGalleria([...TEST_IMAGES_SMALL])
-
-      expect(getGalleriaProp('show-item-navigators')).toBe('true')
-    })
-
-    it('hides navigation buttons for single image', () => {
-      renderGalleria([...TEST_IMAGES_SINGLE])
-
-      expect(getGalleriaProp('show-item-navigators')).toBe('false')
-    })
-
-    it('respects widget option to hide navigation buttons', () => {
-      const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images, {
-        showItemNavigators: false
-      })
-      renderComponent(widget, images)
-
-      expect(getGalleriaProp('show-item-navigators')).toBe('false')
-    })
-
-    it('shows navigation buttons when explicitly enabled for multiple images', () => {
-      const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images, {
-        showItemNavigators: true
-      })
-      renderComponent(widget, images)
-
-      expect(getGalleriaProp('show-item-navigators')).toBe('true')
-    })
-  })
-
-  describe('Widget Options Handling', () => {
-    it('passes through valid widget options', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images, {
-        circular: true,
-        autoPlay: true,
-        transitionInterval: 3000
-      })
-      renderComponent(widget, images)
-
-      expect(getGalleriaProp('circular')).toBe('true')
-      expect(getGalleriaProp('auto-play')).toBe('true')
-      expect(getGalleriaProp('transition-interval')).toBe('3000')
-    })
-
-    it('applies custom styling props', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
-  })
-
-  describe('Active Index Management', () => {
-    it('initializes with zero active index', () => {
-      const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaProp('active-index')).toBe('0')
-    })
-
-    it('can update active index', async () => {
-      const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      const user = userEvent.setup()
-      await user.click(screen.getByTestId('galleria-set-index'))
-
-      await waitFor(() => expect(getGalleriaProp('active-index')).toBe('2'))
-    })
-  })
-
-  describe('Image Template Rendering', () => {
-    it('renders item template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          itemImageSrc: 'https://example.com/item.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('renders thumbnail template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          thumbnailImageSrc: 'https://example.com/thumb.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('handles empty array gracefully', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-      expect(getGalleriaProp('show-thumbnails')).toBe('false')
-      expect(getGalleriaProp('show-item-navigators')).toBe('false')
-    })
-
-    it('handles malformed image objects', () => {
-      const malformedImages: GalleryValue = JSON.parse(
-        '[{}, {"randomProp":"value"}, null, null]'
-      )
-      const widget = createGalleriaWidget(malformedImages)
-      renderComponent(widget, malformedImages)
-
-      // Null/undefined should be filtered out, leaving only the objects
-      const expectedValue = [{}, { randomProp: 'value' }]
-      expect(getGalleriaValue()).toEqual(expectedValue)
-    })
-
-    it('handles very large image arrays', () => {
-      const largeImageArray = createImageStrings(100)
-      const widget = createGalleriaWidget(largeImageArray)
-      renderComponent(widget, largeImageArray)
-
-      expect(getGalleriaValue()).toHaveLength(100)
-      expect(getGalleriaProp('show-thumbnails')).toBe('true')
-      expect(getGalleriaProp('show-item-navigators')).toBe('true')
-    })
-
-    it('handles mixed string and object arrays gracefully', () => {
-      // This is technically invalid input, but the component should handle it
-      const mixedArray: GalleryValue = JSON.parse(
-        '["https://example.com/string.jpg",' +
-          '{"itemImageSrc":"https://example.com/object.jpg"},' +
-          '"https://example.com/another-string.jpg"]'
-      )
-      const widget = createGalleriaWidget(mixedArray)
-
-      // The component expects consistent typing, but let's test it handles mixed input
-      expect(() => renderComponent(widget, mixedArray)).not.toThrow()
-    })
-
-    it('handles invalid URL strings', () => {
-      const invalidUrls = ['not-a-url', '', ' ', 'http://', 'ftp://invalid']
-      const widget = createGalleriaWidget(invalidUrls)
-      renderComponent(widget, invalidUrls)
-
-      expect(getGalleriaValue()).toHaveLength(5)
-    })
-  })
-
-  describe('Styling and Layout', () => {
-    it('applies max-width constraint', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
-
-    it('applies passthrough props for thumbnails', () => {
-      const images = createImageStrings(3)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      const pt = getGalleriaPt()
-
-      expect(pt).toBeDefined()
-      expect(pt.thumbnails).toBeDefined()
-      expect(pt.thumbnailContent).toBeDefined()
-      expect(pt.thumbnailPrevButton).toBeDefined()
-      expect(pt.thumbnailNextButton).toBeDefined()
-    })
+    expect(
+      screen.getByRole('img', { name: '3 images, number 1' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '3 previews, number 1' })
+    ).toBeInTheDocument()
   })
 })

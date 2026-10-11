@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchSteps } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
-import { t } from '../../i18n/translations'
-import { parseFaqAnswer } from '../../utils/faqAnswer'
+import BrandButton from '@/components/common/BrandButton.vue'
+import { translationsFor } from '@/i18n/translations'
+import { parseFaqAnswer } from '@/utils/faqAnswer'
 
 const { locale = 'en', steps } = defineProps<{
   steps: ModelLaunchSteps
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
 
@@ -23,19 +24,19 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(steps.headingKey, locale) }}
+        {{ t(steps.headingKey) }}
       </h2>
     </div>
 
     <ol
       :class="
         cn(
-          'rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-4 p-4 lg:gap-2 lg:p-2',
+          'mt-12 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:gap-2 lg:p-2',
           steps.items.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
         )
       "
@@ -43,12 +44,13 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
       <li
         v-for="(step, index) in steps.items"
         :key="step.id"
-        class="rounded-4.5xl flex flex-col gap-8 bg-primary-comfy-ink p-6"
+        class="flex flex-col gap-8 rounded-4.5xl bg-primary-comfy-ink p-6"
       >
         <p
-          class="text-primary-comfy-yellow text-sm/tight font-extrabold tracking-wider uppercase"
+          class="text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
-          {{ t(steps.stepLabelKey, locale) }} {{ stepNumber(index) }}
+          {{ t(steps.stepLabelKey) }}
+          {{ stepNumber(index) }}
         </p>
         <p class="text-2xl/snug font-medium text-primary-warm-white">
           {{ step.title[locale] || step.title.en }}
@@ -69,6 +71,11 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
               class="text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70"
               >{{ part.label ?? part.value }}</a
             >
+            <strong
+              v-else-if="part.type === 'strong'"
+              class="font-semibold text-primary-warm-white"
+              >{{ part.value }}</strong
+            >
             <template v-else>{{ part.value }}</template>
           </template>
         </p>
@@ -87,7 +94,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.primaryCta.labelKey, locale) }}
+        {{ t(steps.primaryCta.labelKey) }}
       </BrandButton>
       <BrandButton
         v-if="steps.secondaryCta"
@@ -97,7 +104,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
         size="lg"
         class="w-full p-4 text-center sm:w-auto sm:min-w-52"
       >
-        {{ t(steps.secondaryCta.labelKey, locale) }}
+        {{ t(steps.secondaryCta.labelKey) }}
       </BrandButton>
     </div>
   </section>

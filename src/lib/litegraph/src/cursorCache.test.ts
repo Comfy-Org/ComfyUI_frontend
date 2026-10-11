@@ -9,9 +9,15 @@ function createMockElement() {
   })
 
   const element = document.createElement('div')
-  Object.defineProperty(element.style, 'cursor', {
-    get: () => cursorValue,
-    set: setter
+  Object.defineProperty(element, 'style', {
+    value: {
+      get cursor() {
+        return cursorValue
+      },
+      set cursor(value: string) {
+        setter(value)
+      }
+    }
   })
 
   return { element, setter }

@@ -21,8 +21,8 @@ export function useKeyboard() {
 
     if (event.key === ' ') {
       event.preventDefault()
-      const activeElement = document.activeElement as HTMLElement
-      if (activeElement && activeElement.blur) {
+      const activeElement = document.activeElement
+      if (activeElement instanceof HTMLElement) {
         activeElement.blur()
       }
     }

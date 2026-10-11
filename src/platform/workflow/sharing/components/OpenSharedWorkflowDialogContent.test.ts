@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,12 +10,15 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 
 const mockGetSharedWorkflow = vi.fn()
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {},
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: mockGetSharedWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {},
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: mockGetSharedWorkflow
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

@@ -31,8 +31,8 @@ export function header(text: string) {
   console.log()
 }
 
-// eslint-disable-next-line no-control-regex
-const ANSI = /\[[0-9;]*m/g
+// oxlint-disable-next-line no-control-regex
+const ANSI = /\x1b\[[0-9;]*m/g
 
 /**
  * ANSI escapes occupy no cells and emoji occupy two, so .length skews borders.

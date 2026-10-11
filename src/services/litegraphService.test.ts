@@ -1,12 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { cloneDeep } from 'es-toolkit'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: undefined },
-  ComfyApp: class {}
-}))
+vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -21,30 +16,30 @@ const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
-    Reflect.set(app, 'canvas', undefined)
+    app.canvas.ds.visible_area.set([10, 20, 200, 100])
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
 
     expect(center).toEqual([0, 0])
   })
 
-  it('returns origin when canvas exists but ds.visible_area is missing', () => {
-    Reflect.set(app, 'canvas', { ds: {} })
+  it.for<{
+    dpr: number
+    visibleArea: [number, number, number, number]
+    center: [number, number]
+  }>([
+    { dpr: 1, visibleArea: [10, 20, 200, 100], center: [110, 70] },
+    { dpr: 2, visibleArea: [0, 0, 800, 600], center: [400, 300] }
+  ])(
+    'returns the CSS-pixel visible-area centre at DPR $dpr',
+    ({ dpr, visibleArea, center }) => {
+      app.canvas.dpr = dpr
+      app.canvas.ds.visible_area.set(visibleArea)
 
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([0, 0])
-  })
-
-  it('returns the visible-area centre once the canvas is ready', () => {
-    Reflect.set(app, 'canvas', {
-      ds: { visible_area: [10, 20, 200, 100] }
-    })
-
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([110, 70])
-  })
+      expect(useLitegraphService().getCanvasCenter()).toEqual(center)
+    }
+  )
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {
@@ -79,7 +74,6 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mergeBundledSlotText('stale bundled label')
     mergeCustomNodesI18n({
       en: {
@@ -134,7 +128,6 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     i18n.global.mergeLocaleMessage('en', {
       nodeDefs: {
         [nodeName]: {
@@ -179,7 +172,6 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
   let retainedWidget: IBaseWidget
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useWidgetStore().registerCustomWidgets({
       [widgetType]: (node, inputName) => {
         retainedWidget = Object.preventExtensions({
@@ -191,7 +183,7 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
         })
         node.widgets ??= []
         node.widgets.push(retainedWidget)
-        return { widget: retainedWidget }
+        return retainedWidget
       }
     })
     await useLitegraphService().registerNodeDef(nodeName, {

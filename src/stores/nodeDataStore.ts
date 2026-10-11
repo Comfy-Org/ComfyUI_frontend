@@ -9,7 +9,6 @@ import type {
 } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
 
 /**
@@ -49,8 +48,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
    */
   function registerNode(
     graphScope: GraphScope,
-    state: NodeState,
-    _context?: RemoteMutationContext
+    state: NodeState
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
     const incumbent = existingBucket?.byId.get(state.id)
@@ -90,10 +88,6 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     })
   }
 
-  function getNode(rootGraphId: UUID, nodeId: NodeId): NodeState | undefined {
-    return roots.get(toRootGraphId(rootGraphId))?.byId.get(nodeId)
-  }
-
   function ownsNode(graphScope: GraphScope, state: NodeState): boolean {
     const registered = roots.get(graphScope.rootGraphId)?.byId.get(state.id)
     return (
@@ -102,11 +96,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     )
   }
 
-  function deleteNode(
-    graphScope: GraphScope,
-    state: NodeState,
-    _context?: RemoteMutationContext
-  ): boolean {
+  function deleteNode(graphScope: GraphScope, state: NodeState): boolean {
     const bucket = roots.get(graphScope.rootGraphId)
     const registered = bucket?.byId.get(state.id)
     if (
@@ -123,59 +113,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return true
   }
 
-  function updateNodeSlots(
-    graphScope: GraphScope,
-    nodeId: NodeId,
-    slots: Pick<NodeState, 'inputs' | 'outputs'>,
-    _context?: RemoteMutationContext
-  ): boolean {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
-    if (!state || state.graphId !== graphScope.owningGraphId) return false
-    state.inputs = slots.inputs
-    state.outputs = slots.outputs
-    return true
-  }
-
-  function updateNode(
-    graphScope: GraphScope,
-    nodeId: NodeId,
-    replacement: NodeState,
-    _context?: RemoteMutationContext
-  ): boolean {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
-    if (!state || state.graphId !== graphScope.owningGraphId) return false
-
-    state.inputs.splice(0, state.inputs.length, ...replacement.inputs)
-    state.outputs.splice(0, state.outputs.length, ...replacement.outputs)
-    const {
-      graphId: _graphId,
-      id: _id,
-      inputs: _inputs,
-      outputs: _outputs,
-      ...next
-    } = replacement
-    Object.assign(state, {
-      bgcolor: undefined,
-      boxcolor: undefined,
-      color: undefined,
-      lastSerialization: undefined,
-      resizable: undefined,
-      shape: undefined,
-      showAdvanced: undefined,
-      titleMode: undefined,
-      ...next
-    } satisfies Omit<NodeState, 'graphId' | 'id' | 'inputs' | 'outputs'>)
-    return true
-  }
-
   function clearGraph(rootGraphId: UUID): void {
     roots.delete(toRootGraphId(rootGraphId))
   }
 
-  function clearOwner(
-    graphScope: GraphScope,
-    _context?: RemoteMutationContext
-  ): void {
+  function clearOwner(graphScope: GraphScope): void {
     const bucket = roots.get(graphScope.rootGraphId)
     const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
     if (!bucket || !ids) return
@@ -189,10 +131,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     clearGraph,
     deleteNode,
     getGraphNodesFor,
-    getNode,
     ownsNode,
-    registerNode,
-    updateNode,
-    updateNodeSlots
+    registerNode
   }
 })

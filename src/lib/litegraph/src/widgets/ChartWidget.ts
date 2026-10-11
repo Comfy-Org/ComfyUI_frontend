@@ -1,22 +1,15 @@
 import type { IChartWidget } from '../types/widgets'
-import { BaseWidget } from './BaseWidget'
-import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**
  * Widget for displaying charts and data visualizations
  * This is a widget that only has a Vue widgets implementation
  */
 export class ChartWidget
-  extends BaseWidget<IChartWidget>
+  extends VueOnlyWidget<IChartWidget>
   implements IChartWidget
 {
-  override type = 'chart' as const
-
-  drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
-    this.drawVueOnlyWarning(ctx, options, 'Chart')
-  }
-
-  onClick(_options: WidgetEventOptions): void {
-    // This is a widget that only has a Vue widgets implementation
+  protected get vueOnlyLabel(): string {
+    return 'Chart'
   }
 }

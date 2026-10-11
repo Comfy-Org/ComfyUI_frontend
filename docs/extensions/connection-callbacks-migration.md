@@ -73,6 +73,24 @@ So when your `onConnectionsChange` callback fires during load, every peer
 node already exists and its link is already registered, so `graph.getNodeById()`
 and link lookups from inside that callback resolve correctly.
 
+## API prompt import does not reconnect resolved inputs
+
+`app.loadApiJson()` connects each resolvable input without running a second
+disconnect/reconnect pass. Extensions should not rely on duplicate
+`onConnectionsChange` notifications during API prompt import. Make each
+connection handler perform its work on the first notification; move work that
+requires the complete imported graph to `afterConfigureGraph` or `afterLoadGraph`.
+
+Inputs whose source output or destination slot does not exist yet are retried
+while a pass makes progress. This preserves dynamic-input behavior: a successful
+connection can create the slot needed by a later pending connection. Already
+resolved connections are not repeated, and a connection rejected by an
+extension is not retried once its endpoints are available.
+
+This changes API prompt import only. Regular workflow loading still uses
+`graph.configure()` as described above, and connection callback signatures are
+unchanged.
+
 ## Disconnecting inside the output callback skips the input callback
 
 Connecting a link calls the output side's `onConnectionsChange` first, then

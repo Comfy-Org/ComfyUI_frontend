@@ -1,13 +1,7 @@
-import type {
-  IContextMenuValue,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphGroup,
-  type LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -32,11 +26,12 @@ function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {
 const ext: ComfyExtension = {
   name: 'Comfy.GroupOptions',
 
-  getCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
+  getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+    const items: (IContextMenuValue | null)[] = []
+    const graph = canvas.graph
+    if (!graph) return items
 
-    // @ts-expect-error fixme ts strict error
-    const group = canvas.graph.getGroupOnPos(
+    const group = graph.getGroupOnPos(
       canvas.graph_mouse[0],
       canvas.graph_mouse[1]
     )
@@ -48,10 +43,8 @@ const ext: ComfyExtension = {
           callback: () => {
             const group = new LGraphGroup()
             addNodesToGroup(group, canvas.selectedItems)
-            // @ts-expect-error fixme ts strict error
-            canvas.graph.add(group)
-            // @ts-expect-error fixme ts strict error
-            canvas.graph.change()
+            graph.add(group)
+            graph.change()
 
             group.recomputeInsideNodes()
           }
@@ -67,11 +60,10 @@ const ext: ComfyExtension = {
 
     items.push({
       content: 'Add Selected Nodes To Group',
-      disabled: !canvas.selectedItems?.size,
+      disabled: !canvas.selectedItems.size,
       callback: () => {
         addNodesToGroup(group, canvas.selectedItems)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        graph.change()
       }
     })
 
@@ -80,7 +72,6 @@ const ext: ComfyExtension = {
       return items
     } else {
       // Add a separator between the default options and the group options
-      // @ts-expect-error fixme ts strict error
       items.push(null)
     }
 
@@ -97,8 +88,7 @@ const ext: ComfyExtension = {
           'Comfy.GroupSelectedNodes.Padding'
         )
         group.resizeTo(group.children, padding)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        graph.change()
       }
     })
 
@@ -106,8 +96,7 @@ const ext: ComfyExtension = {
       content: 'Select Nodes',
       callback: () => {
         canvas.selectNodes(nodesInGroup)
-        // @ts-expect-error fixme ts strict error
-        canvas.graph.change()
+        graph.change()
         canvas.canvas.focus()
       }
     })

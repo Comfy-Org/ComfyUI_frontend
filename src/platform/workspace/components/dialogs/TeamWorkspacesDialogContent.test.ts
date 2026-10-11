@@ -1,70 +1,42 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+import type { Pinia } from 'pinia'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { getActivePinia } from 'pinia'
+import { useDialogStore } from '@/stores/dialogStore'
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const mockCloseDialog = vi.fn()
-const mockToastAdd = vi.fn()
 const mockSwitchWorkspace = vi.fn()
-const mockCreateWorkspace = vi.fn()
-const mockSharedWorkspaces = vi.hoisted(() => ({
-  value: [] as Array<{
-    id: string
-    name: string
-    role: string
-    isSubscribed: boolean
-    subscriptionPlan: string | null
-    subscriptionTier: string | null
-  }>
-}))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
-  })
-}))
+let pinia: Pinia
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceTierLabel', () => ({
-  useWorkspaceTierLabel: () => ({
-    getTierLabel: (w: { subscriptionTier: string | null }) =>
-      w.subscriptionTier === 'PRO' ? 'Pro' : null
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceTierLabel'),
+  () => ({
+    useWorkspaceTierLabel: () => ({
+      getTierLabel: (w: { subscriptionTier: string | null }) =>
+        w.subscriptionTier === 'PRO' ? 'Pro' : null
+    })
   })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    sharedWorkspaces: mockSharedWorkspaces,
-    createWorkspace: mockCreateWorkspace
-  })
-}))
-
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -74,21 +46,13 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size']
-}
-
 function mountComponent(props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
   const { container } = render(TeamWorkspacesDialogContent, {
     props,
     global: {
-      plugins: [i18n],
+      plugins: [pinia, i18n],
       stubs: {
-        Button: ButtonStub,
         WorkspaceProfilePic: true
       }
     }
@@ -103,30 +67,63 @@ function findCreateButton(container: Element): HTMLButtonElement {
   ) as HTMLButtonElement
 }
 
+function createTeamWorkspace({
+  id,
+  name,
+  role,
+  isSubscribed = false,
+  subscriptionTier = null
+}: {
+  id: string
+  name: string
+  role: 'owner' | 'member'
+  isSubscribed?: boolean
+  subscriptionTier?: 'PRO' | null
+}) {
+  return {
+    id,
+    name,
+    type: 'team' as const,
+    role,
+    created_at: '2025-01-01',
+    joined_at: '2025-01-01',
+    isSubscribed,
+    subscriptionPlan: null,
+    subscriptionTier,
+    members: [],
+    pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true
+  }
+}
+
 function setOwnedWorkspaces() {
-  mockSharedWorkspaces.value = [
-    {
+  workspaceStore.workspaces = [
+    createTeamWorkspace({
       id: 'ws-1',
       name: 'Team Alpha',
       role: 'owner',
       isSubscribed: true,
-      subscriptionPlan: null,
       subscriptionTier: 'PRO'
-    },
-    {
+    }),
+    createTeamWorkspace({
       id: 'ws-2',
       name: 'Team Beta',
-      role: 'member',
-      isSubscribed: false,
-      subscriptionPlan: null,
-      subscriptionTier: null
-    }
+      role: 'member'
+    })
   ]
 }
 
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
 describe('TeamWorkspacesDialogContent', () => {
   beforeEach(() => {
-    mockSharedWorkspaces.value = []
+    vi.useRealTimers()
+    pinia = getActivePinia()!
+    workspaceStore = useTeamWorkspaceStore(pinia)
+    workspaceStore.workspaces = []
   })
 
   describe('workspace listing', () => {
@@ -177,7 +174,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await flushPromises()
 
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
@@ -191,12 +188,10 @@ describe('TeamWorkspacesDialogContent', () => {
       await user.click(switchButton)
       await flushPromises()
 
-      expect(mockCloseDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Network error'
-        })
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspaceSwitcher.failedToSwitch',
+        { description: 'Network error' }
       )
     })
   })
@@ -260,55 +255,67 @@ describe('TeamWorkspacesDialogContent', () => {
     }
 
     it('calls createWorkspace and onConfirm on success', async () => {
-      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
       const onConfirm = vi.fn()
       const { container, user } = mountComponent({ onConfirm })
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
+      expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
       expect(onConfirm).toHaveBeenCalledWith('New Team')
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
 
     it('shows error toast when creation fails', async () => {
-      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
       const { container, user } = mountComponent()
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Limit reached'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.failedToCreateWorkspace',
+        { description: 'Limit reached' }
       )
-      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('shows separate toast when onConfirm fails but still closes dialog', async () => {
-      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
       const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
       const { container, user } = mountComponent({ onConfirm })
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(mockCreateWorkspace).toHaveBeenCalledWith('New Team')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Setup failed'
-        })
+      expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
+      expect(useToast().error).toHaveBeenCalledWith(
+        'teamWorkspacesDialog.confirmCallbackFailed',
+        { description: 'Setup failed' }
       )
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
 
     it('does not call onConfirm when createWorkspace fails', async () => {
-      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
       const onConfirm = vi.fn()
       const { container, user } = mountComponent({ onConfirm })
 
@@ -322,26 +329,34 @@ describe('TeamWorkspacesDialogContent', () => {
       await user.click(findCreateButton(container))
       await nextTick()
 
-      expect(mockCreateWorkspace).not.toHaveBeenCalled()
+      expect(workspaceStore.createWorkspace).not.toHaveBeenCalled()
     })
 
     it('resets loading state after createWorkspace fails', async () => {
-      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      vi.mocked(workspaceStore.createWorkspace).mockRejectedValue(
+        new Error('Limit reached')
+      )
       const { container, user } = mountComponent()
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
 
     it('resets loading state after onConfirm fails', async () => {
-      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      vi.mocked(workspaceStore.createWorkspace).mockResolvedValue(
+        createTeamWorkspace({
+          id: 'new-ws',
+          name: 'New Team',
+          role: 'owner'
+        })
+      )
       const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
       const { container, user } = mountComponent({ onConfirm })
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
   })
 
@@ -351,7 +366,7 @@ describe('TeamWorkspacesDialogContent', () => {
       const closeBtn = container.querySelector('header button')!
       await user.click(closeBtn)
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })

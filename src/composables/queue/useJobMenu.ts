@@ -1,14 +1,16 @@
 import { computed } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import type { MenuItem } from '@/components/ui/menu/types'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -17,21 +19,13 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-
-export type MenuEntry =
-  | {
-      kind?: 'item'
-      key: string
-      label: string
-      icon?: string
-      disabled?: boolean
-      onClick?: () => void | Promise<void>
-    }
-  | { kind: 'divider'; key: string }
 
 /**
  * Provides job context menu entries and actions.
@@ -48,6 +42,7 @@ export function useJobMenu(
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
   const { copyToClipboard } = useCopyToClipboard()
+  const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
@@ -124,24 +119,26 @@ export function useJobMenu(
   const addOutputLoaderNode = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
     let widgetName: 'image' | 'file' | 'audio' | null = null
-    if (result.isImage) {
+    if (isImageResult(result)) {
       nodeType = 'LoadImage'
       widgetName = 'image'
-    } else if (result.isVideo) {
+    } else if (isVideoResult(result)) {
       nodeType = 'LoadVideo'
       widgetName = 'file'
-    } else if (result.isAudio) {
+    } else if (isAudioResult(result)) {
       nodeType = 'LoadAudio'
       widgetName = 'audio'
     }
     if (!nodeType || !widgetName) return
 
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    const nodeDef = Object.hasOwn(nodeDefStore.nodeDefsByName, nodeType)
+      ? nodeDefStore.nodeDefsByName[nodeType]
+      : undefined
     if (!nodeDef) return
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -172,9 +169,9 @@ export function useJobMenu(
   const downloadPreviewAsset = () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(result.url)
+    downloadFile(resultItemUrl(result))
   }
 
   /**
@@ -223,19 +220,19 @@ export function useJobMenu(
     st('queue.jobMenu.cancelJob', 'Cancel job')
   )
 
-  const jobMenuEntries = computed<MenuEntry[]>(() => {
+  const jobMenuEntries = computed<MenuItem[]>(() => {
     const item = currentMenuItem()
     const state = item?.state
     if (!state) return []
-    const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const hasPreviewAsset = !!item.taskRef?.previewOutput
     if (state === 'completed') {
-      return [
+      return handleErrors([
         {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
           icon: 'icon-[lucide--zoom-in]',
           disabled: !hasPreviewAsset || !onInspectAsset,
-          onClick: onInspectAsset
+          command: onInspectAsset
             ? () => {
                 const item = currentMenuItem()
                 if (item) onInspectAsset(item)
@@ -250,96 +247,103 @@ export function useJobMenu(
           ),
           icon: 'icon-[comfy--node]',
           disabled: !hasPreviewAsset,
-          onClick: addOutputLoaderNode
+          command: () => addOutputLoaderNode()
         },
         {
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
           disabled: !hasPreviewAsset,
-          onClick: downloadPreviewAsset
+          command: () => downloadPreviewAsset()
         },
-        { kind: 'divider', key: 'd1' },
+        { separator: true, key: 'd1' },
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          command: () => openJobWorkflow()
         },
         {
           key: 'export-workflow',
           label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
           icon: 'icon-[comfy--file-output]',
-          onClick: exportJobWorkflow
+          command: () => exportJobWorkflow()
         },
-        { kind: 'divider', key: 'd2' },
+        { separator: true, key: 'd2' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          command: () => copyJobId()
         }
-      ]
+      ])
     }
     if (state === 'failed') {
-      return [
+      return handleErrors([
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowFailedLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: openJobWorkflow
+          command: () => openJobWorkflow()
         },
-        { kind: 'divider', key: 'd1' },
+        { separator: true, key: 'd1' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: copyJobId
+          command: () => copyJobId()
         },
         {
           key: 'copy-error',
           label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
           icon: 'icon-[lucide--copy]',
-          onClick: copyErrorMessage
+          command: () => copyErrorMessage()
         },
         {
           key: 'report-error',
           label: st('queue.jobMenu.reportError', 'Report error'),
           icon: 'icon-[lucide--message-circle-warning]',
-          onClick: reportError
+          command: () => reportError()
         },
-        { kind: 'divider', key: 'd2' },
+        { separator: true, key: 'd2' },
         {
           key: 'delete',
           label: st('queue.jobMenu.removeJob', 'Remove job'),
           icon: 'icon-[lucide--circle-minus]',
-          onClick: removeFailedJob
+          command: () => removeFailedJob()
         }
-      ]
+      ])
     }
-    return [
+    return handleErrors([
       {
         key: 'open-workflow',
         label: jobMenuOpenWorkflowLabel.value,
         icon: 'icon-[comfy--workflow]',
-        onClick: openJobWorkflow
+        command: () => openJobWorkflow()
       },
-      { kind: 'divider', key: 'd1' },
+      { separator: true, key: 'd1' },
       {
         key: 'copy-id',
         label: jobMenuCopyJobIdLabel.value,
         icon: 'icon-[lucide--copy]',
-        onClick: copyJobId
+        command: () => copyJobId()
       },
-      { kind: 'divider', key: 'd2' },
+      { separator: true, key: 'd2' },
       {
         key: 'cancel-job',
         label: jobMenuCancelLabel.value,
         icon: 'icon-[lucide--x]',
-        onClick: cancelJob
+        command: () => cancelJob()
       }
-    ]
+    ])
   })
+
+  const handleErrors = (items: MenuItem[]): MenuItem[] =>
+    items.map((item) =>
+      item.command
+        ? { ...item, command: wrapWithErrorHandlingAsync(item.command) }
+        : item
+    )
 
   return {
     jobMenuEntries,

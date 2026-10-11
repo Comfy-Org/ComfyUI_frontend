@@ -1,20 +1,19 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 
 import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
+
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
 }))
 
@@ -91,6 +90,30 @@ describe('unflattenOutputAssets', () => {
     expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
       'temp',
       'output'
+    ])
+  })
+
+  it('keeps the representative asset id apart from same-named outputs', () => {
+    const asset = {
+      job_id: 'job-id',
+      name: 'ComfyUI_00001.glb',
+      size: 1,
+      tags: ['output'],
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      { ...asset, id: 'earlier-id', created_at: '2026-01-01T00:00:00Z' },
+      { ...asset, id: 'later-id', created_at: '2026-01-01T00:00:01Z' }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(grouped.id).toBe('job-id')
+    expect(metadata?.assetId).toBe('later-id')
+    expect(metadata?.allOutputs?.map((output) => output.assetId)).toEqual([
+      'earlier-id',
+      'later-id'
     ])
   })
 })

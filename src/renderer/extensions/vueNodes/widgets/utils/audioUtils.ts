@@ -1,4 +1,4 @@
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { app } from '@/scripts/app'
 
 export function getResourceURL(

@@ -1,6 +1,6 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 // The full structured caption + lyrics behind each track. The card clamps this
 // to five lines on screen; the copy button hands over the whole thing. It is a
@@ -296,9 +296,9 @@ export const minimaxMusic3Page: ModelLaunchPage = {
           'zh-CN': '我可以将 MiniMax Music 3 用于商业用途吗？'
         },
         answer: {
-          en: 'Yes, for companies under 20 million US dollars in yearly revenue, under the MiniMax Community License. Above that threshold you need MiniMax authorization, which [a MiniMax commercial license through Comfy](https://comfy.org/minimax/license) covers.',
+          en: 'Yes, for companies under 20 million US dollars in yearly revenue, under the MiniMax Community License. Above that threshold you need MiniMax authorization, which [a MiniMax commercial license through Comfy](https://comfy.org/minimax/license/) covers.',
           'zh-CN':
-            '可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license)即涵盖这一授权。'
+            '可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/)即涵盖这一授权。'
         }
       }
     ]

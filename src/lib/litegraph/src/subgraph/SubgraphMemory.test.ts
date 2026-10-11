@@ -264,17 +264,13 @@ describe('SubgraphMemory - Widget Reference Management', () => {
       }
 
       // Set references
-      if (input) {
-        ;(input as InputWithWidget)._widget = mockReferences.widget
-        ;(input as InputWithWidget)._connection = mockReferences.connection
-      }
-      if (output) {
-        ;(input as InputWithWidget)._connection = mockReferences.connection
-      }
+      ;(input as InputWithWidget)._widget = mockReferences.widget
+      ;(input as InputWithWidget)._connection = mockReferences.connection
+      ;(output as InputWithWidget)._connection = mockReferences.connection
 
       // Verify references are set
-      expect((input as InputWithWidget)?._widget).toBe(mockReferences.widget)
-      expect((input as InputWithWidget)?._connection).toBe(
+      expect((input as InputWithWidget)._widget).toBe(mockReferences.widget)
+      expect((input as InputWithWidget)._connection).toBe(
         mockReferences.connection
       )
 
@@ -282,7 +278,7 @@ describe('SubgraphMemory - Widget Reference Management', () => {
       subgraphNode.onRemoved()
 
       // Input-specific listeners should be cleaned up (this works)
-      if (input && '_listenerController' in input) {
+      if ('_listenerController' in input) {
         expect(
           (input as InputWithWidget)._listenerController?.signal.aborted
         ).toBe(true)
