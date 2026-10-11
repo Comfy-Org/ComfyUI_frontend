@@ -436,6 +436,8 @@ function getApiWebSocketHostOverride(): string {
   return override.trim()
 }
 
+const isBareHost = (host: string) => !/[\s/\\?#@]/.test(host)
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -882,15 +884,18 @@ export class ComfyApi extends EventTarget {
    */
   private _pollQueue() {
     if (this.pollQueueInterval !== null) return
-    this.pollQueueInterval = setInterval(async () => {
+    const interval = setInterval(async () => {
+      let status: StatusWsMessageStatus | null
       try {
         const resp = await this.fetchApi('/prompt')
-        const status = (await resp.json()) as StatusWsMessageStatus
-        this.dispatchCustomEvent('status', status)
+        status = (await resp.json()) as StatusWsMessageStatus
       } catch {
-        this.dispatchCustomEvent('status', null)
+        status = null
       }
+      if (this.pollQueueInterval !== interval) return
+      this.dispatchCustomEvent('status', status)
     }, 1000)
+    this.pollQueueInterval = interval
   }
 
   /** False when the web session is on and no one is signed in to open it. */
@@ -942,7 +947,8 @@ export class ComfyApi extends EventTarget {
     if (isCloud && !(await this.addSocketAuth(params))) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const wsHost = getApiWebSocketHostOverride() || this.api_host
+    const wsHostOverride = getApiWebSocketHostOverride()
+    const wsHost = wsHostOverride || this.api_host
     const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
@@ -954,6 +960,9 @@ export class ComfyApi extends EventTarget {
 
     let socket: WebSocket
     try {
+      if (wsHostOverride && !isBareHost(wsHostOverride)) {
+        throw new SyntaxError('WebSocket host override must be a bare host')
+      }
       socket = new WebSocket(wsUrl)
     } catch (error) {
       const reason = error instanceof Error ? error.name : 'UnknownError'

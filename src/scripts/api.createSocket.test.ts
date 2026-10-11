@@ -31,6 +31,10 @@ describe('createSocket WebSocket host', () => {
 
   const stubConnectingWebSocket = () => {
     vi.stubGlobal('WebSocket', function (this: WebSocket, url: string) {
+      if (!URL.canParse(url)) {
+        rejectedUrls.push(url)
+        throw new DOMException(`The URL '${url}' is invalid.`, 'SyntaxError')
+      }
       const listeners = new Map<string, Set<() => void>>()
       sockets.push({ url, listeners })
       Object.assign(this, {
@@ -45,13 +49,6 @@ describe('createSocket WebSocket host', () => {
         },
         removeEventListener: vi.fn()
       })
-    })
-  }
-
-  const stubUnusableWebSocket = () => {
-    vi.stubGlobal('WebSocket', function (url: string) {
-      rejectedUrls.push(url)
-      throw new DOMException(`The URL '${url}' is invalid.`, 'SyntaxError')
     })
   }
 
@@ -136,36 +133,41 @@ describe('createSocket WebSocket host', () => {
   })
 
   it('falls back to polling without throwing when the host is unusable', async () => {
-    stubUnusableWebSocket()
-    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
 
     await expect(api.init()).resolves.toBeUndefined()
     expect(api.socket).toBeNull()
     expect(rejectedUrls).toEqual([
-      expect.stringContaining('://https://not a host/')
+      expect.stringContaining('://ws.example.com:notaport/')
     ])
 
     await vi.advanceTimersByTimeAsync(1000)
     expect(promptRequests()).toBe(1)
   })
 
-  it('falls back to polling when the override includes a scheme prefix', async () => {
-    stubUnusableWebSocket()
-    window.__COMFY_API_WS_HOST__ = 'wss://ws.example.com'
+  it.for([
+    'wss://ws.example.com',
+    'ws.example.com/path',
+    'user@ws.example.com',
+    'ws.example.com?x=1',
+    'ws.example.com#frag'
+  ])(
+    'falls back to polling instead of dialing a non-bare override %s',
+    async (override) => {
+      window.__COMFY_API_WS_HOST__ = override
 
-    await expect(api.init()).resolves.toBeUndefined()
-    expect(api.socket).toBeNull()
-    expect(rejectedUrls).toEqual([
-      expect.stringContaining('://wss://ws.example.com/')
-    ])
+      await expect(api.init()).resolves.toBeUndefined()
+      expect(socketUrls()).toEqual([])
+      expect(api.socket).toBeNull()
+      expect(reportError).toHaveBeenCalledOnce()
 
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(promptRequests()).toBe(1)
-  })
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(promptRequests()).toBe(1)
+    }
+  )
 
   it('reports a construction failure without the socket URL query', async () => {
-    stubUnusableWebSocket()
-    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
     window.name = 'session-123'
 
     await api.init()
@@ -173,7 +175,7 @@ describe('createSocket WebSocket host', () => {
     expect(rejectedUrls[0]).toContain('clientId=session-123')
     expect(reportError).toHaveBeenCalledOnce()
     const [reported] = vi.mocked(reportError).mock.calls[0]
-    expect(String(reported)).toContain('https://not a host')
+    expect(String(reported)).toContain('ws.example.com:notaport')
     expect(String(reported)).not.toContain('session-123')
   })
 
@@ -187,8 +189,7 @@ describe('createSocket WebSocket host', () => {
   })
 
   it('reuses one polling loop across repeated connection failures', async () => {
-    stubUnusableWebSocket()
-    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
 
     await api.init()
     await api.resetSocket()
@@ -198,18 +199,43 @@ describe('createSocket WebSocket host', () => {
   })
 
   it('stops polling once a socket opens', async () => {
-    stubUnusableWebSocket()
-    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
     await api.init()
     await vi.advanceTimersByTimeAsync(1000)
     expect(promptRequests()).toBe(1)
 
     delete window.__COMFY_API_WS_HOST__
-    stubConnectingWebSocket()
     await api.resetSocket()
     dispatchToLatestSocket('open')
 
     await vi.advanceTimersByTimeAsync(5000)
     expect(promptRequests()).toBe(1)
+  })
+
+  it('drops a poll response that resolves after the socket opens', async () => {
+    const statusEvents: unknown[] = []
+    const onStatus = (event: CustomEvent) => statusEvents.push(event.detail)
+    api.addEventListener('status', onStatus)
+    let resolvePoll: (response: Response) => void = () => {}
+    const pendingPoll = new Promise<Response>((resolve) => {
+      resolvePoll = resolve
+    })
+    fetchApi.mockImplementation(() => pendingPoll)
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
+    try {
+      await api.init()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(promptRequests()).toBe(1)
+
+      delete window.__COMFY_API_WS_HOST__
+      await api.resetSocket()
+      dispatchToLatestSocket('open')
+      resolvePoll(new Response('{"exec_info":{"queue_remaining":3}}'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(statusEvents).toEqual([])
+    } finally {
+      api.removeEventListener('status', onStatus)
+    }
   })
 })
