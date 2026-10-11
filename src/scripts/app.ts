@@ -944,13 +944,12 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      if (
-        !useExecutionStore().belongsToActiveWorkflow(
-          detail.prompt_id,
-          detail.workflow_id
-        )
-      )
-        return
+      // Deliberately ungated. A sign-in, subscription or credit problem belongs
+      // to the account rather than to one workflow, and the store's
+      // handleAccountPreconditionError returns before recording the error, so
+      // this dialog is the only signal the user ever gets. Gating it made a
+      // background run fail silently: no dialog, no badge, and nothing to find
+      // on the tab afterwards.
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type,
         exceptionMessage: detail.exception_message
@@ -966,14 +965,19 @@ export class ComfyApp {
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId, workflowId } = detail
-      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId))
-        return
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
+      // Before the gate: this one is keyed by job rather than by the visible
+      // graph, and a background run needs it for its queue-panel thumbnail and
+      // for linearOutputStore's re-apply when the user switches back.
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId)) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeExecutionId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews

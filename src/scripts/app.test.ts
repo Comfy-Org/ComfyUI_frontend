@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -3099,7 +3100,11 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
-    it('does not open an account dialog for a background run error', () => {
+    // Deliberately the opposite of the node-output and node-preview gates. A
+    // credit or sign-in problem belongs to the account, and the store returns
+    // from handleAccountPreconditionError before recording anything, so this
+    // dialog is the only signal. Gated, a background run failed silently.
+    it('opens the account dialog even for a background run error', () => {
       const workflowA = markLoaded(
         new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
       )
@@ -3144,7 +3149,10 @@ describe('ComfyApp', () => {
         })
       )
 
-      expect(open).not.toHaveBeenCalled()
+      expect(open).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ nodeType: 'PartnerApiNode' })
+      )
     })
 
     it('does not apply a background run output to the visible workflow', async () => {
@@ -3198,7 +3206,7 @@ describe('ComfyApp', () => {
       expect(setOutputs).not.toHaveBeenCalled()
     })
 
-    it('does not apply a background preview to the visible workflow', () => {
+    it('keeps a background preview job-keyed but off the visible graph', () => {
       const workflowA = markLoaded(
         new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
       )
@@ -3242,7 +3250,17 @@ describe('ComfyApp', () => {
         })
       )
 
-      expect(setPreviews).not.toHaveBeenCalled()
+      expect(
+        setPreviews,
+        'the node-keyed write is gated: the visible graph has the same node ids'
+      ).not.toHaveBeenCalled()
+      // But the job-keyed one must still happen. The queue panel reads the
+      // running job's thumbnail from here, and linearOutputStore re-applies the
+      // last latent preview when the user switches back to that tab.
+      expect(
+        useJobPreviewStore().previewsByPromptId['job-b'],
+        'the background job keeps its own thumbnail'
+      ).toBeTruthy()
     })
 
     it('restores the failed run state when returning to a workflow tab', async () => {

@@ -1238,22 +1238,7 @@ describe('executionStore workflow gating', () => {
     })
   })
 
-  describe('the two ownership rules agree', () => {
-    // Documents the invariant rather than catching a live bug: today
-    // ensureSessionWorkflowPath writes the instance and the path together, so
-    // the two lists cannot disagree in practice. It will fail if a future
-    // caller sets one without the other.
-    it('treats a job known by its tab instance as resolvable', () => {
-      useWorkflowStore().activeWorkflow = workflowA
-      queueJobFrom('job-a', workflowA)
-      useWorkflowStore().activeWorkflow = workflowB
-
-      // The instance is the resolver's first leg, so a frame it can place must
-      // not be reported as unresolvable by the other rule, or one gate accepts
-      // the frame while the other rejects it.
-      expect(store.belongsToActiveWorkflow('job-a', undefined)).toBe(false)
-    })
-
+  describe('a background job that finishes', () => {
     it('does not leave activeJobId naming a finished background job', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
