@@ -393,11 +393,17 @@ const NAMED_SHAPES = {
 
 const wireExecutionOrders = new WeakMap<LGraphNode, number>()
 
-function normalizeLegacySlotIndex(slot: unknown): number | undefined {
-  if (typeof slot === 'number') return Number.isInteger(slot) ? slot : undefined
+function normalizeLegacySlotIndex(
+  slot: unknown,
+  length: number
+): number | undefined {
+  if (typeof slot === 'number')
+    return Number.isInteger(slot) && slot >= 0 && slot < length
+      ? slot
+      : undefined
   if (typeof slot !== 'string' || !/^\d+$/.test(slot)) return
   const index = Number(slot)
-  return Number.isInteger(index) ? index : undefined
+  return Number.isInteger(index) && index < length ? index : undefined
 }
 
 export class LGraphNode
@@ -1985,9 +1991,8 @@ export class LGraphNode
    */
   removeOutput(slot: number): void {
     const { outputs } = this
-    const slotIndex = normalizeLegacySlotIndex(slot)
-    if (slotIndex === undefined || slotIndex < 0 || slotIndex >= outputs.length)
-      return
+    const slotIndex = normalizeLegacySlotIndex(slot, outputs.length)
+    if (slotIndex === undefined) return
 
     // Only disconnect if node is part of a graph
     if (this.graph) {
@@ -2054,9 +2059,8 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
-    const slotIndex = normalizeLegacySlotIndex(slot)
-    if (slotIndex === undefined || slotIndex < 0 || slotIndex >= inputs.length)
-      return
+    const slotIndex = normalizeLegacySlotIndex(slot, inputs.length)
+    if (slotIndex === undefined) return
 
     const slotInfo = legacyArrayItem(inputs, slotIndex)
     if (!slotInfo) return
