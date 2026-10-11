@@ -1,4 +1,3 @@
-import { assert } from '@/base/assert'
 import type { ComfyApp } from '@/types/comfy'
 
 let instance: ComfyApp | undefined
@@ -13,10 +12,6 @@ export function registerApp(app: ComfyApp) {
 }
 
 export function useApp(): ComfyApp {
-  if (!instance) {
-    const message = 'ComfyApp accessed before registerApp'
-    assert(false, message)
-    throw new TypeError(message)
-  }
+  if (!instance) throw new TypeError('ComfyApp accessed before registerApp')
   return instance
 }
