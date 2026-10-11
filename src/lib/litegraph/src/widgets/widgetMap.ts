@@ -76,10 +76,6 @@ export type WidgetTypeMap = {
 }
 
 const toWidgetClass = instantiateClass
-const concreteWidgetsBySource = new WeakMap<
-  IBaseWidget,
-  WeakMap<LGraphNode, IBaseWidget>
->()
 const sourcesByConcreteWidget = new WeakMap<
   IBaseWidget,
   WeakMap<LGraphNode, IBaseWidget>
@@ -90,29 +86,12 @@ function rememberConcreteWidget(
   node: LGraphNode,
   concrete: IBaseWidget
 ): void {
-  let widgetsByNode = concreteWidgetsBySource.get(source)
-  if (!widgetsByNode) {
-    widgetsByNode = new WeakMap()
-    concreteWidgetsBySource.set(source, widgetsByNode)
-  }
-  widgetsByNode.set(node, concrete)
-
   let sourcesByNode = sourcesByConcreteWidget.get(concrete)
   if (!sourcesByNode) {
     sourcesByNode = new WeakMap()
     sourcesByConcreteWidget.set(concrete, sourcesByNode)
   }
   sourcesByNode.set(node, source)
-}
-
-export function forgetConcreteWidget(
-  widget: IBaseWidget,
-  node: LGraphNode
-): void {
-  const source = sourcesByConcreteWidget.get(widget)?.get(node) ?? widget
-  const concrete = concreteWidgetsBySource.get(source)?.get(node)
-  concreteWidgetsBySource.get(source)?.delete(node)
-  sourcesByConcreteWidget.get(concrete ?? widget)?.delete(node)
 }
 
 export function getConcreteWidgetSource(
@@ -244,7 +223,10 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   wrapLegacyWidgets = true
 ): WidgetTypeMap[TWidget['type']] | undefined {
   const cached = wrapLegacyWidgets
-    ? concreteWidgetsBySource.get(widget)?.get(node)
+    ? node.widgets?.find(
+        (candidate) =>
+          sourcesByConcreteWidget.get(candidate)?.get(node) === widget
+      )
     : undefined
   if (cached) return cached as WidgetTypeMap[TWidget['type']]
 

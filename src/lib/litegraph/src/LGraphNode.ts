@@ -163,7 +163,7 @@ import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTeleme
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { forgetConcreteWidget, toConcreteWidget } from './widgets/widgetMap'
+import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -2423,7 +2423,6 @@ export class LGraphNode
     widget.onRemove?.()
     if (id) useWidgetValueStore().deleteWidget(id)
     this.widgets.splice(widgetIndex, 1)
-    forgetConcreteWidget(widget, this)
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {

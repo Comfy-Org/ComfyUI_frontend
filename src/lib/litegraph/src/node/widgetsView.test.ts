@@ -178,6 +178,26 @@ describe('widgets view', () => {
     expect(node.widgets).toEqual([wrapped])
   })
 
+  it('retains source identity while a wrapper is reordered', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+    const other = node.addWidget('number', 'other', 20, null)
+
+    node.widgets[1] = wrapped
+    node.widgets[0] = other
+    node.addCustomWidget(source)
+
+    expect(node.widgets).toEqual([other, wrapped])
+  })
+
   it.for(
     ([false, true] as const).flatMap(
       (vueNodesMode) =>

@@ -3,7 +3,6 @@ import { shallowReactive } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
-  forgetConcreteWidget,
   getConcreteWidgetSource,
   toConcreteWidget
 } from '@/lib/litegraph/src/widgets/widgetMap'
@@ -33,7 +32,6 @@ interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
   present: boolean
-  committedWidgets: Set<IBaseWidget>
   commit: (widgets: IBaseWidget[]) => void
   reporter?: WidgetRefusalReporter
 }
@@ -133,7 +131,6 @@ function refuseAmbiguousWidgets(
     }
     removed.add(finding.widget)
     releaseRefusedWidget(node, finding.widget, finding.name, report)
-    forgetConcreteWidget(finding.widget, node)
     report({ kind: 'refusal', finding })
   }
   if (removed.size) {
@@ -175,18 +172,6 @@ function dedupeRepeatedWrappedSources(
   if (uniqueWidgets.length !== widgets.length) {
     widgets.splice(0, widgets.length, ...uniqueWidgets)
   }
-}
-
-function updateCommittedWidgets(
-  node: LGraphNode,
-  widgets: readonly IBaseWidget[]
-): void {
-  const state = states.get(node)
-  if (!state) return
-  for (const previous of state.committedWidgets) {
-    if (!widgets.includes(previous)) forgetConcreteWidget(previous, node)
-  }
-  state.committedWidgets = new Set(widgets)
 }
 
 export function wasWidgetRefused(
@@ -244,24 +229,22 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   const graphId = node.graph?.rootGraph.id
   const originalWidgets = [...widgets]
 
-  const concreteWidgets = widgets.map((widget) => {
+  const concreteWidgets = originalWidgets.map((widget, index) => {
     const unreadable = isWidgetNameUnreadable(widget)
     try {
-      return toConcreteWidget(widget, node)
+      const concrete = toConcreteWidget(widget, node)
+      widgets[index] = concrete
+      return concrete
     } catch (error) {
       if (!unreadable) throw error
       return widget
     }
   })
-  for (const [index, widget] of concreteWidgets.entries()) {
-    widgets[index] = widget
-  }
 
   // A non-adoptable legacy source may be pushed again after its wrapper is
   // already present. Keep one wrapper without disturbing temporary duplicate
   // concrete objects used by array reordering.
   dedupeRepeatedWrappedSources(node, originalWidgets, widgets)
-  updateCommittedWidgets(node, widgets)
 
   if (!graphId) return
 
@@ -309,7 +292,6 @@ export function initializeWidgetsView(node: LGraphNode): void {
     target,
     view: createArrayMutationView(target, () => commit(target)),
     present: false,
-    committedWidgets: new Set(),
     commit
   }
   states.set(node, state)
