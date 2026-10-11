@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import '../../agentPanel.css'
@@ -24,6 +25,9 @@ const meta: Meta<typeof AgentPanel> = {
     userName: 'Comfy user',
     activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
     workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
+  },
+  argTypes: {
+    freeUsePlacement: { control: 'select', options: FREE_USE_PLACEMENTS }
   },
   decorators: [
     () => ({
@@ -101,29 +105,28 @@ export const ChipStates: Story = {
 /**
  * DES-1221 / FE-3142. One notice, five arms, and nothing else moves: the
  * starter prompts and the composer placeholder are identical in every cell, so
- * placement is the only variable between them.
+ * placement is the only variable between them. Side-by-side is the point here
+ * — the question the design asks is which cell reads best against the others —
+ * so this stays a grid while `freeUsePlacement` is also a Controls option for
+ * walking one arm at a time.
  */
-export const FreeUseControl: Story = {
-  name: 'DES-1221 a / control',
-  args: { freeUsePlacement: 'control' }
-}
-
-export const FreeUseTopBanner: Story = {
-  name: 'DES-1221 b / top banner',
-  args: { freeUsePlacement: 'top-banner' }
-}
-
-export const FreeUseNearComposer: Story = {
-  name: 'DES-1221 c / near composer',
-  args: { freeUsePlacement: 'near-composer' }
-}
-
-export const FreeUseAboveInput: Story = {
-  name: 'DES-1221 d / above input',
-  args: { freeUsePlacement: 'above-input' }
-}
-
-export const FreeUseInsideInput: Story = {
-  name: 'DES-1221 e / inside input',
-  args: { freeUsePlacement: 'inside-input' }
+export const FreeUsePlacements: Story = {
+  name: 'DES-1221 a–e / placement arms',
+  render: (args) => ({
+    components: { AgentPanel },
+    setup() {
+      return { placements: FREE_USE_PLACEMENTS, args }
+    },
+    template: `
+      <div class="flex h-screen gap-4 overflow-x-auto">
+        <div v-for="placement in placements" :key="placement" class="shrink-0">
+          <div class="px-2 py-1 text-xs text-muted-foreground">{{ placement }}</div>
+          <div class="agent-scope bg-secondary-background h-full w-100">
+            <AgentPanel v-bind="args" :free-use-placement="placement" />
+          </div>
+        </div>
+      </div>
+    `
+  }),
+  decorators: [() => ({ template: '<story />' })]
 }

@@ -1,12 +1,23 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
+import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+function signIn(id: string) {
+  vi.mocked(useCurrentUser).mockReturnValue({
+    ...useCurrentUser(),
+    resolvedUserInfo: computed(() => ({ id }))
+  })
+}
 
 const PLACEMENTS = [
   'top-banner',
@@ -31,7 +42,7 @@ describe('FreeUseNotice', () => {
     mount(placement)
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'Prompts and workflow runs are FREE during BETA.'
+      'Your first few turns are free.'
     )
     expect(screen.getByRole('link', { name: 'Learn more' })).toBeInTheDocument()
   })
@@ -41,9 +52,12 @@ describe('FreeUseNotice', () => {
 
     const link = screen.getByRole('link', { name: 'Learn more' })
     expect(link).toHaveAttribute('target', '_blank')
+    // The page the notice's own claim is explained on, not the general Cloud
+    // introduction: a reader following this link has to be able to learn what
+    // "a few free turns" means and what happens after them.
     expect(link).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/get_started/cloud'
+      'https://docs.comfy.org/agent-tools/in-app-agent'
     )
   })
 
@@ -68,14 +82,37 @@ describe('FreeUseNotice', () => {
       [{ action: 'shown', placement: 'top-banner' }],
       [{ action: 'dismissed', placement: 'top-banner' }]
     ])
-    expect(localStorage.getItem(FREE_USE_NOTICE_DISMISSED_KEY)).toBe('true')
+    expect(localStorage.getItem(freeUseNoticeDismissedKey(undefined))).toBe(
+      'true'
+    )
   })
 
   it('stays dismissed across placements, so an arm change cannot resurrect it', () => {
-    localStorage.setItem(FREE_USE_NOTICE_DISMISSED_KEY, 'true')
+    localStorage.setItem(freeUseNoticeDismissedKey(undefined), 'true')
     const { emitted } = mount('inside-input')
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
+  })
+
+  // A browser-wide dismissal would hide a treatment arm's notice from the next
+  // account on a shared browser or after a switch, while the panel still
+  // reports that viewer exposed to the arm.
+  it('keeps a dismissal to the account that made it', async () => {
+    signIn('first-user')
+    const first = mount()
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(localStorage.getItem(freeUseNoticeDismissedKey('first-user'))).toBe(
+      'true'
+    )
+    first.unmount()
+
+    signIn('second-user')
+    const { emitted } = mount()
+
+    expect(screen.getByRole('note')).toBeInTheDocument()
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }]
+    ])
   })
 })

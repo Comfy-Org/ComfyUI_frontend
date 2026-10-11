@@ -30,6 +30,8 @@ test.describe(
         name: 'Free use notice'
       })
       await expect(notice).toBeVisible()
+      await expect(notice).toContainText('Your first few turns are free.')
+      await expect(notice).not.toContainText('during BETA')
       await expect(notice).toHaveAttribute('data-placement', PLACEMENT)
 
       const composer = agentPanel.root.getByTestId('agent-composer')
