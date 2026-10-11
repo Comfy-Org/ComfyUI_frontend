@@ -128,8 +128,8 @@ describe('assetsStore - OSS history pagination', () => {
     await Promise.all([refresh, pagination])
 
     expect(
-      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
-    ).toEqual([{ offset: 0 }, { offset: 200 }])
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
+    ).toEqual([0, 200])
   })
 
   it('loads history pages until it finds the requested output asset', async () => {
@@ -141,8 +141,8 @@ describe('assetsStore - OSS history pagination', () => {
     await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
 
     expect(
-      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
-    ).toEqual([{ offset: 0 }, { offset: 200 }])
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
+    ).toEqual([0, 200])
   })
 
   it('stops looking when history has no more pages', async () => {
@@ -1367,7 +1367,10 @@ describe('assetsStore - reset() on identity change', () => {
     expect(toValue(store.outputAssets.hasMore)).toBe(true)
 
     await store.outputAssets.loadMore()
-    expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 0 })
+    expect(api.getHistory).toHaveBeenLastCalledWith(
+      200,
+      expect.objectContaining({ offset: 0 })
+    )
   })
 
   it('does not commit a history fetch that resolves after the reset', async () => {
@@ -1385,10 +1388,18 @@ describe('assetsStore - reset() on identity change', () => {
     expect(toValue(store.outputAssets.isLoading)).toBe(false)
   })
 
-  it('lets the new identity load history while the previous request is still pending', async () => {
-    const previousIdentityPage = deferred<JobListItem[]>()
+  it('aborts the previous identity history request and loads the new one', async () => {
+    let previousSignal: AbortSignal | undefined
     vi.mocked(api.getHistory)
-      .mockReturnValueOnce(previousIdentityPage.promise)
+      .mockImplementationOnce(
+        (_max, options) =>
+          new Promise<JobListItem[]>((resolve) => {
+            previousSignal = options?.signal
+            previousSignal?.addEventListener('abort', () =>
+              resolve(createHistoryPage(0))
+            )
+          })
+      )
       .mockResolvedValueOnce(createHistoryPage(1000))
     const store = useAssetsStore()
     const previousRefresh = store.outputAssets.invalidate()
@@ -1396,9 +1407,9 @@ describe('assetsStore - reset() on identity change', () => {
 
     store.reset()
     await store.outputAssets.invalidate()
-    previousIdentityPage.resolve(createHistoryPage(0))
     await previousRefresh
 
+    expect(previousSignal?.aborted).toBe(true)
     const ids = toValue(store.outputAssets.items).map(({ id }) => id)
     expect(ids).toHaveLength(200)
     expect(ids).not.toContain('job_0')
@@ -1411,12 +1422,11 @@ describe('assetsStore - reset() on identity change', () => {
     const inFlightRefresh = store.inputAssets.invalidate()
 
     store.reset()
-    expect(toValue(store.inputAssets.isLoading)).toBe(false)
-
     previousIdentityInputs.resolve(inputFilesResponse(['account-a.png']))
     await inFlightRefresh
 
     expect(toValue(store.inputAssets.items)).toEqual([])
+    expect(toValue(store.inputAssets.isLoading)).toBe(false)
   })
 
   it('clears loaded input assets', async () => {

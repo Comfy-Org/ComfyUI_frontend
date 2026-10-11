@@ -33,6 +33,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
@@ -41,11 +42,14 @@ import { useModelToNodeStore } from './modelToNodeStore'
 /**
  * Fetch input files from the internal API (OSS version)
  */
-async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
+async function fetchInputFilesFromAPI(
+  signal: AbortSignal
+): Promise<AssetItem[]> {
   const response = await fetch(api.internalURL('/files/input'), {
     headers: {
       'Comfy-User': api.user
-    }
+    },
+    signal
   })
 
   if (!response.ok) {
@@ -53,6 +57,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   }
 
   const filenames: string[] = await response.json()
+  signal.throwIfAborted()
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
@@ -120,32 +125,25 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Bumped by reset(); a fetch whose response arrives after a bump belongs to
-  // the previous identity and must not commit.
-  let identityGeneration = 0
-
-  async function fetchInputFilesForCurrentIdentity(): Promise<AssetItem[]> {
-    const generation = identityGeneration
-    try {
-      const assets = await fetchInputFilesFromAPI()
-      return generation === identityGeneration ? assets : rawInputAssets.value
-    } catch (err) {
-      if (generation !== identityGeneration) return rawInputAssets.value
-      throw err
-    }
-  }
+  let identityController = new AbortController()
 
   const {
     state: rawInputAssets,
     isLoading: inputLoading,
     execute: executeUpdateInputs
-  } = useAsyncState(fetchInputFilesForCurrentIdentity, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
-      console.error('Error fetching input assets:', err)
+  } = useAsyncState(
+    () => fetchInputFilesFromAPI(identityController.signal),
+    [],
+    {
+      immediate: false,
+      resetOnExecute: false,
+      onError: (err) => {
+        if (!isAbortError(err)) {
+          console.error('Error fetching input assets:', err)
+        }
+      }
     }
-  })
+  )
 
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
@@ -173,7 +171,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
-      const generation = identityGeneration
+      const { signal } = identityController
 
       // Reset state for initial load
       if (!loadMore) {
@@ -185,10 +183,10 @@ export const useAssetsStore = defineStore('assets', () => {
 
       // Fetch from server with offset
       const history = await api.getHistory(BATCH_SIZE, {
-        offset: historyOffset.value
+        offset: historyOffset.value,
+        signal
       })
-
-      if (generation !== identityGeneration) return allHistoryItems.value
+      signal.throwIfAborted()
 
       // Convert JobListItems to AssetItems
       const newAssets = mapHistoryToAssets(history)
@@ -250,23 +248,21 @@ export const useAssetsStore = defineStore('assets', () => {
      * Initial load of history assets
      */
     const doUpdateHistory = async () => {
-      const generation = identityGeneration
       historyLoading.value = true
       historyError.value = null
       try {
         await fetchHistoryAssets(false)
-        if (generation !== identityGeneration) return
         historyAssets.value = allHistoryItems.value
       } catch (err) {
+        if (isAbortError(err)) return
         console.error('Error fetching history assets:', err)
-        if (generation !== identityGeneration) return
         historyError.value = err
         // Keep existing data when error occurs
         if (!historyAssets.value.length) {
           historyAssets.value = []
         }
       } finally {
-        if (generation === identityGeneration) historyLoading.value = false
+        historyLoading.value = false
       }
     }
 
@@ -285,18 +281,16 @@ export const useAssetsStore = defineStore('assets', () => {
      * Load more history items (infinite scroll)
      */
     const doLoadMoreHistory = async () => {
-      const generation = identityGeneration
       isLoadingMore.value = true
       historyError.value = null
 
       try {
         await fetchHistoryAssets(true)
-        if (generation !== identityGeneration) return false
         historyAssets.value = allHistoryItems.value
         return true
       } catch (err) {
+        if (isAbortError(err)) return false
         console.error('Error loading more history:', err)
-        if (generation !== identityGeneration) return false
         historyError.value = err
         // Keep existing data when error occurs (consistent with updateHistory)
         if (!historyAssets.value.length) {
@@ -304,7 +298,7 @@ export const useAssetsStore = defineStore('assets', () => {
         }
         return false
       } finally {
-        if (generation === identityGeneration) isLoadingMore.value = false
+        isLoadingMore.value = false
       }
     }
 
@@ -323,9 +317,9 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     /**
-     * Drop every loaded item and release the serialization queue, so a
-     * previous-identity request that never settles cannot starve the next
-     * identity's fetches. Callers bump identityGeneration first.
+     * Drop every loaded item. Requests already queued keep their place, but the
+     * next refresh or page load starts a new operation instead of joining one
+     * issued for the previous identity.
      */
     const clear = () => {
       historyOffset.value = 0
@@ -334,9 +328,6 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedIds.clear()
       historyAssets.value = []
       historyError.value = null
-      historyLoading.value = false
-      isLoadingMore.value = false
-      historyQueue = Promise.resolve()
       refreshPromise = undefined
       loadMorePromise = undefined
     }
@@ -983,15 +974,13 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Drop every locally cached asset — outputs, inputs and the model inventory —
    * so the previous account's data stops rendering after an in-session
-   * identity change. Loading flags and serialization slots are released too,
-   * so a previous-identity request that never settles cannot starve the new
-   * identity's fetches.
+   * identity change, aborting the previous identity's requests.
    */
   const reset = () => {
-    identityGeneration++
+    identityController.abort()
+    identityController = new AbortController()
 
     rawInputAssets.value = []
-    inputLoading.value = false
     historyOutputs?.clear()
     if (flags.assetsEnabled) void invalidateAll()
 

@@ -1408,12 +1408,18 @@ export class ComfyApi extends EventTarget {
    * Gets the current state of the queue
    * @returns The currently running and queued items
    */
-  async getQueue(options?: { throwOnError?: boolean }): Promise<{
+  async getQueue(options?: {
+    throwOnError?: boolean
+    signal?: AbortSignal
+  }): Promise<{
     Running: JobListItem[]
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this), options)
+      return await fetchQueue(
+        (url) => this.fetchApi(url, { signal: options?.signal }),
+        options
+      )
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
@@ -1427,11 +1433,11 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; signal?: AbortSignal }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
-        this.fetchApi.bind(this),
+        (url) => this.fetchApi(url, { signal: options?.signal }),
         max_items,
         options?.offset
       )

@@ -293,9 +293,7 @@ export const useQueueStore = defineStore('queue', () => {
   const updateState = { inFlight: false, dirty: false }
   const hasDirtyUpdate = () => updateState.dirty
 
-  // Bumped by reset(); an update() whose fetches resolve after a bump belongs
-  // to the previous identity and must not commit.
-  let identityGeneration = 0
+  let identityController = new AbortController()
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -328,16 +326,14 @@ export const useQueueStore = defineStore('queue', () => {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
-    const generation = identityGeneration
+    const { signal } = identityController
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
-        api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getQueue({ throwOnError: true, signal }),
+        api.getHistory(maxHistoryItems.value, { signal })
       ])
 
-      // Both commits below are synchronous, so one guard here covers them: the
-      // snapshots belong to an identity that has since been reset away.
-      if (generation !== identityGeneration) return
+      if (signal.aborted) return
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
@@ -407,14 +403,10 @@ export const useQueueStore = defineStore('queue', () => {
         console.error('Failed to fetch history:', historyResult.reason)
       }
     } finally {
-      // A reset already released the slot and may have started the new
-      // identity's fetch; releasing it again would let a third one run alongside.
-      if (generation === identityGeneration) {
-        isLoading.value = false
-        updateState.inFlight = false
-        if (hasDirtyUpdate()) {
-          void update()
-        }
+      isLoading.value = false
+      updateState.inFlight = false
+      if (hasDirtyUpdate()) {
+        void update()
       }
     }
   }
@@ -438,16 +430,10 @@ export const useQueueStore = defineStore('queue', () => {
    * Drop every locally cached task so the previous account's queue and history
    * stop rendering after an in-session identity change. Client state only —
    * unlike clear(), nothing is deleted server-side.
-   *
-   * The single-flight slot is released too: a previous-identity request that
-   * never settles would otherwise pin `inFlight` and leave the new identity's
-   * update() coalescing into a fetch that can never re-fire.
    */
   const reset = () => {
-    identityGeneration++
-    updateState.inFlight = false
-    updateState.dirty = false
-    isLoading.value = false
+    identityController.abort()
+    identityController = new AbortController()
     runningTasks.value = []
     pendingTasks.value = []
     historyTasks.value = []

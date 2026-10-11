@@ -1089,19 +1089,23 @@ describe('useQueueStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
-    it('should let the new identity fetch while a previous request is still pending', async () => {
-      let resolveQueue!: QueueResolver
-      let resolveHistory!: (value: JobListItem[]) => void
-
-      mockGetQueue.mockReturnValueOnce(
-        new Promise<QueueResponse>((resolve) => {
-          resolveQueue = resolve
+    it('should abort the previous identity request and refetch for the new one', async () => {
+      const abortedSignals: AbortSignal[] = []
+      const settleOnAbort = <T>(signal: AbortSignal | undefined, value: T) =>
+        new Promise<T>((resolve) => {
+          signal?.addEventListener('abort', () => {
+            abortedSignals.push(signal)
+            resolve(value)
+          })
+        })
+      mockGetQueue.mockImplementationOnce((options) =>
+        settleOnAbort(options?.signal, {
+          Running: [createRunningJob(4, 'run-a')],
+          Pending: []
         })
       )
-      mockGetHistory.mockReturnValueOnce(
-        new Promise<JobListItem[]>((resolve) => {
-          resolveHistory = resolve
-        })
+      mockGetHistory.mockImplementationOnce((_max, options) =>
+        settleOnAbort(options?.signal, [createHistoryJob(5, 'hist-a')])
       )
 
       const previousIdentityUpdate = store.update()
@@ -1114,15 +1118,14 @@ describe('useQueueStore', () => {
       })
       mockGetHistory.mockResolvedValue([])
       await store.update()
-
-      expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
-
-      resolveQueue({ Running: [createRunningJob(4, 'run-a')], Pending: [] })
-      resolveHistory([createHistoryJob(5, 'hist-a')])
       await previousIdentityUpdate
 
-      expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+      expect(abortedSignals).toHaveLength(2)
+      await vi.waitFor(() =>
+        expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+      )
       expect(store.historyTasks).toEqual([])
+      expect(store.isLoading).toBe(false)
     })
   })
 
