@@ -4,7 +4,8 @@ import type { FrameSource } from './workshop-model-restrictions'
 import {
   frameRatioRule,
   frameSource,
-  framesDisagreeOnRatio
+  framesDisagreeOnRatio,
+  refusesRealFaces
 } from './workshop-model-restrictions'
 import type { FieldValue } from './workshop-playground'
 
@@ -27,6 +28,20 @@ describe('frameRatioRule', () => {
     'unknown-model'
   ] as const)('leaves %s unrestricted', (slug) => {
     expect(frameRatioRule(slug)).toBeUndefined()
+  })
+})
+
+describe('refusesRealFaces', () => {
+  it.for([
+    ['byteplus--seedance-2-5-first-last-frame--animate-images', true],
+    ['byteplus--seedance-2-5-reference--generate-videos', true],
+    ['byteplus--seedance-2-image-to-video--animate-images', true],
+    ['byteplus--seedance-2-fast-first-last-frame--animate-images', true],
+    ['byteplus--seedance-2-5-text-to-video--generate-videos', false],
+    ['byteplus--seedance-1-0-lite-first-last-frame--animate-images', false],
+    ['kling--omni-pro-first-last-frame--animate-images', false]
+  ] as const)('%s refuses realistic faces: %s', ([slug, refuses]) => {
+    expect(refusesRealFaces(slug)).toBe(refuses)
   })
 })
 

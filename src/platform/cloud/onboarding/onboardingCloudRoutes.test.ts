@@ -196,7 +196,6 @@ describe('cloudOnboardingRoutes', () => {
  */
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
-    vi.mocked(useCurrentUser).mockClear()
     clearOAuthRequestId()
   })
 
@@ -261,7 +260,6 @@ describe('oauthConsentRedirect', () => {
   it('still lands on consent when session minting fails so the view can surface the error', async () => {
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
     createSessionOrThrow.mockRejectedValue(new Error('Unauthorized'))
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
       const target = await oauthConsentRedirect()
@@ -270,12 +268,12 @@ describe('oauthConsentRedirect', () => {
         name: 'cloud-oauth-consent',
         query: { oauth_request_id: VALID_REQUEST_ID }
       })
-      expect(warn).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Failed to establish Cloud session cookie before OAuth consent:',
         expect.any(Error)
       )
     } finally {
-      warn.mockRestore()
+      vi.mocked(console.warn).mockRestore()
     }
   })
 })

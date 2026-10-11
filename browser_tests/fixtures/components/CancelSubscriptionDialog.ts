@@ -5,20 +5,26 @@ import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class CancelSubscriptionDialog extends BaseDialog {
   readonly heading: Locator
-  readonly keepSubscriptionButton: Locator
+  readonly keepPlanButton: Locator
   readonly confirmCancelButton: Locator
+  readonly cancelledHeading: Locator
+  readonly doneButton: Locator
 
   constructor(page: Page) {
     super(page)
     this.heading = this.root.getByRole('heading', {
-      name: 'Cancel subscription'
+      name: 'Cancel your plan?'
     })
-    this.keepSubscriptionButton = this.root.getByRole('button', {
-      name: 'Keep subscription'
+    this.keepPlanButton = this.root.getByRole('button', {
+      name: 'Keep my plan'
     })
     this.confirmCancelButton = this.root.getByRole('button', {
-      name: 'Cancel subscription'
+      name: 'Cancel my plan'
     })
+    this.cancelledHeading = this.root.getByRole('heading', {
+      name: 'Your plan is cancelled'
+    })
+    this.doneButton = this.root.getByRole('button', { name: 'Done' })
   }
 
   async open(cancelAt?: string) {
@@ -28,5 +34,12 @@ export class CancelSubscriptionDialog extends BaseDialog {
       ).dialog.showCancelSubscriptionDialog(date)
     }, cancelAt)
     await this.waitForVisible()
+  }
+
+  async confirmCancel() {
+    await this.confirmCancelButton.click()
+    await this.cancelledHeading.waitFor({ state: 'visible' })
+    await this.doneButton.click()
+    await this.waitForHidden()
   }
 }

@@ -339,10 +339,6 @@
     "name": "Afficher les mises à jour de version",
     "tooltip": "Afficher les mises à jour pour les nouveaux modèles et les nouvelles fonctionnalités majeures."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Délai de dérive du clic du pointeur",
-    "tooltip": "Après avoir appuyé sur un bouton de pointeur, c'est le temps maximum (en millisecondes) que le mouvement du pointeur peut être ignoré.\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Dérive du clic du pointeur (distance maximale)",
     "tooltip": "Si le pointeur se déplace plus que cette distance en maintenant un bouton enfoncé, il est considéré comme un glissement (plutôt qu'un clic).\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."

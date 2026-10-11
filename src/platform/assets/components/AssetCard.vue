@@ -35,12 +35,13 @@
         :class="
           cn(
             'invisible absolute top-2 right-2 group-hover:visible',
-            dropdownMenuButton?.isOpen && 'visible'
+            assetMenuOpen && 'visible'
           )
         "
       >
         <Button
-          v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
+          :tooltip="$t('assetBrowser.modelInfo.title')"
+          tooltip-side="bottom"
           :aria-label="$t('assetBrowser.modelInfo.title')"
           variant="secondary"
           size="sm"
@@ -48,49 +49,55 @@
         >
           <i class="icon-[lucide--info]" />
         </Button>
-        <MoreButton
+        <Menu
           v-if="showAssetOptions"
-          ref="dropdown-menu-button"
-          size="sm"
+          v-model:open="assetMenuOpen"
+          :items="assetMenuItems"
+          align="end"
         >
-          <template #default>
+          <template #trigger>
             <Button
+              size="sm"
               variant="secondary"
-              size="md"
-              class="justify-start"
-              @click="confirmDeletion"
-            >
-              <i class="icon-[lucide--trash-2]" />
-              <span>{{ $t('g.delete') }}</span>
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </MoreButton>
+        </Menu>
       </IconGroup>
     </div>
     <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
-      <h3
-        :id="titleId"
-        v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
-            'text-base-foreground'
-          )
-        "
-      >
-        {{ displayName }}
-      </h3>
-      <p
-        :id="descId"
-        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
-          )
-        "
-      >
-        {{ asset.secondaryText }}
-      </p>
+      <Tooltip :disabled="!displayName" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <h3
+            :id="titleId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
+                'text-base-foreground'
+              )
+            "
+          >
+            {{ displayName }}
+          </h3>
+        </TooltipTrigger>
+        <TooltipContent>{{ displayName }}</TooltipContent>
+      </Tooltip>
+      <Tooltip :disabled="!asset.secondaryText" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <p
+            :id="descId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+              )
+            "
+          >
+            {{ asset.secondaryText }}
+          </p>
+        </TooltipTrigger>
+        <TooltipContent>{{ asset.secondaryText }}</TooltipContent>
+      </Tooltip>
       <div class="mt-auto flex items-center justify-between gap-2">
         <div class="flex gap-3 text-xs text-muted-foreground">
           <span v-if="asset.stats.stars" class="flex items-center gap-1">
@@ -129,15 +136,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
 import IconGroup from '@/components/button/IconGroup.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -165,9 +176,7 @@ const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
-const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
-  'dropdown-menu-button'
-)
+const assetMenuOpen = ref(false)
 
 const titleId = useId()
 const descId = useId()
@@ -202,7 +211,7 @@ function handleSelect() {
 }
 
 function confirmDeletion() {
-  dropdownMenuButton.value?.hide()
+  assetMenuOpen.value = false
   const assetName = toValue(displayName)
   const promptText = ref<string>(t('assetBrowser.deletion.body'))
   const optionsDisabled = ref(false)
@@ -250,4 +259,12 @@ function confirmDeletion() {
     }
   })
 }
+
+const assetMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: () => t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    command: confirmDeletion
+  }
+])
 </script>

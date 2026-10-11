@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 
 import type { WorkshopCreatorForm } from './workshop-creator-form'
 import type {
-  EncodedWorkshopFile,
+  PreparedWorkshopFile,
   WorkshopRequestInputs
 } from './workshop-creator-request'
 import { WorkshopRouterError } from './workshop-router-errors'
@@ -48,7 +48,11 @@ function withoutIndexed(values: Values, prefix: string): Values {
   )
 }
 
-function dataUrl(file: EncodedWorkshopFile): string {
+function dataUrl(file: PreparedWorkshopFile): string {
+  if (!('data' in file))
+    throw new WorkshopRouterError('validation', null, {
+      request_body: 'rejected'
+    })
   return `data:${file.mimeType};base64,${file.data}`
 }
 
@@ -123,9 +127,15 @@ function gemini({
         role: 'user',
         parts: [
           { text: values.prompt },
-          ...(files.images ?? []).map((file) => ({
-            inlineData: { data: file.data, mimeType: file.mimeType }
-          }))
+          ...(files.images ?? []).map((file) =>
+            'data' in file
+              ? {
+                  inlineData: { data: file.data, mimeType: file.mimeType }
+                }
+              : {
+                  fileData: { fileUri: file.url, mimeType: file.mimeType }
+                }
+          )
         ]
       }
     ],
@@ -179,7 +189,11 @@ function veo({
     throw new WorkshopRouterError('validation', null, {
       [lastFrame && !image ? 'first_frame' : 'reference_images']: 'rejected'
     })
-  function encoded(file: EncodedWorkshopFile) {
+  function encoded(file: PreparedWorkshopFile) {
+    if (!('data' in file))
+      throw new WorkshopRouterError('validation', null, {
+        request_body: 'rejected'
+      })
     return { bytesBase64Encoded: file.data, mimeType: file.mimeType }
   }
   return {

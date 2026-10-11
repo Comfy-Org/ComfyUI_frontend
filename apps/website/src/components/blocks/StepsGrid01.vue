@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import NodeUnionIcon from '../icons/NodeUnionIcon.vue'
+import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
 
 type Step = { id: string; label: string; description: string }
 

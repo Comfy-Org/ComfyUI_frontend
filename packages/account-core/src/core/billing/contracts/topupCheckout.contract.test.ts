@@ -11,7 +11,7 @@ type CheckoutResponseBody = z.input<typeof zCreateTopupCheckoutResponse>
 type CheckoutResponse = z.infer<typeof zCreateTopupCheckoutResponse>
 
 const MINIMUM_AMOUNT_CENTS = 500
-const MAXIMUM_AMOUNT_CENTS = 473_900
+const MAXIMUM_AMOUNT_CENTS = 1_600_000
 const RETURN_URL = 'https://app.comfy.org/billing/return'
 
 function checkoutRequest(): CheckoutRequestBody {

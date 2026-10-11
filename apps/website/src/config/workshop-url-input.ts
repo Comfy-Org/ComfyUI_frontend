@@ -4,6 +4,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import { isHttpImageSource } from './workshop-image-source'
 import { workshopExampleFile } from './workshop-example-file'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { readWorkshopFile } from './workshop-file-encoding'
 
 const downloadedSources = new Map<string, FileValue>()
 const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()
@@ -80,9 +81,9 @@ export type WorkshopUrlEncoder = (
   signal: AbortSignal
 ) => Promise<string>
 
-async function uploadUrlInput(
-  field: FieldSchema,
+export async function uploadWorkshopFile(
   file: File,
+  name: string,
   signal: AbortSignal,
   upload?: WorkshopUrlEncoder
 ): Promise<string> {
@@ -91,12 +92,16 @@ async function uploadUrlInput(
     if (!upload) throw new Error('Upload unavailable')
     const url = await upload(file, signal)
     signal.throwIfAborted()
-    const errors = validateForm([field], { [field.name]: url })
-    if (!isHttpImageSource(url) || Object.keys(errors).length)
-      throw new Error('Invalid upload URL')
+    if (!isHttpImageSource(url)) throw new Error('Invalid upload URL')
     return url
   } catch (error) {
     signal.throwIfAborted()
+    if (
+      error instanceof WorkshopRouterError &&
+      error.stage === 'upload_put' &&
+      !error.response
+    )
+      await readWorkshopFile(file.slice(0, 1), signal, name)
     const failure =
       error instanceof WorkshopRouterError
         ? error
@@ -104,11 +109,26 @@ async function uploadUrlInput(
     throw new WorkshopRouterError(
       'upload',
       failure.requestId,
-      { [field.name]: 'uploadFailed' },
+      { [name]: 'uploadFailed' },
       failure.response,
       failure.stage
     )
   }
+}
+
+async function uploadUrlInput(
+  field: FieldSchema,
+  file: File,
+  signal: AbortSignal,
+  upload?: WorkshopUrlEncoder
+): Promise<string> {
+  const url = await uploadWorkshopFile(file, field.name, signal, upload)
+  const errors = validateForm([field], { [field.name]: url })
+  if (Object.keys(errors).length)
+    throw new WorkshopRouterError('upload', null, {
+      [field.name]: 'uploadFailed'
+    })
+  return url
 }
 
 export async function resolveWorkshopUrlInputs(

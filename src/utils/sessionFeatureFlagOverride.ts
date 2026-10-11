@@ -1,4 +1,5 @@
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { isCloud } from '@/platform/distribution/types'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
@@ -13,18 +14,24 @@ type OverrideMap = Record<string, unknown>
  * the only thing standing between a `?ff=` link and the app's behaviour, so it
  * fails closed.
  *
- * Reads the identity module rather than `authStore`, which imports
+ * Reads the identity modules rather than `authStore`, which imports
  * `useFeatureFlags` and would drag the whole app module graph into every
- * feature flag read.
+ * feature flag read. A web session sign-in has no Firebase user, so its
+ * server-verified user counts too.
  */
 function isComfyEmployee(): boolean {
-  try {
-    const user = firebaseIdentity.currentUser()
-    if (!user?.emailVerified) return false
+  return [firebaseUser(), webSessionUser.value].some(
+    (user) =>
+      user?.emailVerified === true &&
+      (user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false)
+  )
+}
 
-    return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false
+function firebaseUser() {
+  try {
+    return firebaseIdentity.currentUser()
   } catch {
-    return false
+    return null
   }
 }
 

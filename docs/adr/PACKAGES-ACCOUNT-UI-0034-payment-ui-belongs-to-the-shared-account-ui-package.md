@@ -81,6 +81,13 @@ does not live in the package.
    framework-free above Vue; a promotion that drags the design system in has
    not finished.
 
+   > **Amended 2026-09-27 by
+   > [ADR-BILLING-WEB-0038](BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md):**
+   > promoted components may use `@comfyorg/design-system` token classes so
+   > the cloud app and `apps/billing-web` render the same checkout
+   > identically. Host couplings (`Button`, telemetry, journey events) still
+   > arrive as inputs.
+
 5. **Transport, commands and readers stay in `@comfyorg/account-core`.**
    This decision moves presentation only. It also does not make a surface
    shareable merely by moving it: state the frontend assembles from several

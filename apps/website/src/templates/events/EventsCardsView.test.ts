@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyEvent } from '../../data/events'
+import type { ComfyEvent } from '@/data/events'
 
-import { directoryRows } from '../../utils/eventsDirectory'
+import { directoryRows } from '@/utils/eventsDirectory'
 import EventsCardsView from './EventsCardsView.vue'
 
 const localized = (en: string) => ({ en, 'zh-CN': en })
@@ -56,7 +56,7 @@ function renderCards(events: ComfyEvent[], reducedMotion: boolean) {
   return render(EventsCardsView, { props: { rows: rowsFor(events) } })
 }
 
-// eslint-disable-next-line testing-library/no-node-access
+// oxlint-disable-next-line testing-library/no-node-access
 const videoIn = (root: Element) => root.querySelector('video')
 
 describe('EventsCardsView', () => {

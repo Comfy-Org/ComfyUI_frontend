@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
-let { useWorkshopAuthFlag } = await import('../scripts/posthog')
+let { useWorkshopAuthFlag } = await import('@/scripts/posthog')
 let { workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
   await import('./workshop-account')
 import type { WorkshopSession } from './workshop-session-state'
@@ -19,7 +19,7 @@ const subscribers = new Set<(snapshot: Snapshot) => void>()
 let emittedSnapshot: Snapshot
 let liveSnapshot: Snapshot
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-account'))
 
 const bootSession: WorkshopSession = {
@@ -39,7 +39,7 @@ const authenticatedSnapshot: Snapshot = {
 
 beforeEach(async () => {
   vi.resetModules()
-  ;({ useWorkshopAuthFlag } = await import('../scripts/posthog'))
+  ;({ useWorkshopAuthFlag } = await import('@/scripts/posthog'))
   ;({ workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
     await import('./workshop-account'))
 
@@ -70,11 +70,10 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(workshopIdentity.activate).mockRejectedValueOnce(
       new Error('activate exploded')
     )
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     sessionModule.useWorkshopSession()
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
     expect(
       subscribers.size,
       'a partial subscription from the failed attempt must not stay installed'
@@ -84,12 +83,11 @@ describe('useWorkshopSession initialization failure', () => {
 
     await vi.waitFor(() =>
       expect(
-        vi.mocked(workshopIdentity.activate),
+        workshopIdentity.activate,
         'the latch must reopen so a later caller retries the activation'
       ).toHaveBeenCalledTimes(2)
     )
     expect(subscribers.size).toBe(1)
-    errorSpy.mockRestore()
   })
 
   it('abandons an in-flight workspace restore when a begin step fails after activation', async () => {
@@ -110,15 +108,14 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(subscribeAuthRefreshTelemetry).mockImplementation(() => {
       throw new Error('telemetry exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     const session = sessionModule.useWorkshopSession()
     vi.mocked(workshopIdentity.deactivate).mockClear()
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+      expect(workshopSessionClient.remint).toHaveBeenCalledOnce()
     )
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
 
     // The restore's re-mint settles only now, after begin threw and abandoned.
     finishRestore({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
@@ -130,9 +127,8 @@ describe('useWorkshopSession initialization failure', () => {
     ).toBeUndefined()
     expect(session.signedIn.value).toBe(false)
     expect(
-      vi.mocked(workshopIdentity.deactivate),
+      workshopIdentity.deactivate,
       'the failed attempt reaches deactivate(); the integration suite pins the storage effect'
     ).toHaveBeenCalledOnce()
-    errorSpy.mockRestore()
   })
 })

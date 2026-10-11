@@ -6,6 +6,8 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { isImageNode } from '@/utils/litegraphUtil'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -143,6 +145,21 @@ app.registerExtension({
       }
     }
   ],
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+    const original = nodeType.prototype.getExtraMenuOptions
+    nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+      const extra = original?.call(this, canvas, options) ?? []
+      if (ComfyApp.clipspace_return_node || !isImageNode(this)) return extra
+
+      options.push({
+        content: 'Open in MaskEditor | Image Canvas',
+        callback: markCoreMediaMenuCallback(() => {
+          useMaskEditor().openMaskEditor(this)
+        }, 'preview')
+      })
+      return extra
+    }
+  },
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
     ComfyApp.open_maskeditor = openMaskEditorFromClipspace

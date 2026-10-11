@@ -68,9 +68,11 @@ watch(parts, measureLines, { flush: 'post' })
       <span
         v-if="part.word !== undefined"
         data-word
-        class="inline-block transition-[opacity,translate] duration-700 ease-out"
+        class="inline-block duration-700 ease-out"
         :class="
-          animating && !revealed ? 'translate-y-[0.35em] opacity-0' : undefined
+          animating && !revealed
+            ? 'translate-y-[0.35em] opacity-0 transition-none'
+            : 'transition-[opacity,translate]'
         "
         :style="{
           transitionDelay: `${delay + (lineOfWord[part.word] ?? 0) * stagger}ms`

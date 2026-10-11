@@ -73,8 +73,7 @@ function renderComponent() {
   return render(CameraInfo, {
     props: { widget: makeWidget() },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
 }

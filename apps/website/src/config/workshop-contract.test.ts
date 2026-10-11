@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 import {
   compileWorkshopContracts,
   countPackedRecords
-} from '../../scripts/generate-workshop-router-contracts'
-import packedContracts from '../content/workshop-router-contracts.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import rawBindings from '../data/workshop-router-bindings.json'
+} from '@website/scripts/generate-workshop-router-contracts'
+import packedContracts from '@/content/workshop-router-contracts.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
+import rawBindings from '@/data/workshop-router-bindings.json'
 import {
   authoredRouterContentBySlug,
   authoredWorkshopModels
@@ -327,10 +327,13 @@ describe('schema-driven Router coverage', () => {
   )(
     'rejects user-controlled streaming mode but retains event responses: $id',
     async (contract) => {
-      const body = {
-        ...object.parse(contract.inputSchema.example),
-        stream: true
-      }
+      // openrouter/chat-completions authors no example; one message is the
+      // smallest body its schema accepts.
+      const base = Object.hasOwn(contract.inputSchema, 'example')
+        ? object.parse(contract.inputSchema.example)
+        : { messages: [{ role: 'user', content: 'Hello' }] }
+      expect(validateWorkshopInput(base, contract.inputSchema)).toBe(true)
+      const body = { ...base, stream: true }
       await expect(
         prepareWorkshopRouterInput(
           contract,

@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
 import {
+  ENTERPRISE_ENDING_NOTICE_DAYS,
   hasActivePaidPlan,
   isEnterprisePlanSlug,
   isSalesManagedTier,
   isUnknownTier,
+  isWithinEnterpriseEndingNotice,
   toTierKey
 } from './tierPricing'
 
@@ -101,5 +103,44 @@ describe('isSalesManagedTier', () => {
     expect(isSalesManagedTier('PRO')).toBe(false)
     expect(isSalesManagedTier('TEAM')).toBe(false)
     expect(isSalesManagedTier(null)).toBe(false)
+  })
+})
+
+describe('isWithinEnterpriseEndingNotice', () => {
+  const NOW = new Date('2026-09-03T12:00:00Z').getTime()
+  const DAY = 24 * 60 * 60 * 1000
+
+  function daysFromNow(days: number): string {
+    return new Date(NOW + days * DAY).toISOString()
+  }
+
+  it('stays outside the window while the end date is far off', () => {
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(30), NOW)).toBe(false)
+    expect(
+      isWithinEnterpriseEndingNotice(
+        daysFromNow(ENTERPRISE_ENDING_NOTICE_DAYS + 1),
+        NOW
+      )
+    ).toBe(false)
+  })
+
+  it('enters the window at the threshold and stays in until the end', () => {
+    expect(
+      isWithinEnterpriseEndingNotice(
+        daysFromNow(ENTERPRISE_ENDING_NOTICE_DAYS),
+        NOW
+      )
+    ).toBe(true)
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(1), NOW)).toBe(true)
+  })
+
+  it('counts a passed end date as within; ended handling gates upstream', () => {
+    expect(isWithinEnterpriseEndingNotice(daysFromNow(-5), NOW)).toBe(true)
+  })
+
+  it('treats missing or invalid dates as no notice at all', () => {
+    expect(isWithinEnterpriseEndingNotice(null, NOW)).toBe(false)
+    expect(isWithinEnterpriseEndingNotice(undefined, NOW)).toBe(false)
+    expect(isWithinEnterpriseEndingNotice('not-a-date', NOW)).toBe(false)
   })
 })

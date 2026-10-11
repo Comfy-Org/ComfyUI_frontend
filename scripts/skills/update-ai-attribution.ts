@@ -12,11 +12,11 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { applyEdits, modify, parse } from 'jsonc-parser'
 import type { FormattingOptions, ParseError } from 'jsonc-parser'
+import { isMainModule } from '../isMainModule'
 
 type SettingValue = boolean | string
 type Tool = 'amp' | 'claude' | 'codex'
@@ -170,4 +170,4 @@ function main() {
   if (results.some(({ outcome }) => outcome === 'error')) process.exitCode = 1
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main()
+if (isMainModule(import.meta.url)) main()

@@ -4,6 +4,10 @@ Use `test` from `./fixtures/blockExternalMedia`, not `@playwright/test`.
 Use its `page` and `context`. Set user-agent variants with scoped `test.use`
 options instead of creating browser contexts.
 
+Find an auth toast with `new AuthToasts(page).withText(...)` from
+`./fixtures/authToasts`, never `page.getByText` on its copy: a screen-reader
+live region repeats that copy.
+
 ## No external requests
 
 Register test-specific `context.route` responses before navigation. They override
@@ -50,6 +54,18 @@ sudo unshare --net sh -c '
 The dummy interface keeps `navigator.onLine` true so the email SDK submits
 instead of queueing offline. Astro preview and Playwright both run inside the
 namespace.
+
+## Video metadata fixtures
+
+`assets/validation-16s.mp4` is a generated 16-second, 16×16 black video for
+testing source-duration validation. `assets/validation-700px.webm` is a
+one-second, 700×394 black video for testing the accepted width boundary. They
+can be regenerated with:
+
+```sh
+ffmpeg -f lavfi -i color=c=black:s=16x16:r=1 -t 16 -c:v libx264 -pix_fmt yuv420p -movflags +faststart e2e/assets/validation-16s.mp4
+ffmpeg -f lavfi -i color=c=black:s=700x394:r=1 -t 1 -c:v libvpx-vp9 -b:v 1k -an e2e/assets/validation-700px.webm
+```
 
 ## Font fixture
 

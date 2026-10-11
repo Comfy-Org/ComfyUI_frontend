@@ -39,3 +39,20 @@ for (const { link, path, reason } of BAD_LINKS) {
     expect(shown).toBe(path)
   })
 }
+
+test('sends a pricing link back to the host, where plans are chosen', async ({
+  page
+}) => {
+  await page.goto('/v1/pricing?product=comfyui&return_to=comfyui_workspace')
+
+  await expect(page).toHaveURL('https://testcloud.comfy.org/')
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+})
+
+test('explains a pricing link with nowhere to go back to', async ({ page }) => {
+  await page.goto('/v1/pricing?product=platform&return_to=platform_account')
+
+  await expect(
+    page.getByText("That link doesn't name a place we can send you back to.")
+  ).toBeVisible()
+})

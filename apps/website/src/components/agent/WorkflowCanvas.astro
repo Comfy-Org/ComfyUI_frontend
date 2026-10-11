@@ -1,0 +1,31 @@
+---
+import '@/styles/workflow-canvas.css'
+import type { Locale } from '@/i18n/translations'
+import WorkflowScene from './WorkflowScene.astro'
+import { tAgent } from './agentTranslations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+---
+
+<section
+  class="wf-showcase"
+  aria-label={tAgent('agentPage.workflow.regionLabel', locale)}
+>
+  <workflow-examples>
+    <WorkflowScene
+      userCursorLabel={tAgent('agentPage.workflow.userCursorLabel', locale)}
+    />
+  </workflow-examples>
+</section>
+
+<script>
+  import { WorkflowExamples } from './workflowExamples'
+
+  if (!customElements.get('workflow-examples')) {
+    customElements.define('workflow-examples', WorkflowExamples)
+  }
+</script>

@@ -1,22 +1,23 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { uploadTempFile } from '@/services/uploadTempFile'
 
-import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 
-const WEBCAM_READY = Symbol()
+const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()
 
 app.registerExtension({
   name: 'Comfy.WebcamCapture',
   getCustomWidgets() {
     return {
       WEBCAM(node, inputName) {
-        // @ts-expect-error fixme ts strict error
-        let res
-        // @ts-expect-error fixme ts strict error
-        node[WEBCAM_READY] = new Promise((resolve) => (res = resolve))
+        let resolveVideo: (video: HTMLVideoElement) => void = () => undefined
+        webcamReady.set(
+          node,
+          new Promise((resolve) => (resolveVideo = resolve))
+        )
 
         const container = document.createElement('div')
         container.style.background = 'rgba(0,0,0,0.25)'
@@ -33,10 +34,12 @@ app.registerExtension({
             })
             container.replaceChildren(video)
 
-            // @ts-expect-error fixme ts strict error
-            setTimeout(() => res(video), 500) // Fallback as loadedmetadata doesnt fire sometimes?
-            // @ts-expect-error fixme ts strict error
-            video.addEventListener('loadedmetadata', () => res(video), false)
+            setTimeout(() => resolveVideo(video), 500) // Fallback as loadedmetadata doesnt fire sometimes?
+            video.addEventListener(
+              'loadedmetadata',
+              () => resolveVideo(video),
+              false
+            )
             video.srcObject = stream
             await video.play()
           } catch (error) {
@@ -46,16 +49,16 @@ app.registerExtension({
             label.style.maxHeight = '100%'
             label.style.whiteSpace = 'pre-wrap'
 
+            const message =
+              error instanceof Error ? error.message : String(error)
             if (window.isSecureContext) {
               label.textContent =
                 'Unable to load webcam, please ensure access is granted:\n' +
-                // @ts-expect-error fixme ts strict error
-                error.message
+                message
             } else {
               label.textContent =
                 'Unable to load webcam. A secure context is required, if you are not accessing ComfyUI on localhost (127.0.0.1) you will have to enable TLS (https)\n\n' +
-                // @ts-expect-error fixme ts strict error
-                error.message
+                message
             }
 
             container.replaceChildren(label)
@@ -71,29 +74,30 @@ app.registerExtension({
   nodeCreated(node: LGraphNode) {
     if ((node.type, node.constructor.comfyClass !== 'WebcamCapture')) return
 
-    // @ts-expect-error fixme ts strict error
-    let video
-    // @ts-expect-error fixme ts strict error
-    const camera = node.widgets.find((w) => w.name === 'image')
-    // @ts-expect-error fixme ts strict error
-    const w = node.widgets.find((w) => w.name === 'width')
-    // @ts-expect-error fixme ts strict error
-    const h = node.widgets.find((w) => w.name === 'height')
-    // @ts-expect-error fixme ts strict error
-    const captureOnQueue = node.widgets.find(
+    let video: HTMLVideoElement | undefined
+    const camera = node.widgets?.find((w) => w.name === 'image')
+    const w = node.widgets?.find((w) => w.name === 'width')
+    const h = node.widgets?.find((w) => w.name === 'height')
+    const captureOnQueue = node.widgets?.find(
       (w) => w.name === 'capture_on_queue'
     )
+    if (!camera || !w || !h || !captureOnQueue) return
 
     const canvas = document.createElement('canvas')
     const nodeOutputStore = useNodeOutputStore()
 
     const capture = () => {
-      // @ts-expect-error widget value type narrow down
+      if (
+        !video ||
+        typeof w.value !== 'number' ||
+        typeof h.value !== 'number'
+      ) {
+        return
+      }
       canvas.width = w.value
-      // @ts-expect-error widget value type narrow down
       canvas.height = h.value
       const ctx = canvas.getContext('2d')
-      // @ts-expect-error widget value type narrow down
+      if (!ctx) return
       ctx.drawImage(video, 0, 0, w.value, h.value)
       const data = canvas.toDataURL('image/png')
 
@@ -116,51 +120,39 @@ app.registerExtension({
     btn.disabled = true
     btn.serializeValue = () => undefined
 
-    // @ts-expect-error fixme ts strict error
     camera.serializeValue = async () => {
-      // @ts-expect-error fixme ts strict error
       if (captureOnQueue.value) {
         capture()
       } else if (!node.imgs?.length) {
-        const err = `No webcam image captured`
-        useToastStore().addAlert(err)
-        throw new Error(err)
+        useToast().warning(t('toastMessages.noWebcamImageCaptured'))
+        throw new Error('No webcam image captured')
       }
 
       // Upload image to temp storage
-      // @ts-expect-error fixme ts strict error
-      const blob = await new Promise<Blob>((r) => canvas.toBlob(r))
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((blob) =>
+          blob ? resolve(blob) : reject(new Error('Failed to capture webcam'))
+        )
+      )
       const name = `${+new Date()}.png`
       const file = new File([blob], name)
-      const body = new FormData()
-      body.append('image', file)
-      body.append('subfolder', 'webcam')
-      body.append('type', 'temp')
-      const resp = await api.fetchApi('/upload/image', {
-        method: 'POST',
-        body
-      })
-      if (resp.status !== 200) {
-        const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
-        useToastStore().addAlert(err)
-        throw new Error(err)
-      }
-      const data = await resp.json()
+      const upload = await uploadTempFile(file, 'webcam')
+      if (!upload.ok)
+        throw new Error(`Error uploading camera image: ${upload.reason}`)
+      const data = upload.file
       const serverName = data.name || name
       const subfolder = data.subfolder || 'webcam'
       const type = data.type || 'temp'
       return `${subfolder}/${serverName} [${type}]`
     }
 
-    // @ts-expect-error fixme ts strict error
-    node[WEBCAM_READY].then((v) => {
+    const ready = webcamReady.get(node)
+    if (!ready) return
+    void ready.then((v) => {
       video = v
       // If width isn't specified then use video output resolution
-      // @ts-expect-error fixme ts strict error
-      if (!w.value) {
-        // @ts-expect-error fixme ts strict error
+      if (typeof w.value !== 'number' || !w.value) {
         w.value = video.videoWidth || 640
-        // @ts-expect-error fixme ts strict error
         h.value = video.videoHeight || 480
       }
       btn.disabled = false

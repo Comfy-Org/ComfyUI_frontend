@@ -6,13 +6,11 @@
     "lib": ["ES2023", "ES2023.Array", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "incremental": true,
+    "tsBuildInfoFile": "${configDir}/node_modules/.cache/tsbuildinfo/tsconfig.tsbuildinfo",
     "noEmit": true,
-    "sourceMap": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "resolveJsonModule": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -29,6 +27,9 @@
       ],
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@/utils/urlSafety": [
+        "./packages/shared-frontend-utils/src/urlSafety.ts"
       ],
       "@/base/credits/comfyCredits": [
         "./packages/shared-frontend-utils/src/creditsUtil.ts"
@@ -57,6 +58,7 @@
     "playwright.config.ts",
     "playwright.i18n.config.ts",
     "vite.config.mts",
+    "vitest.network.setup.ts",
     "vitest.config.ts"
     // "vitest.setup.ts",
   ],

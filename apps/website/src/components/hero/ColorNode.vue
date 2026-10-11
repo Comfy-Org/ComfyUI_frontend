@@ -38,7 +38,7 @@ const saturationTrack = computed(
       />
       <span class="ml-auto flex items-center gap-[0.5em]">
         <span
-          class="ppformula-text-center font-formula text-[0.7em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
+          class="inline-block font-formula text-[0.7em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
         >
           COLOR
         </span>

@@ -11,17 +11,24 @@
     "./loadExternalScript": "./src/loadExternalScript.ts",
     "./networkUtil": "./src/networkUtil.ts",
     "./nodePricing": "./src/nodePricing.ts",
-    "./piiUtil": "./src/piiUtil.ts"
+    "./piiUtil": "./src/piiUtil.ts",
+    "./telemetry": "./src/telemetry.ts",
+    "./templateRanking": "./src/templateRanking.ts",
+    "./templateSearch": "./src/templateSearch.ts",
+    "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@comfyorg/object-info-parser": "workspace:*",
     "axios": "catalog:",
     "es-toolkit": "^1.39.9",
-    "jsonata": "catalog:"
+    "jsonata": "catalog:",
+    "minisearch": "catalog:"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "catalog:",

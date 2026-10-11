@@ -262,7 +262,7 @@ export const formatPricingResult = (
   if (result.type === 'usd') {
     const usd = asFiniteNumber(result.usd)
     if (usd === null) return ''
-    const fmt = { ...defaults, ...(result.format ?? {}) }
+    const fmt = { ...defaults, ...result.format }
     if (valueOnly) {
       const prefix = fmt.approximate ? '~' : ''
       return `${prefix}${formatCreditsValue(usd)}`
@@ -274,7 +274,7 @@ export const formatPricingResult = (
     const minUsd = asFiniteNumber(result.min_usd)
     const maxUsd = asFiniteNumber(result.max_usd)
     if (minUsd === null || maxUsd === null) return ''
-    const fmt = { ...defaults, ...(result.format ?? {}) }
+    const fmt = { ...defaults, ...result.format }
     if (valueOnly) {
       const prefix = fmt.approximate ? '~' : ''
       return `${prefix}${formatCreditsRangeValue(minUsd, maxUsd)}`
@@ -289,7 +289,7 @@ export const formatPricingResult = (
 
     if (usdValues.length === 0) return ''
 
-    const fmt = { ...defaults, ...(result.format ?? {}) }
+    const fmt = { ...defaults, ...result.format }
     if (valueOnly) {
       const prefix = fmt.approximate ? '~' : ''
       return `${prefix}${formatCreditsListValue(usdValues, fmt.separator)}`
@@ -421,8 +421,8 @@ export const evaluateNodeDefPricing = memoize(
     try {
       // Merge all inputs for lookup
       const allInputs = {
-        ...(nodeDef.input?.required ?? {}),
-        ...(nodeDef.input?.optional ?? {})
+        ...nodeDef.input?.required,
+        ...nodeDef.input?.optional
       }
 
       // Build widgets context using depends_on.widgets (matches buildJsonataContext)

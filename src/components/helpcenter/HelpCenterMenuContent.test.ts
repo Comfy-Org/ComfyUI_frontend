@@ -1,18 +1,25 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
 beforeEach(() => {
   managerState.isNewManagerUI.value = false
+  useManagerState().isNewManagerUI = computed(
+    () => managerState.isNewManagerUI.value
+  )
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
@@ -24,8 +31,6 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const managerState = vi.hoisted(() => ({ isNewManagerUI: { value: false } }))
-const addToast = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
@@ -52,21 +57,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
-
-  () => ({
-    useManagerState: () => managerState
-  })
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({ add: addToast })
-  })
-)
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
   default: defineComponent({
@@ -80,7 +71,7 @@ function renderComponent() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
-    messages: { en: enMessages }
+    messages: { en: { ...enMessages, commands: enCommands } }
   })
 
   const result = render(HelpCenterMenuContent, {
@@ -100,10 +91,6 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    openSpy.mockRestore()
   })
 
   it('opens the Typeform survey tagged with help-center source on Cloud', async () => {
@@ -156,10 +143,6 @@ describe('HelpCenterMenuContent system status item', () => {
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
-  afterEach(() => {
-    openSpy.mockRestore()
-  })
-
   it('opens the status page on Cloud', async () => {
     distribution.isCloud = true
     const { user } = renderComponent()
@@ -177,6 +160,35 @@ describe('HelpCenterMenuContent system status item', () => {
     renderComponent()
 
     expect(screen.queryByRole('menuitem', { name: 'System Status' })).toBeNull()
+  })
+})
+
+describe('HelpCenterMenuContent onboarding replay', () => {
+  it('is hidden outside developer mode', async () => {
+    distribution.isDesktop = true
+    useSettingStore().settingValues['Comfy.DevMode'] = false
+    const { user } = renderComponent()
+
+    await user.hover(screen.getByRole('menuitem', { name: 'More...' }))
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'Replay Onboarding' })
+    ).toBeNull()
+  })
+
+  it('runs the replay command and closes the help center', async () => {
+    useSettingStore().settingValues['Comfy.DevMode'] = true
+    const { user, emitted } = renderComponent()
+
+    await user.hover(screen.getByRole('menuitem', { name: 'More...' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Replay Onboarding' })
+    )
+
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.Onboarding.Replay'
+    )
+    expect(emitted().close).toHaveLength(1)
   })
 })
 
@@ -210,8 +222,8 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ method: 'post', url: 'manager/queue/start' })
     )
-    expect(addToast).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 
@@ -230,18 +242,18 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Update ComfyUI' }))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('Update request rejected')
+          kind: 'error',
+          description: expect.stringContaining('Update request rejected')
         })
       )
     })
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({ url: 'manager/reboot' })
     )
-    expect(addToast).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 })

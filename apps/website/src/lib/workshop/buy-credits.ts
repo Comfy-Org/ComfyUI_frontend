@@ -5,8 +5,9 @@ import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
-import type { Locale } from '../../i18n/translations'
+} from '@/config/workshop-env'
+import type { Locale } from '@/i18n/translations'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { topUpReturnUrl } from './topup-return'
 
 export class TopUpCheckoutError extends Error {
@@ -40,7 +41,6 @@ export function isStripeHostedCheckoutUrl(raw: string): boolean {
 
 const zTopUpCheckout = z.object({
   checkout_url: z
-    .string()
     .url()
     .refine(
       isStripeHostedCheckoutUrl,
@@ -118,9 +118,9 @@ async function requestTopUpCheckout(
 export async function createTopUpCheckout(
   options: CreateTopUpCheckoutOptions
 ): Promise<TopUpCheckoutSession> {
-  const timeout = AbortSignal.timeout(options.timeoutMs ?? 15_000)
+  const timeout = createTimeoutSignal(options.timeoutMs ?? 15_000)
   const signal = options.signal
-    ? AbortSignal.any([options.signal, timeout])
+    ? combineAbortSignals([options.signal, timeout])
     : timeout
   const ownReturnUrl = topUpCheckoutReturnUrl(options)
   try {

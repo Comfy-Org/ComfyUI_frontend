@@ -76,9 +76,6 @@ export async function snapshotDomWidget(
   widgetLocator: Locator
 ): Promise<DomWidgetSnapshot> {
   const widgetHandle = await widgetLocator.elementHandle()
-  if (!widgetHandle) {
-    throw new Error('Expected locator to have a visible bounding box')
-  }
   // Single evaluate() call so both reads land in the same frame -- two
   // separate CDP round trips can straddle a frame boundary and go stale.
   return page.evaluate((widgetEl) => {
@@ -145,9 +142,6 @@ async function relativeOffset(
   widgetLocator: Locator
 ): Promise<RelativeOffset> {
   const nodeHandle = await nodeLocator.elementHandle()
-  if (!nodeHandle) {
-    throw new Error('Expected node locator to have a visible bounding box')
-  }
   // Read both rects in a single evaluate() call -- see the comment in
   // `snapshotDomWidget` for why two separate reads risk frame tearing.
   return widgetLocator.evaluate((widgetEl, nodeEl) => {

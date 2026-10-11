@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../pr/openPr', () => ({ openPr: vi.fn() }))
-vi.mock('../recorder/runner', () => ({
+vi.mock(import('../pr/openPr'), () => ({ openPr: vi.fn() }))
+vi.mock(import('../recorder/runner'), () => ({
   findProjectRoot: vi.fn()
 }))
 
@@ -20,9 +20,9 @@ describe('runPr', () => {
     projectRoot = mkdtempSync(join(tmpdir(), 'comfy-test-pr-'))
     mkdirSync(join(projectRoot, 'browser_tests', 'tests'), { recursive: true })
     vi.mocked(findProjectRoot).mockReturnValue(projectRoot)
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit called')
-    }) as never)
+    })
   })
 
   afterEach(() => {

@@ -1,28 +1,32 @@
+function isRendered(element: Element): boolean {
+  return (
+    element.closest('[hidden], [aria-hidden="true"]') === null &&
+    element.checkVisibility({ visibilityProperty: true })
+  )
+}
+
 function hasOpenRekaDialog(): boolean {
   return Array.from(
     document.querySelectorAll('[role="dialog"][data-state="open"]')
   ).some(
-    (dialog) => dialog.closest('[data-reka-popper-content-wrapper]') === null
+    (dialog) =>
+      dialog.closest('[data-reka-popper-content-wrapper]') === null &&
+      isRendered(dialog)
   )
 }
 
 function hasOpenNativeDialog(): boolean {
-  return document.querySelector('dialog[open]') !== null
+  return Array.from(document.querySelectorAll('dialog[open]')).some(isRendered)
 }
 
 function hasVisibleAriaModal(): boolean {
   return Array.from(
     document.querySelectorAll('[role="dialog"][aria-modal="true"]')
-  ).some((dialog) => dialog.closest('[hidden], [aria-hidden="true"]') === null)
+  ).some(isRendered)
 }
 
-/** ComfyDialog toggles visibility via inline display ('flex' / 'none'). */
 function hasVisibleLegacyModal(): boolean {
-  return Array.from(
-    document.querySelectorAll<HTMLElement>('.comfy-modal')
-  ).some(
-    (modal) => modal.style.display !== '' && modal.style.display !== 'none'
-  )
+  return Array.from(document.querySelectorAll('.comfy-modal')).some(isRendered)
 }
 
 export function isModalOpen(managedDialogCount: number): boolean {

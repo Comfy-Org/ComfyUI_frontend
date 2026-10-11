@@ -24,7 +24,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
 
-  const bookmarkedRoot = computed<TreeNode>(() =>
+  const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() =>
     buildBookmarkTree(bookmarks.value)
   )
 

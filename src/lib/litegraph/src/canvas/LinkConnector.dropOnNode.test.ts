@@ -6,7 +6,7 @@ import {
   LinkConnector,
   ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 /**
  * Multi-group autogrow nodes (e.g. the ByteDance Seedance reference node) stack

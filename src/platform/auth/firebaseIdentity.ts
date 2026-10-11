@@ -40,5 +40,6 @@ export const firebaseIdentity = createFirebaseIdentity({
     browserLocalPersistence,
     indexedDBLocalPersistence,
     browserSessionPersistence
-  ]
+  ],
+  watchPopupSignIn: true
 })

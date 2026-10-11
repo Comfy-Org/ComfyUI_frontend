@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -59,6 +60,7 @@ describe('ComfyApi realtime socket reset', () => {
     pendingTokenReleases = []
     vi.stubGlobal('WebSocket', FakeWebSocket)
     api.socket = null
+    installCloudApiAuth()
     vi.mocked(useAuthStore().getAuthToken).mockImplementation(() => {
       if (!deferTokenFetch) return Promise.resolve(currentToken)
       const captured = currentToken

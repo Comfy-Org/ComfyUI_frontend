@@ -1,4 +1,6 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
   GetEmbeddingsResponse as EmbeddingsResponse,
   GetExtensionsResponse as ExtensionsResponse
@@ -19,16 +21,30 @@ import type {
   TerminalSize
 } from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
-import type { ComfyApp } from '@/scripts/app'
+import type { ComfyApp } from '@/types/comfy'
+import type {
+  ContextMenu,
+  DragAndScale,
+  LGraph,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import type {
   BottomPanelExtension,
   CommandManager,
   ExtensionManager,
   SidebarTabExtension,
+  ToastAction,
   ToastManager,
-  ToastMessageOptions
+  ToastMessageOptions,
+  ToastOptions
 } from './extensionTypes'
+import type { ToastId } from './toastId'
 
 export type { NodeId, SerializedNodeId } from './nodeId'
 export { toNodeId, parseNodeId } from './nodeId'
@@ -41,7 +57,7 @@ export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
-export type { ComfyApp } from '@/scripts/app'
+export type { ComfyApp } from '@/types/comfy'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
 export type {
@@ -77,7 +93,10 @@ export type {
   ToastManager,
   ExtensionManager,
   CommandManager,
-  ToastMessageOptions
+  ToastAction,
+  ToastId,
+  ToastMessageOptions,
+  ToastOptions
 }
 
 interface CapturedMessages {
@@ -99,6 +118,16 @@ declare global {
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
 
+    LiteGraph?: typeof LiteGraph
+    LGraph?: typeof LGraph
+    LLink?: typeof LLink
+    LGraphNode?: typeof LGraphNode
+    LGraphGroup?: typeof LGraphGroup
+    DragAndScale?: typeof DragAndScale
+    LGraphCanvas?: typeof LGraphCanvas
+    ContextMenu?: typeof ContextMenu
+    LGraphBadge?: typeof LGraphBadge
+
     /** For use in tests to capture WebSocket messages */
     __capturedMessages?: CapturedMessages
 
@@ -112,6 +141,6 @@ declare global {
      */
     __comfyDesktop2Remote?: boolean
 
-    __comfyDesktop2?: ComfyDesktop2Bridge
+    __comfyDesktop2?: ComfyDesktop2Bridge & { Auth?: DesktopHostAuthBridge }
   }
 }

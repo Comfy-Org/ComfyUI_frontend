@@ -191,5 +191,23 @@ describe('SearchInput', () => {
       await user.click(screen.getByRole('button', { name: 'Clear' }))
       expect(onUpdate).toHaveBeenCalledWith('')
     })
+
+    it('does not allow clearing a disabled search input', async () => {
+      const onUpdate = vi.fn()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderComponent({
+        modelValue: 'test',
+        disabled: true,
+        'onUpdate:modelValue': onUpdate
+      })
+      const clearButton = screen.getByRole('button', { name: 'Clear' })
+
+      expect(clearButton).toBeDisabled()
+      await user.tab()
+      expect(clearButton).not.toHaveFocus()
+      await user.keyboard('{Enter}')
+
+      expect(onUpdate).not.toHaveBeenCalled()
+    })
   })
 })

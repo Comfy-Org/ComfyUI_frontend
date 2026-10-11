@@ -6,6 +6,11 @@ Date: 2026-09-19
 
 Proposed
 
+Revised 2026-09-29 by
+[FE-3032](https://linear.app/comfyorg/issue/FE-3032/agentcrdt-pr-and-stale-adr-cleanup-after-store-first-removal)
+after the graph-intent write path replaced the deleted mint-port wiring. The
+authority and delivery decisions are unchanged.
+
 ## Context
 
 The In-App Agent edits a shared per-workflow document that the frontend follows
@@ -13,15 +18,18 @@ The In-App Agent edits a shared per-workflow document that the frontend follows
 Two channels carry the human's canvas to the server:
 
 1. **Semantic operations.** While a chat is bound to the workflow and its tab
-   is active, the mint ports turn canvas edits into `doc_ops`
-   (`src/workbench/extensions/agent/crdt/mintPortWiring.ts`,
-   `layoutMintPort.ts`, `opSender.ts`). The gate
-   (`mintGate.ts`) is closed when no thread is bound: before the first turn
-   acknowledges, and after "new chat". The sender drops queued operations as
-   `undeliverable` when the binding changes or the transport stays refused.
+   is active, litegraph's graph API emits provenance-tagged commands through
+   `src/lib/litegraph/src/graphIntents.ts`.
+   `src/workbench/extensions/agent/crdt/docOpMinter.ts` turns local commands
+   into `doc_ops`, and `opSender.ts` delivers them. The minter's document-bound
+   gate is closed when no thread is bound: before the first turn acknowledges,
+   and after "new chat". The sender drops queued operations as `undeliverable`
+   when the binding changes or the transport stays refused. Remote follower
+   writes use the same graph API with `agent-remote` provenance, so they update
+   the live graph and stores without minting operations back to the host.
 2. **The turn draft.** Every turn whose target has a cloud workflow id, and
    every first turn of a new chat, posts the live canvas as `draft`
-   (`src/workbench/extensions/agent/composables/agent/useAgentSession.ts`).
+   (`src/workbench/extensions/agent/AgentPanelRoot.vue`).
    The client sends `draft.content` only; the server derives the version it
    compares against from the document it already holds.
 

@@ -4,8 +4,9 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+// The suppressions-file summary diagnostic has no rule code.
 const reportSchema = z.object({
-  diagnostics: z.array(z.object({ code: z.string() }))
+  diagnostics: z.array(z.object({ code: z.string().optional() }))
 })
 
 function isolationRules(filename: string) {
@@ -24,7 +25,7 @@ function isolationRules(filename: string) {
   const { diagnostics } = reportSchema.parse(JSON.parse(result.stdout))
   return diagnostics
     .map(({ code }) => code)
-    .filter((code) => /no-restricted-(imports|properties)/.test(code))
+    .filter((code) => code && /no-restricted-(imports|properties)/.test(code))
 }
 
 describe('browser network isolation lint rules', () => {
@@ -60,5 +61,29 @@ describe('browser network isolation lint rules', () => {
     expect(
       isolationRules('browser_tests/fixtures/networkIsolationFixture.ts')
     ).toEqual([])
+  })
+
+  it('preserves shared PrimeVue restrictions in the website E2E override', () => {
+    const directory = mkdtempSync(
+      path.resolve('apps/website/e2e/__primevue_policy_')
+    )
+    try {
+      const filename = path.join(directory, 'fixture.spec.ts')
+      writeFileSync(
+        filename,
+        [
+          "import Calendar from 'primevue/calendar'",
+          "import { test } from '@playwright/test'",
+          'void Calendar',
+          'void test'
+        ].join('\n')
+      )
+      expect(isolationRules(filename)).toEqual([
+        'eslint(no-restricted-imports)',
+        'eslint(no-restricted-imports)'
+      ])
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   })
 })

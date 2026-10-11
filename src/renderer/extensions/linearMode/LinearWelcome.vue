@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
@@ -12,6 +13,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { enterBuilder } = useEnterBuilder()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
@@ -42,7 +44,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-2xs font-medium text-base-foreground"
+              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-base-foreground px-3.5 py-0.5 text-2xs font-medium text-base-background"
             >
               {{ t('menu.run') }}
             </span>
@@ -93,7 +95,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
           data-testid="linear-welcome-build-app"
           variant="primary"
           size="lg"
-          @click="appModeStore.enterBuilder()"
+          @click="enterBuilder"
         >
           <i class="icon-[lucide--hammer]" />
           {{ t('linearMode.welcome.buildApp') }}

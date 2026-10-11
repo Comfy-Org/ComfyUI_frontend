@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { parseDocument } from 'yaml'
 
 const ROOT = join(import.meta.dirname, '../..')
 const PREPARE_REPORT = join(
@@ -141,30 +142,53 @@ describe('website E2E workflow', () => {
     )
   })
 
-  it('passes only skipped or fully successful runs', () => {
-    expect(
-      checkResult({
-        SHOULD_RUN: 'false',
-        SHARD_RESULT: 'skipped',
-        REPORT_RESULT: 'skipped',
-        TEST_OUTCOME: ''
-      }).status
-    ).toBe(0)
-    expect(
-      checkResult({
-        SHOULD_RUN: 'true',
-        SHARD_RESULT: 'success',
-        REPORT_RESULT: 'success',
-        TEST_OUTCOME: 'success'
-      }).status
-    ).toBe(0)
-    expect(
-      checkResult({
-        SHOULD_RUN: 'true',
-        SHARD_RESULT: 'success',
-        REPORT_RESULT: 'success',
-        TEST_OUTCOME: 'infrastructure'
-      }).status
-    ).toBe(1)
+  it('runs the required gate with change detection even when a dependency fails', () => {
+    const workflow = parseDocument(
+      readFileSync(join(ROOT, '.github/workflows/ci-website-e2e.yaml'), 'utf8')
+    ).toJS()
+
+    expect(workflow).toMatchObject({
+      jobs: {
+        'website-e2e': {
+          if: '${{ always() }}',
+          needs: ['changes', 'website-e2e-shard', 'website-e2e-report'],
+          steps: expect.arrayContaining([
+            expect.objectContaining({
+              env: expect.objectContaining({
+                CHANGES_RESULT: '${{ needs.changes.result }}'
+              })
+            })
+          ])
+        }
+      }
+    })
   })
+
+  it.for`
+    changes        | shouldRun  | shard        | report       | outcome             | status
+    ${'success'}   | ${'true'}  | ${'success'} | ${'success'} | ${'success'}        | ${0}
+    ${'success'}   | ${'false'} | ${'skipped'} | ${'skipped'} | ${''}               | ${0}
+    ${'failure'}   | ${''}      | ${'skipped'} | ${'skipped'} | ${''}               | ${1}
+    ${'cancelled'} | ${''}      | ${'skipped'} | ${'skipped'} | ${''}               | ${1}
+    ${'failure'}   | ${'false'} | ${'skipped'} | ${'skipped'} | ${''}               | ${1}
+    ${'success'}   | ${''}      | ${'skipped'} | ${'skipped'} | ${''}               | ${1}
+    ${'success'}   | ${'false'} | ${'failure'} | ${'skipped'} | ${''}               | ${1}
+    ${'success'}   | ${'true'}  | ${'skipped'} | ${'skipped'} | ${''}               | ${1}
+    ${'success'}   | ${'true'}  | ${'failure'} | ${'success'} | ${'failure'}        | ${1}
+    ${'success'}   | ${'true'}  | ${'success'} | ${'failure'} | ${''}               | ${1}
+    ${'success'}   | ${'true'}  | ${'success'} | ${'success'} | ${'infrastructure'} | ${1}
+  `(
+    'gate exits $status for changes=$changes, shouldRun=$shouldRun, shard=$shard, report=$report, outcome=$outcome',
+    ({ changes, shouldRun, shard, report, outcome, status }) => {
+      expect(
+        checkResult({
+          CHANGES_RESULT: changes,
+          SHOULD_RUN: shouldRun,
+          SHARD_RESULT: shard,
+          REPORT_RESULT: report,
+          TEST_OUTCOME: outcome
+        }).status
+      ).toBe(status)
+    }
+  )
 })

@@ -1,9 +1,10 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef } from 'vue'
-import type { Raw } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -13,11 +14,15 @@ import type {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -34,14 +39,7 @@ export const useCanvasStore = defineStore('canvas', () => {
    * The root LGraphCanvas object is a shallow ref.
    */
   const canvas = shallowRef<LGraphCanvas | null>(null)
-  /**
-   * The selected items on the canvas. All stored items are raw.
-   */
-  const selectedItems = ref<Raw<Positionable>[]>([])
-  const updateSelectedItems = () => {
-    const items = Array.from(canvas.value?.selectedItems ?? [])
-    selectedItems.value = items.map((item) => markRaw(item))
-  }
+  const selectionStore = useSelectionStore()
 
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
@@ -112,8 +110,42 @@ export const useCanvasStore = defineStore('canvas', () => {
   const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
+  const isPickingNodes = ref(false)
+  const toast = useToast()
 
-  // Provide selection state to all Vue nodes
+  function startNodePicking(): void {
+    const currentCanvas = canvas.value
+    if (!currentCanvas || isPickingNodes.value) return
+    isPickingNodes.value = true
+    toast.held = true
+    const selected = [...currentCanvas.selectedItems]
+    const bounds = createPositionBounds(
+      selected.length ? selected : (currentCanvas.graph?.nodes ?? []),
+      40
+    )
+    if (bounds) {
+      currentCanvas.animateToBounds(bounds, {
+        viewport: visibleCanvasViewport(currentCanvas)
+      })
+    }
+  }
+
+  function stopNodePicking(): undefined {
+    if (!isPickingNodes.value) return
+    isPickingNodes.value = false
+    toast.held = false
+    canvas.value?.deselectAll()
+  }
+
+  /** The selected items of the on-screen graph, derived from the selection store. */
+  const selectedItems = computed<Positionable[]>(() => {
+    const graph = currentGraph.value
+    if (!graph) return []
+    return selectionStore
+      .selectedKeys(graphScopeOf(graph))
+      .flatMap((key) => resolveSelectable(graph, key) ?? [])
+  })
+
   const selectedNodeIds = computed<Set<NodeId>>(
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
@@ -130,7 +162,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
           newCanvas.deselect(e.detail.node)
-          updateSelectedItems()
         }
       )
 
@@ -188,7 +219,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     appScalePercentage,
     linearMode,
     isReadOnly,
-    updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,
     initScaleSync,
@@ -196,6 +226,9 @@ export const useCanvasStore = defineStore('canvas', () => {
     currentGraph,
     rootGraphId,
     isInSubgraph,
-    isGhostPlacing
+    isGhostPlacing,
+    isPickingNodes,
+    startNodePicking,
+    stopNodePicking
   }
 })

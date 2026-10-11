@@ -1,4 +1,5 @@
-import type { Page, Response, Route } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Page, Request, Response, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
   AgentThreadListResponse
@@ -15,10 +16,58 @@ const NEW_CHAT_THREAD_ID = '4b8e2c6a-1d3f-4e57-9a80-2c7d5e9f1b33'
 const NEW_CHAT_TURN_ID = '9f1d3b5c-7a2e-4c68-8d41-6e0a2b4c8d55'
 const FRESH_WORKFLOW_ID = 'c2d4e6f8-0a1b-4c3d-9e5f-7a8b9c0d1e2f'
 const MESSAGES_PATH = /\/api\/agent\/threads\/([^/]+)\/messages$/
+const SETTLE_PASSES = 10
 
 interface PostedTurn {
   threadId: string
   body: AgentPostMessageRequest
+}
+
+interface AcceptedThread {
+  id: string
+  title: string
+  workflowId: string
+}
+
+function tryPostDataJson(request: Request): unknown {
+  try {
+    return request.postDataJSON()
+  } catch {
+    return undefined
+  }
+}
+
+function isTurnAck(response: Response): boolean {
+  return (
+    response.request().method() === 'POST' &&
+    MESSAGES_PATH.test(new URL(response.url()).pathname)
+  )
+}
+
+async function readAck(
+  response: Response
+): Promise<{ thread: AcceptedThread } | { failure: string }> {
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch (error) {
+    return { failure: `${response.url()}: body unreadable — ${String(error)}` }
+  }
+  const accepted = zAgentTurnAccepted.safeParse(body)
+  if (!accepted.success)
+    return { failure: `${response.url()}: ${accepted.error.message}` }
+  const posted = zAgentPostMessageRequest.safeParse(
+    tryPostDataJson(response.request())
+  )
+  if (!posted.success)
+    return { failure: `${response.url()}: ${posted.error.message}` }
+  return {
+    thread: {
+      id: accepted.data.thread_id,
+      title: posted.data.content,
+      workflowId: accepted.data.workflow_id ?? posted.data.workflow_id ?? ''
+    }
+  }
 }
 
 function threadIdOf(url: string): string {
@@ -38,15 +87,27 @@ function threadIdOf(url: string): string {
  */
 class AgentNewChatServer {
   private readonly posted: PostedTurn[] = []
-  private readonly acceptedThreadIds: string[] = []
+  private readonly accepted: AcceptedThread[] = []
+  private readonly ackFailures: string[] = []
+  private readonly recording = new Set<Promise<void>>()
 
   constructor(private readonly page: Page) {}
 
   async install(): Promise<void> {
-    this.page.on('response', (response) => this.recordAccepted(response))
-    await this.page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute(this.threadList()))
-    )
+    this.page.on('response', (response) => {
+      if (!isTurnAck(response)) return
+      const record = this.recordAccepted(response).catch((error: unknown) => {
+        this.ackFailures.push(`${response.url()}: ${String(error)}`)
+      })
+      this.recording.add(record)
+      void record.finally(() => this.recording.delete(record))
+    })
+    await this.page.route('**/api/agent/threads', async (route) => {
+      await this.settled().catch((error: unknown) => {
+        this.ackFailures.push(`${route.request().url()}: ${String(error)}`)
+      })
+      await route.fulfill(jsonRoute(this.threadList()))
+    })
     await this.page.route('**/api/agent/threads/*/messages', (route) =>
       this.answerPost(route)
     )
@@ -56,15 +117,29 @@ class AgentNewChatServer {
     return this.posted
   }
 
-  private async recordAccepted(response: Response): Promise<void> {
-    const request = response.request()
-    if (
-      request.method() !== 'POST' ||
-      !MESSAGES_PATH.test(new URL(response.url()).pathname)
+  failedAcks(): readonly string[] {
+    return this.ackFailures
+  }
+
+  async settled(): Promise<void> {
+    for (let pass = 0; pass < SETTLE_PASSES; pass++) {
+      if (this.recording.size === 0) return
+      await Promise.all(this.recording)
+    }
+    if (this.recording.size === 0) return
+    throw new Error(
+      `Agent turn acks still recording after ${SETTLE_PASSES} passes`
     )
+  }
+
+  private async recordAccepted(response: Response): Promise<void> {
+    if (!response.ok()) {
+      this.ackFailures.push(`${response.status()} ${response.url()}`)
       return
-    const accepted = zAgentTurnAccepted.parse(await response.json())
-    this.acceptedThreadIds.push(accepted.thread_id)
+    }
+    const outcome = await readAck(response)
+    if ('failure' in outcome) this.ackFailures.push(outcome.failure)
+    else this.accepted.push(outcome.thread)
   }
 
   private answerPost(route: Route): Promise<void> {
@@ -86,11 +161,11 @@ class AgentNewChatServer {
 
   private threadList(): AgentThreadListResponse {
     return {
-      threads: this.acceptedThreadIds.map((id, index) => ({
+      threads: this.accepted.map(({ id, title, workflowId }) => ({
         id,
-        title: this.posted[index]?.body.content ?? '',
-        preview: this.posted[index]?.body.content ?? '',
-        workflow_id: this.posted[index]?.body.workflow_id ?? '',
+        title,
+        preview: title,
+        workflow_id: workflowId,
         status: 'active',
         message_count: 2,
         created_at: '2026-09-18T10:00:00Z',
@@ -100,7 +175,7 @@ class AgentNewChatServer {
       pagination: {
         offset: 0,
         limit: 100,
-        total: this.acceptedThreadIds.length,
+        total: this.accepted.length,
         has_more: false
       }
     }
@@ -110,11 +185,13 @@ class AgentNewChatServer {
 // Depends on `agentConversation` so these routes register after the
 // harness's and answer first.
 export const agentNewChatTest = agentConversationTest.extend<{
-  newChat: AgentNewChatServer
+  newChat: Pick<AgentNewChatServer, 'postedTurns'>
 }>({
   newChat: async ({ page, agentConversation: _harness }, use) => {
     const server = new AgentNewChatServer(page)
     await server.install()
     await use(server)
+    await server.settled()
+    expect(server.failedAcks()).toEqual([])
   }
 })

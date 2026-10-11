@@ -186,7 +186,7 @@ export function readReport(path: string): FallowReport {
   if (parsed === null || typeof parsed !== 'object') {
     return { error: true, message: `unexpected fallow output in ${path}` }
   }
-  return parsed as FallowReport
+  return parsed
 }
 
 /* c8 ignore start -- CLI entry, exercised by the workflow rather than a unit test */

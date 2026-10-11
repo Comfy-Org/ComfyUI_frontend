@@ -49,7 +49,7 @@ const showAddCredits = computed(
         class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive-background"
       />
       <div class="min-w-0 flex-1 text-sm/5">
-        <p class="m-0 font-medium text-base-foreground">
+        <p class="m-0 text-base-foreground">
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">

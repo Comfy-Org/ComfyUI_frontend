@@ -32,6 +32,7 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
 import type { MergeTraceEntry } from './mergeTrace'
+import type { MediaUiDiagnostic } from './mediaUiDiagnostics'
 
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000
@@ -186,6 +187,8 @@ export interface CrdtDebugReportInput {
   workflow?: unknown
   workflowError?: string
   agentMessages?: readonly AssistantMessage[]
+  /** Privacy-safe counts and booleans for media nodes at capture time. */
+  mediaUiDiagnostics?: readonly MediaUiDiagnostic[]
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -203,6 +206,7 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     return { label, ok: true as const, value }
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: label },
       level: 'warning'
@@ -231,6 +235,28 @@ function json(value: unknown): string {
   } catch (error) {
     return `<unserializable: ${String(error)}>`
   }
+}
+
+function fitMediaDiagnostics(
+  diagnostics: readonly MediaUiDiagnostic[]
+): readonly MediaUiDiagnostic[] {
+  const retained: MediaUiDiagnostic[] = []
+  let serializedLength = '[\n\n]'.length
+  for (const diagnostic of diagnostics) {
+    const diagnosticJson = json(diagnostic)
+    const indentedLength =
+      diagnosticJson.length + diagnosticJson.split('\n').length * 2
+    const separatorLength = retained.length > 0 ? ',\n'.length : 0
+    if (
+      serializedLength + separatorLength + indentedLength >
+      MAX_SECTION_CHARS
+    ) {
+      break
+    }
+    retained.push(diagnostic)
+    serializedLength += separatorLength + indentedLength
+  }
+  return retained
 }
 
 function redactEventPayloads(value: unknown): unknown {
@@ -496,8 +522,8 @@ function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
   const calls: RetainedToolCall[] = []
   let total = 0
-  for (const message of messages.toReversed()) {
-    for (const part of message.parts.toReversed()) {
+  for (const message of [...messages].reverse()) {
+    for (const part of [...message.parts].reverse()) {
       if (part.type !== 'tool') continue
       total++
       if (calls.length === MAX_TOOL_CALLS) continue
@@ -511,7 +537,7 @@ function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
       })
     }
   }
-  return { calls: calls.toReversed(), total }
+  return { calls: calls.reverse(), total }
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
@@ -600,6 +626,16 @@ export async function collectCrdtDebugReport(
       fence('json', truncate(json(redactSecrets(value)), MAX_SECTION_CHARS))
   )
   const workflow = serializeWorkflow(input)
+  const mediaUiDiagnostics =
+    input.mediaUiDiagnostics === undefined
+      ? undefined
+      : fitMediaDiagnostics(input.mediaUiDiagnostics)
+  const mediaUiStatus =
+    mediaUiDiagnostics === undefined
+      ? 'unavailable'
+      : mediaUiDiagnostics.length === input.mediaUiDiagnostics?.length
+        ? `collected (${mediaUiDiagnostics.length} nodes)`
+        : `collected (${mediaUiDiagnostics.length} of ${input.mediaUiDiagnostics?.length} nodes; section limit)`
   const collectionStatus = (
     [
       ['System stats', systemReport],
@@ -612,13 +648,14 @@ export async function collectCrdtDebugReport(
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
     `Generated ${new Date().toISOString()}`,
-    `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
+    `Report format version: 2 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
     identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
     '## Collection status',
     [
       ...collectionStatus,
+      `- Media UI diagnostics: ${mediaUiStatus}`,
       `- Workflow: ${workflow?.status ?? 'unavailable'}`
     ].join('\n')
   ]
@@ -632,6 +669,14 @@ export async function collectCrdtDebugReport(
   }
 
   sections.push('## CRDT state', crdtSection(input.crdt))
+
+  if (mediaUiDiagnostics !== undefined) {
+    sections.push(
+      '## Media UI diagnostics',
+      'Counts and booleans only; selected filenames and resolved media URLs are not included.',
+      fence('json', json(mediaUiDiagnostics))
+    )
+  }
 
   sections.push('## Agent tool calls', agentTools.section)
 

@@ -60,6 +60,21 @@ describe('projectOperationRecord', () => {
       { isAuthenticating: false, canRetryAuthentication: true }
     ],
     [
+      "a pending operation carries the server's cancelable claim",
+      pendingSubscription({ cancelable: true }),
+      { status: 'pending', cancelable: true }
+    ],
+    [
+      'a pending operation the server makes no cancelable claim for is not cancelable',
+      pendingSubscription(),
+      { status: 'pending', cancelable: false }
+    ],
+    [
+      'a settled operation is never cancelable',
+      settledTopup('succeeded'),
+      { status: 'succeeded', cancelable: false }
+    ],
+    [
       'the kind is preserved so a lookup can tell operations apart',
       pendingSubscription(),
       { kind: 'subscription', status: 'pending' }
