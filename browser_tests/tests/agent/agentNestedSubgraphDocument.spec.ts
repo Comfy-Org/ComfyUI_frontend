@@ -57,7 +57,7 @@ test.describe(
         // BOTH ids, which is the assertion this case exists for. Polling only
         // the outer left the thing #18148 fixed uncovered: a reader that keeps
         // the outer and answers `{}` for the nested map still builds the outer
-        // as `nested blueprint` with its interior node marked `has_errors`,
+        // as `nested definition` with its interior node marked `has_errors`,
         // `subgraph-created` still registers the outer type, and the title
         // assertion below still passes — while the user gets a subgraph whose
         // interior is a placeholder. Dropping `allSubgraphDefinitions`
@@ -87,10 +87,10 @@ test.describe(
           NESTED_OUTER_ID,
           [300, 300]
         )
-        const renderedNode = page.locator(`[data-node-id="${nodeId}"]`)
+        const renderedNode = agentConversation.vueNodes.getNodeLocator(nodeId)
         await expect(renderedNode).toBeVisible()
         await expect(renderedNode.getByTestId('node-title')).toHaveText(
-          'nested blueprint'
+          'nested definition'
         )
       })
     })

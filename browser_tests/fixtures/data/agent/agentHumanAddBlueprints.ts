@@ -7,7 +7,7 @@ export interface NestedSubgraphDefinitions {
   definitions: { subgraphs: ExportedSubgraph[] }
 }
 
-/** Outer definition of the nested blueprint, and the inner one it wraps. */
+/** Outer definition of the nested subgraph, and the inner one it wraps. */
 export const NESTED_OUTER_ID = '7f1e2d3c-4b5a-4968-8778-6a5b4c3d2e1f'
 export const NESTED_INNER_ID = '2a3b4c5d-6e7f-4081-9293-a4b5c6d7e8f9'
 
@@ -141,7 +141,7 @@ export function agentNestedSubgraphDefinitions(): NestedSubgraphDefinitions {
             lastRerouteId: 0
           },
           config: {},
-          name: 'nested blueprint',
+          name: 'nested definition',
           inputNode: { id: -10, bounding: [0, 0, 120, 60] },
           outputNode: { id: -20, bounding: [700, 0, 120, 60] },
           inputs: [],
