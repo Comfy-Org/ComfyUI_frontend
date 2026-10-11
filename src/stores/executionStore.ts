@@ -371,8 +371,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
     for (const state of Object.values(states)) {
-      if (!messageMatchesActiveWorkflow(state.prompt_id, state.workflow_id))
-        continue
+      if (!belongsToActiveWorkflow(state.prompt_id, state.workflow_id)) continue
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
@@ -501,7 +500,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // starting job belongs to the active workflow. Otherwise a job started
     // from another tab would steal activeJobId and clobber the active tab's
     // execution UI.
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+    if (!belongsToActiveWorkflow(jobId, e.detail.workflow_id)) return
 
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
@@ -510,7 +509,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activeJob.value) return
-    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+    if (!belongsToActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
       return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
@@ -531,7 +530,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
     clearInitializationByJobId(jobId)
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(jobId, e.detail.workflow_id)) {
       // The job is finished either way, so its own records have to be released
       // or they leak for the lifetime of the session. Only the shared UI state
       // below belongs to the visible tab. Text previews stay gated: they are
@@ -544,7 +543,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
-    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+    if (!belongsToActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
       return
     activeJob.value.nodes[e.detail.node] = true
   }
@@ -575,7 +574,7 @@ export const useExecutionStore = defineStore('execution', () => {
         })
       }
     }
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(jobId, e.detail.workflow_id)) {
       // Finished either way, so release this job's own records or they leak for
       // the session. Only the shared UI state below belongs to the visible tab,
       // and text previews stay gated because they are keyed by node and the
@@ -592,7 +591,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // `executing: null` of a job started in another workflow tab would clear
     // the visible tab's active job and its node progress.
     const raw = api.lastExecutingMessage
-    if (raw && !messageMatchesActiveWorkflow(raw.prompt_id, raw.workflow_id)) {
+    if (raw && !belongsToActiveWorkflow(raw.prompt_id, raw.workflow_id)) {
       return
     }
 
@@ -694,7 +693,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function applyProgressState(detail: ProgressStateWsMessage) {
     const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = detail
-    const isActiveWorkflowMessage = messageMatchesActiveWorkflow(
+    const isActiveWorkflowMessage = belongsToActiveWorkflow(
       jobId,
       messageWorkflowId
     )
@@ -760,10 +759,6 @@ export const useExecutionStore = defineStore('execution', () => {
    *  2. {@link jobIdToSessionWorkflowPath}, unique per open workflow.
    *  3. the graph id, from the message or {@link jobIdToWorkflowId}.
    *
-   * When ownership cannot be resolved at all, for instance a job queued in a
-   * different browser session, the message is treated as belonging to the
-   * active workflow, which preserves single-tab behaviour.
-   *
    * A workflow id names a workflow, not an open tab, and several open tabs can
    * carry the same one: `ensureWorkflowId` keeps whatever id the json already
    * has, so copying a workflow into a new tab duplicates it, and loading one
@@ -772,22 +767,22 @@ export const useExecutionStore = defineStore('execution', () => {
    * to be consulted first. QA hit this with three unsaved copies of the default
    * graph, where every tab rendered every other tab's outputs.
    */
-  function messageMatchesActiveWorkflow(
+  function resolveWorkflowOwnership(
     jobId: JobId,
-    rawMessageWorkflowId: string | undefined
-  ): boolean {
+    rawMessageWorkflowId?: string
+  ): 'active' | 'foreign' | 'unresolved' {
     const messageWorkflowId = workflowIdOrUndefined(rawMessageWorkflowId)
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return true
+    if (!activeWorkflow) return 'unresolved'
 
     const mappedInstance = jobIdToWorkflowInstanceId.get(jobId)
     if (mappedInstance && activeWorkflow.instanceId) {
-      return mappedInstance === activeWorkflow.instanceId
+      return mappedInstance === activeWorkflow.instanceId ? 'active' : 'foreign'
     }
 
     const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
     if (mappedPath && activeWorkflow.path) {
-      return mappedPath === activeWorkflow.path
+      return mappedPath === activeWorkflow.path ? 'active' : 'foreign'
     }
 
     const activeId = workflowIdOrUndefined(activeWorkflowGraphId() ?? undefined)
@@ -795,38 +790,30 @@ export const useExecutionStore = defineStore('execution', () => {
       const ownerId =
         messageWorkflowId ??
         workflowIdOrUndefined(jobIdToWorkflowId.value.get(jobId))
-      if (ownerId) return ownerId === activeId
+      if (ownerId) return ownerId === activeId ? 'active' : 'foreign'
     }
 
-    return true
+    return 'unresolved'
   }
 
   /**
-   * Returns true when workflow ownership for {@link jobId} can be resolved
-   * — either by an explicit `workflow_id` on the incoming message or by a
-   * mapping registered when the job was queued. When this returns false
-   * the caller should fall back to whatever legacy guard applied before
-   * workflow gating was introduced.
+   * Whether a message belongs on the visible workflow. Unresolvable messages
+   * use the legacy active-prompt guard, preserving single-tab behavior without
+   * letting an unknown job mutate another active run.
    */
-  function canResolveWorkflowOwnership(
-    jobId: JobId,
-    messageWorkflowId: string | undefined
+  function belongsToActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId?: string
   ): boolean {
-    // Must list every map messageMatchesActiveWorkflow consults, and reject the
-    // same ids it rejects, or the two disagree about the same frame: the
-    // instance is that resolver's first and strongest leg, and leaving it out
-    // here made a frame resolvable by one rule and unresolvable by the other.
-    return (
-      workflowIdOrUndefined(messageWorkflowId) !== undefined ||
-      jobIdToWorkflowInstanceId.has(jobId) ||
-      jobIdToWorkflowId.value.has(jobId) ||
-      jobIdToSessionWorkflowPath.value.has(jobId)
-    )
+    if (!jobId) return true
+    const ownership = resolveWorkflowOwnership(jobId, workflowId)
+    if (ownership !== 'unresolved') return ownership === 'active'
+    return !activeJobId.value || jobId === activeJobId.value
   }
 
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
     const { prompt_id: jobId, workflow_id: messageWorkflowId } = detail
-    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
+    if (!belongsToActiveWorkflow(jobId, messageWorkflowId)) return
     _executingNodeProgress.value = detail
   }, 'raf:progress')
 
@@ -895,9 +882,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     if (runErrorKey === null) {
       bufferPendingExecutionError({ detail: e.detail, endTime })
-      if (
-        !messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id)
-      ) {
+      if (!belongsToActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id)) {
         releaseFinishedJobRecords(e.detail.prompt_id)
         return
       }
@@ -957,7 +942,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // dialog is already scoped by the run error key inside showExecutionError.
     // A background job is still finished, so release its own records either way
     // or they survive the session, same as the success and interrupt paths.
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
       releaseFinishedJobRecords(detail.prompt_id)
       return
     }
@@ -977,7 +962,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(detail.prompt_id)
     if (workflow) clearWorkflowStatus(workflow)
     clearInitializationByJobId(detail.prompt_id)
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
       releaseFinishedJobRecords(detail.prompt_id)
       return true
     }
@@ -994,7 +979,7 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
       releaseFinishedJobRecords(detail.prompt_id)
       return true
     }
@@ -1021,7 +1006,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
-    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+    if (!belongsToActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
       releaseFinishedJobRecords(detail.prompt_id)
       return true
     }
@@ -1143,9 +1128,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // handlers use, and require ownership to be resolvable rather than adopting
     // a job we cannot place.
     const matchedJobId = Object.keys(nodeProgressStatesByJob.value).findLast(
-      (jobId) =>
-        canResolveWorkflowOwnership(jobId, undefined) &&
-        messageMatchesActiveWorkflow(jobId, undefined)
+      (jobId) => resolveWorkflowOwnership(jobId) === 'active'
     )
 
     if (matchedJobId) {
@@ -1251,30 +1234,6 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError(runErrorKey)
-  }
-
-  /**
-   * Whether a text preview belongs on the visible canvas.
-   *
-   * Prefers the workflow-ownership gate and falls back to the legacy
-   * active-prompt guard only when ownership is unresolvable: activeJobId can
-   * point at another workflow's job, which would otherwise drop frames for the
-   * workflow the user is looking at.
-   *
-   * Exported because node outputs are applied outside this store, in ComfyApp's
-   * own `executed` listener, which resolves the execution id against the
-   * visible graph. Without this gate a finished job writes its output onto the
-   * same-numbered node of whatever tab is in front.
-   */
-  function belongsToActiveWorkflow(
-    jobId: JobId | undefined,
-    workflowId?: string
-  ): boolean {
-    if (!jobId) return true
-    if (canResolveWorkflowOwnership(jobId, workflowId)) {
-      return messageMatchesActiveWorkflow(jobId, workflowId)
-    }
-    return !activeJobId.value || jobId === activeJobId.value
   }
 
   function storeJob({

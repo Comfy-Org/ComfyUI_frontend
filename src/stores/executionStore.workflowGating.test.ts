@@ -268,6 +268,17 @@ describe('executionStore workflow gating', () => {
 
       expect(store.activeJob?.nodes['1']).toBe(own ? true : undefined)
     })
+
+    it('does not apply an unresolvable frame to another active job', () => {
+      fire('executed', {
+        prompt_id: 'job-x',
+        node: '1',
+        display_node: '1',
+        output: {}
+      })
+
+      expect(store.activeJob?.nodes['1']).toBeUndefined()
+    })
   })
 
   describe('terminal frames', () => {
@@ -285,6 +296,23 @@ describe('executionStore workflow gating', () => {
         prompt_id: 'job-b',
         workflow_id: WORKFLOW_B_ID,
         timestamp: 2
+      })
+
+      expect(store.activeJobId).toBe('job-a')
+    })
+
+    it('unresolvable execution_error does not reset another active job', () => {
+      fire('execution_error', {
+        prompt_id: 'job-x',
+        timestamp: 2,
+        node_id: '1',
+        node_type: 'TestNode',
+        exception_message: 'fail',
+        exception_type: 'Error',
+        traceback: [],
+        executed: [],
+        current_inputs: {},
+        current_outputs: {}
       })
 
       expect(store.activeJobId).toBe('job-a')
@@ -1297,17 +1325,12 @@ describe('executionStore workflow gating', () => {
         timestamp: 1
       })
 
-      // Fails without the normalization in canResolveWorkflowOwnership: the
-      // sentinel would make the frame look resolvable and the graph-id leg
-      // would then compare it.
       expect(store.belongsToActiveWorkflow('job-x', zeroUuid)).toBe(false)
     })
 
     it('adopts an unmapped job stamped with the sentinel', () => {
       useWorkflowStore().activeWorkflow = workflowA
 
-      // Fails without the normalization in messageMatchesActiveWorkflow: the
-      // sentinel would be compared against A's real graph id and lose.
       fire('execution_start', {
         prompt_id: 'job-fresh',
         workflow_id: zeroUuid,
