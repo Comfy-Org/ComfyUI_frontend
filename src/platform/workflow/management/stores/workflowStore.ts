@@ -211,7 +211,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
+    const graphState = comfyApp.rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
+    if (graphState !== comfyApp.rootGraphOrUndefined?.state) {
+      throw new DOMException('Workflow load was replaced', 'AbortError')
+    }
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
 

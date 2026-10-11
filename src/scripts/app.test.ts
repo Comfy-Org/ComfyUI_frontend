@@ -22,7 +22,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { ref } from 'vue'
+import { markRaw, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -846,6 +846,126 @@ describe('ComfyApp', () => {
       expect(secondTracker.activeState.extra).toMatchObject({ marker: 'other' })
       expect(app.rootGraph.extra).toMatchObject({ marker: 'other' })
     })
+
+    it.for(['activation', 'tracker restoration', 'afterLoadGraph'] as const)(
+      'cancels an older restore overtaken during %s without replacing the newer workflow',
+      async (pauseAt) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvas
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          singletonApp.canvas = previousCanvas
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        singletonApp.canvas = mockCanvas
+        Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+
+        const saved = createWorkflowGraphData()
+        saved.extra = { marker: 'saved' }
+        const changed = structuredClone(saved)
+        changed.extra = { marker: 'changed' }
+        const firstWorkflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/undo.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const firstTracker = markRaw(new ChangeTracker(firstWorkflow, saved))
+        firstTracker.activeState = changed
+        firstTracker._restoringState = true
+        firstWorkflow.changeTracker = firstTracker
+        const other = createWorkflowGraphData()
+        other.extra = { marker: 'other' }
+        const secondWorkflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/other.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const secondTracker = markRaw(new ChangeTracker(secondWorkflow, other))
+        secondWorkflow.changeTracker = secondTracker
+        let releasePause!: () => void
+        const pause = new Promise<void>((resolve) => {
+          releasePause = resolve
+        })
+        let reachedPause = false
+        if (pauseAt === 'activation') {
+          vi.spyOn(firstWorkflow, 'load').mockImplementationOnce(async () => {
+            reachedPause = true
+            await pause
+            return firstWorkflow
+          })
+        } else if (pauseAt === 'tracker restoration') {
+          const openWorkflow = vi
+            .mocked(workflowStore.openWorkflow)
+            .getMockImplementation()
+          assert(openWorkflow)
+          vi.mocked(workflowStore.openWorkflow).mockImplementation(
+            async (workflow) => {
+              const loaded = await openWorkflow(workflow)
+              if (workflow.path === firstWorkflow.path) {
+                reachedPause = true
+                await pause
+              }
+              return loaded
+            }
+          )
+        } else {
+          mockExtensionService.invokeExtensionsAsync.mockImplementation(
+            async (hook) => {
+              if (hook === 'afterLoadGraph' && !reachedPause) {
+                reachedPause = true
+                await pause
+              }
+            }
+          )
+        }
+
+        const olderLoad = app.loadGraphData(
+          saved,
+          false,
+          false,
+          firstWorkflow,
+          {
+            skipAssetScans: true
+          }
+        )
+        try {
+          await vi.waitFor(() => expect(reachedPause).toBe(true))
+          await app.loadGraphData(other, false, false, secondWorkflow, {
+            skipAssetScans: true
+          })
+        } finally {
+          releasePause()
+        }
+        const result = await olderLoad
+
+        expect(workflowStore.activeWorkflow?.path).toBe(secondWorkflow.path)
+        expect(workflowStore.activeWorkflow?.changeTracker).toBe(secondTracker)
+        expect(secondTracker.activeState.extra).toMatchObject({
+          marker: 'other'
+        })
+        expect(secondTracker.initialState.extra).toMatchObject({
+          marker: 'other'
+        })
+        expect(firstTracker.initialState).toEqual(saved)
+        expect(firstTracker.activeState.extra).toMatchObject({
+          marker: pauseAt === 'afterLoadGraph' ? 'saved' : 'changed'
+        })
+        expect(graph.extra).toMatchObject({ marker: 'other' })
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        expect(result).toBeUndefined()
+      }
+    )
 
     it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
       app.canvasElRef.value = document.createElement('canvas')

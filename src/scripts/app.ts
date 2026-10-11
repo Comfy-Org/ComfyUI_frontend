@@ -1645,6 +1645,14 @@ export class ComfyApp {
       }
       const configuredGraphState = this.rootGraph.state
       const configuredLoadId = this.committedGraphLoadSequence
+      const isCurrentGraphLoad = () =>
+        configuredGraphState === this.rootGraph.state &&
+        configuredLoadId === this.committedGraphLoadSequence
+      const cancelReplacedLoad = () =>
+        useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1709,14 +1717,8 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
-      if (
-        configuredGraphState !== this.rootGraph.state ||
-        configuredLoadId !== this.committedGraphLoadSequence
-      ) {
-        await useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          new DOMException('Workflow load was replaced', 'AbortError')
-        )
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
         return undefined
       }
 
@@ -1734,12 +1736,24 @@ export class ComfyApp {
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
-        workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
-      )
+      try {
+        await useWorkflowService().afterLoadNewGraph(
+          workflow,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+          effectiveShareId
+        )
+      } catch (error) {
+        if (isCurrentGraphLoad()) throw error
+      }
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       for (const pendingLoadId of this.pendingGraphLoads) {
         if (pendingLoadId <= loadId)
           this.pendingGraphLoads.delete(pendingLoadId)
