@@ -8,7 +8,7 @@ import type { DrawWidgetOptions } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
@@ -389,7 +389,7 @@ class ImagePreviewWidget extends BaseWidget {
 
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
     pointer.onDragStart = () => {
-      const { canvas } = app
+      const { canvas } = useApp()
       const { graph } = canvas
       canvas.emitBeforeChange()
       graph?.beforeChange()
@@ -405,7 +405,7 @@ class ImagePreviewWidget extends BaseWidget {
     }
 
     pointer.onDragEnd = (e) => {
-      const { canvas } = app
+      const { canvas } = useApp()
       if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
         canvas.graph?.snapToGrid(canvas.selectedItems)
 

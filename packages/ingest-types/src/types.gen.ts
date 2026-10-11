@@ -49,7 +49,7 @@ export type WorkspaceSummary = {
  */
 export type WorkspaceDeploymentList = {
   /**
-   * False when comfy-builder refused the caller's token on its Builds listing (401 or 403); the rows then carry no Build name or Release version. True does not promise every row a name: a row has none when its Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
    */
   builds_visible: boolean
   /**
@@ -80,11 +80,11 @@ export type WorkspaceDeploymentList = {
  */
 export type WorkspaceDeployment = {
   /**
-   * The Build the Release was cut from. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   build_id?: string
   /**
-   * The Build's name. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   build_name?: string
   /**
@@ -96,11 +96,15 @@ export type WorkspaceDeployment = {
    */
   deployment_id: string
   /**
+   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
+   */
+  deployment_name?: string
+  /**
    * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
    */
   release_id: string
   /**
-   * The Release's version number within its Build. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   release_version?: number
   /**
@@ -283,6 +287,84 @@ export type AssetInfo = {
    */
   public: boolean
   storage_url: string
+}
+
+/**
+ * The workflow to read.
+ */
+export type WorkflowPacksRequest = {
+  /**
+   * A ComfyUI workflow as the editor holds it (the UI format: a `nodes` array beside a `links` array, subgraphs under `definitions.subgraphs`). The API format is read too. Passed to comfy-builder as it is.
+   */
+  workflow: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export type WorkflowPacks = {
+  /**
+   * Which export format the workflow was read as.
+   */
+  format: 'api' | 'ui'
+  /**
+   * Packs found for the workflow's nodes by Cloud's own map of node classes to packs.
+   */
+  matched_packs: Array<WorkflowPack>
+  /**
+   * Node classes Cloud cannot confirm a pack provides, sorted by class, each with its reason. Empty when every node is built in, served by a partner provider, or placed by Cloud's own map in a listed pack. A `stamped` entry's pack is listed and will be installed, yet the workflow may still not run on Cloud as it is.
+   */
+  missing_nodes: Array<WorkflowMissingNode>
+  /**
+   * Packs the workflow itself names on its nodes (`cnr_id`) for node classes Cloud's map does not know, where the Comfy Registry's class index named the same pack. Cloud's map did not choose them, so Comfy Cloud cannot be assumed to have them installed.
+   */
+  stamped_packs: Array<WorkflowPack>
+}
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export type WorkflowMissingNode = {
+  /**
+   * The node class, as the workflow names it.
+   */
+  class_type: string
+  /**
+   * The Comfy Registry id the workflow's own stamp names on the node (its `cnr_id`, lowercased, as comfy-builder reads it); present only with reason `stamped`. The pack Cloud installs for the node is in `matched_packs` or `stamped_packs`, but not always under this id: Cloud's map lists some packs by their repository URL instead, with no `id`. So a client cannot count on finding that entry by this id.
+   */
+  pack?: string
+  /**
+   * `github`: the workflow says the node was installed from GitHub (its `aux_id`), and no Registry pack provides it. `unknown`: no pack provides it, or the pack that claims it publishes nothing to fetch, and the workflow names no GitHub source. `unchecked`: the Comfy Registry did not answer about it, so nothing says it is missing; asking again may find its pack. `stamped`: the node names a pack (its `cnr_id`, in `pack`) that will be installed, but Cloud could not confirm that pack provides this node: only the workflow's own stamp ties the node to it, and Cloud's map of node classes does not place it there, so the workflow may not run on Cloud as it is (the node may be newer than the pack version Cloud installs, or not the pack's at all).
+   */
+  reason: 'github' | 'unknown' | 'unchecked' | 'stamped'
+  /**
+   * The GitHub repository (`org/repo`) the workflow names for the node; present only with reason `github`.
+   */
+  repository?: string
+}
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export type WorkflowPack = {
+  /**
+   * The pack's Comfy Registry id. Absent for a pack the Registry publishes no installable version of, which is installed from `repository` instead.
+   */
+  id?: string
+  /**
+   * The pack's name, or its Registry id when it has none.
+   */
+  name: string
+  /**
+   * The repository the pack is installed from, present only when the Registry publishes no installable version of it.
+   */
+  repository?: string
+  /**
+   * The Registry version that would be installed: the newest one published, since a workflow names no versions. Absent when the pack is installed from `repository`.
+   */
+  version?: string
 }
 
 /**
@@ -692,6 +774,7 @@ export type TopupQuoteResponse = {
 
 /**
  * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
   /**
@@ -2332,7 +2415,7 @@ export type OAuthRegisterRequest = {
    */
   response_types?: Array<'code'>
   /**
-   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
+   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server grants the published scope lists of `comfy-mcp` and, when active, `comfy-router`, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
    *
    */
   scope?: string | null
@@ -4097,7 +4180,7 @@ export type CreateWorkspaceApiKeyResponse = {
    */
   description: string
   /**
-   * When the key expires (if set)
+   * The effective expiration timestamp, which may differ from the one requested: a key minted by an OAuth-authenticated session is capped to the OAuth refresh-token lifetime, so clients must read the lifetime they actually got from this field rather than assume the requested one. Absent only for first-party keys created with no expiry.
    */
   expires_at?: string
   /**
@@ -4127,7 +4210,7 @@ export type CreateWorkspaceApiKeyRequest = {
    */
   description?: string
   /**
-   * Optional expiration timestamp
+   * Optional expiration timestamp. Keys created by an OAuth-authenticated session (an access token issued by the Comfy OAuth server to a registered client) are always capped to the OAuth refresh-token lifetime (OAUTH_REFRESH_TOKEN_TTL, 30 days by default): omitting this field yields that cap, a longer value is reduced to it, and a shorter value is honoured as-is. Keys created by a first-party session (browser workspace JWT, Firebase) are unaffected and may still be created with no expiry.
    */
   expires_at?: string
   /**
@@ -10120,9 +10203,9 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
-     * Authenticated assignment for the Agent free-use notice placement experiment. Always present and defaults to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned.
+     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
-    'agent-free-use-message-placement':
+    'agent-free-use-message-placement'?:
       | 'control'
       | 'top-banner'
       | 'near-composer'
@@ -15624,6 +15707,66 @@ export type ListWorkspaceDeploymentsResponses = {
 
 export type ListWorkspaceDeploymentsResponse =
   ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
+
+export type ResolveWorkspaceWorkflowPacksData = {
+  body: WorkflowPacksRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/workflow-packs'
+}
+
+export type ResolveWorkspaceWorkflowPacksErrors = {
+  /**
+   * The workflow could not be read. `code` is comfy-builder's identifier, which a caller branches on: `INVALID_REQUEST` when no workflow was sent, `INVALID_WORKFLOW` when the payload is not a workflow or holds no nodes, `WORKFLOW_TOO_LARGE` when it names more node classes than one read may carry. While `web_session_enabled` is on, `code` may also be `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller is not a member of the workspace, or is an API key: the read runs as the caller on a Cloud JWT minted here, which needs a signed-in session. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * The rollout flag cloud_on_customer_build_enabled is off for the caller.
+   */
+  404: ErrorResponse
+  /**
+   * The workflow is larger than the 1 MiB one read may carry.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-builder could not be reached, failed, or refused the token minted here; nothing is known about the workflow, so try again.
+   */
+  502: ErrorResponse
+  /**
+   * Reading workflows is not configured in this environment (BUILDER_SERVICE_URL is unset).
+   */
+  503: ErrorResponse
+}
+
+export type ResolveWorkspaceWorkflowPacksError =
+  ResolveWorkspaceWorkflowPacksErrors[keyof ResolveWorkspaceWorkflowPacksErrors]
+
+export type ResolveWorkspaceWorkflowPacksResponses = {
+  /**
+   * The workflow was read; what it needs, and what nothing provides
+   */
+  200: WorkflowPacks
+}
+
+export type ResolveWorkspaceWorkflowPacksResponse =
+  ResolveWorkspaceWorkflowPacksResponses[keyof ResolveWorkspaceWorkflowPacksResponses]
 
 export type GetCurrentWorkspaceData = {
   body?: never
