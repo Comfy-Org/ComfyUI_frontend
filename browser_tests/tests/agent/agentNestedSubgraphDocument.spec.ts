@@ -47,25 +47,41 @@ test.describe(
       await test.step('replay the recorded turn', () =>
         agentConversation.runTurns())
 
-      await test.step('the host seeds the nested definition', () => {
-        agentConversation.pushNestedDefinition()
-        expect(
-          agentConversation.hostNestedDefinitionIds(NESTED_OUTER_ID)
-        ).toEqual([NESTED_INNER_ID])
-      })
+      // No assertion on the host doc here: it would read the fixture's own
+      // Node-side Y.Doc one line after the fixture wrote it, with no browser
+      // or product code in between, so no regression could fail it.
+      await test.step('the host seeds the nested definition', () =>
+        agentConversation.pushNestedDefinition())
 
       await test.step('the nested definition renders as a usable canvas node', async () => {
+        // BOTH ids, which is the assertion this case exists for. Polling only
+        // the outer left the thing #18148 fixed uncovered: a reader that keeps
+        // the outer and answers `{}` for the nested map still builds the outer
+        // as `nested blueprint` with its interior node marked `has_errors`,
+        // `subgraph-created` still registers the outer type, and the title
+        // assertion below still passes — while the user gets a subgraph whose
+        // interior is a placeholder. Dropping `allSubgraphDefinitions`
+        // flattening from `liveGraphApplier.registerDefinitions` is a second
+        // regression the outer-only poll misses. Reported as the missing ids
+        // so a failure names which level was lost.
         await expect
           .poll(
             () =>
               page.evaluate(
-                (type) =>
-                  Boolean(window.LiteGraph?.registered_node_types[type]),
-                NESTED_OUTER_ID
+                (types) =>
+                  // `in` rather than a truthiness check on the indexed value:
+                  // `registered_node_types` is typed as a total record, so
+                  // oxlint's type-aware `no-unnecessary-condition` rejects
+                  // `!registry[type]` as always-falsy. Membership is also the
+                  // thing being asserted.
+                  types.filter(
+                    (type) => !(type in window.LiteGraph!.registered_node_types)
+                  ),
+                [NESTED_OUTER_ID, NESTED_INNER_ID]
               ),
             { timeout: 15_000 }
           )
-          .toBeTruthy()
+          .toEqual([])
 
         const nodeId = await agentConversation.addNodeOfType(
           NESTED_OUTER_ID,
