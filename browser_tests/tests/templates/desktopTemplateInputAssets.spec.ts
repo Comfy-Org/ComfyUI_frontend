@@ -1,4 +1,5 @@
 import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
+import type { Page } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
@@ -6,6 +7,7 @@ import { desktopTemplateInputsFixture } from '@e2e/fixtures/desktopTemplateInput
 import { withIndex, withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(desktopTemplateInputsFixture, templateApiFixture)
 
@@ -16,6 +18,19 @@ const WORKFLOW = 'browser_tests/assets/nodes/single_ksampler.json'
 const WORKFLOW_MISSING_INPUT =
   'browser_tests/assets/missing/missing_media_bare_filename.json'
 const MISSING_INPUT = 'bare_photo.png'
+
+/** Names the missing-media scan has confirmed, once it has finished. */
+async function confirmedMissingNames(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow
+    return (
+      workflow?.pendingWarnings?.missingMediaCandidates?.map(
+        (candidate) => candidate.name
+      ) ?? []
+    )
+  })
+}
 
 function missingAsset(): ComfyTemplateInputAsset {
   return {
@@ -88,6 +103,12 @@ test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
       status: 'downloading',
       templateInputs: [{ templateId: OFFICIAL_TEMPLATE, assetId: 'asset-a' }]
     })
+
+    // The scan runs without being awaited, so a hidden overlay means nothing
+    // until it has actually confirmed this file as missing.
+    await expect
+      .poll(() => confirmedMissingNames(comfyPage.page))
+      .toContain(MISSING_INPUT)
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
