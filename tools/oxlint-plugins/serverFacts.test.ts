@@ -131,6 +131,15 @@ const c = canEdit.value && hasSeats.value
 `
     },
     {
+      name: 'a capability narrowed by a load-error flag',
+      code: `
+const { canViewInvites } = useBillingCapabilities()
+const failed = reactive({ members: false, invites: false })
+const a = canViewInvites.value && failed.invites
+const b = !canViewInvites.value || failed.members
+`
+    },
+    {
       name: 'a step, layout or presentation seeded once from a capability',
       code: `
 const { canTopUp } = useBillingCapabilities()
@@ -260,6 +269,20 @@ const c = paymentLocked.value ? true : canTopUp.value
         { messageId: 'combined', data: { operator: '||' } },
         { messageId: 'combined', data: { operator: '&&' } },
         { messageId: 'chosen' }
+      ]
+    },
+    {
+      name: 'a load-error flag that grants a capability',
+      code: `
+const { canViewInvites } = useBillingCapabilities()
+const a = canViewInvites.value || failed.invites
+const b = failed.members || (canViewInvites.value && failed.invites)
+const c = canViewInvites.value && other.invites
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '||' } },
+        { messageId: 'combined', data: { operator: '||' } },
+        { messageId: 'combined', data: { operator: '&&' } }
       ]
     },
     {
@@ -428,6 +451,14 @@ const kind =
   status.billing_status === 'paused' || status.billing_status === 'payment_failed'
     ? 'recover'
     : 'none'
+`
+    },
+    {
+      name: 'a role the user is choosing in a form',
+      code: `
+const isPromotion = targetRole === 'owner'
+const a = selectedRole.value === 'member'
+const b = newRole === 'owner' || nextRole === 'member'
 `
     },
     {

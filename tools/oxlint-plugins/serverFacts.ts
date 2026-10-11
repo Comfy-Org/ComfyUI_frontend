@@ -46,9 +46,20 @@ const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
   'isHiddenOnSection'
 ])
 
+const LOCAL_STATE_RECORDS: ReadonlySet<string> = new Set(['failed'])
+
 const ROLE_VALUES: ReadonlySet<string> = new Set(['owner', 'member', 'admin'])
 const isRoleValue = (literal: string) => ROLE_VALUES.has(literal)
 const ROLE_FIELD = /(?:^r|R)ole$/
+// A role the user is picking in a form, not one the server reports.
+const CHOSEN_ROLES: ReadonlySet<string> = new Set([
+  'targetRole',
+  'selectedRole',
+  'newRole',
+  'nextRole'
+])
+const isRoleField = (field: string) =>
+  ROLE_FIELD.test(field) && !CHOSEN_ROLES.has(field)
 const SERVER_TIERS: Record<SubscriptionTier, true> = {
   FREE: true,
   STANDARD: true,
@@ -361,7 +372,19 @@ function isLocalUiState(node: AstNode): boolean {
   if (expression.type === 'LogicalExpression') {
     return isLocalUiState(expression.left) && isLocalUiState(expression.right)
   }
-  return LOCAL_UI_STATE.has(referenceName(expression) ?? '')
+  return (
+    LOCAL_UI_STATE.has(referenceName(expression) ?? '') ||
+    isLocalStateRecordField(expression)
+  )
+}
+
+// `failed.invites` reads one flag of a component's own load-error record.
+function isLocalStateRecordField(expression: AstNode): boolean {
+  if (expression.type !== 'MemberExpression' || expression.computed) {
+    return false
+  }
+  const object = unwrap(expression.object)
+  return object.type === 'Identifier' && LOCAL_STATE_RECORDS.has(object.name)
 }
 
 type IsCapability = (node: AstNode) => boolean
@@ -626,7 +649,7 @@ function factComparison(node: Binary): FactComparison | undefined {
       : [leftLiteral, node.right]
   const field = factName(compared)
   if (literal === undefined || field === undefined) return undefined
-  const isFactLiteral = ROLE_FIELD.test(field)
+  const isFactLiteral = isRoleField(field)
     ? isRoleValue
     : COMPARED_FACTS.get(field)
   return isFactLiteral?.(literal)
@@ -787,7 +810,7 @@ export const noServerFactLiterals: Rule = {
           !ROLE_FALLBACK_OPERATORS.has(node.operator) ||
           literal === undefined ||
           !isRoleValue(literal) ||
-          !ROLE_FIELD.test(factName(node.left) ?? '') ||
+          !isRoleField(factName(node.left) ?? '') ||
           isInsidePendingFact(node)
         ) {
           return
