@@ -149,9 +149,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         request.type
       )
       const params = new URLSearchParams({
-        ...request,
         filename:
           node.comfyClass === 'LoadImageOutput' ? request.filename : filepath,
+        ...(image.subfolder != null && { subfolder: image.subfolder }),
         type: rootFolder
       })
       return api.apiURL(`/view?${params}${previewParam}${rand}`)

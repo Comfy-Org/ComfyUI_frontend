@@ -184,10 +184,10 @@ describe('useMaskEditorLoader', () => {
 
     await useMaskEditorLoader().loadFromNode(node)
 
-    expect(requestedUrls.length).toBeGreaterThan(0)
-    for (const url of requestedUrls) {
-      expect(url).toContain('filename=good.png')
-    }
+    expect(requestedUrls).not.toHaveLength(0)
+    expect(requestedUrls).toEqual(
+      requestedUrls.map(() => expect.stringContaining('filename=good.png'))
+    )
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'good.png', type: 'output' },
       nodeId: 9
