@@ -888,7 +888,7 @@ export class ComfyApi extends EventTarget {
       let status: StatusWsMessageStatus | null
       try {
         const resp = await this.fetchApi('/prompt')
-        status = (await resp.json()) as StatusWsMessageStatus
+        status = resp.ok ? ((await resp.json()) as StatusWsMessageStatus) : null
       } catch {
         status = null
       }
@@ -987,6 +987,7 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
       this._stopPollQueue()
 

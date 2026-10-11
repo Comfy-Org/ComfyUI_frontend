@@ -23,11 +23,13 @@ describe('createSocket WebSocket host', () => {
   const promptRequests = () =>
     fetchApi.mock.calls.filter(([route]) => route === '/prompt').length
 
-  const dispatchToLatestSocket = (type: string) => {
-    const socket = sockets.at(-1)
+  const dispatchToSocket = (index: number, type: string) => {
+    const socket = sockets.at(index)
     if (!socket) throw new Error(`no socket to dispatch "${type}" to`)
     for (const listener of socket.listeners.get(type) ?? []) listener()
   }
+
+  const dispatchToLatestSocket = (type: string) => dispatchToSocket(-1, type)
 
   const stubConnectingWebSocket = () => {
     vi.stubGlobal('WebSocket', function (this: WebSocket, url: string) {
@@ -210,6 +212,37 @@ describe('createSocket WebSocket host', () => {
 
     await vi.advanceTimersByTimeAsync(5000)
     expect(promptRequests()).toBe(1)
+  })
+
+  it('keeps polling when a replaced socket opens late', async () => {
+    await api.init()
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
+    await api.resetSocket()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(promptRequests()).toBe(1)
+
+    dispatchToSocket(0, 'open')
+
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(promptRequests()).toBe(2)
+  })
+
+  it('reports a failed poll response as a disconnect', async () => {
+    const statusEvents: unknown[] = []
+    const onStatus = (event: CustomEvent) => statusEvents.push(event.detail)
+    api.addEventListener('status', onStatus)
+    fetchApi.mockImplementation(
+      async () => new Response('{"error":"bad gateway"}', { status: 502 })
+    )
+    window.__COMFY_API_WS_HOST__ = 'ws.example.com:notaport'
+    try {
+      await api.init()
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(statusEvents).toEqual([null])
+    } finally {
+      api.removeEventListener('status', onStatus)
+    }
   })
 
   it('drops a poll response that resolves after the socket opens', async () => {
