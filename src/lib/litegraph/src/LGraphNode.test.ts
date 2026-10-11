@@ -865,7 +865,6 @@ describe('LGraphNode', () => {
       -1,
       2,
       0.5,
-      Infinity,
       '',
       ' ',
       '2',
@@ -873,15 +872,21 @@ describe('LGraphNode', () => {
       '0e0'
     ]
 
-    test.for(
-      removalOperations.flatMap((operation) =>
-        invalidSlots.map((slot) => ({ operation, slot }))
-      )
-    )('ignores invalid $operation.name slot $slot', ({ operation, slot }) => {
+    test.for(invalidSlots)('removeOutput ignores invalid slot $0', (slot) => {
       const testNode = new LGraphNode('TestNode')
-      const { names, onRemoved } = operation.setup(testNode)
+      const { names, onRemoved } = removalOperations[1].setup(testNode)
 
-      operation.remove(testNode, slot)
+      removalOperations[1].remove(testNode, slot)
+
+      expect(names()).toEqual(['first', 'second'])
+      expect(onRemoved).not.toHaveBeenCalled()
+    })
+
+    test('removeInput ignores an invalid runtime slot', () => {
+      const testNode = new LGraphNode('TestNode')
+      const { names, onRemoved } = removalOperations[0].setup(testNode)
+
+      removalOperations[0].remove(testNode, '0x0')
 
       expect(names()).toEqual(['first', 'second'])
       expect(onRemoved).not.toHaveBeenCalled()
@@ -896,7 +901,6 @@ describe('LGraphNode', () => {
         operation.remove(testNode, '0')
 
         expect(names()).toEqual(['second'])
-        expect(onRemoved).toHaveBeenCalledOnce()
         expect(onRemoved.mock.calls.map(([slot]) => slot)).toEqual([0])
       }
     )

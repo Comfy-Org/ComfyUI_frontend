@@ -45,25 +45,7 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
-    const getExistingLinks = (): LLink[] | undefined => {
-      const targetSlot = this.parent.slots.indexOf(this)
-      if (targetSlot === -1) return
-      const seen = new Set<LLink['id']>()
-      return this.linkIds.flatMap((id) => {
-        if (seen.has(id)) return []
-        const link = subgraph.getLink(id)
-        if (
-          !link ||
-          link.target_id !== this.parent.id ||
-          link.target_slot !== targetSlot
-        )
-          return []
-        seen.add(id)
-        return [link]
-      })
-    }
-    const linksBeforeHook = getExistingLinks()
-    if (!linksBeforeHook) return
+    if (this.parent.slots.indexOf(this) === -1) return
 
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
@@ -72,9 +54,14 @@ export class SubgraphOutput extends SubgraphSlot {
       return
 
     // Re-read after the extension hook because it may mutate topology.
-    const existingLinks = getExistingLinks()
-    if (!existingLinks) return
-    const existingLink = existingLinks.at(0)
+    const targetSlot = this.parent.slots.indexOf(this)
+    if (targetSlot === -1) return
+    const existingLink = this.linkIds
+      .map((id) => subgraph.getLink(id))
+      .find(
+        (link) =>
+          link?.target_id === this.parent.id && link.target_slot === targetSlot
+      )
     const canonicalLinkIds = existingLink ? [existingLink.id] : []
     const mirrorNeedsRepair =
       canonicalLinkIds.length !== this.linkIds.length ||
@@ -101,7 +88,7 @@ export class SubgraphOutput extends SubgraphSlot {
       node.id,
       outputIndex,
       this.parent.id,
-      this.parent.slots.indexOf(this),
+      targetSlot,
       afterRerouteId
     )
 

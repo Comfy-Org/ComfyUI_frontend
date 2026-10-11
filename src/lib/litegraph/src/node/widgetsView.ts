@@ -4,7 +4,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getConcreteWidgetSource,
-  isConcreteWidgetSourceStale,
   toConcreteWidget
 } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -146,18 +145,15 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
-export function releaseReplacedWidget(
+export function transferReplacedWidgetState(
   node: LGraphNode,
   outgoing: IBaseWidget,
   replacement: IBaseWidget
 ): void {
-  const reboundInputs = node.inputs.filter(
-    (input) => input._widget === outgoing
-  )
-  for (const input of reboundInputs) input._widget = undefined
-  outgoing.onRemove?.()
   if (outgoing instanceof BaseWidget) outgoing.releaseRegisteredState()
-  for (const input of reboundInputs) input._widget = replacement
+  for (const input of node.inputs) {
+    if (input._widget === outgoing) input._widget = replacement
+  }
 }
 
 function reconcileWrappedSources(
@@ -174,27 +170,23 @@ function reconcileWrappedSources(
     if (source !== widget) installedBySource.set(source, { index, widget })
   })
 
-  const acceptedRawSources = new Set<IBaseWidget>()
   const removedIndexes = new Set<number>()
   widgets.forEach((widget, index) => {
-    const source = originalWidgets[index]
-    if (getConcreteWidgetSource(source) !== source || widget === source) return
+    const original = originalWidgets[index]
+    if (getConcreteWidgetSource(original) !== original || widget === original)
+      return
 
-    const installed = installedBySource.get(source)
+    const installed = installedBySource.get(original)
     if (installed) {
       removedIndexes.add(index)
-      if (isConcreteWidgetSourceStale(installed.widget)) {
+      if (widget !== installed.widget) {
         widgets[installed.index] = widget
-        releaseReplacedWidget(node, installed.widget, widget)
-        installedBySource.set(source, { index: installed.index, widget })
+        transferReplacedWidgetState(node, installed.widget, widget)
+        installedBySource.set(original, { index: installed.index, widget })
       }
       return
     }
-    if (acceptedRawSources.has(source)) {
-      removedIndexes.add(index)
-      return
-    }
-    acceptedRawSources.add(source)
+    installedBySource.set(original, { index, widget })
   })
 
   if (removedIndexes.size) {

@@ -78,7 +78,7 @@ import {
   clearWidgetRestorationSlots,
   getWidgetRestorationSlot,
   initializeWidgetsView,
-  releaseReplacedWidget
+  transferReplacedWidgetState
 } from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
@@ -2356,7 +2356,7 @@ export class LGraphNode
     if (existingIndex === -1) {
       this.widgets.push(widget)
     } else if (this.widgets[existingIndex] !== widget) {
-      releaseReplacedWidget(this, this.widgets[existingIndex], widget)
+      transferReplacedWidgetState(this, this.widgets[existingIndex], widget)
       this.widgets[existingIndex] = widget
     }
 

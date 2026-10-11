@@ -86,23 +86,8 @@ const provenanceByConcreteWidget = new WeakMap<
   ConcreteWidgetProvenance
 >()
 
-function rememberConcreteWidget(
-  source: IBaseWidget,
-  concrete: IBaseWidget
-): void {
-  provenanceByConcreteWidget.set(concrete, {
-    source,
-    sourceType: source.type
-  })
-}
-
 export function getConcreteWidgetSource(widget: IBaseWidget): IBaseWidget {
   return provenanceByConcreteWidget.get(widget)?.source ?? widget
-}
-
-export function isConcreteWidgetSourceStale(widget: IBaseWidget): boolean {
-  const provenance = provenanceByConcreteWidget.get(widget)
-  return !!provenance && provenance.source.type !== provenance.sourceType
 }
 
 function collectDescriptors(value: object) {
@@ -242,7 +227,10 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       ? adoptConcreteWidget(widget, concrete)
       : concrete
   if (result && wrapLegacyWidgets && !Object.is(result, widget)) {
-    rememberConcreteWidget(widget, result)
+    provenanceByConcreteWidget.set(result, {
+      source: widget,
+      sourceType: widget.type
+    })
   }
   return result
 }

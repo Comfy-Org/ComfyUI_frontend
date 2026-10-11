@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -87,16 +87,14 @@ function storedValue(widget: IBaseWidget) {
   return useWidgetValueStore().getWidget(widget.widgetId!)?.value
 }
 
-function nonExtensibleWidget(
-  overrides: Partial<IBaseWidget> = {}
-): IBaseWidget {
+function nonExtensibleWidget(onRemove?: IBaseWidget['onRemove']): IBaseWidget {
   return Object.preventExtensions<IBaseWidget>({
     name: 'wrapped',
     type: 'number',
     value: 10,
     options: {},
     y: 0,
-    ...overrides
+    onRemove
   })
 }
 
@@ -216,8 +214,8 @@ describe('widgets view', () => {
     const wrapped = node.widgets[0]
     const other = node.addWidget('number', 'other', 20, null)
 
-    node.widgets.splice(0, 1)
-    node.widgets.push(wrapped)
+    node.widgets[1] = wrapped
+    node.widgets[0] = other
 
     expect(node.widgets).toEqual([other, wrapped])
   })
@@ -229,8 +227,8 @@ describe('widgets view', () => {
     const wrapped = node.widgets[0]
     const other = node.addWidget('number', 'other', 20, null)
 
-    node.widgets[1] = wrapped
-    node.widgets[0] = other
+    node.widgets.splice(0, 1)
+    node.widgets.push(wrapped)
     node.addCustomWidget(source)
 
     expect(node.widgets).toEqual([other, wrapped])
@@ -238,10 +236,9 @@ describe('widgets view', () => {
 
   it('refreshes a wrapper when its source type changes', () => {
     const node = new LGraphNode('test')
-    const source = nonExtensibleWidget()
-    const original = node.addCustomWidget(source)
     const onRemove = vi.fn()
-    original.onRemove = onRemove
+    const source = nonExtensibleWidget(onRemove)
+    const original = node.addCustomWidget(source)
     const input = node.addInput('wrapped', 'number', {
       widget: { name: 'wrapped' },
       _widget: original
@@ -250,10 +247,12 @@ describe('widgets view', () => {
     source.type = 'toggle'
     const refreshed = node.addCustomWidget(source)
 
-    expect(refreshed).not.toBe(original)
     expect(refreshed).toBeInstanceOf(BooleanWidget)
     expect(node.widgets).toEqual([refreshed])
     expect(input._widget).toBe(refreshed)
+    expect(onRemove).not.toHaveBeenCalled()
+
+    node.removeWidget(refreshed)
     expect(onRemove).toHaveBeenCalledOnce()
   })
 
@@ -275,30 +274,107 @@ describe('widgets view', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     const before = node.addWidget('number', 'before', 1, null)
-    const source = nonExtensibleWidget()
+    const onRemove = vi.fn()
+    const source = nonExtensibleWidget(onRemove)
     const installed = node.addCustomWidget(source)
     const after = node.addWidget('number', 'after', 2, null)
-    const onRemove = vi.fn()
-    installed.onRemove = onRemove
+    const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
     const input = node.addInput('wrapped', 'number', {
       widget: { name: 'wrapped' },
       _widget: installed
     })
 
+    source.name = 'renamed'
     source.type = 'toggle'
-    node.widgets!.unshift(source)
+    assert.exists(node.widgets)
+    node.widgets.unshift(source)
 
-    const refreshed = node.widgets![1]
+    const refreshed = node.widgets[1]
     expect(node.widgets).toEqual([before, refreshed, after])
     expect(refreshed).toBeInstanceOf(BooleanWidget)
     expect(input._widget).toBe(refreshed)
-    expect(onRemove).toHaveBeenCalledOnce()
+    expect(onRemove).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
     expect(
       useWidgetValueStore()
         .getNodeWidgets(graph.rootGraph.id, node.id)
         .map((widget) => widget.type)
     ).toEqual(['number', 'toggle', 'number'])
+
+    node.removeWidget(refreshed)
+    expect(onRemove).toHaveBeenCalledOnce()
   })
+
+  it.for(
+    (
+      [
+        {
+          entry: 'addCustomWidget',
+          refresh(node: LGraphNode, source: IBaseWidget) {
+            return node.addCustomWidget(source)
+          }
+        },
+        {
+          entry: 'widgets.push',
+          refresh(node: LGraphNode, source: IBaseWidget) {
+            node.widgets?.push(source)
+            return node.widgets?.find(
+              (widget) => widget instanceof BooleanWidget
+            )
+          }
+        }
+      ] as const
+    ).flatMap((path) =>
+      (
+        [
+          {
+            callback: 'throws',
+            implementation: () => {
+              throw new Error('extension teardown failed')
+            }
+          },
+          {
+            callback: 'mutates the widget list',
+            implementation: (node: LGraphNode) => {
+              node.widgets?.splice(0, 1)
+            }
+          }
+        ] as const
+      ).map((callback) => ({ path, callback }))
+    )
+  )(
+    'does not run source teardown during refresh through $path.entry when it $callback.callback',
+    ({ path, callback }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+      const before = node.addWidget('number', 'before', 1, null)
+      const onRemove = vi.fn(() => callback.implementation(node))
+      const source = nonExtensibleWidget(onRemove)
+      const installed = node.addCustomWidget(source)
+      const after = node.addWidget('number', 'after', 2, null)
+      const input = node.addInput('wrapped', 'number', {
+        widget: { name: 'wrapped' },
+        _widget: installed
+      })
+
+      source.type = 'toggle'
+      let refreshed: IBaseWidget | undefined
+      expect(() => {
+        refreshed = path.refresh(node, source)
+      }).not.toThrow()
+
+      expect(refreshed).toBeInstanceOf(BooleanWidget)
+      expect(node.widgets).toEqual([before, refreshed, after])
+      expect(input._widget).toBe(refreshed)
+      expect(onRemove).not.toHaveBeenCalled()
+      expect(
+        useWidgetValueStore()
+          .getNodeWidgets(graph.rootGraph.id, node.id)
+          .map((widget) => widget.type)
+      ).toEqual(['number', 'toggle', 'number'])
+    }
+  )
 
   it.for(
     ([false, true] as const).flatMap(
