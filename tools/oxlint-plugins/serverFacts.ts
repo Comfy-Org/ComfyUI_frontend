@@ -34,7 +34,15 @@ const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
   'submitting',
   'saving',
   'busy',
-  'inFlight'
+  'inFlight',
+  'operation',
+  'topupOperation',
+  'paymentLocked',
+  'isValidAmount',
+  'isReady',
+  'hasResolvedCapabilities',
+  'snapshotAuthoritative',
+  'isHiddenOnSection'
 ])
 
 const ROLE_VALUES: ReadonlySet<string> = new Set(['owner', 'member', 'admin'])

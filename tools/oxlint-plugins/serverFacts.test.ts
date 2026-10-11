@@ -108,6 +108,18 @@ const disabled = isSubmitting.value ? true : !canTopUp.value
 `
     },
     {
+      name: 'a capability narrowed by an in-flight operation, form or read state',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const a = topupOperation.value && canTopUp.value
+const b = !operation || !canTopUp.value
+const c = paymentLocked.value || !isValidAmount.value || !canTopUp.value
+const d = canTopUp.value && hasResolvedCapabilities.value && isReady.value
+const e = snapshotAuthoritative.value ? canTopUp.value : false
+const f = canTopUp.value && !isHiddenOnSection.value
+`
+    },
+    {
       name: 'a capability defaulted while its source is absent',
       code: `
 const a = capabilities.value ? capabilities.value.can_top_up : false
@@ -207,6 +219,20 @@ const { canTopUp } = useBillingCapabilities()
 const enabled = (canTopUp.value && !isLoading.value) || isSaving.value
 `,
       errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'in-flight or read state that grants a capability',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const a = canTopUp.value || topupOperation.value
+const b = !canTopUp.value && hasResolvedCapabilities.value
+const c = paymentLocked.value ? true : canTopUp.value
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '||' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'chosen' }
+      ]
     },
     {
       name: 'server-derived plan and subscription flags next to a capability',
