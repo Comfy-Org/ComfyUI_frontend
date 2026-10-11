@@ -861,6 +861,34 @@ describe('LGraphNode', () => {
 
       expect(testNode.widgets).toEqual([other, wrapped])
     })
+
+    test('restores a pre-pushed widget by its position', () => {
+      const testNode = new LGraphNode('TestNode')
+      const source = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'first',
+        value: 0,
+        options: {},
+        y: 0
+      })
+      let first: IBaseWidget | undefined
+      let successor: IBaseWidget | undefined
+      testNode.onConfigure = () => {
+        testNode.widgets = [source]
+        first = testNode.widgets[0]
+        successor = testNode.addWidget('number', 'second', 0, () => undefined)
+        testNode.addCustomWidget(source)
+      }
+
+      testNode.configure(
+        getMockISerialisedNode({
+          widgets_values: [10, 20]
+        })
+      )
+
+      expect(first?.value).toBe(10)
+      expect(successor?.value).toBe(20)
+    })
   })
 
   describe('removeInput', () => {
