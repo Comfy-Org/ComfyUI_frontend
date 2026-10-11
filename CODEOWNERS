@@ -1,3 +1,10 @@
+/src/platform/settings/                          @Comfy-Org/comfy_frontend_devs
+/src/platform/keybindings/                       @Comfy-Org/comfy_frontend_devs
+/src/platform/assets/                            @Comfy-Org/comfy_frontend_devs
+/src/platform/workflow/persistence/              @Comfy-Org/comfy_frontend_devs
+/src/platform/workflow/sharing/                  @Comfy-Org/comfy_frontend_devs
+/src/platform/workflow/deploy/                   @Comfy-Org/comfy_frontend_devs
+
 # Renderer extensions — fallback owner.
 # CODEOWNERS is last-match-wins, so this stays above the per-feature blocks
 # below and they continue to take precedence.
@@ -188,3 +195,34 @@
 /src/extensions/core/cloudFeedbackTopbarButton.test.ts @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/cloudRemoteConfig.ts         @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/cloudSessionCookie.ts        @Comfy-Org/comfy_frontend_devs
+
+/docs/architecture/domains/records/settings.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/keybindings.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/assets.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/workflow-persistence.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/workflow-sharing.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/workflow-deployment.domain.json @Comfy-Org/comfy_frontend_devs
+/src/scripts/ui/settings.ts                      @Comfy-Org/comfy_frontend_devs
+/src/scripts/ui/settings.test.ts                 @Comfy-Org/comfy_frontend_devs
+/src/components/dialog/content/setting/SettingItem.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/dialog/content/setting/KeybindingPanel.vue @Comfy-Org/comfy_frontend_devs
+/src/components/dialog/content/setting/KeybindingPanel.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/dialog/content/setting/keybinding/ @Comfy-Org/comfy_frontend_devs
+/src/composables/useEditKeybindingDialog.ts       @Comfy-Org/comfy_frontend_devs
+/src/stores/assetsStore.ts                       @Comfy-Org/comfy_frontend_devs
+/src/stores/assetsStore.test.ts                  @Comfy-Org/comfy_frontend_devs
+/src/stores/assetDownloadStore.ts                @Comfy-Org/comfy_frontend_devs
+/src/stores/assetDownloadStore.test.ts            @Comfy-Org/comfy_frontend_devs
+/src/stores/assetExportStore.ts                  @Comfy-Org/comfy_frontend_devs
+/src/stores/assetExportStore.test.ts              @Comfy-Org/comfy_frontend_devs
+/src/stores/workspace/assetsSidebarBadgeStore.ts @Comfy-Org/comfy_frontend_devs
+/src/stores/workspace/assetsSidebarBadgeStore.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarTab.vue @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarTab.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarGridView.vue @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarGridView.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarListView.vue @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarListView.test.ts @Comfy-Org/comfy_frontend_devs
+/src/components/sidebar/tabs/AssetsSidebarListView.stories.ts @Comfy-Org/comfy_frontend_devs
+/src/composables/sidebarTabs/useAssetsSidebarTab.ts @Comfy-Org/comfy_frontend_devs
+/src/composables/sidebarTabs/useAssetsSidebarTab.test.ts @Comfy-Org/comfy_frontend_devs
