@@ -1,15 +1,16 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
@@ -68,6 +69,10 @@ export class MovingInputLink extends MovingLinkBase {
   ): LLink | null | undefined {
     if (input === this.inputSlot) return
 
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     this.inputNode.disconnectInput(this.inputIndex, true)
     const link = this.outputNode.connectSlots(
       this.outputSlot,
@@ -75,6 +80,7 @@ export class MovingInputLink extends MovingLinkBase {
       input,
       this.fromReroute?.id
     )
+    transferLinkPresentation(scope, this.presentation, link?.id)
     if (link) events.dispatch('input-moved', this)
     return link
   }
@@ -91,11 +97,16 @@ export class MovingInputLink extends MovingLinkBase {
     output: SubgraphOutput,
     events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     const newLink = output.connect(
       this.fromSlot,
       this.node,
       this.fromReroute?.id
     )
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
     events?.dispatch('link-created', newLink)
   }
 
@@ -110,6 +121,9 @@ export class MovingInputLink extends MovingLinkBase {
     originalReroutes: Reroute[]
   ): void {
     const { outputNode, outputSlot, fromReroute } = this
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
 
     // Clean up reroutes
     for (const reroute of originalReroutes) {
@@ -126,6 +140,7 @@ export class MovingInputLink extends MovingLinkBase {
       input,
       existingLink.parentId
     )
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
     if (newLink) events.dispatch('input-moved', this)
   }
 

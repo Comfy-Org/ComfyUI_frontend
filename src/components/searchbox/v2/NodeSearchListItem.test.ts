@@ -1,13 +1,10 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
-import {
-  createMockNodeDef,
-  setupTestPinia,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
+import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 
@@ -29,16 +26,10 @@ function renderItem(
 }
 
 describe('NodeSearchListItem', () => {
-  beforeEach(() => {
-    setupTestPinia()
-  })
-
-  it('does not render HTML from node names', () => {
+  it('renders node names as text rather than HTML', () => {
     const displayName = '<img src=x onerror=alert(1)>Node'
     renderItem({
-      nodeDef: createMockNodeDef({
-        display_name: displayName
-      })
+      nodeDef: createMockNodeDef({ display_name: displayName })
     })
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument()

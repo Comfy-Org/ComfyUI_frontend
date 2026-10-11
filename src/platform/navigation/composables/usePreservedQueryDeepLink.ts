@@ -8,15 +8,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 
 /**
- * Shared head/tail for URL deep-link loaders that survive a login redirect via
- * the preserved-query (sessionStorage) system. `param` names BOTH the URL query
- * key and its preserved-query namespace — they are always identical. Extracts
- * ONLY the boilerplate:
- *  - hydrateAndRead(): restore the preserved param, reflect it in the URL, and
- *    return its value from the (possibly merged) query.
- *  - strip(): remove `param` from the URL and clear the preserved namespace.
- * Each caller keeps its OWN gate/validation and action explicit — this helper
- * intentionally contains no auth logic.
+ * `param` is both the URL query key and its preserved-query namespace, so a
+ * value stashed before a login redirect is restored into the URL on return.
  */
 export function usePreservedQueryDeepLink(param: string) {
   const route = useRoute()

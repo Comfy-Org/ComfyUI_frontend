@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 
-# Skip in CI: the canonical knip check runs in ci-lint-format on every
-# PR, and bot workflows (e.g. i18n-update-core) populate ComfyUI/ via
-# setup-comfyui-server, which contaminates knip's project glob with the
-# devtools copy under custom_nodes and produces false-positive failures.
+set -e
+
+# Skip in CI: the canonical checks run in CI on every PR, and bot workflows
+# (e.g. i18n-update-core) populate ComfyUI/ via setup-comfyui-server, which
+# contaminates static-analysis project globs with the devtools copy under
+# custom_nodes and produces false-positive failures.
 if [ -n "${CI-}" ]; then
   exit 0
 fi
 
-# Run Knip with cache via package script
 pnpm knip 1>&2
-
+git fetch --quiet --no-tags origin main
+base="$(git merge-base HEAD FETCH_HEAD)"
+diff_file="$(mktemp)"
+trap 'rm -f "$diff_file"' 0
+git diff --unified=0 --relative "$base"...HEAD -- > "$diff_file"
+pnpm fallow:audit --changed-since "$base" --diff-file "$diff_file" 1>&2

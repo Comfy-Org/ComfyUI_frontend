@@ -1,14 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
+  LGraphNode,
   findUsedSubgraphIds,
   getDirectSubgraphIds
 } from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 
+import { reorderSubgraphInputs } from './subgraphUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -17,10 +18,63 @@ import {
 
 describe('subgraphUtils', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 
+  describe('reorderSubgraphInputs', () => {
+    it('logs and preserves mismatched host and subgraph inputs', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.inputs.pop()
+
+      reorderSubgraphInputs(host, [1, 0])
+
+      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
+        'first',
+        'second'
+      ])
+      expect(console.error).toHaveBeenCalledWith(
+        'reorderSubgraphInputs: host and subgraph inputs differ',
+        { hostInputs: 1, subgraphInputs: 2 }
+      )
+    })
+
+    it('preserves both input orders when endpoint updates are rejected', () => {
+      const graph = new LGraph()
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      graph.add(host)
+      const source = new LGraphNode('Source')
+      source.addOutput('out', 'STRING')
+      graph.add(source)
+      const link = source.connect(0, host, 0)!
+      vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+      const invalidatePromotedViews = vi.spyOn(host, 'invalidatePromotedViews')
+
+      reorderSubgraphInputs(host, [1, 0])
+
+      expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
+      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
+        'first',
+        'second'
+      ])
+      expect(link.target_slot).toBe(0)
+      expect(invalidatePromotedViews).not.toHaveBeenCalled()
+    })
+  })
   describe('getDirectSubgraphIds', () => {
     it('should return empty set for graph with no subgraph nodes', () => {
       const graph = new LGraph()

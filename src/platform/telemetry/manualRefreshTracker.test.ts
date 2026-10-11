@@ -5,7 +5,7 @@ const hoisted = vi.hoisted(() => ({
   getInternalContext: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: hoisted
 }))
 
@@ -20,7 +20,6 @@ function mockNavigationType(type: string): void {
 describe('trackUserManualRefresh', () => {
   beforeEach(() => {
     hoisted.getInternalContext.mockReturnValue({ session_id: 'session-1' })
-    localStorage.clear()
   })
 
   it('counts reloads within the same session', () => {

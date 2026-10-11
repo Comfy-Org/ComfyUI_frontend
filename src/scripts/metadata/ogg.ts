@@ -2,17 +2,25 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+const NULL = '\0'
+
+/** Extracts the JSON text from a `<key>={...}` Vorbis comment ending at a null byte. */
+function readVorbisCommentJson(header: string, key: string) {
+  const commentStart = header.indexOf(`${key}={`)
+  if (commentStart === -1) return undefined
+  const jsonStart = commentStart + key.length + '='.length
+  const firstClose = header.indexOf('}', jsonStart)
+  if (firstClose === -1) return undefined
+  const commentEnd = header.indexOf(NULL, firstClose)
+  if (commentEnd === -1) return undefined
+  return header.slice(jsonStart, commentEnd).match(/\{.*\}/)?.[0]
+}
+
 export async function getOggMetadata(file: File) {
-  const reader = new FileReader()
-  const read_process = new Promise<ArrayBuffer | null>((r) => {
-    reader.onload = (event) => r((event?.target?.result as ArrayBuffer) ?? null)
-    reader.onerror = () => r(null)
-    reader.onabort = () => r(null)
-  })
-  reader.readAsArrayBuffer(file)
-  const arrayBuffer = await read_process
+  const arrayBuffer = await readFileAsArrayBuffer(file)
   if (!arrayBuffer) return { prompt: undefined, workflow: undefined }
   const signature = String.fromCharCode(...new Uint8Array(arrayBuffer, 0, 4))
   if (signature !== 'OggS') console.error('Invalid file signature.')
@@ -32,9 +40,7 @@ export async function getOggMetadata(file: File) {
   }
   let workflow: ComfyWorkflowJSON | undefined
   let prompt: ComfyApiWorkflow | undefined
-  let prompt_s = header
-    .match(/prompt=(\{.*?(\}.*?\u0000))/s)?.[1]
-    ?.match(/\{.*\}/)?.[0]
+  const prompt_s = readVorbisCommentJson(header, 'prompt')
   if (prompt_s) {
     try {
       prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(prompt_s)
@@ -42,9 +48,7 @@ export async function getOggMetadata(file: File) {
       console.error('Failed to parse Ogg prompt metadata', e)
     }
   }
-  let workflow_s = header
-    .match(/workflow=(\{.*?(\}.*?\u0000))/s)?.[1]
-    ?.match(/\{.*\}/)?.[0]
+  const workflow_s = readVorbisCommentJson(header, 'workflow')
   if (workflow_s) {
     try {
       workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow_s)

@@ -20,6 +20,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
   - Node.js (see `.nvmrc` for the required version) and pnpm
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
+  - Docker, if you want to use the containerized test backend
 
 ### Initial Setup
 
@@ -62,6 +63,27 @@ python main.py --port 8188 --cpu
 - Run `pnpm dev:electron` to start the dev server with electron API mocked
 - Run `pnpm dev:cloud` to start the dev server against the cloud backend (instead of local ComfyUI server)
 
+#### Containerized test backend
+
+Start a containerized ComfyUI backend for Playwright:
+
+```bash
+pnpm container:start
+```
+
+The launcher pulls the backend image used by CI when available. Otherwise, it
+builds a source fallback that may differ from the published CI image. It mounts
+`tools/devtools` and starts ComfyUI at `localhost:8188`. Use one terminal for
+the frontend and another for the tests:
+
+```bash
+pnpm dev
+pnpm test:browser:local
+```
+
+The [browser test setup](browser_tests/README.md#setup) covers Playwright,
+private GHCR access, and remote agent containers.
+
 #### Testing with Cloud & Staging Environments
 
 Some features — particularly **partner/API nodes** (e.g. BFL, OpenAI, Stability AI) — require a cloud backend for authentication and billing. Running these against a local ComfyUI instance will result in permission errors or logged-out states. There are two ways to connect to a cloud/staging backend:
@@ -93,6 +115,13 @@ python main.py --comfy-api-base https://stagingapi.comfy.org --verbose
 
 Then run `pnpm dev` as usual. This keeps the frontend in local mode but routes backend API calls through staging.
 
+#### Local Agent Integration
+
+To develop the frontend, the in-workspace multi-player package, and the local agent
+backend together with HMR, use the
+[local agent integration environment](docs/testing/agent-integration-development.md).
+It includes the Playwright entrypoint and teardown procedure.
+
 #### Access dev server on touch devices
 
 Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.
@@ -100,11 +129,11 @@ Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to
 After you start the dev server, you should see following logs:
 
 ```
-> comfyui-frontend@1.3.42 dev
-> vite
+> @comfyorg/comfyui-frontend@ dev
+> vite --config vite.config.mts
 
 
-  VITE v5.4.6  ready in 488 ms
+  VITE vX.Y.Z  ready in 488 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://172.21.80.1:5173/
@@ -187,6 +216,13 @@ We've also included a list of recommended extensions in `.vscode/extensions.json
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
+### Temporarily Disabled Tests
+
+Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
+failing tests before merging. The lint rules reject Vitest `skip` and `todo`
+declarations, `skipIf` and `runIf` with a literal condition that disables the
+test, and Playwright `skip` declarations.
+
 ### Running All Tests
 
 Before submitting a PR, ensure all tests pass:
@@ -204,7 +240,7 @@ pnpm format
 
 - Use TypeScript for all new code
 - Avoid `any` types - use proper type definitions
-- Never use `@ts-expect-error` - fix the underlying type issue
+- Never use `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test that intentionally verifies a compiler error - otherwise fix the underlying type issue
 
 ### Vue 3 Patterns
 
@@ -242,7 +278,7 @@ For detailed instructions and code examples, see [packages/design-system/src/ico
 
 ## Working with litegraph.js
 
-Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/0001-merge-litegraph-into-frontend.md)).
+Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md)).
 
 ### Important Notes
 
@@ -339,7 +375,7 @@ Starting PR Review
 1. Use comment threads for clarification
 2. Create a huddle or schedule a live review for complex discussions
 3. Escalate to team leads if discussion goes in circles
-4. Document recurring style conflicts in Coderabbit config or `CLAUDE.md`
+4. Document recurring style conflicts in Coderabbit config or `AGENTS.md`
 5. Defer to the author for pure personal preference items (but don't
    mislabel technical decisions as preference)
 

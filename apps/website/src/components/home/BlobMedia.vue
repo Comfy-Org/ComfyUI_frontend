@@ -48,6 +48,8 @@ function isVideo(url: string): boolean {
         :src
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
         :class="
           cn(
             'absolute inset-0 size-full object-cover',

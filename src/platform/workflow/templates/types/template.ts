@@ -1,3 +1,5 @@
+import type { TemplateInput } from '../schemas/templateSchema'
+
 export interface LogoInfo {
   /** Provider name(s) matching index_logo.json. String for single, array for stacked logos. */
   provider: string | string[]
@@ -7,6 +9,7 @@ export interface LogoInfo {
 
 export interface TemplateInfo {
   name: string
+  io?: { inputs?: TemplateInput[] }
   /**
    * Optional title which is used as the fallback if the name is not in the locales dictionary.
    */
@@ -19,6 +22,13 @@ export interface TemplateInfo {
   localizedTitle?: string
   localizedDescription?: string
   isEssential?: boolean
+  /**
+   * Whether App Mode is this template's default view, from the workflow's own
+   * `extra.linearMode`. Supplied by `templates/index.json`; absent means a node
+   * graph. Do not fall back to the `.app` filename suffix, which is wrong in
+   * both directions (see the App badge in WorkflowTemplateSelectorDialog).
+   */
+  isApp?: boolean
   sourceModule?: string
   tags?: string[]
   models?: string[]

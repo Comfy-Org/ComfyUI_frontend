@@ -74,7 +74,7 @@
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.BRUSH
                 ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                : 'text-muted-foreground hover:text-base-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.BRUSH"
@@ -89,7 +89,7 @@
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.ERASER
                 ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                : 'text-muted-foreground hover:text-base-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.ERASER"
@@ -116,7 +116,7 @@
           @update:model-value="(v) => v?.length && (brushSize = v[0])"
         />
         <span
-          class="text-node-text-muted w-8 text-center text-xs"
+          class="w-8 text-center text-xs text-muted-foreground"
           data-testid="painter-size-value"
         >
           {{ brushSize }}
@@ -144,14 +144,14 @@
           <span class="min-w-[4ch] truncate text-xs">{{
             brushColorDisplay
           }}</span>
-          <span class="text-node-text-muted ml-auto flex items-center text-xs">
+          <span class="ml-auto flex items-center text-xs text-muted-foreground">
             <input
               type="number"
               :value="brushOpacityPercent"
               min="0"
               max="100"
               step="1"
-              class="text-node-text-muted w-7 appearance-none border-0 bg-transparent text-right text-xs outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              class="w-7 appearance-none border-0 bg-transparent text-right text-xs text-muted-foreground outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               @click.stop
               @change="
                 (e) => {
@@ -187,7 +187,7 @@
             "
           />
           <span
-            class="text-node-text-muted w-8 text-center text-xs"
+            class="w-8 text-center text-xs text-muted-foreground"
             data-testid="painter-hardness-value"
             >{{ brushHardnessPercent }}%</span
           >
@@ -212,7 +212,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasWidth = v[0])"
           />
-          <span class="text-node-text-muted w-10 text-center text-xs">{{
+          <span class="w-10 text-center text-xs text-muted-foreground">{{
             canvasWidth
           }}</span>
         </div>
@@ -234,7 +234,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasHeight = v[0])"
           />
-          <span class="text-node-text-muted w-10 text-center text-xs">{{
+          <span class="w-10 text-center text-xs text-muted-foreground">{{
             canvasHeight
           }}</span>
         </div>

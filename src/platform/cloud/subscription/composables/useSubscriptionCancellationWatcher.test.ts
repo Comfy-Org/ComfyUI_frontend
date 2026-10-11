@@ -18,6 +18,10 @@ describe('useSubscriptionCancellationWatcher', () => {
   const baseStatus: BillingStatusResponse = {
     is_active: true,
     has_funds: true,
+    max_seats: 0,
+    occupied_seats: 0,
+    team_credit_stop: null,
+    scheduled_change: null,
     renewal_date: '2025-11-16'
   }
 
@@ -34,21 +38,14 @@ describe('useSubscriptionCancellationWatcher', () => {
     options: Parameters<typeof useSubscriptionCancellationWatcher>[0]
   ): ReturnType<typeof useSubscriptionCancellationWatcher> => {
     const scope = effectScope()
-    let result: ReturnType<typeof useSubscriptionCancellationWatcher> | null =
-      null
-    scope.run(() => {
-      result = useSubscriptionCancellationWatcher(options)
-    })
-    if (!result) {
-      throw new Error('Failed to initialize cancellation watcher')
-    }
+    const result = scope.run(() => useSubscriptionCancellationWatcher(options))
+    if (!result) throw new Error('Expected watcher scope to run')
+
     activeScopes.push(scope)
     return result
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    trackMonthlySubscriptionCancelled.mockReset()
     subscriptionStatus.value = { ...baseStatus }
     isActive.value = true
     shouldWatch = true
@@ -57,7 +54,6 @@ describe('useSubscriptionCancellationWatcher', () => {
   afterEach(() => {
     activeScopes.forEach((scope) => scope.stop())
     activeScopes.length = 0
-    vi.useRealTimers()
   })
 
   it('polls with exponential backoff and fires telemetry once cancellation detected', async () => {
@@ -65,9 +61,8 @@ describe('useSubscriptionCancellationWatcher', () => {
       if (fetchStatus.mock.calls.length === 2) {
         isActive.value = false
         subscriptionStatus.value = {
+          ...baseStatus,
           is_active: false,
-          has_funds: true,
-          renewal_date: '2025-11-16',
           cancel_at: '2025-12-01'
         }
       }

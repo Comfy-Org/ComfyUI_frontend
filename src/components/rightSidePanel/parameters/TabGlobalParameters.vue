@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 const { t } = useI18n()
 
 const isSearching = ref(false)
@@ -55,16 +52,11 @@ function handleReorder({
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="favoritedWidgets"
-      class="flex-1"
-    />
-  </div>
+  <PanelSearchHeader
+    v-model="searchQuery"
+    :searcher
+    :update-key="favoritedWidgets"
+  />
   <SectionWidgets
     :label
     :widgets="searchedFavoritedWidgets"
@@ -93,7 +85,7 @@ function handleReorder({
           <template #moreIcon>
             <span
               aria-hidden="true"
-              class="text-secondary-foreground inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle"
+              class="inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle text-base-foreground"
             >
               <i class="icon-[lucide--more-vertical] text-sm" />
             </span>

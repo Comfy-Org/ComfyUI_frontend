@@ -16,6 +16,8 @@
   --color-charcoal-600: #262729;
   --color-charcoal-700: #202121;
   --color-charcoal-800: #171718;
+  --color-charcoal-900: #111111;
+  --color-charcoal-950: #09090a;
 
   --color-neutral-550: #636363;
 
@@ -57,4 +59,8 @@
   --color-sapphire-700: #172dd7;
   --color-brand-yellow: var(--color-electric-400);
   --color-brand-blue: var(--color-sapphire-700);
+
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
 }

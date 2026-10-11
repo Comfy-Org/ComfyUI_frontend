@@ -44,25 +44,22 @@ const zColorInputSpec = zBaseInputOptions.extend({
   type: z.literal('COLOR'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      default: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional(),
+  options: z.object({ default: z.string().optional() }).optional()
 })
 
 const zImageInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zImageCompareInputSpec = zBaseInputOptions.extend({
   type: z.literal('IMAGECOMPARE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z.record(z.unknown()).optional()
+  options: z.record(z.string(), z.unknown()).optional()
 })
 
 const zBoundingBoxInputSpec = zBaseInputOptions.extend({
@@ -84,21 +81,19 @@ const zMarkdownInputSpec = zBaseInputOptions.extend({
   type: z.literal('MARKDOWN'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      content: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional()
 })
 
 const zChartInputSpec = zBaseInputOptions.extend({
   type: z.literal('CHART'),
   name: z.string(),
   isOptional: z.boolean().optional(),
+  chartType: z.enum(['bar', 'line']).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   options: z
     .object({
       type: z.enum(['bar', 'line']).optional(),
-      data: z.object({}).optional()
+      data: z.record(z.string(), z.unknown()).optional()
     })
     .optional()
 })
@@ -107,11 +102,8 @@ const zGalleriaInputSpec = zBaseInputOptions.extend({
   type: z.literal('GALLERIA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      images: z.array(z.string()).optional()
-    })
-    .optional()
+  images: z.array(z.string()).optional(),
+  options: z.object({ images: z.array(z.string()).optional() }).optional()
 })
 
 const zColorsInputSpec = zBaseInputOptions.extend({
@@ -147,6 +139,9 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
   type: z.literal('TEXTAREA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
+  rows: z.number().optional(),
+  cols: z.number().optional(),
+  default: z.string().optional(),
   options: z
     .object({
       rows: z.number().optional(),
@@ -214,6 +209,15 @@ const zVideoEditInputSpec = zBaseInputOptions.extend({
   default: zVideoEditValue.optional()
 })
 
+const zResolutionPreviewInputSpec = zBaseInputOptions.extend({
+  type: z.literal('RESOLUTION_PREVIEW'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  ratio_widget: z.string().optional(),
+  megapixels_widget: z.string().optional(),
+  multiple_widget: z.string().optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -239,6 +243,7 @@ const zInputSpec = z.union([
   zCurveInputSpec,
   zRangeInputSpec,
   zVideoEditInputSpec,
+  zResolutionPreviewInputSpec,
   zCustomInputSpec
 ])
 
@@ -254,9 +259,9 @@ const zOutputSpec = z.object({
 
 // Main node definition schema
 export const zComfyNodeDef = z.object({
-  inputs: z.record(zInputSpec),
+  inputs: z.record(z.string(), zInputSpec),
   outputs: z.array(zOutputSpec),
-  hidden: z.record(z.any()).optional(),
+  hidden: z.record(z.string(), z.any()).optional(),
 
   name: z.string(),
   display_name: z.string(),
@@ -288,6 +293,9 @@ export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type VideoEditInputSpec = z.infer<typeof zVideoEditInputSpec>
+export type ResolutionPreviewInputSpec = z.infer<
+  typeof zResolutionPreviewInputSpec
+>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
@@ -328,4 +336,28 @@ export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
+}
+
+export const isColorInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ColorInputSpec => {
+  return inputSpec.type === 'COLOR'
+}
+
+export const isTextareaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is TextareaInputSpec => {
+  return inputSpec.type === 'TEXTAREA'
+}
+
+export const isGalleriaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is GalleriaInputSpec => {
+  return inputSpec.type === 'GALLERIA'
+}
+
+export const isResolutionPreviewInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ResolutionPreviewInputSpec => {
+  return inputSpec.type === 'RESOLUTION_PREVIEW'
 }

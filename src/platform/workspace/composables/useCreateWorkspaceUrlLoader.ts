@@ -1,6 +1,6 @@
 import { usePreservedQueryDeepLink } from '@/platform/navigation/composables/usePreservedQueryDeepLink'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
 
@@ -15,8 +15,8 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
  * as the invite URL loader.
  */
 export function useCreateWorkspaceUrlLoader() {
-  const dialogService = useDialogService()
   const deepLink = usePreservedQueryDeepLink(NAMESPACE)
+  const { showTeamWorkspacesDialog } = useWorkspaceDialogs()
 
   /**
    * Opens the team workspaces dialog if `?create_workspace=1` is present.
@@ -34,7 +34,7 @@ export function useCreateWorkspaceUrlLoader() {
     deepLink.strip()
 
     try {
-      await dialogService.showTeamWorkspacesDialog()
+      await showTeamWorkspacesDialog()
     } catch (error) {
       console.error(
         '[useCreateWorkspaceUrlLoader] Failed to open create workspace dialog:',

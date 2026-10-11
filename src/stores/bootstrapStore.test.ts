@@ -1,72 +1,38 @@
-import { createTestingPinia } from '@pinia/testing'
+import type { WebSession } from '@comfyorg/account-core/webSession'
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { AxiosResponse } from 'axios'
 import { AxiosError } from 'axios'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
+import * as i18nModule from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    init: vi.fn().mockResolvedValue(undefined),
-    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
-    getCustomNodesI18n: vi.fn().mockResolvedValue({}),
-    getUserConfig: vi.fn().mockResolvedValue({})
-  }
-}))
-
-vi.mock('@/i18n', () => ({
-  mergeCustomNodesI18n: vi.fn()
-}))
-
-const mockIsSettingsReady = ref(false)
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    load: vi.fn(() => {
-      mockIsSettingsReady.value = true
-    }),
-    get isReady() {
-      return mockIsSettingsReady.value
-    },
-    isLoading: ref(false),
-    error: ref(undefined)
-  }))
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: vi.fn(),
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
-
-const mockNeedsLogin = ref(false)
-vi.mock('@/stores/userStore', () => ({
-  useUserStore: vi.fn(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    needsLogin: mockNeedsLogin
-  }))
-}))
-
-const mockIsAuthInitialized = ref(false)
-const mockIsAuthAuthenticated = ref(false)
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    isInitialized: mockIsAuthInitialized,
-    isAuthenticated: mockIsAuthAuthenticated
-  }))
-}))
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/auth/session/cloudIdentityBoot'))
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+vi.mock(import('@sentry/vue'), () => ({
+  addBreadcrumb: vi.fn()
+}))
 
 function requestFailure(status: number) {
   const error = new AxiosError(`Request failed with status code ${status}`)
@@ -76,12 +42,20 @@ function requestFailure(status: number) {
 
 describe('bootstrapStore', () => {
   beforeEach(() => {
-    mockIsSettingsReady.value = false
-    mockIsAuthInitialized.value = false
-    mockIsAuthAuthenticated.value = false
-    mockNeedsLogin.value = false
+    vi.spyOn(api, 'getCustomNodesI18n').mockResolvedValue({})
+    vi.spyOn(i18nModule, 'mergeCustomNodesI18n').mockImplementation(() => {})
+    useSettingStore().isReady = false
+    useAuthStore().isInitialized = false
+    Object.assign(useAuthStore(), { currentUser: null })
+    Object.assign(useUserStore(), { needsLogin: false })
     mockDistributionTypes.isCloud = false
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.mocked(useSettingStore().load).mockImplementation(() => {
+      useSettingStore().isReady = true
+      return Promise.resolve()
+    })
+    vi.mocked(useWorkflowStore().loadWorkflows).mockResolvedValue(undefined)
+    vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+    vi.mocked(useUserStore().initialize).mockResolvedValue(undefined)
   })
 
   it('initializes with all flags false', () => {
@@ -100,6 +74,29 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
+  })
+
+  it('records both store phases when their loads reject', async () => {
+    vi.mocked(useSettingStore().load).mockRejectedValueOnce(
+      new Error('settings failed')
+    )
+    vi.mocked(useWorkflowStore().loadWorkflows).mockRejectedValueOnce(
+      new Error('workflows failed')
+    )
+    const milestone = vi.spyOn(bootstrapTracer, 'milestone')
+    const previousPhaseCount = bootstrapTracer.summary().length
+    const store = useBootstrapStore()
+
+    await expect(store.startStoreBootstrap()).resolves.toBeUndefined()
+
+    await vi.waitFor(() => {
+      expect(milestone).toHaveBeenCalledWith('stores-ready')
+      expect(store.isI18nReady).toBe(true)
+    })
+    const phaseRows = bootstrapTracer.summary().slice(previousPhaseCount)
+    expect(phaseRows.map((row) => row.name)).toEqual(
+      expect.arrayContaining(['bootstrap/settings', 'bootstrap/workflows'])
+    )
   })
 
   describe('custom node translations', () => {
@@ -134,31 +131,99 @@ describe('bootstrapStore', () => {
   describe('cloud mode', () => {
     beforeEach(() => {
       mockDistributionTypes.isCloud = true
+      mockReportError.mockReset()
     })
 
-    it('waits for Firebase auth before loading stores', async () => {
+    it('waits for Firebase init before loading stores, then resumes after sign-in', async () => {
       const store = useBootstrapStore()
       const settingStore = useSettingStore()
       const bootstrapPromise = store.startStoreBootstrap()
 
-      expect(store.isI18nReady).toBe(false)
       expect(settingStore.isReady).toBe(false)
-
-      // Firebase initialized but user not yet authenticated
-      mockIsAuthInitialized.value = true
-      await nextTick()
-
-      expect(store.isI18nReady).toBe(false)
-      expect(settingStore.isReady).toBe(false)
-
-      // User authenticates (e.g. signs in on login page)
-      mockIsAuthAuthenticated.value = true
-      await bootstrapPromise
 
       await vi.waitFor(() => {
         expect(store.isI18nReady).toBe(true)
-        expect(settingStore.isReady).toBe(true)
       })
+      expect(useAuthStore().isInitialized).toBe(false)
+
+      useAuthStore().isInitialized = true
+
+      await vi.waitFor(() => {
+        expect(store.isI18nReady).toBe(true)
+      })
+      expect(settingStore.isReady).toBe(false)
+      expect(useWorkflowStore().loadWorkflows).not.toHaveBeenCalled()
+
+      useAuthStore().currentUser = fromPartial({ uid: 'user-123' })
+      await bootstrapPromise
+
+      expect(settingStore.isReady).toBe(true)
+    })
+
+    it('boots the web session before waiting for a sign-in and loads stores for a session-only user', async () => {
+      const boot = vi.mocked(bootCloudIdentity)
+      const store = useBootstrapStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+      await vi.waitFor(() => expect(store.isI18nReady).toBe(true))
+      expect(boot).not.toHaveBeenCalled()
+
+      useAuthStore().isInitialized = true
+      await vi.waitFor(() => expect(boot).toHaveBeenCalledOnce())
+      expect(useSettingStore().isReady).toBe(false)
+
+      Object.assign(useCloudWebSessionStore(), {
+        state: {
+          phase: 'signed_in',
+          session: fromPartial<WebSession>({ user: { id: 'user-a' } })
+        }
+      })
+      await bootstrapPromise
+
+      expect(useSettingStore().isReady).toBe(true)
+    })
+
+    it('retries once and keeps authenticated stores gated if Firebase resolves signed out', async () => {
+      vi.useFakeTimers()
+      try {
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        void store.startStoreBootstrap()
+
+        // First wait times out with Firebase still not initialized.
+        await vi.advanceTimersByTimeAsync(16_001)
+        expect(settingStore.isReady).toBe(false)
+
+        // Firebase resolves during the retry backoff.
+        useAuthStore().isInitialized = true
+        await vi.advanceTimersByTimeAsync(3_001)
+
+        expect(settingStore.isReady).toBe(false)
+        expect(mockReportError).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('gives up after a second timeout, reports it, and keeps authenticated stores gated', async () => {
+      vi.useFakeTimers()
+      try {
+        const store = useBootstrapStore()
+        const settingStore = useSettingStore()
+        void store.startStoreBootstrap()
+
+        // Firebase never resolves through the initial wait, the backoff, or the retry.
+        await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
+
+        expect(mockReportError).toHaveBeenCalledOnce()
+        expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
+          surface: 'platform',
+          errorType: 'bootstrap_auth_wait_timeout'
+        })
+        expect(console.error).not.toHaveBeenCalled()
+        expect(settingStore.isReady).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

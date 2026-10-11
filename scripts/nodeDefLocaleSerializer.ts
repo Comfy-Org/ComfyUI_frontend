@@ -21,6 +21,18 @@ interface LocalizableNodeDef {
   display_name?: string
 }
 
+interface SerializedLabel {
+  name?: string
+  tooltip?: string
+}
+
+interface SerializedNodeDef {
+  display_name: string
+  description?: string
+  inputs?: Record<string, SerializedLabel>
+  outputs?: Record<string, SerializedLabel>
+}
+
 export type WidgetLabels = Record<
   string,
   Record<string, { name: string | undefined }>
@@ -90,7 +102,7 @@ export function serializeNodeDefLocales(
     )
   }
 
-  const nodeDefinitions = Object.fromEntries(
+  const nodeDefinitions: Record<string, SerializedNodeDef> = Object.fromEntries(
     [...nodeDefs]
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((nodeDef) => {

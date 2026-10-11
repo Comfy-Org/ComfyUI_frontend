@@ -1,4 +1,5 @@
-import type { AssetInfo, ComfyHubProfile } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
@@ -11,7 +12,7 @@ function getFileContentType(file: File): string {
 }
 
 function getUsername(profile: ComfyHubProfile | null): string {
-  const username = profile?.username?.trim()
+  const username = profile?.username.trim()
   if (!username) {
     throw new Error('ComfyHub profile is required before publishing')
   }

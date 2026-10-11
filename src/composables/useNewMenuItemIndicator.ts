@@ -20,8 +20,8 @@ export function useNewMenuItemIndicator(
 
   const newActions = computed(() => getNewActions(toValue(menuItems)))
 
-  const seenItems = computed<string[]>(
-    () => settingStore.get('Comfy.WorkflowActions.SeenItems') ?? []
+  const seenItems = computed<string[]>(() =>
+    settingStore.get('Comfy.WorkflowActions.SeenItems')
   )
 
   const hasUnseenItems = computed(() => {

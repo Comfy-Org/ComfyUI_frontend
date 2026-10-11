@@ -12,7 +12,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -24,7 +24,7 @@ async function mountDeepLink(url: string) {
   await router.push(url)
   await router.isReady()
 
-  let deepLink!: ReturnType<typeof usePreservedQueryDeepLink>
+  let deepLink: ReturnType<typeof usePreservedQueryDeepLink> | undefined
   render(
     defineComponent({
       setup() {
@@ -34,6 +34,8 @@ async function mountDeepLink(url: string) {
     }),
     { global: { plugins: [router] } }
   )
+  if (!deepLink)
+    throw new Error('usePreservedQueryDeepLink was not initialized')
 
   let navigations = 0
   router.afterEach(() => {
@@ -109,7 +111,6 @@ describe('usePreservedQueryDeepLink', () => {
     })
 
     it('logs a warning when cleaning the URL param fails', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { router, strip } = await mountDeepLink('/?invite=from-url')
       const replaceError = new Error('navigation guard rejected')
       router.beforeEach(() => {
@@ -119,7 +120,7 @@ describe('usePreservedQueryDeepLink', () => {
       strip()
 
       await vi.waitFor(() =>
-        expect(warn).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           expect.stringContaining('invite'),
           replaceError
         )

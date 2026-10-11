@@ -18,12 +18,18 @@
       </RouterLink>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
+    <CloudSsoRequiredNotice
+      v-if="ssoRequiredNotice"
+      v-bind="ssoRequiredNotice"
+      class="mt-4"
+    />
+
     <div class="mt-12 flex flex-col gap-4 xl:gap-6">
-      <template v-if="!showEmailForm">
+      <template v-if="authMode !== 'email'">
         <CloudSocialAuthButtons
           :google-label="t('auth.signup.signUpWithGoogle')"
           :github-label="t('auth.signup.signUpWithGithub')"
@@ -42,11 +48,24 @@
       </template>
 
       <template v-else>
-        <Message v-if="isFreeTierEnabled" severity="warn" class="w-full">
+        <Message v-if="isFreeTierEnabled" severity="warning" class="w-full">
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
-        <Message v-if="userIsInChina" severity="warn" class="w-full">
+        <div
+          v-if="regionStatus === 'pending'"
+          data-testid="region-check-pending"
+          class="flex flex-col gap-6"
+        >
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+          <Skeleton class="h-10 w-full" />
+        </div>
+        <Message
+          v-else-if="regionStatus === 'blocked'"
+          severity="warning"
+          class="w-full"
+        >
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
         <SignUpForm
@@ -73,34 +92,43 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Message from '@/components/ui/message/Message.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
+import CloudSsoRequiredNotice from '@/platform/cloud/onboarding/components/CloudSsoRequiredNotice.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
+import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
-import { isInChina } from '@/utils/networkUtil'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
-const userIsInChina = ref(false)
+const { flags } = useFeatureFlags()
+const { trySso } = useSsoSignIn('cloud_signup')
+
+const { status: regionStatus } = useRegionGate()
 const { isFreeTierEnabled } = useFreeTierOnboarding()
 
 const {
   authError,
-  showEmailForm,
+  authMode,
+  ssoRequiredNotice,
   onAuthSuccess,
   isSecureContext,
   showGoogleSsoInAppBrowserNotice,
@@ -118,6 +146,7 @@ const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
 
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
+  if (flags.ssoEnabled && (await trySso(values.email))) return
   if (
     await authActions.signUpWithEmail(
       values.email,
@@ -133,9 +162,7 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   telemetry?.trackSignupOpened()
-
-  userIsInChina.value = await isInChina()
 })
 </script>

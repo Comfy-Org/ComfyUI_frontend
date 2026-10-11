@@ -45,7 +45,6 @@ describe('useDismissableOverlay', () => {
   afterEach(() => {
     scope?.stop()
     scope = undefined
-    document.body.innerHTML = ''
   })
 
   it('dismisses on outside pointerdown', () => {
