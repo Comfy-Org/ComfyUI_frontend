@@ -261,7 +261,7 @@ const zOutputSpec = z.object({
 export const zComfyNodeDef = z.object({
   inputs: z.record(z.string(), zInputSpec),
   outputs: z.array(zOutputSpec),
-  hidden: z.record(z.string(), z.any()).optional(),
+  hidden: z.record(z.string(), z.unknown()).optional(),
 
   name: z.string(),
   display_name: z.string(),

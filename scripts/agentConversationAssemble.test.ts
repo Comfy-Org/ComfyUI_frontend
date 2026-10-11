@@ -675,7 +675,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow('ops.1.op Invalid option')
+    ).toThrow(/turns\.0\.response\.2\.ops\.1\.op /)
   })
 
   it('refuses a non-object echoed op entry', () => {
