@@ -1230,8 +1230,6 @@ describe('executionStore workflow gating', () => {
     })
   })
 
-  // Round 9 findings: each of these pins one line that was previously provable
-  // only by deleting it and watching nothing happen.
   describe('per-job state that a neighbouring job must not disturb', () => {
     it('keeps a background pending snapshot when the visible job ends', () => {
       useWorkflowStore().activeWorkflow = workflowA
