@@ -24,7 +24,8 @@ import type {
   Size
 } from './interfaces'
 import type { IContextMenuValue } from './types/contextMenu'
-import { LiteGraph, Rectangle } from './litegraph'
+import { LiteGraph } from './litegraphInstance'
+import { Rectangle } from './infrastructure/Rectangle'
 import {
   containsCentre,
   containsRect,

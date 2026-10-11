@@ -10,7 +10,7 @@ import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphErro
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import type { ISubgraphInput } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'

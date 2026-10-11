@@ -9,12 +9,10 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphGroup,
-  LGraphNode,
-  Reroute,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import { Subgraph } from '@/lib/litegraph/src/LGraph'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
