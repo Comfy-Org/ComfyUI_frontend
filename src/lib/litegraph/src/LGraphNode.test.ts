@@ -803,42 +803,6 @@ describe('LGraphNode', () => {
       expect(testNode.widgets).toEqual([second])
     })
 
-    test('deduplicates repeated direct pushes of one legacy source', () => {
-      const testNode = new LGraphNode('TestNode')
-      const widget = nonExtensibleWidget()
-
-      testNode.widgets = [widget, widget]
-
-      expect(testNode.widgets).toHaveLength(1)
-    })
-
-    test('rebuilds a wrapper removed directly through the widgets view', () => {
-      const testNode = new LGraphNode('TestNode')
-      const widget = nonExtensibleWidget()
-      testNode.widgets = [widget]
-      const first = testNode.widgets[0]
-
-      testNode.widgets.splice(0, 1)
-      widget.value = 2
-      const second = testNode.addCustomWidget(widget)
-
-      expect(second).not.toBe(first)
-      expect(second.value).toBe(2)
-    })
-
-    test('keeps a wrapped legacy widget during an in-place reorder', () => {
-      const testNode = new LGraphNode('TestNode')
-      const source = nonExtensibleWidget({ name: 'wrapped' })
-      testNode.widgets = [source]
-      const wrapped = testNode.widgets[0]
-      const other = testNode.addWidget('number', 'other', 2, null)
-
-      testNode.widgets[1] = wrapped
-      testNode.widgets[0] = other
-
-      expect(testNode.widgets).toEqual([other, wrapped])
-    })
-
     test('restores a pre-pushed widget by its position', () => {
       const testNode = new LGraphNode('TestNode')
       const source = nonExtensibleWidget({ name: 'first', value: 0 })

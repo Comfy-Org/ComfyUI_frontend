@@ -179,6 +179,60 @@ describe('widgets view', () => {
     expect(node.widgets).toEqual([wrapped])
   })
 
+  it('deduplicates repeated direct pushes of one legacy source', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+
+    node.widgets = [source, source]
+
+    expect(node.widgets).toHaveLength(1)
+  })
+
+  it('rebuilds a wrapper removed directly through the widgets view', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+    node.widgets = [source]
+    const first = node.widgets[0]
+
+    node.widgets.splice(0, 1)
+    source.value = 20
+    const second = node.addCustomWidget(source)
+
+    expect(second).not.toBe(first)
+    expect(second.value).toBe(20)
+  })
+
+  it('keeps a wrapped legacy widget during an in-place reorder', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+    const other = node.addWidget('number', 'other', 20, null)
+
+    node.widgets[1] = wrapped
+    node.widgets[0] = other
+
+    expect(node.widgets).toEqual([other, wrapped])
+  })
+
   it('retains source identity while a wrapper is reordered', () => {
     const node = new LGraphNode('test')
     const source = Object.preventExtensions<IBaseWidget>({
