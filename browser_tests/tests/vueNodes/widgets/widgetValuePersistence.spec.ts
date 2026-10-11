@@ -7,8 +7,6 @@ import {
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { DraftPayloadV2 } from '@/platform/workflow/persistence/base/draftTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -45,21 +43,14 @@ test.describe(
           await expect(toggle).not.toBeChecked()
 
           await expect
-            .poll(() =>
-              comfyPage.page.evaluate(() => {
-                return Object.keys(localStorage).some((key) => {
-                  if (!key.startsWith('Comfy.Workflow.Draft.v2:')) return false
-                  const payload: DraftPayloadV2 = JSON.parse(
-                    localStorage.getItem(key)!
-                  )
-                  const workflow: ComfyWorkflowJSON = JSON.parse(payload.data)
-                  return workflow.nodes.some(
-                    (node) =>
-                      node.type === 'PrimitiveBoolean' &&
-                      Object.values(node.widgets_values ?? {})[0] === false
-                  )
-                })
-              })
+            .poll(async () =>
+              (await comfyPage.workflow.getDraftWorkflows()).some((workflow) =>
+                workflow.nodes.some(
+                  (node) =>
+                    node.type === 'PrimitiveBoolean' &&
+                    Object.values(node.widgets_values ?? {})[0] === false
+                )
+              )
             )
             .toBe(true)
           await comfyPage.workflow.reloadAndWaitForApp()
