@@ -3100,10 +3100,6 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
-    // Deliberately the opposite of the node-output and node-preview gates. A
-    // credit or sign-in problem belongs to the account, and the store returns
-    // from handleAccountPreconditionError before recording anything, so this
-    // dialog is the only signal. Gated, a background run failed silently.
     it('opens the account dialog even for a background run error', () => {
       const workflowA = markLoaded(
         new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
