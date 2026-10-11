@@ -17,7 +17,8 @@ export default defineConfig({
   plugins: [
     dts({
       copyDtsFiles: true,
-      rollupTypes: true,
+      bundleTypes: true,
+      processor: 'vue',
       tsconfigPath: 'tsconfig.types.json'
     })
   ]
