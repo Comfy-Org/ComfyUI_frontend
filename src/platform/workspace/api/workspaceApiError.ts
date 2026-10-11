@@ -11,7 +11,7 @@ export class WorkspaceApiError extends Error {
     public readonly code?: string,
     /** For a failure `status` cannot classify, such as a billing SDK refusal. */
     public readonly failureCategory?: BillingTelemetryFailure['failure_category'],
-    /** The `workspaceApi` method that failed; unset outside the HTTP client. */
+    /** The `workspaceApi` method that failed, or the one an SDK-rail read replaces. */
     public readonly operation?: string
   ) {
     super(message)

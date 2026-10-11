@@ -45,12 +45,13 @@
 /src/lib/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compositor / Layer Editor
-/src/extensions/core/imageCompositor.ts                @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/imageCompositor.test.ts           @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/layerEditor.ts                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/compositor/                   @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/layerEditor/                  @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/CompositorWidget.ts     @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/imageCompositor.ts                                      @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/imageCompositor.test.ts                                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/layerEditor.ts                                          @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/compositor/                                         @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/layerEditor/                                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/CompositorWidget.ts                           @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # GLSL
 /src/renderer/glsl/                               @jtydhr88 @christian-byrne @Comfy-Org/comfy_frontend_devs

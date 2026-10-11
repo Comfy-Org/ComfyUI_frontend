@@ -3,7 +3,7 @@ import {
   isMiddleButtonHeld,
   isMiddlePointerInput
 } from '@/base/pointerUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 export function forwardMiddleButtonToCanvas(
   inputEl: HTMLElement,
@@ -12,7 +12,7 @@ export function forwardMiddleButtonToCanvas(
   inputEl.addEventListener(
     'pointerdown',
     (event) => {
-      if (isMiddlePointerInput(event)) app.canvas.processMouseDown(event)
+      if (isMiddlePointerInput(event)) useApp().canvas.processMouseDown(event)
     },
     { signal }
   )
@@ -20,7 +20,7 @@ export function forwardMiddleButtonToCanvas(
   inputEl.addEventListener(
     'pointermove',
     (event) => {
-      if (isMiddleButtonHeld(event)) app.canvas.processMouseMove(event)
+      if (isMiddleButtonHeld(event)) useApp().canvas.processMouseMove(event)
     },
     { signal }
   )
@@ -28,7 +28,7 @@ export function forwardMiddleButtonToCanvas(
   inputEl.addEventListener(
     'pointerup',
     (event) => {
-      if (isMiddleButtonEvent(event)) app.canvas.processMouseUp(event)
+      if (isMiddleButtonEvent(event)) useApp().canvas.processMouseUp(event)
     },
     { signal }
   )

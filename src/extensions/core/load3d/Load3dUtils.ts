@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { uploadTempFile } from '@/services/uploadTempFile'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -111,7 +111,7 @@ class Load3dUtils {
       'filename=' + encodeURIComponent(filename),
       'type=' + type,
       'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
+      useApp().getRandParam().substring(1)
     ].join('&')
 
     return `/view?${params}`

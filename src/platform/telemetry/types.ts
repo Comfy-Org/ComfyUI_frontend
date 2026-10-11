@@ -14,7 +14,8 @@
 
 import {
   AUTH_TELEMETRY_EVENT,
-  SESSION_TELEMETRY_EVENT
+  SESSION_TELEMETRY_EVENT,
+  SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
@@ -33,6 +34,7 @@ import type {
   AuthErrorMetadata,
   AuthFlowAction,
   AuthMethod,
+  SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
@@ -891,34 +893,6 @@ interface AgentStarterPromptExperimentMetadata {
    */
   '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
 }
-/**
- * Where the free-use notice was placed, for the DES-1221 placement experiment.
- *
- * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
- * `$feature/agent-free-use-message-placement`, and a translation layer between
- * the two is one more place for the arms to drift apart.
- */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
-export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
-}
-/**
- * Interactions with the notice itself. The experiment's primary outcome and
- * guardrails are all read off events that already exist — `agent_panel_opened`,
- * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
- * by the PostHog variant property. This event adds only what those cannot say:
- * whether the notice was actually on screen in its assigned arm, and what the
- * viewer did with it.
- */
-export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
-  action: 'shown' | 'dismissed' | 'learn_more_clicked'
-  placement: AgentFreeUsePlacement
-}
 export interface AgentStarterPromptClickedMetadata
   extends
     Record<string, unknown>,
@@ -1343,6 +1317,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1468,8 +1443,6 @@ export interface TelemetryProvider {
   trackAgentStarterPromptExposure?(
     metadata: AgentStarterPromptExposureMetadata
   ): void
-  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
-  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1533,6 +1506,11 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
   UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
+  SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
+  SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
+  SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
@@ -1649,8 +1627,6 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
-  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
-  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
@@ -1739,6 +1715,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | WebSessionTelemetryEvent['properties']
+  | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
