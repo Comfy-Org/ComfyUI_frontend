@@ -2,15 +2,6 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The inline prompt editor builds a ResizeObserver at import time; jsdom omits it.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
-
 import { i18n } from '@/i18n'
 import type {
   AgentFreeUseNoticeMetadata,
@@ -73,20 +64,25 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)('shows exactly one notice for %s', (variant) => {
-    mount(variant)
+  // Each of the four slots re-emits `@notice` separately, so a slot that lost
+  // its re-emit, or carries the wrong `placement` literal, would send no
+  // interactions while its exposure still counted. `getByRole` throws on a
+  // second match, so this also pins one notice per arm.
+  it.for(PLACEMENTS)(
+    'renders and reports exactly one notice at %s',
+    (variant) => {
+      const onFreeUseNotice = vi.fn()
+      mount(variant, onFreeUseNotice)
 
-    const notices = screen.getAllByRole('note', {
-      name: 'Free use notice'
-    })
-    expect(notices).toHaveLength(1)
-    expect(notices[0]).toHaveAttribute('data-placement', variant)
-  })
+      expect(notice()).toHaveAttribute('data-placement', variant)
+      expect(onFreeUseNotice.mock.calls).toEqual([
+        [{ action: 'shown', placement: variant }]
+      ])
+    }
+  )
 
-  // DES-1221's four cells are four nested regions, outermost first. Visual
-  // ordering *within* a region is geometry, which a jsdom test cannot see, so
-  // `agentFreeUsePlacement.spec.ts` asserts that in a real browser; what this
-  // level establishes is which region each arm renders into.
+  // Visual ordering *within* a region is geometry a DOM test cannot see;
+  // `agentFreeUsePlacement.spec.ts` asserts that in a real browser.
   const REGIONS = [
     'agent-panel-footer',
     'agent-composer',
@@ -162,13 +158,9 @@ describe('AgentPanel free-use placement', () => {
     }
   )
 
-  it('reports the impression and the dismissal of the notice', async () => {
+  it('reports the dismissal of the notice', async () => {
     const onFreeUseNotice = vi.fn()
     mount('above-input', onFreeUseNotice)
-
-    expect(onFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'above-input' }]
-    ])
 
     await userEvent.click(
       within(notice()).getByRole('button', { name: 'Dismiss' })

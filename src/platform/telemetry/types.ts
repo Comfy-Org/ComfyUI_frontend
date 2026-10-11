@@ -902,22 +902,29 @@ interface AgentStarterPromptExperimentMetadata {
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: 'control' | AgentFreeUsePlacement
   '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
 }
 /**
- * Interactions with the notice itself. The experiment's primary outcome and
- * guardrails are all read off events that already exist — `agent_panel_opened`,
- * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
- * by the PostHog variant property. This event adds only what those cannot say:
- * whether the notice was actually on screen in its assigned arm, and what the
- * viewer did with it.
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
+ *
+ * The arm lives on `app:agent_free_use_exposure` and nowhere else. The flag is
+ * served by `/features` and evaluated server-side, so posthog-js never holds
+ * it and cannot decorate `agent_message_sent` or the run events with a
+ * `$feature/…` property the way the starter-prompt experiment does. Outcomes
+ * are therefore joined to the exposure event by person. Per-event attribution
+ * would need the arm threaded onto each outcome call site, which is a separate
+ * change.
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'

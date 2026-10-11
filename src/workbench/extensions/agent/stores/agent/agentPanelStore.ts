@@ -78,6 +78,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  /**
+   * Per panel open, not per component instance. `DockedAgentPanel` is hosted by
+   * both `GraphCanvas` and `LinearView`, so toggling linear mode or hiding the
+   * UI rebuilds `AgentPanelRoot` while the panel stays open, and every
+   * placement sits behind `!showHistory`, so a chat-history round trip remounts
+   * the notice. Both would otherwise re-report the free-use experiment's
+   * exposure and its on-screen impression for the same viewer, inflating
+   * impressions and the dismissed/shown denominator with them.
+   */
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -262,6 +273,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isOpen.value = true
     openedAt = Date.now()
     teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -337,6 +350,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
     width,
     requestedWidth,
     isOverlay,

@@ -103,11 +103,8 @@ export const ChipStates: Story = {
 }
 
 /**
- * DES-1221 / FE-3142. One notice, five arms, and nothing else moves: the
- * starter prompts and the composer placeholder are identical in every cell, so
- * placement is the only variable between them. Side-by-side is the point here
- * — the question the design asks is which cell reads best against the others —
- * so this stays a grid while `freeUsePlacement` is also a Controls option for
+ * Side-by-side is the point: the question the design asks is which cell reads
+ * best against the others. `freeUsePlacement` is also a Controls option, for
  * walking one arm at a time.
  */
 export const FreeUsePlacements: Story = {

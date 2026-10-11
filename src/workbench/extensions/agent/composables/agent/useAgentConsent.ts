@@ -13,10 +13,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/constants'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -188,7 +188,7 @@ export function useAgentConsent() {
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
-          docsUrl: DOCS_URL,
+          docsUrl: AGENT_DOCS_URL,
           accepting: false,
           error: '',
           onVnodeMounted: () => {

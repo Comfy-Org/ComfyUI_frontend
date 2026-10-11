@@ -241,7 +241,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
-        status.scoped_effective_has_funds?.agent ?? status.has_funds
+        status.scoped_effective_has_funds?.agent ?? status.has_funds,
+      agentScopedHasFunds: status.scoped_has_funds?.agent
     }
   })
 

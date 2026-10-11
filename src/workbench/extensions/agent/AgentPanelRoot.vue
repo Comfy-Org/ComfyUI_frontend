@@ -21,8 +21,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -1307,40 +1305,44 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-/**
- * DES-1221. This component mounts only while the panel is on screen, so
- * reading the flag here keeps the exposure — and the experiment's
- * denominator — to the panel openers the hypothesis is about.
- */
-const {
-  variant: freeUsePlacement,
-  attributeExperiment: attributeFreeUseExperiment
-} = useFreeUsePlacement()
+// DES-1221. Read while the panel is on screen, so the experiment's denominator
+// is the panel openers the hypothesis is about.
+const { variant: freeUsePlacement, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-// This component's lifetime is one panel open, so a per-instance record is
-// per-open without a module global to reset.
-const reportedFreeUsePlacements = new Set<AgentFreeUsePlacement>()
-
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  // A QA override forces a placement without moving the PostHog assignment,
-  // so these interactions would otherwise land in whichever arm PostHog
-  // served. `useFreeUsePlacement` withholds exposure for the same reason.
-  if (!attributeFreeUseExperiment) return
-  // Every placement sits behind `!showHistory`, so opening chat history
-  // remounts the notice and `shown` fires again for the same viewer. It is the
-  // experiment's on-screen signal and the denominator of dismissed/shown, so
-  // count it once per panel open rather than once per mount.
-  if (metadata.action === 'shown') {
-    if (reportedFreeUsePlacements.has(metadata.placement)) return
-    reportedFreeUsePlacements.add(metadata.placement)
-  }
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+/**
+ * `Try your first chat for free!` is a claim about the Agent's own granted
+ * allowance, so it renders only while the server says that allowance still has
+ * balance — `scoped_has_funds.agent`, which is `false` once the grant is spent
+ * even where shared or purchased credits remain, and `false` when no grant was
+ * ever issued. Inferring eligibility from paywall state instead would make the
+ * claim to a spent-grant workspace that still has paid credits, which is the
+ * cost PM-2005 and #20400 exist to correct.
+ *
+ * Fail-closed, deliberately: an absent field, an unsettled read, a rail that
+ * does not report it, and an exhausted grant all read as not-eligible. The
+ * exhaustion and credit-transition notices own the paid-state handoff.
+ *
+ * Suppression is render-only. The assignment and its exposure are untouched,
+ * so an arm keeps its denominator whether or not this viewer was eligible.
+ *
+ * `=== true` is the whole gate: a null subscription is an unfinished read and
+ * the legacy rail populates no scoped balance, so both already read as not
+ * eligible without a separate loading or rail branch.
+ *
+ * `creditsExhausted` stays in the binding beside it. A 402 refusal renders the
+ * inline card immediately while the status read refreshes only on the next
+ * observed turn completion, so the client can hold a stale `true` here for as
+ * long as that gap lasts, and the notice must not sit beside that card.
+ */
+const freeUseGrantActive = computed(
+  () => subscription.value?.agentScopedHasFunds === true
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1916,7 +1918,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :suppress-free-use-notice="creditsExhausted"
+      :suppress-free-use-notice="!freeUseGrantActive || creditsExhausted"
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"

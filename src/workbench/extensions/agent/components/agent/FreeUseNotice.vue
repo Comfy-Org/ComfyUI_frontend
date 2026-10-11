@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useStorage } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -9,13 +9,9 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/constants'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
-
-// The Agent page states the free initial allowance and what happens after it;
-// the Cloud introduction this used to point at explains neither, so a reader
-// could not learn the notice's terms from it.
-const FREE_USE_DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 
 const PLACEMENT_CLASSES = {
   'top-banner': 'px-4 py-3',
@@ -27,15 +23,34 @@ const PLACEMENT_CLASSES = {
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
-const { resolvedUserInfo } = useCurrentUser()
+const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
+// writeDefaults false: an account that resolves after mount would otherwise
+// plant `false` under the signed-out key on its way to its own.
 const dismissed = useStorage(
   () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
-  false
+  false,
+  undefined,
+  { writeDefaults: false }
 )
 
-onMounted(() => {
-  if (!dismissed.value) emit('notice', { action: 'shown', placement })
-})
+/**
+ * `useStorage` re-reads when its key getter changes, so the dismissal is only
+ * authoritative once auth has settled on the account that owns the key.
+ * Rendering before then flashes the notice at a viewer who had dismissed it and
+ * reports an impression they did not choose to see.
+ */
+const visible = computed(() => isAuthInitialized.value && !dismissed.value)
+
+let reportedShown = false
+watch(
+  visible,
+  (onScreen) => {
+    if (!onScreen || reportedShown) return
+    reportedShown = true
+    emit('notice', { action: 'shown', placement })
+  },
+  { immediate: true }
+)
 
 function onDismiss(): void {
   dismissed.value = true
@@ -45,7 +60,7 @@ function onDismiss(): void {
 
 <template>
   <div
-    v-if="!dismissed"
+    v-if="visible"
     role="note"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
@@ -62,7 +77,7 @@ function onDismiss(): void {
         variant="link"
         size="unset"
         as="a"
-        :href="FREE_USE_DOCS_URL"
+        :href="AGENT_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
         class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
