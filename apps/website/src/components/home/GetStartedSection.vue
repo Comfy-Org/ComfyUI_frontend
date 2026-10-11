@@ -1,43 +1,44 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks, getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
 const steps = [
   {
     number: '1',
-    title: t('getStarted.step1.title', locale),
+    title: t('getStarted.step1.title'),
     description: '',
     links: [
       {
-        label: t('getStarted.step1.downloadLocal', locale),
+        label: t('getStarted.step1.downloadLocal'),
         href: routes.download
       },
       {
-        label: t('getStarted.step1.launchCloud', locale),
+        label: t('getStarted.step1.launchCloud'),
         href: externalLinks.cloudCta('getstarted_try_cloud')
       }
     ]
   },
   {
     number: '2',
-    title: t('getStarted.step2.title', locale)
+    title: t('getStarted.step2.title')
   },
   {
     number: '3',
-    title: t('getStarted.step3.title', locale),
-    description: t('getStarted.step3.description', locale)
+    title: t('getStarted.step3.title'),
+    description: t('getStarted.step3.description')
   }
 ]
 </script>
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
   >
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-8">
       <!-- Left heading -->
@@ -45,10 +46,10 @@ const steps = [
         class="sticky top-20 shrink-0 bg-primary-comfy-ink py-2 lg:top-28 lg:w-115 lg:self-start"
       >
         <h2 class="text-5xl font-light text-primary-comfy-canvas">
-          {{ t('getStarted.heading', locale) }}
+          {{ t('getStarted.heading') }}
         </h2>
         <p class="mt-8 text-base text-primary-comfy-canvas">
-          {{ t('getStarted.subheading', locale) }}
+          {{ t('getStarted.subheading') }}
         </p>
       </div>
 
@@ -79,12 +80,12 @@ const steps = [
             v-else-if="step.number === '2'"
             class="flex-1 text-sm text-primary-comfy-canvas"
           >
-            {{ t('getStarted.step2.descriptionPrefix', locale)
+            {{ t('getStarted.step2.descriptionPrefix')
             }}<a
               :href="externalLinks.workflows"
               class="text-primary-comfy-yellow hover:underline"
-              >{{ t('getStarted.step2.descriptionLink', locale) }}</a
-            >{{ t('getStarted.step2.descriptionSuffix', locale) }}
+              >{{ t('getStarted.step2.descriptionLink') }}</a
+            >{{ t('getStarted.step2.descriptionSuffix') }}
           </p>
           <p v-if="step.links" class="flex-1 text-sm">
             <template v-for="(link, i) in step.links" :key="link.href">
@@ -98,7 +99,7 @@ const steps = [
                 v-if="i < step.links.length - 1"
                 class="text-primary-comfy-canvas"
               >
-                {{ t('getStarted.step1.or', locale) }}
+                {{ t('getStarted.step1.or') }}
               </span>
             </template>
             <span class="text-primary-comfy-canvas">.</span>

@@ -8,7 +8,7 @@ const hoisted = vi.hoisted(() => ({
   widths: [] as { value: number }[]
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useElementSize: () => {
     const width = ref(0)
     hoisted.widths.push(width)
@@ -20,7 +20,7 @@ describe(TextTickerMultiLine, () => {
   let unmountFn: () => void
 
   afterEach(() => {
-    unmountFn?.()
+    unmountFn()
     hoisted.widths.length = 0
   })
 
@@ -36,18 +36,18 @@ describe(TextTickerMultiLine, () => {
   }
 
   function getMeasureEl(container: HTMLElement): HTMLElement {
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     return container.querySelector('[aria-hidden="true"]') as HTMLElement
   }
 
   function getVisibleLines(container: HTMLElement): HTMLElement[] {
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     return Array.from(
       container.querySelectorAll<HTMLElement>(
         'div.overflow-hidden:not([aria-hidden])'
       )
     )
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
   }
 
   async function setWidths(textWidth: number, containerWidth: number) {

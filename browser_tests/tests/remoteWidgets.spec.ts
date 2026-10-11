@@ -46,12 +46,11 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     }, nodeName)
   }
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false,
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test.describe('Loading options', () => {

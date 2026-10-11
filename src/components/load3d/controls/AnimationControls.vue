@@ -69,7 +69,8 @@
         @update:model-value="handleSliderChange"
       />
       <span class="min-w-16 text-xs text-base-foreground">
-        {{ formatTime(currentTime) }} / {{ formatTime(animationDuration) }}
+        {{ formatAnimationTime(currentTime) }} /
+        {{ formatAnimationTime(animationDuration) }}
       </span>
     </div>
   </div>
@@ -78,6 +79,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'
 import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
@@ -115,12 +117,6 @@ const currentTime = computed(() => {
   if (!animationDuration.value) return 0
   return (animationProgress.value / 100) * animationDuration.value
 })
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = (seconds % 60).toFixed(1)
-  return mins > 0 ? `${mins}:${secs.padStart(4, '0')}` : `${secs}s`
-}
 
 function togglePlay() {
   playing.value = !playing.value

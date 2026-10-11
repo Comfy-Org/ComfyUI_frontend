@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
-  BaseWidget,
+  LegacyWidget,
   LGraph,
   LGraphNode,
   LiteGraph,
@@ -287,7 +287,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('preserves a promoted widget when re-resolution fails', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
     })
@@ -317,7 +316,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('declines promotion when an empty widget name cannot be registered', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [
         { name: '', type: 'STRING' },
@@ -357,7 +355,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('clears an existing promotion when registration is later declined', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })
@@ -429,11 +426,10 @@ describe('SubgraphNode Synchronization', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph)
     const widget = subgraphNode.widgets[0]
-    expect(widget?.widgetId).toBeDefined()
+    expect(widget.widgetId).toBeDefined()
 
     expect(() => {
-      // @ts-expect-error Abstract class instantiation
-      new BaseWidget({ ...widget, node: subgraphNode })
+      new LegacyWidget({ ...widget, node: subgraphNode })
     }).not.toThrow()
   })
 
@@ -461,9 +457,9 @@ describe('SubgraphNode Synchronization', () => {
     state.label = 'Stored Label'
     state.y = 27
 
-    expect(widget?.name).toBe('text')
-    expect(widget?.label).toBe('Stored Label')
-    expect(widget?.y).toBe(27)
+    expect(widget.name).toBe('text')
+    expect(widget.label).toBe('Stored Label')
+    expect(widget.y).toBe(27)
   })
 
   it('writes promoted widget label and y to WidgetState', () => {
@@ -485,7 +481,6 @@ describe('SubgraphNode Synchronization', () => {
     const id = promotedInput.widgetId
     if (!id) throw new Error('Missing widgetId')
 
-    if (!widget) throw new Error('Missing projected widget')
     widget.label = 'Projected Label'
     widget.y = 31
 

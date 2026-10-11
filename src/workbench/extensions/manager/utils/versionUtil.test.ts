@@ -9,7 +9,7 @@ const mockConfig = vi.hoisted((): { app_version: string | undefined } => ({
   app_version: '1.24.0-1'
 }))
 
-vi.mock('@/config', () => ({
+vi.mock<unknown>(import('@/config'), () => ({
   default: mockConfig
 }))
 

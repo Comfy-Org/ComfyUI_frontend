@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -20,17 +18,15 @@ import {
   resolveNode
 } from './litegraphUtil'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
 const mockBringNodeToFront = vi.fn()
 
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeZIndex', () => ({
-  useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useNodeZIndex'),
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: vi.fn() })
-}))
+  () => ({
+    useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
+  })
+)
 
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
@@ -243,7 +239,6 @@ describe('getWidgetIdForNode', () => {
   })
 
   it('maps every widget when one duplicate cannot be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = fakeNode(42)
     const first = {
       name: 'shared',
@@ -270,16 +265,15 @@ describe('getWidgetIdForNode', () => {
     expect(mappedFirst).toBe(first)
     expect(mappedFrozen).toBe(frozen)
     expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared'])
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockClear()
+    expect(console.warn).toHaveBeenCalledOnce()
+    vi.mocked(console.warn).mockClear()
     expect(getWidgetIdForNode(node, frozen)).toBe(
       widgetId(graphId, toNodeId(42), 'shared#1')
     )
-    expect(warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('maps repeated widget object references only once', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = fakeNode(42)
     const first = {
       name: 'shared',
@@ -311,7 +305,7 @@ describe('getWidgetIdForNode', () => {
       'shared',
       'shared'
     ])
-    expect(warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('returns undefined when the node has no graph', () => {

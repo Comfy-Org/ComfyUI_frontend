@@ -1,0 +1,117 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "pm-1135-asset-grid-fragmentation",
+    "response_side": "synthesized",
+    "note": "SYNTHESIZED, not a cloud capture: hand-authored to reproduce PM-1135 / PM-1313. Mirrors a real batch-generation turn where the agent calls an image tool twice and reports each result in its own sentence, with the two tool calls (agent_tool_call) closing the open text part between the two agent_message_delta events that each carry one generated image. The response has no graph operations, so the workflow seed is empty (no nodes/links), matching agent-rec-clear-workflow.json's minimal-workflow pattern. Lives under conversations/repro/ (not conversations/ directly) so listRecordedConversations() and the comfy-test agent-replay case list, which require every top-level fixture to be response_side: recorded, do not pick it up; loadAgentConversation still resolves it by its 'repro/<id>' case id."
+  },
+  "workflow": {
+    "id": "3e2d9b7a-98d1-4b53-96c7-9c1a17c2df31",
+    "name": "Text to image",
+    "catalog": {
+      "types": {}
+    },
+    "seed": {
+      "nodes": [],
+      "links": []
+    }
+  },
+  "turns": [
+    {
+      "message_id": "b8e6f7d2-77e5-4b96-8f19-13e5a55f7e21",
+      "request": {
+        "content": "Generate two versions of a red bicycle poster."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_render_a",
+              "tool_name": "generate_image",
+              "status": "running"
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_render_a",
+              "tool_name": "generate_image",
+              "status": "success",
+              "duration_ms": 900
+            }
+          },
+          "at_ms": 900
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Version A:\n\n![render_a.png](https://assets.example/outputs/render_a.png)"
+            }
+          },
+          "at_ms": 920
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_render_b",
+              "tool_name": "generate_image",
+              "status": "running"
+            }
+          },
+          "at_ms": 940
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "tool_call_id": "call_render_b",
+              "tool_name": "generate_image",
+              "status": "success",
+              "duration_ms": 850
+            }
+          },
+          "at_ms": 1790
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Version B:\n\n![render_b.png](https://assets.example/outputs/render_b.png)"
+            }
+          },
+          "at_ms": 1810
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 200,
+                "cache_read_input_tokens": 4000,
+                "input_tokens": 12,
+                "output_tokens": 48,
+                "total_tokens": 60
+              }
+            }
+          },
+          "at_ms": 1812
+        }
+      ]
+    }
+  ]
+}

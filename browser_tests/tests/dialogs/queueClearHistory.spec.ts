@@ -55,7 +55,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       if (route.request().method() === 'POST') {
         clearCalled = true
       }
-      return route.continue()
+      return route.fallback()
     })
 
     await dialog.getByRole('button', { name: 'Cancel' }).click()
@@ -78,7 +78,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       if (route.request().method() === 'POST') {
         clearCalled = true
       }
-      return route.continue()
+      return route.fallback()
     })
 
     await dialog.getByLabel('Close').click()

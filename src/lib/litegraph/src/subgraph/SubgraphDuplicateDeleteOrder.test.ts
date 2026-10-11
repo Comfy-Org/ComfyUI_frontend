@@ -24,12 +24,7 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const PROMOTED_INPUT = 'value'
 const EXTERNAL_INPUT = 'signal'
@@ -97,7 +92,7 @@ function promotedId(node: SubgraphNode) {
 function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
   const producer = createTestNode(rootGraph, [], ['number'])
 
-  if (!LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]) {
+  if (!(CONVERTIBLE_NODE_TYPE in LiteGraph.registered_node_types)) {
     class ConvertibleNode extends LGraphNodeClass {
       constructor() {
         super('Convertible')

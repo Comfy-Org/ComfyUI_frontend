@@ -1,10 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { effectScope, nextTick } from 'vue'
 import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// eslint-disable-next-line import-x/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
+// oxlint-disable-next-line comfy/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
@@ -21,7 +20,6 @@ const createCanvas = (draw: () => void) => {
 }
 
 it('contains CanvasInfo draws to its explicit sources', async () => {
-  setActivePinia(createPinia())
   const node = new LGraphNode('test')
   const slot = node.addInput('input', 'STRING')
   const firstCanvas = createCanvas(() => {

@@ -1,52 +1,43 @@
 <script setup lang="ts">
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { useMediaQuery } from '@vueuse/core'
+
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { platformCtas } from './ctas'
-import PlatformHeroBadge from './PlatformHeroBadge.vue'
-import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
+import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const ctas = platformCtas(locale)
+const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
 </script>
 
 <template>
   <HeroSplit01
     :locale="locale"
     compact
-    beta
-    :badge-text="t('platform.hero.badge', locale)"
-    :title="t('platform.products.serverless.title', locale)"
-    title-class="sr-only"
-    :subtitle="t('platform.products.serverless.description', locale)"
-    :primary-cta="ctas.getStarted"
-    :secondary-cta="ctas.docs"
+    :title="t('platform.serverlessHero.heading')"
+    title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-normal md:text-4xl/tight lg:text-5xl/tight"
+    :subtitle="t('platform.serverlessHero.subtitle')"
+    :primary-cta="{
+      ...ctas.getStarted,
+      href: 'https://platform.comfy.org/?onboarding=comfyapi'
+    }"
+    :secondary-cta="{
+      ...ctas.docs,
+      href: 'https://docs.comfy.org/development/serverless/quickstart'
+    }"
     media-wrapper-class="hidden lg:block"
   >
-    <template #badge>
-      <PlatformHeroBadge :locale :status-label="t('nav.badgeBeta', locale)">
-        <template #label>
-          <img
-            src="/icons/logo.svg"
-            alt="Comfy"
-            width="173"
-            height="48"
-            class="h-5 w-auto brightness-0 md:h-9"
-          />
-          <span>{{
-            t('platform.products.serverless.badgeLabel', locale)
-          }}</span>
-        </template>
-      </PlatformHeroBadge>
-    </template>
     <template #aboveCtas>
       <div class="mt-8 rounded-3xl lg:hidden">
-        <ServerlessIsometricStudy :locale />
+        <ServerlessJsonApiGpuAnimation v-if="!desktop" :locale />
       </div>
     </template>
     <template #media>
-      <ServerlessIsometricStudy :locale />
+      <ServerlessJsonApiGpuAnimation v-if="desktop" :locale />
     </template>
   </HeroSplit01>
 </template>

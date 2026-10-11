@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
 import type { FeatureCardLink } from './FeatureCard.vue'
 import FeatureCard from './FeatureCard.vue'
 
@@ -23,7 +23,7 @@ const { columns = 3 } = defineProps<{
 <template>
   <section
     :id
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="compact">
       {{ heading }}

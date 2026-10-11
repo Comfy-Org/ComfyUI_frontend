@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import ServerlessAutoscaleAnimation from './ServerlessAutoscaleAnimation.vue'
 import ServerlessLogsAnimation from './ServerlessLogsAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 type SlotShape = 'circle' | 'square' | 'diamond'
 
@@ -81,19 +82,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessScale.heading', locale) }}
+      {{ t('platform.serverlessScale.heading') }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.serverlessScale.subtitle', locale) }}
+          {{ t('platform.serverlessScale.subtitle') }}
         </p>
       </template>
     </SectionHeader>
 
     <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <!-- Autoscaling: a stepped worker line tracking a dashed demand curve -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"
@@ -101,15 +102,15 @@ onBeforeUnmount(() => {
           <ServerlessAutoscaleAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.1.title', locale) }}
+          {{ t('platform.serverlessScale.1.title') }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.1.description', locale) }}
+          {{ t('platform.serverlessScale.1.description') }}
         </p>
       </article>
 
       <!-- Logs: a console panel streaming rows -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink"
@@ -117,15 +118,15 @@ onBeforeUnmount(() => {
           <ServerlessLogsAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.2.title', locale) }}
+          {{ t('platform.serverlessScale.2.title') }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.2.description', locale) }}
+          {{ t('platform.serverlessScale.2.description') }}
         </p>
       </article>
 
       <!-- Any workflow & model: the ecosystem converging on one endpoint -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"
@@ -278,10 +279,10 @@ onBeforeUnmount(() => {
           </svg>
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
-          {{ t('platform.serverlessScale.3.title', locale) }}
+          {{ t('platform.serverlessScale.3.title') }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.serverlessScale.3.description', locale) }}
+          {{ t('platform.serverlessScale.3.description') }}
         </p>
       </article>
     </div>

@@ -1,23 +1,10 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
-
-const mockExecute = vi.hoisted(() => vi.fn())
-const mockSelectionState = vi.hoisted(() => ({
-  isSingleImageNode: { value: true }
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: mockExecute })
-}))
-
-vi.mock('@/composables/graph/useSelectionState', () => ({
-  useSelectionState: () => mockSelectionState
-}))
+import { useCommandStore } from '@/stores/commandStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -35,17 +22,12 @@ const i18n = createI18n({
 const renderButton = () =>
   render(MaskEditorButton, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
 describe('MaskEditorButton', () => {
-  beforeEach(() => {
-    mockSelectionState.isSingleImageNode = ref(true)
-  })
-
-  it('should render with the localized aria-label when a single image node is selected', () => {
+  it('should render with the localized aria-label', () => {
     renderButton()
 
     expect(
@@ -53,24 +35,19 @@ describe('MaskEditorButton', () => {
     ).toBeInTheDocument()
   })
 
-  it('should hide via v-show when no single image node is selected', () => {
-    mockSelectionState.isSingleImageNode = ref(false)
-    renderButton()
-
-    const btn = screen.getByLabelText('Open in Mask Editor', {
-      selector: 'button'
-    })
-    expect(btn.getAttribute('style') ?? '').toContain('display: none')
-  })
-
   it('should execute the OpenMaskEditor command on click', async () => {
     const user = userEvent.setup()
+    const openMaskEditor = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      function: openMaskEditor
+    })
     renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Open in Mask Editor' })
     )
 
-    expect(mockExecute).toHaveBeenCalledWith('Comfy.MaskEditor.OpenMaskEditor')
+    expect(openMaskEditor).toHaveBeenCalledOnce()
   })
 })

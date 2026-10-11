@@ -1,57 +1,46 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import DomWidget from './DomWidget.vue'
 
-const mockUpdateClipPath = vi.fn()
-const mockClippingStyle = ref<Record<string, string>>({})
-const mockDomClippingEnabled = ref(false)
-const mockCanvasElement = document.createElement('canvas')
-const mockCanvasStore = {
-  canvas: {
-    graph: {
-      getNodeById: vi.fn(() => true)
-    },
-    ds: {
-      offset: [0, 0],
-      scale: 1
-    },
+import DomWidget from './DomWidget.vue'
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
+
+vi.mock(import('./domWidgetMountReporting'), () => ({
+  reportDomWidgetMountFailure: vi.fn()
+}))
+
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({
+    graph: { getNodeById: vi.fn(() => true) },
+    ds: { offset: [0, 0], scale: 1 },
     canvas: mockCanvasElement,
     selected_nodes: {},
     selectNode: vi.fn(),
     bringToFront: vi.fn(),
     selectedItems: new Set()
-  },
-  getCanvas: () => ({
-    canvas: mockCanvasElement,
-    ds: mockCanvasStore.canvas.ds
-  }),
-  linearMode: false
-}
+  })
+  Object.assign(useCanvasStore(), { linearMode: false })
+  useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = false
+})
 
-vi.mock('@/composables/element/useDomClipping', () => ({
+const mockUpdateClipPath = vi.fn()
+const mockClippingStyle = ref<Record<string, string>>({})
+
+const mockCanvasElement = document.createElement('canvas')
+
+vi.mock(import('@/composables/element/useDomClipping'), () => ({
   useDomClipping: () => ({
     style: mockClippingStyle,
     updateClipPath: mockUpdateClipPath
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn((key: string) =>
-      key === 'Comfy.DOMClippingEnabled' ? mockDomClippingEnabled.value : false
-    )
   })
 }))
 
@@ -91,10 +80,10 @@ function createWidgetState(
 describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
-    mockDomClippingEnabled.value = false
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = false
     mockClippingStyle.value = {}
-    mockCanvasStore.canvas.selected_nodes = {}
-    mockCanvasStore.canvas.selectedItems = new Set()
+    useCanvasStore().getCanvas().selected_nodes = {}
+    useCanvasStore().getCanvas().selectedItems = new Set()
   })
 
   it('positions a newly mounted widget', () => {
@@ -105,7 +94,7 @@ describe('DomWidget style', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.left).toBe('0px')
     expect(root.style.top).toBe('0px')
@@ -125,14 +114,14 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
   })
 
   it('applies clipping style when DOM clipping is enabled', async () => {
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     const widgetState = createWidgetState(false)
     const { container } = render(DomWidget, {
       props: {
@@ -143,7 +132,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('inset(1px)')
   })
@@ -157,7 +146,7 @@ describe('DomWidget style', () => {
     })
     mockUpdateClipPath.mockClear()
 
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     await nextTick()
 
     expect(mockUpdateClipPath).toHaveBeenCalled()
@@ -173,8 +162,11 @@ describe('DomWidget style', () => {
     legacyFirst.pos = [50, 60]
     legacyFirst.size = [70, 80]
     legacyFirst.updateArea()
-    mockCanvasStore.canvas.selectedItems = new Set([firstSelected, legacyFirst])
-    mockCanvasStore.canvas.selected_nodes = {
+    useCanvasStore().getCanvas().selectedItems = new Set([
+      firstSelected,
+      legacyFirst
+    ])
+    useCanvasStore().getCanvas().selected_nodes = {
       1: legacyFirst,
       2: firstSelected
     }
@@ -184,7 +176,7 @@ describe('DomWidget style', () => {
         widgetState
       }
     })
-    mockDomClippingEnabled.value = true
+    useSettingStore().settingValues['Comfy.DOMClippingEnabled'] = true
     await nextTick()
 
     expect(mockUpdateClipPath).toHaveBeenCalledWith(
@@ -213,7 +205,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('')
   })
@@ -230,7 +222,7 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })
@@ -253,7 +245,7 @@ describe('DomWidget position update matrix', () => {
         render(DomWidget, { props: { widgetState } })
       )
       const roots = rendered.map(({ container }) => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         return container.querySelector('.dom-widget') as HTMLElement
       })
       const initialStyles = roots.map((root) => root.getAttribute('style'))
@@ -281,6 +273,82 @@ describe('native DOM widget interaction lifecycle', () => {
     useDomWidgetStore().clear()
   })
 
+  function renderWithUnmountableElement(widgetState: DomWidgetState) {
+    const input = document.createElement('input')
+    Object.assign(widgetState.widget, { element: input })
+    vi.spyOn(HTMLElement.prototype, 'appendChild').mockImplementation(function (
+      this: HTMLElement,
+      child: Node
+    ) {
+      if (child === input) throw new Error('mount failed')
+      return Node.prototype.appendChild.call(this, child)
+    })
+
+    const escapedErrors: unknown[] = []
+    const rendered = render(DomWidget, {
+      props: { widgetState },
+      global: { config: { errorHandler: (error) => escapedErrors.push(error) } }
+    })
+
+    return { rendered, escapedErrors }
+  }
+
+  it('reports a mount failure on the initial mount', async () => {
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'mount failed' }),
+      {
+        nodeId: widgetState.widget.node.id,
+        nodeType: widgetState.widget.node.type,
+        widgetName: 'test_widget'
+      }
+    )
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when the widget becomes visible', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.visible = false
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    widgetState.visible = true
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when linear mode is left', async () => {
+    Object.assign(useCanvasStore(), { linearMode: true })
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    Object.assign(useCanvasStore(), { linearMode: false })
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
   it('preserves selection and outside-click focus behavior, then removes listeners', async () => {
     const widgetState = createWidgetState(false)
     const input = document.createElement('input')
@@ -296,10 +364,10 @@ describe('native DOM widget interaction lifecycle', () => {
     await nextTick()
 
     input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    expect(mockCanvasStore.canvas.selectNode).toHaveBeenCalledWith(
+    expect(useCanvasStore().getCanvas().selectNode).toHaveBeenCalledWith(
       widgetState.widget.node
     )
-    expect(mockCanvasStore.canvas.bringToFront).toHaveBeenCalledWith(
+    expect(useCanvasStore().getCanvas().bringToFront).toHaveBeenCalledWith(
       widgetState.widget.node
     )
 
@@ -307,12 +375,12 @@ describe('native DOM widget interaction lifecycle', () => {
     expect(blur).toHaveBeenCalledOnce()
 
     rendered.unmount()
-    vi.mocked(mockCanvasStore.canvas.selectNode).mockClear()
+    vi.mocked(useCanvasStore().getCanvas().selectNode).mockClear()
     blur.mockClear()
 
     input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    expect(mockCanvasStore.canvas.selectNode).not.toHaveBeenCalled()
+    expect(useCanvasStore().getCanvas().selectNode).not.toHaveBeenCalled()
     expect(blur).not.toHaveBeenCalled()
   })
 
@@ -326,7 +394,7 @@ describe('native DOM widget interaction lifecycle', () => {
     })
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })

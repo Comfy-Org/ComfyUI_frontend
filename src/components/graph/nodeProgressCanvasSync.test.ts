@@ -1,7 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -17,10 +15,6 @@ const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000001'
 type ProgressState = Parameters<
   NodeProgressCanvasSync['sync']
 >[0][NodeLocatorId]
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 function runningState(id: string, value: number): ProgressState {
   return {

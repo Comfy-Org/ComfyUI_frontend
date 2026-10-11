@@ -318,9 +318,7 @@ test.describe(
       await comfyPage.runButton.click()
 
       await expect(
-        comfyPage.toast.visibleToasts
-          .filter({ hasText: 'Error uploading camera image' })
-          .first()
+        comfyPage.toast.withText('Error uploading camera image').first()
       ).toBeVisible()
     })
 
@@ -345,9 +343,7 @@ test.describe(
       await comfyPage.runButton.click()
 
       await expect(
-        comfyPage.toast.visibleToasts
-          .filter({ hasText: 'No webcam image captured' })
-          .first()
+        comfyPage.toast.withText('No webcam image captured').first()
       ).toBeVisible()
       expect(uploadCalled).toBe(false)
     })

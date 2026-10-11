@@ -215,7 +215,7 @@ function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
             counts.skipped = stats.skipped || 0
             return counts
           }
-        } catch (e) {
+        } catch {
           // Continue to try other formats
         }
       }
@@ -242,7 +242,7 @@ function extractTestCounts(reportDir: string, baseUrl?: string): TestCounts {
             counts.skipped = stats.skipped || 0
             return counts
           }
-        } catch (e) {
+        } catch {
           // Continue to try other formats
         }
       }

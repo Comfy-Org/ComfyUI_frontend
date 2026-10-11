@@ -16,10 +16,6 @@ for (const vueNodesEnabled of [false, true] as const) {
     test('invokes prototype behavior from rendering and pointer input', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.Enabled',
-        vueNodesEnabled
-      )
       await comfyPage.nodeOps.clearGraph()
       const addForeignWidget = () => {
         class ForeignLegacyWidget implements IBaseWidget {

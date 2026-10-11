@@ -15,6 +15,8 @@ const repoConfig = path.resolve('.oxlintrc.json')
 const PROBE_DIR = '__comfy_page_setup_probes__'
 const specProbeDir = path.resolve('browser_tests/tests', PROBE_DIR)
 const fixtureProbeDir = path.resolve('browser_tests/fixtures', PROBE_DIR)
+const websiteProbeDir = path.resolve('apps/website/e2e', PROBE_DIR)
+const probeDirs = [specProbeDir, fixtureProbeDir, websiteProbeDir]
 
 const RULE_CODE = 'comfy(no-comfy-page-setup-call)'
 
@@ -46,7 +48,34 @@ const fixtureProbe = `export async function prepare(comfyPage: { setup(): Promis
 }
 `
 
-function lint(targets: string[]): Diagnostic[] {
+const settingsHooks = `test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+customTest.afterEach(async ({ comfyPage }) => {
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+})
+`
+
+const acceptedSettings = `test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+test('changes settings at runtime', async ({ comfyPage }) => {
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+})
+const customTest = base.extend({
+  helper: async ({ comfyPage }, use) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await use(comfyPage)
+  }
+})
+test.beforeEach(async () => {
+  await unrelated.setSetting('other', true)
+  await other.settings.setSetting('other', true)
+})
+test.afterEach(async () => {
+  await other.settings.setSetting('other', false)
+})
+`
+
+function lint(targets: string[]): readonly Diagnostic[] {
   let stdout: string
   let failure: string | undefined
   try {
@@ -79,25 +108,41 @@ function lint(targets: string[]): Diagnostic[] {
     )
   }
 
-  return diagnostics.filter((diagnostic) => diagnostic.code === RULE_CODE)
+  return diagnostics
 }
 
-describe('no-comfy-page-setup-call', () => {
+describe('comfyPage rules', () => {
   let findings: Diagnostic[]
+  let settingsFindings: Diagnostic[]
 
   beforeAll(() => {
-    for (const dir of [specProbeDir, fixtureProbeDir]) {
+    for (const dir of probeDirs) {
       mkdirSync(dir, { recursive: true })
     }
     writeFileSync(path.join(specProbeDir, 'reported.spec.ts'), reportedSpec)
     writeFileSync(path.join(specProbeDir, 'accepted.spec.ts'), acceptedSpec)
     writeFileSync(path.join(fixtureProbeDir, 'fixture.ts'), fixtureProbe)
+    writeFileSync(
+      path.join(specProbeDir, 'settings-hooks.spec.ts'),
+      settingsHooks
+    )
+    writeFileSync(path.join(specProbeDir, 'settings-hooks.ts'), settingsHooks)
+    writeFileSync(
+      path.join(specProbeDir, 'settings-accepted.spec.ts'),
+      acceptedSettings
+    )
+    writeFileSync(path.join(fixtureProbeDir, 'settings.spec.ts'), settingsHooks)
+    writeFileSync(path.join(websiteProbeDir, 'settings.spec.ts'), settingsHooks)
 
-    findings = lint([specProbeDir, fixtureProbeDir])
+    const diagnostics = lint(probeDirs)
+    findings = diagnostics.filter((diagnostic) => diagnostic.code === RULE_CODE)
+    settingsFindings = diagnostics.filter(
+      (diagnostic) => diagnostic.code === 'comfy(prefer-initial-settings)'
+    )
   })
 
   afterAll(() => {
-    for (const dir of [specProbeDir, fixtureProbeDir]) {
+    for (const dir of probeDirs) {
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -124,5 +169,32 @@ describe('no-comfy-page-setup-call', () => {
     )
     expect(fixtureFindings).toHaveLength(0)
     expect(findings).toHaveLength(1)
+  })
+
+  it('reports startup and reset hooks as errors, including custom test aliases', () => {
+    const reported = settingsFindings.filter((finding) =>
+      finding.filename?.endsWith('settings-hooks.spec.ts')
+    )
+    expect(reported).toHaveLength(2)
+    expect(reported).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining('initialSettings')
+        }),
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining('teardown')
+        })
+      ])
+    )
+  })
+
+  it('allows runtime changes and unrelated setters, and excludes hooks outside browser specs', () => {
+    expect(
+      settingsFindings.filter(
+        (finding) => !finding.filename?.endsWith('settings-hooks.spec.ts')
+      )
+    ).toEqual([])
   })
 })

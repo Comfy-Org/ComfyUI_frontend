@@ -1,18 +1,16 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import MissingMediaCard from './MissingMediaCard.vue'
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn()
 }))
 

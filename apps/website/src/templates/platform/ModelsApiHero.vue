@@ -1,56 +1,56 @@
 <script setup lang="ts">
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CodeTabs from './CodeTabs.vue'
-import { modelsApiCodeTabs } from './codeSamples'
-import { platformCtas } from './ctas'
-import PlatformHeroBadge from './PlatformHeroBadge.vue'
+import { routerCodeTabs } from './codeSamples'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
-const ctas = platformCtas(locale)
+const routes = getRoutes(locale)
 </script>
 
 <template>
   <HeroSplit01
     :locale="locale"
     compact
-    :badge-text="t('platform.hero.badge', locale)"
-    :badge-show-logo="false"
-    :title="t('platform.products.models.title', locale)"
-    title-class="sr-only"
-    media-wrapper-class="hidden min-w-0 lg:block"
-    :subtitle="t('platform.products.models.description', locale)"
-    :primary-cta="ctas.getStarted"
-    :secondary-cta="{
-      label: ctas.docs.label,
-      href: externalLinks.docsComfyRouter,
+    :badge-text="t('platform.router.badge.label')"
+    :title="t('platform.modelsHero.heading')"
+    title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
+    class="lg:items-stretch"
+    media-wrapper-class="hidden min-w-0 lg:flex lg:flex-col"
+    :subtitle="t('platform.modelsHero.subtitle')"
+    :primary-cta="{
+      label: t('platform.modelsHero.getApiKey'),
+      href: externalLinks.routerApiKeys,
       target: '_blank'
     }"
+    :secondary-cta="{
+      label: t('platform.router.cta.browseModels'),
+      href: routes.workshop
+    }"
   >
-    <template #badge>
-      <PlatformHeroBadge
-        :locale="locale"
-        :label="t('platform.products.models.title', locale)"
-        :status-label="t('nav.badgeComingSoon', locale)"
-      />
-    </template>
     <template #aboveCtas>
       <div class="mt-8 lg:hidden">
         <CodeTabs
-          :tabs="modelsApiCodeTabs"
-          :label="t('platform.products.models.title', locale)"
+          :tabs="routerCodeTabs"
+          :label="t('platform.products.models.title')"
           content-class="bg-[#2a2230]"
+          :copy-label="t('ui.copy')"
+          :copied-label="t('ui.copied')"
         />
       </div>
     </template>
     <template #media>
       <CodeTabs
-        :tabs="modelsApiCodeTabs"
-        :label="t('platform.products.models.title', locale)"
+        :tabs="routerCodeTabs"
+        :label="t('platform.products.models.title')"
         content-class="bg-[#2a2230]"
+        :copy-label="t('ui.copy')"
+        :copied-label="t('ui.copied')"
+        fill
       />
     </template>
   </HeroSplit01>

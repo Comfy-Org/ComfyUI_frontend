@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import {
-  type CameraManagerInterface,
-  type CameraState,
-  type CameraType,
-  type EventManagerInterface
+import type {
+  CameraManagerInterface,
+  CameraState,
+  CameraType,
+  EventManagerInterface
 } from './interfaces'
 
 function resolveIncomingCustomUp(state: CameraState): THREE.Vector3 | null {
@@ -93,11 +93,9 @@ export class CameraManager implements CameraManagerInterface {
   setControls(controls: OrbitControls): void {
     this.controls = controls
 
-    if (this.controls) {
-      this.controls.addEventListener('end', () => {
-        this.eventManager.emitEvent('cameraChanged', this.getCameraState())
-      })
-    }
+    controls.addEventListener('end', () => {
+      this.eventManager.emitEvent('cameraChanged', this.getCameraState())
+    })
   }
 
   getCurrentCameraType(): CameraType {
@@ -201,7 +199,7 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   setCameraState(state: CameraState): void {
-    if (state.cameraType && state.cameraType !== this.getCurrentCameraType()) {
+    if (state.cameraType !== this.getCurrentCameraType()) {
       this.toggleCamera(state.cameraType)
     }
 

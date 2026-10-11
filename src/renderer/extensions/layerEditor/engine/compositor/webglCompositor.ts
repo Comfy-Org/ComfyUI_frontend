@@ -509,11 +509,18 @@ export function createWebGLCompositor(): Compositor {
         c.width = width
         c.height = height
       }
-      const ctx = c.getContext('webgl2', {
+      const attributes: WebGLContextAttributes = {
         alpha: true,
         premultipliedAlpha: false,
         preserveDrawingBuffer: true
-      })
+      }
+      // Same call either way, but made per concrete type: through the union,
+      // TypeScript 6 resolves getContext to the generic string overload and
+      // loses the WebGL2RenderingContext return type.
+      const ctx =
+        c instanceof OffscreenCanvas
+          ? c.getContext('webgl2', attributes)
+          : c.getContext('webgl2', attributes)
       if (!ctx) return false
       if (!ctx.getExtension('EXT_color_buffer_float')) return false
       canvas = c

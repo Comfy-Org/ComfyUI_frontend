@@ -1,13 +1,12 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 import FormSection from './FormSection.vue'
 
 const stubs = {
-  SectionLabel: true,
+  SocialProofBarSection: true,
   HubspotFormEmbed: {
     props: ['formId'],
     template: '<div data-testid="hubspot-form" :data-form-id="formId" />'

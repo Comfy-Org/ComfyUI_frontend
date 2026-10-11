@@ -85,6 +85,10 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -101,6 +105,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -126,6 +131,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -153,6 +159,10 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -180,7 +190,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -191,12 +202,14 @@ import UnifiedPricingTable from './UnifiedPricingTable.vue'
 const {
   onClose,
   reason,
+  paymentIntentSource,
   embeddedCheckoutEnabled = false,
   initialPlanMode,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   embeddedCheckoutEnabled?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
@@ -207,8 +220,7 @@ const emit = defineEmits<{
 }>()
 
 const stripePaymentElementEnabled =
-  embeddedCheckoutEnabled &&
-  Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey())
 
 // The embedded-payment confirm step keeps the pricing table's dialog
 // dimensions so stepping between them reads as one dialog changing content,
@@ -234,7 +246,12 @@ const {
   authenticationState,
   authenticationError,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   isTeamCheckout,
   previewVariant,
   handleSubscribeClick,
@@ -249,7 +266,9 @@ const {
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
+  embeddedCheckoutEnabled
+})
 
 const savedMethodsForConfirm = computed(() =>
   collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value
