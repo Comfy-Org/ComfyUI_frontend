@@ -77,6 +77,9 @@ function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
 let workflowLoadTail: Promise<unknown> = Promise.resolve()
 let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
+// The workflows (null: the blank fallback) a failed-activation recovery is
+// repainting, so the repaint's own activation failure does not recover again.
+const activationRecoveries = new Set<ComfyWorkflow | null>()
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 
@@ -394,17 +397,79 @@ export const useWorkflowService = () => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
-    await useApp().loadGraphData(
-      toRaw(retained.activeState) as ComfyWorkflowJSON,
+    await repaintWorkflow(retained)
+  }
+
+  /**
+   * Loads directly rather than through `queueWorkflowLoad`: a caller may
+   * already be inside a queued load, and chaining onto the tail it is
+   * itself holding would deadlock.
+   */
+  const repaintWorkflow = async (workflow: ComfyWorkflow) => {
+    const loaded = await useApp().loadGraphData(
+      toRaw(workflow.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
       /* restore_view=*/ true,
-      retained,
+      workflow,
       {
         checkForRerouteMigration: false,
         deferWarnings: true,
         skipAssetScans: true
       }
     )
+    return loaded !== false
+  }
+
+  /**
+   * Repaint the workflow the editor showed before an activation that
+   * rejected after the nodes were built, falling back to a blank graph.
+   */
+  const repaintAfterFailedActivation = async (
+    retained: ComfyWorkflow | null
+  ) => {
+    const key = retained && toRaw(retained)
+    if (activationRecoveries.has(key)) return
+    activationRecoveries.add(key)
+    try {
+      if (retained?.isLoaded && (await repaintWorkflow(retained))) return
+      if ((await useApp().loadGraphData(blankGraph)) !== false) return
+      reportError(
+        new Error('Neither the retained workflow nor a blank graph loaded'),
+        { surface: 'graph', errorType: 'workflow_load_recovery_failure' }
+      )
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_recovery_failure'
+      })
+    } finally {
+      activationRecoveries.delete(key)
+    }
+  }
+
+  /**
+   * `workflowStore.openWorkflow` appends the tab before awaiting the file
+   * fetch, so an activation that rejected mid-fetch leaves an unloaded tab
+   * behind. Only tabs the failed activation added are dropped, and never one
+   * holding a draft: closing a workflow also removes its draft.
+   */
+  const dropPhantomTabs = async (tabsOpenBefore: ReadonlySet<string>) => {
+    const workflowStore = useWorkspaceStore().workflow
+    const phantoms = workflowStore.openWorkflows.filter(
+      (open) =>
+        !tabsOpenBefore.has(open.path) &&
+        !open.isLoaded &&
+        !workflowStore.isActive(open) &&
+        !workflowDraftStore.getDraft(open.path)
+    )
+    try {
+      for (const phantom of phantoms) await workflowStore.closeWorkflow(phantom)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_recovery_failure'
+      })
+    }
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
@@ -697,6 +762,11 @@ export const useWorkflowService = () => {
    * app.loadApiJson -> useWorkflowService().afterLoadNewGraph
    * app.importA1111 -> useWorkflowService().afterLoadNewGraph
    *
+   * An activation can reject after the nodes were built (e.g. reusing a
+   * persisted workflow of the same name whose file fails to fetch). Before
+   * rethrowing, the editor is repainted with what it showed before and the
+   * tab the failed activation opened is dropped.
+   *
    * @param value The value to set as the active workflow.
    * @param workflowData The initial workflow data loaded to the graph editor.
    */
@@ -705,10 +775,25 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
-    await activateLoadedWorkflow(value, workflowData, shareId)
-    useNodeOutputStore().restorePreviewsForWorkflow(
-      useWorkspaceStore().workflow.activeWorkflow?.path
+    const workflowStore = useWorkspaceStore().workflow
+    const activeBefore = workflowStore.activeWorkflow
+    const tabsOpenBefore = new Set(
+      workflowStore.openWorkflows.map((open) => open.path)
     )
+    try {
+      await activateLoadedWorkflow(value, workflowData, shareId)
+      useNodeOutputStore().restorePreviewsForWorkflow(
+        workflowStore.activeWorkflow?.path
+      )
+    } catch (error) {
+      // An activation that already switched to its workflow left the canvas
+      // owned; one that did not leaves the built nodes unowned.
+      const active = workflowStore.activeWorkflow
+      if (!active || toRaw(active) === toRaw(activeBefore))
+        await repaintAfterFailedActivation(active)
+      await dropPhantomTabs(tabsOpenBefore)
+      throw error
+    }
   }
 
   const activateLoadedWorkflow = async (
