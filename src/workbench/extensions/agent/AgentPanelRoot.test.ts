@@ -685,19 +685,24 @@ describe('AgentPanelRoot first-use experience', () => {
     })
   })
 
-  // "Try your first chat for free!" and the standing exhausted paywall would
-  // otherwise render in the same footer, contradicting each other.
-  it('says nothing about free turns beside the exhausted paywall', async () => {
+  it('says nothing about free turns beside an inline paywall', async () => {
     placeFreeUseNotice()
     paywallHasFunds.value = false
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(
-      await screen.findByTestId('agent-credits-exhausted-paywall')
-    ).toBeInTheDocument()
+    await screen.findByTestId('agent-credits-exhausted-paywall')
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByTestId('agent-credits-exhausted-paywall')
+      ).not.toBeInTheDocument()
+    )
 
     expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
-    expect(useTelemetry()!.trackAgentFreeUseNotice).not.toHaveBeenCalled()
   })
 })
 

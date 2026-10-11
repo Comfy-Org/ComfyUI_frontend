@@ -71,6 +71,7 @@ const {
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
+  suppressFreeUseNotice = false,
   sessionId = null,
   currentChatReady = false,
   customTitle,
@@ -113,6 +114,7 @@ const {
    * composer; see AgentPanelRoot's `creditsExhausted` for why it exists.
    */
   creditsExhausted?: boolean
+  suppressFreeUseNotice?: boolean
   sessionId?: string | null
   currentChatReady?: boolean
   customTitle?: string
@@ -168,15 +170,8 @@ const targetNotice = computed(() => {
   return followsVisibleWorkflow ? 'following' : undefined
 })
 
-/**
- * "Try your first chat for free!" is false for a viewer who has already spent
- * their credits, and the exhausted paywall card sits in the same footer — so
- * the two would contradict each other on screen. Falling back to `control`
- * suppresses the notice without touching the assignment or its exposure: the
- * arm is still recorded, this viewer just is not told something untrue.
- */
 const noticePlacement = computed(() =>
-  creditsExhausted ? 'control' : freeUsePlacement
+  suppressFreeUseNotice ? 'control' : freeUsePlacement
 )
 
 const panelStore = useAgentPanelStore()

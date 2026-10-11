@@ -41,6 +41,7 @@ function mount(
       historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
       freeUsePlacement,
       creditsExhausted,
+      suppressFreeUseNotice: creditsExhausted,
       onFreeUseNotice
     },
     global: {
