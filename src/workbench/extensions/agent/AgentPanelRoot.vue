@@ -24,7 +24,8 @@ import type {
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
-  AgentStopMethod
+  AgentStopMethod,
+  AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
@@ -693,6 +694,29 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   }))
 )
 
+function adoptionSource(
+  workflowId: string,
+  sent: WorkflowTurnContext,
+  tab: ComfyWorkflow
+): Extract<AgentWorkflowBindSource, 'active_tab' | 'minted'> | null {
+  if (sent.id !== undefined) {
+    const boundNow = bindingStore.workflowIdFor(tab.path)
+    const stillBound = boundNow === undefined || boundNow === workflowId
+    return sent.id === workflowId && stillBound ? 'active_tab' : null
+  }
+  // An unbound tab adopts a workflow only when it was minted for this turn:
+  // an id that already resolves to a tab or a stored workflow belongs there,
+  // and a tab that acquired its own binding mid-flight is no longer unbound.
+  // `sent.isTemporary` is read from the send, not from the tab now: saving the
+  // originating tab while the POST is in flight does not disown its own turn.
+  const minted =
+    sent.isTemporary &&
+    cloudIdFor(tab) === undefined &&
+    bindingStore.tabPathFor(workflowId) === undefined &&
+    storedWorkflowFor(workflowId) === null
+  return minted ? 'minted' : null
+}
+
 function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined,
@@ -707,32 +731,11 @@ function onWorkflowAdopted(
     (workflow) => workflow.instanceId === sent.instanceId
   )
   if (!tab) return
-  if (sent.id !== undefined) {
-    const boundNow = bindingStore.workflowIdFor(tab.path)
-    if (
-      sent.id === workflowId &&
-      (boundNow === undefined || boundNow === workflowId)
-    ) {
-      bindingStore.bind(workflowId, tab.path)
-      tabActivity.setEditing(tab.path)
-      reportWorkflowBound(workflowId, previousWorkflowId, 'active_tab')
-    }
-    return
-  }
-  // An unbound tab adopts a workflow only when it was minted for this turn:
-  // an id that already resolves to a tab or a stored workflow belongs there,
-  // and a tab that acquired its own binding mid-flight is no longer unbound.
-  // `sent.isTemporary` is read from the send, not from the tab now: saving the
-  // originating tab while the POST is in flight does not disown its own turn.
-  const adoptable =
-    sent.isTemporary &&
-    cloudIdFor(tab) === undefined &&
-    bindingStore.tabPathFor(workflowId) === undefined &&
-    storedWorkflowFor(workflowId) === null
-  if (!adoptable) return
+  const source = adoptionSource(workflowId, sent, tab)
+  if (source === null) return
   bindingStore.bind(workflowId, tab.path)
   tabActivity.setEditing(tab.path)
-  reportWorkflowBound(workflowId, previousWorkflowId, 'minted')
+  reportWorkflowBound(workflowId, previousWorkflowId, source)
 }
 
 function warnWorkflowUnavailable(): void {
