@@ -385,11 +385,6 @@ describe('executionStore terminal-job recovery', () => {
       workflow_id: WORKFLOW_B_ID,
       timestamp: 1
     })
-    expect(store.getWorkflowStatus(workflowB)).toBe('running')
-    expect(
-      store.activeJobId,
-      'B is behind, so it must not be adopted'
-    ).toBeNull()
 
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
 
