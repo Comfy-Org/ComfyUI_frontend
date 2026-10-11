@@ -161,6 +161,23 @@ describe('widgets view', () => {
     expect(storedValue(widget)).toBe(10)
   })
 
+  it('deduplicates a raw source inserted before its installed wrapper', () => {
+    const node = new LGraphNode('test')
+    const source = Object.preventExtensions<IBaseWidget>({
+      name: 'wrapped',
+      type: 'number',
+      value: 10,
+      options: {},
+      y: 0
+    })
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+
+    node.widgets.unshift(source)
+
+    expect(node.widgets).toEqual([wrapped])
+  })
+
   it.for(
     ([false, true] as const).flatMap(
       (vueNodesMode) =>
