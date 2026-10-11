@@ -137,12 +137,9 @@ describe('errorResponseFromBody', () => {
     })
   })
 
-  it('falls back for a truncated JSON body instead of showing the fragment', () => {
-    for (const fragment of [
-      '{"code":"RATE_LIMITED","mess',
-      '[{"message":"first"},',
-      '{'
-    ]) {
+  it.for(['{"code":"RATE_LIMITED","mess', '[{"message":"first"},', '{'])(
+    'falls back for the truncated JSON body %s instead of showing the fragment',
+    (fragment) => {
       expect(
         errorResponseFromBody(fragment, 'Failed to publish workflow')
       ).toEqual({
@@ -150,7 +147,7 @@ describe('errorResponseFromBody', () => {
         message: 'Failed to publish workflow'
       })
     }
-  })
+  )
 
   it('falls back for a blank-string body', () => {
     expect(errorResponseFromBody('   ', 'fallback')).toEqual({
@@ -197,27 +194,30 @@ describe('errorResponseFromBody', () => {
 })
 
 describe('parseErrorResponse', () => {
-  function makeResponse(overrides: {
-    text?: () => Promise<string>
-    status?: number
-    statusText?: string
-  }): Response {
-    return {
-      status: overrides.status ?? 500,
-      statusText: overrides.statusText ?? 'Internal Server Error',
-      text: overrides.text ?? (async () => '{}')
-    } as Response
+  function makeResponse(
+    body: BodyInit | null,
+    status = 500,
+    statusText = 'Internal Server Error'
+  ): Response {
+    return new Response(body, { status, statusText })
+  }
+
+  function unreadableBody(): ReadableStream {
+    return new ReadableStream({
+      start(controller) {
+        controller.error(new TypeError('stream failed'))
+      }
+    })
   }
 
   it('parses a canonical error body', async () => {
-    const response = makeResponse({
-      text: async () =>
-        JSON.stringify({
-          code: 'INVALID_INPUT',
-          message: 'Bad field',
-          details: { field: 'name' }
-        })
-    })
+    const response = makeResponse(
+      JSON.stringify({
+        code: 'INVALID_INPUT',
+        message: 'Bad field',
+        details: { field: 'name' }
+      })
+    )
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'INVALID_INPUT',
       message: 'Bad field',
@@ -226,37 +226,30 @@ describe('parseErrorResponse', () => {
   })
 
   it('uses a plain-text body as the message', async () => {
-    const response = makeResponse({
-      text: async () => 'upstream connect error',
-      statusText: 'Bad Gateway',
-      status: 502
-    })
+    const response = makeResponse('upstream connect error', 502, 'Bad Gateway')
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'upstream connect error'
     })
   })
 
-  it('falls back for a body that parses to a JSON primitive', async () => {
-    for (const raw of ['42', 'null', 'true', '"   "']) {
-      const response = makeResponse({
-        text: async () => raw,
-        statusText: 'Bad Gateway',
-        status: 502
-      })
+  it.for(['42', 'null', 'true', '"   "'])(
+    'falls back for a body that parses to the JSON primitive %s',
+    async (raw) => {
+      const response = makeResponse(raw, 502, 'Bad Gateway')
       await expect(parseErrorResponse(response)).resolves.toEqual({
         code: 'UNKNOWN_ERROR',
         message: 'Bad Gateway'
       })
     }
-  })
+  )
 
   it('falls back to the caller message for a truncated JSON body', async () => {
-    const response = makeResponse({
-      text: async () => '{"code":"USERNAME_TAKEN","message":"Username alrea',
-      statusText: 'Bad Gateway',
-      status: 502
-    })
+    const response = makeResponse(
+      '{"code":"USERNAME_TAKEN","message":"Username alrea',
+      502,
+      'Bad Gateway'
+    )
     await expect(
       parseErrorResponse(response, 'Failed to create ComfyHub profile')
     ).resolves.toEqual({
@@ -266,11 +259,7 @@ describe('parseErrorResponse', () => {
   })
 
   it('falls back to statusText when the body is empty', async () => {
-    const response = makeResponse({
-      text: async () => '',
-      statusText: 'Bad Gateway',
-      status: 502
-    })
+    const response = makeResponse('', 502, 'Bad Gateway')
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'Bad Gateway'
@@ -278,13 +267,7 @@ describe('parseErrorResponse', () => {
   })
 
   it('falls back to statusText when the body cannot be read', async () => {
-    const response = makeResponse({
-      text: async () => {
-        throw new TypeError('stream failed')
-      },
-      statusText: 'Bad Gateway',
-      status: 502
-    })
+    const response = makeResponse(unreadableBody(), 502, 'Bad Gateway')
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'Bad Gateway'
@@ -292,11 +275,7 @@ describe('parseErrorResponse', () => {
   })
 
   it('falls back to the status code when statusText is empty', async () => {
-    const response = makeResponse({
-      text: async () => '',
-      statusText: '',
-      status: 402
-    })
+    const response = makeResponse('', 402, '')
     await expect(parseErrorResponse(response)).resolves.toEqual({
       code: 'UNKNOWN_ERROR',
       message: 'HTTP 402'
@@ -304,11 +283,7 @@ describe('parseErrorResponse', () => {
   })
 
   it('prefers a caller-supplied fallback over the status text', async () => {
-    const response = makeResponse({
-      text: async () => '',
-      statusText: 'Bad Gateway',
-      status: 502
-    })
+    const response = makeResponse('', 502, 'Bad Gateway')
     await expect(
       parseErrorResponse(response, 'Failed to publish workflow')
     ).resolves.toEqual({
@@ -318,9 +293,9 @@ describe('parseErrorResponse', () => {
   })
 
   it('still prefers the server message over a caller-supplied fallback', async () => {
-    const response = makeResponse({
-      text: async () => JSON.stringify({ message: 'Username already taken' })
-    })
+    const response = makeResponse(
+      JSON.stringify({ message: 'Username already taken' })
+    )
     await expect(
       parseErrorResponse(response, 'Failed to create ComfyHub profile')
     ).resolves.toEqual({
@@ -329,13 +304,14 @@ describe('parseErrorResponse', () => {
     })
   })
 
-  it('keeps the code but falls back for message-less JSON bodies', async () => {
-    for (const body of [
-      JSON.stringify({ code: 'USERNAME_TAKEN' }),
-      JSON.stringify({ code: 'USERNAME_TAKEN', message: null }),
-      JSON.stringify({ code: 'USERNAME_TAKEN', message: '' })
-    ]) {
-      const response = makeResponse({ text: async () => body })
+  it.for([
+    JSON.stringify({ code: 'USERNAME_TAKEN' }),
+    JSON.stringify({ code: 'USERNAME_TAKEN', message: null }),
+    JSON.stringify({ code: 'USERNAME_TAKEN', message: '' })
+  ])(
+    'keeps the code but falls back for message-less JSON body %s',
+    async (body) => {
+      const response = makeResponse(body)
       await expect(
         parseErrorResponse(response, 'Failed to create ComfyHub profile')
       ).resolves.toEqual({
@@ -343,7 +319,7 @@ describe('parseErrorResponse', () => {
         message: 'Failed to create ComfyHub profile'
       })
     }
-  })
+  )
 })
 
 describe('isWorkspaceBillingRequiredError', () => {

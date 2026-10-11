@@ -5,12 +5,10 @@ vi.mock(import('@/scripts/api'))
 
 const { useComfyHubService } = await import('./comfyHubService')
 
-function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => payload
-  } as Response
+function mockJsonResponse(payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 function mockErrorResponse(
