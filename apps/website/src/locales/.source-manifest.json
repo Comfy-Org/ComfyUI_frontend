@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.json": "c5bce8b08a39d0d51682ab1f97cda25f43832aca"
+  },
+  "version": 1,
+  "knownViolations": {
+    "main.json": [
+      "[\"cloud\",\"reason\",\"1\",\"title\"]",
+      "[\"cloud\",\"reason\",\"4\",\"title\"]",
+      "[\"contact\",\"faq\",\"a1\"]",
+      "[\"contact\",\"faq\",\"a2\"]",
+      "[\"contact\",\"faq\",\"a3\"]",
+      "[\"models\",\"list\",\"heroTitleAfter\"]",
+      "[\"workshop\",\"model\",\"meta\",\"price\"]"
+    ]
+  }
+}

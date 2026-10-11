@@ -1,6 +1,8 @@
+import path from 'path'
+
 /**
- * Directories whose top-level exports form the generated `window.comfyAPI`
- * public API.
+ * Directories under `src/` whose top-level exports form the generated
+ * `window.comfyAPI` public API.
  *
  * `comfyAPIPlugin` rewrites every top-level export in these files into a
  * `window.comfyAPI.<module>.<name>` assignment and emits a sibling `.js` shim
@@ -13,14 +15,27 @@
  * public surface and the dead-code analysis agree by construction instead of
  * needing a per-symbol escape hatch on each published-but-unimported export.
  */
-const COMFY_API_DIRS = ['src/extensions/core', 'src/scripts'] as const
+const COMFY_API_DIRS = ['extensions/core', 'scripts'] as const
 
 /** Knip `entry` patterns covering the generated public API surface. */
 export const COMFY_API_ENTRY_GLOBS = COMFY_API_DIRS.map(
-  (dir) => `${dir}/**/*.ts`
+  (dir) => `src/${dir}/**/*.ts`
 )
 
-/** Whether a module id is transformed into `window.comfyAPI` public API. */
-export function isComfyAPISourceFile(id: string): boolean {
-  return id.endsWith('.ts') && COMFY_API_DIRS.some((dir) => id.includes(dir))
+/**
+ * The `src/`-relative path of a module transformed into `window.comfyAPI`
+ * public API, or `null` if the module is not part of that surface.
+ */
+export function getComfyAPIRelativePath(id: string): string | null {
+  if (!id.endsWith('.ts')) return null
+
+  const relativePath = path
+    .relative(path.join(process.cwd(), 'src'), id)
+    .replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) return null
+
+  return COMFY_API_DIRS.some((dir) => relativePath.startsWith(`${dir}/`))
+    ? relativePath
+    : null
 }

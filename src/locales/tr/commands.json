@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Kes"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Seçili Düğüm için Katman Editörünü Aç"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Varsayılan İş Akışını Yükle"
   },
@@ -227,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Yeni Boş İş Akışı"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Başlangıç Tanıtımını Yeniden Oynat"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -274,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Alt Grafik Arama Takma Adlarını Ayarla"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Deneysel: AssetAPI'yi Etkinleştir"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Tuval Performansı"

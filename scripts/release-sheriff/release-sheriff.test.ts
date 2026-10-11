@@ -1,18 +1,21 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('node:child_process'), () => ({ execFileSync: vi.fn() }))
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
-  fetchOnCallEmails,
+  assigneeAccepted,
   isSheriffPr,
-  parseOnCallEmails,
+  loadSheriffConfig,
+  parseSheriffConfig,
   planActions,
-  resolveSheriff
+  runAssignment,
+  singleLine
 } from './release-sheriff'
-
-const config = {
-  fallbackGithubLogin: 'fallback-dev',
-  githubLoginByEmail: { 'Sheriff@comfy.org': 'sheriff-dev' }
-}
 
 function pr(overrides: Partial<PullRequestSummary> = {}): PullRequestSummary {
   return {
@@ -30,149 +33,246 @@ function pr(overrides: Partial<PullRequestSummary> = {}): PullRequestSummary {
   }
 }
 
-describe('parseOnCallEmails', () => {
-  it('reads and dedupes current on-call users from the included graph', () => {
-    const payload = {
-      included: [
-        { type: 'shifts', attributes: { start: '2026-07-22T00:00:00Z' } },
-        { type: 'users', attributes: { email: 'a@comfy.org', name: 'A' } },
-        { type: 'users', attributes: { email: 'a@comfy.org' } },
-        { type: 'users', attributes: { email: 'b@comfy.org' } }
-      ]
-    }
-
-    expect(parseOnCallEmails(payload)).toEqual(['a@comfy.org', 'b@comfy.org'])
-  })
-
-  it('ignores payloads without usable user records', () => {
-    expect(parseOnCallEmails(null)).toEqual([])
-    expect(parseOnCallEmails({ included: 'nope' })).toEqual([])
-    expect(parseOnCallEmails({ included: [{ type: 'users' }] })).toEqual([])
+describe('parseSheriffConfig', () => {
+  it('reads the sheriff and the backup reviewer, trimming each', () => {
     expect(
-      parseOnCallEmails({
-        included: [{ type: 'users', attributes: { email: ' ' } }]
-      })
-    ).toEqual([])
-  })
-})
-
-describe('fetchOnCallEmails', () => {
-  const datadog = { datadogSite: 'datadoghq.com', scheduleId: 'sched-1' }
-  const creds = { apiKey: 'api', appKey: 'app' }
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('warns and skips the request when no schedule is configured', async () => {
-    const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const result = await fetchOnCallEmails(
-      { ...datadog, scheduleId: '' },
-      creds
-    )
-
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/no datadog on-call schedule/i)
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
-  it('warns and skips the request when credentials are missing', async () => {
-    const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const result = await fetchOnCallEmails(datadog, { apiKey: 'api' })
-
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/DATADOG_API_KEY \/ DATADOG_APP_KEY/)
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
-  it('warns on a non-ok response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      })
-    )
-
-    const result = await fetchOnCallEmails(datadog, creds)
-
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/503 Service Unavailable/)
-  })
-
-  it('warns when the request is rejected', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
-
-    const result = await fetchOnCallEmails(datadog, creds)
-
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/lookup failed \(Error: boom\)/)
-  })
-
-  it('returns the parsed on-call emails and no warning on success', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          included: [
-            { type: 'users', attributes: { email: 'sheriff@comfy.org' } }
-          ]
-        })
-    })
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const result = await fetchOnCallEmails(datadog, creds)
-
-    expect(result).toEqual({ emails: ['sheriff@comfy.org'], warning: null })
-
-    const [url, init] = fetchSpy.mock.calls[0]
-    expect(String(url)).toBe(
-      'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1/responders' +
-        '?include=responders.shifts.user&filter%5Bposition%5D=current'
-    )
-    expect(init.headers).toMatchObject({
-      'DD-API-KEY': 'api',
-      'DD-APPLICATION-KEY': 'app'
-    })
-  })
-})
-
-describe('resolveSheriff', () => {
-  it('maps the on-call email to a GitHub login regardless of case', () => {
-    expect(resolveSheriff(['SHERIFF@comfy.org'], config)).toEqual({
-      login: 'sheriff-dev',
-      source: 'datadog',
-      unmappedEmails: []
-    })
-  })
-
-  it('skips unmapped users and reports them alongside the resolved login', () => {
-    expect(
-      resolveSheriff(['ghost@comfy.org', 'sheriff@comfy.org'], config)
+      parseSheriffConfig(
+        '{"sheriff":" thedatalife ","backupReviewer":"christian-byrne"}'
+      )
     ).toEqual({
-      login: 'sheriff-dev',
-      source: 'datadog',
-      unmappedEmails: ['ghost@comfy.org']
+      config: { sheriff: 'thedatalife', backupReviewer: 'christian-byrne' },
+      error: null
     })
   })
 
-  it('falls back when nothing resolves', () => {
-    expect(resolveSheriff(['ghost@comfy.org'], config)).toEqual({
-      login: 'fallback-dev',
-      source: 'fallback',
-      unmappedEmails: ['ghost@comfy.org']
-    })
-  })
-
-  it('reports no sheriff when the fallback is unset', () => {
+  it('ignores unknown fields so the file can carry its own documentation', () => {
     expect(
-      resolveSheriff([], { ...config, fallbackGithubLogin: '  ' })
-    ).toMatchObject({ login: null, source: 'none' })
+      parseSheriffConfig(
+        '{"_comment":["why this exists"],"sheriff":"a","backupReviewer":"b"}'
+      ).config
+    ).toEqual({ sheriff: 'a', backupReviewer: 'b' })
+  })
+
+  const malformed: [label: string, raw: string, expected: RegExp][] = [
+    ['text that is not JSON', 'not json', /not valid JSON/],
+    ['a JSON array', '[]', /not a JSON object/],
+    ['null', 'null', /not a JSON object/],
+    ['a missing sheriff', '{"backupReviewer":"b"}', /no usable "sheriff"/],
+    [
+      'a blank sheriff',
+      '{"sheriff":" ","backupReviewer":"b"}',
+      /no usable "sheriff"/
+    ],
+    ['a missing backup', '{"sheriff":"a"}', /no usable "backupReviewer"/],
+    [
+      'a sheriff login with a space',
+      '{"sheriff":"the data life","backupReviewer":"b"}',
+      /"the data life" is not a GitHub username/
+    ],
+    [
+      'a backup login with a space',
+      '{"sheriff":"a","backupReviewer":"christian byrne"}',
+      /"christian byrne" is not a GitHub username/
+    ],
+    [
+      'a login starting with a hyphen',
+      '{"sheriff":"-nope","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login ending with a hyphen',
+      '{"sheriff":"nope-","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login with consecutive hyphens',
+      '{"sheriff":"no--pe","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login over 39 characters',
+      `{"sheriff":"${'a'.repeat(40)}","backupReviewer":"b"}`,
+      /not a GitHub username/
+    ],
+    [
+      'a blank backup',
+      '{"sheriff":"a","backupReviewer":""}',
+      /no usable "backupReviewer"/
+    ]
+  ]
+
+  it.for(malformed)('rejects %s', ([, raw, expected]) => {
+    const { config, error } = parseSheriffConfig(raw)
+
+    expect(config).toBeNull()
+    expect(error).toMatch(expected)
+  })
+
+  it('accepts the hyphenated and 39-character logins GitHub allows', () => {
+    const longest = 'a'.repeat(39)
+
+    expect(
+      parseSheriffConfig(
+        `{"sheriff":"christian-byrne","backupReviewer":"${longest}"}`
+      )
+    ).toEqual({
+      config: { sheriff: 'christian-byrne', backupReviewer: longest },
+      error: null
+    })
+  })
+
+  it('rejects a backup reviewer who is the sheriff, ignoring case', () => {
+    const { config, error } = parseSheriffConfig(
+      '{"sheriff":"thedatalife","backupReviewer":"TheDataLife"}'
+    )
+
+    expect(config).toBeNull()
+    expect(error).toMatch(/same login as both "sheriff" and "backupReviewer"/)
+  })
+})
+
+describe('assigneeAccepted', () => {
+  const issue = (...logins: string[]) => ({
+    assignees: logins.map((login) => ({ login }))
+  })
+
+  it('confirms the login GitHub echoed back, ignoring case', () => {
+    expect(assigneeAccepted(issue('TheDataLife'), 'thedatalife')).toBe(true)
+    expect(
+      assigneeAccepted(issue('someone', 'thedatalife'), 'thedatalife')
+    ).toBe(true)
+  })
+
+  // The failure this exists for: GitHub drops an assignee without push access
+  // and still answers 201, so an empty list is a successful-looking no-op.
+  it('rejects a response that silently dropped the login', () => {
+    expect(assigneeAccepted(issue(), 'thedatalife')).toBe(false)
+    expect(assigneeAccepted(issue('someone-else'), 'thedatalife')).toBe(false)
+  })
+
+  const unusable: [label: string, response: unknown][] = [
+    ['a non-object', 'nope'],
+    ['null', null],
+    ['an object with no assignees', {}],
+    ['assignees that is not an array', { assignees: 'nope' }],
+    ['assignee entries without a login', { assignees: [{}, { login: 7 }] }]
+  ]
+
+  it.for(unusable)('rejects %s', ([, response]) => {
+    expect(assigneeAccepted(response, 'thedatalife')).toBe(false)
+  })
+})
+
+describe('runAssignment', () => {
+  // The caller path for a failed assignment. assigneeAccepted is covered above,
+  // but nothing proved runAssignment acts on a false result -- and if it stops,
+  // a PR silently stays unowned while the run reports success.
+  function run(
+    issueAfterPost: { assignees: { login: string }[] },
+    reviewRequestFails = false
+  ) {
+    const dir = mkdtempSync(join(tmpdir(), 'release-sheriff-'))
+    const file = join(dir, 'github-output')
+    const priorFile = process.env.GITHUB_OUTPUT
+    const priorCode = process.exitCode
+    process.env.GITHUB_OUTPUT = file
+    process.exitCode = 0
+
+    // ghWithRetry backs off through a blocking Atomics.wait before its last
+    // attempt. Mocking the CLI does not avoid that sleep, so the retry path
+    // costs real wall time unless the wait itself is stubbed.
+    const sleep = vi.spyOn(Atomics, 'wait').mockReturnValue('timed-out')
+
+    const candidate = pr({ number: 42, labels: [{ name: 'backport' }] })
+    let listed = false
+    vi.mocked(execFileSync).mockImplementation((_file, args) => {
+      const argv = args ?? []
+      if (argv[0] === 'pr' && argv[1] === 'list') {
+        if (listed) return '[]'
+        listed = true
+        return JSON.stringify([candidate])
+      }
+      if (argv.some((arg) => arg.endsWith('/assignees'))) {
+        return JSON.stringify(issueAfterPost)
+      }
+      if (reviewRequestFails) throw new Error('gh: 422 Unprocessable Entity')
+      return ''
+    })
+
+    try {
+      runAssignment('owner/repo', 'thedatalife', 'christian-byrne')
+      return {
+        exitCode: process.exitCode,
+        degraded: existsSync(file) ? readFileSync(file, 'utf8') : ''
+      }
+    } finally {
+      // Assigning undefined would set the literal string 'undefined', leaving
+      // a later test writing its output to a path named that.
+      if (priorFile === undefined) delete process.env.GITHUB_OUTPUT
+      else process.env.GITHUB_OUTPUT = priorFile
+      process.exitCode = priorCode
+      sleep.mockRestore()
+      vi.mocked(execFileSync).mockReset()
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  it('fails the run when GitHub drops the assignee it just accepted', () => {
+    const { exitCode, degraded } = run({ assignees: [] })
+
+    expect(exitCode).toBe(1)
+    expect(degraded).toContain('#42 is not confirmed assigned to `thedatalife`')
+    expect(degraded).toMatch(/Cause not established/)
+    // One heredoc record: a second would misparse the first's terminator.
+    expect(degraded.match(/^degraded<<__EOF__$/gm)).toHaveLength(1)
+  })
+
+  // The other half of the same guarantee: a backport that is assigned but has
+  // nobody asked to review it never reaches the approval backport-auto-merge
+  // waits for, so a rejected request has to fail the run too.
+  it('fails the run when GitHub rejects the review request', () => {
+    const { exitCode, degraded } = run(
+      { assignees: [{ login: 'thedatalife' }] },
+      true
+    )
+
+    expect(exitCode).toBe(1)
+    expect(degraded).toContain(
+      '#42 has no confirmed review request for `thedatalife`'
+    )
+    expect(degraded).not.toContain('is not confirmed assigned')
+  })
+
+  it('stays green when GitHub echoes the assignee back', () => {
+    const { exitCode, degraded } = run({
+      assignees: [{ login: 'TheDataLife' }]
+    })
+
+    expect(exitCode).toBe(0)
+    expect(degraded).toBe('')
+  })
+})
+
+describe('singleLine', () => {
+  it('cannot emit a line that closes a GITHUB_OUTPUT heredoc early', () => {
+    expect(singleLine('before\n__EOF__\nafter')).toBe('before __EOF__ after')
+  })
+
+  it('collapses incidental whitespace', () => {
+    expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
+  })
+})
+
+describe('the shipped .github/release-sheriff.json', () => {
+  // parseSheriffConfig is exercised on inline literals above, so all of it
+  // still passes with a typo in the file the workflow actually reads. This is
+  // the gate the file's own comment promises: a PR that blanks a login or
+  // names one person as both sheriff and backup fails here.
+  it('parses, so a bad edit fails the PR that writes it', () => {
+    const { config, error } = loadSheriffConfig()
+
+    expect(error).toBeNull()
+    expect(config).not.toBeNull()
   })
 })
 
@@ -185,6 +285,20 @@ describe('isSheriffPr', () => {
     expect(isSheriffPr(pr({ headRefName: 'version-bump-1.46.0-beta.1' }))).toBe(
       true
     )
+  })
+
+  it('matches anything opened by automation, whatever it is about', () => {
+    for (const login of [
+      'app/dependabot',
+      'app/cloud-code-bot',
+      'comfy-pr-bot'
+    ])
+      expect(isSheriffPr(pr({ author: { login } }))).toBe(true)
+  })
+
+  it('ignores humans whose login merely resembles a bot', () => {
+    expect(isSheriffPr(pr({ author: { login: 'dependabot-fan' } }))).toBe(false)
+    expect(isSheriffPr(pr({ author: null }))).toBe(false)
   })
 
   it('ignores feature branches that merely start with version-bump-', () => {
@@ -212,7 +326,9 @@ describe('planActions', () => {
         [pr({ number: 7, labels: [{ name: 'backport' }] })],
         'sheriff'
       )
-    ).toEqual([{ number: 7, assign: true, requestReview: true }])
+    ).toEqual([
+      { number: 7, assign: true, requestReview: true, reviewer: 'sheriff' }
+    ])
   })
 
   it('never overwrites an existing assignee or review request', () => {
@@ -230,12 +346,12 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: false, requestReview: true },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: false, requestReview: true, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: 'sheriff' }
     ])
   })
 
-  it('does not request review on approved PRs or the sheriff’s own PRs', () => {
+  it('does not request review on approved PRs, nor from the sheriff on their own', () => {
     const prs = [
       pr({
         number: 1,
@@ -245,13 +361,25 @@ describe('planActions', () => {
       pr({
         number: 2,
         labels: [{ name: 'backport' }],
-        author: { login: 'sheriff' }
+        author: { login: 'Sheriff' }
       })
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 1, assign: true, requestReview: false },
-      { number: 2, assign: true, requestReview: false }
+      { number: 1, assign: true, requestReview: false, reviewer: 'sheriff' },
+      { number: 2, assign: true, requestReview: false, reviewer: null }
+    ])
+  })
+
+  it('asks the standby to review the sheriff’s own PR', () => {
+    const own = pr({
+      number: 3,
+      labels: [{ name: 'backport' }],
+      author: { login: 'Sheriff' }
+    })
+
+    expect(planActions([own], 'sheriff', 'b')).toEqual([
+      { number: 3, assign: true, requestReview: true, reviewer: 'b' }
     ])
   })
 
@@ -261,7 +389,7 @@ describe('planActions', () => {
         number: 1,
         labels: [{ name: 'backport' }],
         assignees: [{ login: 'dev' }],
-        latestReviews: [{ author: { login: 'sheriff' } }],
+        latestReviews: [{ author: { login: 'Sheriff' } }],
         reviewDecision: 'CHANGES_REQUESTED'
       }),
       pr({
@@ -272,7 +400,7 @@ describe('planActions', () => {
     ]
 
     expect(planActions(prs, 'sheriff')).toEqual([
-      { number: 2, assign: true, requestReview: true }
+      { number: 2, assign: true, requestReview: true, reviewer: 'sheriff' }
     ])
   })
 

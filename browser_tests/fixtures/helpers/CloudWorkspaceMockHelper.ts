@@ -1,5 +1,8 @@
-import type { Page, Route } from '@playwright/test'
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
+import type { Locator, Page, Route } from '@playwright/test'
+import type {
+  BillingCapabilities,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   Member,
@@ -7,15 +10,18 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
+  CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
   TEAM_BILLING_STATUS,
   TEAM_PRO_PLAN,
-  TEAM_WORKSPACE,
-  WORKSPACE_FEATURE_FLAG
+  TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
@@ -28,12 +34,6 @@ interface MemberMockState {
   patches: RoleChangeRequest[]
 }
 
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
-
 /**
  * Boots the cloud app against fully mocked workspace + billing endpoints so
  * member/role specs can drive a raw `page` (the `comfyPage` fixture would try
@@ -45,12 +45,42 @@ const jsonRoute = (body: unknown) => ({
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
+  async openPlanAndCreditsSettings(): Promise<Locator> {
+    await this.page.goto(
+      process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    )
+    await this.page.waitForFunction(
+      () => !!window.app?.extensionManager,
+      null,
+      {
+        timeout: 45_000
+      }
+    )
+    await this.page
+      .getByRole('button', { name: /^Settings/ })
+      .first()
+      .click()
+    const dialog = this.page.getByTestId(TestIds.dialogs.settings)
+    await dialog.waitFor({ state: 'visible' })
+    await dialog
+      .locator('nav')
+      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .click()
+    return dialog.getByRole('main')
+  }
+
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
     activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
-    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members, activeWorkspace, billingStatus)
+    const state = await this.mockBoot(
+      members,
+      activeWorkspace,
+      billingStatus,
+      capabilityOverrides
+    )
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -62,7 +92,8 @@ export class CloudWorkspaceMockHelper {
   private async mockBoot(
     members: Member[],
     activeWorkspace: WorkspaceWithRole,
-    billingStatus: BillingStatusResponse
+    billingStatus: BillingStatusResponse,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
@@ -70,42 +101,18 @@ export class CloudWorkspaceMockHelper {
     }
     const { page } = this
 
-    await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(WORKSPACE_FEATURE_FLAG))
-    )
-    await page.route('**/api/system_stats', (r) =>
-      r.fulfill(jsonRoute(mockSystemStats))
-    )
-    await page.route('**/api/users', (r) =>
-      r.fulfill(
-        jsonRoute({
-          storage: 'server',
-          migrated: true,
-          users: { 'test-user-e2e': 'E2E Test User' }
-        })
-      )
-    )
-    // A non-empty settings payload with TutorialCompleted marks the user as
-    // returning, so the new-user Templates dialog never auto-opens to block the
-    // Settings button. Errors tab off suppresses the model-folder 401 toast.
-    await page.route('**/api/settings', (r) =>
-      r.fulfill(
-        jsonRoute({
-          'Comfy.TutorialCompleted': true,
-          'Comfy.RightSidePanel.ShowErrorsTab': false
-        })
-      )
-    )
-    await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/auth/session', (r) =>
-      r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-    )
+    await mockCloudBootRoutes(page, {
+      features: CLOUD_REMOTE_CONFIG,
+      // A non-empty settings payload with TutorialCompleted marks the user as
+      // returning, so the new-user Templates dialog never auto-opens to block
+      // the Settings button. Errors tab off suppresses the model-folder 401
+      // toast.
+      settings: {
+        'Comfy.TutorialCompleted': true,
+        'Comfy.RightSidePanel.ShowErrorsTab': false
+      }
+    })
     await mockWorkspaceTokenMint(page, activeWorkspace)
-    await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
     await page.route('**/api/workspaces', (r) =>
       r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))
@@ -137,6 +144,20 @@ export class CloudWorkspaceMockHelper {
 
     await page.route('**/api/billing/status', (r) =>
       r.fulfill(jsonRoute(billingStatus))
+    )
+    await page.route('**/api/billing/capabilities', (r) => {
+      if (r.request().method() !== 'GET') return r.fallback()
+      return r.fulfill(
+        jsonRoute(
+          createWorkspaceBillingCapabilities(
+            activeWorkspace,
+            capabilityOverrides
+          )
+        )
+      )
+    })
+    await page.route('**/api/billing/payment-portal', (r) =>
+      r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )
     await page.route('**/api/billing/balance', (r) =>
       r.fulfill(

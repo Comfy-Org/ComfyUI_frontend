@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
@@ -9,37 +11,39 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   findActiveIndex,
+  getJobAssets,
   getJobDetail,
+  getJobApiPrompt,
   getJobWorkflow,
   getOutputsForTask
 } from '@/services/jobOutputCache'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
-  fetchJobDetail: vi.fn(),
-  extractWorkflow: vi.fn()
-}))
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), { spy: true })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getJobDetail: vi.fn(),
+    getJobAssets: vi.fn(),
     apiURL: vi.fn((path: string) => `/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
   }
 }))
 
-function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
-  const item = new ResultItemImpl({
+function createResultItem(
+  url: string,
+  supportsPreview = true
+): AugmentedResultItem {
+  return {
     filename: url,
     subfolder: '',
     type: 'output',
     nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
-  })
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
-  return item
+    mediaType: supportsPreview ? 'images' : 'unknown',
+    url
+  }
 }
 
 function createMockJob(id: string, outputsCount = 1): JobListItem {
@@ -54,8 +58,8 @@ function createMockJob(id: string, outputsCount = 1): JobListItem {
 }
 
 function createTask(
-  preview?: ResultItemImpl,
-  allOutputs?: ResultItemImpl[],
+  preview?: AugmentedResultItem,
+  allOutputs?: AugmentedResultItem[],
   outputsCount = 1
 ): TaskItemImpl {
   const job = createMockJob(
@@ -73,10 +77,6 @@ function uniqueId(prefix: string): string {
 }
 
 describe('jobOutputCache', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('findActiveIndex', () => {
     it('returns index of matching URL', () => {
       const items = [
@@ -240,15 +240,17 @@ describe('jobOutputCache', () => {
 
       expect(result).toHaveLength(4)
       expect(result.map((item) => item.filename).sort()).toEqual(
-        ['image.png', 'image.webp', 'clip.mp4', 'sound.mp3'].sort()
+        expect.arrayContaining([
+          'image.png',
+          'image.webp',
+          'clip.mp4',
+          'sound.mp3'
+        ])
       )
 
       const image = result.find((item) => item.filename === 'image.png')
       const video = result.find((item) => item.filename === 'clip.mp4')
-      const { ResultItemImpl: ResultItemImplClass } =
-        await import('@/stores/queueStore')
 
-      expect(image).toBeInstanceOf(ResultItemImplClass)
       expect(image?.nodeId).toBe('node-1')
       expect(image?.mediaType).toBe('images')
       expect(video?.nodeId).toBe('node-2')
@@ -359,6 +361,75 @@ describe('jobOutputCache', () => {
     })
   })
 
+  describe('getJobAssets', () => {
+    it('caches assets after the first fetch', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
+
+      await getJobAssets(jobId)
+      const result = await getJobAssets(jobId)
+
+      expect(result.map((asset) => asset.id)).toEqual(['a1'])
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes concurrent requests for the same job', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: true
+      })
+
+      const [first, second] = await Promise.all([
+        getJobAssets(jobId),
+        getJobAssets(jobId)
+      ])
+
+      expect(first).toEqual(second)
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not cache empty results', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [],
+        complete: true
+      })
+
+      await getJobAssets(jobId)
+      await getJobAssets(jobId)
+
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache a truncated result, and re-fetches once complete', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [{ id: 'a1', name: 'a.png', created_at: 't' }],
+        complete: false
+      })
+
+      const truncated = await getJobAssets(jobId)
+      expect(truncated.map((asset) => asset.id)).toEqual(['a1'])
+
+      vi.mocked(api.getJobAssets).mockResolvedValue({
+        assets: [
+          { id: 'a1', name: 'a.png', created_at: 't' },
+          { id: 'a2', name: 'b.png', created_at: 't' }
+        ],
+        complete: true
+      })
+
+      const recovered = await getJobAssets(jobId)
+
+      expect(recovered.map((asset) => asset.id)).toEqual(['a1', 'a2'])
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('getJobWorkflow', () => {
     it('fetches job detail and extracts workflow', async () => {
       const jobId = uniqueId('job-wf')
@@ -392,6 +463,58 @@ describe('jobOutputCache', () => {
       const result = await getJobWorkflow(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('getJobApiPrompt', () => {
+    const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+
+    function jobWithWorkflow(jobId: string, workflow: unknown): JobDetail {
+      return {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {},
+        workflow
+      }
+    }
+
+    it('returns the stored API prompt for an API-submitted job', async () => {
+      const jobId = uniqueId('job-api')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns the stored API prompt when extra_data is null', async () => {
+      const jobId = uniqueId('job-api-null')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, { prompt: apiPrompt, extra_data: null })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toEqual(apiPrompt)
+    })
+
+    it('returns undefined when the job embeds an editor workflow', async () => {
+      const jobId = uniqueId('job-embedded')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        jobWithWorkflow(jobId, {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: { workflow: { nodes: [] } } }
+        })
+      )
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
+    })
+
+    it('returns undefined when job detail not found', async () => {
+      const jobId = uniqueId('job-api-missing')
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      await expect(getJobApiPrompt(jobId)).resolves.toBeUndefined()
     })
   })
 })

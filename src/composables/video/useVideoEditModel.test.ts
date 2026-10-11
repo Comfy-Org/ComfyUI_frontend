@@ -16,7 +16,7 @@ describe('useVideoEditModel', () => {
 
   function createModel(
     initial: VideoEditValue = {},
-    { duration = 10, fps = 10 } = {}
+    { duration = 10, fps = 10, width = 1920, height = 1080 } = {}
   ) {
     const modelValue = ref<VideoEditValue>(initial)
     scope = effectScope()
@@ -25,8 +25,8 @@ describe('useVideoEditModel', () => {
         duration: ref(duration),
         totalFrames: ref(100),
         fps: ref(fps),
-        width: ref(1920),
-        height: ref(1080)
+        width: ref(width),
+        height: ref(height)
       })
     )!
     return { modelValue, ...model }
@@ -79,6 +79,34 @@ describe('useVideoEditModel', () => {
 
     it('falls back to fps for conversions when the duration is unknown', () => {
       const { modelValue, startFrame } = createModel({}, { duration: 0 })
+
+      startFrame.value = 10
+
+      expect(modelValue.value.trim).toEqual({ start_time: 1, duration: 0 })
+    })
+
+    it('treats non-finite trim values as a no-op trim', () => {
+      const { startFrame, endFrame } = createModel({
+        trim: { start_time: Number.NaN, duration: Number.NaN }
+      })
+
+      expect(startFrame.value).toBe(0)
+      expect(endFrame.value).toBe(99)
+    })
+
+    it('normalizes corrupt trim values back into the model', async () => {
+      const { modelValue } = createModel({
+        trim: { start_time: Number.NaN, duration: -5 }
+      })
+      await nextTick()
+
+      expect(modelValue.value.trim).toEqual({ start_time: 0, duration: 0 })
+    })
+
+    it('writes clean values when editing after a corrupted trim', () => {
+      const { modelValue, startFrame } = createModel({
+        trim: { start_time: Number.NaN, duration: Number.NaN }
+      })
 
       startFrame.value = 10
 
@@ -140,6 +168,50 @@ describe('useVideoEditModel', () => {
       })
     })
 
+    it.for([
+      { x: 0, y: 0, width: Number.NaN, height: Number.NaN },
+      { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 100 },
+      { x: Number.NaN, y: 0, width: 100, height: 100 },
+      { x: 0, y: Number.NEGATIVE_INFINITY, width: 100, height: 100 }
+    ])('falls back to the full frame for the non-finite crop %j', (crop) => {
+      const { cropBounds } = createModel({ crop })
+
+      expect(cropBounds.value).toEqual({
+        x: 0,
+        y: 0,
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('normalizes corrupt crop values back into the model', async () => {
+      const { modelValue } = createModel({
+        crop: { x: -10, y: 0, width: Number.POSITIVE_INFINITY, height: 100 }
+      })
+      await nextTick()
+
+      expect(modelValue.value.crop).toEqual({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      })
+    })
+
+    it('clamps a stored crop that exceeds the current source frame', () => {
+      const { cropBounds } = createModel(
+        { crop: { x: 100, y: 100, width: 1920, height: 1080 } },
+        { width: 640, height: 480 }
+      )
+
+      expect(cropBounds.value).toEqual({
+        x: 100,
+        y: 100,
+        width: 540,
+        height: 380
+      })
+    })
+
     it('rounds and stores a partial crop', () => {
       const { modelValue, cropBounds } = createModel()
 
@@ -176,72 +248,6 @@ describe('useVideoEditModel', () => {
         width: 0,
         height: 0
       })
-    })
-  })
-
-  describe('section toggles', () => {
-    it('starts disabled for no-op values', () => {
-      const { trimEnabled, cropEnabled } = createModel()
-
-      expect(trimEnabled.value).toBe(false)
-      expect(cropEnabled.value).toBe(false)
-    })
-
-    it('starts enabled for active values', () => {
-      const { trimEnabled, cropEnabled } = createModel({
-        trim: { start_time: 1, duration: 0 },
-        crop: { x: 0, y: 0, width: 640, height: 360 }
-      })
-
-      expect(trimEnabled.value).toBe(true)
-      expect(cropEnabled.value).toBe(true)
-    })
-
-    it('resets the trim section when toggled off', () => {
-      const { modelValue, trimEnabled } = createModel({
-        trim: { start_time: 1, duration: 7 }
-      })
-
-      trimEnabled.value = false
-
-      expect(modelValue.value.trim).toEqual({ start_time: 0, duration: 0 })
-    })
-
-    it('resets the crop section when toggled off', () => {
-      const { modelValue, cropEnabled } = createModel({
-        crop: { x: 10, y: 10, width: 640, height: 360 }
-      })
-
-      cropEnabled.value = false
-
-      expect(modelValue.value.crop).toEqual({
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0
-      })
-    })
-
-    it('expands the editor without touching the value when toggled on', () => {
-      const { modelValue, trimEnabled } = createModel()
-
-      trimEnabled.value = true
-
-      expect(trimEnabled.value).toBe(true)
-      expect(modelValue.value.trim).toBeUndefined()
-    })
-
-    it('auto-enables a section when an active value arrives later', async () => {
-      const { modelValue, cropEnabled } = createModel()
-      expect(cropEnabled.value).toBe(false)
-
-      modelValue.value = {
-        ...modelValue.value,
-        crop: { x: 5, y: 5, width: 100, height: 100 }
-      }
-      await nextTick()
-
-      expect(cropEnabled.value).toBe(true)
     })
   })
 })

@@ -1,7 +1,7 @@
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { basename } from 'path'
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { Position } from '@e2e/fixtures/types'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
@@ -10,6 +10,28 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
+
+  async dropFilesOn(target: Locator, filePaths: string[]): Promise<void> {
+    const files = filePaths.map((filePath) => ({
+      bytes: Array.from(readFileSync(filePath)),
+      name: basename(filePath),
+      type: getMimeType(basename(filePath)),
+      lastModified: statSync(filePath).mtimeMs
+    }))
+    const transfer = await this.page.evaluateHandle((files) => {
+      const transfer = new DataTransfer()
+      for (const { bytes, name, type, lastModified } of files)
+        transfer.items.add(
+          new File([new Uint8Array(bytes)], name, { type, lastModified })
+        )
+      return transfer
+    }, files)
+    try {
+      await target.dispatchEvent('drop', { dataTransfer: transfer })
+    } finally {
+      await transfer.dispose()
+    }
+  }
 
   async dragAndDropExternalResource(
     options: {
@@ -156,7 +178,11 @@ export class DragDropHelper {
 
   async dragAndDropFile(
     fileName: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+    options: {
+      dropPosition?: Position
+      waitForUpload?: boolean
+      preserveNativePropagation?: boolean
+    } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }

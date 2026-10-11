@@ -90,8 +90,7 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
 
-/** Target: P5 FPS ≥ 52 → P95 frame time ≤ 19.2ms */
-const TARGET_P95_FRAME_MS = 19.2
+/** Target: P5 FPS ≥ 52 */
 const TARGET_P5_FPS = 52
 
 function groupByName(
@@ -169,7 +168,7 @@ function computeCV(stats: MetricStats): number {
 function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(0)}ms`
   if (unit === 'bytes') return formatBytes(value)
-  return `${value.toFixed(0)}`
+  return value.toFixed(0)
 }
 
 function formatDelta(pct: number | null): string {

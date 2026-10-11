@@ -1,10 +1,12 @@
+import { IMAGE_WIDGET } from '@/composables/maskeditor/imageWidgetAdapter'
+import { getNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {
@@ -74,8 +76,8 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
   const pathPlusQueryParams = api.apiURL(
     '/view?' +
       params.toString() +
-      app.getPreviewFormatParam() +
-      app.getRandParam()
+      useApp().getPreviewFormatParam() +
+      useApp().getRandParam()
   )
   const imageElement = new Image()
   imageElement.crossOrigin = 'anonymous'
@@ -97,10 +99,9 @@ export function useMaskEditorLoader() {
 
       let nodeImageRef = parseImageRef(nodeImageUrl)
 
-      const imageWidget = node.widgets?.find((w) => w.name === 'image')
-      const widgetFilename = imageWidget
-        ? extractWidgetStringValue(imageWidget.value)
-        : undefined
+      const widgetFilename = extractWidgetStringValue(
+        getNodeWidgetValue(node, IMAGE_WIDGET)
+      )
 
       // If we have a widget filename, we should prioritize it over the node image
       // because the node image might be stale (e.g. from a previous save)
@@ -127,7 +128,7 @@ export function useMaskEditorLoader() {
           if (response.ok) {
             maskLayersFromApi = await response.json()
           }
-        } catch (error) {
+        } catch {
           // Fallback to pattern matching if API call fails
         }
       }
@@ -231,10 +232,6 @@ export function useMaskEditorLoader() {
   }
 
   function validateNode(node: LGraphNode): void {
-    if (!node) {
-      throw new Error('Node is null or undefined')
-    }
-
     const hasImages = node.imgs?.length || node.previewMediaType === 'image'
     if (!hasImages) {
       throw new Error('Node has no images')

@@ -1,27 +1,43 @@
 <template>
-  <Avatar
-    class="aspect-square bg-interface-panel-selected-surface"
-    :image="photoUrl ?? undefined"
-    :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
-    :pt="{
-      icon: {
-        class: { 'size-4': !hasAvatar },
-        'data-testid': 'avatar-icon'
-      }
-    }"
-    shape="circle"
-    :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
-    @error="handleImageError"
-  />
+  <span
+    :class="
+      cn(
+        'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full bg-interface-panel-selected-surface',
+        size === 'large' ? 'size-12' : 'size-8'
+      )
+    "
+  >
+    <img
+      v-if="hasAvatar"
+      :src="photoUrl ?? undefined"
+      :alt="ariaLabel ?? $t('auth.login.userAvatar')"
+      :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
+      class="size-full object-cover"
+      @error="handleImageError"
+    />
+    <i
+      v-else
+      data-testid="avatar-icon"
+      :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
+      :class="cn('icon-[lucide--user]', iconClass)"
+    />
+  </span>
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
-import { computed, ref } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, watch } from 'vue'
 
-const { photoUrl, ariaLabel } = defineProps<{
+const {
+  photoUrl,
+  ariaLabel,
+  iconClass = 'size-4',
+  size = 'normal'
+} = defineProps<{
   photoUrl?: string | null
   ariaLabel?: string
+  iconClass?: string
+  size?: 'normal' | 'large'
 }>()
 
 const imageError = ref(false)
@@ -29,4 +45,11 @@ const handleImageError = () => {
   imageError.value = true
 }
 const hasAvatar = computed(() => photoUrl && !imageError.value)
+
+watch(
+  () => photoUrl,
+  () => {
+    imageError.value = false
+  }
+)
 </script>

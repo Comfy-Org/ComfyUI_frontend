@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrumpir"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Abrir el editor de capas para el nodo seleccionado"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Cargar flujo de trabajo predeterminado"
   },
@@ -227,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nuevo flujo de trabajo en blanco"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Repetir la introducción"
+  },
   "Comfy_OpenClipspace": {
     "label": "Abrir espacio de clips"
   },
@@ -274,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Establecer alias de búsqueda del subgrafo"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Habilitar AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Rendimiento del lienzo"

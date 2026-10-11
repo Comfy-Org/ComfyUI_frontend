@@ -17,7 +17,7 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-foreground m-0 text-xs font-semibold">
+      <h3 class="m-0 text-xs font-semibold text-base-foreground">
         {{ nodeDef.display_name }}
       </h3>
 
@@ -53,6 +53,7 @@
       <div
         v-if="inputs.length > 0 && showInputsAndOutputs"
         class="flex flex-col gap-1"
+        data-testid="node-preview-inputs"
       >
         <h4
           class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
@@ -64,7 +65,7 @@
           :key="input.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="text-foreground shrink-0">{{ input.name }}</span>
+          <span class="shrink-0 text-base-foreground">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             input.type
           }}</span>
@@ -86,7 +87,7 @@
           :key="output.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="text-foreground shrink-0">{{ output.name }}</span>
+          <span class="shrink-0 text-base-foreground">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             output.type
           }}</span>
@@ -103,6 +104,7 @@ import { computed, ref } from 'vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
+import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const BASE_WIDTH_PX = 200
@@ -136,10 +138,10 @@ const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []
-  return Object.entries(nodeDef.inputs)
-    .filter(([_, input]) => !input.hidden)
-    .map(([name, input]) => ({
-      name,
+  return flattenInputSpecs(nodeDef.inputs)
+    .filter((input) => !input.hidden)
+    .map((input) => ({
+      name: input.name,
       type: input.type
     }))
 })

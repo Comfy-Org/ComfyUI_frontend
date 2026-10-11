@@ -1,7 +1,6 @@
-import path from 'path'
 import type { Plugin } from 'vite'
 
-import { isComfyAPISourceFile } from '../comfyAPISurface'
+import { getComfyAPIRelativePath } from '../comfyAPISurface'
 
 interface ShimResult {
   code: string
@@ -36,19 +35,18 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-/** Names this module publishes onto `window.comfyAPI`. */
-export function getPublishedExportNames(code: string): string[] {
-  const regex =
-    /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g
-  return Array.from(code.matchAll(regex), (match) => match[2])
-}
-
 function transformExports(code: string, id: string): ShimResult {
   const moduleName = getModuleName(id)
   const exports: string[] = []
   let newCode = code
 
-  for (const name of getPublishedExportNames(code)) {
+  // Regex to match different types of exports
+  const regex =
+    /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g
+  let match
+
+  while ((match = regex.exec(code)) !== null) {
+    const name = match[2]
     // All exports should be bind to the window object as new API endpoint.
     if (exports.length == 0) {
       newCode += `\nwindow.comfyAPI = window.comfyAPI || {};`
@@ -68,26 +66,23 @@ function transformExports(code: string, id: string): ShimResult {
 
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
-  const parts = id.split('/')
+  const parts = id.replace(/\\/g, '/').split('/')
   const fileName = parts[parts.length - 1]
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 
-export function comfyAPIPlugin(isDev: boolean): Plugin {
+export function comfyAPIPlugin(isDev: boolean) {
   return {
     name: 'comfy-api-plugin',
     apply: 'build',
     transform(code: string, id: string) {
       if (isDev) return null
 
-      if (isComfyAPISourceFile(id)) {
+      const relativePath = getComfyAPIRelativePath(id)
+      if (relativePath) {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {
-          const projectRoot = process.cwd()
-          const relativePath = path
-            .relative(path.join(projectRoot, 'src'), id)
-            .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
           let shimContent = `// Shim for ${relativePath}\n`
@@ -115,5 +110,5 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         }
       }
     }
-  }
+  } satisfies Plugin
 }

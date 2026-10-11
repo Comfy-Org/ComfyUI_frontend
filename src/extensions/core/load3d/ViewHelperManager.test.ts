@@ -1,8 +1,9 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EventManagerInterface } from './interfaces'
+import type { CameraState, EventManagerInterface } from './interfaces'
 import { ViewHelperManager } from './ViewHelperManager'
 
 interface MockViewHelperInstance {
@@ -21,7 +22,7 @@ const { viewHelperInstances, mockHandleClick } = vi.hoisted(() => ({
   mockHandleClick: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
+vi.mock(import('three/examples/jsm/helpers/ViewHelper'), () => {
   class ViewHelper {
     animating = false
     visible = true
@@ -33,10 +34,10 @@ vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
       public camera: THREE.Camera,
       public domElement: HTMLElement
     ) {
-      viewHelperInstances.push(this as unknown as MockViewHelperInstance)
+      viewHelperInstances.push(this)
     }
   }
-  return { ViewHelper }
+  return { ViewHelper: fromAny(ViewHelper) }
 })
 
 function makeMockEventManager() {
@@ -56,9 +57,20 @@ describe('ViewHelperManager', () => {
   let camera: THREE.PerspectiveCamera
   let controls: OrbitControls
   let manager: ViewHelperManager
+  const cameraState: CameraState = {
+    position: new THREE.Vector3(1, 2, 3),
+    target: new THREE.Vector3(4, 5, 6),
+    zoom: 1.5,
+    cameraType: 'perspective',
+    quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    fov: 35,
+    aspect: 1.5,
+    near: 0.1,
+    far: 1000,
+    frustum: { left: -2, right: 2, top: 2, bottom: -2 }
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     viewHelperInstances.length = 0
     events = makeMockEventManager()
     camera = new THREE.PerspectiveCamera()
@@ -67,12 +79,9 @@ describe('ViewHelperManager', () => {
       {} as THREE.WebGLRenderer,
       () => camera,
       () => controls,
+      () => cameraState,
       events
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('createViewHelper', () => {
@@ -81,10 +90,10 @@ describe('ViewHelperManager', () => {
 
       manager.createViewHelper(parent)
 
-      expect(manager.viewHelperContainer.parentNode).toBe(parent)
-      expect(manager.viewHelperContainer.style.width).toBe('128px')
-      expect(manager.viewHelperContainer.style.height).toBe('128px')
-      expect(manager.viewHelperContainer.style.position).toBe('absolute')
+      expect(manager.viewHelperContainer?.parentNode).toBe(parent)
+      expect(manager.viewHelperContainer?.style.width).toBe('128px')
+      expect(manager.viewHelperContainer?.style.height).toBe('128px')
+      expect(manager.viewHelperContainer?.style.position).toBe('absolute')
     })
 
     it('instantiates ViewHelper with the active camera and binds its center to the controls target', () => {
@@ -94,6 +103,7 @@ describe('ViewHelperManager', () => {
         {} as THREE.WebGLRenderer,
         () => camera,
         () => controls,
+        () => cameraState,
         events
       )
 
@@ -101,7 +111,7 @@ describe('ViewHelperManager', () => {
 
       expect(viewHelperInstances).toHaveLength(1)
       expect(viewHelperInstances[0].camera).toBe(camera)
-      expect(manager.viewHelper.center).toBe(target)
+      expect(manager.viewHelper?.center).toBe(target)
     })
 
     it('routes pointerup events to ViewHelper.handleClick and stops propagation', () => {
@@ -111,7 +121,7 @@ describe('ViewHelperManager', () => {
       manager.createViewHelper(parent)
 
       const event = new PointerEvent('pointerup', { bubbles: true })
-      manager.viewHelperContainer.dispatchEvent(event)
+      manager.viewHelperContainer?.dispatchEvent(event)
 
       expect(mockHandleClick).toHaveBeenCalledWith(event)
       expect(propagated).not.toHaveBeenCalled()
@@ -123,7 +133,7 @@ describe('ViewHelperManager', () => {
       parent.addEventListener('pointerdown', propagated)
       manager.createViewHelper(parent)
 
-      manager.viewHelperContainer.dispatchEvent(
+      manager.viewHelperContainer?.dispatchEvent(
         new PointerEvent('pointerdown', { bubbles: true })
       )
 
@@ -135,72 +145,39 @@ describe('ViewHelperManager', () => {
   describe('update', () => {
     it('does nothing when ViewHelper is not animating', () => {
       manager.createViewHelper(document.createElement('div'))
-      manager.viewHelper.animating = false
+      const [helper] = viewHelperInstances
+      helper.animating = false
 
       manager.update(0.5)
 
-      expect(manager.viewHelper.update).not.toHaveBeenCalled()
+      expect(helper.update).not.toHaveBeenCalled()
       expect(events.emitEvent).not.toHaveBeenCalled()
     })
 
     it('drives the animation while it is in progress without emitting yet', () => {
       manager.createViewHelper(document.createElement('div'))
-      manager.viewHelper.animating = true
+      const [helper] = viewHelperInstances
+      helper.animating = true
 
       manager.update(0.25)
 
-      expect(manager.viewHelper.update).toHaveBeenCalledWith(0.25)
+      expect(helper.update).toHaveBeenCalledWith(0.25)
       expect(events.emitEvent).not.toHaveBeenCalled()
     })
 
-    it('emits cameraChanged with a perspective state when the animation just finished', () => {
+    it('emits cameraChanged with the full camera state when the animation just finished', () => {
       manager.createViewHelper(document.createElement('div'))
-      camera.position.set(1, 2, 3)
-      camera.zoom = 1.5
-      controls.target.set(4, 5, 6)
-      manager.viewHelper.animating = true
-      ;(
-        manager.viewHelper.update as unknown as {
-          mockImplementation(fn: () => void): void
-        }
-      ).mockImplementation(() => {
-        manager.viewHelper.animating = false
-      })
-
-      manager.update(0)
-
-      expect(events.emitEvent).toHaveBeenCalledWith('cameraChanged', {
-        position: expect.objectContaining({ x: 1, y: 2, z: 3 }),
-        target: expect.objectContaining({ x: 4, y: 5, z: 6 }),
-        zoom: 1.5,
-        cameraType: 'perspective'
-      })
-    })
-
-    it('reports orthographic when the active camera is an OrthographicCamera', () => {
-      const ortho = new THREE.OrthographicCamera()
-      ortho.zoom = 0.5
-      manager = new ViewHelperManager(
-        {} as THREE.WebGLRenderer,
-        () => ortho,
-        () => controls,
-        events
-      )
-      manager.createViewHelper(document.createElement('div'))
-      manager.viewHelper.animating = true
-      ;(
-        manager.viewHelper.update as unknown as {
-          mockImplementation(fn: () => void): void
-        }
-      ).mockImplementation(() => {
-        manager.viewHelper.animating = false
+      const [helper] = viewHelperInstances
+      helper.animating = true
+      helper.update.mockImplementation(() => {
+        helper.animating = false
       })
 
       manager.update(0)
 
       expect(events.emitEvent).toHaveBeenCalledWith(
         'cameraChanged',
-        expect.objectContaining({ cameraType: 'orthographic', zoom: 0.5 })
+        cameraState
       )
     })
   })
@@ -208,13 +185,13 @@ describe('ViewHelperManager', () => {
   describe('visibleViewHelper', () => {
     it('shows the helper and unhides the container when called with true', () => {
       manager.createViewHelper(document.createElement('div'))
-      manager.viewHelper.visible = false
-      manager.viewHelperContainer.style.display = 'none'
+      const [helper] = viewHelperInstances
+      manager.visibleViewHelper(false)
 
       manager.visibleViewHelper(true)
 
-      expect(manager.viewHelper.visible).toBe(true)
-      expect(manager.viewHelperContainer.style.display).toBe('block')
+      expect(helper.visible).toBe(true)
+      expect(manager.viewHelperContainer?.style.display).toBe('block')
     })
 
     it('hides the helper and the container when called with false', () => {
@@ -222,15 +199,15 @@ describe('ViewHelperManager', () => {
 
       manager.visibleViewHelper(false)
 
-      expect(manager.viewHelper.visible).toBe(false)
-      expect(manager.viewHelperContainer.style.display).toBe('none')
+      expect(manager.viewHelper?.visible).toBe(false)
+      expect(manager.viewHelperContainer?.style.display).toBe('none')
     })
   })
 
   describe('recreateViewHelper', () => {
     it('disposes the old helper and constructs a new one bound to the controls target', () => {
       manager.createViewHelper(document.createElement('div'))
-      const oldHelper = manager.viewHelper
+      const [oldHelper] = viewHelperInstances
       const newTarget = new THREE.Vector3(9, 9, 9)
       controls.target.copy(newTarget)
 
@@ -239,7 +216,7 @@ describe('ViewHelperManager', () => {
       expect(oldHelper.dispose).toHaveBeenCalled()
       expect(manager.viewHelper).not.toBe(oldHelper)
       expect(viewHelperInstances).toHaveLength(2)
-      expect(manager.viewHelper.center).toBe(controls.target)
+      expect(manager.viewHelper?.center).toBe(controls.target)
     })
   })
 
@@ -247,12 +224,12 @@ describe('ViewHelperManager', () => {
     it('disposes the helper and removes the container from its parent', () => {
       const parent = document.createElement('div')
       manager.createViewHelper(parent)
-      const helper = manager.viewHelper
+      const [helper] = viewHelperInstances
 
       manager.dispose()
 
       expect(helper.dispose).toHaveBeenCalled()
-      expect(manager.viewHelperContainer.parentNode).toBeNull()
+      expect(manager.viewHelperContainer?.parentNode).toBeNull()
     })
   })
 })

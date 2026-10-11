@@ -8,15 +8,15 @@
 // keeps title and meta correct. `category` is undefined on /learning (all).
 import { computed } from 'vue'
 
-import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import type { LearningCategory } from '@/data/learningTutorials'
+import type { Locale } from '@/i18n/translations'
 
 import {
   featuredFor,
   filterByCategory,
   learningDescription,
   learningHeading
-} from '../../data/learningTutorials'
+} from '@/data/learningTutorials'
 import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
 import LearningCategoryNav from './LearningCategoryNav.vue'
 import TutorialRow from './TutorialRow.vue'
@@ -45,7 +45,7 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-20">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-20">
     <div class="flex flex-col gap-10 lg:flex-row lg:gap-16">
       <!-- Sidebar -->
       <aside class="lg:w-72 lg:shrink-0">
@@ -56,7 +56,7 @@ const rows = computed(() =>
           >
             {{ heading }}
           </component>
-          <p class="text-primary-warm-gray mt-3 text-sm/relaxed">
+          <p class="mt-3 text-sm/relaxed text-primary-warm-gray">
             {{ description }}
           </p>
 

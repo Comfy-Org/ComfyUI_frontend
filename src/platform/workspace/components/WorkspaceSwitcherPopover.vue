@@ -1,6 +1,9 @@
 <template>
-  <div class="flex w-80 flex-col overflow-hidden rounded-lg">
-    <div class="flex flex-col overflow-y-auto">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
+    <div
+      class="flex scrollbar-custom min-h-0 flex-1 flex-col"
+      data-testid="workspace-switcher-list"
+    >
       <!-- Loading state -->
       <div v-if="isFetchingWorkspaces" class="flex flex-col gap-2 p-2">
         <div
@@ -31,11 +34,13 @@
             >
               <button
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                :disabled="!isCloud && isSwitching"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
                   class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
+                  :subscription-tier="workspace.subscriptionTier"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
@@ -65,41 +70,57 @@
           </div>
         </template>
       </template>
+    </div>
 
-      <!-- Create workspace button -->
-      <div class="p-2">
+    <div
+      v-if="!isCloud"
+      class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
+    >
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <i class="pi pi-info-circle text-xs" />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{
+          $t('workspaceSwitcher.scopeTooltip')
+        }}</TooltipContent>
+      </Tooltip>
+      <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
+    </div>
+
+    <!-- Create workspace button -->
+    <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
+      <div
+        :class="
+          cn(
+            'flex h-12 w-full items-center gap-2 rounded-sm p-2',
+            canCreateWorkspace
+              ? 'cursor-pointer hover:bg-secondary-background-hover'
+              : 'cursor-default'
+          )
+        "
+        @click="canCreateWorkspace && handleCreateWorkspace()"
+      >
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
-              canCreateWorkspace
-                ? 'cursor-pointer hover:bg-secondary-background-hover'
-                : 'cursor-default'
+              'flex size-8 items-center justify-center rounded-full bg-secondary-background',
+              !canCreateWorkspace && 'opacity-50'
             )
           "
-          @click="canCreateWorkspace && handleCreateWorkspace()"
         >
-          <div
-            :class="
-              cn(
-                'flex size-8 items-center justify-center rounded-full bg-secondary-background',
-                !canCreateWorkspace && 'opacity-50'
-              )
-            "
-          >
-            <i class="pi pi-plus text-sm text-muted-foreground" />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <span
-              v-if="canCreateWorkspace"
-              class="text-sm text-muted-foreground"
-            >
-              {{ $t('workspaceSwitcher.createWorkspace') }}
-            </span>
-            <span v-else class="text-sm text-muted-foreground">
-              {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
-            </span>
-          </div>
+          <i class="pi pi-plus text-sm text-muted-foreground" />
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span v-if="canCreateWorkspace" class="text-sm text-muted-foreground">
+            {{ $t('workspaceSwitcher.createWorkspace') }}
+          </span>
+          <span v-else class="text-sm text-muted-foreground">
+            {{
+              workspacesManagedByOrganization
+                ? $t('workspaceSwitcher.managedByOrganization')
+                : $t('workspaceSwitcher.maxWorkspacesReached')
+            }}
+          </span>
         </div>
       </div>
     </div>
@@ -111,8 +132,12 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
@@ -151,8 +176,14 @@ const currentSubscriptionTierName = computed(() => {
 })
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceId,
+  workspaces,
+  canCreateWorkspace,
+  workspacesManagedByOrganization,
+  isFetchingWorkspaces,
+  isSwitching
+} = storeToRefs(workspaceStore)
 
 const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
   workspaces.value.map((w) => ({

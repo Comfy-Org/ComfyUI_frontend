@@ -3,11 +3,6 @@ import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
 import { cachedMeasureText } from './utils/textMeasureCache'
 
-export enum BadgePosition {
-  TopLeft = 'top-left',
-  TopRight = 'top-right'
-}
-
 export interface LGraphBadgeOptions {
   text: string
   fgColor?: string
@@ -69,7 +64,7 @@ export class LGraphBadge {
   }
 
   get visible() {
-    return (this.text?.length ?? 0) > 0 || !!this.icon
+    return this.text.length > 0 || !!this.icon
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {
@@ -107,12 +102,7 @@ export class LGraphBadge {
     // Draw badge background
     ctx.fillStyle = this.bgColor
     ctx.beginPath()
-    if (ctx.roundRect) {
-      ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
-    } else {
-      // Fallback for browsers that don't support roundRect
-      ctx.rect(x + badgeX, y, badgeWidth, this.height)
-    }
+    ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
     ctx.fill()
 
     let drawX = x + badgeX + this.padding

@@ -1,28 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, expect, it } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
-
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
 
 function renderComponent(
   props: {
@@ -35,30 +16,31 @@ function renderComponent(
   } = {}
 ) {
   const value = ref<number>(props.initial ?? 50)
-  const utils = render(PopupSlider, {
-    props: {
-      tooltipText: props.tooltipText ?? 'FOV',
-      icon: props.icon,
-      min: props.min,
-      max: props.max,
-      step: props.step,
-      modelValue: value.value,
-      'onUpdate:modelValue': (v: number | undefined) => {
-        if (v !== undefined) value.value = v
+  const utils = render(
+    defineComponent({
+      setup: () => () =>
+        h(PopupSlider, {
+          tooltipText: props.tooltipText ?? 'FOV',
+          icon: props.icon,
+          min: props.min,
+          max: props.max,
+          step: props.step,
+          modelValue: value.value,
+          'onUpdate:modelValue': (v: number | undefined) => {
+            if (v !== undefined) value.value = v
+          }
+        })
+    }),
+    {
+      global: {
+        directives: { tooltip: () => {} }
       }
-    },
-    global: {
-      directives: { tooltip: () => {} }
     }
-  })
+  )
   return { ...utils, value, user: userEvent.setup() }
 }
 
 describe('PopupSlider', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   it('keeps the slider hidden from the accessibility tree until the trigger is clicked', () => {
     renderComponent({ tooltipText: 'FOV' })
 
@@ -88,11 +70,13 @@ describe('PopupSlider', () => {
   it('forwards default min / max / step (10 / 150 / 1) when none are provided', async () => {
     const { user } = renderComponent({ tooltipText: 'FOV' })
     await user.click(screen.getByRole('button', { name: 'FOV' }))
-    const slider = screen.getByRole('slider') as HTMLInputElement
+    const slider = await screen.findByRole('slider')
 
-    expect(slider.min).toBe('10')
-    expect(slider.max).toBe('150')
-    expect(slider.step).toBe('1')
+    expect(slider).toHaveAttribute('aria-valuemin', '10')
+    expect(slider).toHaveAttribute('aria-valuemax', '150')
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(slider).toHaveAttribute('aria-valuenow', '51')
   })
 
   it('uses caller-provided min / max / step over the defaults', async () => {
@@ -103,11 +87,13 @@ describe('PopupSlider', () => {
       step: 0.25
     })
     await user.click(screen.getByRole('button', { name: 'Light' }))
-    const slider = screen.getByRole('slider') as HTMLInputElement
+    const slider = await screen.findByRole('slider')
 
-    expect(slider.min).toBe('0')
-    expect(slider.max).toBe('5')
-    expect(slider.step).toBe('0.25')
+    expect(slider).toHaveAttribute('aria-valuemin', '0')
+    expect(slider).toHaveAttribute('aria-valuemax', '5')
+    slider.focus()
+    await user.keyboard('{Home}{ArrowRight}')
+    expect(slider).toHaveAttribute('aria-valuenow', '0.25')
   })
 
   it('updates the v-model when the slider value changes', async () => {
@@ -116,10 +102,9 @@ describe('PopupSlider', () => {
       initial: 50
     })
     await user.click(screen.getByRole('button', { name: 'FOV' }))
-    const slider = screen.getByRole('slider') as HTMLInputElement
-
-    slider.value = '120'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await user.keyboard('{ArrowRight>70}')
 
     expect(value.value).toBe(120)
   })

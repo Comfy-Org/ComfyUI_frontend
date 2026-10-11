@@ -38,7 +38,7 @@ export let runWhenGlobalIdle: (
 
 // Self-invoking function to set up the idle callback implementation
 ;(function () {
-  const safeGlobal: GlobalWindow = globalThis as GlobalWindow
+  const safeGlobal: GlobalWindow = globalThis
 
   if (
     typeof safeGlobal.requestIdleCallback !== 'function' ||

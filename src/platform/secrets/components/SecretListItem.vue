@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-base-raised-surface flex items-center justify-between rounded-lg border border-border-default p-4"
+    class="flex items-center justify-between rounded-lg border border-border-default bg-secondary-background p-4"
   >
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
@@ -13,7 +13,7 @@
         />
         <span
           v-else-if="secret.provider"
-          class="bg-base-surface rounded-sm px-2 py-0.5 text-xs text-muted"
+          class="rounded-sm bg-tertiary-background px-2 py-0.5 text-xs text-muted"
         >
           {{ providerLabel }}
         </span>
@@ -29,7 +29,7 @@
       <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
       <template v-else>
         <Button
-          v-tooltip="{ value: editLabel, showDelay: 300 }"
+          :tooltip="editLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="editLabel"
@@ -39,7 +39,7 @@
           <i class="pi pi-pen-to-square" />
         </Button>
         <Button
-          v-tooltip="{ value: deleteLabel, showDelay: 300 }"
+          :tooltip="deleteLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="deleteLabel"

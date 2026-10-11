@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -13,18 +11,14 @@ import { useNodeCanvasImagePreview } from './useNodeCanvasImagePreview'
 const imagePreviewWidget = vi.hoisted(() => vi.fn())
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget'),
+
   () => ({
     useImagePreviewWidget: () => imagePreviewWidget
   })
 )
 
 describe('useNodeCanvasImagePreview', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('does not add preview widget when node has no images', () => {
     const node = new LGraphNode('test')
 

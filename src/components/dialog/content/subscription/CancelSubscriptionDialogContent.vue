@@ -1,79 +1,154 @@
 <template>
-  <div
-    class="flex w-full max-w-[400px] flex-col rounded-2xl border border-border-default bg-base-background"
+  <CancellationStepLayout
+    :title="
+      didCancelSucceed
+        ? $t('subscription.cancelFlow.cancelled.title')
+        : $t('subscription.cancelFlow.confirm.title')
+    "
+    :subtitle="didCancelSucceed ? description : undefined"
+    :close-disabled="isClosingBlocked"
+    :on-close="onClose"
   >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+    <p
+      v-if="isAwaitingStripe"
+      class="m-0 text-sm/5 text-muted-foreground"
+      role="status"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('subscription.cancelDialog.title') }}
-      </h2>
-      <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        :disabled="isLoading"
+      {{ $t('subscription.cancelDialog.finishOnStripe') }}
+    </p>
+    <template v-else-if="!didCancelSucceed">
+      <p class="m-0 text-sm/5 text-muted-foreground">{{ description }}</p>
+      <p class="m-0 text-sm/5 text-base-foreground">
+        {{
+          $t('subscription.cancelFlow.confirm.loseAccess', {
+            date: formattedEndDate
+          })
+        }}
+      </p>
+      <ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
+        <li
+          v-for="feature in lostFeatures"
+          :key="feature.key"
+          class="flex flex-col gap-1.5 rounded-[10px] border border-border-subtle bg-secondary-background/50 p-3"
+        >
+          <i
+            :class="cn(feature.icon, 'size-4 text-base-foreground')"
+            aria-hidden="true"
+          />
+          <span class="text-sm text-base-foreground">{{ feature.title }}</span>
+          <span class="text-xs text-muted-foreground">
+            {{ feature.description }}
+          </span>
+        </li>
+      </ul>
+    </template>
+
+    <template #actions>
+      <Button
+        v-if="didCancelSucceed"
+        variant="secondary"
+        size="lg"
+        class="w-24"
         @click="onClose"
       >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ description }}
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
-      <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
-        {{ $t('subscription.cancelDialog.keepSubscription') }}
+        {{ $t('subscription.cancelFlow.done') }}
       </Button>
       <Button
-        variant="destructive"
+        v-else-if="isAwaitingStripe"
+        variant="secondary"
         size="lg"
-        :loading="isLoading"
-        @click="onConfirmCancel"
+        @click="onClose"
       >
-        {{ $t('subscription.cancelDialog.confirmCancel') }}
+        {{ $t('g.close') }}
       </Button>
-    </div>
-  </div>
+      <template v-else>
+        <Button
+          variant="textonly"
+          size="lg"
+          :disabled="isLoading"
+          @click="onClose"
+        >
+          {{ $t('subscription.cancelFlow.keepPlan') }}
+        </Button>
+        <Button
+          variant="destructive"
+          size="lg"
+          :loading="isLoading"
+          @click="onConfirmCancel"
+        >
+          {{ $t('subscription.cancelFlow.confirm.cancelPlan') }}
+        </Button>
+      </template>
+    </template>
+  </CancellationStepLayout>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import type { CancelRail } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
+import { useCancellationPlan } from '@/platform/cloud/subscription/composables/useCancellationPlan'
+import {
+  createCancelFlowReporter,
+  getSubscriptionCancellationMetadata
+} from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-const { cancelAt, flowAlreadyOpened = false } = defineProps<{
+const {
+  cancelAt,
+  flowAlreadyOpened = false,
+  flowAlreadyConfirmed = false,
+  isScopeCurrent = () => true
+} = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
+  isScopeCurrent?: () => boolean
 }>()
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
 const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { canCancel } = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
+const { planName, creditGrant } = useCancellationPlan()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const isAwaitingStripe = ref(false)
+// Last seen `isCancelled` (null until the status loads). A cancel only counts
+// as observed when it turns true after a loaded, not-cancelled reading.
+let lastCancelled: boolean | null = null
+let cancelObserved = false
+const didScopeAbort = ref(false)
+const cancelReport = createCancelFlowReporter(
+  telemetry,
+  () => ({
+    duration: subscription.value?.duration,
+    tier: tier.value
+  }),
+  { confirmed: flowAlreadyConfirmed }
+)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -90,15 +165,25 @@ onMounted(() => {
     'flow_opened',
     cancellationMetadata()
   )
+  cancelReport.intent()
 })
 
-onUnmounted(() => {
-  if (didCancelSucceed.value || isLoading.value) return
+function reportAbandoned() {
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+  cancelReport.abandoned()
+}
+
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+  reportAbandoned()
 })
 
 const formattedEndDate = computed(() => {
-  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
+  const date = parseIsoDateSafe(
+    cancelAt ?? subscription.value?.endDate ?? subscription.value?.renewalDate
+  )
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
@@ -108,52 +193,176 @@ const formattedEndDate = computed(() => {
 })
 
 const description = computed(() =>
-  t('subscription.cancelDialog.description', { date: formattedEndDate.value })
+  t('subscription.cancelFlow.confirm.description', {
+    plan: planName.value,
+    date: formattedEndDate.value
+  })
+)
+
+function creditsTitle() {
+  const grant = creditGrant.value
+  if (!grant)
+    return t('subscription.cancelFlow.confirm.features.credits.generic')
+  const named = { credits: n(grant.credits) }
+  return grant.cycle === 'yearly'
+    ? t('subscription.cancelFlow.confirm.features.credits.yearly', named)
+    : t('subscription.cancelFlow.confirm.features.credits.monthly', named)
+}
+
+const lostFeatures = computed(() => {
+  return [
+    {
+      key: 'gpus',
+      icon: 'icon-[lucide--cpu]',
+      title: t('subscription.cancelFlow.confirm.features.gpus.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.gpus.description'
+      )
+    },
+    {
+      key: 'models',
+      icon: 'icon-[lucide--layers]',
+      title: t('subscription.cancelFlow.confirm.features.models.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.models.description'
+      )
+    },
+    {
+      key: 'customNodes',
+      icon: 'icon-[lucide--blocks]',
+      title: t('subscription.cancelFlow.confirm.features.customNodes.title'),
+      description: t(
+        'subscription.cancelFlow.confirm.features.customNodes.description'
+      )
+    },
+    {
+      key: 'credits',
+      icon: 'icon-[lucide--coins]',
+      title: creditsTitle(),
+      description: t(
+        'subscription.cancelFlow.confirm.features.credits.description'
+      )
+    }
+  ]
+})
+
+function completeObservedCancel() {
+  if (!cancelObserved || didCancelSucceed.value) return
+  if (!isScopeCurrent()) return abortForScopeChange()
+  didCancelSucceed.value = true
+  isAwaitingStripe.value = false
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({ operationFollows: false })
+}
+
+watch(
+  () => (subscription.value ? !!subscription.value.isCancelled : null),
+  (cancelled) => {
+    if (cancelled === null) return
+    if (cancelled && lastCancelled === false) cancelObserved = true
+    if (!cancelled) cancelObserved = false
+    lastCancelled = cancelled
+    if (cancelObserved && isAwaitingStripe.value) completeObservedCancel()
+  }
+)
+
+// The shared watcher gives up after a few minutes; keep checking on return from Stripe.
+const refreshOnFocus = useThrottleFn(() => {
+  if (isAwaitingStripe.value) fetchStatus().catch(() => {})
+}, 10_000)
+useEventListener(defaultWindow, 'focus', () => void refreshOnFocus())
+
+const isClosingBlocked = computed(
+  () => isLoading.value && !didCancelSucceed.value
 )
 
 function onClose() {
-  if (isLoading.value) return
+  if (isClosingBlocked.value) return
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
-async function onConfirmCancel() {
-  if (
+function abortForScopeChange() {
+  didScopeAbort.value = true
+  toast.warning(t('subscription.cancelDialog.workspaceChanged'))
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+}
+
+function lacksWorkspaceCancelPermission() {
+  return (
     shouldUseWorkspaceBilling.value &&
-    !permissions.value.canManageSubscriptionLifecycle
-  ) {
-    return
-  }
+    !(isCloud
+      ? canCancel.value
+      : permissions.value.canManageSubscriptionLifecycle)
+  )
+}
 
+function reportCancelFailure(error: unknown) {
+  if (!shouldUseWorkspaceBilling.value) {
+    telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    cancelReport.confirmed({ operationFollows: false })
+    cancelReport.failed(categorizeBillingApiError(error))
+  }
+  toast.error(t('subscription.cancelDialog.failed'), {
+    description: getErrorMessage(error) ?? t('g.unknownError')
+  })
+  isLoading.value = false
+}
+
+function reportWorkspaceConfirmed() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
-  isLoading.value = true
-  try {
-    await cancelSubscription()
-  } catch (error) {
-    const errorMessage = getErrorMessage(error)
-    if (!shouldUseWorkspaceBilling.value) {
-      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
-    }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.cancelDialog.failed'),
-      detail: errorMessage ?? t('g.unknownError')
-    })
-    isLoading.value = false
-    return
-  }
+  cancelReport.confirmed({ operationFollows: true })
+}
 
+function awaitStripeCancel() {
+  // Dismissed while the portal call was pending: nothing was observed and no
+  // other terminal event will fire.
+  if (unmounted) return reportAbandoned()
+  isAwaitingStripe.value = true
+  isLoading.value = false
+  // The cancel may have been observed while the portal call was pending.
+  completeObservedCancel()
+}
+
+async function finishWorkspaceCancel() {
   didCancelSucceed.value = true
   try {
     await fetchStatus()
   } catch {
     // Cancellation already succeeded; stale local subscription status should not report failure.
   }
-  dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
   isLoading.value = false
+}
+
+function handleCancelError(error: unknown) {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  reportCancelFailure(error)
+}
+
+// The rail comes from the cancel call itself; current routing may have flipped since.
+async function finishCancel(rail: CancelRail, confirmedBeforeCall: boolean) {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (rail === 'legacy') return awaitStripeCancel()
+  if (!confirmedBeforeCall) reportWorkspaceConfirmed()
+  await finishWorkspaceCancel()
+}
+
+async function onConfirmCancel() {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (lacksWorkspaceCancelPermission()) return
+
+  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
+  // once the cancellation is observed instead of on click.
+  const confirmedBeforeCall = shouldUseWorkspaceBilling.value
+  if (confirmedBeforeCall) reportWorkspaceConfirmed()
+  lastCancelled = subscription.value ? !!subscription.value.isCancelled : null
+  cancelObserved = false
+  isLoading.value = true
+  let rail: CancelRail
+  try {
+    rail = await cancelSubscription(isScopeCurrent)
+  } catch (error) {
+    return handleCancelError(error)
+  }
+  await finishCancel(rail, confirmedBeforeCall)
 }
 </script>
