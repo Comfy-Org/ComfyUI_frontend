@@ -9965,6 +9965,25 @@ export type GetBillingUsageTimeSeriesResponses = {
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
 
+export type GetDefaultWorkflowData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/default_workflow'
+}
+
+export type GetDefaultWorkflowResponses = {
+  /**
+   * Default workflow JSON
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetDefaultWorkflowResponse =
+  GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
+
 export type GetEmbeddingsData = {
   body?: never
   path?: never
