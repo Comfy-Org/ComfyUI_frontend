@@ -416,11 +416,6 @@ describe('executionStore workflow gating', () => {
       ).toBeUndefined()
     })
 
-    // Two branches: a node error goes through handleExecutionError, a
-    // service-level error (no node_id, e.g. "Job has stagnated") through
-    // handleServiceLevelError. Each releases the background job's records
-    // separately, and the service-level release was previously untested, so
-    // deleting it left the whole suite green.
     it.for([
       { kind: 'a node error', nodeId: '1' as string | null },
       { kind: 'a service-level error', nodeId: null }

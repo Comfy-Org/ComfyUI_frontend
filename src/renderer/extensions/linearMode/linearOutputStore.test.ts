@@ -275,17 +275,22 @@ describe('linearOutputStore', () => {
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
 
-    for (const [node, file] of [
-      ['9.0.1', 'iter1.png'],
-      ['9.0.2', 'iter2.png']
-    ] as const) {
-      store.onNodeExecuted('job-1', {
-        prompt_id: 'job-1',
-        node,
-        display_node: '9',
-        output: { images: [{ filename: file, subfolder: '', type: 'output' }] }
-      })
-    }
+    store.onNodeExecuted('job-1', {
+      prompt_id: 'job-1',
+      node: '9.0.1',
+      display_node: '9',
+      output: {
+        images: [{ filename: 'iter1.png', subfolder: '', type: 'output' }]
+      }
+    })
+    store.onNodeExecuted('job-1', {
+      prompt_id: 'job-1',
+      node: '9.0.2',
+      display_node: '9',
+      output: {
+        images: [{ filename: 'iter2.png', subfolder: '', type: 'output' }]
+      }
+    })
 
     const images = store.inProgressItems.filter((i) => i.state === 'image')
     expect(images, 'each loop iteration keeps its own output').toHaveLength(2)
@@ -309,6 +314,21 @@ describe('linearOutputStore', () => {
     expect(
       store.inProgressItems.filter((i) => i.state === 'image'),
       'same node, different files, so both are real outputs'
+    ).toHaveLength(2)
+  })
+
+  it('keeps both when two nodes report the same file', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    // Two PreviewImage nodes fed from one upstream image report the same
+    // filename, and each is its own output. Without the node in the key the
+    // files alone would make these look like one frame replayed.
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '7'))
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '8'))
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
     ).toHaveLength(2)
   })
 
