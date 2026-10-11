@@ -574,7 +574,7 @@ describe('getCloudWorkflow', () => {
 })
 
 describe('postMessage wire body', () => {
-  it('uses snake_case workflow_id and includes only the keys provided', async () => {
+  it('uses snake_case workflow_id and adds nothing beyond the keys provided and the build sha', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: 'build it',
@@ -590,7 +590,8 @@ describe('postMessage wire body', () => {
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
-      attachments: ['a1']
+      attachments: ['a1'],
+      frontend_build_sha: __COMFYUI_FRONTEND_COMMIT__
     })
     expect(contentType(init)).toBe('application/json')
   })
@@ -605,7 +606,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      current_tab_unbound: true
+      current_tab_unbound: true,
+      frontend_build_sha: __COMFYUI_FRONTEND_COMMIT__
     })
   })
 
@@ -615,7 +617,8 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      frontend_build_sha: __COMFYUI_FRONTEND_COMMIT__
     })
   })
 
@@ -633,7 +636,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      frontend_build_sha: __COMFYUI_FRONTEND_COMMIT__
     })
   })
 
@@ -681,7 +685,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
+      frontend_build_sha: __COMFYUI_FRONTEND_COMMIT__
     })
   })
 
@@ -703,6 +708,34 @@ describe('postMessage wire body', () => {
       content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
     })
   })
+
+  // R-461: the server-emitted agent_turn_completed carried an empty
+  // frontend_build_sha on every event, because the agent service filled it from
+  // its own process-wide configuration. Production serves a weighted canary
+  // beside stable, so a canary-only regression was diluted by the stable arm's
+  // share of the denominator before it could reach its alert threshold. The arm
+  // identity belongs to the submitting bundle, and nothing else on the wire
+  // carries it - so assert the wire key, on every turn rather than only the
+  // ones that happen to set an optional.
+  it.for([
+    { name: 'a new thread', thread: 'new' },
+    { name: 'an existing thread', thread: 't1' }
+  ])(
+    'reports the submitting build sha on a turn opened against $name',
+    async ({ thread }) => {
+      respond(jsonResponse(202, turnAccepted))
+      await makeClient().postMessage(thread, { content: 'build it' })
+
+      const parsed = JSON.parse(String(lastCall().init.body)) as Record<
+        string,
+        unknown
+      >
+      expect(parsed.frontend_build_sha).toBe(__COMFYUI_FRONTEND_COMMIT__)
+      // A build with no commit identity reports 'unknown' rather than nothing,
+      // so an empty property on the event means "client never reported it".
+      expect(parsed.frontend_build_sha).not.toBe('')
+    }
+  )
 })
 
 describe('uploadImage multipart', () => {
