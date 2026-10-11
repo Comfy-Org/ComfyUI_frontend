@@ -1271,7 +1271,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function belongsToActiveWorkflow(
     jobId: JobId | undefined,
-    workflowId: string | undefined
+    workflowId?: string
   ): boolean {
     if (!jobId) return true
     if (canResolveWorkflowOwnership(jobId, workflowId)) {

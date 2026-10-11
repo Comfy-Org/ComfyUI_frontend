@@ -32,7 +32,7 @@ export function useProgressTextPreviews() {
     // gate falls back to the activeJobId check only when ownership cannot be
     // resolved at all. No workflow id to pass: core packs progress_text as a
     // binary frame that carries none, tracked in Comfy-Org/ComfyUI#16887.
-    if (!executionStore.belongsToActiveWorkflow(prompt_id, undefined)) return
+    if (!executionStore.belongsToActiveWorkflow(prompt_id)) return
 
     const executionId = String(nodeId)
     const currentId = executionId.includes(':')
