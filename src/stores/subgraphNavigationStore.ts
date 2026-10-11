@@ -10,9 +10,9 @@ import {
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
@@ -21,6 +21,22 @@ import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
+
+interface WorkflowServiceAccess {
+  openWorkflow(
+    workflow: ComfyWorkflow,
+    options: { navigationIntentId?: number }
+  ): Promise<boolean>
+}
+
+let useWorkflowService: () => WorkflowServiceAccess
+
+/** Called by `workflowService` when it loads; it imports this store. */
+export function provideWorkflowService(
+  useService: () => WorkflowServiceAccess
+): void {
+  useWorkflowService = useService
+}
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
 
