@@ -76,9 +76,8 @@ describe('MeshModelAdapter OBJ worker loading', () => {
       new URL('file:///worker.js')
     )
     vi.stubGlobal('Worker', FakeWorker)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response(OBJ_BYTES.slice())))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(new Response(OBJ_BYTES.slice()))
     )
   })
 

@@ -34,7 +34,6 @@ const objLoaderStub = {
     vi.fn<(onLoad: (object: THREE.Object3D) => void) => void>(),
   parse: vi.fn<(bytes: ArrayBuffer) => void>()
 }
-const objFetchStub = vi.fn<(request: Request) => Promise<Response>>()
 
 vi.mock(import('three/examples/jsm/loaders/STLLoader'), () => ({
   STLLoader: fromAny(
@@ -276,14 +275,17 @@ describe('MeshModelAdapter', () => {
     }
 
     function requestedUrls() {
-      return objFetchStub.mock.calls.map(([request]) => request.url)
+      return vi
+        .mocked(fetch)
+        .mock.calls.map(([input]) =>
+          input instanceof Request ? input.url : String(input)
+        )
     }
 
     beforeEach(() => {
-      objFetchStub.mockImplementation(() =>
+      vi.mocked(fetch).mockImplementation(() =>
         Promise.resolve(new Response(new ArrayBuffer(8)))
       )
-      vi.stubGlobal('fetch', objFetchStub)
     })
 
     it('attempts the MTL sidecar in original material mode', async () => {
