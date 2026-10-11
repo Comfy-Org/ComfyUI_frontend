@@ -17,7 +17,7 @@ import {
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
@@ -37,7 +37,7 @@ export function dynamicGroupWidget(
   } = zDynamicGroupInputSpec.parse(inputData)[1]
   const fields = { ...template.required, ...template.optional }
   const store = useWidgetValueStore()
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const controller: IBaseWidget = node.addCustomWidget({
     name: inputName,
     type: 'number',

@@ -15,7 +15,7 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -606,7 +606,7 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphService()
+  const { updatePreviews } = useLitegraphServiceAccess()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
