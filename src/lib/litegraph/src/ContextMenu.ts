@@ -5,7 +5,7 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import { LiteGraph } from './litegraph'
+import { litegraph } from './litegraphInstance'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([
@@ -215,7 +215,7 @@ export class ContextMenu<TValue = unknown> {
     root.style.left = `${left}px`
     root.style.top = `${top}px`
 
-    if (LiteGraph.context_menu_scaling && options.scale) {
+    if (litegraph().context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
     }
   }
@@ -384,7 +384,7 @@ export class ContextMenu<TValue = unknown> {
       } else if (!ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
         ContextMenu.trigger(
           this.parentMenu.root,
-          `${LiteGraph.pointerevents_method}leave`,
+          `${litegraph().pointerevents_method}leave`,
           e
         )
       }

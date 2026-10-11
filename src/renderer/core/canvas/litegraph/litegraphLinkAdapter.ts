@@ -9,7 +9,7 @@
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
   LinkMarkerShape,
@@ -117,7 +117,7 @@ export class LitegraphLinkAdapter {
         disabled: context.disabledPattern
       },
       animation: {
-        time: LiteGraph.getTime() * 0.001
+        time: litegraph().getTime() * 0.001
       },
       scale: context.scale,
       highlightedIds: new Set(Array.from(context.highlightedLinks).map(String))

@@ -1,7 +1,7 @@
 import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
 import type { Point } from '../interfaces'
-import { LiteGraph } from '../litegraph'
+import { litegraph } from '../litegraphInstance'
 import { inputLinkId } from '../node/slotLinks'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
@@ -16,7 +16,7 @@ export function getLinkEndpointPositions(
       return
     }
 
-    const endPos = LiteGraph.vueNodesMode
+    const endPos = litegraph().vueNodesMode
       ? getSlotPosition(inputNode, link.target_slot, true)
       : inputNode.getInputPos(link.target_slot)
     return [subgraphInput.pos, endPos]
@@ -28,7 +28,7 @@ export function getLinkEndpointPositions(
       return
     }
 
-    const startPos = LiteGraph.vueNodesMode
+    const startPos = litegraph().vueNodesMode
       ? getSlotPosition(outputNode, link.origin_slot, false)
       : outputNode.getOutputPos(link.origin_slot)
     return [startPos, subgraphOutput.pos]
@@ -42,10 +42,10 @@ export function getLinkEndpointPositions(
     return
   if (!outputNode || !output) return
 
-  const endPos: Point = LiteGraph.vueNodesMode
+  const endPos: Point = litegraph().vueNodesMode
     ? getSlotPosition(inputNode, link.target_slot, true)
     : inputNode.getInputPos(link.target_slot)
-  const startPos: Point = LiteGraph.vueNodesMode
+  const startPos: Point = litegraph().vueNodesMode
     ? getSlotPosition(outputNode, link.origin_slot, false)
     : outputNode.getOutputPos(link.origin_slot)
 
