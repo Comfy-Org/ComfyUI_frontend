@@ -835,11 +835,6 @@ describe('useQueueStore', () => {
       ).toBeUndefined()
     })
 
-    // Raised in review: useQueuePolling now stays awake while anything is
-    // tracked, so a job that no source can find kept polling alive for the rest
-    // of the session and logged a miss every cycle. One miss is not enough to
-    // act on, because fetchJobDetail returns undefined for a transient network
-    // error as well as for a 404.
     it('evicts a tracked job only after a second failed lookup', async () => {
       const executionStore = useExecutionStore()
       executionStore.nodeProgressStatesByJob = {
