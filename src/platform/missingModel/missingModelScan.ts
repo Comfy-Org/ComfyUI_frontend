@@ -30,6 +30,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
@@ -487,8 +488,7 @@ export async function verifyAssetSupportedCandidates(
     pendingCandidates.map((candidate) => candidate.nodeType)
   )
 
-  const store =
-    assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
+  const store = assetsStore ?? useAssetsStore()
 
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
