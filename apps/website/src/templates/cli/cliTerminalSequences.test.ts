@@ -13,7 +13,7 @@ describe('cliTerminalSequences', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  describe.each(cliTerminalSequences)('sequence $id', (sequence) => {
+  describe.for(cliTerminalSequences)('sequence $id', (sequence) => {
     it('opens with a typed command', () => {
       expect(sequence.lines.at(0)?.kind).toBe('cmd')
     })

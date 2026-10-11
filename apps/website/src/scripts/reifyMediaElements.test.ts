@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 
 import { reifyMediaElements } from './reifyMediaElements'
@@ -55,5 +54,27 @@ describe('reifyMediaElements', () => {
     expect(
       [...body.children].map((el) => el.tagName.toLowerCase())
     ).toStrictEqual(['p', 'video', 'p'])
+  })
+
+  it('recreates inert animation frames without changing their security or layout', () => {
+    const body = swapInFromInertDocument(`
+      <div><iframe
+        src="/assets/platform/serverless/json-api-gpu-animation.html?layout=compact"
+        title="Comfy animation"
+        sandbox="allow-scripts"
+        loading="eager"
+        tabindex="-1"
+        class="absolute inset-0 size-full border-0"
+      ></iframe></div>
+    `)
+    const parsedFrame = body.querySelector('iframe')!
+
+    reifyMediaElements(body)
+
+    const frame = body.querySelector('iframe')!
+    expect(frame).not.toBe(parsedFrame)
+    expect(frame.outerHTML).toBe(parsedFrame.outerHTML)
+    expect(frame.ownerDocument).toBe(document)
+    expect(frame.parentElement?.tagName).toBe('DIV')
   })
 })

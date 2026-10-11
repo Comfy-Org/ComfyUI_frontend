@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -22,8 +21,6 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LLink ↔ linkStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()
     const link = new LLink(
@@ -34,7 +31,6 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     graph.addFloatingLink(link)
     const registeredState = link._state
 
@@ -56,20 +52,23 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     graph.links.set(toLinkId(2), link)
 
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'LiteGraph: refusing to register link 1 under mismatched id 2'
     )
     expect(graph.links.size).toBe(0)
   })
 
   it('requires Pinia when constructing a root graph', () => {
+    const pinia = getActivePinia()
     setActivePinia(undefined)
-
-    expect(() => new LGraph()).toThrow()
+    try {
+      expect(() => new LGraph()).toThrow()
+    } finally {
+      setActivePinia(pinia)
+    }
   })
 
   it('does not add a link when topology registration is rejected', () => {
@@ -90,7 +89,6 @@ describe('LLink ↔ linkStore integration', () => {
       toNodeId(2),
       0
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(graphScopeOf(graph), incumbent._state)
 
     graph._addLink(collision)
@@ -109,7 +107,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(inputNode)
     outputNode.onConnectionsChange = vi.fn()
     inputNode.onConnectionsChange = vi.fn()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useLinkStore().registerLink(
       {
         ...graphScopeOf(graph),
@@ -310,7 +307,6 @@ describe('LLink ↔ linkStore integration', () => {
     graph.add(b)
 
     const link = a.connect(0, b, 0)!
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     link.target_slot = 1
 
     unregisterLinkTopology(link)
@@ -547,11 +543,10 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => {
       first.target_slot = 1
     }).not.toThrow()
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to update link endpoints',
       expect.objectContaining({ code: 'occupied-target' })
     )
@@ -576,7 +571,6 @@ describe('LLink ↔ linkStore integration', () => {
     blocker.addOutput('out', 'INT')
     graph.add(blocker)
     blocker.connect(0, secondTarget, 0)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     moving.target_id = secondTarget.id
     expect(moving.target_id).toBe(firstTarget.id)

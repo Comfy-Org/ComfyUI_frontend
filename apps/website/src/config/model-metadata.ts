@@ -4,9 +4,15 @@ interface ModelOverride {
   featured?: boolean
   // Slug used on comfy.org/workflows/model/{hubSlug}. Only set when the page exists.
   hubSlug?: string
+  // When set, the model page's "What is {name}" paragraph links the leading
+  // occurrence of displayName to this URL. See [slug].astro.
+  whatIsBacklinkUrl?: string
 }
 
 export const modelMetadata: Record<string, ModelOverride> = {
+  minimax: {
+    whatIsBacklinkUrl: 'https://design.minimax.io/tools/minimax-h3-comfyui'
+  },
   'nano-banana': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-pro',

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   locale = 'en',
@@ -17,11 +17,13 @@ const {
   estimateCount?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const estimate = computed(() => {
   if (!estimateKey) return undefined
-  const text = t(estimateKey, locale)
-  return estimateCount ? text.replace('{count}', estimateCount) : text
+  return estimateCount
+    ? t(estimateKey, { count: estimateCount })
+    : t(estimateKey)
 })
 </script>
 
@@ -29,10 +31,10 @@ const estimate = computed(() => {
   <div class="mt-6">
     <div class="flex items-center gap-2">
       <CreditsIcon
-        class="text-primary-comfy-orange size-4 shrink-0"
+        class="size-4 shrink-0 text-primary-comfy-orange"
         aria-hidden="true"
       />
-      <span class="ppformula-text-center text-sm text-primary-warm-white">
+      <span class="inline-block text-sm text-primary-warm-white">
         <span class="font-extrabold">
           {{ credits }}
         </span>

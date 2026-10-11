@@ -1,96 +1,38 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createTestingPinia } from '@pinia/testing'
-import type { Pinia } from 'pinia'
-import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as vuefire from 'vuefire'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
-const mockFetch = vi.fn()
+const CUSTOMERS_URL = /\/customers$/
 
-vi.mock('vuefire', () => ({
-  useFirebaseAuth: vi.fn()
-}))
+vi.mock(import('firebase/auth'))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      isCloud: true,
+      isDesktop: false
+    }) as const
+)
 
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/platform/distribution/types', () => ({
-  DISTRIBUTION: 'cloud',
-  isCloud: true,
-  isDesktop: false
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: { unifiedCloudAuthEnabled: false }
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    clearWorkspaceContext: vi.fn(),
-    getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-    getUnifiedToken: vi.fn().mockReturnValue(undefined),
-    mintAtLogin: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspaceId: null,
-    resetForIdentityChange: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showErrorDialog: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 describe('API key authentication initialization', () => {
-  let pinia: Pinia
-
   beforeEach(() => {
     localStorage.clear()
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-    vi.stubGlobal('fetch', mockFetch)
-    mockFetch.mockResolvedValue({
-      ok: true,
-      statusText: 'OK',
-      json: () => Promise.resolve({ id: 'test-customer-id' })
-    })
-
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      {} as ReturnType<typeof vuefire.useFirebaseAuth>
+    respondToFetch(CUSTOMERS_URL, () =>
+      Response.json({ id: 'test-customer-id' })
     )
+
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
         ;(callback as (user: User | null) => void)(null)
@@ -100,33 +42,25 @@ describe('API key authentication initialization', () => {
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
   })
 
-  afterEach(() => {
-    disposePinia(pinia)
-  })
-
-  const customerResponse = (id: string) => ({
-    ok: true,
-    statusText: 'OK',
-    json: () => Promise.resolve({ id })
-  })
+  const customerResponse = (id: string) => Response.json({ id })
 
   const settleQueuedTasks = () => new Promise((resolve) => setTimeout(resolve))
 
   const initializeStoreWithPendingLookup = async () => {
     let settleLookup!: {
-      resolve: (response: unknown) => void
+      resolve: (response: Response) => void
       reject: (reason: Error) => void
     }
-    mockFetch.mockImplementationOnce(
+    vi.mocked(fetch).mockImplementationOnce(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<Response>((resolve, reject) => {
           settleLookup = { resolve, reject }
         })
     )
     localStorage.setItem('comfy_api_key', 'key-a')
     useAuthStore()
     const apiKeyStore = useApiKeyAuthStore()
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     return { apiKeyStore, ...settleLookup }
   }
 
@@ -136,11 +70,11 @@ describe('API key authentication initialization', () => {
 
     const apiKeyStore = useApiKeyAuthStore()
 
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     expect(apiKeyStore.getApiKey()).toBe('persisted-api-key')
     expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers'),
       expect.objectContaining({
         headers: expect.objectContaining({
@@ -162,8 +96,8 @@ describe('API key authentication initialization', () => {
     )
     await settleQueuedTasks()
 
-    expect(mockFetch).toHaveBeenCalledOnce()
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers'),
       expect.objectContaining({
         headers: expect.objectContaining({ 'X-API-KEY': 'key-b' })
@@ -210,6 +144,6 @@ describe('API key authentication initialization', () => {
 
     expect(apiKeyStore.currentUser).toBeNull()
     expect(apiKeyStore.getApiKey()).toBeNull()
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 })

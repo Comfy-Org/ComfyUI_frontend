@@ -18,7 +18,7 @@
         }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground -m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="-m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -97,17 +97,12 @@ async function onConfirm() {
   loading.value = true
   try {
     await workspaceStore.changeMemberRole(memberId, targetRole)
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.changeRoleDialog.success'),
-      life: 2000
+    toast.success(t('workspacePanel.changeRoleDialog.success'), {
+      duration: 2000
     })
     dialogStore.closeDialog({ key: 'change-member-role' })
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.changeRoleDialog.error')
-    })
+    toast.error(t('workspacePanel.changeRoleDialog.error'))
   } finally {
     loading.value = false
   }

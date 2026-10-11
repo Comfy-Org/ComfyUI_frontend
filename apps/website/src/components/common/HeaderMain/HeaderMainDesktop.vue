@@ -1,33 +1,58 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import NavigationMenu from '@/components/ui/navigation-menu/NavigationMenu.vue'
 import NavigationMenuContent from '@/components/ui/navigation-menu/NavigationMenuContent.vue'
 import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuItem.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
-import {
-  isHrefActive,
-  useCurrentPath
-} from '../../../composables/useCurrentPath'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import type { NavItem } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
+import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import type { HubSections, NavItem } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const mainNavigation = getMainNavigation(locale)
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
+  locale?: Locale
+  hubSections?: HubSections
+}>()
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 const currentPath = useCurrentPath()
 
-function isNavItemActive(navItem: NavItem, path: string): boolean {
+function ownsPath(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
   return (
-    navItem.columns?.some((column) =>
+    !!navItem.activePathPrefix &&
+    `${path}/`.startsWith(navItem.activePathPrefix)
+  )
+}
+
+function columnsAt(navItem: NavItem, placement: 'main' | 'footer') {
+  return (navItem.columns ?? []).filter(
+    (column) => (column.placement ?? 'main') === placement
+  )
+}
+
+function columnGap(navItem: NavItem): string {
+  return navItem.columns?.some((column) => column.description)
+    ? 'gap-10'
+    : 'gap-16'
+}
+
+function isNavItemActive(navItem: NavItem, path: string): boolean {
+  if (ownsPath(navItem, path)) return true
+  if (!navItem.columns) return false
+  return (
+    !mainNavigation.value.some((item) => ownsPath(item, path)) &&
+    navItem.columns.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ?? false
+    )
   )
 }
 </script>
@@ -44,37 +69,57 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             :active="isNavItemActive(navItem, currentPath)"
           >
             <span class="inline-flex items-center gap-1">
-              <span class="ppformula-text-center">{{ navItem.label }}</span>
-              <span v-if="navItem.badge" class="hidden xl:inline-flex">
+              <span>{{ navItem.label }}</span>
+              <span v-if="navItem.badge" class="inline-flex">
                 <NewBadge :locale="locale" size="xxs" />
               </span>
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <ul class="flex w-max gap-16">
-              <NavFeaturedCard
-                v-if="navItem.featured"
-                :featured="navItem.featured"
-              />
-              <NavColumn
-                v-for="column in navItem.columns"
-                :key="column.header"
-                :column="column"
-                :locale="locale"
-                :current-path="currentPath"
-              />
-            </ul>
+            <div class="w-max">
+              <ul :class="cn('flex', columnGap(navItem))">
+                <NavFeaturedCard
+                  v-if="navItem.featured"
+                  :featured="navItem.featured"
+                />
+                <NavColumn
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'main')"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                />
+              </ul>
+              <ul
+                v-if="columnsAt(navItem, 'footer').length"
+                class="mt-6 border-t border-primary-warm-gray/20 pt-5"
+              >
+                <NavColumn
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'footer')"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                  layout="row"
+                />
+              </ul>
+            </div>
           </NavigationMenuContent>
         </template>
         <NavigationMenuLink
           v-else
           as-child
           :active="isNavItemActive(navItem, currentPath)"
-          :class="navigationMenuTriggerStyle()"
+          :class="
+            cn(navigationMenuTriggerStyle(), 'flex-row gap-1 whitespace-nowrap')
+          "
         >
-          <a :href="navItem.href" class="ppformula-text-center">{{
-            navItem.label
-          }}</a>
+          <a :href="navItem.href">
+            <span class="inline-block">{{ navItem.label }}</span>
+            <span v-if="navItem.badge" class="inline-flex">
+              <NewBadge :locale="locale" size="xxs" />
+            </span>
+          </a>
         </NavigationMenuLink>
       </NavigationMenuItem>
     </NavigationMenuList>

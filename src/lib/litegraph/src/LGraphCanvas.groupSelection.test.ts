@@ -1,6 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -11,9 +9,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
@@ -317,6 +313,19 @@ describe('LGraphCanvas group selection', () => {
       expect(group.selected).toBe(false)
       expect(nodeA.selected).toBe(true)
       expect(nodeB.selected).toBe(true)
+    })
+
+    it('ignores a foreign group with the same id', () => {
+      canvas.select(group)
+      const foreignGroup = new LGraphGroup('Foreign', group.id)
+      foreignGroup.selected = true
+
+      const ctrlEvent = { ctrlKey: true } as CanvasPointerEvent
+      canvas.processSelect(foreignGroup, ctrlEvent)
+
+      expect(group.selected).toBe(true)
+      expect(canvas.selectedItems.has(group)).toBe(true)
+      expect(foreignGroup.selected).toBe(true)
     })
   })
 

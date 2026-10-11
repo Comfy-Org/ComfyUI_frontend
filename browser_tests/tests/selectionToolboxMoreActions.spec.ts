@@ -6,8 +6,9 @@ import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 
 test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
   test.describe('Single node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
     })
@@ -122,7 +123,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
         .toBe(initialCount + 1)
     })
 
-    test('refresh button is rendered in toolbox when node is selected', async ({
+    test('refresh button is hidden for a node without refreshable widgets', async ({
       comfyPage
     }) => {
       const nodeRef = (
@@ -131,18 +132,16 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
-
-      // The refresh button uses v-show so it's always in the DOM;
-      // actual visibility depends on backend-provided widget refresh
-      // capabilities which vary between local and CI environments.
-      const refreshButton = comfyPage.page.getByTestId('refresh-button')
-      await expect(refreshButton).toBeAttached()
+      await expect(
+        comfyPage.selectionToolbox.getByTestId('refresh-button')
+      ).toBeHidden()
     })
   })
 
   test.describe('Multiple node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
     })

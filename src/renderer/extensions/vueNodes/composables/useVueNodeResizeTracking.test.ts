@@ -1,3 +1,5 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -5,6 +7,7 @@ import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -48,9 +51,6 @@ const testState = vi.hoisted(() => {
   const contentSizes = new Map<string, { width: number; height: number }>()
 
   return {
-    linearMode: false,
-    rootGraphId: ROOT_GRAPH_ID,
-    visibility: null as { value: 'visible' | 'hidden' } | null,
     nodeLayouts: new Map<NodeId, NodeLayout>(),
     contentSizes,
     reportContentSize: vi.fn(
@@ -67,30 +67,21 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => {
-    const visibility = ref<'visible' | 'hidden'>('visible')
-    testState.visibility = visibility
-    return visibility
-  },
-  createSharedComposable: <T>(fn: T) => fn
-}))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    linearMode: testState.linearMode,
-    rootGraphId: testState.rootGraphId,
-    canvas: { setDirty: testState.setDirty }
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+    })
   })
-}))
+)
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
-  })
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
@@ -100,7 +91,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/layout/slots/syncSlotOffsets', () => ({
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
   syncSlotOffsets: (
     _element: HTMLElement,
     _rootGraphId: UUID,
@@ -185,11 +176,14 @@ function seedNodeLayout(options: {
   })
 }
 
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
+})
+
 describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
-    testState.linearMode = false
-    testState.rootGraphId = ROOT_GRAPH_ID
-    if (testState.visibility) testState.visibility.value = 'visible'
+    useCanvasStore().linearMode = false
+    Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
   })
@@ -224,7 +218,7 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
     vi.clearAllMocks()
-    testState.rootGraphId = SECOND_GRAPH_ID
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_GRAPH_ID })
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -285,7 +279,7 @@ describe('useVueNodeResizeTracking', () => {
     })
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.rootGraphId).toBe(ROOT_GRAPH_ID)
+    expect(useCanvasStore().rootGraphId).toBe(ROOT_GRAPH_ID)
     expect(testState.reportContentSize).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       subgraphNodeId,
@@ -319,18 +313,17 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
-  it('defers hidden entries and re-observes connected elements when visible', async () => {
+  it('re-observes hidden elements without re-reporting an unchanged size', async () => {
     const nodeId = toNodeId('hidden-node')
     const { entry } = createResizeEntry({ nodeId })
     document.body.append(entry.target)
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    if (!testState.visibility) throw new Error('visibility ref not initialized')
-
     resizeObserverState.callback?.([entry], createObserverMock())
     expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
     vi.clearAllMocks()
 
-    testState.visibility.value = 'hidden'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -339,24 +332,121 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
 
     vi.clearAllMocks()
-    testState.visibility.value = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
 
     expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
 
     vi.clearAllMocks()
     resizeObserverState.callback?.([entry], createObserverMock())
-    expect(testState.reportContentSize).toHaveBeenCalledWith(
-      ROOT_GRAPH_ID,
-      nodeId,
-      {
-        width: 240,
-        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
-      }
-    )
-    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
     entry.target.remove()
   })
+
+  // PM-1304 / PM-1312: switching tabs away and back re-triggers this shared
+  // measurement pipeline for every deferred node in one batch, not just the
+  // node whose content actually grew. This spreads the "can't shrink"
+  // ratchet from `refreshNodeGeometry` to nodes the user never touched.
+  it(
+    "does not re-report an untouched node's unchanged content size after a " +
+      'tab-visibility cycle triggered by a different node',
+    async () => {
+      const touchedNodeId = toNodeId('touched-node')
+      const untouchedNodeId = toNodeId('untouched-node')
+
+      const touched = createResizeEntry({
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 180
+      })
+      const untouched = createResizeEntry({
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      })
+      document.body.append(touched.entry.target, untouched.entry.target)
+      seedNodeLayout({
+        nodeId: touchedNodeId,
+        left: 100,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+      seedNodeLayout({
+        nodeId: untouchedNodeId,
+        left: 400,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+
+      // Establish a baseline measurement for both nodes.
+      resizeObserverState.callback?.(
+        [touched.entry, untouched.entry],
+        createObserverMock()
+      )
+      vi.clearAllMocks()
+
+      // Tab goes hidden. Both nodes happen to receive a resize-observer
+      // entry while hidden (e.g. a layout pass unrelated to either node's
+      // own content), even though only the touched node's autogrow widget
+      // is actually mid-resize.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+
+      const grownTouched = createResizeEntry({
+        element: touched.entry.target,
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 500
+      }).entry
+      const unchangedUntouched = createResizeEntry({
+        element: untouched.entry.target,
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      }).entry
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+      expect(testState.reportContentSize).not.toHaveBeenCalled()
+      vi.clearAllMocks()
+
+      // Tab becomes visible again.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+      vi.clearAllMocks()
+
+      // The browser redelivers each node's real, current measurement: the
+      // touched node genuinely grew; the untouched node's DOM size never
+      // changed from the baseline measured above.
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+
+      expect(testState.reportContentSize).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        touchedNodeId,
+        { width: 240, height: 500 - LiteGraph.NODE_TITLE_HEIGHT }
+      )
+
+      // Bug: the untouched node's identical, already-known measurement is
+      // re-reported too. The tab-visibility batch cleared its measurement
+      // cache along with the touched node's, forcing it back through the
+      // pipeline as if it were a fresh, changed measurement.
+      expect(testState.reportContentSize).not.toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        untouchedNodeId,
+        expect.anything()
+      )
+    }
+  )
 
   it('observes on mount and removes identity before unobserving on unmount', () => {
     const nodeId = toNodeId('mounted-node')

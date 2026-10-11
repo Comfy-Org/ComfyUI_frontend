@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   LogsTerminalHelper,
   logsTerminalFixture
@@ -108,6 +109,59 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
         secondLine
       )
+    })
+
+    test.describe('live log retention', () => {
+      test.use({
+        initialSettings: {
+          'Comfy.Locale': 'en',
+          'Comfy.NodeLibrary.NewDesign': false
+        }
+      })
+
+      for (const { change, act } of [
+        {
+          change: 'opening and closing the sidebar',
+          act: async (comfyPage: ComfyPage) => {
+            await comfyPage.menu.nodeLibraryTab.open()
+            await comfyPage.menu.nodeLibraryTab.close()
+          }
+        },
+        {
+          change: 'entering and leaving focus mode',
+          act: async (comfyPage: ComfyPage) => {
+            await comfyPage.setFocusMode(true)
+            await comfyPage.setFocusMode(false)
+          }
+        },
+        {
+          change: 'changing the locale',
+          act: async (comfyPage: ComfyPage) => {
+            await comfyPage.settingDialog.selectLocale('zh')
+          }
+        }
+      ]) {
+        test(`retains live logs after ${change}`, async ({
+          comfyPage,
+          getWebSocket
+        }) => {
+          const { logs } = comfyPage.bottomPanel
+          await comfyPage.bottomPanel.toggleLogs()
+          await expect(logs.loadingSpinner).toBeHidden()
+          await expect(logs.terminalRoot).toBeVisible()
+          const ws = await getWebSocket()
+          ws.send(LogsTerminalHelper.buildWsLogFrame(['Before layout change']))
+          await expect(logs.terminalRoot).toContainText('Before layout change')
+
+          await act(comfyPage)
+
+          await expect(logs.loadingSpinner).toBeHidden()
+          await expect(logs.terminalRoot).toBeVisible()
+          ws.send(LogsTerminalHelper.buildWsLogFrame(['After layout change']))
+          await expect(logs.terminalRoot).toContainText('After layout change')
+          await expect(logs.terminalRoot).toContainText('Before layout change')
+        })
+      }
     })
 
     test('copy button copies terminal contents to clipboard', async ({

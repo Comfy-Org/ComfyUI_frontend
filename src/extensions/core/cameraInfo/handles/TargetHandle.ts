@@ -17,17 +17,18 @@ export class TargetHandle {
     camera: THREE.Camera,
     domElement: HTMLElement,
     private readonly onDraggingChange: DraggingChangeListener,
-    private readonly onChange: ChangeListener
+    private readonly onChange: ChangeListener,
+    name = 'CameraInfoTarget'
   ) {
     this.proxy = new THREE.Object3D()
-    this.proxy.name = 'CameraInfoTargetProxy'
+    this.proxy.name = `${name}Proxy`
 
     this.controls = new TransformControls(camera, domElement)
     this.controls.setMode('translate')
     this.controls.setSize(0.8)
     this.controls.attach(this.proxy)
     this.helper = this.controls.getHelper()
-    this.helper.name = 'CameraInfoTargetHandle'
+    this.helper.name = `${name}Handle`
     this.helper.visible = false
     this.controls.enabled = false
 

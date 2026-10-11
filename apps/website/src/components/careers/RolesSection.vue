@@ -2,19 +2,20 @@
 import { useEventListener, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
-import type { Department } from '../../data/roles'
-import type { Locale } from '../../i18n/translations'
+import type { Department } from '@/data/roles'
+import type { Locale } from '@/i18n/translations'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/translations'
-import { scrollTo } from '../../scripts/smoothScroll'
-import CategoryNav from '../common/CategoryNav.vue'
-import SectionLabel from '../common/SectionLabel.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import { scrollTo } from '@/scripts/smoothScroll'
+import CategoryNav from '@/components/common/CategoryNav.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 
 const { locale = 'en', departments = [] } = defineProps<{
   locale?: Locale
   departments?: readonly Department[]
 }>()
+const { t } = translationsFor(locale)
 
 const visibleDepartments = computed(() =>
   departments.filter((d) => d.roles.length > 0)
@@ -90,12 +91,12 @@ function scrollToDepartment(deptKey: string) {
       <div class="flex flex-col gap-12 lg:flex-row lg:gap-20">
         <div class="shrink-0 lg:min-w-48">
           <div
-            class="bg-primary-comfy-ink sticky top-20 z-10 py-4 md:top-28 md:py-0"
+            class="sticky top-20 z-10 bg-primary-comfy-ink py-4 md:top-28 md:py-0"
           >
             <h2
-              class="text-primary-comfy-canvas text-3xl font-light md:text-4xl"
+              class="text-3xl font-light text-primary-comfy-canvas md:text-4xl"
             >
-              {{ t('careers.roles.heading', locale) }}
+              {{ t('careers.roles.heading') }}
             </h2>
             <CategoryNav
               v-if="hasRoles"
@@ -110,10 +111,10 @@ function scrollToDepartment(deptKey: string) {
         <div class="min-w-0 flex-1">
           <p
             v-if="!hasRoles"
-            class="text-primary-warm-gray text-base md:text-lg"
+            class="text-base text-primary-warm-gray md:text-lg"
             data-testid="careers-roles-empty"
           >
-            {{ t('careers.roles.empty', locale) }}
+            {{ t('careers.roles.empty') }}
           </p>
 
           <div
@@ -133,34 +134,34 @@ function scrollToDepartment(deptKey: string) {
               :href="role.jobUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="border-primary-warm-gray/20 hover:border-primary-comfy-canvas group flex items-center gap-4 border-b py-5 transition-colors duration-200"
+              class="group flex items-center gap-4 border-b border-primary-warm-gray/20 py-5 transition-colors duration-200 hover:border-primary-comfy-canvas"
               data-testid="careers-role-link"
             >
               <div
                 class="flex min-w-0 flex-1 flex-col md:flex-row md:items-baseline md:gap-x-4"
               >
                 <span
-                  class="text-primary-comfy-canvas text-base font-medium md:text-lg"
+                  class="text-base font-medium text-primary-comfy-canvas md:text-lg"
                 >
                   {{ role.title }}
                 </span>
                 <div
-                  class="text-primary-warm-gray mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm md:mt-0 md:contents"
+                  class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-primary-warm-gray md:mt-0 md:contents"
                 >
                   <span>{{ role.department }}</span>
                   <span class="md:hidden">{{ role.location }}</span>
                 </div>
               </div>
               <span
-                class="text-primary-warm-gray hidden shrink-0 text-sm md:inline"
+                class="hidden shrink-0 text-sm text-primary-warm-gray md:inline"
               >
                 {{ role.location }}
               </span>
               <span
-                class="bg-primary-comfy-yellow/0 group-hover:bg-primary-comfy-yellow relative grid size-7 shrink-0 place-items-center rounded-sm transition-colors duration-300 ease-out"
+                class="relative grid size-7 shrink-0 place-items-center rounded-sm bg-primary-comfy-yellow/0 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-yellow"
               >
                 <span
-                  class="bg-primary-comfy-yellow group-hover:bg-primary-comfy-ink size-5 transition-colors duration-300 ease-out"
+                  class="size-5 bg-primary-comfy-yellow transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
                   style="
                     mask: url('/icons/arrow-up-right.svg') center / contain
                       no-repeat;

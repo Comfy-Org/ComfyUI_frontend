@@ -2,13 +2,16 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const searchInputVariants = cva({
-  base: 'relative flex w-full cursor-text items-center rounded-lg bg-secondary-background text-base-foreground',
+  base: 'relative flex w-full cursor-text items-center rounded-lg bg-secondary-background text-base-foreground focus-within:ring-1 focus-within:ring-border-default',
   variants: {
     size: {
       sm: 'h-6 p-1',
       md: 'h-8 px-2 py-1.5',
       lg: 'h-10 p-2',
       xl: 'h-12 p-2'
+    },
+    invalid: {
+      true: 'ring-1 ring-destructive-background'
     }
   },
   defaultVariants: { size: 'md' }

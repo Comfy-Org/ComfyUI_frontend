@@ -1,40 +1,66 @@
 <template>
-  <div
-    v-if="docked"
-    data-testid="docked-agent-panel"
-    role="complementary"
-    aria-labelledby="agent-panel-title"
-    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
-    :style="{ width: `${width}px` }"
-  >
+  <Teleport to="body" :disabled="!isOverlay">
     <div
-      data-testid="agent-panel-resize-handle"
-      class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
-      :data-resizing="isResizing"
-      @pointerdown="onResizeStart"
-      @lostpointercapture="isResizing = false"
-    />
-    <div
-      data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      v-if="docked"
+      data-testid="docked-agent-panel"
+      role="complementary"
+      aria-labelledby="agent-panel-title"
+      :class="
+        cn(
+          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
+          isOverlay
+            ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-base-background shadow-lg'
+            : 'relative h-full'
+        )
+      "
+      :style="{ width: `${panelWidth}px` }"
     >
       <div
-        class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        v-if="!isOverlay"
+        data-testid="agent-panel-resize-handle"
+        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        :data-resizing="isResizing"
+        @pointerdown="onResizeStart"
+        @lostpointercapture="isResizing = false"
+      />
+      <div
+        data-testid="docked-agent-panel-shell"
+        :class="
+          cn(
+            'size-full p-2',
+            hasOpaqueNeighbor &&
+              'border-l border-interface-stroke bg-base-background'
+          )
+        "
       >
-        <AgentPanelRoot />
+        <div
+          class="size-full overflow-hidden rounded-lg border border-interface-stroke"
+        >
+          <AgentPanelRoot />
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
@@ -58,14 +84,44 @@ const AgentPanelRoot = defineAsyncComponent({
   loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
-    reportError(error, { errorType: 'agent_panel_load_failure' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_panel_load_failure'
+    })
     fail()
   }
 })
 
+/** Set by the parent that lays out both this panel and its left neighbour. */
+const { hasOpaqueNeighbor = false } = defineProps<{
+  hasOpaqueNeighbor?: boolean
+}>()
+
 const agentPanelStore = useAgentPanelStore()
-const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
+const {
+  isVisible: docked,
+  width,
+  requestedWidth,
+  isOverlay
+} = storeToRefs(agentPanelStore)
+const { width: viewportWidth } = useWindowSize()
+const panelWidth = computed(() =>
+  Math.min(
+    isOverlay.value ? requestedWidth.value : width.value,
+    viewportWidth.value
+  )
+)
+useWorkspaceInsetRight(() =>
+  docked.value && !isOverlay.value ? width.value : 0
+)
+const agentRunModeStore = useAgentRunModeStore()
+
+void agentRunModeStore.load().catch((error: unknown) => {
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_run_mode_load_failure'
+  })
+})
 
 const isResizing = ref(false)
 let resizeStartX = 0
@@ -83,6 +139,14 @@ useEventListener(document, 'pointermove', (e: PointerEvent) => {
   if (!isResizing.value) return
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
 })
+
+function stopResizing(): void {
+  isResizing.value = false
+}
+
+useEventListener(document, 'pointerup', stopResizing)
+useEventListener(document, 'pointercancel', stopResizing)
+onBeforeUnmount(stopResizing)
 </script>
 
 <style scoped>

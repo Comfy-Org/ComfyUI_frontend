@@ -103,7 +103,7 @@ If you also want a `docsUrl`, `blogUrl`, or a link to the hub model page, add an
 }
 ```
 
-No changes to `models.ts` or `translations.ts` are needed.
+No changes to `models.ts` or the shared locale catalogs are needed.
 
 ---
 

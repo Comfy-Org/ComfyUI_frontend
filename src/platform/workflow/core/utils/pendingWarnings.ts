@@ -4,7 +4,7 @@ import type {
   ComfyWorkflow,
   PendingWarnings
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 const emptyToUndefined = <T>(arr: T[] | undefined): T[] | undefined =>
   arr?.length ? arr : undefined

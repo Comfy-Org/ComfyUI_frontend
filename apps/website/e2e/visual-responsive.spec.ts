@@ -2,8 +2,9 @@ import type { Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -29,6 +30,12 @@ async function assertNoOverflow(page: Page) {
 async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
+  await expect(
+    page
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Products', includeHidden: true })
+  ).toBeAttached()
+  await waitForPpFormulaLight(page)
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
@@ -64,7 +71,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/cloud/pricing')
+      await navigateAndSettle(page, '/pricing')
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
@@ -83,7 +90,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
 const FAQ_PAGES = [
   {
     name: 'pricing',
-    url: '/cloud/pricing',
+    url: '/pricing',
     // PricingFaq.astro is plain markup — there is no island to wait for.
     island: false,
     trigger: 'details > summary',
@@ -118,6 +125,15 @@ for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
         await triggers.nth(0).click()
         await triggers.nth(1).click()
         await expect(faq.locator(opened)).toHaveCount(2)
+        // The sticky header overlays this capture, so pin the scroll offset.
+        await expect
+          .poll(() =>
+            faq.evaluate((el) => el.getAnimations({ subtree: true }).length)
+          )
+          .toBe(0)
+        await faq.evaluate((el) =>
+          el.scrollIntoView({ block: 'start', behavior: 'instant' })
+        )
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
@@ -141,20 +157,6 @@ test.describe('Contact', { tag: '@visual' }, () => {
   }
 })
 
-test.describe('Gallery', { tag: '@visual' }, () => {
-  for (const vp of SMALL_VIEWPORTS) {
-    test(`gallery-grid-${vp.name}`, async ({ page }) => {
-      await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/gallery')
-
-      const section = page.getByTestId('gallery-grid')
-      await expect(section).toBeVisible()
-      await section.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`gallery-grid-${vp.name}.png`)
-    })
-  }
-})
-
 test.describe('About', { tag: '@visual' }, () => {
   for (const vp of SMALL_VIEWPORTS) {
     test(`hero-${vp.name}`, async ({ page }) => {
@@ -171,16 +173,33 @@ test.describe('About', { tag: '@visual' }, () => {
   }
 })
 
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS.filter(
+    (v) => v.name === '1-sm' || v.name === '3-lg'
+  )) {
+    test(`hero-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+
+      await expect(
+        page.getByRole('heading', { level: 1, name: /creative companies/i })
+      ).toBeVisible()
+      await expect(page).toHaveScreenshot(`customers-hero-${vp.name}.png`)
+    })
+  }
+})
+
 test.describe('Overflow guards', { tag: '@visual' }, () => {
+  test.describe.configure({ mode: 'parallel' })
+
   const pages = [
     '/',
     '/cloud',
     '/enterprise',
     '/enterprise/managed-builds',
-    '/cloud/pricing',
+    '/pricing',
     '/contact',
     '/download',
-    '/gallery',
     '/about',
     '/careers'
   ]

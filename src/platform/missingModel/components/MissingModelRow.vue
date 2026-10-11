@@ -40,7 +40,7 @@
             v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
-            class="focus-visible:ring-ring m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+            class="m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
             :title="displayModelName"
             @click="handleModelLabelClick"
           >
@@ -126,36 +126,31 @@
       </template>
 
       <template v-else>
-        <AccessibleTooltip
+        <Button
           v-if="showGatedRepoAction"
-          :label="t('rightSidePanel.missingModels.gatedModelTooltip')"
+          :tooltip="t('rightSidePanel.missingModels.gatedModelTooltip')"
+          :as="usesNativeModelAccess ? 'button' : 'a'"
+          :type="usesNativeModelAccess ? 'button' : undefined"
+          :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
+          :target="usesNativeModelAccess ? undefined : '_blank'"
+          :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
+          data-testid="missing-model-gated-access"
+          variant="muted-textonly"
+          size="icon"
+          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+          :aria-label="
+            t(
+              usesNativeModelAccess
+                ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
+                : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+          @click="handleOpenGatedRepo"
         >
-          <template #trigger>
-            <Button
-              :as="usesNativeModelAccess ? 'button' : 'a'"
-              :type="usesNativeModelAccess ? 'button' : undefined"
-              :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
-              :target="usesNativeModelAccess ? undefined : '_blank'"
-              :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
-              data-testid="missing-model-gated-access"
-              variant="muted-textonly"
-              size="icon"
-              class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
-              :aria-label="
-                t(
-                  usesNativeModelAccess
-                    ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
-                    : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
-                  { model: model.name },
-                  { escapeParameter: false }
-                )
-              "
-              @click="handleOpenGatedRepo"
-            >
-              <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
-            </Button>
-          </template>
-        </AccessibleTooltip>
+          <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
+        </Button>
         <Button
           v-if="showDownloadAction"
           data-testid="missing-model-download"
@@ -216,7 +211,7 @@
           <div class="flex min-h-8 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -255,7 +250,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'

@@ -1,95 +1,72 @@
-import { ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { render } from '@testing-library/vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
+import * as lazyDeployToComfyApiDialog from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
+import { toNodeId } from '@/types/nodeId'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string) => key
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
-const mockBookmarkStore = vi.hoisted(() => ({
-  isBookmarked: vi.fn(() => false),
-  toggleBookmarked: vi.fn()
-}))
+let mockBookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: { path: 'test.json', isPersisted: true } as ComfyWorkflow
-}))
+let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-const mockWorkflowService = vi.hoisted(() => ({
-  openWorkflow: vi.fn(),
-  duplicateWorkflow: vi.fn(),
-  saveWorkflowAs: vi.fn(),
-  deleteWorkflow: vi.fn()
-}))
+let mockCommandStore: ReturnType<typeof useCommandStore>
 
-const mockCommandStore = vi.hoisted(() => ({
-  execute: vi.fn()
-}))
+let mockSubgraphStore: ReturnType<typeof useSubgraphStore>
 
-const mockSubgraphStore = vi.hoisted(() => ({
-  isSubgraphBlueprint: vi.fn(() => false)
-}))
+let mockMenuItemStore: ReturnType<typeof useMenuItemStore>
 
-const mockMenuItemStore = vi.hoisted(() => ({
-  hasSeenLinear: false
-}))
+let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
-const mockAppModeStore = vi.hoisted(() => ({
-  enterBuilder: vi.fn(),
-  pruneLinearData: vi.fn(
-    (
-      data?: Partial<{
-        inputs: [number | string, string][]
-        outputs: (number | string)[]
-      }>
-    ) => ({
-      inputs: data?.inputs ?? [],
-      outputs: data?.outputs ?? []
-    })
-  ),
-  selectedInputs: [] as [number | string, string][],
-  selectedOutputs: [] as (number | string)[]
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { linearToggleEnabled: false }
-}))
+vi.mock(import('@/components/builder/useEnterBuilder'), () => {
+  const enterBuilder = vi.fn()
+  return { useEnterBuilder: () => ({ enterBuilder }) }
+})
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore),
-  useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
-}))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog')
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn(() => mockCommandStore)
-}))
-
-vi.mock('@/stores/subgraphStore', () => ({
-  useSubgraphStore: vi.fn(() => mockSubgraphStore)
-}))
-
-vi.mock('@/stores/menuItemStore', () => ({
-  useMenuItemStore: vi.fn(() => mockMenuItemStore)
-}))
-
-vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: vi.fn(() => mockAppModeStore)
-}))
-
-vi.mock('@/composables/useErrorHandling', () => ({}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(() => mockFeatureFlags)
-}))
+function useWorkflowActionsMenu(
+  ...args: Parameters<typeof useWorkflowActionsMenuComposable>
+) {
+  let composable!: ReturnType<typeof useWorkflowActionsMenuComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useWorkflowActionsMenuComposable(...args)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
 
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
@@ -111,16 +88,28 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
-    mockBookmarkStore.isBookmarked.mockReturnValue(false)
-    mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(false)
+    mockBookmarkStore = useWorkflowBookmarkStore()
+    mockWorkflowStore = useWorkflowStore()
+    mockCommandStore = useCommandStore()
+    mockSubgraphStore = useSubgraphStore()
+    mockMenuItemStore = useMenuItemStore()
+    mockAppModeStore = useAppModeStore()
+    vi.mocked(mockCommandStore.execute).mockResolvedValue(undefined)
+    vi.mocked(mockBookmarkStore.toggleBookmarked).mockResolvedValue(undefined)
+    vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(false)
+    vi.mocked(mockSubgraphStore.isSubgraphBlueprint).mockReturnValue(false)
+    vi.mocked(
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
+    ).mockResolvedValue(undefined)
     mockMenuItemStore.hasSeenLinear = false
-    mockFeatureFlags.flags.linearToggleEnabled = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
-    mockWorkflowStore.activeWorkflow = {
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({
       path: 'test.json',
       isPersisted: true
-    } as ComfyWorkflow
+    })
   })
 
   it('shows root-level items by default', () => {
@@ -159,7 +148,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows app mode items when linearToggleEnabled flag is set', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -178,7 +167,6 @@ describe('useWorkflowActionsMenu', () => {
 
   it('hides app mode items when conditions not met', () => {
     mockMenuItemStore.hasSeenLinear = false
-    mockFeatureFlags.flags.linearToggleEnabled = false
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -187,7 +175,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('hides app mode items when not root', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
     const labels = menuLabels(menuItems.value)
@@ -196,12 +184,14 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows "go to workflow mode" when in linear mode', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
-    mockWorkflowStore.activeWorkflow = {
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({
       path: 'test.json',
       isPersisted: true,
       activeMode: 'app'
-    } as ComfyWorkflow
+    })
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -211,7 +201,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows bookmark label based on bookmark state', () => {
-    mockBookmarkStore.isBookmarked.mockReturnValue(true)
+    vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(true)
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -221,7 +211,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('adds badge to app mode items', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const appModeItem = findItem(
@@ -250,7 +240,7 @@ describe('useWorkflowActionsMenu', () => {
       isTemporary: false
     } as ComfyWorkflow)
 
-    mockBookmarkStore.isBookmarked.mockReturnValue(false)
+    vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(false)
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
       isRoot: true,
@@ -262,7 +252,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows publish item for blueprints', () => {
-    mockSubgraphStore.isSubgraphBlueprint.mockReturnValue(true)
+    vi.mocked(mockSubgraphStore.isSubgraphBlueprint).mockReturnValue(true)
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -276,7 +266,7 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.duplicate').command?.()
 
-    expect(mockWorkflowService.duplicateWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -295,7 +285,7 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.deleteWorkflow'
     ).command?.()
 
-    expect(mockWorkflowService.deleteWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().deleteWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -308,7 +298,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('enter builder mode calls enterBuilder', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(
@@ -316,17 +306,19 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.enterBuilderMode'
     ).command?.()
 
-    expect(mockAppModeStore.enterBuilder).toHaveBeenCalled()
+    expect(useEnterBuilder().enterBuilder).toHaveBeenCalled()
   })
 
   it('shows "Edit app" when workflow has linear data', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
-    mockWorkflowStore.activeWorkflow = {
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({
       path: 'test.json',
       isPersisted: true
-    } as ComfyWorkflow
+    })
     mockAppModeStore.selectedInputs.push([1, 'widget'])
-    mockAppModeStore.selectedOutputs.push(2)
+    mockAppModeStore.selectedOutputs.push(toNodeId(2))
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const item = findItem(menuItems.value, 'breadcrumbsMenu.editBuilderMode')
@@ -336,7 +328,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.enterAppMode').command?.()
@@ -348,10 +340,12 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('rename is disabled for unpersisted root workflows', () => {
-    mockWorkflowStore.activeWorkflow = {
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({
       path: 'test.json',
       isPersisted: false
-    } as ComfyWorkflow
+    })
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const rename = findItem(menuItems.value, 'g.rename')
@@ -360,16 +354,59 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('bookmark is disabled for temporary workflows', () => {
-    mockWorkflowStore.activeWorkflow = {
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({
       path: 'test.json',
       isPersisted: true,
       isTemporary: true
-    } as ComfyWorkflow
+    })
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const bookmark = findItem(menuItems.value, 'tabMenu.addToBookmarks')
 
     expect(bookmark.disabled).toBe(true)
+  })
+
+  it('offers Deploy to Comfy API as a new root-level item', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    expect(deploy.isNew).toBe(true)
+    expect(deploy.badge).toBe('g.new')
+
+    const nested = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
+    expect(menuLabels(nested.menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('deploy command opens the Deploy to Comfy API dialog', async () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    await deploy.command?.()
+
+    expect(
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('does not deploy a workflow that fails to activate', async () => {
+    const customWorkflow = ref(
+      fromPartial<ComfyWorkflow>({ path: 'other.json', isPersisted: true })
+    )
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+
+    await findItem(menuItems.value, 'deployToComfyApi.buttonLabel').command?.()
+
+    expect(
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('switches to custom workflow before executing rename', async () => {
@@ -385,9 +422,44 @@ describe('useWorkflowActionsMenu', () => {
     })
     await findItem(menuItems.value, 'g.rename').command?.()
 
-    expect(mockWorkflowService.openWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
       customWorkflow.value
     )
     expect(startRename).toHaveBeenCalled()
+  })
+
+  it('switches to the right-clicked workflow before opening the deploy dialog', async () => {
+    const customWorkflow = ref(
+      fromPartial<ComfyWorkflow>({ path: 'other.json', isPersisted: true })
+    )
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), {
+      isRoot: true,
+      workflow: customWorkflow
+    })
+    const activation: { finish?: () => void } = {}
+    vi.mocked(useWorkflowService().openWorkflow).mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        activation.finish = () => resolve(true)
+      })
+    )
+
+    const deploying = findItem(
+      menuItems.value,
+      'deployToComfyApi.buttonLabel'
+    ).command?.()
+
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      customWorkflow.value
+    )
+    expect(
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
+    ).not.toHaveBeenCalled()
+    expect(activation.finish).toBeTypeOf('function')
+    activation.finish?.()
+    await deploying
+    expect(
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
+    ).toHaveBeenCalledOnce()
   })
 })

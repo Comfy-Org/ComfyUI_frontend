@@ -19,10 +19,10 @@ function makeConfig(
   return { cameraType: 'perspective', fov: 75, ...overrides }
 }
 
-function renderGroup(config = makeConfig()) {
+function renderGroup(config = makeConfig(), compact = false) {
   const result = render(CameraMenuGroup, {
-    props: { config },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    props: { config, compact },
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup(), config }
 }
@@ -44,6 +44,69 @@ describe('CameraMenuGroup', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Orthographic' })
+    ).toBeInTheDocument()
+  })
+
+  it('hides the up toggle when the camera has no custom up', () => {
+    renderGroup()
+
+    expect(
+      screen.queryByRole('button', { name: /custom up|natural up/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('toggles between the custom and natural up', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config)
+
+    await user.click(screen.getByRole('button', { name: 'Custom up' }))
+    expect(config.useCustomUp).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Natural up' }))
+    expect(config.useCustomUp).toBe(true)
+  })
+
+  it.for([
+    { useCustomUp: true, label: 'Custom up', tooltip: 'Reset camera up to Y' },
+    {
+      useCustomUp: false,
+      label: 'Natural up',
+      tooltip: 'Restore camera up from input'
+    }
+  ])(
+    'names the $label toggle action in its tooltip',
+    async ({ useCustomUp, label, tooltip }) => {
+      const { user } = renderGroup({
+        ...makeConfig(),
+        hasCustomUp: true,
+        useCustomUp
+      })
+
+      await user.hover(screen.getByRole('button', { name: label }))
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+    }
+  )
+
+  it('announces the up toggle as an action in compact mode', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config, true)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Reset camera up to Y' })
+    )
+
+    expect(config.useCustomUp).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'Restore camera up from input' })
     ).toBeInTheDocument()
   })
 })

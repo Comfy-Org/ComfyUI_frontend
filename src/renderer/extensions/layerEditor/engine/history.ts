@@ -96,7 +96,7 @@ export class History {
       return
     }
 
-    const top = this.undoStack[this.undoStack.length - 1]
+    const top = this.undoStack.at(-1)
     if (
       top &&
       top !== this.mergeBarrier &&

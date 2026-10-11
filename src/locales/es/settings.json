@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Guardar y restaurar la posición del lienzo y el nivel de zoom en los flujos de trabajo"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Mostrar los modelos que faltan en la pestaña de incidencias",
+    "tooltip": "Cuando se desactiva, los archivos de modelo que no se encuentran no se muestran en la pestaña de incidencias y sus nodos no se resaltan."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de vista previa en vivo",
     "options": {
@@ -335,10 +339,6 @@
     "name": "Mostrar actualizaciones de versión",
     "tooltip": "Mostrar actualizaciones para nuevos modelos y funciones principales nuevas."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Retraso de deriva del clic del puntero",
-    "tooltip": "Después de presionar un botón del puntero, este es el tiempo máximo (en milisegundos) que se puede ignorar el movimiento del puntero.\n\nAyuda a prevenir que los objetos sean movidos involuntariamente si el puntero se mueve al hacer clic."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Deriva del clic del puntero (distancia máxima)",
     "tooltip": "Si el puntero se mueve más de esta distancia mientras se mantiene presionado un botón, se considera arrastrar (en lugar de hacer clic).\n\nAyuda a prevenir que los objetos sean movidos involuntariamente si el puntero se mueve al hacer clic."
@@ -461,8 +461,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Persistir el estado del flujo de trabajo y restaurar en la (re)carga de la página"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Mostrar advertencia de modelos faltantes"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Mostrar los medios que faltan en la pestaña de incidencias",
+    "tooltip": "Cuando se desactiva, las imágenes, los vídeos y el audio de entrada que no se encuentran no se muestran en la pestaña de incidencias y sus nodos no se resaltan."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Mostrar los nodos que faltan en la pestaña de incidencias",
+    "tooltip": "Cuando se desactiva, los paquetes de nodos que faltan no se muestran en la pestaña de incidencias y sus nodos no se resaltan. El flujo de trabajo seguirá sin poder ejecutarse hasta que se instalen."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs de nodos al guardar el flujo de trabajo"

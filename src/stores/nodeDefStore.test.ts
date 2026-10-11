@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import axios from 'axios'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,7 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -414,6 +415,22 @@ describe('useNodeDefStore', () => {
 
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
+    })
+  })
+
+  describe('node frequencies', () => {
+    it('omits frequencies for unavailable node definitions', async () => {
+      store.updateNodeDefs([createMockNodeDef()])
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: { TestNode: 10, MissingNode: 9 }
+      })
+
+      const frequencyStore = useNodeFrequencyStore()
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(frequencyStore.topNodeDefs.map(({ name }) => name)).toEqual([
+        'TestNode'
+      ])
     })
   })
 })

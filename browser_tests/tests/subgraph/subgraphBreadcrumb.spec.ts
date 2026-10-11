@@ -121,7 +121,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     })
   })
 
-  test('clicking the root breadcrumb item returns to the root graph', async ({
+  test('activating the root breadcrumb with Enter returns to the root graph', async ({
     comfyPage,
     subgraphBreadcrumb
   }) => {
@@ -139,7 +139,15 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphNode.navigateIntoSubgraph()
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-    await subgraphBreadcrumb.clickItem('root')
+    await expect(subgraphBreadcrumb.panel.rootItem).not.toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
+    await expect(subgraphBreadcrumb.panel.activeItem).toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
+    await subgraphBreadcrumb.activateRootWithKeyboard()
 
     await expect
       .poll(() => comfyPage.subgraph.getActiveGraphId())
@@ -200,7 +208,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
 
       const rootNodeTitle = await comfyPage.page.evaluate(
-        (nodeId) => window.app!.graph!.getNodeById(nodeId)?.title ?? null,
+        (nodeId) => window.app!.graph.getNodeById(nodeId)?.title ?? null,
         toNodeId(OUTER_SUBGRAPH_NODE_ID_IN_NESTED)
       )
       expect(rootNodeTitle).toBe(newName)

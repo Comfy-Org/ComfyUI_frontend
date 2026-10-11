@@ -1,4 +1,4 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -33,7 +33,7 @@ export function resolvePromotedWidgetSource(
   node: LGraphNode,
   widget: IBaseWidget
 ): ResolvedPromotedWidgetSource | undefined {
-  if (!node.isSubgraphNode?.()) return undefined
+  if (!node.isSubgraphNode()) return undefined
 
   const input = inputForWidget(node, widget)
   if (!hasWidgetId(input)) return undefined

@@ -12,7 +12,10 @@ import type {
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
 
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 
 export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
@@ -68,11 +71,21 @@ const EXECUTABLE_SCHEMES: ReadonlySet<string> = new Set([
 export class OAuthApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly code?: string
   ) {
     super(message)
     this.name = 'OAuthApiError'
   }
+}
+
+async function readApiError(response: Response): Promise<OAuthApiError> {
+  const { code, message } = await parseErrorResponse(response)
+  return new OAuthApiError(
+    message,
+    response.status,
+    code === UNKNOWN_ERROR_CODE ? undefined : code
+  )
 }
 
 function assertChallenge(
@@ -119,8 +132,7 @@ export async function fetchOAuthConsentChallenge(
   )
 
   if (!response.ok) {
-    const { message } = await parseErrorResponse(response)
-    throw new OAuthApiError(message, response.status)
+    throw await readApiError(response)
   }
 
   const challenge: unknown = await response.json()
@@ -150,8 +162,7 @@ export async function submitOAuthConsentDecision({
   })
 
   if (!response.ok) {
-    const { message } = await parseErrorResponse(response)
-    throw new OAuthApiError(message, response.status)
+    throw await readApiError(response)
   }
 
   const body: unknown = await response.json()

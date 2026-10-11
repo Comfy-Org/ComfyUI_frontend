@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -12,15 +13,15 @@ const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({
   skeletonCloneMock: vi.fn()
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock(import('@/composables/useLoad3d'), () => ({
   nodeToLoad3dMap: nodeMap
 }))
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: useLoad3dViewerMock
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils'), () => ({
   clone: skeletonCloneMock
 }))
 
@@ -193,14 +194,8 @@ describe('load3dService', () => {
       const viewer = makeViewer()
       const factory = vi.fn().mockReturnValue(viewer)
 
-      const first = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
-      const second = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
+      const first = svc.getOrCreateViewerSync(node, factory)
+      const second = svc.getOrCreateViewerSync(node, factory)
 
       expect(first).toBe(viewer)
       expect(second).toBe(viewer)
@@ -328,9 +323,11 @@ describe('load3dService', () => {
       backgroundInfo: { type: 'image' | 'color' }
       lightsIntensity: number | undefined
       fov: number
+      originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
     }>
 
     function makeSource(overrides: SourceOverrides = {}): Load3d {
+      const originalMaterials = overrides.originalMaterials ?? new WeakMap()
       const {
         currentModel = null,
         isSplat = false,
@@ -363,7 +360,8 @@ describe('load3dService', () => {
           originalModel,
           materialMode,
           currentUpDirection,
-          appliedTexture
+          appliedTexture,
+          originalMaterials
         }),
         getGizmoTransform: () => ({
           position: { x: 7, y: 8, z: 9 },
@@ -391,6 +389,11 @@ describe('load3dService', () => {
         materialMode: string
         currentUpDirection: string
         appliedTexture: unknown
+        originalMaterials: WeakMap<
+          THREE.Mesh,
+          THREE.Material | THREE.Material[]
+        >
+        clearQuadWireframe: ReturnType<typeof vi.fn>
       }
       gizmoManager: {
         isEnabled: () => boolean
@@ -423,11 +426,16 @@ describe('load3dService', () => {
         scene.add(o)
       })
       const modelManager = {
-        currentModel: existingModel as THREE.Object3D | null,
+        currentModel: existingModel,
         originalModel: null as unknown,
         materialMode: 'original',
         currentUpDirection: 'original',
-        appliedTexture: null as unknown
+        appliedTexture: null as unknown,
+        originalMaterials: new WeakMap<
+          THREE.Mesh,
+          THREE.Material | THREE.Material[]
+        >(),
+        clearQuadWireframe: vi.fn()
       }
       const animationManager = {
         setupModelAnimations: vi.fn()
@@ -448,7 +456,7 @@ describe('load3dService', () => {
             remove: sceneRemove
           } as unknown as THREE.Scene
         }),
-        loadModel: vi.fn().mockResolvedValue(undefined),
+        loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
         setMaterialMode: vi.fn(),
         setUpDirection: vi.fn(),
         applyGizmoTransform: vi.fn(),
@@ -474,6 +482,14 @@ describe('load3dService', () => {
 
     function makeModel(): THREE.Object3D {
       return new THREE.Object3D()
+    }
+
+    function firstMesh(root: THREE.Object3D): THREE.Mesh {
+      const child = root.children[0]
+      if (!(child instanceof THREE.Mesh)) {
+        throw new Error('expected the first child to be a mesh')
+      }
+      return child
     }
 
     it('copies camera/scene/lighting/FOV even when there is no source model', async () => {
@@ -509,6 +525,26 @@ describe('load3dService', () => {
       expect(skeletonCloneMock).not.toHaveBeenCalled()
     })
 
+    it('does not apply stale scene state after a rejected splat load', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        isSplat: true,
+        originalURL: 'http://example.com/scan.splat'
+      })
+      const { target } = makeTarget()
+      vi.mocked(target.loadModel).mockResolvedValue(false)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.toggleCamera).not.toHaveBeenCalled()
+      expect(target.setCameraState).not.toHaveBeenCalled()
+      expect(target.setBackgroundColor).not.toHaveBeenCalled()
+      expect(target.toggleGrid).not.toHaveBeenCalled()
+      expect(target.setBackgroundImage).not.toHaveBeenCalled()
+      expect(target.setLightIntensity).not.toHaveBeenCalled()
+      expect(target.setFOV).not.toHaveBeenCalled()
+    })
+
     it('skips loadModel for splat models when originalURL is null', async () => {
       const source = makeSource({
         currentModel: makeModel(),
@@ -534,6 +570,76 @@ describe('load3dService', () => {
 
       expect(state.sceneRemoved).toContain(existing)
       expect(state.sceneAdded).toContain(clone)
+    })
+
+    it('drops the target quad wireframe state along with its existing model', async () => {
+      const source = makeSource({ currentModel: makeModel() })
+      const { target, state } = makeTarget({ existingModel: makeModel() })
+      const removeFromScene = vi.mocked(target.getSceneManager().scene.remove)
+      skeletonCloneMock.mockReturnValue(makeModel())
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(state.modelManager.clearQuadWireframe).toHaveBeenCalledOnce()
+      expect(
+        state.modelManager.clearQuadWireframe.mock.invocationCallOrder[0]
+      ).toBeLessThan(removeFromScene.mock.invocationCallOrder[0])
+    })
+
+    it('hands the viewer a clone in its original materials without wireframe overlays', async () => {
+      const original = new THREE.MeshStandardMaterial()
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshBasicMaterial({ visible: false })
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      const sourceModel = new THREE.Group().add(mesh)
+      const originalMaterials = new WeakMap<THREE.Mesh, THREE.Material>()
+      originalMaterials.set(mesh, original)
+      const source = makeSource({
+        currentModel: sourceModel,
+        materialMode: 'wireframe',
+        originalMaterials
+      })
+      const { target, state } = makeTarget()
+      const clone = sourceModel.clone(true)
+      skeletonCloneMock.mockReturnValue(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      const cloneMesh = firstMesh(clone)
+      expect(cloneMesh.material).toBe(original)
+      expect(cloneMesh.children).toHaveLength(0)
+      expect(state.modelManager.originalMaterials.get(cloneMesh)).toBe(original)
+      expect(state.modelManager.materialMode).toBe('original')
+      expect(target.setMaterialMode).toHaveBeenCalledWith('wireframe')
+    })
+
+    it('re-applies wireframe on a target that was already in wireframe', async () => {
+      const sourceModel = new THREE.Group().add(
+        new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+      )
+      const source = makeSource({
+        currentModel: sourceModel,
+        materialMode: 'wireframe'
+      })
+      const { target, state } = makeTarget()
+      state.modelManager.materialMode = 'wireframe'
+      skeletonCloneMock.mockReturnValue(sourceModel.clone(true))
+      // Mirror SceneModelManager.setMaterialMode's early return: the mode is
+      // only applied when it differs from the one already recorded.
+      let applied = false
+      vi.mocked(target.setMaterialMode).mockImplementation((mode) => {
+        if (mode === state.modelManager.materialMode) return
+        state.modelManager.materialMode = mode
+        applied = true
+      })
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(applied).toBe(true)
+      expect(state.modelManager.materialMode).toBe('wireframe')
     })
 
     it('clones the source model via SkeletonUtils and assigns it as the target current model', async () => {
@@ -565,7 +671,6 @@ describe('load3dService', () => {
       await useLoad3dService().copyLoad3dState(source, target)
 
       expect(state.modelManager.originalModel).toBe(sourceOriginal)
-      expect(state.modelManager.materialMode).toBe('wireframe')
       expect(state.modelManager.currentUpDirection).toBe('+y')
       expect(state.modelManager.appliedTexture).toBe(texture)
       expect(target.setMaterialMode).toHaveBeenCalledWith('wireframe')
