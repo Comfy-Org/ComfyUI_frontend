@@ -25,8 +25,6 @@
     "src/composables/maskeditor/useCanvasHistory.ts->src/stores/maskEditorStore.ts",
     "src/composables/node/usePriceBadge.ts->src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts->src/stores/workspace/sidebarTabStore.ts",
-    "src/composables/useLoad3d.ts->src/services/load3dService.ts",
-    "src/composables/useLoad3dViewer.ts->src/services/load3dService.ts",
     "src/composables/usePaste.ts->src/scripts/app.ts",
     "src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts",
     "src/core/graph/subgraph/promotionUtils.ts->src/services/litegraphService.ts",
