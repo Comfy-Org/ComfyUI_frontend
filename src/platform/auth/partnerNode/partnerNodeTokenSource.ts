@@ -29,8 +29,8 @@ const zPartnerNodeTokenResponse = zExchangeTokenResponse.pick({
 export interface PartnerNodeTokenTarget {
   ownerUid: string
   workspaceId: string
-  /** The identity token the mint is authorized with. */
-  idToken: () => Promise<string | undefined>
+  /** Mint bearer: a Firebase ID token or a host OAuth access token. */
+  credential: () => Promise<string | undefined>
 }
 
 interface PartnerNodeTokenSourceDeps {
@@ -68,8 +68,8 @@ export function createPartnerNodeTokenSource({
     `${ownerUid}:${workspaceId}`
 
   async function mint(target: PartnerNodeTokenTarget): Promise<MintOutcome> {
-    const idToken = await target.idToken()
-    if (!idToken) return { ok: false, reason: 'no_identity' }
+    const credential = await target.credential()
+    if (!credential) return { ok: false, reason: 'no_identity' }
 
     const body: PartnerNodeMintRequest = {
       workspace_id: target.workspaceId,
@@ -80,7 +80,7 @@ export function createPartnerNodeTokenSource({
       response = await fetch(apiUrl('/auth/token'), {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${idToken}`,
+          Authorization: `Bearer ${credential}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
