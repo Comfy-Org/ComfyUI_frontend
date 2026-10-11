@@ -80,6 +80,7 @@ import type { OutputStackListItem } from '@/platform/assets/composables/useOutpu
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import { assetPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -142,7 +143,7 @@ function getAssetPreviewUrl(asset: AssetItem): string {
   if (mediaType === 'image' || mediaType === 'video') {
     return asset.preview_url || ''
   }
-  return ''
+  return assetPreviewUrl(asset.preview_id ?? '') ?? ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {
