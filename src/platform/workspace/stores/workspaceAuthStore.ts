@@ -37,6 +37,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyW
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { provideUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -743,3 +744,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     dropDeniedWorkspace
   }
 })
+
+provideUnifiedRemint((expectedToken) =>
+  useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
+)

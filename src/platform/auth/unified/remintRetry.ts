@@ -23,6 +23,15 @@ let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
   | undefined
 
+type UnifiedRemint = (expectedToken: string) => Promise<string | null>
+
+let remintUnified: UnifiedRemint | undefined
+
+/** Installed by `workspaceAuthStore`; importing it here cycles through `authStore`. */
+export function provideUnifiedRemint(remint: UnifiedRemint): void {
+  remintUnified = remint
+}
+
 /**
  * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
  * ON. Memoizes the feature-flag accessor so the hot `fetchApi` path does not
@@ -42,15 +51,13 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
  * active unified session, or the re-mint failed. A permanent auth failure is
  * surfaced + torn down inside `remintUnifiedOnce` (error toast + session clear,
  * matching the proactive refresh path); the `catch` here only guards an
- * unexpected throw (e.g. a chunk-load failure or no active Pinia), which it
+ * unexpected throw (e.g. no active Pinia), which it
  * reports as `auth_unified_remint_unexpected`. Either way `null` makes the
  * caller surface its original 401 unchanged.
  */
 async function tryRemintToken(expectedToken: string): Promise<string | null> {
   try {
-    const { useWorkspaceAuthStore } =
-      await import('@/platform/workspace/stores/workspaceAuthStore')
-    return await useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
+    return (await remintUnified?.(expectedToken)) ?? null
   } catch (err) {
     reportError(err, {
       surface: 'auth',
