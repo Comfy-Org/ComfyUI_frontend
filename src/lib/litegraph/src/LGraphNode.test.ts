@@ -48,6 +48,19 @@ function getMockISerialisedNode(
   )
 }
 
+function nonExtensibleWidget(
+  overrides: Partial<IBaseWidget> = {}
+): IBaseWidget {
+  return Object.preventExtensions<IBaseWidget>({
+    type: 'number',
+    name: 'value',
+    value: 1,
+    options: {},
+    y: 0,
+    ...overrides
+  })
+}
+
 describe('LGraphNode', () => {
   let node: LGraphNode
   let origLiteGraph: Omit<typeof LiteGraph, 'Classes'>
@@ -748,13 +761,7 @@ describe('LGraphNode', () => {
 
     test('reuses one wrapper for a non-extensible legacy widget source', () => {
       const testNode = new LGraphNode('TestNode')
-      const widget = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'value',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const widget = nonExtensibleWidget()
 
       const first = testNode.addCustomWidget(widget)
       const second = testNode.addCustomWidget(widget)
@@ -765,13 +772,7 @@ describe('LGraphNode', () => {
 
     test('reuses the wrapper created by a direct legacy widget push', () => {
       const testNode = new LGraphNode('TestNode')
-      const widget = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'value',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const widget = nonExtensibleWidget()
 
       testNode.widgets = [widget]
       const installed = testNode.widgets[0]
@@ -792,13 +793,7 @@ describe('LGraphNode', () => {
 
     test('rebuilds a non-extensible wrapper after removal', () => {
       const testNode = new LGraphNode('TestNode')
-      const widget = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'value',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const widget = nonExtensibleWidget()
       const first = testNode.addCustomWidget(widget)
 
       testNode.removeWidget(first)
@@ -810,13 +805,7 @@ describe('LGraphNode', () => {
 
     test('deduplicates repeated direct pushes of one legacy source', () => {
       const testNode = new LGraphNode('TestNode')
-      const widget = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'value',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const widget = nonExtensibleWidget()
 
       testNode.widgets = [widget, widget]
 
@@ -825,13 +814,7 @@ describe('LGraphNode', () => {
 
     test('rebuilds a wrapper removed directly through the widgets view', () => {
       const testNode = new LGraphNode('TestNode')
-      const widget = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'value',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const widget = nonExtensibleWidget()
       testNode.widgets = [widget]
       const first = testNode.widgets[0]
 
@@ -845,13 +828,7 @@ describe('LGraphNode', () => {
 
     test('keeps a wrapped legacy widget during an in-place reorder', () => {
       const testNode = new LGraphNode('TestNode')
-      const source = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'wrapped',
-        value: 1,
-        options: {},
-        y: 0
-      })
+      const source = nonExtensibleWidget({ name: 'wrapped' })
       testNode.widgets = [source]
       const wrapped = testNode.widgets[0]
       const other = testNode.addWidget('number', 'other', 2, null)
@@ -864,13 +841,7 @@ describe('LGraphNode', () => {
 
     test('restores a pre-pushed widget by its position', () => {
       const testNode = new LGraphNode('TestNode')
-      const source = Object.preventExtensions<IBaseWidget>({
-        type: 'number',
-        name: 'first',
-        value: 0,
-        options: {},
-        y: 0
-      })
+      const source = nonExtensibleWidget({ name: 'first', value: 0 })
       let first: IBaseWidget | undefined
       let successor: IBaseWidget | undefined
       testNode.onConfigure = () => {
