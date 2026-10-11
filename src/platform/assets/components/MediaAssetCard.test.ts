@@ -8,6 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import '@/platform/assets/components/MediaAudioTop.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -298,6 +299,93 @@ describe('MediaAssetCard', () => {
       expect(emitted().select).toHaveLength(1)
     }
   )
+
+  describe('audio player strip', () => {
+    const audioAsset: AssetItem = { ...asset, name: 'track.mp3' }
+    const waveformWidth = 100
+
+    async function renderAudioCard() {
+      const rendered = renderCard({ loading: false, asset: audioAsset })
+      const audio = await screen.findByTestId('wave-audio-media')
+      assert.instanceOf(audio, HTMLAudioElement)
+      Object.defineProperty(audio, 'duration', {
+        value: 10,
+        configurable: true
+      })
+      await fireEvent(audio, new Event('durationchange'))
+      const waveform = screen.getByTestId('wave-audio-waveform')
+      waveform.getBoundingClientRect = () =>
+        new DOMRect(0, 0, waveformWidth, 32)
+      return {
+        ...rendered,
+        waveform,
+        playButton: screen.getByRole('button', { name: 'g.play' }),
+        playSpy: vi.spyOn(audio, 'play').mockResolvedValue()
+      }
+    }
+
+    it.for([
+      { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+      { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+      { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+    ])(
+      '$modifier-clicks the waveform to select without seeking',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { emitted, waveform, playSpy } = await renderAudioCard()
+
+        await user.keyboard(keyDown)
+        await user.pointer({
+          keys: '[MouseLeft]',
+          target: waveform,
+          coords: { clientX: waveformWidth / 2, clientY: 16 }
+        })
+        await user.keyboard(keyUp)
+
+        expect(emitted().select).toHaveLength(1)
+        expect(playSpy).not.toHaveBeenCalled()
+        expect(screen.getByText('0:00 / 0:10')).toBeInTheDocument()
+      }
+    )
+
+    it('seeks without selecting from a plain click on the waveform', async () => {
+      const user = userEvent.setup()
+      const { emitted, waveform, playSpy } = await renderAudioCard()
+
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: waveform,
+        coords: { clientX: waveformWidth / 2, clientY: 16 }
+      })
+
+      expect(screen.getByText('0:05 / 0:10')).toBeInTheDocument()
+      expect(playSpy).toHaveBeenCalled()
+      expect(emitted().select).toBeUndefined()
+      expect(emitted()['toggle-selection']).toBeUndefined()
+    })
+
+    it('toggles playback without selecting from a plain click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.click(playButton)
+
+      expect(playSpy).toHaveBeenCalledTimes(1)
+      expect(emitted().select).toBeUndefined()
+    })
+
+    it('selects without toggling playback from a modifier click on play', async () => {
+      const user = userEvent.setup()
+      const { emitted, playButton, playSpy } = await renderAudioCard()
+
+      await user.keyboard('{Shift>}')
+      await user.click(playButton)
+      await user.keyboard('{/Shift}')
+
+      expect(emitted().select).toHaveLength(1)
+      expect(playSpy).not.toHaveBeenCalled()
+    })
+  })
 
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()
