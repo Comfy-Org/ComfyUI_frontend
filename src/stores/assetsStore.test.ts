@@ -1341,21 +1341,30 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
 
 describe('assetsStore - assets.seed.completed', () => {
   const seed = { created: 0, elapsed: 0, enriched: 0, skipped: 0, total: 0 }
+  const invalidated = { invalidate: 1, loadNew: 0 }
 
   it.for([
-    { case: 'full phase', detail: { phase: 'full' }, call: 'invalidate' },
     {
-      case: 'enrichment outpaces creation',
-      detail: { phase: 'enrich', created: 1, enriched: 2 },
-      call: 'invalidate'
+      case: 'full phase invalidates',
+      detail: { phase: 'full', created: 2, enriched: 2 },
+      calls: invalidated
     },
     {
-      case: 'only new assets',
-      detail: { phase: 'fast', created: 2, enriched: 1 },
-      call: 'loadNew'
+      case: 'enrich phase invalidates even with no enriched count',
+      detail: { phase: 'enrich' },
+      calls: invalidated
     },
-    { case: 'nothing changed', detail: { phase: 'fast' }, call: undefined }
-  ] as const)('$case → $call', async ({ detail, call }) => {
+    {
+      case: 'fast phase with new assets loads new',
+      detail: { phase: 'fast', created: 2 },
+      calls: { invalidate: 0, loadNew: 1 }
+    },
+    {
+      case: 'fast phase with nothing created does nothing',
+      detail: { phase: 'fast' },
+      calls: { invalidate: 0, loadNew: 0 }
+    }
+  ] as const)('$case', async ({ detail, calls }) => {
     const store = useAssetsStore()
     const pagedList = () => ({
       items: [],
@@ -1378,10 +1387,11 @@ describe('assetsStore - assets.seed.completed', () => {
       })
     )
 
-    for (const list of lists) {
-      for (const method of ['invalidate', 'loadNew'] as const) {
-        expect(list[method]).toHaveBeenCalledTimes(method === call ? 1 : 0)
-      }
-    }
+    expect(
+      lists.map((list) => ({
+        invalidate: list.invalidate.mock.calls.length,
+        loadNew: list.loadNew.mock.calls.length
+      }))
+    ).toEqual([calls, calls])
   })
 })

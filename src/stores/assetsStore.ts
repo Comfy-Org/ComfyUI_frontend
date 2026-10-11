@@ -354,7 +354,7 @@ export const useAssetsStore = defineStore('assets', () => {
     api,
     'assets.seed.completed',
     async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
-      if (detail.enriched > detail.created || detail.phase === 'full') {
+      if (detail.phase !== 'fast') {
         await outputAssets.value.invalidate()
         await inputAssets.value.invalidate()
       } else if (detail.created) {
