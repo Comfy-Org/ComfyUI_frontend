@@ -341,10 +341,12 @@ describe('useAgentConversationStore', () => {
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
     const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
     store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
@@ -1963,21 +1965,39 @@ describe('useAgentConversationStore', () => {
 
   it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
     const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
     store.setThreadId('th')
     store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.stashActiveTurn()
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
-    ])
-    store.notifyCanvasCaughtUp('f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e')
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'done', ok: true }
-    ])
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'streaming',
+          ok: true
+        })
+      ])
+    )
+    store.notifyCanvasCaughtUp(workflowId)
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        })
+      ])
+    )
   })
 
   it.for<{
