@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
+import type { DraftPayloadV2 } from '@/platform/workflow/persistence/base/draftTypes'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -67,6 +68,22 @@ export class WorkflowHelper {
         key.startsWith('Comfy.Workflow.Draft.v2:')
       )
     )
+  }
+
+  getDraftWorkflows(): Promise<ComfyWorkflowJSON[]> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflows: ComfyWorkflowJSON[] = []
+      for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith('Comfy.Workflow.Draft.v2:')) continue
+        const rawPayload = localStorage.getItem(key)
+        if (rawPayload === null) continue
+
+        const payload: DraftPayloadV2 = JSON.parse(rawPayload)
+        const workflow: ComfyWorkflowJSON = JSON.parse(payload.data)
+        workflows.push(workflow)
+      }
+      return workflows
+    })
   }
 
   /** Waits for V2 draft index recency, not payload content freshness. */
