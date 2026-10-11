@@ -1,0 +1,233 @@
+{
+  "id": "camera-authoring",
+  "capability": "Camera authoring",
+  "description": "CameraInfo and CameraAngle node viewports: camera state and orbit/roll/look-through math, Three.js handles, overlays and inset previews, widget-value bridges, Vue widgets, and extension registration. The shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
+  "modules": [
+    { "path": "src/extensions/core/cameraInfo/types.ts", "role": "domain" },
+    {
+      "path": "src/extensions/core/cameraInfo/cameraTransform.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/cameraTransform.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/lookThroughDragMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/lookThroughDragMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/orbitDragMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/rollDragMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
+      "role": "domain"
+    },
+    { "path": "src/extensions/core/cameraAngle/types.ts", "role": "domain" },
+    {
+      "path": "src/extensions/core/cameraInfo/widgetBridge.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/widgetBridge.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/CameraInfoViewport.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/cameraAngleMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/cameraAngleMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/widgetBridge.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/widgetBridge.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/CameraAngleViewport.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/CameraAngleViewport.test.ts",
+      "role": "application"
+    },
+    { "path": "src/composables/useCameraInfo.ts", "role": "application" },
+    { "path": "src/composables/useCameraInfo.test.ts", "role": "application" },
+    { "path": "src/composables/useCameraAngle.ts", "role": "application" },
+    {
+      "path": "src/composables/useCameraAngle.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/CameraInfoOverlay.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/subjectCameraPreview.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/CameraHandle.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/CameraHandle.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/OrbitHandles.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/OrbitHandles.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/RollHandle.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/RollHandle.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/TargetHandle.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/TargetHandle.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/handlePicking.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/handlePicking.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/pointerInteraction.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraInfo/handles/pointerInteraction.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/SubjectBox.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/SubjectBox.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/orbitGizmos.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/cameraAngle/orbitGizmos.test.ts",
+      "role": "infrastructure"
+    },
+    { "path": "src/components/cameraInfo/**", "role": "presentation" },
+    { "path": "src/components/cameraAngle/**", "role": "presentation" },
+    { "path": "src/extensions/core/cameraInfo.ts", "role": "integration" },
+    { "path": "src/extensions/core/cameraAngle.ts", "role": "integration" },
+    { "path": "src/extensions/core/cameraAngle.test.ts", "role": "integration" }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Camera state math converts orbit, roll, look-at, and look-through drags without drift",
+      "checks": [
+        "src/extensions/core/cameraInfo/cameraTransform.test.ts",
+        "src/extensions/core/cameraInfo/lookThroughDragMath.test.ts",
+        "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
+        "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
+        "src/extensions/core/cameraAngle/cameraAngleMath.test.ts"
+      ]
+    },
+    {
+      "name": "Widget bridges read, clamp, and write camera node widget values",
+      "checks": [
+        "src/extensions/core/cameraInfo/widgetBridge.test.ts",
+        "src/extensions/core/cameraAngle/widgetBridge.test.ts",
+        "src/composables/useCameraInfo.test.ts",
+        "src/composables/useCameraAngle.test.ts"
+      ]
+    },
+    {
+      "name": "Viewports, handles, overlays, and previews pick, drag, render, and dispose Three.js objects",
+      "checks": [
+        "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
+        "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
+        "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
+        "src/extensions/core/cameraInfo/handles/CameraHandle.test.ts",
+        "src/extensions/core/cameraInfo/handles/OrbitHandles.test.ts",
+        "src/extensions/core/cameraInfo/handles/RollHandle.test.ts",
+        "src/extensions/core/cameraInfo/handles/TargetHandle.test.ts",
+        "src/extensions/core/cameraInfo/handles/handlePicking.test.ts",
+        "src/extensions/core/cameraInfo/handles/pointerInteraction.test.ts",
+        "src/extensions/core/cameraAngle/CameraAngleViewport.test.ts",
+        "src/extensions/core/cameraAngle/SubjectBox.test.ts",
+        "src/extensions/core/cameraAngle/orbitGizmos.test.ts"
+      ]
+    },
+    {
+      "name": "Camera widgets render controls and the CameraAngle extension registers its node widget",
+      "checks": [
+        "src/components/cameraInfo/CameraInfo.test.ts",
+        "src/components/cameraAngle/CameraAngle.test.ts",
+        "src/extensions/core/cameraAngle.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing imports and runtime behavior remain unchanged; classified callers such as light authoring expose cross-domain findings rather than receiving new dependency permissions.",
+    "Classification does not move the shared Three.js renderer, Load3D viewport factory, load3d components, or viewport node wiring into camera authoring.",
+    "CameraInfo and CameraAngle widget names and serialized widget values remain unchanged."
+  ],
+  "deepImports": "inventory"
+}
