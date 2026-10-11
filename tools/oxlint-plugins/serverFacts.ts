@@ -560,7 +560,7 @@ export const noCapabilityRecombination: Rule = {
   }
 }
 
-type Binary = VisitedNode<'BinaryExpression'>
+type Binary = Extract<AstNode, { type: 'BinaryExpression' }>
 
 interface FactComparison {
   field: string
@@ -652,12 +652,63 @@ function isInsideSortComparator(node: AstNode): boolean {
   )
 }
 
-function isExemptComparison(node: Binary): boolean {
+const STATUS_FIELDS: ReadonlySet<string> = new Set([
+  'billingStatus',
+  'subscriptionStatus',
+  'billing_status',
+  'subscription_status'
+])
+
+function logicalRoot(node: AstNode): AstNode {
+  const { parent } = node
+  return parent?.type === 'LogicalExpression' ? logicalRoot(parent) : node
+}
+
+function isBooleanLiteral(node: AstNode | null | undefined): boolean {
+  return node?.type === 'Literal' && typeof node.value === 'boolean'
+}
+
+// A branch that returns `true` or `false` turns the condition into one step of
+// a composed gate, so only branches that pick a value read the status as is.
+function branchesOnValue(test: AstNode): boolean {
+  const { parent } = test
+  if (parent?.type === 'ConditionalExpression') {
+    return (
+      parent.test === test &&
+      !isBooleanLiteral(parent.consequent) &&
+      !isBooleanLiteral(parent.alternate)
+    )
+  }
+  return (
+    parent?.type === 'IfStatement' &&
+    parent.test === test &&
+    !isBooleanLiteral(returnedBy(parent.consequent)) &&
+    (parent.alternate === null ||
+      !isBooleanLiteral(returnedBy(parent.alternate)))
+  )
+}
+
+// `billingStatus === 'paused' ? a : b` renders one status as received; joined
+// with another fact, role or flag it derives a decision.
+function isStatusReadAsIs(node: Binary, { field, path }: FactComparison) {
+  if (!STATUS_FIELDS.has(field) || path === undefined) return false
+  const root = logicalRoot(node)
+  return (
+    logicalOperands(root).every(
+      (operand) =>
+        operand.type === 'BinaryExpression' &&
+        factComparison(operand)?.path === path
+    ) && branchesOnValue(root)
+  )
+}
+
+function isExemptComparison(node: Binary, comparison: FactComparison): boolean {
   return (
     isInsidePendingFact(node) ||
     isInsideTypeGuard(node) ||
     selectsLabel(node) ||
-    isInsideSortComparator(node)
+    isInsideSortComparator(node) ||
+    isStatusReadAsIs(node, comparison)
   )
 }
 
@@ -679,7 +730,7 @@ export const noServerFactLiterals: Rule = {
     return {
       BinaryExpression(node) {
         const comparison = factComparison(node)
-        if (!comparison || isExemptComparison(node)) return
+        if (!comparison || isExemptComparison(node, comparison)) return
         const { field, literal } = comparison
         context.report({
           node,

@@ -389,6 +389,25 @@ const byDate = list.toSorted(function (a, b) {
 `
     },
     {
+      name: 'a billing status read as received to pick a value',
+      code: `
+const amount = computed(() => {
+  if (billingStatus.value === 'paused') return null
+  return invoice.value
+})
+function bannerKind(inputs) {
+  if (inputs.billingStatus === 'paused') return 'paused'
+  if (inputs.billingStatus === 'payment_failed') return 'paymentFailed'
+  return null
+}
+const status = billingStatus.value === 'payment_failed' ? 'payment_failed' : 'paused'
+const kind =
+  status.billing_status === 'paused' || status.billing_status === 'payment_failed'
+    ? 'recover'
+    : 'none'
+`
+    },
+    {
       name: 'a lowercase client catalog tier key',
       code: `
 const isTeam = context.tier === 'team'
@@ -510,6 +529,52 @@ const f = tier === 'TEAM'
       name: 'a subscription status compared with a literal',
       code: `const ended = subscriptionStatus.value === 'ended'`,
       errors: [
+        {
+          messageId: 'compared',
+          data: { field: 'subscriptionStatus', literal: 'ended' }
+        }
+      ]
+    },
+    {
+      name: 'a billing status combined with another fact, flag or gate step',
+      code: `
+const lock = billingStatus.value === 'paused' && isOwner.value ? 'owner' : null
+const recover =
+  billingStatus.value === 'payment_failed' || (flag && billingStatus.value === 'paused')
+    ? 'recover'
+    : null
+const mixed = billingStatus.value === 'paused' || subscriptionStatus.value === 'ended' ? 'a' : 'b'
+const exhausted = computed(() => {
+  if (billingStatus.value === 'paused') return false
+  return !hasFunds.value
+})
+const ended = subscriptionStatus.value === 'ended' ? true : isCancelled.value
+`,
+      errors: [
+        {
+          messageId: 'compared',
+          data: { field: 'billingStatus', literal: 'paused' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'billingStatus', literal: 'payment_failed' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'billingStatus', literal: 'paused' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'billingStatus', literal: 'paused' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'subscriptionStatus', literal: 'ended' }
+        },
+        {
+          messageId: 'compared',
+          data: { field: 'billingStatus', literal: 'paused' }
+        },
         {
           messageId: 'compared',
           data: { field: 'subscriptionStatus', literal: 'ended' }
