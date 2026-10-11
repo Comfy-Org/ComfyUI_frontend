@@ -86,46 +86,38 @@ describe('layoutStore CRDT operations', () => {
     expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toEqual(layout)
   })
 
-  it('rejects moving a node that is not registered', () => {
+  it('ignores moving a node that is not registered', () => {
     const nodeId = toNodeId('test-node-unregistered-move')
 
-    vi.stubEnv('DEV', true)
-    try {
-      expect(() =>
-        layoutStore.applyOperation({
-          type: 'moveNode',
-          graphId: GRAPH,
-          nodeId,
-          position: { x: 1, y: 2 },
-          timestamp: Date.now(),
-          source: LayoutSource.Canvas,
-          actor: 'test'
-        })
-      ).toThrow(/not registered/)
-    } finally {
-      vi.unstubAllEnvs()
-    }
+    expect(() =>
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        graphId: GRAPH,
+        nodeId,
+        position: { x: 1, y: 2 },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+    ).not.toThrow()
+    expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toBeNull()
   })
 
-  it('rejects resizing a node that is not registered', () => {
+  it('ignores resizing a node that is not registered', () => {
     const nodeId = toNodeId('test-node-unregistered-resize')
 
-    vi.stubEnv('DEV', true)
-    try {
-      expect(() =>
-        layoutStore.applyOperation({
-          type: 'resizeNode',
-          graphId: GRAPH,
-          nodeId,
-          size: { width: 10, height: 10 },
-          timestamp: Date.now(),
-          source: LayoutSource.Canvas,
-          actor: 'test'
-        })
-      ).toThrow(/not registered/)
-    } finally {
-      vi.unstubAllEnvs()
-    }
+    expect(() =>
+      layoutStore.applyOperation({
+        type: 'resizeNode',
+        graphId: GRAPH,
+        nodeId,
+        size: { width: 10, height: 10 },
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+    ).not.toThrow()
+    expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toBeNull()
   })
 
   it('does not create a node when reading a missing layout', () => {

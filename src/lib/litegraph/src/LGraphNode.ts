@@ -393,6 +393,10 @@ const NAMED_SHAPES = {
  */
 
 const wireExecutionOrders = new WeakMap<LGraphNode, number>()
+const concreteWidgetsBySource = new WeakMap<
+  LGraphNode,
+  WeakMap<IBaseWidget, IBaseWidget>
+>()
 
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
@@ -1979,11 +1983,14 @@ export class LGraphNode
    */
   removeOutput(slot: number): void {
     const { outputs } = this
-    const isValidSlot = slot >= 0 && slot < outputs.length
-    assert(
-      isValidSlot,
-      `LGraphNode.removeOutput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${outputs.length} outputs`
-    )
+    const isValidSlot =
+      Number.isInteger(slot) && slot >= 0 && slot < outputs.length
+    assert(isValidSlot, 'LGraphNode.removeOutput: slot is out of bounds', {
+      slot,
+      nodeId: this.id,
+      nodeType: this.type,
+      outputCount: outputs.length
+    })
     if (!isValidSlot) return
 
     // Only disconnect if node is part of a graph
@@ -2051,11 +2058,8 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
-    const isValidSlot = slot >= 0 && slot < inputs.length
-    assert(
-      isValidSlot,
-      `LGraphNode.removeInput: slot ${slot} is out of bounds for node "${this.type}" (id: ${this.id}) with ${inputs.length} inputs`
-    )
+    if (!Number.isInteger(slot) || slot < 0 || slot >= inputs.length) return
+
     const slotInfo = legacyArrayItem(inputs, slot)
     if (!slotInfo) return
 
@@ -2343,18 +2347,39 @@ export class LGraphNode
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
-    const widget = toConcreteWidget(custom_widget, this)
+    let widgetsBySource = concreteWidgetsBySource.get(this)
+    if (!widgetsBySource) {
+      widgetsBySource = new WeakMap()
+      concreteWidgetsBySource.set(this, widgetsBySource)
+    }
 
-    const isDuplicateWidget = this.widgets.includes(widget)
+    const previouslyRegistered = widgetsBySource.get(custom_widget)
+    const isDuplicateWidget =
+      previouslyRegistered !== undefined &&
+      this.widgets.includes(previouslyRegistered)
     assert(
       !isDuplicateWidget,
-      `LGraphNode.addCustomWidget: widget "${widget.name}" is already registered on node "${this.type}" (id: ${this.id}) - refusing to add the same widget instance again`
+      'LGraphNode.addCustomWidget: widget source is already registered',
+      {
+        nodeId: this.id,
+        nodeType: this.type
+      }
     )
-    if (isDuplicateWidget) return widget
+    if (isDuplicateWidget) {
+      return previouslyRegistered as WidgetTypeMap[TPlainWidget['type']]
+    }
+    if (previouslyRegistered) widgetsBySource.delete(custom_widget)
 
-    this.widgets.push(widget)
-
-    if (!this.widgets.includes(widget)) return widget
+    const widget = toConcreteWidget(custom_widget, this)
+    const existingIndex = this.widgets.findIndex(
+      (candidate) => candidate === widget || candidate === custom_widget
+    )
+    if (existingIndex === -1) {
+      this.widgets.push(widget)
+    } else if (this.widgets[existingIndex] !== widget) {
+      this.widgets[existingIndex] = widget
+    }
+    widgetsBySource.set(custom_widget, widget)
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2365,9 +2390,11 @@ export class LGraphNode
 
     if (widget.serialize === false) return widget
 
+    const widgetIndex = this.widgets.indexOf(widget)
     const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
+      this.widgets
+        .slice(0, widgetIndex + 1)
+        .filter((candidate) => candidate.serialize !== false).length - 1
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,

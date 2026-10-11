@@ -9,6 +9,7 @@ import type {
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
@@ -744,28 +745,57 @@ describe('LGraphNode', () => {
         const widget = testNode.addWidget('number', 'value', 1, null)
 
         expect(() => testNode.addCustomWidget(widget)).toThrow(
-          /already registered/
+          /widget source is already registered/
         )
         expect(testNode.widgets).toHaveLength(1)
       } finally {
         vi.unstubAllEnvs()
       }
     })
-  })
 
-  describe('removeInput', () => {
-    test('rejects an out-of-bounds slot', () => {
+    test('rejects the same non-extensible legacy widget source twice', () => {
       vi.stubEnv('DEV', true)
       try {
         const testNode = new LGraphNode('TestNode')
-        testNode.addInput('input1', 'number')
+        const widget = Object.preventExtensions<IBaseWidget>({
+          type: 'number',
+          name: 'value',
+          value: 1,
+          options: {},
+          y: 0
+        })
 
-        expect(() => testNode.removeInput(-1)).toThrow(/out of bounds/)
-        expect(() => testNode.removeInput(1)).toThrow(/out of bounds/)
-        expect(testNode.inputs).toHaveLength(1)
+        testNode.addCustomWidget(widget)
+
+        expect(() => testNode.addCustomWidget(widget)).toThrow(
+          /widget source is already registered/
+        )
+        expect(testNode.widgets).toHaveLength(1)
       } finally {
         vi.unstubAllEnvs()
       }
+    })
+
+    test('allows a removed widget source to be registered again', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = testNode.addWidget('number', 'value', 1, null)
+
+      testNode.removeWidget(widget)
+
+      expect(() => testNode.addCustomWidget(widget)).not.toThrow()
+      expect(testNode.widgets).toEqual([widget])
+    })
+  })
+
+  describe('removeInput', () => {
+    test('ignores an out-of-bounds or fractional slot', () => {
+      const testNode = new LGraphNode('TestNode')
+      testNode.addInput('input1', 'number')
+
+      expect(() => testNode.removeInput(-1)).not.toThrow()
+      expect(() => testNode.removeInput(1)).not.toThrow()
+      expect(() => testNode.removeInput(0.5)).not.toThrow()
+      expect(testNode.inputs).toHaveLength(1)
     })
   })
 
@@ -778,6 +808,7 @@ describe('LGraphNode', () => {
 
         expect(() => testNode.removeOutput(-1)).toThrow(/out of bounds/)
         expect(() => testNode.removeOutput(1)).toThrow(/out of bounds/)
+        expect(() => testNode.removeOutput(0.5)).toThrow(/out of bounds/)
         expect(testNode.outputs).toHaveLength(1)
       } finally {
         vi.unstubAllEnvs()

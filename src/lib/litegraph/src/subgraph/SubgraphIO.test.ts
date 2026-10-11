@@ -227,12 +227,14 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
 
       const output = subgraph.outputs[0]
       output.linkIds.push(toLinkId(998), toLinkId(999))
+      const linksBefore = [...output.linkIds]
 
       vi.stubEnv('DEV', true)
       try {
         expect(() => output.connect(innerNode.outputs[0], innerNode)).toThrow(
-          /at most one connection/
+          /more than one existing link/
         )
+        expect(output.linkIds).toEqual(linksBefore)
       } finally {
         vi.unstubAllEnvs()
       }

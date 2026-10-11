@@ -3,7 +3,6 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
-import { assert } from '@/base/assert'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
@@ -1026,10 +1025,6 @@ class LayoutStoreImpl {
     const ynode = this.ynodes.get(
       makeScopedLayoutKey(operation.graphId, nodeId)
     )
-    assert(
-      !!ynode,
-      `LayoutStore.moveNode: node ${nodeId} is not registered in the layout store - cannot position an unregistered node`
-    )
     if (!ynode) return false
 
     const size = yNodeToLayout(ynode).size
@@ -1052,10 +1047,6 @@ class LayoutStoreImpl {
     const { nodeId } = operation
     const ynode = this.ynodes.get(
       makeScopedLayoutKey(operation.graphId, nodeId)
-    )
-    assert(
-      !!ynode,
-      `LayoutStore.resizeNode: node ${nodeId} is not registered in the layout store - cannot resize an unregistered node`
     )
     if (!ynode) return false
 
