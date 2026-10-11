@@ -599,8 +599,66 @@ function isInsideTypeGuard(node: AstNode): boolean {
   )
 }
 
+const LABEL_CALLEES: ReadonlySet<string> = new Set(['t', '$t'])
+const SORT_METHODS: ReadonlySet<string> = new Set(['sort', 'toSorted'])
+
+function isLabel(node: AstNode | null | undefined): boolean {
+  if (!node) return false
+  const expression = unwrap(node)
+  return (
+    expression.type === 'CallExpression' &&
+    LABEL_CALLEES.has(factName(expression.callee) ?? '')
+  )
+}
+
+// The value a branch yields: `return x`, or a block holding only `return x`.
+function returnedBy(statement: AstNode): AstNode | null | undefined {
+  if (statement.type === 'ReturnStatement') return statement.argument
+  if (statement.type !== 'BlockStatement' || statement.body.length !== 1) {
+    return undefined
+  }
+  return returnedBy(statement.body[0])
+}
+
+// `role === 'owner' ? t('owner') : t('member')` picks copy, not a gate.
+function selectsLabel(node: AstNode): boolean {
+  const { parent } = node
+  if (parent?.type === 'ConditionalExpression') {
+    return (
+      parent.test === node &&
+      isLabel(parent.consequent) &&
+      isLabel(parent.alternate)
+    )
+  }
+  return (
+    parent?.type === 'IfStatement' &&
+    parent.test === node &&
+    isLabel(returnedBy(parent.consequent)) &&
+    (parent.alternate === null || isLabel(returnedBy(parent.alternate)))
+  )
+}
+
+function isInsideSortComparator(node: AstNode): boolean {
+  const comparator = enclosingFunction(node)
+  const call = comparator?.parent
+  if (call?.type !== 'CallExpression' || call.arguments[0] !== comparator) {
+    return false
+  }
+  const callee = unwrap(call.callee)
+  return (
+    callee.type === 'MemberExpression' &&
+    !callee.computed &&
+    SORT_METHODS.has(callee.property.name)
+  )
+}
+
 function isExemptComparison(node: Binary): boolean {
-  return isInsidePendingFact(node) || isInsideTypeGuard(node)
+  return (
+    isInsidePendingFact(node) ||
+    isInsideTypeGuard(node) ||
+    selectsLabel(node) ||
+    isInsideSortComparator(node)
+  )
 }
 
 export const noServerFactLiterals: Rule = {

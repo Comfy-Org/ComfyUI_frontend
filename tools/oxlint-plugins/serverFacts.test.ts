@@ -362,6 +362,33 @@ const isTeamPayload = (value: Payload): value is TeamPayload =>
 `
     },
     {
+      name: 'a role or tier that only picks translated copy',
+      code: `
+const badge = role === 'owner' ? t('roleOwner') : t('roleMember')
+function roleLabel(role) {
+  if (role === 'owner') return t('roleOwner')
+  if (role === 'member') {
+    return i18n.global.t('roleMember')
+  }
+  return ''
+}
+function tierName(tier) {
+  if (tier === 'TEAM') return t('teamPlanName')
+  else return t('tierName', { tier })
+}
+`
+    },
+    {
+      name: 'a role compared inside a sort comparator',
+      code: `
+const sorted = [...members].sort((a, b) => (a.role === 'owner' ? -1 : 1))
+const byDate = list.toSorted(function (a, b) {
+  const dateA = a.role === 'owner' ? a.created_at : a.joined_at
+  return dateA.localeCompare(b.created_at)
+})
+`
+    },
+    {
       name: 'a lowercase client catalog tier key',
       code: `
 const isTeam = context.tier === 'team'
@@ -428,6 +455,31 @@ function isTeam(value: Payload): value is TeamPayload {
 }
 `,
       errors: [
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } }
+      ]
+    },
+    {
+      name: 'a role that picks a gate, an action or mixed output',
+      code: `
+const a = role === 'owner' ? t('manage') : null
+function action(role) {
+  if (role === 'owner') {
+    track('owner')
+    return t('manage')
+  }
+}
+function gate(role) {
+  if (role === 'owner') return t('manage')
+  else return canManage.value
+}
+const b = members.filter((m) => m.role === 'owner')
+const c = sortKey(members, (m) => m.role === 'owner')
+`,
+      errors: [
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
         { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
         { messageId: 'compared', data: { field: 'role', literal: 'owner' } }
       ]
