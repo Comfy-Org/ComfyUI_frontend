@@ -159,6 +159,7 @@ import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
 import {
   captureUnpackedTargetInput,
   findUnavailableSubgraphNodeType,
@@ -3808,3 +3809,5 @@ export class Subgraph
     }
   }
 }
+
+provideSubgraphGuard((value): value is Subgraph => value instanceof Subgraph)

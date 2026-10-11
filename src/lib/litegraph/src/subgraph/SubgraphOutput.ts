@@ -14,7 +14,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
+import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'
 
 /**
  * An output "slot" from a subgraph to a parent graph.

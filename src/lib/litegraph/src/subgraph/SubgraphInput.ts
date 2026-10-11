@@ -18,7 +18,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
+import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
 
 /**
  * An input "slot" from a parent graph into a subgraph.

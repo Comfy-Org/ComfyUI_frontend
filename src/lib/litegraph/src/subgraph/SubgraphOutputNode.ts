@@ -23,6 +23,7 @@ import { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
+import { provideSubgraphOutputGuard } from './subgraphTypeGuards'
 
 export class SubgraphOutputNode
   extends SubgraphIONodeBase<SubgraphOutput>
@@ -161,3 +162,14 @@ export class SubgraphOutputNode
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
 }
+
+function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
+    slot.parent instanceof SubgraphOutputNode
+  )
+}
+
+provideSubgraphOutputGuard(isSubgraphOutput)

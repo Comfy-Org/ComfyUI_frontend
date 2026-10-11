@@ -18,10 +18,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -36,7 +33,6 @@ import type { GraphOrSubgraph, Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphNode } from './SubgraphNode'
-import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface FilteredItems {
@@ -653,45 +649,4 @@ export function reorderSubgraphInputs(
   }
 }
 
-/**
- * Type guard to check if a slot is a SubgraphInput.
- * @param slot The slot to check
- * @returns true if the slot is a SubgraphInput
- */
-export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    'parent' in slot &&
-    slot.parent instanceof SubgraphInputNode
-  )
-}
-
-/**
- * Type guard to check if a slot is a SubgraphOutput.
- * @param slot The slot to check
- * @returns true if the slot is a SubgraphOutput
- */
-export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    'parent' in slot &&
-    slot.parent instanceof SubgraphOutputNode
-  )
-}
-
-/**
- * Type guard to check if a slot is a regular node slot (INodeInputSlot or INodeOutputSlot).
- * @param slot The slot to check
- * @returns true if the slot is a regular node slot
- */
-export function isNodeSlot(
-  slot: unknown
-): slot is INodeInputSlot | INodeOutputSlot {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    ('link' in slot || 'links' in slot)
-  )
-}
+export { isSubgraphInput, isSubgraphOutput } from './subgraphTypeGuards'
