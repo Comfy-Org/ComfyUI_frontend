@@ -184,6 +184,103 @@ function destructuredCapabilities(pattern: ObjectPattern): string[] {
   )
 }
 
+const FUNCTION_TYPES: ReadonlySet<string> = new Set([
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+  'FunctionDeclaration'
+])
+const COMPARISON_OPERATORS: ReadonlySet<string> = new Set([
+  '===',
+  '!==',
+  '==',
+  '!=',
+  '<',
+  '<=',
+  '>',
+  '>=',
+  'in',
+  'instanceof'
+])
+
+type FunctionNode = Extract<
+  AstNode,
+  { type: 'ArrowFunctionExpression' | 'FunctionExpression' }
+>
+
+function isFunctionNode(node: AstNode): node is FunctionNode {
+  return (
+    node.type === 'ArrowFunctionExpression' ||
+    node.type === 'FunctionExpression'
+  )
+}
+
+function returnArguments(node: AstNode): AstNode[] {
+  if (node.type === 'ReturnStatement')
+    return node.argument ? [node.argument] : []
+  if (FUNCTION_TYPES.has(node.type)) return []
+  return childNodes(node).flatMap(returnArguments)
+}
+
+function returnedValues({ body }: FunctionNode): AstNode[] {
+  return body.type === 'BlockStatement' ? returnArguments(body) : [body]
+}
+
+// The values a binding holds: a getter's or function's return values, or the
+// argument a ref is seeded with.
+function boundValues(init: AstNode): AstNode[] {
+  const expression = unwrap(init)
+  if (isFunctionNode(expression)) return returnedValues(expression)
+  if (expression.type !== 'CallExpression') return [expression]
+  const first = expression.arguments.at(0)
+  const callee = factName(expression.callee)
+  if (callee === 'computed' && first && isFunctionNode(first)) {
+    return returnedValues(first)
+  }
+  return (callee === 'ref' || callee === 'shallowRef') && first
+    ? [first]
+    : [expression]
+}
+
+// A value is `boolean` when its shape says so, `opaque` when it is a reference
+// or a call whose type the AST cannot tell, and `other` when it is plainly not
+// a boolean, such as a string, an object or a function.
+type ValueKind = 'boolean' | 'opaque' | 'other'
+
+function joinKinds(kinds: ValueKind[]): ValueKind {
+  if (kinds.includes('other')) return 'other'
+  return kinds.includes('boolean') ? 'boolean' : 'opaque'
+}
+
+function literalKind(value: unknown): ValueKind {
+  if (typeof value === 'boolean') return 'boolean'
+  return value === null ? 'opaque' : 'other'
+}
+
+function valueKind(node: AstNode, isCapability: IsCapability): ValueKind {
+  const expression = unwrap(node)
+  const kindOf = (side: AstNode) => valueKind(side, isCapability)
+  switch (expression.type) {
+    case 'Literal':
+      return literalKind(expression.value)
+    case 'Identifier':
+    case 'MemberExpression':
+    case 'CallExpression':
+      return isCapability(expression) ? 'boolean' : 'opaque'
+    case 'UnaryExpression':
+      return expression.operator === '!' ? 'boolean' : 'other'
+    case 'BinaryExpression':
+      return COMPARISON_OPERATORS.has(expression.operator) ? 'boolean' : 'other'
+    case 'LogicalExpression':
+      return joinKinds([expression.left, expression.right].map(kindOf))
+    case 'ConditionalExpression':
+      return joinKinds(
+        [expression.consequent, expression.alternate].map(kindOf)
+      )
+    default:
+      return 'other'
+  }
+}
+
 function referenceName(node: AstNode): string | undefined {
   const expression = unwrap(node)
   if (expression.type === 'Identifier') return expression.name
@@ -387,13 +484,42 @@ export const noCapabilityRecombination: Rule = {
       onlyDefaultsCapability(node) ||
       isInsidePendingFact(node)
 
+    const isCapabilityRecord = (node: AstNode): boolean => {
+      const expression = unwrap(node)
+      return (
+        expression.type === 'ObjectExpression' &&
+        expression.properties.some(
+          (property) =>
+            property.type === 'Property' &&
+            !property.computed &&
+            property.key.type === 'Identifier' &&
+            CAPABILITY_BINDING.test(property.key.name) &&
+            containsCapability(property.value)
+        )
+      )
+    }
+
+    const trackBinding = (name: string, init: AstNode) => {
+      if (isCapabilitySourceCall(init)) {
+        capabilityObjects.add(name)
+        return
+      }
+      if (!containsCapability(init)) return
+      const values = boundValues(init)
+      if (values.some(isCapabilityRecord)) capabilityObjects.add(name)
+      else if (
+        joinKinds(
+          values.map((value) => valueKind(value, isCapabilityValue))
+        ) === 'boolean'
+      ) {
+        capabilityBindings.add(name)
+      }
+    }
+
     return {
       VariableDeclarator({ id, init }) {
         if (id.type === 'Identifier') {
-          if (isCapabilitySourceCall(init)) capabilityObjects.add(id.name)
-          else if (init && containsCapability(init)) {
-            capabilityBindings.add(id.name)
-          }
+          if (init) trackBinding(id.name, init)
           return
         }
         if (id.type !== 'ObjectPattern' || !isCapabilitySource(init)) return

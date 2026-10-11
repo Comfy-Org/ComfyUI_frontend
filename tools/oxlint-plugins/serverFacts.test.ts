@@ -120,6 +120,23 @@ const f = canTopUp.value && !isHiddenOnSection.value
 `
     },
     {
+      name: 'a step, layout or presentation seeded once from a capability',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const step = ref(canTopUp.value ? 'verifying' : 'amount')
+const uiConfig = computed(() => ({ showSearch: canTopUp.value, cols: 'grid' }))
+const presentation = computed(() => {
+  if (!ready.value) return DEFAULT_PRESENTATION
+  return resolvePresentation({ canTopUp: canTopUp.value })
+})
+const view = () => (canTopUp.value ? { muted: false } : { muted: true })
+const a = step.value === 'verifying' && hasSeats.value
+const b = uiConfig.value.showSearch && hasSeats.value
+const c = isTeam.value ? toReason(presentation.value) : 'unknown'
+const d = isTeam.value ? view() : null
+`
+    },
+    {
       name: 'a capability defaulted while its source is absent',
       code: `
 const a = capabilities.value ? capabilities.value.can_top_up : false
@@ -254,6 +271,30 @@ const c = !canTopUp.value || !isSubscribed.value
 const { canTopUp } = useBillingCapabilities()
 const topUpAllowed = computed(() => canTopUp.value)
 const showTopUp = topUpAllowed.value && isPersonal.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a boolean gate returned from a block-bodied computed, combined later',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const permitted = computed(() => {
+  if (!snapshotAuthoritative.value) return true
+  return canTopUp.value
+})
+const show = permitted.value && hasSeats.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a can-prefixed field of a permissions object built from a capability',
+      code: `
+const { canInviteMembers } = useBillingCapabilities()
+const permissions = computed(() => ({
+  ...base.value,
+  canInvite: canInviteMembers.value
+}))
+const show = permissions.value.canInvite && hasSeats.value
 `,
       errors: [{ messageId: 'combined', data: { operator: '&&' } }]
     },
