@@ -1099,8 +1099,6 @@ class LayoutStoreImpl {
   ): boolean {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
-    // Stale or replayed creates can encounter successor-owned layout state;
-    // treat them as idempotent no-ops.
     if (this.ynodes.has(nodeKey)) return false
 
     this.ynodes.set(nodeKey, layoutToYNode(operation.layout))
