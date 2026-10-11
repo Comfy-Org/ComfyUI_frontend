@@ -728,6 +728,51 @@
         ]
       },
       {
+        "name": "canvas-renderer/domain",
+        "patterns": [
+          "src/renderer/core/canvas/__tests__/cameraState.test.ts",
+          "src/renderer/core/canvas/cameraState.ts"
+        ]
+      },
+      {
+        "name": "canvas-renderer/application",
+        "patterns": [
+          "src/renderer/core/canvas/__mocks__/useCanvasInteractions.ts",
+          "src/renderer/core/canvas/__tests__/useCanvasScheduler.test.ts",
+          "src/renderer/core/canvas/canvasRedrawBudget.test.ts",
+          "src/renderer/core/canvas/canvasStore.nodePicking.test.ts",
+          "src/renderer/core/canvas/canvasStore.test.ts",
+          "src/renderer/core/canvas/canvasStore.ts",
+          "src/renderer/core/canvas/interaction/canvasInteractionMode.test.ts",
+          "src/renderer/core/canvas/interaction/canvasInteractionMode.ts",
+          "src/renderer/core/canvas/links/slotLinkDragUIState.ts",
+          "src/renderer/core/canvas/useAutoPan.test.ts",
+          "src/renderer/core/canvas/useAutoPan.ts",
+          "src/renderer/core/canvas/useCanvasInteractions.test.ts",
+          "src/renderer/core/canvas/useCanvasInteractions.ts",
+          "src/renderer/core/canvas/useCanvasScheduler.ts"
+        ]
+      },
+      {
+        "name": "canvas-renderer/infrastructure",
+        "patterns": [
+          "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
+          "src/renderer/core/canvas/canvasViewport.ts",
+          "src/renderer/core/canvas/pathRenderer.test.ts",
+          "src/renderer/core/canvas/pathRenderer.ts"
+        ]
+      },
+      {
+        "name": "canvas-renderer/integration",
+        "patterns": [
+          "src/renderer/core/canvas/interaction/canvasPointerEvent.ts",
+          "src/renderer/core/canvas/links/linkConnectorAdapter.ts",
+          "src/renderer/core/canvas/links/linkDropOrchestrator.test.ts",
+          "src/renderer/core/canvas/links/linkDropOrchestrator.ts",
+          "src/renderer/core/canvas/litegraph/**"
+        ]
+      },
+      {
         "name": "cloud/domain",
         "patterns": [
           "src/platform/cloud/onboarding/sso/ssoEntryQuery.ts",
@@ -856,6 +901,148 @@
         ]
       },
       {
+        "name": "comfyui-api/domain",
+        "patterns": [
+          "src/platform/remote/comfyui/errors.test.ts",
+          "src/platform/remote/comfyui/errors.ts",
+          "src/platform/remote/comfyui/execution/types.test.ts",
+          "src/platform/remote/comfyui/execution/types.ts",
+          "src/platform/remote/comfyui/types.ts"
+        ]
+      },
+      {
+        "name": "design-system/domain",
+        "patterns": [
+          "src/components/curve/curveUtils.ts",
+          "src/components/curve/curveUtils.test.ts",
+          "src/components/curve/types.ts",
+          "src/components/range/rangeUtils.ts",
+          "src/components/range/rangeUtils.test.ts",
+          "src/components/gradientslider/gradients.ts"
+        ]
+      },
+      {
+        "name": "design-system/application",
+        "patterns": [
+          "src/components/ui/toast/toastStore.test.ts",
+          "src/components/ui/toast/toastStore.ts"
+        ]
+      },
+      {
+        "name": "design-system/presentation",
+        "patterns": [
+          "src/components/ui/badge/**",
+          "src/components/ui/button/**",
+          "src/components/ui/button-group/**",
+          "src/components/ui/chart/**",
+          "src/components/ui/checkbox/**",
+          "src/components/ui/color-picker/**",
+          "src/components/ui/dialog/**",
+          "src/components/ui/field/**",
+          "src/components/ui/hover-card/**",
+          "src/components/ui/input/**",
+          "src/components/ui/input-group/**",
+          "src/components/ui/label/**",
+          "src/components/ui/menu/**",
+          "src/components/ui/message/**",
+          "src/components/ui/multi-select/**",
+          "src/components/ui/number-field/**",
+          "src/components/ui/pagination/**",
+          "src/components/ui/popover/**",
+          "src/components/ui/radio-group/**",
+          "src/components/ui/search-input/**",
+          "src/components/ui/select/**",
+          "src/components/ui/single-select/**",
+          "src/components/ui/skeleton/**",
+          "src/components/ui/slider/**",
+          "src/components/ui/spinner/**",
+          "src/components/ui/splitter/**",
+          "src/components/ui/switch/**",
+          "src/components/ui/table/**",
+          "src/components/ui/tabs/**",
+          "src/components/ui/tags-input/**",
+          "src/components/ui/textarea/**",
+          "src/components/ui/toggle-group/**",
+          "src/components/ui/tooltip/**",
+          "src/components/ui/tree/**",
+          "src/components/ui/Popover.vue",
+          "src/components/ui/ZoomPane.vue",
+          "src/components/ui/toast/ToastClose.vue",
+          "src/components/ui/toast/ToastDescription.vue",
+          "src/components/ui/toast/ToastDock.test.ts",
+          "src/components/ui/toast/ToastDock.vue",
+          "src/components/ui/toast/ToastPanel.stories.ts",
+          "src/components/ui/toast/ToastPanel.test.ts",
+          "src/components/ui/toast/ToastPanel.vue",
+          "src/components/ui/toast/ToastRoot.vue",
+          "src/components/ui/toast/ToastTitle.vue",
+          "src/components/ui/toast/ToastViewport.vue",
+          "src/components/ui/toast/Toaster.stories.ts",
+          "src/components/ui/toast/Toaster.test.ts",
+          "src/components/ui/toast/Toaster.vue",
+          "src/components/button/**",
+          "src/components/card/**",
+          "src/components/chip/**",
+          "src/components/icons/**",
+          "src/components/loader/**",
+          "src/components/tab/**",
+          "src/components/common/BadgePill.vue",
+          "src/components/common/BadgePill.test.ts",
+          "src/components/common/ComfyImage.vue",
+          "src/components/common/ContentDivider.vue",
+          "src/components/common/Dialogue.vue",
+          "src/components/common/DotSpinner.vue",
+          "src/components/common/DraggableList.vue",
+          "src/components/common/EditableText.vue",
+          "src/components/common/EditableText.test.ts",
+          "src/components/common/FilterDropdown.vue",
+          "src/components/common/FilterDropdown.test.ts",
+          "src/components/common/ImageLightbox.vue",
+          "src/components/common/ImageLightbox.test.ts",
+          "src/components/common/ImperativePopover.vue",
+          "src/components/common/ImperativePopover.test.ts",
+          "src/components/common/InputKnob.vue",
+          "src/components/common/InputSlider.vue",
+          "src/components/common/LazyImage.vue",
+          "src/components/common/LoadingOverlay.vue",
+          "src/components/common/MarqueeLine.vue",
+          "src/components/common/MarqueeLine.test.ts",
+          "src/components/common/NoResultsPlaceholder.vue",
+          "src/components/common/NotificationPopup.vue",
+          "src/components/common/NotificationPopup.test.ts",
+          "src/components/common/OverlayIcon.vue",
+          "src/components/common/SanitizedHtml.vue",
+          "src/components/common/SanitizedHtml.test.ts",
+          "src/components/common/ScrubableNumberInput.vue",
+          "src/components/common/ScrubableNumberInput.stories.ts",
+          "src/components/common/StatusBadge.vue",
+          "src/components/common/statusBadge.variants.ts",
+          "src/components/common/TextDivider.vue",
+          "src/components/common/TextTicker.vue",
+          "src/components/common/TextTicker.test.ts",
+          "src/components/common/TextTickerMultiLine.vue",
+          "src/components/common/TextTickerMultiLine.test.ts",
+          "src/components/common/UrlInput.vue",
+          "src/components/common/UrlInput.test.ts",
+          "src/components/common/UserAvatar.vue",
+          "src/components/common/UserAvatar.test.ts",
+          "src/components/common/Video.vue",
+          "src/components/common/Video.test.ts",
+          "src/components/common/VideoCompareSlider.vue",
+          "src/components/common/VideoCompareSlider.test.ts",
+          "src/components/common/VirtualGrid.vue",
+          "src/components/common/VirtualGrid.test.ts",
+          "src/components/curve/CurveEditor.vue",
+          "src/components/curve/CurveEditor.test.ts",
+          "src/components/range/RangeEditor.vue",
+          "src/components/range/RangeEditor.test.ts",
+          "src/components/palette/PaletteSwatchRow.vue",
+          "src/components/palette/PaletteSwatchRow.test.ts",
+          "src/components/gradientslider/GradientSlider.vue",
+          "src/components/gradientslider/GradientSlider.test.ts"
+        ]
+      },
+      {
         "name": "error-catalog/domain",
         "patterns": ["src/platform/errorCatalog/**"]
       },
@@ -899,6 +1086,21 @@
         ]
       },
       {
+        "name": "execution/application",
+        "patterns": [
+          "src/stores/executionErrorStore.test.ts",
+          "src/stores/executionErrorStore.ts",
+          "src/stores/executionStore.test.ts",
+          "src/stores/executionStore.ts",
+          "src/stores/jobPreviewStore.test.ts",
+          "src/stores/jobPreviewStore.ts",
+          "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
+          "src/stores/nodeOutputStore.test.ts",
+          "src/stores/nodeOutputStore.ts",
+          "src/stores/nodeOutputStore.workflowSwitch.test.ts"
+        ]
+      },
+      {
         "name": "extension-manager/domain",
         "patterns": [
           "src/workbench/extensions/manager/types/**",
@@ -919,6 +1121,44 @@
       {
         "name": "extension-manager/presentation",
         "patterns": ["src/workbench/extensions/manager/components/**"]
+      },
+      {
+        "name": "first-run-tour/domain",
+        "patterns": [
+          "src/renderer/extensions/firstRunTour/gettingStarted/tutorialCards.ts",
+          "src/renderer/extensions/firstRunTour/roles/**"
+        ]
+      },
+      {
+        "name": "first-run-tour/application",
+        "patterns": [
+          "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts",
+          "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
+          "src/renderer/extensions/firstRunTour/tour/cameraFraming.test.ts",
+          "src/renderer/extensions/firstRunTour/tour/cameraFraming.ts",
+          "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.test.ts",
+          "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
+          "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
+          "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts"
+        ]
+      },
+      {
+        "name": "first-run-tour/presentation",
+        "patterns": [
+          "src/renderer/extensions/firstRunTour/FirstRunTour.vue",
+          "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedCard.vue",
+          "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.test.ts",
+          "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.vue",
+          "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedTemplateCard.vue",
+          "src/renderer/extensions/firstRunTour/nudge/**"
+        ]
+      },
+      {
+        "name": "first-run-tour/integration",
+        "patterns": [
+          "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.test.ts",
+          "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts"
+        ]
       },
       {
         "name": "glsl-preview/domain",
@@ -947,6 +1187,309 @@
           "src/renderer/glsl/sharedGLContext.ts",
           "src/renderer/glsl/sharedGLContext.test.ts"
         ]
+      },
+      {
+        "name": "graph-canvas/domain",
+        "patterns": [
+          "src/lib/litegraph/src/canvas/CanvasInteractionMode.ts",
+          "src/lib/litegraph/src/canvas/measureSlots.ts",
+          "src/lib/litegraph/src/canvas/reduceGesture.test.ts",
+          "src/lib/litegraph/src/canvas/reduceGesture.ts",
+          "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
+          "src/lib/litegraph/src/types/contextMenu.ts",
+          "src/lib/litegraph/src/types/events.ts",
+          "src/lib/litegraph/src/types/panel.ts"
+        ]
+      },
+      {
+        "name": "graph-canvas/application",
+        "patterns": [
+          "src/lib/litegraph/src/DragAndScale.animateToBounds.test.ts",
+          "src/lib/litegraph/src/DragAndScale.ts",
+          "src/lib/litegraph/src/DragAndScale.viewportSize.test.ts",
+          "src/lib/litegraph/src/__tests__/DragAndScale.fitToBounds.test.ts",
+          "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
+          "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
+          "src/lib/litegraph/src/canvas/hitTesting.ts",
+          "src/lib/litegraph/src/canvas/resolvePointerTarget.ts"
+        ]
+      },
+      {
+        "name": "graph-canvas/infrastructure",
+        "patterns": [
+          "src/lib/litegraph/src/CanvasPointer.deviceDetection.test.ts",
+          "src/lib/litegraph/src/CanvasPointer.ts",
+          "src/lib/litegraph/src/canvas/captureGesture.test.ts",
+          "src/lib/litegraph/src/canvas/captureGesture.ts",
+          "src/lib/litegraph/src/canvas/clipboardStorage.ts",
+          "src/lib/litegraph/src/cursorCache.test.ts",
+          "src/lib/litegraph/src/cursorCache.ts"
+        ]
+      },
+      {
+        "name": "graph-canvas/presentation",
+        "patterns": [
+          "src/lib/litegraph/src/ContextMenu.ts",
+          "src/lib/litegraph/src/LGraphBadge.ts",
+          "src/lib/litegraph/src/LGraphButton.test.ts",
+          "src/lib/litegraph/src/LGraphButton.ts",
+          "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.cloneZIndex.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.deprecated.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.drawConnections.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.gesture.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.ghost.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.groupSelection.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.interactionMode.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.invalidation.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.prompt.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.renderInfo.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.resize.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.selectOnly.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.selection.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.setGraph.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.subgraphPasteDelete.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.titleButtons.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.ts",
+          "src/lib/litegraph/src/LGraphIcon.ts",
+          "src/lib/litegraph/src/canvas/InputIndicators.ts",
+          "src/lib/litegraph/src/draw.ts",
+          "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
+          "src/lib/litegraph/src/nodeBadgeDraw.ts",
+          "src/lib/litegraph/src/utils/linkColors.ts",
+          "src/lib/litegraph/src/utils/textMeasureCache.test.ts",
+          "src/lib/litegraph/src/utils/textMeasureCache.ts",
+          "src/lib/litegraph/src/utils/textUtils.test.ts",
+          "src/lib/litegraph/src/utils/textUtils.ts"
+        ]
+      },
+      {
+        "name": "graph-canvas/integration",
+        "patterns": [
+          "src/lib/litegraph/src/__fixtures__/canvasHarness.ts",
+          "src/lib/litegraph/src/contextMenuCompat.test.ts",
+          "src/lib/litegraph/src/contextMenuCompat.ts"
+        ]
+      },
+      {
+        "name": "graph-commands/application",
+        "patterns": [
+          "src/lib/litegraph/src/graphIntents.test.ts",
+          "src/lib/litegraph/src/graphIntents.ts"
+        ]
+      },
+      {
+        "name": "graph-commands/infrastructure",
+        "patterns": ["src/lib/litegraph/src/docBoundGraphs.ts"]
+      },
+      {
+        "name": "graph-layout/domain",
+        "patterns": [
+          "src/renderer/core/layout/constants.ts",
+          "src/renderer/core/layout/slots/slotIdentifier.ts",
+          "src/renderer/core/layout/types.ts",
+          "src/renderer/core/layout/utils/geometry.ts",
+          "src/renderer/core/layout/utils/layoutMath.test.ts",
+          "src/renderer/core/layout/utils/layoutMath.ts",
+          "src/renderer/core/layout/utils/layoutUtils.test.ts",
+          "src/renderer/core/layout/utils/layoutUtils.ts",
+          "src/renderer/core/spatial/**"
+        ]
+      },
+      {
+        "name": "graph-layout/application",
+        "patterns": [
+          "src/renderer/core/layout/operations/layoutMutations.test.ts",
+          "src/renderer/core/layout/operations/layoutMutations.ts",
+          "src/renderer/core/layout/store/**",
+          "src/renderer/core/layout/transform/__mocks__/useTransformState.ts",
+          "src/renderer/core/layout/transform/useTransformSettling.test.ts",
+          "src/renderer/core/layout/transform/useTransformSettling.ts",
+          "src/renderer/core/layout/transform/useTransformState.test.ts",
+          "src/renderer/core/layout/transform/useTransformState.ts"
+        ]
+      },
+      {
+        "name": "graph-layout/infrastructure",
+        "patterns": [
+          "src/renderer/core/layout/utils/mappers.test.ts",
+          "src/renderer/core/layout/utils/mappers.ts"
+        ]
+      },
+      {
+        "name": "graph-layout/presentation",
+        "patterns": [
+          "src/renderer/core/layout/__tests__/TransformPane.test.ts",
+          "src/renderer/core/layout/transform/TransformPane.test.ts",
+          "src/renderer/core/layout/transform/TransformPane.vue"
+        ]
+      },
+      {
+        "name": "graph-layout/integration",
+        "patterns": [
+          "src/renderer/core/layout/operations/graphLayoutAttachment.perf.test.ts",
+          "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
+          "src/renderer/core/layout/operations/graphLayoutAttachment.ts",
+          "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
+          "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
+          "src/renderer/core/layout/slots/syncSlotOffsets.ts",
+          "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
+          "src/renderer/core/layout/transform/graphRenderTransform.ts",
+          "src/renderer/core/layout/utils/nodeSizeUtil.ts"
+        ]
+      },
+      {
+        "name": "graph-model/domain",
+        "patterns": [
+          "src/lib/litegraph/src/LGraph.compoundUndo.test.ts",
+          "src/lib/litegraph/src/LGraph.configureStoreScope.test.ts",
+          "src/lib/litegraph/src/LGraph.deepCollision.test.ts",
+          "src/lib/litegraph/src/LGraph.failedConfigure.test.ts",
+          "src/lib/litegraph/src/LGraph.inputSlotRealign.test.ts",
+          "src/lib/litegraph/src/LGraph.linkPresentation.test.ts",
+          "src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts",
+          "src/lib/litegraph/src/LGraph.roundTrip.test.ts",
+          "src/lib/litegraph/src/LGraph.serialise.test.ts",
+          "src/lib/litegraph/src/LGraph.tabSwitchSnapshot.test.ts",
+          "src/lib/litegraph/src/LGraph.test.ts",
+          "src/lib/litegraph/src/LGraph.ts",
+          "src/lib/litegraph/src/LGraphGroup.test.ts",
+          "src/lib/litegraph/src/LGraphGroup.ts",
+          "src/lib/litegraph/src/LGraphNode.arrangeWidgetInputSlots.test.ts",
+          "src/lib/litegraph/src/LGraphNode.fallbackWidgetNames.test.ts",
+          "src/lib/litegraph/src/LGraphNode.geometry.test.ts",
+          "src/lib/litegraph/src/LGraphNode.namedValuesShadowDiff.test.ts",
+          "src/lib/litegraph/src/LGraphNode.nodeState.test.ts",
+          "src/lib/litegraph/src/LGraphNode.ownCollectionFields.test.ts",
+          "src/lib/litegraph/src/LGraphNode.propertyChanged.test.ts",
+          "src/lib/litegraph/src/LGraphNode.reactivity.test.ts",
+          "src/lib/litegraph/src/LGraphNode.resize.test.ts",
+          "src/lib/litegraph/src/LGraphNode.serialisedWidgetRegisters.test.ts",
+          "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
+          "src/lib/litegraph/src/LGraphNode.test.ts",
+          "src/lib/litegraph/src/LGraphNode.titleButtons.test.ts",
+          "src/lib/litegraph/src/LGraphNode.ts",
+          "src/lib/litegraph/src/LGraphNode.widgetLabelRename.regression.test.ts",
+          "src/lib/litegraph/src/LGraphNode.widgetOrder.test.ts",
+          "src/lib/litegraph/src/LLink.spreadCopy.test.ts",
+          "src/lib/litegraph/src/LLink.store.test.ts",
+          "src/lib/litegraph/src/LLink.test.ts",
+          "src/lib/litegraph/src/LLink.ts",
+          "src/lib/litegraph/src/LinkMap.ts",
+          "src/lib/litegraph/src/Reroute.store.test.ts",
+          "src/lib/litegraph/src/Reroute.ts",
+          "src/lib/litegraph/src/extensionPersistence.test.ts",
+          "src/lib/litegraph/src/extensionPersistence.ts",
+          "src/lib/litegraph/src/geometryApiContracts.test.ts",
+          "src/lib/litegraph/src/idAllocation.property.test.ts",
+          "src/lib/litegraph/src/idAllocation.test.ts",
+          "src/lib/litegraph/src/idAllocation.ts",
+          "src/lib/litegraph/src/infrastructure/ConstrainedSize.ts",
+          "src/lib/litegraph/src/infrastructure/InvalidLinkError.ts",
+          "src/lib/litegraph/src/infrastructure/LGraphEventMap.ts",
+          "src/lib/litegraph/src/infrastructure/NullGraphError.ts",
+          "src/lib/litegraph/src/infrastructure/Rectangle.resize.test.ts",
+          "src/lib/litegraph/src/infrastructure/Rectangle.test.ts",
+          "src/lib/litegraph/src/infrastructure/Rectangle.ts",
+          "src/lib/litegraph/src/infrastructure/RecursionError.ts",
+          "src/lib/litegraph/src/infrastructure/SlotIndexError.ts",
+          "src/lib/litegraph/src/interfaces.ts",
+          "src/lib/litegraph/src/measure.test.ts",
+          "src/lib/litegraph/src/measure.ts",
+          "src/lib/litegraph/src/node/NodeInputSlot.test.ts",
+          "src/lib/litegraph/src/node/NodeInputSlot.ts",
+          "src/lib/litegraph/src/node/NodeOutputSlot.test.ts",
+          "src/lib/litegraph/src/node/NodeOutputSlot.ts",
+          "src/lib/litegraph/src/node/NodeSlot.test.ts",
+          "src/lib/litegraph/src/node/NodeSlot.ts",
+          "src/lib/litegraph/src/node/SlotBase.ts",
+          "src/lib/litegraph/src/node/cleanExtensionCompatFixture.test.ts",
+          "src/lib/litegraph/src/node/legacySlotLinkMutations.test.ts",
+          "src/lib/litegraph/src/node/rgthreeLifecycleCompatFixture.test.ts",
+          "src/lib/litegraph/src/node/slotEcosystemPatterns.test.ts",
+          "src/lib/litegraph/src/node/slotMirrorNormalisationOnLoad.test.ts",
+          "src/lib/litegraph/src/node/slotUtils.test.ts",
+          "src/lib/litegraph/src/node/slotUtils.ts",
+          "src/lib/litegraph/src/serialization.test.ts",
+          "src/lib/litegraph/src/strings.ts",
+          "src/lib/litegraph/src/types/NodeLike.ts",
+          "src/lib/litegraph/src/types/disposable.d.ts",
+          "src/lib/litegraph/src/types/globalEnums.ts",
+          "src/lib/litegraph/src/types/graphTriggers.ts",
+          "src/lib/litegraph/src/types/linkNetwork.ts",
+          "src/lib/litegraph/src/types/serialisation.ts",
+          "src/lib/litegraph/src/types/slots.ts",
+          "src/lib/litegraph/src/types/utility.ts",
+          "src/lib/litegraph/src/utils/arrange.ts",
+          "src/lib/litegraph/src/utils/collections.test.ts",
+          "src/lib/litegraph/src/utils/collections.ts",
+          "src/lib/litegraph/src/utils/spaceDistribution.test.ts",
+          "src/lib/litegraph/src/utils/spaceDistribution.ts",
+          "src/lib/litegraph/src/utils/type.ts"
+        ]
+      },
+      {
+        "name": "graph-model/application",
+        "patterns": [
+          "src/stores/executionOrderStore.ts",
+          "src/core/graph/nodeShell/**",
+          "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
+          "src/lib/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
+          "src/lib/litegraph/src/linkDeduplication.remapReferences.test.ts",
+          "src/lib/litegraph/src/linkDeduplication.transformLinkReferences.test.ts",
+          "src/lib/litegraph/src/linkDeduplication.ts",
+          "src/lib/litegraph/src/node/slotLinks.test.ts",
+          "src/lib/litegraph/src/node/slotLinks.ts",
+          "src/lib/litegraph/src/remintLinkRemap.ts"
+        ]
+      },
+      {
+        "name": "graph-model/infrastructure",
+        "patterns": [
+          "src/lib/litegraph/src/MapProxyHandler.ts",
+          "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts",
+          "src/lib/litegraph/src/infrastructure/createMutationView.test.ts",
+          "src/lib/litegraph/src/infrastructure/createMutationView.ts",
+          "src/lib/litegraph/src/node/slotDescriptorView.test.ts",
+          "src/lib/litegraph/src/node/slotDescriptorView.ts"
+        ]
+      },
+      {
+        "name": "graph-model/integration",
+        "patterns": [
+          "src/lib/litegraph/src/__fixtures__/assets/testGraphs.ts",
+          "src/lib/litegraph/src/__fixtures__/duplicateLinks.ts",
+          "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts",
+          "src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts",
+          "src/lib/litegraph/src/__fixtures__/nodeHelpers.ts",
+          "src/lib/litegraph/src/__fixtures__/nodeIdsFromReservedMintRange.ts",
+          "src/lib/litegraph/src/__fixtures__/testExtensions.ts",
+          "src/lib/litegraph/src/__fixtures__/uniqueSubgraphNodeIds.ts",
+          "src/lib/litegraph/test/fixtures/cleanExtensionCompatFixture.ts",
+          "src/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture.ts"
+        ]
+      },
+      {
+        "name": "graph-selection/domain",
+        "patterns": [
+          "src/core/selection/selectionState.test.ts",
+          "src/core/selection/selectionState.ts"
+        ]
+      },
+      {
+        "name": "graph-selection/application",
+        "patterns": [
+          "src/core/selection/selectionStore.test.ts",
+          "src/core/selection/selectionStore.ts"
+        ]
+      },
+      {
+        "name": "graph-selection/integration",
+        "patterns": ["src/lib/litegraph/src/canvas/SelectedItemsView.ts"]
       },
       {
         "name": "hdr-viewer/domain",
@@ -1044,6 +1587,88 @@
         ]
       },
       {
+        "name": "job-queue/domain",
+        "patterns": [
+          "src/composables/queue/jobTabs.test.ts",
+          "src/composables/queue/jobTabs.ts",
+          "src/platform/remote/comfyui/jobs/jobTypes.ts",
+          "src/stores/resultItemParsing.test.ts",
+          "src/stores/resultItemParsing.ts"
+        ]
+      },
+      {
+        "name": "job-queue/application",
+        "patterns": [
+          "src/components/queue/job/useJobErrorReporting.test.ts",
+          "src/components/queue/job/useJobErrorReporting.ts",
+          "src/components/queue/job/useQueueEstimates.test.ts",
+          "src/components/queue/job/useQueueEstimates.ts",
+          "src/composables/queue/useJobActions.ts",
+          "src/composables/queue/useJobList.test.ts",
+          "src/composables/queue/useJobList.ts",
+          "src/composables/queue/useJobMenu.test.ts",
+          "src/composables/queue/useJobMenu.ts",
+          "src/composables/queue/useQueueClearHistoryDialog.ts",
+          "src/composables/queue/useQueueFeatureFlags.ts",
+          "src/composables/queue/useQueueNotificationBanners.test.ts",
+          "src/composables/queue/useQueueNotificationBanners.ts",
+          "src/composables/queue/useQueueProgress.test.ts",
+          "src/composables/queue/useQueueProgress.ts",
+          "src/composables/queue/useResultGallery.test.ts",
+          "src/composables/queue/useResultGallery.ts",
+          "src/platform/remote/comfyui/useQueuePolling.test.ts",
+          "src/platform/remote/comfyui/useQueuePolling.ts",
+          "src/stores/queueSettingsStore.ts",
+          "src/stores/queueStore.loadWorkflow.test.ts",
+          "src/stores/queueStore.test.ts",
+          "src/stores/queueStore.ts"
+        ]
+      },
+      {
+        "name": "job-queue/infrastructure",
+        "patterns": [
+          "src/platform/remote/comfyui/jobs/__mocks__/fetchJobs.ts",
+          "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
+          "src/platform/remote/comfyui/jobs/fetchJobs.ts"
+        ]
+      },
+      {
+        "name": "job-queue/presentation",
+        "patterns": [
+          "src/components/queue/JobHistoryActionsMenu.test.ts",
+          "src/components/queue/JobHistoryActionsMenu.vue",
+          "src/components/queue/QueueInlineProgress.test.ts",
+          "src/components/queue/QueueInlineProgress.vue",
+          "src/components/queue/QueueInlineProgressSummary.vue",
+          "src/components/queue/QueueNotificationBanner.stories.ts",
+          "src/components/queue/QueueNotificationBanner.test.ts",
+          "src/components/queue/QueueNotificationBanner.vue",
+          "src/components/queue/QueueNotificationBannerHost.vue",
+          "src/components/queue/QueueOverlayActive.test.ts",
+          "src/components/queue/QueueOverlayActive.vue",
+          "src/components/queue/QueueOverlayExpanded.test.ts",
+          "src/components/queue/QueueOverlayExpanded.vue",
+          "src/components/queue/QueueOverlayHeader.test.ts",
+          "src/components/queue/QueueOverlayHeader.vue",
+          "src/components/queue/QueueProgressOverlay.test.ts",
+          "src/components/queue/QueueProgressOverlay.vue",
+          "src/components/queue/dialogs/QueueClearHistoryDialog.vue",
+          "src/components/queue/job/JobAssetsList.test.ts",
+          "src/components/queue/job/JobAssetsList.vue",
+          "src/components/queue/job/JobDetailsHoverPopover.vue",
+          "src/components/queue/job/JobDetailsPopover.stories.ts",
+          "src/components/queue/job/JobDetailsPopover.vue",
+          "src/components/queue/job/JobFilterActions.test.ts",
+          "src/components/queue/job/JobFilterActions.vue",
+          "src/components/queue/job/JobFilterTabs.vue",
+          "src/components/queue/job/JobFiltersBar.test.ts",
+          "src/components/queue/job/JobFiltersBar.vue",
+          "src/components/queue/job/buildVirtualJobRows.test.ts",
+          "src/components/queue/job/buildVirtualJobRows.ts",
+          "src/components/queue/job/testUtils/mockTanstackVirtualizer.ts"
+        ]
+      },
+      {
         "name": "keybindings/domain",
         "patterns": [
           "src/platform/keybindings/types.ts",
@@ -1125,6 +1750,136 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
           "src/extensions/core/lightInfo.ts",
           "src/extensions/core/lightInfo.test.ts"
+        ]
+      },
+      {
+        "name": "linear-mode/domain",
+        "patterns": [
+          "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
+          "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
+          "src/renderer/extensions/linearMode/linearModeTypes.ts",
+          "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts"
+        ]
+      },
+      {
+        "name": "linear-mode/application",
+        "patterns": [
+          "src/renderer/extensions/linearMode/getExecutionStatusMessage.test.ts",
+          "src/renderer/extensions/linearMode/getExecutionStatusMessage.ts",
+          "src/renderer/extensions/linearMode/linearOutputStore.test.ts",
+          "src/renderer/extensions/linearMode/linearOutputStore.ts",
+          "src/renderer/extensions/linearMode/useExecutionStatus.ts",
+          "src/renderer/extensions/linearMode/useOutputHistory.test.ts",
+          "src/renderer/extensions/linearMode/useOutputHistory.ts"
+        ]
+      },
+      {
+        "name": "linear-mode/presentation",
+        "patterns": [
+          "src/renderer/extensions/linearMode/AppInput.vue",
+          "src/renderer/extensions/linearMode/AppOutput.vue",
+          "src/renderer/extensions/linearMode/DropZone.stories.ts",
+          "src/renderer/extensions/linearMode/DropZone.test.ts",
+          "src/renderer/extensions/linearMode/DropZone.vue",
+          "src/renderer/extensions/linearMode/DropZoneIndicatorContent.vue",
+          "src/renderer/extensions/linearMode/DropZoneMediaActions.vue",
+          "src/renderer/extensions/linearMode/ImagePreview.vue",
+          "src/renderer/extensions/linearMode/LatentPreview.vue",
+          "src/renderer/extensions/linearMode/LinearArrange.vue",
+          "src/renderer/extensions/linearMode/LinearControls.test.ts",
+          "src/renderer/extensions/linearMode/LinearControls.vue",
+          "src/renderer/extensions/linearMode/LinearPreview.test.ts",
+          "src/renderer/extensions/linearMode/LinearPreview.vue",
+          "src/renderer/extensions/linearMode/LinearProgressBar.vue",
+          "src/renderer/extensions/linearMode/LinearRunErrorWarning.test.ts",
+          "src/renderer/extensions/linearMode/LinearRunErrorWarning.vue",
+          "src/renderer/extensions/linearMode/LinearWelcome.test.ts",
+          "src/renderer/extensions/linearMode/LinearWelcome.vue",
+          "src/renderer/extensions/linearMode/MediaOutputPreview.vue",
+          "src/renderer/extensions/linearMode/mediaTypes.ts",
+          "src/renderer/extensions/linearMode/MobileDisplay.vue",
+          "src/renderer/extensions/linearMode/MobileError.vue",
+          "src/renderer/extensions/linearMode/OutputHistory.test.ts",
+          "src/renderer/extensions/linearMode/OutputHistory.vue",
+          "src/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.test.ts",
+          "src/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue",
+          "src/renderer/extensions/linearMode/OutputHistoryItem.vue",
+          "src/renderer/extensions/linearMode/OutputPreviewItem.vue",
+          "src/renderer/extensions/linearMode/PartnerNodeItem.vue",
+          "src/renderer/extensions/linearMode/PartnerNodesList.vue",
+          "src/renderer/extensions/linearMode/Preview3d.test.ts",
+          "src/renderer/extensions/linearMode/Preview3d.vue",
+          "src/renderer/extensions/linearMode/VideoPreview.vue"
+        ]
+      },
+      {
+        "name": "link-connection/domain",
+        "patterns": [
+          "src/lib/litegraph/src/canvas/RenderLink.ts",
+          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts"
+        ]
+      },
+      {
+        "name": "link-connection/application",
+        "patterns": [
+          "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
+          "src/lib/litegraph/src/canvas/FloatingRenderLink.ts",
+          "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
+          "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
+          "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
+          "src/lib/litegraph/src/canvas/LinkConnector.test.ts",
+          "src/lib/litegraph/src/canvas/LinkConnector.ts",
+          "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
+          "src/lib/litegraph/src/canvas/MovingInputLink.ts",
+          "src/lib/litegraph/src/canvas/MovingLinkBase.ts",
+          "src/lib/litegraph/src/canvas/MovingOutputLink.ts",
+          "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
+          "src/lib/litegraph/src/canvas/ToInputRenderLink.ts",
+          "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
+          "src/lib/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
+          "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
+          "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts"
+        ]
+      },
+      {
+        "name": "link-presentation/domain",
+        "patterns": [
+          "src/lib/litegraph/src/canvas/linkGeometry.ts",
+          "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
+          "src/lib/litegraph/src/canvas/linkRevealState.ts"
+        ]
+      },
+      {
+        "name": "link-presentation/application",
+        "patterns": [
+          "src/core/graph/transferLinkPresentation.ts",
+          "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
+          "src/lib/litegraph/src/canvas/linkVisibility.ts"
+        ]
+      },
+      {
+        "name": "link-presentation/presentation",
+        "patterns": [
+          "src/lib/litegraph/src/canvas/linkBadgeRenderer.ts",
+          "src/lib/litegraph/src/canvas/linkBadges.test.ts",
+          "src/lib/litegraph/src/canvas/linkBadges.ts"
+        ]
+      },
+      {
+        "name": "litegraph-api/infrastructure",
+        "patterns": [
+          "src/lib/litegraph/src/litegraphInstance.ts",
+          "src/lib/litegraph/src/polyfills.ts",
+          "src/lib/litegraph/src/utils/feedback.ts"
+        ]
+      },
+      {
+        "name": "litegraph-api/integration",
+        "patterns": [
+          "src/lib/litegraph/src/LiteGraphGlobal.ts",
+          "src/lib/litegraph/src/litegraph.publicApi.test.ts",
+          "src/lib/litegraph/src/litegraph.test.ts",
+          "src/lib/litegraph/src/litegraph.ts"
         ]
       },
       {
@@ -1425,6 +2180,98 @@
         ]
       },
       {
+        "name": "node-widgets/domain",
+        "patterns": [
+          "src/core/graph/widgets/comboWidgetInventory.ts",
+          "src/core/graph/widgets/controlWidgetMarker.ts",
+          "src/core/graph/widgets/dynamicInputSpec.test.ts",
+          "src/core/graph/widgets/dynamicInputSpec.ts",
+          "src/core/graph/widgets/revealDynamicInputSlot.test.ts",
+          "src/core/graph/widgets/revealDynamicInputSlot.ts",
+          "src/core/graph/widgets/valueControl.test.ts",
+          "src/core/graph/widgets/valueControl.ts",
+          "src/lib/litegraph/src/types/widgets.ts",
+          "src/lib/litegraph/src/utils/mathParser.test.ts",
+          "src/lib/litegraph/src/utils/mathParser.ts",
+          "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
+          "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+          "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
+          "src/lib/litegraph/src/widgetValueNullContract.test.ts"
+        ]
+      },
+      {
+        "name": "node-widgets/application",
+        "patterns": [
+          "src/core/graph/widgets/dynamicGroupWidget.test.ts",
+          "src/core/graph/widgets/dynamicGroupWidget.ts",
+          "src/core/graph/widgets/dynamicWidgets.test.ts",
+          "src/core/graph/widgets/dynamicWidgets.ts",
+          "src/core/graph/widgets/matchTypeConfiguring.test.ts",
+          "src/core/graph/widgets/matchTypeFallback.test.ts",
+          "src/core/graph/widgets/nodeWidgetValues.test.ts",
+          "src/core/graph/widgets/nodeWidgetValues.ts",
+          "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts",
+          "src/core/graph/widgets/valueControlWidgets.ts",
+          "src/lib/litegraph/src/utils/widget.test.ts",
+          "src/lib/litegraph/src/utils/widget.ts"
+        ]
+      },
+      {
+        "name": "node-widgets/infrastructure",
+        "patterns": [
+          "src/lib/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
+          "src/lib/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
+          "src/lib/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
+          "src/lib/litegraph/src/node/widgetsView.test.ts",
+          "src/lib/litegraph/src/node/widgetsView.ts",
+          "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+          "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
+          "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts"
+        ]
+      },
+      {
+        "name": "node-widgets/presentation",
+        "patterns": [
+          "src/lib/litegraph/src/CurveEditor.ts",
+          "src/lib/litegraph/src/widgets/BaseSteppedWidget.ts",
+          "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
+          "src/lib/litegraph/src/widgets/BaseWidget.ts",
+          "src/lib/litegraph/src/widgets/BooleanWidget.ts",
+          "src/lib/litegraph/src/widgets/ButtonWidget.ts",
+          "src/lib/litegraph/src/widgets/ChartWidget.ts",
+          "src/lib/litegraph/src/widgets/ColorWidget.test.ts",
+          "src/lib/litegraph/src/widgets/ColorWidget.ts",
+          "src/lib/litegraph/src/widgets/ColorsWidget.test.ts",
+          "src/lib/litegraph/src/widgets/ColorsWidget.ts",
+          "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
+          "src/lib/litegraph/src/widgets/ComboWidget.ts",
+          "src/lib/litegraph/src/widgets/FileUploadWidget.ts",
+          "src/lib/litegraph/src/widgets/GalleriaWidget.ts",
+          "src/lib/litegraph/src/widgets/GradientSliderWidget.ts",
+          "src/lib/litegraph/src/widgets/KnobWidget.ts",
+          "src/lib/litegraph/src/widgets/LegacyWidget.ts",
+          "src/lib/litegraph/src/widgets/MultiSelectWidget.ts",
+          "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
+          "src/lib/litegraph/src/widgets/NumberWidget.ts",
+          "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+          "src/lib/litegraph/src/widgets/RangeWidget.ts",
+          "src/lib/litegraph/src/widgets/SelectButtonWidget.ts",
+          "src/lib/litegraph/src/widgets/SliderWidget.ts",
+          "src/lib/litegraph/src/widgets/TextWidget.ts",
+          "src/lib/litegraph/src/widgets/TextareaWidget.ts",
+          "src/lib/litegraph/src/widgets/TreeSelectWidget.ts",
+          "src/lib/litegraph/src/widgets/VueOnlyWidget.ts"
+        ]
+      },
+      {
+        "name": "node-widgets/integration",
+        "patterns": [
+          "src/core/graph/widgets/__fixtures__/dynamicInputHelpers.ts",
+          "src/lib/litegraph/src/widgets/widgetMap.test.ts",
+          "src/lib/litegraph/src/widgets/widgetMap.ts"
+        ]
+      },
+      {
         "name": "note-nodes/presentation",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
@@ -1673,6 +2520,112 @@
         ]
       },
       {
+        "name": "subgraph-promotion/domain",
+        "patterns": [
+          "src/core/graph/subgraph/createPromotionErrorReconciler.ts",
+          "src/core/graph/subgraph/hasPromotedWidgetTarget.ts",
+          "src/core/graph/subgraph/matchPromotedInput.test.ts",
+          "src/core/graph/subgraph/matchPromotedInput.ts",
+          "src/core/graph/subgraph/preview/previewExposureChain.test.ts",
+          "src/core/graph/subgraph/preview/previewExposureChain.ts",
+          "src/core/graph/subgraph/promotedWidgetTypes.ts",
+          "src/core/graph/subgraph/resolveConcretePromotedWidget.test.ts",
+          "src/core/graph/subgraph/resolveConcretePromotedWidget.ts",
+          "src/core/graph/subgraph/resolvePromotedWidgetSource.ts",
+          "src/core/graph/subgraph/widgetRenderKey.test.ts",
+          "src/core/graph/subgraph/widgetRenderKey.ts",
+          "src/core/schemas/parseNodePropertyArray.ts",
+          "src/core/schemas/previewExposureSchema.test.ts",
+          "src/core/schemas/previewExposureSchema.ts",
+          "src/core/schemas/promotionSchema.test.ts",
+          "src/core/schemas/promotionSchema.ts",
+          "src/core/schemas/proxyWidgetQuarantineSchema.test.ts",
+          "src/core/schemas/proxyWidgetQuarantineSchema.ts"
+        ]
+      },
+      {
+        "name": "subgraph-promotion/application",
+        "patterns": [
+          "src/core/graph/subgraph/adoptPromotedWidgetValue.ts",
+          "src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts",
+          "src/core/graph/subgraph/migration/proxyWidgetMigration.ts",
+          "src/core/graph/subgraph/promotedInputWidget.test.ts",
+          "src/core/graph/subgraph/promotedInputWidget.ts",
+          "src/core/graph/subgraph/promotedWidgetControl.test.ts",
+          "src/core/graph/subgraph/promotedWidgetControl.ts",
+          "src/core/graph/subgraph/promotionAfterReplacement.test.ts",
+          "src/core/graph/subgraph/promotionUtils.test.ts",
+          "src/core/graph/subgraph/promotionUtils.ts",
+          "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts"
+        ]
+      },
+      {
+        "name": "subgraphs/domain",
+        "patterns": [
+          "src/core/graph/subgraph/resolveSubgraphInputLink.test.ts",
+          "src/core/graph/subgraph/resolveSubgraphInputLink.ts",
+          "src/core/graph/subgraph/resolveSubgraphInputTarget.test.ts",
+          "src/core/graph/subgraph/resolveSubgraphInputTarget.ts",
+          "src/lib/litegraph/src/constants.ts",
+          "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
+          "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
+          "src/lib/litegraph/src/subgraph/EmptySubgraphInput.ts",
+          "src/lib/litegraph/src/subgraph/EmptySubgraphOutput.ts",
+          "src/lib/litegraph/src/subgraph/Subgraph.test.ts",
+          "src/lib/litegraph/src/subgraph/Subgraph.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphDuplicateDeleteOrder.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphEdgeCases.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphIONodeBase.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphInput.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphMemory.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphNode.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphNode.titleButton.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphNode.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphOutput.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphOutputNode.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphSlotBase.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphSlotVisualFeedback.test.ts",
+          "src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts",
+          "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
+          "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts",
+          "src/lib/litegraph/src/subgraph/subgraphUtils.test.ts",
+          "src/lib/litegraph/src/subgraph/subgraphUtils.ts",
+          "src/lib/litegraph/src/subgraph/unpackSubgraph.ts"
+        ]
+      },
+      {
+        "name": "subgraphs/application",
+        "patterns": [
+          "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
+          "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
+          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts"
+        ]
+      },
+      {
+        "name": "subgraphs/presentation",
+        "patterns": [
+          "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
+          "src/lib/litegraph/src/subgraph/svgBitmapCache.ts"
+        ]
+      },
+      {
+        "name": "subgraphs/integration",
+        "patterns": [
+          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphComplexPromotion1.ts",
+          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphFixtures.ts",
+          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.test.ts",
+          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts"
+        ]
+      },
+      {
         "name": "support-feedback/domain",
         "patterns": [
           "src/platform/support/config.ts",
@@ -1871,6 +2824,258 @@
         ]
       },
       {
+        "name": "vue-node-renderer/domain",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.test.ts",
+          "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.ts",
+          "src/renderer/extensions/vueNodes/types/**",
+          "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.test.ts",
+          "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts"
+        ]
+      },
+      {
+        "name": "vue-node-renderer/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeSnap.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeTooltips.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeZIndex.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts",
+          "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts",
+          "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
+          "src/renderer/extensions/vueNodes/composables/useShiftKeySync.ts",
+          "src/renderer/extensions/vueNodes/execution/**",
+          "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.test.ts",
+          "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.ts",
+          "src/renderer/extensions/vueNodes/layout/nodeSizeReflow.test.ts",
+          "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts",
+          "src/renderer/extensions/vueNodes/layout/useNodeDrag.ts",
+          "src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts",
+          "src/renderer/extensions/vueNodes/layout/useNodeLayout.ts",
+          "src/renderer/extensions/vueNodes/preview/**",
+          "src/renderer/extensions/vueNodes/utils/__tests__/nodeDataUtils.test.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeErrorState.test.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeErrorState.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.test.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts"
+        ]
+      },
+      {
+        "name": "vue-node-renderer/infrastructure",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts"
+        ]
+      },
+      {
+        "name": "vue-node-renderer/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/components/ImagePreview.stories.ts",
+          "src/renderer/extensions/vueNodes/components/ImagePreview.test.ts",
+          "src/renderer/extensions/vueNodes/components/ImagePreview.vue",
+          "src/renderer/extensions/vueNodes/components/imagePreviewLayout.ts",
+          "src/renderer/extensions/vueNodes/components/InputSlot.test.ts",
+          "src/renderer/extensions/vueNodes/components/InputSlot.vue",
+          "src/renderer/extensions/vueNodes/components/LGraphNode.subgraph.test.ts",
+          "src/renderer/extensions/vueNodes/components/LGraphNode.test.ts",
+          "src/renderer/extensions/vueNodes/components/LGraphNode.vue",
+          "src/renderer/extensions/vueNodes/components/LGraphNodePreview.test.ts",
+          "src/renderer/extensions/vueNodes/components/LGraphNodePreview.vue",
+          "src/renderer/extensions/vueNodes/components/LivePreview.test.ts",
+          "src/renderer/extensions/vueNodes/components/LivePreview.vue",
+          "src/renderer/extensions/vueNodes/components/NodeBadge.vue",
+          "src/renderer/extensions/vueNodes/components/NodeBadges.test.ts",
+          "src/renderer/extensions/vueNodes/components/NodeBadges.vue",
+          "src/renderer/extensions/vueNodes/components/NodeContent.vue",
+          "src/renderer/extensions/vueNodes/components/NodeFooter.test.ts",
+          "src/renderer/extensions/vueNodes/components/NodeFooter.vue",
+          "src/renderer/extensions/vueNodes/components/NodeHeader.test.ts",
+          "src/renderer/extensions/vueNodes/components/NodeHeader.vue",
+          "src/renderer/extensions/vueNodes/components/NodeSlots.test.ts",
+          "src/renderer/extensions/vueNodes/components/NodeSlots.vue",
+          "src/renderer/extensions/vueNodes/components/NodeWidgets.test.ts",
+          "src/renderer/extensions/vueNodes/components/NodeWidgets.vue",
+          "src/renderer/extensions/vueNodes/components/OutputSlot.test.ts",
+          "src/renderer/extensions/vueNodes/components/OutputSlot.vue",
+          "src/renderer/extensions/vueNodes/components/SlotConnectionDot.test.ts",
+          "src/renderer/extensions/vueNodes/components/SlotConnectionDot.vue",
+          "src/renderer/extensions/vueNodes/components/SlotLinkReveal.test.ts",
+          "src/renderer/extensions/vueNodes/components/WidgetGrid.test.ts",
+          "src/renderer/extensions/vueNodes/components/WidgetGrid.vue",
+          "src/renderer/extensions/vueNodes/VideoPreview.agentReset.test.ts",
+          "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
+          "src/renderer/extensions/vueNodes/VideoPreview.vue"
+        ]
+      },
+      {
+        "name": "vue-node-renderer/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/composables/insertWorkflowSubgraphInteriorWidgets.regression.test.ts",
+          "src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.ts",
+          "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts",
+          "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.widgetRename.regression.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.autoPan.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts",
+          "src/renderer/extensions/vueNodes/composables/useSlotLinkReveal.test.ts",
+          "src/renderer/extensions/vueNodes/composables/useSlotLinkReveal.ts",
+          "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.test.ts",
+          "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
+          "src/renderer/extensions/vueNodes/utils/eventUtils.ts"
+        ]
+      },
+      {
+        "name": "vue-node-widgets/domain",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts"
+        ]
+      },
+      {
+        "name": "vue-node-widgets/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.desktop.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts"
+        ]
+      },
+      {
+        "name": "vue-node-widgets/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/BatchNavigation.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/BatchNavigation.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/layout/**",
+          "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.stories.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/ValueControlPopover.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/ValueControlPopover.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetButton.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.stories.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.stories.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.asset-mode.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/widgetTestUtils.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.stories.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/registry/**"
+        ]
+      },
+      {
+        "name": "vue-node-widgets/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.webSession.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.promoted.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.ts",
+          "src/renderer/utils/nodeTypeGuards.ts"
+        ]
+      },
+      {
         "name": "webcam-capture/integration",
         "patterns": ["src/extensions/core/webcamCapture.ts"]
       },
@@ -1888,6 +3093,67 @@
       {
         "name": "workflow-deployment/presentation",
         "patterns": ["src/platform/workflow/deploy/components/**"]
+      },
+      {
+        "name": "workflow-format/domain",
+        "patterns": [
+          "src/platform/workflow/core/types/formats.ts",
+          "src/platform/workflow/core/utils/modelRequirements.test.ts",
+          "src/platform/workflow/core/utils/modelRequirements.ts",
+          "src/platform/workflow/core/utils/workflowFlattening.test.ts",
+          "src/platform/workflow/core/utils/workflowFlattening.ts",
+          "src/platform/workflow/validation/schemas/workflowSchema.test.ts",
+          "src/platform/workflow/validation/schemas/workflowSchema.ts"
+        ]
+      },
+      {
+        "name": "workflow-format/application",
+        "patterns": [
+          "src/platform/workflow/validation/composables/useWorkflowValidation.test.ts",
+          "src/platform/workflow/validation/composables/useWorkflowValidation.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/domain",
+        "patterns": [
+          "src/platform/workflow/core/utils/workflowId.test.ts",
+          "src/platform/workflow/core/utils/workflowId.ts",
+          "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
+          "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
+          "src/platform/workflow/core/utils/workflowToClipboardItems.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/application",
+        "patterns": [
+          "src/platform/workflow/core/services/__mocks__/workflowService.ts",
+          "src/platform/workflow/core/services/workflowActionsService.test.ts",
+          "src/platform/workflow/core/services/workflowActionsService.ts",
+          "src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts",
+          "src/platform/workflow/core/services/workflowService.test.ts",
+          "src/platform/workflow/core/services/workflowService.ts",
+          "src/platform/workflow/core/utils/pendingWarnings.test.ts",
+          "src/platform/workflow/core/utils/pendingWarnings.ts",
+          "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
+          "src/platform/workflow/management/stores/comfyWorkflow.test.ts",
+          "src/platform/workflow/management/stores/comfyWorkflow.ts",
+          "src/platform/workflow/management/stores/workflowStore.test.ts",
+          "src/platform/workflow/management/stores/workflowStore.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/infrastructure",
+        "patterns": [
+          "src/platform/workflow/utils/workflowExtractionUtil.test.ts",
+          "src/platform/workflow/utils/workflowExtractionUtil.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/integration",
+        "patterns": [
+          "src/platform/workflow/management/composables/useAppsSidebarTab.ts",
+          "src/platform/workflow/management/composables/useWorkflowsSidebarTab.ts"
+        ]
       },
       {
         "name": "workflow-persistence/domain",
@@ -1992,6 +3258,17 @@
       {
         "name": "workflow-templates/presentation",
         "patterns": ["src/components/templates/**"]
+      },
+      {
+        "name": "workflow-thumbnails/application",
+        "patterns": [
+          "src/renderer/core/thumbnail/useWorkflowThumbnail.test.ts",
+          "src/renderer/core/thumbnail/useWorkflowThumbnail.ts"
+        ]
+      },
+      {
+        "name": "workflow-thumbnails/infrastructure",
+        "patterns": ["src/renderer/core/thumbnail/graphThumbnailRenderer.ts"]
       },
       {
         "name": "workspace/domain",
@@ -2369,6 +3646,38 @@
         ]
       },
       {
+        "from": "canvas-renderer/domain",
+        "allow": ["canvas-renderer/domain", "unclassified"]
+      },
+      {
+        "from": "canvas-renderer/application",
+        "allow": [
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "canvas-renderer/infrastructure",
+        "allow": [
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "canvas-renderer/integration",
+        "allow": [
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "cloud/domain",
         "allow": ["cloud/domain", "unclassified"]
       },
@@ -2411,6 +3720,31 @@
         ]
       },
       {
+        "from": "comfyui-api/domain",
+        "allow": ["comfyui-api/domain", "unclassified"]
+      },
+      {
+        "from": "design-system/domain",
+        "allow": ["design-system/domain", "unclassified"]
+      },
+      {
+        "from": "design-system/application",
+        "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "design-system/presentation",
+        "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "error-catalog/domain",
         "allow": ["error-catalog/domain", "unclassified"]
       },
@@ -2435,6 +3769,10 @@
           "error-reporting/infrastructure",
           "unclassified"
         ]
+      },
+      {
+        "from": "execution/application",
+        "allow": ["execution/application", "unclassified"]
       },
       {
         "from": "extension-manager/domain",
@@ -2468,6 +3806,37 @@
         ]
       },
       {
+        "from": "first-run-tour/domain",
+        "allow": ["first-run-tour/domain", "unclassified"]
+      },
+      {
+        "from": "first-run-tour/application",
+        "allow": [
+          "first-run-tour/domain",
+          "first-run-tour/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "first-run-tour/presentation",
+        "allow": [
+          "first-run-tour/domain",
+          "first-run-tour/application",
+          "first-run-tour/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "first-run-tour/integration",
+        "allow": [
+          "first-run-tour/domain",
+          "first-run-tour/application",
+          "first-run-tour/presentation",
+          "first-run-tour/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "glsl-preview/domain",
         "allow": ["glsl-preview/domain", "unclassified"]
       },
@@ -2486,6 +3855,159 @@
           "glsl-preview/domain",
           "glsl-preview/application",
           "glsl-preview/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-canvas/domain",
+        "allow": ["graph-canvas/domain", "unclassified"]
+      },
+      {
+        "from": "graph-canvas/application",
+        "allow": [
+          "graph-canvas/domain",
+          "graph-canvas/application",
+          "graph-canvas/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-canvas/infrastructure",
+        "allow": [
+          "graph-canvas/domain",
+          "graph-canvas/application",
+          "graph-canvas/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-canvas/presentation",
+        "allow": [
+          "graph-canvas/domain",
+          "graph-canvas/application",
+          "graph-canvas/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-canvas/integration",
+        "allow": [
+          "graph-canvas/domain",
+          "graph-canvas/application",
+          "graph-canvas/infrastructure",
+          "graph-canvas/presentation",
+          "graph-canvas/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-commands/application",
+        "allow": [
+          "graph-commands/application",
+          "graph-commands/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-commands/infrastructure",
+        "allow": [
+          "graph-commands/application",
+          "graph-commands/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-layout/domain",
+        "allow": ["graph-layout/domain", "unclassified"]
+      },
+      {
+        "from": "graph-layout/application",
+        "allow": [
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-layout/infrastructure",
+        "allow": [
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-layout/presentation",
+        "allow": [
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-layout/integration",
+        "allow": [
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-model/domain",
+        "allow": ["graph-model/domain", "unclassified"]
+      },
+      {
+        "from": "graph-model/application",
+        "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-model/infrastructure",
+        "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-model/integration",
+        "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-selection/domain",
+        "allow": ["graph-selection/domain", "unclassified"]
+      },
+      {
+        "from": "graph-selection/application",
+        "allow": [
+          "graph-selection/domain",
+          "graph-selection/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-selection/integration",
+        "allow": [
+          "graph-selection/domain",
+          "graph-selection/application",
+          "graph-selection/integration",
           "unclassified"
         ]
       },
@@ -2595,6 +4117,37 @@
         ]
       },
       {
+        "from": "job-queue/domain",
+        "allow": ["job-queue/domain", "unclassified"]
+      },
+      {
+        "from": "job-queue/application",
+        "allow": [
+          "job-queue/domain",
+          "job-queue/application",
+          "job-queue/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "job-queue/infrastructure",
+        "allow": [
+          "job-queue/domain",
+          "job-queue/application",
+          "job-queue/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "job-queue/presentation",
+        "allow": [
+          "job-queue/domain",
+          "job-queue/application",
+          "job-queue/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "keybindings/domain",
         "allow": ["keybindings/domain", "unclassified"]
       },
@@ -2654,6 +4207,72 @@
           "light-authoring/infrastructure",
           "light-authoring/presentation",
           "light-authoring/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "linear-mode/domain",
+        "allow": ["linear-mode/domain", "unclassified"]
+      },
+      {
+        "from": "linear-mode/application",
+        "allow": [
+          "linear-mode/domain",
+          "linear-mode/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "linear-mode/presentation",
+        "allow": [
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "link-connection/domain",
+        "allow": ["link-connection/domain", "unclassified"]
+      },
+      {
+        "from": "link-connection/application",
+        "allow": [
+          "link-connection/domain",
+          "link-connection/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "link-presentation/domain",
+        "allow": ["link-presentation/domain", "unclassified"]
+      },
+      {
+        "from": "link-presentation/application",
+        "allow": [
+          "link-presentation/domain",
+          "link-presentation/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "link-presentation/presentation",
+        "allow": [
+          "link-presentation/domain",
+          "link-presentation/application",
+          "link-presentation/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "litegraph-api/infrastructure",
+        "allow": ["litegraph-api/infrastructure", "unclassified"]
+      },
+      {
+        "from": "litegraph-api/integration",
+        "allow": [
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
           "unclassified"
         ]
       },
@@ -2879,6 +4498,48 @@
       {
         "from": "node-templates/integration",
         "allow": ["node-templates/integration", "unclassified"]
+      },
+      {
+        "from": "node-widgets/domain",
+        "allow": ["node-widgets/domain", "unclassified"]
+      },
+      {
+        "from": "node-widgets/application",
+        "allow": [
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-widgets/infrastructure",
+        "allow": [
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-widgets/presentation",
+        "allow": [
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-widgets/integration",
+        "allow": [
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "node-widgets/presentation",
+          "node-widgets/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "note-nodes/presentation",
@@ -3123,6 +4784,45 @@
         ]
       },
       {
+        "from": "subgraph-promotion/domain",
+        "allow": ["subgraph-promotion/domain", "unclassified"]
+      },
+      {
+        "from": "subgraph-promotion/application",
+        "allow": [
+          "subgraph-promotion/domain",
+          "subgraph-promotion/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "subgraphs/domain",
+        "allow": ["subgraphs/domain", "unclassified"]
+      },
+      {
+        "from": "subgraphs/application",
+        "allow": ["subgraphs/domain", "subgraphs/application", "unclassified"]
+      },
+      {
+        "from": "subgraphs/presentation",
+        "allow": [
+          "subgraphs/domain",
+          "subgraphs/application",
+          "subgraphs/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "subgraphs/integration",
+        "allow": [
+          "subgraphs/domain",
+          "subgraphs/application",
+          "subgraphs/presentation",
+          "subgraphs/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "support-feedback/domain",
         "allow": ["support-feedback/domain", "unclassified"]
       },
@@ -3246,6 +4946,79 @@
         ]
       },
       {
+        "from": "vue-node-renderer/domain",
+        "allow": ["vue-node-renderer/domain", "unclassified"]
+      },
+      {
+        "from": "vue-node-renderer/application",
+        "allow": [
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/infrastructure",
+        "allow": [
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/presentation",
+        "allow": [
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/integration",
+        "allow": [
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "vue-node-renderer/presentation",
+          "vue-node-renderer/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-widgets/domain",
+        "allow": ["vue-node-widgets/domain", "unclassified"]
+      },
+      {
+        "from": "vue-node-widgets/application",
+        "allow": [
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-widgets/presentation",
+        "allow": [
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "vue-node-widgets/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-widgets/integration",
+        "allow": [
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "vue-node-widgets/presentation",
+          "vue-node-widgets/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "webcam-capture/integration",
         "allow": ["webcam-capture/integration", "unclassified"]
       },
@@ -3267,6 +5040,50 @@
           "workflow-deployment/domain",
           "workflow-deployment/application",
           "workflow-deployment/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-format/domain",
+        "allow": ["workflow-format/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-format/application",
+        "allow": [
+          "workflow-format/domain",
+          "workflow-format/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-management/domain",
+        "allow": ["workflow-management/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-management/application",
+        "allow": [
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-management/infrastructure",
+        "allow": [
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-management/integration",
+        "allow": [
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/integration",
           "unclassified"
         ]
       },
@@ -3365,6 +5182,22 @@
         ]
       },
       {
+        "from": "workflow-thumbnails/application",
+        "allow": [
+          "workflow-thumbnails/application",
+          "workflow-thumbnails/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-thumbnails/infrastructure",
+        "allow": [
+          "workflow-thumbnails/application",
+          "workflow-thumbnails/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workspace/domain",
         "allow": ["workspace/domain", "unclassified"]
       },
@@ -3441,27 +5274,63 @@
           "camera-authoring/infrastructure",
           "camera-authoring/presentation",
           "camera-authoring/integration",
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/infrastructure",
+          "canvas-renderer/integration",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "comfyui-api/domain",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "error-catalog/domain",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "execution/application",
           "extension-manager/domain",
           "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
+          "first-run-tour/domain",
+          "first-run-tour/application",
+          "first-run-tour/presentation",
+          "first-run-tour/integration",
           "glsl-preview/domain",
           "glsl-preview/application",
           "glsl-preview/infrastructure",
+          "graph-canvas/domain",
+          "graph-canvas/application",
+          "graph-canvas/infrastructure",
+          "graph-canvas/presentation",
+          "graph-canvas/integration",
+          "graph-commands/application",
+          "graph-commands/infrastructure",
+          "graph-layout/domain",
+          "graph-layout/application",
+          "graph-layout/infrastructure",
+          "graph-layout/presentation",
+          "graph-layout/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "graph-selection/domain",
+          "graph-selection/application",
+          "graph-selection/integration",
           "hdr-viewer/domain",
           "hdr-viewer/application",
           "hdr-viewer/infrastructure",
           "hdr-viewer/presentation",
           "hdr-viewer/integration",
+          "job-queue/domain",
+          "job-queue/application",
+          "job-queue/infrastructure",
+          "job-queue/presentation",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -3470,6 +5339,16 @@
           "light-authoring/infrastructure",
           "light-authoring/presentation",
           "light-authoring/integration",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "link-connection/domain",
+          "link-connection/application",
+          "link-presentation/domain",
+          "link-presentation/application",
+          "link-presentation/presentation",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
@@ -3495,6 +5374,11 @@
           "node-replacement/infrastructure",
           "node-replacement/presentation",
           "node-templates/integration",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "node-widgets/presentation",
+          "node-widgets/integration",
           "note-nodes/presentation",
           "note-nodes/integration",
           "onboarding-tours/domain",
@@ -3525,6 +5409,12 @@
           "skill-packs/presentation",
           "startup-tracing/application",
           "startup-tracing/infrastructure",
+          "subgraph-promotion/domain",
+          "subgraph-promotion/application",
+          "subgraphs/domain",
+          "subgraphs/application",
+          "subgraphs/presentation",
+          "subgraphs/integration",
           "support-feedback/domain",
           "support-feedback/application",
           "surveys/domain",
@@ -3543,10 +5433,25 @@
           "viewport-3d/infrastructure",
           "viewport-3d/presentation",
           "viewport-3d/integration",
+          "vue-node-renderer/domain",
+          "vue-node-renderer/application",
+          "vue-node-renderer/infrastructure",
+          "vue-node-renderer/presentation",
+          "vue-node-renderer/integration",
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "vue-node-widgets/presentation",
+          "vue-node-widgets/integration",
           "webcam-capture/integration",
           "workflow-deployment/domain",
           "workflow-deployment/application",
           "workflow-deployment/presentation",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/integration",
           "workflow-persistence/domain",
           "workflow-persistence/application",
           "workflow-persistence/infrastructure",
@@ -3559,6 +5464,8 @@
           "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/presentation",
+          "workflow-thumbnails/application",
+          "workflow-thumbnails/infrastructure",
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
