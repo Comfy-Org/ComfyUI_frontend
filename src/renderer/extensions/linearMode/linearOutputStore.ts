@@ -29,6 +29,18 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
   const executedNodeIds = new Set<string>()
+  /**
+   * `jobId:nodeId` of every output already appended to the history.
+   *
+   * A reconnect replays the run's frames, and the first `executed` consumes the
+   * skeleton item and clears `currentSkeletonId`, so the replayed frame finds no
+   * skeleton and falls through to the create-directly branch below, appending a
+   * second copy of the same output. Keyed by job as well as node, because two
+   * jobs can be in flight at once and share node ids, which is the whole reason
+   * this PR exists.
+   */
+  const appendedOutputKeys = new Set<string>()
+  const MAX_APPENDED_OUTPUT_KEYS = 500
 
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -60,6 +72,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onJobStart(jobId: JobId) {
     executedNodeIds.clear()
+    // This job's keys only: a concurrent job's outputs must stay deduped.
+    for (const key of appendedOutputKeys) {
+      if (key.startsWith(`${jobId}:`)) appendedOutputKeys.delete(key)
+    }
 
     const item: InProgressItem = {
       id: makeItemId(jobId),
@@ -112,6 +128,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
+    const outputKey = `${jobId}:${nodeId}`
+    if (appendedOutputKeys.has(outputKey)) return
     executedNodeIds.add(nodeId)
     if (raf) {
       cancelAnimationFrame(raf)
@@ -153,6 +171,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       arr.splice(idx, 1, imageItem, ...extras)
       currentSkeletonId.value = null
       inProgressItems.value = arr
+      rememberAppendedOutput(outputKey)
       return
     }
 
@@ -167,6 +186,18 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }))
     autoSelect(`slot:${newItems[0].id}`, jobId)
     inProgressItems.value = [...newItems, ...inProgressItems.value]
+    rememberAppendedOutput(outputKey)
+  }
+
+  function rememberAppendedOutput(key: string) {
+    appendedOutputKeys.add(key)
+    // Bounded: far above nodes-per-job times concurrent jobs, and Set keeps
+    // insertion order, so the oldest key goes first.
+    while (appendedOutputKeys.size > MAX_APPENDED_OUTPUT_KEYS) {
+      const oldest = appendedOutputKeys.values().next().value
+      if (oldest === undefined) break
+      appendedOutputKeys.delete(oldest)
+    }
   }
 
   function onJobComplete(jobId: JobId) {

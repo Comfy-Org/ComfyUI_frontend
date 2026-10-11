@@ -266,6 +266,64 @@ describe('linearOutputStore', () => {
     expect(store.inProgressItems).toHaveLength(2)
   })
 
+  // A reconnect replays the run's frames. The first `executed` consumes the
+  // skeleton and clears currentSkeletonId, so the replay found no skeleton and
+  // fell through to the create-directly branch, appending the same output a
+  // second time. Caught in CI by the browser spec at 2 image outputs; this pins
+  // it at the store level too.
+  it('does not append a second copy when a reconnect replays executed', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(1)
+
+    // Same job, same node, same output: a catch-up replay, not a new node.
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image'),
+      'the replayed frame must not add a second item'
+    ).toHaveLength(1)
+  })
+
+  it('still appends a second output node in the same job', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    // A different output node, which is what distinguishes this from a replay.
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'b.png', subfolder: '', type: 'output' }],
+        '2'
+      )
+    )
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(2)
+  })
+
+  it('does not dedupe the same node id across two concurrent jobs', () => {
+    const store = useLinearOutputStore()
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+
+    // Two jobs in flight share node ids, which is the reason the key is scoped
+    // by job and not by node alone.
+    store.onJobStart('job-2')
+    store.onNodeExecuted('job-2', makeExecutedDetail('job-2'))
+
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(2)
+  })
+
   it('handles execute without prior skeleton (no latent preview)', () => {
     const store = useLinearOutputStore()
     store.onJobStart('job-1')
@@ -277,9 +335,11 @@ describe('linearOutputStore', () => {
     // Second node executes directly (no latent, no skeleton)
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'b.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'b.png', subfolder: '', type: 'output' }],
+        '2'
+      )
     )
 
     const images = store.inProgressItems.filter((i) => i.state === 'image')
@@ -356,15 +416,19 @@ describe('linearOutputStore', () => {
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'b.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'b.png', subfolder: '', type: 'output' }],
+        '2'
+      )
     )
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'c.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'c.png', subfolder: '', type: 'output' }],
+        '3'
+      )
     )
 
     const run1Images = store.inProgressItems.filter((i) => i.state === 'image')
@@ -383,15 +447,19 @@ describe('linearOutputStore', () => {
     store.onNodeExecuted('job-2', makeExecutedDetail('job-2'))
     store.onNodeExecuted(
       'job-2',
-      makeExecutedDetail('job-2', [
-        { filename: 'e.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-2',
+        [{ filename: 'e.png', subfolder: '', type: 'output' }],
+        '2'
+      )
     )
     store.onNodeExecuted(
       'job-2',
-      makeExecutedDetail('job-2', [
-        { filename: 'f.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-2',
+        [{ filename: 'f.png', subfolder: '', type: 'output' }],
+        '3'
+      )
     )
 
     const run2Images = store.inProgressItems.filter((i) => i.state === 'image')
@@ -413,9 +481,11 @@ describe('linearOutputStore', () => {
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'b.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'b.png', subfolder: '', type: 'output' }],
+        '2'
+      )
     )
     store.onJobComplete('job-1')
 
@@ -440,15 +510,19 @@ describe('linearOutputStore', () => {
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'b.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'b.png', subfolder: '', type: 'output' }],
+        '2'
+      )
     )
     store.onNodeExecuted(
       'job-1',
-      makeExecutedDetail('job-1', [
-        { filename: 'c.png', subfolder: '', type: 'output' }
-      ])
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'c.png', subfolder: '', type: 'output' }],
+        '3'
+      )
     )
     store.onJobComplete('job-1')
 
