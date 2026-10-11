@@ -153,7 +153,7 @@ const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
     ? workspaceApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params))
+    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
 const loadEvents = async () => {

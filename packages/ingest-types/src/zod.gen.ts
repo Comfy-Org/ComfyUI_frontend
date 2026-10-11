@@ -45,6 +45,7 @@ export const zWorkspaceDeployment = z.object({
   build_name: z.string().optional(),
   created_at: z.string().datetime(),
   deployment_id: z.string(),
+  deployment_name: z.string().optional(),
   release_id: z.string(),
   release_version: z.number().int().optional(),
   status: z.string()
@@ -172,6 +173,43 @@ export const zWorkflowPublishInfo = z.object({
   publish_time: z.string().datetime().nullish(),
   share_id: z.string(),
   workflow_id: z.string()
+})
+
+/**
+ * The workflow to read.
+ */
+export const zWorkflowPacksRequest = z.object({
+  workflow: z.record(z.unknown())
+})
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export const zWorkflowMissingNode = z.object({
+  class_type: z.string(),
+  pack: z.string().optional(),
+  reason: z.enum(['github', 'unknown', 'unchecked', 'stamped']),
+  repository: z.string().optional()
+})
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export const zWorkflowPack = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  repository: z.string().optional(),
+  version: z.string().optional()
+})
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export const zWorkflowPacks = z.object({
+  format: z.enum(['api', 'ui']),
+  matched_packs: z.array(zWorkflowPack),
+  missing_nodes: z.array(zWorkflowMissingNode),
+  stamped_packs: z.array(zWorkflowPack)
 })
 
 /**
@@ -4344,15 +4382,6 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
-  'agent-free-use-message-placement': z
-    .enum([
-      'control',
-      'top-banner',
-      'near-composer',
-      'above-input',
-      'inside-input'
-    ])
-    .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
     .optional()
@@ -5406,6 +5435,17 @@ export const zListWorkspaceDeploymentsPath = z.object({
  * The workspace's live deployments, newest first
  */
 export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
+
+export const zResolveWorkspaceWorkflowPacksBody = zWorkflowPacksRequest
+
+export const zResolveWorkspaceWorkflowPacksPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workflow was read; what it needs, and what nothing provides
+ */
+export const zResolveWorkspaceWorkflowPacksResponse = zWorkflowPacks
 
 /**
  * The credential's workspace

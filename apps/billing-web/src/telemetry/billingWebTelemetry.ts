@@ -15,7 +15,10 @@ import {
   getCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import {
   createPostHogBeforeSend,
   createPostHogUrlQueryScrub
@@ -53,6 +56,7 @@ interface BillingEvent {
     | BillingTelemetryEventName
     | CheckoutJourneyTelemetryEventName
     | WebSessionTelemetryEvent['name']
+    | SsoTelemetryEvent['name']
   readonly properties: Readonly<Record<string, unknown>>
   /** Sent while the page goes away, after PostHog has drained its queue on `pagehide`. */
   readonly onPageExit?: true
@@ -262,6 +266,12 @@ export function createBillingWebTelemetry() {
     )
   }
 
+  function trackSsoEvent(event: SsoTelemetryEvent): void {
+    attempt(() =>
+      send({ name: event.name, properties: { ...event.properties } })
+    )
+  }
+
   /** The RUM user is the opaque id of the signed-in user, nothing else. */
   function startRumUser(identity: WatchSource<SessionIdentity>): void {
     syncIdentity(RUM_USER, identity)
@@ -272,6 +282,7 @@ export function createBillingWebTelemetry() {
     startRumUser,
     trackBillingEvent,
     trackCheckoutJourneyEvent,
+    trackSsoEvent,
     trackWebSessionEvent
   }
 }
