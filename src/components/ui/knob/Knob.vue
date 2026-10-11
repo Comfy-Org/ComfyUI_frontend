@@ -48,16 +48,30 @@ function onPointerDown(event: PointerEvent) {
   updateFromPointer(event)
 }
 
+function keyboardTarget(key: string): number | undefined {
+  switch (key) {
+    case 'ArrowUp':
+    case 'ArrowRight':
+      return modelValue.value + step
+    case 'ArrowDown':
+    case 'ArrowLeft':
+      return modelValue.value - step
+    case 'PageUp':
+      return modelValue.value + 10 * step
+    case 'PageDown':
+      return modelValue.value - 10 * step
+    case 'Home':
+      return min
+    case 'End':
+      return max
+  }
+}
+
 function onKeydown(event: KeyboardEvent) {
-  const direction =
-    event.key === 'ArrowUp' || event.key === 'ArrowRight'
-      ? 1
-      : event.key === 'ArrowDown' || event.key === 'ArrowLeft'
-        ? -1
-        : 0
-  if (!direction) return
+  const target = keyboardTarget(event.key)
+  if (target === undefined) return
   event.preventDefault()
-  setValue(modelValue.value + direction * step)
+  setValue(target)
 }
 </script>
 

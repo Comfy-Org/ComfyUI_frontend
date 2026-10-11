@@ -31,6 +31,25 @@ describe('Knob', () => {
   })
 
   it.for([
+    { key: '{ArrowUp}', value: 52 },
+    { key: '{ArrowLeft}', value: 48 },
+    { key: '{PageUp}', value: 70 },
+    { key: '{PageDown}', value: 30 },
+    { key: '{Home}', value: 0 },
+    { key: '{End}', value: 100 }
+  ])('moves to $value on $key', async ({ key, value }) => {
+    const user = userEvent.setup()
+    const { emitted } = render(Knob, {
+      props: { modelValue: 50, min: 0, max: 100, step: 2 }
+    })
+
+    screen.getByRole('slider').focus()
+    await user.keyboard(key)
+
+    expect(emitted()['update:modelValue']).toEqual([[value]])
+  })
+
+  it.for([
     {
       position: 'the bottom-left arc start',
       clientX: 0,
@@ -49,6 +68,12 @@ describe('Knob', () => {
       clientX: 20,
       clientY: 44,
       value: 0
+    },
+    {
+      position: 'the dead zone nearer the arc end',
+      clientX: 32,
+      clientY: 42,
+      value: 100
     }
   ])(
     'maps a pointer press at $position across the 270 degree arc',
