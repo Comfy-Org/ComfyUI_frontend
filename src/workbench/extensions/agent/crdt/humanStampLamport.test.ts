@@ -4,11 +4,7 @@
  * tab minted that the host has not echoed back yet. The host sequence is an
  * admission number and must not feed stamps.
  */
-import type {
-  Op,
-  WidgetCatalog,
-  WorkflowJSON
-} from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -98,7 +94,9 @@ describe('human op stamps tick over the follower doc', () => {
     sender.enqueue([setSteps(4)])
 
     expect(sent[0][0]).toMatchObject({ base_version: 51, stamp: [51, HUMAN] })
-    const result = applyOps(host, sent[0] as unknown as Op[], CATALOG)
+    const minted = sender.pendingOps().flatMap(({ ops }) => ops)
+    expect(minted.map((op) => op.op_id)).toEqual(sent[0].map((op) => op.op_id))
+    const result = applyOps(host, minted, CATALOG)
     expect(result.outcomes[0].outcome).toBe('applied')
     expect(readGraph(host).nodes.B.widgets).toMatchObject({ steps: 4 })
     sender.detach()
@@ -125,23 +123,20 @@ describe('human op stamps tick over the follower doc', () => {
       },
       CATALOG
     )
-    const growConnect = {
-      ...mintWireOps(
-        [
-          {
-            op: 'connect',
-            from_node: 1,
-            from_slot: 0,
-            to_node: 136,
-            to_slot: null,
-            link_id: 7,
-            link_type: 'IMAGE'
-          } as unknown as GraphOperation
-        ],
-        { actor: AGENT, baseVersion: 30 }
-      )[0],
-      grow: { name: 'images.image1', type: 'IMAGE' }
-    } as unknown as Op
+    const [growConnect] = mintWireOps(
+      [
+        {
+          op: 'connect',
+          from_node: 1,
+          from_slot: 0,
+          to_node: 136,
+          link_id: 7,
+          link_type: 'IMAGE',
+          grow: { name: 'images.image1', type: 'IMAGE' }
+        }
+      ],
+      { actor: AGENT, baseVersion: 30 }
+    )
     expect(applyOps(host, [growConnect], CATALOG).outcomes[0].outcome).toBe(
       'applied'
     )
@@ -190,15 +185,7 @@ describe('human op stamps tick over the follower doc', () => {
       CATALOG
     )
     agentWrite(host, setSteps(50), 50)
-    agentWrite(
-      host,
-      {
-        op: 'delete_node',
-        node_id: 'S',
-        removed_links: []
-      } as unknown as GraphOperation,
-      30
-    )
+    agentWrite(host, { op: 'delete_node', node_id: 'S', removed_links: [] }, 30)
     const stampKeys = [...host.getMap('__stamps').keys()]
     expect(stampKeys.some((key) => key.startsWith('["interior_route",'))).toBe(
       true
