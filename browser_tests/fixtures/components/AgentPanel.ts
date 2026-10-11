@@ -5,7 +5,9 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export class AgentPanel {
   public readonly activityRows: Locator
@@ -230,6 +232,25 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  /** Denies every turn POST with this admission denial for the rest of the test. */
+  async rejectEveryTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') {
+        return route.fallback()
+      }
+      await route.fulfill({
+        ...jsonRoute(body),
+        status,
+        headers: { 'Retry-After': String(retryAfterSeconds) }
+      })
+    })
   }
 
   async openWorkSummary(): Promise<void> {
