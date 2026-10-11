@@ -465,7 +465,9 @@ describe('useWorkflowService', () => {
   describe('openWorkflow ordering', () => {
     it('keeps the current workflow when a remote load is superseded', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const current = createModeTestWorkflow({
+        path: 'workflows/current.json'
+      })
       const loading = createModeTestWorkflow({
         path: 'workflows/closed.json',
         loaded: false
@@ -502,8 +504,12 @@ describe('useWorkflowService', () => {
 
     it('does not restore the retained workflow after a superseded graph load', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
-      const loading = createModeTestWorkflow({ path: 'workflows/loading.json' })
+      const current = createModeTestWorkflow({
+        path: 'workflows/current.json'
+      })
+      const loading = createModeTestWorkflow({
+        path: 'workflows/loading.json'
+      })
       workflows.activeWorkflow = current
       vi.mocked(app.loadGraphData).mockResolvedValue('superseded')
 
@@ -517,7 +523,9 @@ describe('useWorkflowService', () => {
 
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const current = createModeTestWorkflow({
+        path: 'workflows/current.json'
+      })
       const saved = createModeTestWorkflow({
         path: 'workflows/saved.json',
         loaded: false
@@ -552,7 +560,9 @@ describe('useWorkflowService', () => {
 
     it('keeps a temporary workflow openable after a superseded load', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const current = createModeTestWorkflow({
+        path: 'workflows/current.json'
+      })
       const draft = new ComfyWorkflowClass({
         path: 'workflows/draft.json',
         modified: Date.now(),
@@ -586,7 +596,9 @@ describe('useWorkflowService', () => {
 
     it('settles an already superseded opening without waiting for queued loads', async () => {
       const workflows = useWorkflowStore()
-      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
+      const blocker = createModeTestWorkflow({
+        path: 'workflows/blocker.json'
+      })
       const stale = createModeTestWorkflow({
         path: 'workflows/stale.json',
         loaded: false
@@ -616,7 +628,9 @@ describe('useWorkflowService', () => {
 
     it('skips an opening superseded while it waits behind another load', async () => {
       const workflows = useWorkflowStore()
-      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
+      const blocker = createModeTestWorkflow({
+        path: 'workflows/blocker.json'
+      })
       const stale = createModeTestWorkflow({
         path: 'workflows/stale.json',
         loaded: false

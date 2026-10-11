@@ -208,7 +208,13 @@ describe('ChangeTracker', () => {
         calls: 0
       },
       { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
-      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
+      {
+        key: 'y',
+        shiftKey: false,
+        history: 'redo',
+        selectOnly: true,
+        calls: 0
+      }
     ] as const)(
       'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
       async ({ key, shiftKey, history, selectOnly, calls }) => {

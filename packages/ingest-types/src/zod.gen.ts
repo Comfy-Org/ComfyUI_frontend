@@ -38,6 +38,33 @@ export const zWorkspaceSummary = z.object({
 })
 
 /**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export const zWorkspaceDeployment = z.object({
+  build_id: z.string().optional(),
+  build_name: z.string().optional(),
+  created_at: z.string().datetime(),
+  deployment_id: z.string(),
+  deployment_name: z.string().optional(),
+  release_id: z.string(),
+  release_version: z.number().int().optional(),
+  status: z.string()
+})
+
+/**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export const zWorkspaceDeploymentList = z.object({
+  builds_visible: z.boolean(),
+  default_deployment_id: z.string().optional(),
+  gone_default_deployment_id: z.string().optional(),
+  gone_picked_deployment_id: z.string().optional(),
+  items: z.array(zWorkspaceDeployment),
+  pick_source: z.enum(['browser', 'workspace_default']).optional(),
+  picked_deployment_id: z.string().optional()
+})
+
+/**
  * Metadata for a workspace-scoped API key (secret is never returned).
  */
 export const zWorkspaceApiKeyInfo = z.object({
@@ -83,7 +110,7 @@ export const zWorkflowVersionContentResponse = z.object({
   dependency_asset_ids: z.array(z.string()).optional(),
   id: z.string(),
   version: z.number().int(),
-  workflow_json: z.record(z.unknown())
+  workflow_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -149,6 +176,43 @@ export const zWorkflowPublishInfo = z.object({
 })
 
 /**
+ * The workflow to read.
+ */
+export const zWorkflowPacksRequest = z.object({
+  workflow: z.record(z.string(), z.unknown())
+})
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export const zWorkflowMissingNode = z.object({
+  class_type: z.string(),
+  pack: z.string().optional(),
+  reason: z.enum(['github', 'unknown', 'unchecked', 'stamped']),
+  repository: z.string().optional()
+})
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export const zWorkflowPack = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  repository: z.string().optional(),
+  version: z.string().optional()
+})
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export const zWorkflowPacks = z.object({
+  format: z.enum(['api', 'ui']),
+  matched_packs: z.array(zWorkflowPack),
+  missing_nodes: z.array(zWorkflowMissingNode),
+  stamped_packs: z.array(zWorkflowPack)
+})
+
+/**
  * Pagination metadata included in list responses. Supports both legacy
  * offset/limit pagination and cursor-based pagination. When cursor-based
  * pagination is used, `next_cursor` is the primary pagination token and
@@ -182,7 +246,7 @@ export const zWorkflowApiAssetsResponse = z.object({
  * Request body for querying assets associated with a workflow.
  */
 export const zWorkflowApiAssetsRequest = z.object({
-  workflow_api_json: z.record(z.unknown())
+  workflow_api_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -395,6 +459,7 @@ export const zTopupQuoteResponse = z.object({
 
 /**
  * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export const zToolCallSummary = z.object({
   duration_ms: z.number().int().optional(),
@@ -516,8 +581,8 @@ export const zTaskResponse = z.object({
   error_message: z.string().optional(),
   id: z.string().uuid(),
   idempotency_key: z.string(),
-  payload: z.record(z.unknown()),
-  result: z.record(z.unknown()).optional(),
+  payload: z.record(z.string(), z.unknown()),
+  result: z.record(z.string(), z.unknown()).optional(),
   started_at: z.string().datetime().optional(),
   status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_name: z.string(),
@@ -971,7 +1036,7 @@ export const zPublishedWorkflowDetail = z.object({
   publish_time: z.string().datetime().nullish(),
   share_id: z.string(),
   workflow_id: z.string(),
-  workflow_json: z.record(z.unknown())
+  workflow_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -988,7 +1053,7 @@ export const zPublishHubWorkflowRequest = z.object({
   asset_ids: z.array(z.string()),
   custom_nodes: z.array(z.string()).optional(),
   description: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   models: z.array(z.string()).optional(),
   name: z.string(),
   sample_image_tokens_or_urls: z.array(z.string()).optional(),
@@ -1037,7 +1102,7 @@ export const zProviderCatalogResponse = z.object({
  * Response returned after successfully queuing a workflow prompt.
  */
 export const zPromptResponse = z.object({
-  node_errors: z.record(z.unknown()).optional(),
+  node_errors: z.record(z.string(), z.unknown()).optional(),
   number: z.number().optional(),
   prompt_id: z.string().uuid().optional()
 })
@@ -1046,11 +1111,11 @@ export const zPromptResponse = z.object({
  * Request body for submitting a ComfyUI workflow prompt for execution.
  */
 export const zPromptRequest = z.object({
-  extra_data: z.record(z.unknown()).optional(),
+  extra_data: z.record(z.string(), z.unknown()).optional(),
   front: z.boolean().optional(),
   number: z.number().optional(),
   partial_execution_targets: z.array(z.string()).optional(),
-  prompt: z.record(z.unknown()),
+  prompt: z.record(z.string(), z.unknown()),
   workflow_id: z.string().optional(),
   workflow_version_id: z.string().optional()
 })
@@ -1069,7 +1134,7 @@ export const zPromptInfo = z.object({
 /**
  * Error response for ComfyUI prompt execution.
  */
-export const zPromptErrorResponse = z.record(z.unknown())
+export const zPromptErrorResponse = z.record(z.string(), z.unknown())
 
 /**
  * Summary of seat costs based on current workspace members
@@ -1354,6 +1419,13 @@ export const zPlan = z.object({
 })
 
 /**
+ * Which developer-platform deployment this browser should run on.
+ */
+export const zPickWorkspaceDeploymentRequest = z.object({
+  deployment_id: z.string()
+})
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export const zPendingInvite = z.object({
@@ -1430,12 +1502,12 @@ export const zOAuthRegisterRequest = z.object({
   grant_types: z
     .array(z.enum(['authorization_code', 'refresh_token']))
     .optional(),
-  jwks: z.record(z.unknown()).nullish(),
+  jwks: z.record(z.string(), z.unknown()).nullish(),
   jwks_uri: z.string().nullish(),
   logo_uri: z.string().nullish(),
   policy_uri: z.string().nullish(),
   redirect_uris: z.array(z.string()).min(1).max(5),
-  resource_grants: z.record(z.array(z.string())).nullish(),
+  resource_grants: z.record(z.string(), z.array(z.string())).nullish(),
   response_types: z.array(z.enum(['code'])).optional(),
   scope: z.string().nullish(),
   software_id: z.string().nullish(),
@@ -1457,7 +1529,7 @@ export const zOAuthRegisterError = z.object({
  */
 export const zErrorResponse = z.object({
   code: z.string(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   message: z.string(),
   organization_id: z.string().optional()
 })
@@ -1540,8 +1612,8 @@ export const zNodeInfo = z.object({
   description: z.string().optional(),
   display_name: z.string().optional(),
   experimental: z.boolean().optional(),
-  input: z.record(z.unknown()).optional(),
-  input_order: z.record(z.array(z.string())).optional(),
+  input: z.record(z.string(), z.unknown()).optional(),
+  input_order: z.record(z.string(), z.array(z.string())).optional(),
   name: z.string().optional(),
   output: z.array(z.string()).optional(),
   output_is_list: z.array(z.boolean()).optional(),
@@ -1648,7 +1720,7 @@ export const zAsset = z.object({
   job_id: z.string().uuid().nullish(),
   last_access_time: z.string().datetime().optional(),
   loader_path: z.string().nullish(),
-  metadata: z.record(z.unknown()).readonly().optional(),
+  metadata: z.record(z.string(), z.unknown()).readonly().optional(),
   mime_type: z.string().optional(),
   name: z.string(),
   preview_id: z.string().uuid().nullish(),
@@ -1665,7 +1737,7 @@ export const zAsset = z.object({
     .optional(),
   tags: z.array(z.string()).optional(),
   updated_at: z.string().datetime(),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
@@ -1710,8 +1782,8 @@ export const zJwksResponse = z.object({
  * Detailed execution error information from ComfyUI
  */
 export const zExecutionError = z.object({
-  current_inputs: z.record(z.unknown()),
-  current_outputs: z.record(z.unknown()),
+  current_inputs: z.record(z.string(), z.unknown()),
+  current_outputs: z.record(z.string(), z.unknown()),
   exception_message: z.string(),
   exception_type: z.string(),
   node_id: z.string(),
@@ -1752,7 +1824,7 @@ export const zJobEntry = z.object({
     .optional(),
   id: z.string().uuid(),
   outputs_count: z.number().int().optional(),
-  preview_output: z.record(z.unknown()).optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
   previewable_outputs_count: z.number().int().optional(),
   status: z.enum([
     'pending',
@@ -1859,7 +1931,7 @@ export const zJobDetailResponse = z.object({
     })
     .optional(),
   execution_error: zExecutionError.optional(),
-  execution_meta: z.record(z.unknown()).optional(),
+  execution_meta: z.record(z.string(), z.unknown()).optional(),
   execution_start_time: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1869,11 +1941,11 @@ export const zJobDetailResponse = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .optional(),
-  execution_status: z.record(z.unknown()).optional(),
+  execution_status: z.record(z.string(), z.unknown()).optional(),
   id: z.string().uuid(),
-  outputs: z.record(z.unknown()).optional(),
+  outputs: z.record(z.string(), z.unknown()).optional(),
   outputs_count: z.number().int().optional(),
-  preview_output: z.record(z.unknown()).optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
   previewable_outputs_count: z.number().int().optional(),
   queue_position: z.number().int().gte(1).nullish(),
   queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
@@ -1893,7 +1965,7 @@ export const zJobDetailResponse = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   user_id: z.string().optional(),
-  workflow: z.record(z.unknown()).optional(),
+  workflow: z.record(z.string(), z.unknown()).optional(),
   workflow_id: z.string().optional(),
   workflow_version_id: z.string().optional(),
   workspace_id: z.string().optional()
@@ -1987,13 +2059,13 @@ export const zHubWorkflowTemplateEntry = z.object({
   includeOnDistributions: z.array(z.string()).optional(),
   io: z
     .object({
-      inputs: z.array(z.record(z.unknown())).optional(),
-      outputs: z.array(z.record(z.unknown())).optional()
+      inputs: z.array(z.record(z.string(), z.unknown())).optional(),
+      outputs: z.array(z.record(z.string(), z.unknown())).optional()
     })
     .optional(),
   isApp: z.boolean(),
   isEssential: z.boolean().optional(),
-  logos: z.array(z.record(z.unknown())).optional(),
+  logos: z.array(z.record(z.string(), z.unknown())).optional(),
   mediaSubtype: z.string().optional(),
   mediaType: z.string().optional(),
   metaDescription: z.string().optional(),
@@ -2056,7 +2128,7 @@ export const zHubWorkflowSummary = z.object({
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
   is_app: z.boolean(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
   profile: zHubProfileSummary,
@@ -2079,7 +2151,7 @@ export const zHubWorkflowDetail = z.object({
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
   is_app: z.boolean(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
   profile: zHubProfileSummary,
@@ -2093,7 +2165,7 @@ export const zHubWorkflowDetail = z.object({
   thumbnail_url: z.string().optional(),
   tutorial_url: z.string().optional(),
   workflow_id: z.string(),
-  workflow_json: z.record(z.unknown())
+  workflow_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -2172,17 +2244,17 @@ export const zHistoryEntry = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .optional(),
-  meta: z.record(z.unknown()).optional(),
-  outputs: z.record(z.unknown()).optional(),
+  meta: z.record(z.string(), z.unknown()).optional(),
+  outputs: z.record(z.string(), z.unknown()).optional(),
   prompt: z
     .object({
-      extra_data: z.record(z.unknown()).optional(),
+      extra_data: z.record(z.string(), z.unknown()).optional(),
       priority: z.number().optional(),
       prompt_id: z.string().optional()
     })
     .optional(),
   prompt_id: z.string(),
-  status: z.record(z.unknown()).optional(),
+  status: z.record(z.string(), z.unknown()).optional(),
   workflow_id: z.string().optional()
 })
 
@@ -2208,18 +2280,18 @@ export const zHistoryManageRequest = z.object({
  * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
  */
 export const zHistoryDetailEntry = z.object({
-  meta: z.record(z.unknown()).optional(),
-  outputs: z.record(z.unknown()).optional(),
+  meta: z.record(z.string(), z.unknown()).optional(),
+  outputs: z.record(z.string(), z.unknown()).optional(),
   prompt: z
     .object({
-      extra_data: z.record(z.unknown()).optional(),
+      extra_data: z.record(z.string(), z.unknown()).optional(),
       outputs_to_execute: z.array(z.string()).optional(),
       priority: z.number().optional(),
-      prompt: z.record(z.unknown()).optional(),
+      prompt: z.record(z.string(), z.unknown()).optional(),
       prompt_id: z.string().optional()
     })
     .optional(),
-  status: z.record(z.unknown()).optional()
+  status: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
@@ -2227,7 +2299,7 @@ export const zHistoryDetailEntry = z.object({
  * Returns a dictionary with prompt_id as key and full history data as value.
  *
  */
-export const zHistoryDetailResponse = z.record(zHistoryDetailEntry)
+export const zHistoryDetailResponse = z.record(z.string(), zHistoryDetailEntry)
 
 /**
  * Metadata for a global subgraph blueprint (without full data)
@@ -2328,14 +2400,14 @@ export const zForbiddenError = z.union([
 /**
  * Response after submitting feedback
  */
-export const zFeedbackResponse = z.record(z.unknown())
+export const zFeedbackResponse = z.record(z.string(), z.unknown())
 
 /**
  * Request to submit user feedback
  */
 export const zFeedbackRequest = z.object({
   content: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   rating: z.number().int().gte(1).lte(5).optional(),
   type: z.enum(['missing_nodes', 'general', 'missing_models'])
 })
@@ -2476,7 +2548,7 @@ export const zCreateWorkspaceApiKeyRequest = z.object({
  */
 export const zCreateWorkflowVersionRequest = z.object({
   base_version: z.number().int(),
-  workflow_json: z.record(z.unknown())
+  workflow_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -2488,7 +2560,7 @@ export const zCreateWorkflowRequest = z.object({
   forked_from_workflow_id: z.string().optional(),
   forked_from_workflow_version_id: z.string().optional(),
   name: z.string().optional(),
-  workflow_json: z.record(z.unknown())
+  workflow_json: z.record(z.string(), z.unknown())
 })
 
 /**
@@ -2679,8 +2751,8 @@ export const zBillingStatusResponse = z.object({
   renewal_date: z.string().datetime().optional(),
   renewal_invoice: zRenewalInvoice.optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
-  scoped_effective_has_funds: z.record(z.boolean()).optional(),
-  scoped_has_funds: z.record(z.boolean()).optional(),
+  scoped_effective_has_funds: z.record(z.string(), z.boolean()).optional(),
+  scoped_has_funds: z.record(z.string(), z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2864,7 +2936,7 @@ export const zBillingEvent = z.object({
   createdAt: z.string().datetime(),
   event_id: z.string(),
   event_type: z.string(),
-  params: z.record(z.unknown()).optional()
+  params: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
@@ -3059,14 +3131,14 @@ export const zAssetUpdated = z.object({
   name: z.string().optional(),
   tags: z.array(z.string()).optional(),
   updated_at: z.string().datetime(),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
  * Histogram of tag counts used for refining asset search results.
  */
 export const zAssetTagHistogramResponse = z.object({
-  tag_counts: z.record(z.number().int())
+  tag_counts: z.record(z.string(), z.number().int())
 })
 
 /**
@@ -3232,7 +3304,7 @@ export const zAgentPostMessageRequest = z.object({
   current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
-      content: z.record(z.unknown()).optional()
+      content: z.record(z.string(), z.unknown()).optional()
     })
     .optional(),
   open_tabs: z
@@ -3243,7 +3315,7 @@ export const zAgentPostMessageRequest = z.object({
       })
     )
     .optional(),
-  selection: z.record(z.unknown()).optional(),
+  selection: z.record(z.string(), z.unknown()).optional(),
   workflow_id: z.string().optional(),
   workflow_references: z
     .array(
@@ -3415,7 +3487,7 @@ export const zAgentError = z.object({
  * Authoritative snapshot of a workflow's agent draft — the replay-on-reconnect baseline for the draft_patch stream.
  */
 export const zAgentDraftSnapshot = z.object({
-  content: z.record(z.unknown()),
+  content: z.record(z.string(), z.unknown()),
   version: z.number().int()
 })
 
@@ -3558,7 +3630,7 @@ export const zAssetWritable = z.object({
     .optional(),
   tags: z.array(z.string()).optional(),
   updated_at: z.string().datetime(),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
@@ -3671,7 +3743,7 @@ export const zAgentLlmAdmitResponse = z.object({
 /**
  * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
  */
-export const zAgentLlmMessagesBody = z.record(z.unknown())
+export const zAgentLlmMessagesBody = z.record(z.string(), z.unknown())
 
 /**
  * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
@@ -3851,7 +3923,7 @@ export const zUpdateAssetBody = z.object({
   mime_type: z.string().optional(),
   name: z.string().optional(),
   preview_id: z.string().uuid().optional(),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 export const zUpdateAssetPath = z.object({
@@ -3910,7 +3982,7 @@ export const zCreateAssetDownloadBody = z.object({
   preview_id: z.string().uuid().optional(),
   source_url: z.string().url(),
   tags: z.array(z.string()).optional(),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 export const zCreateAssetDownloadResponse = z.union([
@@ -3921,7 +3993,9 @@ export const zCreateAssetDownloadResponse = z.union([
 export const zCreateAssetExportBody = z.object({
   asset_ids: z.array(z.string()).optional(),
   include_previews: z.boolean().optional().default(false),
-  job_asset_name_filters: z.record(z.array(z.string()).min(1)).optional(),
+  job_asset_name_filters: z
+    .record(z.string(), z.array(z.string()).min(1))
+    .optional(),
   job_ids: z.array(z.string()).optional(),
   naming_strategy: z
     .enum(['group_by_job_id', 'preserve', 'asset_id', 'group_by_job_time'])
@@ -3948,7 +4022,7 @@ export const zCreateAssetFromHashBody = z.object({
   mime_type: z.string().optional(),
   name: z.string().optional(),
   tags: z.array(z.string()).min(1),
-  user_metadata: z.record(z.unknown()).optional()
+  user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 /**
@@ -4014,7 +4088,7 @@ export const zCancelAssetSeedResponse = z.object({
 /**
  * Scan progress details (files scanned, total, status, etc.)
  */
-export const zGetAssetSeedStatusResponse = z.record(z.unknown())
+export const zGetAssetSeedStatusResponse = z.record(z.string(), z.unknown())
 
 export const zGetAssetTagHistogramQuery = z.object({
   include_tags: z.array(z.string()).optional(),
@@ -4319,6 +4393,7 @@ export const zGetFeaturesResponse = z.object({
       'above-input',
       'inside-input'
     ])
+    .optional()
     .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
@@ -4401,7 +4476,10 @@ export const zGetGlobalSettingResponse = zGlobalSetting
 /**
  * Success - Map of subgraph IDs to their metadata
  */
-export const zGetGlobalSubgraphsResponse = z.record(zGlobalSubgraphInfo)
+export const zGetGlobalSubgraphsResponse = z.record(
+  z.string(),
+  zGlobalSubgraphInfo
+)
 
 export const zGetGlobalSubgraphPath = z.object({
   id: z.string()
@@ -4546,7 +4624,7 @@ export const zListHubWorkflowIndexResponse = z.array(zHubWorkflowTemplateEntry)
 /**
  * Nested map of locale to translation key-value pairs
  */
-export const zGetI18nResponse = z.record(z.unknown())
+export const zGetI18nResponse = z.record(z.string(), z.unknown())
 
 export const zCreateInputUploadUrlBody = zInputUploadUrlRequest
 
@@ -4600,6 +4678,15 @@ export const zListJobsQuery = z.object({
  */
 export const zListJobsResponse = zJobsListResponse
 
+export const zDeleteJobPath = z.object({
+  job_id: z.string().uuid()
+})
+
+/**
+ * Job and its assets deleted successfully, or the job was not in a deletable state (pending/in-progress/already-deleted) and no change was made (no-op)
+ */
+export const zDeleteJobResponse = z.void()
+
 export const zGetJobDetailPath = z.object({
   job_id: z.string().uuid()
 })
@@ -4650,7 +4737,7 @@ export const zGetLegacyModelsByFolderPath = z.object({
 /**
  * Success - Node replacement mappings
  */
-export const zGetNodeReplacementsResponse = z.record(z.unknown())
+export const zGetNodeReplacementsResponse = z.record(z.string(), z.unknown())
 
 export const zGetNodeInfoQuery = z.object({
   include_user_models: z.boolean().optional().default(false)
@@ -4659,7 +4746,7 @@ export const zGetNodeInfoQuery = z.object({
 /**
  * Success
  */
-export const zGetNodeInfoResponse = z.record(zNodeInfo)
+export const zGetNodeInfoResponse = z.record(z.string(), zNodeInfo)
 
 export const zGetLegacyObjectInfoByNodeClassPath = z.object({
   node_class: z.string()
@@ -4747,17 +4834,17 @@ export const zListSecretProvidersResponse = zSecretProvidersResponse
 /**
  * User settings as key-value pairs
  */
-export const zGetAllSettingsResponse = z.record(z.unknown())
+export const zGetAllSettingsResponse = z.record(z.string(), z.unknown())
 
 /**
  * Settings to update as key-value pairs
  */
-export const zUpdateMultipleSettingsBody = z.record(z.unknown())
+export const zUpdateMultipleSettingsBody = z.record(z.string(), z.unknown())
 
 /**
  * Updated user settings
  */
-export const zUpdateMultipleSettingsResponse = z.record(z.unknown())
+export const zUpdateMultipleSettingsResponse = z.record(z.string(), z.unknown())
 
 export const zGetSettingByIdPath = z.object({
   id: z.string()
@@ -5056,7 +5143,7 @@ export const zGetApiViewVideoAliasResponse = z.string()
 /**
  * Empty object for workflow templates
  */
-export const zGetWorkflowTemplatesResponse = z.record(z.unknown())
+export const zGetWorkflowTemplatesResponse = z.record(z.string(), z.unknown())
 
 export const zListWorkflowsQuery = z.object({
   limit: z.number().int().lte(100).optional().default(20),
@@ -5311,6 +5398,71 @@ export const zUpdateWorkspacePath = z.object({
  */
 export const zUpdateWorkspaceResponse = zWorkspace
 
+export const zClearWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDefaultDeploymentResponse = z.void()
+
+export const zSetWorkspaceDefaultDeploymentBody =
+  zPickWorkspaceDeploymentRequest
+
+export const zSetWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Set; members with no pick are on this deployment from their next request
+ */
+export const zSetWorkspaceDefaultDeploymentResponse = z.void()
+
+export const zClearWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+export const zClearWorkspaceDeploymentQuery = z.object({
+  follow: z.enum(['workspace']).optional()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDeploymentResponse = z.void()
+
+export const zPickWorkspaceDeploymentBody = zPickWorkspaceDeploymentRequest
+
+export const zPickWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Picked; the cookie on this response carries it
+ */
+export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zListWorkspaceDeploymentsPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workspace's live deployments, newest first
+ */
+export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
+
+export const zResolveWorkspaceWorkflowPacksBody = zWorkflowPacksRequest
+
+export const zResolveWorkspaceWorkflowPacksPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workflow was read; what it needs, and what nothing provides
+ */
+export const zResolveWorkspaceWorkflowPacksResponse = zWorkflowPacks
+
 /**
  * The credential's workspace
  */
@@ -5333,6 +5485,7 @@ export const zGetHealthResponse = z.string()
  * Map of folder type name to list of path entries
  */
 export const zGetInternalFolderPathsResponse = z.record(
+  z.string(),
   z.array(z.array(z.string()))
 )
 

@@ -40,7 +40,7 @@ const RegistryPackSchema = z
         id: optionalString,
         name: optionalString
       })
-      .passthrough()
+      .loose()
       .nullish()
       .transform(nullToUndefined),
     latest_version: z
@@ -48,17 +48,17 @@ const RegistryPackSchema = z
         version: optionalString,
         createdAt: optionalString
       })
-      .passthrough()
+      .loose()
       .nullish()
       .transform(nullToUndefined)
   })
-  .passthrough()
+  .loose()
 
 const RegistryListResponseSchema = z
   .object({
     nodes: z.array(RegistryPackSchema)
   })
-  .passthrough()
+  .loose()
 
 const RegistryComfyNodeSchema = z
   .object({
@@ -74,14 +74,14 @@ const RegistryComfyNodeSchema = z
       .nullish()
       .transform((v) => v ?? undefined)
   })
-  .passthrough()
+  .loose()
 
 const RegistryComfyNodesResponseSchema = z
   .object({
     comfy_nodes: z.array(RegistryComfyNodeSchema).nullish(),
     totalNumberOfPages: z.number().nullish()
   })
-  .passthrough()
+  .loose()
 
 interface FetchRegistryOptions {
   baseUrl?: string
@@ -273,7 +273,7 @@ async function fetchComfyNodesPage(
     if (!parsed.success) return null
 
     return {
-      nodes: (parsed.data.comfy_nodes ?? []) as RegistryComfyNode[],
+      nodes: parsed.data.comfy_nodes ?? [],
       totalPages: parsed.data.totalNumberOfPages ?? 1
     }
   } catch {
@@ -344,7 +344,7 @@ async function fetchBatch(
     if (!parsed.success) {
       return { kind: 'err', retryable: false }
     }
-    return { kind: 'ok', nodes: parsed.data.nodes as RegistryPack[] }
+    return { kind: 'ok', nodes: parsed.data.nodes }
   } catch {
     return { kind: 'err', retryable: true }
   } finally {

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 /** The validated stored order of the catalogue. */
 export const workshopModelOrderSchema = z.object({
-  measuredOn: z.string().date(),
+  measuredOn: z.iso.date(),
   windowDays: z.number().int().positive(),
   note: z.string(),
   // A slug listed twice would quietly take its last position and rank one model
