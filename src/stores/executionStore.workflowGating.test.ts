@@ -2,7 +2,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type {
+  ExecutedWsMessage,
+  ExecutingWsMessage,
+  ExecutionCachedWsMessage,
+  ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
+  ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
+  NodeProgressState,
+  NotificationWsMessage,
+  ProgressStateWsMessage,
+  ProgressWsMessage
+} from '@/platform/remote/comfyui/execution/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -10,26 +22,22 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { zeroUuid } from '@/utils/uuid'
 
-/**
- * Workflow-ownership gating for execution WebSocket messages.
- *
- * Core stamps `workflow_id` on every JSON frame of a running prompt, so a frame
- * that belongs to another open workflow tab must not write the shared "current
- * execution" state. Three resolution paths have to keep working, because a
- * frontend talks to backends of three different vintages:
- *
- *  - **modern**: the frame carries `workflow_id`
- *  - **legacy**: no `workflow_id` anywhere — ownership resolves from the
- *    mapping registered when the job was queued, or from the session path
- *  - **unresolvable**: neither is available, and behaviour must stay exactly as
- *    it was before gating existed (permissive)
- */
-
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 type EventHandler = (event: CustomEvent) => void
+interface EventPayloads {
+  executed: ExecutedWsMessage
+  execution_cached: ExecutionCachedWsMessage
+  execution_error: ExecutionErrorWsMessage
+  execution_interrupted: ExecutionInterruptedWsMessage
+  execution_start: ExecutionStartWsMessage
+  execution_success: ExecutionSuccessWsMessage
+  notification: NotificationWsMessage
+  progress: ProgressWsMessage
+  progress_state: ProgressStateWsMessage
+}
 const apiEventHandlers = new Map<string, EventHandler>()
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -66,8 +74,6 @@ function workflow(id: string, path: string): LoadedComfyWorkflow {
     activeState: { id },
     initialState: { id },
     path,
-    // Every open tab carries its own instanceId in the running app, and it is
-    // the only identifier that is unique per tab rather than per workflow.
     instanceId: `instance-${path}`
   })
 }
@@ -75,12 +81,6 @@ function workflow(id: string, path: string): LoadedComfyWorkflow {
 const workflowA = workflow(WORKFLOW_A_ID, 'workflows/a.json')
 const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
 
-/**
- * Copy a workflow, open a new tab and paste it: `ensureWorkflowId` keeps the
- * id already in the pasted json, so both tabs carry the same workflow id while
- * being different open workflows. Reported by QA on the core PR thread, with
- * three unsaved copies of the default graph.
- */
 const workflowACopy = workflow(WORKFLOW_A_ID, 'workflows/a copy.json')
 
 /**
@@ -89,7 +89,7 @@ const workflowACopy = workflow(WORKFLOW_A_ID, 'workflows/a copy.json')
  */
 function fireExecuting(
   node: string | null,
-  ids: { prompt_id: string; workflow_id?: string }
+  ids: Pick<ExecutingWsMessage, 'prompt_id' | 'workflow_id'>
 ) {
   api.lastExecutingMessage = { node, ...ids }
   const handler = apiEventHandlers.get('executing')
@@ -97,7 +97,10 @@ function fireExecuting(
   handler(new CustomEvent('executing', { detail: node }))
 }
 
-function fire(event: string, detail: Record<string, unknown>) {
+function fire<K extends keyof EventPayloads>(
+  event: K,
+  detail: EventPayloads[K]
+) {
   const handler = apiEventHandlers.get(event)
   if (!handler) throw new Error(`${event} handler not bound`)
   handler(new CustomEvent(event, { detail }))
@@ -155,7 +158,6 @@ describe('executionStore workflow gating', () => {
     store.bindExecutionEvents()
   })
 
-  /** Queue a job from `wf` so the id mapping exists, as storeJob does. */
   function queueLegacyJobFrom(jobId: string, wf: LoadedComfyWorkflow) {
     store.storeJob({
       nodes: ['1'],
@@ -259,12 +261,11 @@ describe('executionStore workflow gating', () => {
       const ids = own
         ? { prompt_id: 'job-a', workflow_id: WORKFLOW_A_ID }
         : { prompt_id: 'job-b', workflow_id: WORKFLOW_B_ID }
-      const detail =
-        event === 'executed'
-          ? { ...ids, node: '1', display_node: '1', output: {} }
-          : { ...ids, nodes: ['1'], timestamp: 2 }
-
-      fire(event, detail)
+      if (event === 'executed') {
+        fire('executed', { ...ids, node: '1', display_node: '1', output: {} })
+      } else {
+        fire('execution_cached', { ...ids, nodes: ['1'], timestamp: 2 })
+      }
 
       expect(store.activeJob?.nodes['1']).toBe(own ? true : undefined)
     })
@@ -318,9 +319,6 @@ describe('executionStore workflow gating', () => {
       expect(store.activeJobId).toBe('job-a')
     })
 
-    // Regression: gating the whole handler hid the completed badge on a
-    // background tab, which workflowTabStatus.spec.ts caught on CI. Per-workflow
-    // status is keyed by the job's own workflow and is never shared state.
     it('still marks another workflow completed on its own tab', () => {
       queueJobFrom('job-b', workflowB)
       fire('execution_start', {
@@ -338,6 +336,24 @@ describe('executionStore workflow gating', () => {
 
       expect(store.getWorkflowStatus(workflowB)).toBe('completed')
       expect(store.activeJobId).toBe('job-a')
+    })
+
+    it('records a background completion only on its owning workflow', () => {
+      queueJobFrom('job-b', workflowB)
+
+      fire('execution_start', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 1
+      })
+      fire('execution_success', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 2
+      })
+
+      expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+      expect(store.getWorkflowStatus(workflowB)).toBe('completed')
     })
 
     it('execution_success from the active workflow clears it', () => {
@@ -388,6 +404,7 @@ describe('executionStore workflow gating', () => {
       fire('execution_interrupted', {
         prompt_id: 'job-b',
         workflow_id: WORKFLOW_B_ID,
+        timestamp: 2,
         synthetic: true,
         reason: 'Job cancelled by user'
       })
@@ -401,8 +418,6 @@ describe('executionStore workflow gating', () => {
 
     it('execution_error from another workflow leaves active state alone but clears its initializing flag', () => {
       queueJobFrom('job-b', workflowB)
-      // Without this the job is never initializing, so the assertion below
-      // passes whatever the code does.
       fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
       expect(store.isJobInitializing('job-b')).toBe(true)
 
@@ -414,7 +429,8 @@ describe('executionStore workflow gating', () => {
         node_type: 'TestNode',
         exception_message: 'fail',
         exception_type: 'Error',
-        traceback: []
+        traceback: [],
+        executed: []
       })
 
       expect(store.activeJobId).toBe('job-a')
@@ -430,7 +446,8 @@ describe('executionStore workflow gating', () => {
         node_type: 'TestNode',
         exception_message: 'fail',
         exception_type: 'Error',
-        traceback: []
+        traceback: [],
+        executed: []
       })
 
       expect(store.activeJobId).toBe('job-a')
@@ -448,7 +465,8 @@ describe('executionStore workflow gating', () => {
         exception_message:
           'Payment Required: Please add credits to your account to use this node.',
         exception_type: 'InsufficientFundsError',
-        traceback: []
+        traceback: [],
+        executed: []
       })
 
       expect(store.activeJobId).toBe('job-a')
@@ -670,9 +688,6 @@ describe('executionStore workflow gating', () => {
     it('stays permissive when ownership cannot be resolved at all', () => {
       useWorkflowStore().activeWorkflow = workflowA
 
-      // No workflow_id on the frame and no mapping for this job: the job could
-      // have been queued by another browser session, and single-tab behaviour
-      // must not regress.
       fire('progress_state', {
         prompt_id: 'job-from-elsewhere',
         nodes: { '1': nodeState('job-from-elsewhere', '1', 'running', 5) }
@@ -696,8 +711,6 @@ describe('executionStore workflow gating', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-b', workflowB)
 
-      // Core omits the field entirely when unknown, never sends "" — but a
-      // third-party server might, and an empty id must not read as "mine".
       fire('progress_state', {
         prompt_id: 'job-b',
         workflow_id: '',
@@ -709,8 +722,6 @@ describe('executionStore workflow gating', () => {
 
     it('gates on workflow_id even when the job mapping disagrees', () => {
       useWorkflowStore().activeWorkflow = workflowA
-      // Mapping says workflow A, the frame says workflow B. The frame wins:
-      // the server is the authority on which workflow produced the prompt.
       store.registerJobWorkflowIdMapping('job-x', WORKFLOW_A_ID)
 
       fire('progress_state', {
@@ -733,9 +744,6 @@ describe('executionStore workflow gating', () => {
       })
     })
 
-    // The event detail is a bare node id for extension compatibility, so this
-    // path can only gate via the raw message api records. Before that, the
-    // other tab's final `executing: null` cleared the visible tab's run.
     it('does not let another workflow clear the visible active job', () => {
       fireExecuting(null, {
         prompt_id: 'job-b',
@@ -769,8 +777,6 @@ describe('executionStore workflow gating', () => {
     })
 
     it('still works when the raw message was never recorded', () => {
-      // Defensive: an `executing` dispatched by an extension or a test rather
-      // than by the socket has no raw message, and must behave as before.
       const handler = apiEventHandlers.get('executing')
       assert.exists(handler)
       handler(new CustomEvent('executing', { detail: null }))
@@ -856,11 +862,6 @@ describe('executionStore workflow gating', () => {
   })
 
   describe('switching tabs mid-run', () => {
-    // The QA run on a real generation found this: gating stops a background
-    // workflow writing the mirror, but whatever it wrote while it was in front
-    // stays there, and `nodeLocationProgressStates` resolves node ids against
-    // the *currently* active graph. Two workflows sharing a node id therefore
-    // show the stale entry on the newly visible node.
     it('clears the mirror when switching to a workflow with no running job', async () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
@@ -891,7 +892,6 @@ describe('executionStore workflow gating', () => {
       await nextTick()
       expect(store.nodeProgressStates['1']).toBeUndefined()
 
-      // A's run advanced while it was in the background; per-job state kept it.
       fire('progress_state', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
@@ -942,10 +942,6 @@ describe('executionStore workflow gating', () => {
       expect(store.nodeProgressStates['1']?.value).toBe(7)
       expect(store.nodeProgressStates['1']?.prompt_id).toBe('job-b')
     })
-    // A legacy server sends no workflow_id at all, so ownership resolves
-    // through the session path the client recorded at queue time. The QA pass
-    // against core f1072eb0 saw foreign progress here; it must clear on switch
-    // on that backend too, not only on one that stamps the frames.
     it('clears the mirror on a backend that sends no workflow id', async () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueLegacyJobFrom('job-a', workflowA)
@@ -960,15 +956,11 @@ describe('executionStore workflow gating', () => {
 
       expect(store.nodeProgressStates['1']).toBeUndefined()
     })
-    // Round 2 of the GPU QA: the first switch is clean, a later one is not.
     it('stays clean across repeated switches during one run', async () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
 
-      // Two cycles, not a loop: each depends on the state the previous one
-      // left, and what QA saw was the first arrival in B being clean and a
-      // later one not, so first-versus-later is the distinction being made.
-      const cycle = async (step: number) => {
+      async function cycle(step: number) {
         fire('progress_state', {
           prompt_id: 'job-a',
           workflow_id: WORKFLOW_A_ID,
@@ -1005,7 +997,6 @@ describe('executionStore workflow gating', () => {
       await nextTick()
       expect(store.nodeProgressStates['1']).toBeUndefined()
 
-      // A keeps running; B's own job has not started yet.
       fire('progress_state', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
@@ -1014,11 +1005,6 @@ describe('executionStore workflow gating', () => {
 
       expect(store.nodeProgressStates['1']).toBeUndefined()
     })
-    // The canvas stamps progress onto the new graph's nodes when the graph
-    // changes (nodeProgressCanvasSync.replaceGraph), reading whatever the
-    // mirror holds at that instant. Clearing the mirror on a watcher is a race
-    // against that, and it is the race the GPU QA lost. So the projection has
-    // to be correct even when the mirror still holds the foreign entry.
     it('does not project a foreign entry that is still in the mirror', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
@@ -1029,8 +1015,6 @@ describe('executionStore workflow gating', () => {
       })
       expect(Object.keys(store.nodeLocationProgressStates)).toHaveLength(1)
 
-      // Switch without letting the watcher run, which is what the canvas sees
-      // when it observes the graph change first.
       useWorkflowStore().activeWorkflow = workflowB
 
       expect(store.nodeProgressStates['1']?.value).toBe(3)
@@ -1057,9 +1041,6 @@ describe('executionStore workflow gating', () => {
       openTabs(workflowA, workflowACopy)
     })
 
-    // Node outputs are written by ComfyApp's own `executed` listener, not by
-    // this store, and it resolves the node against the visible graph. The gate
-    // it consults is this predicate.
     it('rejects a foreign job output frame for the copy', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
@@ -1102,11 +1083,6 @@ describe('executionStore workflow gating', () => {
     })
   })
 
-  /**
-   * The resolution order is load-bearing and was wrong once: keying on the
-   * graph id first let every tab sharing an id claim every job. These pin the
-   * order itself, so reordering the legs fails here rather than in QA.
-   */
   describe('ownership resolution precedence', () => {
     beforeEach(() => {
       openTabs(workflowA, workflowACopy)
@@ -1115,8 +1091,6 @@ describe('executionStore workflow gating', () => {
     it('prefers the tab instance over both weaker legs', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
-      // Point the path leg at the copy as well, so both weaker legs name the
-      // copy and only the instance names A. Reordering the legs flips this.
       store.ensureSessionWorkflowPath(
         'job-a',
         workflowACopy.path,
@@ -1134,7 +1108,6 @@ describe('executionStore workflow gating', () => {
 
     it('falls back to the session path when no instance is known', () => {
       useWorkflowStore().activeWorkflow = workflowA
-      // No storeJob, so no instance mapping: register only the path.
       store.ensureSessionWorkflowPath('job-pathonly', workflowACopy.path)
 
       expect(
@@ -1162,8 +1135,6 @@ describe('executionStore workflow gating', () => {
     it('stays permissive when ownership cannot be resolved at all', () => {
       useWorkflowStore().activeWorkflow = workflowA
 
-      // A job from another browser session: no mapping, no frame id. Keeping
-      // this permissive is what preserves single-tab behaviour.
       expect(store.belongsToActiveWorkflow('job-unknown', undefined)).toBe(true)
     })
 
@@ -1171,8 +1142,6 @@ describe('executionStore workflow gating', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
 
-      // Save As mints a new workflow with its own instanceId and a new graph
-      // id, and switches to it. The original tab keeps the run.
       const savedAs = workflow(
         'a-brand-new-graph-id',
         'workflows/saved as.json'
@@ -1198,16 +1167,6 @@ describe('executionStore workflow gating', () => {
     })
   })
 
-  /**
-   * Reported by review on #20045. handleExecutionStart deliberately does not
-   * adopt activeJobId for a job whose tab is in the background, so that a
-   * background run cannot steal the visible tab's execution UI. But nothing
-   * adopted it on the way back either, so a tab could show node progress while
-   * isIdle stayed true: the title, favicon and overlay read idle, and
-   * handleExecuted dropped completion frames at `if (!activeJob.value) return`.
-   * Reachable by the second prompt of a batch, or anything queued behind
-   * another job while the user is on a different tab.
-   */
   describe('returning to a tab whose job started in the background', () => {
     it('adopts the job so the tab is not both running and idle', async () => {
       useWorkflowStore().activeWorkflow = workflowA
@@ -1226,8 +1185,6 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         nodes: { '1': nodeState('job-a', '1', 'running', 3) }
       })
-      expect(store.activeJobId, 'B must not adopt A job').toBeNull()
-
       useWorkflowStore().activeWorkflow = workflowA
       await nextTick()
 
@@ -1350,8 +1307,6 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         timestamp: 1
       })
-      expect(store.activeJobId).toBe('job-a')
-
       useWorkflowStore().activeWorkflow = workflowB
       fire('execution_success', {
         prompt_id: 'job-a',

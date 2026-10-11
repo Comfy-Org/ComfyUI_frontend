@@ -781,10 +781,6 @@ describe('useQueueStore', () => {
 
   describe('terminal-job reconciliation', () => {
     it('clears progress for a job the backend reports only in history', async () => {
-      // This is the only production caller of reconcileTerminalJobs, and it was
-      // unverified: deleting the call, or swapping its two arguments so every
-      // running job is treated as terminal, left the whole suite green.
-      // Asserting the eviction rather than spying catches both.
       const executionStore = useExecutionStore()
       executionStore.nodeProgressStatesByJob = {
         'hist-stuck': {

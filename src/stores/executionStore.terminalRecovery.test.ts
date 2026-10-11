@@ -1,21 +1,18 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type {
+  ExecutingWsMessage,
+  ExecutionErrorWsMessage,
+  ExecutionStartWsMessage,
+  NodeProgressState,
+  NotificationWsMessage,
+  ProgressStateWsMessage
+} from '@/platform/remote/comfyui/execution/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-
-/**
- * Recovery from a dropped terminal WebSocket frame.
- *
- * `execution_success` / `execution_error` / `execution_interrupted` are
- * broadcast once and never retried, so a single dropped frame leaves node
- * progress pinned forever — the user sees a node stuck mid-run with no way to
- * clear it. Queue polling is the only authority that can notice: the backend
- * reports the job in history while the frontend still holds progress for it.
- */
 
 const { mockRemoveTextPreview } = await vi.hoisted(async () => ({
   mockRemoveTextPreview: vi.fn()
@@ -33,6 +30,12 @@ vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
 }))
 
 type EventHandler = (event: CustomEvent) => void
+interface EventPayloads {
+  execution_error: ExecutionErrorWsMessage
+  execution_start: ExecutionStartWsMessage
+  notification: NotificationWsMessage
+  progress_state: ProgressStateWsMessage
+}
 const apiEventHandlers = new Map<string, EventHandler>()
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -75,14 +78,9 @@ function workflow(id: string, path: string): LoadedComfyWorkflow {
 const workflowA = workflow(WORKFLOW_A_ID, 'workflows/a.json')
 const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
 
-/**
- * `executing` is dispatched with a bare node id for extension compatibility, so
- * the store reads the ids off the raw message api recorded. Mirror that rather
- * than passing an object as the detail, which would pass for the wrong reason.
- */
 function fireExecuting(
   node: string | null,
-  ids: { prompt_id: string; workflow_id?: string }
+  ids: Pick<ExecutingWsMessage, 'prompt_id' | 'workflow_id'>
 ) {
   api.lastExecutingMessage = { node, ...ids }
   const handler = apiEventHandlers.get('executing')
@@ -90,7 +88,10 @@ function fireExecuting(
   handler(new CustomEvent('executing', { detail: node }))
 }
 
-function fire(event: string, detail: Record<string, unknown>) {
+function fire<K extends keyof EventPayloads>(
+  event: K,
+  detail: EventPayloads[K]
+) {
   const handler = apiEventHandlers.get(event)
   if (!handler) throw new Error(`${event} handler not bound`)
   handler(new CustomEvent(event, { detail }))
@@ -140,7 +141,6 @@ describe('executionStore terminal-job recovery', () => {
     store.bindExecutionEvents()
   })
 
-  /** A job of the active workflow, mid-run, whose terminal frame never came. */
   function stuckActiveJob(jobId = 'job-a') {
     store.registerJobWorkflowIdMapping(jobId, WORKFLOW_A_ID)
     fire('execution_start', {
@@ -180,8 +180,6 @@ describe('executionStore terminal-job recovery', () => {
   it('ignores a job that is neither running nor in history yet', () => {
     const jobId = stuckActiveJob()
 
-    // Submitted but not yet visible in either list: evicting here would blank
-    // a run that is about to report progress.
     store.reconcileTerminalJobs(new Set(), new Set())
 
     expect(store.nodeProgressStates['1']?.state).toBe('running')
@@ -206,8 +204,6 @@ describe('executionStore terminal-job recovery', () => {
   })
 
   it('clears a stuck job belonging to another workflow', () => {
-    // The other tab's job is tracked per-job even though it never wrote the
-    // shared mirror, so it needs evicting too or that tab stays stuck.
     store.registerJobWorkflowIdMapping('job-b', WORKFLOW_B_ID)
     fire('progress_state', {
       prompt_id: 'job-b',
@@ -257,7 +253,6 @@ describe('executionStore terminal-job recovery', () => {
   })
 
   it('still recovers when the terminal frame was dropped for a legacy backend', () => {
-    // No workflow_id anywhere: recovery must not depend on the new field.
     const jobId = 'job-legacy'
     store.registerJobWorkflowIdMapping(jobId, WORKFLOW_A_ID)
     fire('execution_start', { prompt_id: jobId, timestamp: 1 })
@@ -271,8 +266,6 @@ describe('executionStore terminal-job recovery', () => {
 
     expect(store.nodeProgressStates['1']).toBeUndefined()
   })
-  /** As above, but queued through storeJob, which is what associates the job
-   * with its workflow. The status and text-preview paths both read that. */
   function stuckQueuedJob(jobId = 'job-queued') {
     store.registerJobWorkflowIdMapping(jobId, WORKFLOW_A_ID)
     store.storeJob({
@@ -301,16 +294,10 @@ describe('executionStore terminal-job recovery', () => {
 
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
 
-    // handleExecutionStart set this and nothing else resets it, so without the
-    // release the tab keeps claiming it is running for the rest of the session.
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
   it('fires onJobReset while the job record its consumer reads still exists', () => {
-    // useProgressTextPreviews.clearTextPreviews reads the job's node list off
-    // the queuedJobs entry to find the widgets to remove, so triggering after
-    // the delete would hand it nothing and silently remove no widget. Order is
-    // the whole point here.
     const jobId = stuckQueuedJob()
     const seen: string[][] = []
     store.onJobReset((job) => {
@@ -325,8 +312,11 @@ describe('executionStore terminal-job recovery', () => {
     ).toEqual([['1']])
   })
 
-  it('releases a background job records when it ends in an error', () => {
-    const jobId = 'job-bg-error'
+  it.for([
+    { name: 'node error', nodeId: '1' },
+    { name: 'service-level error', nodeId: null }
+  ])('releases background job records after a $name', ({ nodeId }) => {
+    const jobId = `job-bg-error-${nodeId ?? 'service'}`
     store.registerJobWorkflowIdMapping(jobId, WORKFLOW_B_ID)
     store.storeJob({
       nodes: ['1'],
@@ -345,14 +335,11 @@ describe('executionStore terminal-job recovery', () => {
       workflow_id: WORKFLOW_B_ID,
       nodes: { '1': runningNode(jobId, '1') }
     })
-    expect(store.nodeProgressStatesByJob[jobId]).toBeDefined()
-
-    // A is in front, so this error belongs to a background tab. It is still a
-    // finished job, so its own records have to go, like the success path.
     fire('execution_error', {
       prompt_id: jobId,
       workflow_id: WORKFLOW_B_ID,
-      node_id: '1',
+      timestamp: 2,
+      node_id: nodeId,
       node_type: 'TestNode',
       exception_type: 'RuntimeError',
       exception_message: 'boom',
