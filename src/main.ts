@@ -83,6 +83,10 @@ if (desktopHostAuth) {
   const { startDesktopHostSession } =
     await import('@/platform/auth/desktopHost/desktopHostSession')
   await startDesktopHostSession(desktopHostAuth)
+} else if (!isCloud) {
+  const { startLocalWebSession } =
+    await import('@/platform/auth/localWeb/localWebSession')
+  await startLocalWebSession()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
