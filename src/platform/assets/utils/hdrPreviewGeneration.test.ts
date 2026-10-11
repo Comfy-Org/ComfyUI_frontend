@@ -84,7 +84,7 @@ describe('generatePreviewsForNewAssets', () => {
 
   it.for([
     { locks: 'granted', stub: stubGrantingLocks },
-    { locks: 'unavailable', stub: () => undefined }
+    { locks: 'unavailable', stub: () => vi.stubGlobal('navigator', {}) }
   ])(
     'attaches a rendered preview to a new HDR asset when locks are $locks',
     async ({ stub }) => {
