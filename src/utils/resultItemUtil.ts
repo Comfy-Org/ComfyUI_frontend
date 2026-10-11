@@ -2,30 +2,38 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 /**
- * A result item that can be resolved to a `/view` URL. Only `filename` is
- * guaranteed at runtime — the live `executed` websocket payload is not
- * schema-validated, so `subfolder` and `type` may still be absent or malformed.
- * Build requests with {@link toViewRequest} instead of reading those directly.
+ * A result item that can be resolved to a `/view` URL. `subfolder` and `type`
+ * may be absent; build requests with {@link toViewRequest} to apply the
+ * backend's defaults.
  */
 export type ViewableResultItem = {
   filename: string
-  subfolder?: unknown
-  type?: unknown
+  subfolder?: string | null
+  type?: ResultItemType | null
 }
 
 /**
  * Output arrays can contain `null` (the output file failed to upload) or a
  * filename-less marker such as `{ status: 'unavailable', reason }`. Neither can
  * be turned into a `/view` request, so they must be skipped rather than
- * rendered. Accepts `unknown` because the live `executed` websocket payload is
- * not schema-validated.
+ * rendered. A present but unrecognized `type` is rejected rather than defaulted,
+ * since `/view` would otherwise serve an unrelated file of the same name.
+ * Accepts `unknown` because the live `executed` websocket payload is not
+ * schema-validated.
  */
 export function isViewableResultItem<T>(
   item: T
 ): item is T & ViewableResultItem {
-  if (typeof item !== 'object' || item === null) return false
-  const { filename } = item as { filename?: unknown }
-  return typeof filename === 'string' && filename !== ''
+  if (typeof item !== 'object' || item === null || !('filename' in item))
+    return false
+  const { filename } = item
+  if (typeof filename !== 'string' || filename === '') return false
+
+  const subfolder = 'subfolder' in item ? item.subfolder : undefined
+  if (subfolder != null && typeof subfolder !== 'string') return false
+
+  const type = 'type' in item ? item.type : undefined
+  return type == null || resultItemType.safeParse(type).success
 }
 
 /**
@@ -45,16 +53,14 @@ export function findViewableResultItem<T>(
   return Array.isArray(items) ? items.find(isViewableResultItem) : undefined
 }
 
-/** Normalizes an entry to the fields a `/view` request needs. */
 export function toViewRequest(item: ViewableResultItem): {
   filename: string
   subfolder: string
   type: ResultItemType
 } {
-  const parsedType = resultItemType.safeParse(item.type)
   return {
     filename: item.filename,
-    subfolder: typeof item.subfolder === 'string' ? item.subfolder : '',
-    type: parsedType.success ? parsedType.data : 'output'
+    subfolder: item.subfolder ?? '',
+    type: item.type ?? 'output'
   }
 }

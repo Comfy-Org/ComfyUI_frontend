@@ -1,7 +1,7 @@
 import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
@@ -27,17 +27,18 @@ export function getExecutionContext(): ExecutionContext {
   const activeWorkflow = workflowStore.activeWorkflow
 
   const nodeCounts = reduceAllNodes<NodeMetrics>(
-    app.rootGraph,
+    useApp().rootGraph,
     (metrics, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =
-        nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef?.api_node === true
-      const isSubgraph = node.isSubgraphNode?.() === true
+        nodeDef?.nodeSource.type === NodeSourceType.CustomNodes
+      const isApiNode = nodeDef?.api_node
+      const isSubgraph =
+        typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true
-        const canonicalName = nodeDef?.name
+        const canonicalName = nodeDef.name
         if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
           metrics.api_node_names.push(canonicalName)
         }

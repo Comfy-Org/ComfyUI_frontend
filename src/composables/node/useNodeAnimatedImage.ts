@@ -1,8 +1,9 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
+
+export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
 /**
  * Composable for handling animated image previews in nodes
@@ -32,7 +33,7 @@ export function useNodeAnimatedImage() {
       element.appendChild(node.imgs[0])
       const widget = node.addDOMWidget(ANIM_PREVIEW_WIDGET, 'img', element, {
         hideOnZoom: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       })
       node.overIndex = 0
 

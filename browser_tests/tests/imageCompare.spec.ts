@@ -8,39 +8,62 @@ import { toNodeId } from '@/types/nodeId'
 
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)
 
+function testImage(label: string, color: string): string {
+  return `${label}.${color.replace('#', '')}.png`
+}
+
+function testImageSvg(filename: string): string {
+  const [label, color] = filename.split('.')
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+    `<rect width="200" height="200" fill="#${color}"/>` +
+    `<text x="50%" y="50%" fill="white" font-size="24" ` +
+    `text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`
+  )
+}
+
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
+  test.beforeEach(async ({ page, comfyPage }) => {
+    await page.route(
+      (url) => url.pathname.endsWith('/view'),
+      async (route, request) => {
+        const filename =
+          new URL(request.url()).searchParams.get('filename') ?? ''
+        if (filename.startsWith('broken')) {
+          await route.abort()
+          return
+        }
+        await route.fulfill({
+          contentType: 'image/svg+xml',
+          body: testImageSvg(filename)
+        })
+      }
+    )
     await comfyPage.workflow.loadWorkflow('widgets/image_compare_widget')
   })
 
-  function createTestImageDataUrl(label: string, color: string): string {
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
-      `<rect width="200" height="200" fill="${color}"/>` +
-      `<text x="50%" y="50%" fill="white" font-size="24" ` +
-      `text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
-  }
-
-  async function setImageCompareValue(
+  async function setSavedImages(
     comfyPage: ComfyPage,
-    value: {
-      beforeImages: string[]
-      afterImages: string[]
-      beforeAlt?: string
-      afterAlt?: string
-    }
+    images: { beforeImages: string[]; afterImages: string[] }
   ) {
     await comfyPage.page.evaluate(
-      ({ nodeId, value }) => {
-        const node = window.app!.graph.getNodeById(nodeId)
-        const widget = node?.widgets?.find((w) => w.type === 'imagecompare')
-        if (widget) {
-          widget.value = value
-          widget.callback?.(value)
+      ({ nodeId, beforeImages, afterImages }) => {
+        const toResultItems = (filenames: string[]) =>
+          filenames.map((filename) => ({
+            filename,
+            subfolder: '',
+            type: 'temp' as const
+          }))
+        window.app!.nodeOutputs[String(nodeId)] = {
+          a_images: toResultItems(beforeImages),
+          b_images: toResultItems(afterImages)
         }
       },
-      { nodeId: IMAGE_COMPARE_NODE_ID, value }
+      {
+        nodeId: IMAGE_COMPARE_NODE_ID,
+        beforeImages: images.beforeImages,
+        afterImages: images.afterImages
+      }
     )
     await comfyPage.nextFrame()
   }
@@ -91,8 +114,12 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     })
   }
 
+  function srcOf(filename: string) {
+    return new RegExp(`filename=${filename.replace(/\./g, '\\.')}`)
+  }
+
   test(
-    'Shows empty state when no images are set',
+    'Shows empty state when the node is unconnected and has not run',
     { tag: '@smoke' },
     async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -105,36 +132,76 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   )
 
   test(
-    'Widget displays images and handle after value is set',
+    'Widget displays images and handle after a run saves them',
     { tag: '@smoke' },
     async ({ comfyPage }) => {
-      const beforeUrl = createTestImageDataUrl('Before', '#c00')
-      const afterUrl = createTestImageDataUrl('After', '#00c')
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [beforeUrl],
-        afterImages: [afterUrl]
+      await setSavedImages(comfyPage, {
+        beforeImages: [testImage('Before', '#c00')],
+        afterImages: [testImage('After', '#00c')]
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
-      const beforeImg = node.locator('img[alt="Before image"]')
-      const afterImg = node.locator('img[alt="After image"]')
-      await expect(beforeImg).toBeVisible()
-      await expect(afterImg).toBeVisible()
+      await expect(node.locator('img[alt="Before image"]')).toBeVisible()
+      await expect(node.locator('img[alt="After image"]')).toBeVisible()
       await expect(node.getByRole('presentation')).toBeVisible()
 
       await waitForImagesLoaded(node)
     }
   )
 
+  test.describe('Workflow tab switching', () => {
+    test.use({
+      initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+    })
+
+    test('Comparison survives a workflow tab switch', async ({ comfyPage }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'Compare images lived on the non-serialized widget value, so switching tabs emptied the widget'
+      })
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await comfyPage.menu.topbar.saveWorkflow('image-compare-tab-switch')
+
+      await setSavedImages(comfyPage, {
+        beforeImages: [testImage('Before', '#c00')],
+        afterImages: [testImage('After', '#00c')]
+      })
+      await comfyPage.page.evaluate(() => {
+        window.app!.extensionManager.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      })
+
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(node.locator('img')).toHaveCount(2)
+
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      await expect(tab.getOpenedItem('image-compare-tab-switch')).toBeVisible()
+      await tab.switchToWorkflow('image-compare-tab-switch')
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      const restored = comfyPage.vueNodes.getNodeLocator('1')
+      await expect(restored.locator('img[alt="Before image"]')).toHaveAttribute(
+        'src',
+        srcOf(testImage('Before', '#c00'))
+      )
+      await expect(restored.locator('img[alt="After image"]')).toHaveAttribute(
+        'src',
+        srcOf(testImage('After', '#00c'))
+      )
+    })
+  })
+
   test(
     'Slider defaults to 50% with both images set',
     { tag: ['@smoke', '@screenshot'] },
     async ({ comfyPage }) => {
-      const beforeUrl = createTestImageDataUrl('Before', '#c00')
-      const afterUrl = createTestImageDataUrl('After', '#00c')
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [beforeUrl],
-        afterImages: [afterUrl]
+      await setSavedImages(comfyPage, {
+        beforeImages: [testImage('Before', '#c00')],
+        afterImages: [testImage('After', '#00c')]
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -164,11 +231,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     'Mouse hover moves slider position',
     { tag: '@smoke' },
     async ({ comfyPage }) => {
-      const beforeUrl = createTestImageDataUrl('Before', '#c00')
-      const afterUrl = createTestImageDataUrl('After', '#00c')
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [beforeUrl],
-        afterImages: [afterUrl]
+      await setSavedImages(comfyPage, {
+        beforeImages: [testImage('Before', '#c00')],
+        afterImages: [testImage('After', '#00c')]
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -206,11 +271,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('Slider preserves last position when mouse leaves widget', async ({
     comfyPage
   }) => {
-    const beforeUrl = createTestImageDataUrl('Before', '#c00')
-    const afterUrl = createTestImageDataUrl('After', '#00c')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [beforeUrl],
-      afterImages: [afterUrl]
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Before', '#c00')],
+      afterImages: [testImage('After', '#00c')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -244,11 +307,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('Slider position clamps to 0-100% range at container edges', async ({
     comfyPage
   }) => {
-    const beforeUrl = createTestImageDataUrl('Before', '#c00')
-    const afterUrl = createTestImageDataUrl('After', '#00c')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [beforeUrl],
-      afterImages: [afterUrl]
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Before', '#c00')],
+      afterImages: [testImage('After', '#00c')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -284,12 +345,11 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       .toBeCloseTo(100, 0)
   })
 
-  test('Only before image shows without slider when afterImages is empty', async ({
+  test('Only before image shows without slider when the after side is empty', async ({
     comfyPage
   }) => {
-    const url = createTestImageDataUrl('Before', '#c00')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [url],
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Before', '#c00')],
       afterImages: []
     })
 
@@ -298,13 +358,12 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     await expect(node.getByRole('presentation')).toBeHidden()
   })
 
-  test('Only after image shows without slider when beforeImages is empty', async ({
+  test('Only after image shows without slider when the before side is empty', async ({
     comfyPage
   }) => {
-    const url = createTestImageDataUrl('After', '#00c')
-    await setImageCompareValue(comfyPage, {
+    await setSavedImages(comfyPage, {
       beforeImages: [],
-      afterImages: [url]
+      afterImages: [testImage('After', '#00c')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -316,13 +375,13 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     'Batch navigation appears when before side has multiple images',
     { tag: '@smoke' },
     async ({ comfyPage }) => {
-      const url1 = createTestImageDataUrl('A1', '#c00')
-      const url2 = createTestImageDataUrl('A2', '#0c0')
-      const url3 = createTestImageDataUrl('A3', '#00c')
-      const afterUrl = createTestImageDataUrl('B1', '#888')
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [url1, url2, url3],
-        afterImages: [afterUrl]
+      await setSavedImages(comfyPage, {
+        beforeImages: [
+          testImage('A1', '#c00'),
+          testImage('A2', '#0c0'),
+          testImage('A3', '#00c')
+        ],
+        afterImages: [testImage('B1', '#888')]
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -334,7 +393,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       await expect(
         beforeBatch.getByTestId(TestIds.imageCompare.batchCounter)
       ).toHaveText('1 / 3')
-      // after-batch renders only when afterBatchCount > 1
+      // after-batch renders only when the after side has more than one image
       await expect(
         node.getByTestId(TestIds.imageCompare.afterBatch)
       ).toBeHidden()
@@ -347,10 +406,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('Batch navigation is hidden when both sides have single images', async ({
     comfyPage
   }) => {
-    const url = createTestImageDataUrl('Image', '#c00')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [url],
-      afterImages: [url]
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Image', '#c00')],
+      afterImages: [testImage('Image', '#c00')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -361,12 +419,13 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     'Navigate forward through before images',
     { tag: '@smoke' },
     async ({ comfyPage }) => {
-      const url1 = createTestImageDataUrl('A1', '#c00')
-      const url2 = createTestImageDataUrl('A2', '#0c0')
-      const url3 = createTestImageDataUrl('A3', '#00c')
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [url1, url2, url3],
-        afterImages: [createTestImageDataUrl('B1', '#888')]
+      await setSavedImages(comfyPage, {
+        beforeImages: [
+          testImage('A1', '#c00'),
+          testImage('A2', '#0c0'),
+          testImage('A3', '#00c')
+        ],
+        afterImages: [testImage('B1', '#888')]
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -379,7 +438,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       await expect(counter).toHaveText('2 / 3')
       await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
         'src',
-        url2
+        srcOf(testImage('A2', '#0c0'))
       )
       await expect(prevBtn).toBeEnabled()
 
@@ -390,12 +449,13 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   )
 
   test('Navigate backward through before images', async ({ comfyPage }) => {
-    const url1 = createTestImageDataUrl('A1', '#c00')
-    const url2 = createTestImageDataUrl('A2', '#0c0')
-    const url3 = createTestImageDataUrl('A3', '#00c')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [url1, url2, url3],
-      afterImages: [createTestImageDataUrl('B1', '#888')]
+    await setSavedImages(comfyPage, {
+      beforeImages: [
+        testImage('A1', '#c00'),
+        testImage('A2', '#0c0'),
+        testImage('A3', '#00c')
+      ],
+      afterImages: [testImage('B1', '#888')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -417,14 +477,13 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('Before and after batch navigation are independent', async ({
     comfyPage
   }) => {
-    const url1 = createTestImageDataUrl('A1', '#c00')
-    const url2 = createTestImageDataUrl('A2', '#0c0')
-    const url3 = createTestImageDataUrl('A3', '#00c')
-    const urlA = createTestImageDataUrl('B1', '#880')
-    const urlB = createTestImageDataUrl('B2', '#008')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [url1, url2, url3],
-      afterImages: [urlA, urlB]
+    await setSavedImages(comfyPage, {
+      beforeImages: [
+        testImage('A1', '#c00'),
+        testImage('A2', '#0c0'),
+        testImage('A3', '#00c')
+      ],
+      afterImages: [testImage('B1', '#880'), testImage('B2', '#008')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -442,11 +501,11 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     ).toHaveText('2 / 2')
     await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
       'src',
-      url2
+      srcOf(testImage('A2', '#0c0'))
     )
     await expect(node.locator('img[alt="After image"]')).toHaveAttribute(
       'src',
-      urlB
+      srcOf(testImage('B2', '#008'))
     )
   })
 
@@ -481,11 +540,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       `Screenshot at ${pct}% slider position`,
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
-        const beforeUrl = createTestImageDataUrl('Before', '#c00')
-        const afterUrl = createTestImageDataUrl('After', '#00c')
-        await setImageCompareValue(comfyPage, {
-          beforeImages: [beforeUrl],
-          afterImages: [afterUrl]
+        await setSavedImages(comfyPage, {
+          beforeImages: [testImage('Before', '#c00')],
+          afterImages: [testImage('After', '#00c')]
         })
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -509,9 +566,6 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('Widget handles image load failure gracefully', async ({
     comfyPage
   }) => {
-    const brokenBefore = 'http://127.0.0.1:1/broken.png'
-    const brokenAfter = 'http://127.0.0.1:1/broken2.png'
-
     const pageErrors: Error[] = []
     const onPageError = (err: Error) => {
       pageErrors.push(err)
@@ -519,9 +573,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     comfyPage.page.on('pageerror', onPageError)
 
     try {
-      await setImageCompareValue(comfyPage, {
-        beforeImages: [brokenBefore],
-        afterImages: [brokenAfter]
+      await setSavedImages(comfyPage, {
+        beforeImages: ['broken-before.png'],
+        afterImages: ['broken-after.png']
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -558,17 +612,12 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     }
   })
 
-  test('Rapid value updates show latest images and reset batch index', async ({
+  test('A newer run with fewer images returns to the first image', async ({
     comfyPage
   }) => {
-    const redUrl = createTestImageDataUrl('Red', '#c00')
-    const green1Url = createTestImageDataUrl('G1', '#0c0')
-    const green2Url = createTestImageDataUrl('G2', '#090')
-    const blueUrl = createTestImageDataUrl('Blue', '#00c')
-
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [redUrl, green1Url],
-      afterImages: [blueUrl]
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Red', '#c00'), testImage('G1', '#0c0')],
+      afterImages: [testImage('Blue', '#00c')]
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -582,68 +631,25 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
         .getByTestId(TestIds.imageCompare.batchCounter)
     ).toHaveText('2 / 2')
 
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [green1Url, green2Url],
-      afterImages: [blueUrl]
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('G2', '#090')],
+      afterImages: [testImage('Blue', '#00c')]
     })
 
     await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
       'src',
-      green1Url
+      srcOf(testImage('G2', '#090'))
     )
-    await expect(
-      node
-        .getByTestId(TestIds.imageCompare.beforeBatch)
-        .getByTestId(TestIds.imageCompare.batchCounter)
-    ).toHaveText('1 / 2')
-  })
-
-  test('Legacy string value shows single image without slider', async ({
-    comfyPage
-  }) => {
-    const url = createTestImageDataUrl('Legacy', '#c00')
-    await comfyPage.page.evaluate(
-      ({ nodeId, url }) => {
-        const node = window.app!.graph.getNodeById(nodeId)
-        const widget = node?.widgets?.find((w) => w.type === 'imagecompare')
-        if (widget) {
-          widget.value = url
-          widget.callback?.(url)
-        }
-      },
-      { nodeId: IMAGE_COMPARE_NODE_ID, url }
-    )
-    await comfyPage.nextFrame()
-
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node.locator('img')).toHaveCount(1)
-    await expect(node.getByRole('presentation')).toBeHidden()
-  })
-
-  test('Custom beforeAlt and afterAlt are used as img alt text', async ({
-    comfyPage
-  }) => {
-    const beforeUrl = createTestImageDataUrl('Before', '#c00')
-    const afterUrl = createTestImageDataUrl('After', '#00c')
-    await setImageCompareValue(comfyPage, {
-      beforeImages: [beforeUrl],
-      afterImages: [afterUrl],
-      beforeAlt: 'Custom before',
-      afterAlt: 'Custom after'
-    })
-
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    await expect(node.locator('img[alt="Custom before"]')).toBeVisible()
-    await expect(node.locator('img[alt="Custom after"]')).toBeVisible()
+    await expect(node.getByTestId(TestIds.imageCompare.batchNav)).toBeHidden()
   })
 
   test('Large batch sizes show correct counter and end navigation state', async ({
     comfyPage
   }) => {
     const images = Array.from({ length: 20 }, (_, i) =>
-      createTestImageDataUrl(String(i + 1), '#c00')
+      testImage(String(i + 1), '#c00')
     )
-    await setImageCompareValue(comfyPage, {
+    await setSavedImages(comfyPage, {
       beforeImages: images,
       afterImages: images
     })

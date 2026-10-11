@@ -81,7 +81,7 @@ jobs:
           echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Upload Storybook build
-        if: success() && github.event.pull_request.head.repo.fork == false
+        if: success()
         uses: actions/upload-artifact@v6
         with:
           name: storybook-static

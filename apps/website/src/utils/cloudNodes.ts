@@ -10,10 +10,10 @@ import type {
   RegistryComfyNode,
   RegistryPackWithNodes
 } from './cloudNodes.registry'
-import type { NodesSnapshot, Pack, PackNode } from '../data/cloudNodes'
+import type { NodesSnapshot, Pack, PackNode } from '@/data/cloudNodes'
 
-import bundledSnapshot from '../data/cloud-nodes.snapshot.json' with { type: 'json' }
-import { isNodesSnapshot } from '../data/cloudNodes'
+import bundledSnapshot from '@/data/cloud-nodes.snapshot.json' with { type: 'json' }
+import { isNodesSnapshot } from '@/data/cloudNodes'
 import { fetchRegistryPacksWithNodes } from './cloudNodes.registry'
 import { CloudNodesEnvelopeSchema } from './cloudNodes.schema'
 

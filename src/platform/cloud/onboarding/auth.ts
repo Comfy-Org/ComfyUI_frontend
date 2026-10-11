@@ -1,8 +1,15 @@
 import { addBreadcrumb } from '@sentry/vue'
-import { isEmpty } from 'es-toolkit/compat'
+import { watch } from 'vue'
 
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+
+import {
+  consumeSurveyReplayRequest,
+  isSurveyReplayRequested
+} from '@/platform/onboarding/onboardingReplay'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
@@ -20,6 +27,7 @@ function captureApiError(
   extraContext?: Record<string, unknown>
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType,
     tags: {
       api_endpoint: endpoint,
@@ -30,9 +38,6 @@ function captureApiError(
   })
 }
 
-/**
- * Helper function to check if error is already handled HTTP error
- */
 function isHttpError(error: unknown, errorMessagePrefix: string): boolean {
   return error instanceof Error && error.message.startsWith(errorMessagePrefix)
 }
@@ -67,7 +72,6 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 
     return response.json()
   } catch (error) {
-    // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to get user:')) {
       captureApiError(toError(error), '/user', 'network_error')
     }
@@ -75,23 +79,39 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   }
 }
 
-export async function getSurveyCompletedStatus(): Promise<boolean> {
+export async function getSurveyCompletedStatus(
+  ownerId: string | undefined
+): Promise<boolean> {
+  if (isSurveyReplayRequested(ownerId)) return false
+
+  return (await readStoredSurvey()) !== 'absent'
+}
+
+type StoredSurvey = 'present' | 'absent' | 'unknown'
+
+function classifyStoredSurvey(data: unknown): StoredSurvey {
+  if (typeof data !== 'object' || data === null || !('value' in data)) {
+    return 'unknown'
+  }
+  const value = data.value
+  if (value === null) return 'absent'
+  if (typeof value !== 'object' || Array.isArray(value)) return 'unknown'
+  return Object.keys(value).length === 0 ? 'absent' : 'present'
+}
+
+async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'GET',
+      signal,
       headers: {
         'Content-Type': 'application/json'
       }
     })
-    // 404 = the survey key was never stored = genuinely not completed. Only
-    // reachable after a successful authenticated read (a stale token returns
-    // 401, never 404), so it can't be a transient-auth false signal.
     if (response.status === 404) {
-      return false
+      return 'absent'
     }
     if (!response.ok) {
-      // Other non-ok (401/403/5xx): treat as completed so a transient failure
-      // never bounces a working user to /cloud/survey.
       addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
@@ -101,13 +121,14 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
         }
       })
-      return true
+      return 'unknown'
     }
-    const data = await response.json()
-    return !isEmpty(data.value)
+    const data: unknown = await response.json()
+    return classifyStoredSurvey(data)
   } catch (error) {
-    // Network/parse failure: same fail-safe policy as a non-ok response.
+    if (signal?.aborted && error === signal.reason) return 'unknown'
     reportError(error, {
+      surface: 'platform',
       errorType: 'network_error',
       tags: { api_endpoint: '/settings/{key}' },
       context: {
@@ -116,14 +137,54 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       level: 'warning'
     })
-    return true
+    return 'unknown'
   }
 }
 
+export type SurveySubmissionResult =
+  | { status: 'stored' }
+  | { status: 'preserved' }
+  | { status: 'failed'; cause: unknown }
+  | { status: 'cancelled' }
+
 export async function submitSurvey(
-  survey: Record<string, unknown>
-): Promise<void> {
+  survey: Record<string, unknown>,
+  ownerId: string
+): Promise<SurveySubmissionResult> {
+  const identityChanged = new AbortController()
+  const auth = useAuthStore()
+  const abortUnlessOwner = (firebaseUid: string | undefined) => {
+    if ((firebaseUid ?? auth.sessionOnlyUser?.id) !== ownerId) {
+      identityChanged.abort()
+    }
+  }
+  const stopWatchingFirebase = firebaseIdentity.onUserChanged((user) =>
+    abortUnlessOwner(user?.uid)
+  )
+  const stopWatchingSession = watch(
+    () => auth.sessionOnlyUser?.id,
+    () => abortUnlessOwner(auth.currentUser?.uid),
+    { flush: 'sync' }
+  )
+
   try {
+    const replaying = isSurveyReplayRequested(ownerId)
+    if (replaying) {
+      const stored = await readStoredSurvey(identityChanged.signal)
+      if (identityChanged.signal.aborted) return { status: 'cancelled' }
+      if (stored === 'unknown') {
+        return {
+          status: 'failed',
+          cause:
+            'Could not read the stored survey answers, so the replayed submission was not written'
+        }
+      }
+      if (stored === 'present') {
+        consumeSurveyReplayRequest(ownerId)
+        return { status: 'preserved' }
+      }
+    }
+
     addBreadcrumb({
       category: 'auth',
       message: 'Submitting survey',
@@ -135,12 +196,14 @@ export async function submitSurvey(
 
     const response = await api.fetchApi('/settings', {
       method: 'POST',
+      signal: identityChanged.signal,
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: survey })
     })
 
+    if (identityChanged.signal.aborted) return { status: 'cancelled' }
     if (!response.ok) {
       const error = new Error(`Failed to submit survey: ${response.statusText}`)
       captureApiError(
@@ -156,26 +219,34 @@ export async function submitSurvey(
           }
         }
       )
-      throw error
+      return { status: 'failed', cause: error }
     }
 
-    // Log successful survey submission
+    if (replaying) consumeSurveyReplayRequest(ownerId)
+
     addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',
       level: 'info'
     })
+
+    return { status: 'stored' }
   } catch (error) {
-    // Only capture network errors (not HTTP errors we already captured)
-    if (!isHttpError(error, 'Failed to submit survey:')) {
-      captureApiError(
-        toError(error),
-        '/settings',
-        'network_error',
-        undefined,
-        'submit_survey'
-      )
-    }
-    throw error
+    if (
+      identityChanged.signal.aborted &&
+      error === identityChanged.signal.reason
+    )
+      return { status: 'cancelled' }
+    captureApiError(
+      toError(error),
+      '/settings',
+      'network_error',
+      undefined,
+      'submit_survey'
+    )
+    return { status: 'failed', cause: error }
+  } finally {
+    stopWatchingFirebase()
+    stopWatchingSession()
   }
 }

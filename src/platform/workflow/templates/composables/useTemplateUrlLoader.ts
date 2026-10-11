@@ -1,11 +1,11 @@
-import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
@@ -109,21 +109,12 @@ export function useTemplateUrlLoader() {
     try {
       await templateWorkflows.loadTemplates()
 
-      const success = await templateWorkflows.loadWorkflowTemplate(
+      const result = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
         sourceParam
       )
 
-      if (!success) {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('templateWorkflows.error.templateNotFound', {
-            templateName: templateParam
-          })
-        })
-        return
-      }
+      if (result !== 'loaded') return
 
       if (modeParam === 'linear') {
         // Set linear mode after successful template load
@@ -136,10 +127,8 @@ export function useTemplateUrlLoader() {
         '[useTemplateUrlLoader] Failed to load template from URL:',
         error
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate')
+      toast.error(t('g.error'), {
+        description: t('templateWorkflows.error.loading')
       })
     } finally {
       cleanupUrlParams()

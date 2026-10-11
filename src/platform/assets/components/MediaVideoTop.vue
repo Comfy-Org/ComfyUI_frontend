@@ -5,7 +5,10 @@
     @mouseleave="isHovered = false"
   >
     <video
+      v-if="status !== 'failed'"
       ref="videoElement"
+      data-testid="media-asset-video"
+      :src="src"
       :controls="shouldShowControls"
       preload="metadata"
       muted
@@ -15,20 +18,24 @@
       @click="onVideoClick"
       @play="onVideoPlay"
       @pause="onVideoPause"
+      @error="handleVideoError"
+    ></video>
+    <div
+      v-else
+      role="img"
+      :aria-label="$t('g.videoFailedToLoad')"
+      class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
     >
-      <source
-        v-if="asset.src"
-        :src="asset.src"
-        :type="asset.mime_type ?? undefined"
-      />
-    </video>
-    <VideoPlayOverlay :visible="!isPlaying" size="md" />
+      <i class="icon-[lucide--video-off] size-8 text-muted-foreground" />
+    </div>
+    <VideoPlayOverlay :visible="!isPlaying && status !== 'failed'" size="md" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
+import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
@@ -38,36 +45,30 @@ const { asset, showNativeControls = true } = defineProps<{
   showNativeControls?: boolean
 }>()
 
-const emit = defineEmits<{
-  videoPlayingStateChanged: [isPlaying: boolean]
-  videoControlsChanged: [showControls: boolean]
-}>()
-
 const videoElement = ref<HTMLVideoElement | null>(null)
 const isHovered = ref(false)
 const isPlaying = ref(false)
+
+const { src, status, onError } = useRetryableMediaSrc(
+  () => asset.src || undefined
+)
 
 // Show native controls only while actively playing and hovered.
 const shouldShowControls = computed(
   () => showNativeControls && isPlaying.value && isHovered.value
 )
 
-watch(shouldShowControls, (controlsVisible) => {
-  emit('videoControlsChanged', controlsVisible)
-})
-
-onMounted(() => {
-  emit('videoControlsChanged', shouldShowControls.value)
-})
-
 const onVideoPlay = () => {
   isPlaying.value = true
-  emit('videoPlayingStateChanged', true)
 }
 
 const onVideoPause = () => {
   isPlaying.value = false
-  emit('videoPlayingStateChanged', false)
+}
+
+const handleVideoError = () => {
+  isPlaying.value = false
+  onError()
 }
 
 async function onVideoClick(event: MouseEvent) {

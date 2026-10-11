@@ -22,20 +22,20 @@ export const toggleGroupVariants = cva({
 
 export const toggleGroupItemVariants = cva({
   base: [
-    'inline-flex items-center justify-center rounded',
-    'border-none cursor-pointer appearance-none',
+    'inline-flex items-center justify-center rounded-sm',
+    'cursor-pointer appearance-none border-none',
     'text-center font-normal',
     'transition-all duration-150 ease-in-out',
-    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-    'disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed',
-    'data-[state=on]:bg-interface-menu-component-surface-selected data-[state=on]:text-text-primary'
+    'focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none',
+    'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+    'data-[state=on]:bg-secondary-background data-[state=on]:text-base-foreground'
   ],
   variants: {
     variant: {
       default:
-        'bg-transparent text-text-secondary hover:bg-interface-menu-component-surface-selected/50',
+        'bg-transparent text-muted-foreground hover:bg-secondary-background/50',
       outline:
-        'border border-border-default bg-transparent text-text-secondary hover:bg-secondary-background'
+        'border border-border-default bg-transparent text-muted-foreground hover:bg-secondary-background'
     },
     size: {
       default: 'h-7 px-3 text-sm',

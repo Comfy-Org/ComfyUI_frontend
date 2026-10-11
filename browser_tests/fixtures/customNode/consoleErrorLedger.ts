@@ -11,6 +11,18 @@ interface ConnectivityRule extends AllowlistRule {
   requiredConnectivityId?: string
 }
 
+// Matches a `/view` request by its query params in any order. Values are
+// regex sources matched against the URL-encoded param value.
+function viewRequestPattern(
+  prefix: RegExp,
+  params: Record<string, string>
+): RegExp {
+  const paramLookaheads = Object.entries(params)
+    .map(([key, value]) => `(?=(?:[^\\s\\]]*&)?${key}=${value}(?:[&\\]\\s]|$))`)
+    .join('')
+  return new RegExp(`${prefix.source}${paramLookaheads}`)
+}
+
 // Pack-attributed console noise with no visible error surface. Shared by
 // the all-nodes tiers and the curated run tier so one ledger covers every
 // surface a pack's script can emit on. Filter-guarded: a pattern suppresses
@@ -87,8 +99,11 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       // on a backend with an empty input dir the value is undefined and the
       // preview 404s (and retries with a fresh rand). Console-only noise,
       // no visible error; upstream-report candidate.
-      pattern:
-        /Failed to load resource.*\/api\/view\?filename=undefined&subfolder=&type=input/,
+      pattern: viewRequestPattern(/Failed to load resource.*\/api\/view\?/, {
+        filename: 'undefined',
+        subfolder: '',
+        type: 'input'
+      }),
       reason: 'loader preview fetches undefined filename on empty input dir',
       restore:
         'skip the preview request when no loader filename exists and remove this entry'
@@ -130,8 +145,12 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
   'ComfyUI-UltraShape1': [
     {
       id: 'ultrashape-mesh-placeholder-preview',
-      pattern:
-        /Failed to load resource.*404.*api\/view\?filename=%28upload\+a\+mesh\+file%29&subfolder=&type=input&rand=/,
+      pattern: viewRequestPattern(/Failed to load resource.*404.*api\/view\?/, {
+        filename: '%28upload\\+a\\+mesh\\+file%29',
+        subfolder: '',
+        type: 'input',
+        rand: '[^&\\]\\s]*'
+      }),
       global: true,
       reason:
         'mesh preview requests the literal upload-placeholder value on a backend with no mesh input',
@@ -153,8 +172,10 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     },
     {
       id: 'whatdreams-set-value-probe-preview',
-      pattern:
-        /Failed to load resource.*404.*api\/view\?filename=_cn&type=input/,
+      pattern: viewRequestPattern(/Failed to load resource.*404.*api\/view\?/, {
+        filename: '_cn',
+        type: 'input'
+      }),
       reason: 'set-and-stick probe value previewed by the media loader',
       restore:
         'make the audio loader tolerate an unavailable configured value and remove this entry'

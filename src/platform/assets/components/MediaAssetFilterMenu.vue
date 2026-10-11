@@ -165,6 +165,11 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
+import { cn } from '@comfyorg/tailwind-utils'
+import {
   dateFilterOptions,
   mediaTypeFilterOptions
 } from '@/platform/assets/mediaAssetFilterOptions'
@@ -196,12 +201,9 @@ const hasSearchResults = computed(
   () => matchingMediaTypes.value.length > 0 || matchingDates.value.length > 0
 )
 
-const menuItemClass =
-  'flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm outline-none data-highlighted:bg-secondary-background-hover'
 const groupLabelClass =
   'px-2 pt-1 pb-1.5 text-xs font-semibold text-muted-foreground uppercase'
-const submenuClass =
-  'z-1700 min-w-40 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm'
+const submenuClass = cn(menuContentClass, 'min-w-40')
 
 onMounted(() => {
   void nextTick(() => searchInput.value?.focus())

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 
-import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
+import type { GalleryItem } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {
@@ -27,7 +27,7 @@ defineEmits<{ click: [] }>()
 <template>
   <div class="group block cursor-pointer" @click="$emit('click')">
     <div
-      class="rounded-4.5xl relative overflow-hidden"
+      class="relative overflow-hidden rounded-4.5xl"
       :style="{ aspectRatio: aspect }"
     >
       <video
@@ -62,7 +62,7 @@ defineEmits<{ click: [] }>()
             </p>
           </div>
           <span
-            class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full"
+            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-comfy-yellow"
           >
             <svg
               width="14"

@@ -38,7 +38,6 @@ describe('useVideoEditWidget', () => {
     expect(options).toMatchObject({
       features: ['trim', 'crop'],
       serialize: true,
-      canvasOnly: false,
       hideInPanel: true
     })
   })

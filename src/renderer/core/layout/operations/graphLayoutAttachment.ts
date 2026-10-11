@@ -25,10 +25,9 @@ interface LayoutAttachment<TId> {
   id: TId
 }
 
-const nodeAttachments = new WeakMap<
-  LGraphNode,
-  LayoutAttachment<LGraphNode['id']>
->()
+type NodeLayoutAttachment = LayoutAttachment<LGraphNode['id']>
+
+const nodeAttachments = new WeakMap<LGraphNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
   UUID,
   Map<LGraphNode['id'], WeakRef<LGraphNode>>
@@ -224,6 +223,13 @@ function commitNodeSize(node: LGraphNode): void {
   )
     return
 
+  // A direct resize is authoritative over the previous DOM measurement. Drop
+  // that measurement before deriving the rendered size so the node can shrink;
+  // ResizeObserver reports the content's new size after layout settles.
+  ;(layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
+    attachment.graphId,
+    attachment.id
+  )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -295,7 +301,7 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
 function transferableNodeAttachment(
   node: LGraphNode,
   replacement: LGraphNode
-): LayoutAttachment<LGraphNode['id']> | undefined {
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (
     !attachment ||
@@ -343,7 +349,9 @@ export function transferLayoutAttachment(
   return true
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+function takeNodeLayoutAttachment(
+  node: LGraphNode
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
@@ -352,11 +360,18 @@ export function detachNodeLayout(node: LGraphNode): void {
   layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
   projection.layoutRef = undefined
   nodeAttachments.delete(node)
-  if (!deleteNodeAttachmentOwner(graphId, node)) return
+  return deleteNodeAttachmentOwner(graphId, node)
+    ? { graphId, id: nodeId }
+    : undefined
+}
+
+export function detachNodeLayout(node: LGraphNode): void {
+  const attachment = takeNodeLayoutAttachment(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    graphId,
-    nodeId,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
     type: 'deleteNode'
   })
 }

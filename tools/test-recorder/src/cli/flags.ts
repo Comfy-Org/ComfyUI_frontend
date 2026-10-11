@@ -29,7 +29,7 @@ export function parseFlags(
       continue
     }
 
-    const next = args[i + 1]
+    const next = args.at(i + 1)
     if (takesValue.has(body) && next !== undefined && !next.startsWith('--')) {
       flags[body] = next
       i++

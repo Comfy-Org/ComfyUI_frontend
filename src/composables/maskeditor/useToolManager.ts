@@ -7,7 +7,7 @@ import type {
   ToolInternalSettings
 } from '@/extensions/core/maskeditor/types'
 import { Tools } from '@/extensions/core/maskeditor/types'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useBrushDrawing } from './useBrushDrawing'
 import { useCanvasTools } from './useCanvasTools'
@@ -23,13 +23,19 @@ export function useToolManager(
 
   const coordinateTransform = useCoordinateTransform()
 
+  const useDominantAxis = useApp().extensionManager.setting.get(
+    'Comfy.MaskEditor.UseDominantAxis'
+  )
+  const brushAdjustmentSpeed = useApp().extensionManager.setting.get(
+    'Comfy.MaskEditor.BrushAdjustmentSpeed'
+  )
   const brushDrawing = useBrushDrawing({
-    useDominantAxis: app.extensionManager.setting.get<boolean>(
-      'Comfy.MaskEditor.UseDominantAxis'
-    ),
-    brushAdjustmentSpeed: app.extensionManager.setting.get<number>(
-      'Comfy.MaskEditor.BrushAdjustmentSpeed'
-    )
+    useDominantAxis:
+      typeof useDominantAxis === 'boolean' ? useDominantAxis : undefined,
+    brushAdjustmentSpeed:
+      typeof brushAdjustmentSpeed === 'number'
+        ? brushAdjustmentSpeed
+        : undefined
   })
   const canvasTools = useCanvasTools()
 

@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -20,10 +18,7 @@ const { nodes, mustShowNodeTitle } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const workflowStore = useWorkflowStore()
-
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
   () => nodes
@@ -37,14 +32,14 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
     .map((node) => {
       const { widgets = [] } = node
       const advancedWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel
-            ) && w.options?.advanced
-        )
+        .filter((w) => {
+          const visibility = w.visibility ?? deriveWidgetVisibility(w)
+          return (
+            !visibility.suppression.byExtension &&
+            !visibility.suppression.byConnection &&
+            visibility.surfaces.panel === 'advanced'
+          )
+        })
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
     })
@@ -62,16 +57,6 @@ const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
 const advancedCollapsed = ref(true)
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
-    advancedCollapsed.value = true
-  }
-)
 
 function isSectionCollapsed(nodeId: NodeId): boolean {
   // When not explicitly set, sections are collapsed if multiple nodes are selected

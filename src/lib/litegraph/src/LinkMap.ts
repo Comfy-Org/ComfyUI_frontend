@@ -22,7 +22,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override clear(): void {
-    for (const id of [...this.keys()]) this.remove(id)
+    for (const id of Array.from(this.keys())) this.remove(id)
   }
 
   override delete(id: LinkId): boolean {

@@ -102,7 +102,7 @@ export const LAYER_MODES: Record<BlendFn, LayerModeDef> = {
 }
 
 export function defaultMode(blend: BlendFn = 'normal'): LayerMode {
-  const d = LAYER_MODES[blend] ?? LAYER_MODES.normal
+  const d = LAYER_MODES[blend]
   return {
     blend,
     blendSpace: 'auto',
@@ -116,7 +116,7 @@ export function resolveMode(
   mode: LayerMode,
   opts?: { groupPassThrough?: boolean }
 ): EffectiveMode {
-  const def = LAYER_MODES[mode.blend] ?? LAYER_MODES.normal
+  const def = LAYER_MODES[mode.blend]
   if (mode.legacy) {
     return {
       blend: mode.blend,

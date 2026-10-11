@@ -7,6 +7,20 @@
 export const BANNER_STORAGE_KEY = 'closedBanners'
 export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
 
+export type ClosedBanners = Record<string, boolean>
+
+/** Narrows untrusted `JSON.parse` output from localStorage. */
+export function toClosedBanners(parsed: unknown): ClosedBanners {
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return {}
+  }
+  const closed: ClosedBanners = {}
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value === 'boolean') closed[key] = value
+  }
+  return closed
+}
+
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string
@@ -47,6 +61,14 @@ export function evaluateBannerVisibility(
   if (!targetSections.includes(ctx.currentSection)) return false
 
   return true
+}
+
+/** The first banner that passes the visibility gate, in the order given. */
+export function firstVisibleBanner<T extends EvaluableBanner>(
+  banners: readonly T[],
+  ctx: BannerVisibilityContext
+): T | undefined {
+  return banners.find((banner) => evaluateBannerVisibility(banner, ctx))
 }
 
 interface BannerLinkContent {

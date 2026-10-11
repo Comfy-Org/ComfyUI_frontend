@@ -1,24 +1,27 @@
-// @ts-expect-error Polyfill
-Symbol.dispose ??= Symbol('Symbol.dispose')
-// @ts-expect-error Polyfill
-Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
+const disposeSymbol = Symbol('Symbol.dispose')
+const asyncDisposeSymbol = Symbol('Symbol.asyncDispose')
+if (!('dispose' in Symbol))
+  Object.defineProperty(Symbol, 'dispose', { value: disposeSymbol })
+if (!('asyncDispose' in Symbol))
+  Object.defineProperty(Symbol, 'asyncDispose', {
+    value: asyncDisposeSymbol
+  })
 
 // API *************************************************
 // like rect but rounded corners
 export function loadPolyfills() {
   if (
     typeof window != 'undefined' &&
-    window.CanvasRenderingContext2D &&
-    !window.CanvasRenderingContext2D.prototype.roundRect
+    typeof Reflect.get(window, 'CanvasRenderingContext2D') === 'function' &&
+    !Reflect.has(window.CanvasRenderingContext2D.prototype, 'roundRect')
   ) {
-    // @ts-expect-error Slightly broken polyfill - radius_low not impl. anywhere
     window.CanvasRenderingContext2D.prototype.roundRect = function (
       x: number,
       y: number,
       w: number,
       h: number,
       radius: number | number[],
-      radius_low: number | number[]
+      radius_low?: number | number[]
     ) {
       let top_left_radius: number
       let top_right_radius: number
@@ -80,14 +83,19 @@ export function loadPolyfills() {
     }
   }
 
-  if (typeof window != 'undefined' && !window['requestAnimationFrame']) {
+  if (
+    typeof window != 'undefined' &&
+    !Reflect.has(window, 'requestAnimationFrame')
+  ) {
+    const legacyWindow = window as typeof window & {
+      webkitRequestAnimationFrame?: typeof requestAnimationFrame
+      mozRequestAnimationFrame?: typeof requestAnimationFrame
+    }
     window.requestAnimationFrame =
-      // @ts-expect-error Legacy code
-      window.webkitRequestAnimationFrame ||
-      // @ts-expect-error Legacy code
-      window.mozRequestAnimationFrame ||
+      legacyWindow.webkitRequestAnimationFrame ||
+      legacyWindow.mozRequestAnimationFrame ||
       function (callback) {
-        window.setTimeout(callback, 1000 / 60)
+        return window.setTimeout(callback, 1000 / 60)
       }
   }
 }

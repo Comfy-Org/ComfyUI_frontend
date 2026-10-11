@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -25,21 +25,21 @@ const appMock = vi.hoisted(() => ({
 }))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('../composables/audio/useAudioRecorder', () => ({
+vi.mock(import('../composables/audio/useAudioRecorder'), () => ({
   useAudioRecorder: useAudioRecorderMock
 }))
 
-vi.mock('../composables/audio/useAudioPlayback', () => ({
+vi.mock(import('../composables/audio/useAudioPlayback'), () => ({
   useAudioPlayback: useAudioPlaybackMock
 }))
 
-vi.mock('../composables/audio/useAudioWaveform', () => ({
+vi.mock(import('../composables/audio/useAudioWaveform'), () => ({
   useAudioWaveform: useAudioWaveformMock
 }))
 
-vi.mock('@/scripts/app', () => appMock)
+vi.mock<unknown>(import('@/scripts/app'), () => appMock)
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
@@ -113,7 +113,7 @@ const ButtonStub = defineComponent({
 function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
   return render(WidgetRecordAudio, {
     global: {
-      plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
+      plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
     props: { readonly: false, nodeId: toNodeId('n1'), ...props }
@@ -260,7 +260,7 @@ describe('WidgetRecordAudio', () => {
 
   describe('Recording persistence via onRecordingComplete', () => {
     function createAudioWidget(initialSrc = '') {
-      const element = document.createElement('audio') as HTMLAudioElement
+      const element = document.createElement('audio')
       element.src = initialSrc
       return {
         name: 'audioUI',
@@ -280,11 +280,6 @@ describe('WidgetRecordAudio', () => {
           blob instanceof Blob ? `blob:fake/${blob.size}` : 'blob:fake/media'
       )
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      vi.mocked(URL.createObjectURL).mockRestore()
-      vi.mocked(URL.revokeObjectURL).mockRestore()
     })
 
     it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {

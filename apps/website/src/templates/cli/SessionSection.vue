@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader max-width="xl">
-      {{ t('cli.session.heading', locale) }}
+      {{ t('cli.session.heading') }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.session.subtitle', locale) }}
+          {{ t('cli.session.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -26,7 +27,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       <VideoPlayer
         :locale="locale"
-        :aria-label="t('cli.session.alt', locale)"
+        :aria-label="t('cli.session.alt')"
         src="https://media.comfy.org/website/cli/terminal-session-v2-1280.mp4"
         poster="https://media.comfy.org/website/cli/terminal-session-v2-poster.jpg"
         autoplay
@@ -38,6 +39,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       />
     </div>
 
-    <p class="sr-only">{{ t('cli.session.transcript', locale) }}</p>
+    <p class="sr-only">
+      {{ t('cli.session.transcript') }}
+    </p>
   </section>
 </template>

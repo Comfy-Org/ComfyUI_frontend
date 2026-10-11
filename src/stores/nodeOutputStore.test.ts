@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -13,27 +13,13 @@ import {
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
-const mockResolveNode = vi.fn()
-
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn(),
-  resolveNode: (...args: unknown[]) => mockResolveNode(...args)
+  resolveNode: vi.fn()
 }))
 
-const mockGetNodeById = vi.fn()
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
-    getRandParam: vi.fn(() => ''),
-    rootGraph: {
-      getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
-    },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const createMockNode = (
   overrides: Record<string, unknown> = {}
@@ -50,15 +36,8 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -139,6 +118,31 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
       )
     ).toEqual(['blob:second'])
+  })
+
+  it('projects execution output into canonical state and view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    const output = createMockOutputs([
+      {
+        filename: 'execution-result.png',
+        subfolder: 'daily outputs',
+        type: 'output'
+      }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, output)
+
+    expect(store.nodeOutputs[String(node.id)]).toEqual(output)
+    expect(app.nodeOutputs[String(node.id)]).toEqual(output)
+
+    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    const previewUrl = new URL(url, window.location.origin)
+    expect(previewUrl.pathname).toBe('/api/view')
+    expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('daily outputs')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('owns preview arrays after setting them', () => {
@@ -254,6 +258,66 @@ describe('nodeOutputStore legacy entry synchronization', () => {
 
     expect(store.nodeOutputs.changed).toBeUndefined()
     expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+  })
+})
+
+describe('nodeOutputStore replaceNodeOutputImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('drops the previous output metadata when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setOutputFromLegacy(
+      '7',
+      fromAny({
+        images: [{ filename: 'previous.webp' }],
+        animated: [true],
+        video: [{ filename: 'previous.mp4' }]
+      })
+    )
+
+    const images = [
+      {
+        filename: 'painted.png',
+        subfolder: 'clipspace',
+        type: 'input' as const
+      }
+    ]
+    store.replaceNodeOutputImages(node, images)
+
+    expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.video).toBeUndefined()
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+
+  it('ignores an empty replacement', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png', type: 'input' as const }]
+    const node = createMockNode({ id: 7, images })
+    store.setOutputFromLegacy('7', { images })
+
+    store.replaceNodeOutputImages(node, [])
+
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+    expect(node.images).toEqual(images)
+  })
+
+  it('removes stale previews when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'preview:stale'
+    ])
+
+    store.replaceNodeOutputImages(node, [
+      { filename: 'painted.png', type: 'input' }
+    ])
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(app.nodePreviewImages['7']).toBeUndefined()
   })
 })
 
@@ -425,6 +489,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
+    vi.mocked(app.getPreviewFormatParam).mockReturnValue('&format=test_webp')
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
@@ -435,7 +500,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if isVideoNode returns true', () => {
@@ -444,7 +509,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images is undefined', () => {
@@ -452,7 +517,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs: ExecutedWsMessage['output'] = {}
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images is empty', () => {
@@ -460,7 +525,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images only contains null entries', () => {
@@ -468,7 +533,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs(fromAny([null]))
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images contains SVG images', () => {
@@ -476,7 +541,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.svg' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return format param for standard image outputs', () => {
@@ -484,7 +549,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+    expect(app.getPreviewFormatParam).toHaveBeenCalledTimes(1)
   })
 
   it('should return format param for multiple standard images', () => {
@@ -495,7 +560,7 @@ describe('nodeOutputStore getPreviewParam', () => {
       { filename: 'img2.jpg' }
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+    expect(app.getPreviewFormatParam).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -525,27 +590,6 @@ describe('nodeOutputStore getNodeImageUrlsByExecutionId', () => {
     const urls = store.getNodeImageUrlsByExecutionId(executionId, node)
 
     expect(urls).toEqual([expect.stringContaining('filename=good.png')])
-  })
-
-  it('emits view params in a fixed filename/subfolder/type order', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode()
-    const executionId = createNodeExecutionId([toNodeId(1)])
-    store.setNodeOutputsByExecutionId(
-      executionId,
-      createMockOutputs([
-        { type: 'input', filename: '(upload a mesh file)', subfolder: '' }
-      ])
-    )
-
-    // The order is part of the contract: the custom-node console-error ledger
-    // (browser_tests/fixtures/customNode/consoleErrorLedger.ts) allowlists the
-    // 404s these previews provoke by matching the query string literally.
-    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([
-      expect.stringContaining(
-        '/view?filename=%28upload+a+mesh+file%29&subfolder=&type=input'
-      )
-    ])
   })
 })
 
@@ -833,34 +877,35 @@ describe('nodeOutputStore merge mode interactions', () => {
     expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
   })
 
-  it('should not duplicate when merge is called with empty images array', () => {
-    const store = useNodeOutputStore()
+  it.for([
+    { case: 'an empty images array', images: [] },
+    {
+      case: 'only degenerate images',
+      images: [null, { status: 'unavailable', reason: 'upload_failed' }]
+    }
+  ])(
+    'should not duplicate input preview images when merging $case',
+    ({ images }) => {
+      const store = useNodeOutputStore()
+      const executionId = createNodeExecutionId([toNodeId(3)])
+      store.setNodeOutputsByExecutionId(
+        executionId,
+        createMockOutputs([
+          { filename: 'uploaded.png', subfolder: '', type: 'input' }
+        ])
+      )
 
-    // Set initial input preview
-    const inputOutput = createMockOutputs([
-      { filename: 'uploaded.png', subfolder: '', type: 'input' }
-    ])
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(3)]),
-      inputOutput
-    )
+      store.setNodeOutputsByExecutionId(
+        executionId,
+        createMockOutputs(fromAny(images)),
+        { merge: true }
+      )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
-    const emptyOutput = createMockOutputs([])
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(3)]),
-      emptyOutput,
-      {
-        merge: true
-      }
-    )
-
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
-    expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
-  })
+      expect(store.nodeOutputs['3']?.images).toEqual([
+        { filename: 'uploaded.png', subfolder: '', type: 'input' }
+      ])
+    }
+  )
 })
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
@@ -899,6 +944,29 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('previews an annotated widget value from its own directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5, comfyClass: 'LoadImage' })
+
+    store.setNodeOutputs(node, 'nested/preview.png [temp]', {
+      isAnimated: true
+    })
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png [temp]',
+      subfolder: 'nested',
+      type: 'input'
+    })
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.animated).toEqual([true])
+    expect(previewUrl.searchParams.get('filename')).toBe('preview.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('nested')
+    expect(previewUrl.searchParams.get('type')).toBe('temp')
+  })
+
   it('leaves node images unchanged for preview change detection', () => {
     const store = useNodeOutputStore()
     const images = [{ filename: 'previous.png' }]
@@ -931,7 +999,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
@@ -945,7 +1013,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
@@ -959,7 +1027,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 42 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(42), mockImg, 3)
 
@@ -973,11 +1041,11 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 123 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId('123'), mockImg, 0)
 
-    expect(mockResolveNode).toHaveBeenCalledWith('123')
+    expect(litegraphUtil.resolveNode).toHaveBeenCalledWith('123')
     expect(mockNode.imgs).toEqual([mockImg])
   })
 
@@ -986,7 +1054,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const store = useNodeOutputStore()
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(undefined)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(undefined)
 
     expect(() =>
       store.syncLegacyNodeImgs(toNodeId(999), mockImg, 0)
@@ -999,7 +1067,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg)
 
@@ -1012,10 +1080,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 5 })
     const mockImg = document.createElement('img')
 
-    // Node NOT in root graph (returns null)
-    mockGetNodeById.mockReturnValue(null)
-    // But found by resolveNode (in a subgraph)
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(5), mockImg, 0)
 

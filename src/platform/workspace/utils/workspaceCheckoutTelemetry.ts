@@ -1,9 +1,10 @@
-import { useTelemetry } from '@/platform/telemetry'
 import type {
-  PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+} from '@comfyorg/account-core/billing'
+
+import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useAuthStore } from '@/stores/authStore'
 
