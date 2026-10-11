@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getConcreteWidgetSource,
+  isConcreteWidgetSourceStale,
   toConcreteWidget
 } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -145,46 +146,63 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
-function dedupeRepeatedWrappedSources(
+export function releaseReplacedWidget(
+  node: LGraphNode,
+  outgoing: IBaseWidget,
+  replacement: IBaseWidget
+): void {
+  const reboundInputs = node.inputs.filter(
+    (input) => input._widget === outgoing
+  )
+  for (const input of reboundInputs) input._widget = undefined
+  outgoing.onRemove?.()
+  if (outgoing instanceof BaseWidget) outgoing.releaseRegisteredState()
+  for (const input of reboundInputs) input._widget = replacement
+}
+
+function reconcileWrappedSources(
   node: LGraphNode,
   originalWidgets: readonly IBaseWidget[],
   widgets: IBaseWidget[]
 ): void {
-  const originalSources = originalWidgets.map((widget) =>
-    getConcreteWidgetSource(widget, node)
-  )
-  const installedWrappedSources = new Set(
-    originalWidgets.flatMap((widget, index) =>
-      widget === originalSources[index] ||
-      widget.type !== originalSources[index].type
-        ? []
-        : [originalSources[index]]
-    )
-  )
-  const refreshedSources = new Set(
-    originalWidgets.flatMap((widget, index) =>
-      widget === originalSources[index] && widget !== widgets[index]
-        ? [originalSources[index]]
-        : []
-    )
-  )
-  const acceptedRawSources = new Set<IBaseWidget>()
-  const uniqueWidgets = widgets.filter((widget, index) => {
-    const source = originalSources[index]
-    const wasRawWrappedSource =
-      originalWidgets[index] === source && widget !== source
-    const wasStaleWrapper =
-      originalWidgets[index] !== source &&
-      originalWidgets[index].type !== source.type
-    if (wasStaleWrapper && refreshedSources.has(source)) return false
-    if (!wasRawWrappedSource) return true
-    if (installedWrappedSources.has(source) || acceptedRawSources.has(source))
-      return false
-    acceptedRawSources.add(source)
-    return true
+  const installedBySource = new Map<
+    IBaseWidget,
+    { index: number; widget: IBaseWidget }
+  >()
+  originalWidgets.forEach((widget, index) => {
+    const source = getConcreteWidgetSource(widget)
+    if (source !== widget) installedBySource.set(source, { index, widget })
   })
-  if (uniqueWidgets.length !== widgets.length) {
-    widgets.splice(0, widgets.length, ...uniqueWidgets)
+
+  const acceptedRawSources = new Set<IBaseWidget>()
+  const removedIndexes = new Set<number>()
+  widgets.forEach((widget, index) => {
+    const source = originalWidgets[index]
+    if (getConcreteWidgetSource(source) !== source || widget === source) return
+
+    const installed = installedBySource.get(source)
+    if (installed) {
+      removedIndexes.add(index)
+      if (isConcreteWidgetSourceStale(installed.widget)) {
+        widgets[installed.index] = widget
+        releaseReplacedWidget(node, installed.widget, widget)
+        installedBySource.set(source, { index: installed.index, widget })
+      }
+      return
+    }
+    if (acceptedRawSources.has(source)) {
+      removedIndexes.add(index)
+      return
+    }
+    acceptedRawSources.add(source)
+  })
+
+  if (removedIndexes.size) {
+    widgets.splice(
+      0,
+      widgets.length,
+      ...widgets.filter((_, index) => !removedIndexes.has(index))
+    )
   }
 }
 
@@ -243,28 +261,22 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   const graphId = node.graph?.rootGraph.id
   const originalWidgets = [...widgets]
 
-  const concreteWidgets = originalWidgets.map((widget, index) => {
+  originalWidgets.forEach((widget, index) => {
     const unreadable = isWidgetNameUnreadable(widget)
     try {
-      const concrete = toConcreteWidget(widget, node)
-      widgets[index] = concrete
-      return concrete
+      widgets[index] = toConcreteWidget(widget, node)
     } catch (error) {
       if (!unreadable) throw error
-      return widget
     }
   })
 
-  // A non-adoptable legacy source may be pushed again after its wrapper is
-  // already present. Keep one wrapper without disturbing temporary duplicate
-  // concrete objects used by array reordering.
-  dedupeRepeatedWrappedSources(node, originalWidgets, widgets)
+  reconcileWrappedSources(node, originalWidgets, widgets)
 
   if (!graphId) return
 
   const refused = refuseAmbiguousWidgets(node, widgets)
 
-  for (const widget of concreteWidgets) {
+  for (const widget of widgets) {
     if (!refused.has(widget) && isNodeBindable(widget)) {
       widget.setNodeId(node.id)
     }

@@ -87,6 +87,19 @@ function storedValue(widget: IBaseWidget) {
   return useWidgetValueStore().getWidget(widget.widgetId!)?.value
 }
 
+function nonExtensibleWidget(
+  overrides: Partial<IBaseWidget> = {}
+): IBaseWidget {
+  return Object.preventExtensions<IBaseWidget>({
+    name: 'wrapped',
+    type: 'number',
+    value: 10,
+    options: {},
+    y: 0,
+    ...overrides
+  })
+}
+
 /** Node packs rebuild `node.widgets` by writing to the array directly. */
 describe('widgets view', () => {
   beforeEach(() => {
@@ -164,13 +177,7 @@ describe('widgets view', () => {
 
   it('deduplicates a raw source inserted before its installed wrapper', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
     node.widgets = [source]
     const wrapped = node.widgets[0]
 
@@ -181,13 +188,7 @@ describe('widgets view', () => {
 
   it('deduplicates repeated direct pushes of one legacy source', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
 
     node.widgets = [source, source]
 
@@ -196,13 +197,7 @@ describe('widgets view', () => {
 
   it('rebuilds a wrapper removed directly through the widgets view', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
     node.widgets = [source]
     const first = node.widgets[0]
 
@@ -216,32 +211,20 @@ describe('widgets view', () => {
 
   it('keeps a wrapped legacy widget during an in-place reorder', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
     node.widgets = [source]
     const wrapped = node.widgets[0]
     const other = node.addWidget('number', 'other', 20, null)
 
-    node.widgets[1] = wrapped
-    node.widgets[0] = other
+    node.widgets.splice(0, 1)
+    node.widgets.push(wrapped)
 
     expect(node.widgets).toEqual([other, wrapped])
   })
 
   it('retains source identity while a wrapper is reordered', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
     node.widgets = [source]
     const wrapped = node.widgets[0]
     const other = node.addWidget('number', 'other', 20, null)
@@ -255,14 +238,14 @@ describe('widgets view', () => {
 
   it('refreshes a wrapper when its source type changes', () => {
     const node = new LGraphNode('test')
-    const source = Object.preventExtensions<IBaseWidget>({
-      name: 'wrapped',
-      type: 'number',
-      value: 10,
-      options: {},
-      y: 0
-    })
+    const source = nonExtensibleWidget()
     const original = node.addCustomWidget(source)
+    const onRemove = vi.fn()
+    original.onRemove = onRemove
+    const input = node.addInput('wrapped', 'number', {
+      widget: { name: 'wrapped' },
+      _widget: original
+    })
 
     source.type = 'toggle'
     const refreshed = node.addCustomWidget(source)
@@ -270,6 +253,51 @@ describe('widgets view', () => {
     expect(refreshed).not.toBe(original)
     expect(refreshed).toBeInstanceOf(BooleanWidget)
     expect(node.widgets).toEqual([refreshed])
+    expect(input._widget).toBe(refreshed)
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  it('retains an installed wrapper whose local type changes', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    const installed = node.addCustomWidget(source)
+
+    installed.type = 'hidden'
+    const returned = node.addCustomWidget(source)
+
+    expect(returned).toBe(installed)
+    expect(node.widgets).toEqual([installed])
+    expect(installed.type).toBe('hidden')
+  })
+
+  it('refreshes a changed raw source in its installed slot', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const before = node.addWidget('number', 'before', 1, null)
+    const source = nonExtensibleWidget()
+    const installed = node.addCustomWidget(source)
+    const after = node.addWidget('number', 'after', 2, null)
+    const onRemove = vi.fn()
+    installed.onRemove = onRemove
+    const input = node.addInput('wrapped', 'number', {
+      widget: { name: 'wrapped' },
+      _widget: installed
+    })
+
+    source.type = 'toggle'
+    node.widgets!.unshift(source)
+
+    const refreshed = node.widgets![1]
+    expect(node.widgets).toEqual([before, refreshed, after])
+    expect(refreshed).toBeInstanceOf(BooleanWidget)
+    expect(input._widget).toBe(refreshed)
+    expect(onRemove).toHaveBeenCalledOnce()
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets(graph.rootGraph.id, node.id)
+        .map((widget) => widget.type)
+    ).toEqual(['number', 'toggle', 'number'])
   })
 
   it.for(

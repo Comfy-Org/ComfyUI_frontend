@@ -1,4 +1,3 @@
-import { assert } from '@/base/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { linkIdReservations, mintLinkId } from '../idAllocation'
@@ -63,17 +62,8 @@ export class SubgraphOutput extends SubgraphSlot {
         return [link]
       })
     }
-    const reportLinkCount = (links: readonly LLink[]) => {
-      assert(
-        links.length <= 1,
-        'SubgraphOutput.connect: output has more than one existing link',
-        { existingLinkCount: links.length }
-      )
-    }
-
     const linksBeforeHook = getExistingLinks()
     if (!linksBeforeHook) return
-    reportLinkCount(linksBeforeHook)
 
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
@@ -84,15 +74,12 @@ export class SubgraphOutput extends SubgraphSlot {
     // Re-read after the extension hook because it may mutate topology.
     const existingLinks = getExistingLinks()
     if (!existingLinks) return
-    reportLinkCount(existingLinks)
     const existingLink = existingLinks.at(0)
-    const extraLinks = existingLinks.slice(1)
     const canonicalLinkIds = existingLink ? [existingLink.id] : []
     const mirrorNeedsRepair =
       canonicalLinkIds.length !== this.linkIds.length ||
       canonicalLinkIds.some((id, index) => this.linkIds[index] !== id)
-    const changeStarted =
-      existingLink != null || extraLinks.length > 0 || mirrorNeedsRepair
+    const changeStarted = existingLink != null || mirrorNeedsRepair
     if (changeStarted) {
       subgraph.beforeChange()
     }
@@ -101,9 +88,6 @@ export class SubgraphOutput extends SubgraphSlot {
     // Repair the mirror only after the hook approves and inside the change.
     if (mirrorNeedsRepair) {
       this.linkIds.splice(0, this.linkIds.length, ...canonicalLinkIds)
-    }
-    for (const extraLink of extraLinks) {
-      extraLink.disconnect(subgraph, 'input')
     }
 
     const linkId = mintLinkId(

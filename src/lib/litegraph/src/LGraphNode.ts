@@ -77,7 +77,8 @@ import {
 import {
   clearWidgetRestorationSlots,
   getWidgetRestorationSlot,
-  initializeWidgetsView
+  initializeWidgetsView,
+  releaseReplacedWidget
 } from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
@@ -397,13 +398,10 @@ function normalizeLegacySlotIndex(
   slot: unknown,
   length: number
 ): number | undefined {
-  if (typeof slot === 'number')
-    return Number.isInteger(slot) && slot >= 0 && slot < length
-      ? slot
-      : undefined
-  if (typeof slot !== 'string' || !/^\d+$/.test(slot)) return
-  const index = Number(slot)
-  return Number.isInteger(index) && index < length ? index : undefined
+  const index =
+    typeof slot === 'string' && /^\d+$/.test(slot) ? Number(slot) : slot
+  if (typeof index !== 'number' || !Number.isInteger(index)) return
+  return index >= 0 && index < length ? index : undefined
 }
 
 export class LGraphNode
@@ -2353,12 +2351,12 @@ export class LGraphNode
     const existingIndex = this.widgets.findIndex(
       (candidate) =>
         candidate === widget ||
-        candidate === custom_widget ||
-        getConcreteWidgetSource(candidate, this) === custom_widget
+        getConcreteWidgetSource(candidate) === custom_widget
     )
     if (existingIndex === -1) {
       this.widgets.push(widget)
     } else if (this.widgets[existingIndex] !== widget) {
+      releaseReplacedWidget(this, this.widgets[existingIndex], widget)
       this.widgets[existingIndex] = widget
     }
 

@@ -76,29 +76,33 @@ export type WidgetTypeMap = {
 }
 
 const toWidgetClass = instantiateClass
-const sourcesByConcreteWidget = new WeakMap<
+interface ConcreteWidgetProvenance {
+  source: IBaseWidget
+  sourceType: IBaseWidget['type']
+}
+
+const provenanceByConcreteWidget = new WeakMap<
   IBaseWidget,
-  WeakMap<LGraphNode, IBaseWidget>
+  ConcreteWidgetProvenance
 >()
 
 function rememberConcreteWidget(
   source: IBaseWidget,
-  node: LGraphNode,
   concrete: IBaseWidget
 ): void {
-  let sourcesByNode = sourcesByConcreteWidget.get(concrete)
-  if (!sourcesByNode) {
-    sourcesByNode = new WeakMap()
-    sourcesByConcreteWidget.set(concrete, sourcesByNode)
-  }
-  sourcesByNode.set(node, source)
+  provenanceByConcreteWidget.set(concrete, {
+    source,
+    sourceType: source.type
+  })
 }
 
-export function getConcreteWidgetSource(
-  widget: IBaseWidget,
-  node: LGraphNode
-): IBaseWidget {
-  return sourcesByConcreteWidget.get(widget)?.get(node) ?? widget
+export function getConcreteWidgetSource(widget: IBaseWidget): IBaseWidget {
+  return provenanceByConcreteWidget.get(widget)?.source ?? widget
+}
+
+export function isConcreteWidgetSourceStale(widget: IBaseWidget): boolean {
+  const provenance = provenanceByConcreteWidget.get(widget)
+  return !!provenance && provenance.source.type !== provenance.sourceType
 }
 
 function collectDescriptors(value: object) {
@@ -222,14 +226,15 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   node: LGraphNode,
   wrapLegacyWidgets = true
 ): WidgetTypeMap[TWidget['type']] | undefined {
-  const cached = wrapLegacyWidgets
-    ? node.widgets?.find(
-        (candidate) =>
-          sourcesByConcreteWidget.get(candidate)?.get(node) === widget &&
-          candidate.type === widget.type
-      )
+  const installed = wrapLegacyWidgets
+    ? node.widgets?.find((candidate) => {
+        const provenance = provenanceByConcreteWidget.get(candidate)
+        return (
+          provenance?.source === widget && provenance.sourceType === widget.type
+        )
+      })
     : undefined
-  if (cached) return cached as WidgetTypeMap[TWidget['type']]
+  if (installed) return installed as WidgetTypeMap[TWidget['type']]
 
   const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
   const result =
@@ -237,7 +242,7 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       ? adoptConcreteWidget(widget, concrete)
       : concrete
   if (result && wrapLegacyWidgets && !Object.is(result, widget)) {
-    rememberConcreteWidget(widget, node, result)
+    rememberConcreteWidget(widget, result)
   }
   return result
 }

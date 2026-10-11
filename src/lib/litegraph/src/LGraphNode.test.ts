@@ -1,5 +1,5 @@
 import { omit } from 'es-toolkit'
-import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
@@ -826,53 +826,83 @@ describe('LGraphNode', () => {
     })
   })
 
-  describe('removeInput', () => {
-    test('ignores an out-of-bounds or fractional slot', () => {
+  describe('slot removal', () => {
+    const removalOperations = [
+      {
+        name: 'input',
+        setup(node: LGraphNode) {
+          node.addInput('first', 'number')
+          node.addInput('second', 'number')
+          const onRemoved = vi.fn()
+          node.onInputRemoved = onRemoved
+          return {
+            names: () => node.inputs.map(({ name }) => name),
+            onRemoved
+          }
+        },
+        remove(node: LGraphNode, slot: unknown) {
+          Reflect.apply(node.removeInput, node, [slot])
+        }
+      },
+      {
+        name: 'output',
+        setup(node: LGraphNode) {
+          node.addOutput('first', 'number')
+          node.addOutput('second', 'number')
+          const onRemoved = vi.fn()
+          node.onOutputRemoved = onRemoved
+          return {
+            names: () => node.outputs.map(({ name }) => name),
+            onRemoved
+          }
+        },
+        remove(node: LGraphNode, slot: unknown) {
+          Reflect.apply(node.removeOutput, node, [slot])
+        }
+      }
+    ] as const
+    const invalidSlots: readonly unknown[] = [
+      -1,
+      2,
+      0.5,
+      Infinity,
+      '',
+      ' ',
+      '2',
+      '0x0',
+      '0e0'
+    ]
+
+    test.for(
+      removalOperations.flatMap((operation) =>
+        invalidSlots.map((slot) => ({ operation, slot }))
+      )
+    )('ignores invalid $operation.name slot $slot', ({ operation, slot }) => {
       const testNode = new LGraphNode('TestNode')
-      testNode.addInput('input1', 'number')
+      const { names, onRemoved } = operation.setup(testNode)
 
-      expect(() => testNode.removeInput(-1)).not.toThrow()
-      expect(() => testNode.removeInput(1)).not.toThrow()
-      expect(() => testNode.removeInput(0.5)).not.toThrow()
-      expect(() => testNode.removeInput('' as unknown as number)).not.toThrow()
-      expect(() => testNode.removeInput(' ' as unknown as number)).not.toThrow()
-      expect(() =>
-        testNode.removeInput('0x0' as unknown as number)
-      ).not.toThrow()
-      expect(() =>
-        testNode.removeInput('0e0' as unknown as number)
-      ).not.toThrow()
-      expect(testNode.inputs).toHaveLength(1)
+      operation.remove(testNode, slot)
 
-      testNode.removeInput('0' as unknown as number)
-      expect(testNode.inputs).toHaveLength(0)
+      expect(names()).toEqual(['first', 'second'])
+      expect(onRemoved).not.toHaveBeenCalled()
     })
+
+    test.for(removalOperations)(
+      'accepts a runtime digit-string $name slot',
+      (operation) => {
+        const testNode = new LGraphNode('TestNode')
+        const { names, onRemoved } = operation.setup(testNode)
+
+        operation.remove(testNode, '0')
+
+        expect(names()).toEqual(['second'])
+        expect(onRemoved).toHaveBeenCalledOnce()
+        expect(onRemoved.mock.calls.map(([slot]) => slot)).toEqual([0])
+      }
+    )
   })
 
   describe('removeOutput', () => {
-    test('ignores an out-of-bounds or fractional slot', () => {
-      const testNode = new LGraphNode('TestNode')
-      testNode.addOutput('output1', 'number')
-
-      expect(() => testNode.removeOutput(-1)).not.toThrow()
-      expect(() => testNode.removeOutput(1)).not.toThrow()
-      expect(() => testNode.removeOutput(0.5)).not.toThrow()
-      expect(() => testNode.removeOutput('' as unknown as number)).not.toThrow()
-      expect(() =>
-        testNode.removeOutput(' ' as unknown as number)
-      ).not.toThrow()
-      expect(() =>
-        testNode.removeOutput('0x0' as unknown as number)
-      ).not.toThrow()
-      expect(() =>
-        testNode.removeOutput('0e0' as unknown as number)
-      ).not.toThrow()
-      expect(testNode.outputs).toHaveLength(1)
-
-      testNode.removeOutput('0' as unknown as number)
-      expect(testNode.outputs).toHaveLength(0)
-    })
-
     test('reindexes connected links after a digit-string slot removal', () => {
       const graph = new LGraph()
       const source = new LGraphNode('Source')
@@ -884,10 +914,9 @@ describe('LGraphNode', () => {
       graph.add(source)
       graph.add(target)
       const link = source.connect(2, target, 0)
-      expect(link).toBeDefined()
-      if (!link) throw new Error('expected connected link')
+      assert.exists(link)
 
-      source.removeOutput('1' as unknown as number)
+      Reflect.apply(source.removeOutput, source, ['1'])
 
       expect(link.origin_slot).toBe(1)
       expect(source.outputs[1].links).toContain(link.id)
