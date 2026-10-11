@@ -357,8 +357,14 @@ export function createAgentEventTransport(
     pendingCanvasSync.set(part, {
       workflowId: lastWorkflowId,
       timer: setTimeout(() => {
-        // The timer expiring is the absence of an observation, not one.
-        settlePendingCanvasSync(part, false)
+        // A follower update can cover several writes while its watcher emits
+        // only once. Preserve strict frame-to-write matching on the fast path,
+        // then use the part's own baseline before calling the timeout an
+        // absence of observation.
+        const confirmed =
+          baseline !== undefined && getCanvasSyncOutcomeCount() > baseline
+        settlePendingCanvasSync(part, confirmed)
+        if (confirmed) claimCanvasSyncOutcome()
         emit(snapshotMessage(message))
       }, STALE_AFTER_MS)
     })

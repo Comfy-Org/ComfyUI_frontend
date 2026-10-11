@@ -1229,6 +1229,32 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     ])
   })
 
+  it('confirms every pending write covered by one coalesced canvas outcome', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let outcomeCount = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'awaiting',
+      () => outcomeCount
+    )
+
+    transport.ingest(toolCall('add_node', 'running', 'write-1'))
+    transport.ingest(toolCall('set_widget', 'running', 'write-2'))
+    transport.ingest(toolCall('add_node', 'success', 'write-1'))
+    transport.ingest(toolCall('set_widget', 'success', 'write-2'))
+
+    outcomeCount += 1
+    transport.notifyCanvasCaughtUp()
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
+  })
+
   // PM-1575 regression (finding #6, medium): a duplicate or redelivered
   // terminal frame for the same tool_call_id (e.g. a websocket retry) used
   // to overwrite the pending timer's map entry without clearing the
