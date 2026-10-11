@@ -1666,7 +1666,9 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`
+    const overwrite = options.overwrite ?? true
+    const fullInfo = options.full_info ?? false
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
     const resp = await this.fetchApi(route, {
       method: 'POST',
       body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
@@ -1674,16 +1676,28 @@ export class ComfyApi extends EventTarget {
     })
     if (resp.status !== 200) {
       const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
-      reportError(new Error(message), {
-        errorType: 'userdata_store_failure',
-        surface: 'platform',
-        tags: {
-          status: resp.status,
-          overwrite: options.overwrite ?? true,
-          full_info: options.full_info ?? false
-        },
-        context: { file, route }
-      })
+      // The reported message and route are file-independent: the literal file
+      // name (and `route`, which embeds it) is unbounded cardinality and
+      // would fragment Sentry grouping into one bucket per file instead of
+      // one for this failure mode — exactly what buried PM-1906's alerts.
+      reportError(
+        new Error(
+          `Error storing user data file: ${resp.status} ${resp.statusText}`
+        ),
+        {
+          errorType: 'userdata_store_failure',
+          surface: 'platform',
+          tags: {
+            status: resp.status,
+            overwrite,
+            full_info: fullInfo
+          },
+          context: {
+            file,
+            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+          }
+        }
+      )
       if (options.throwOnError !== false) {
         throw new Error(message)
       }
