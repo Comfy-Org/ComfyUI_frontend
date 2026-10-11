@@ -3,7 +3,7 @@ import type { LinkPresentation } from '@/types/linkPresentation'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeProperty } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot } from '../Reroute'

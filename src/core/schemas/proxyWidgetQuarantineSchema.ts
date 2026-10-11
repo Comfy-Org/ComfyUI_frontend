@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@/types/nodeProperty'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
