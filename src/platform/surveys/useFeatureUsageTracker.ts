@@ -104,7 +104,10 @@ export function useFeatureUsageTracker(featureId: string) {
     )
     const nextUsageData = persistedUsageData ?? {
       ...currentUsageData,
-      [featureId]: incrementUsage(existing, now)
+      [featureId]: incrementUsage(
+        latestUsage(pendingUsage.get(featureId), existing),
+        now
+      )
     }
     if (!persistedUsageData) {
       const nextUsage = nextUsageData[featureId]

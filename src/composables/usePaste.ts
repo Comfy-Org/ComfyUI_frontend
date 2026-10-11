@@ -8,7 +8,8 @@ import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorag
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   createNode,
@@ -80,7 +81,7 @@ function holdsLatestCanvasCopy(html: string): boolean {
 
 function isWorkflow(
   value: unknown
-): value is Parameters<typeof app.loadGraphData>[0] {
+): value is Parameters<ComfyApp['loadGraphData']>[0] {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -297,7 +298,7 @@ export const usePaste = () => {
     }
 
     if (isWorkflow(workflow)) {
-      await app.loadGraphData(workflow)
+      await useApp().loadGraphData(workflow)
     } else {
       if (
         (e.target instanceof HTMLTextAreaElement &&

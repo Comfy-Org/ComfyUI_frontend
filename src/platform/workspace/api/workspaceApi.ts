@@ -204,7 +204,7 @@ async function requestAuth() {
   return { headers: await requireWorkspaceApiAuth().getWorkspaceAuthHeader() }
 }
 
-type WorkspaceApiOperation = keyof typeof workspaceApi
+export type WorkspaceApiOperation = keyof typeof workspaceApi
 
 function handleAxiosError(
   err: unknown,

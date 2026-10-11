@@ -15,7 +15,7 @@ export function packRouterSchemas(
   sourceCommit: string
 ): string {
   const records = z
-    .array(z.object({ id: z.string(), document: z.unknown() }))
+    .array(z.object({ id: z.string(), document: z.unknown().optional() }))
     .parse(input)
     .map((entry) => parseRouterOpenApiSnapshot({ ...entry, sourceCommit }))
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))

@@ -185,6 +185,12 @@ export function useFeatureFlags() {
         true
       )
     },
+    get partnerNodeTokenEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PARTNER_NODE_TOKEN,
+        remoteConfig.value.partner_node_token
+      )
+    },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
@@ -248,6 +254,15 @@ export function useFeatureFlags() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.SSO_ENABLED,
         remoteConfig.value.sso_enabled
+      )
+    },
+    /** Browser sign-in for a local ComfyUI that Desktop does not host. */
+    get localWebSsoEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_WEB_SSO,
+        remoteConfig.value.local_web_sso
       )
     },
     get billingControlEnabled() {

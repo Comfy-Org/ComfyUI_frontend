@@ -6,8 +6,8 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { i18n } from '@/i18n'
 import '@/lib/litegraph/public/css/litegraph.css'
 import '@/assets/css/style.css'
@@ -22,8 +22,6 @@ const ComfyUIPreset = definePreset(Aura, {
 
 // Setup Vue app for Storybook
 setup((app) => {
-  app.directive('tooltip', Tooltip)
-
   // Create Pinia instance
   const pinia = createPinia()
 
@@ -61,6 +59,13 @@ export const withTheme = (Story: StoryFn, context: StoryContext) => {
   return Story(context.args, context)
 }
 
+function withTooltipProvider() {
+  return {
+    components: { TooltipProvider },
+    template: '<TooltipProvider><story /></TooltipProvider>'
+  }
+}
+
 const preview: Preview = {
   parameters: {
     controls: {
@@ -92,7 +97,7 @@ const preview: Preview = {
       }
     }
   },
-  decorators: [withTheme]
+  decorators: [withTheme, withTooltipProvider]
 }
 
 export default preview

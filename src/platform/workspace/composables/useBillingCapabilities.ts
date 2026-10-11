@@ -72,8 +72,9 @@ function readCapabilitiesResponse(
 ): Promise<BillingCapabilitiesResponse | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
-  return readOnRail(() =>
-    rail.readCapabilities({ signal, forceRefresh: revalidating })
+  return readOnRail(
+    () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
+    'getBillingCapabilities'
   )
 }
 

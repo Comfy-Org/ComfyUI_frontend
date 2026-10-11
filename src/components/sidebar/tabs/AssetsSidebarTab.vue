@@ -12,10 +12,8 @@
       >
         <div class="flex min-w-0 flex-1 items-center gap-2">
           <Button
-            v-tooltip.bottom="{
-              value: $t('sideToolbar.backToAssets'),
-              showDelay: 300
-            }"
+            :tooltip="$t('sideToolbar.backToAssets')"
+            tooltip-side="bottom"
             variant="textonly"
             size="icon"
             type="button"
@@ -30,10 +28,8 @@
           </span>
           <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
           <Button
-            v-tooltip.bottom="{
-              value: $t('g.copyJobId'),
-              showDelay: 300
-            }"
+            :tooltip="$t('g.copyJobId')"
+            tooltip-side="bottom"
             variant="textonly"
             size="icon"
             type="button"
