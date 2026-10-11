@@ -988,8 +988,17 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
+  const revokePartnerNodeLogin = async (): Promise<void> => {
+    if (isCloud || !flags.partnerNodeTokenEnabled) return
+    const credential = isDesktopHostSignedIn()
+      ? await desktopHostTabToken()
+      : await currentUser.value?.getIdToken().catch(() => undefined)
+    void partnerNodeTokens.revokeLogin(credential)
+  }
+
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      await revokePartnerNodeLogin()
       const signsOutDesktopHost = isDesktopHostSignedIn()
       if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))

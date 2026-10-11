@@ -1,6 +1,7 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
+import { signOut } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -15,6 +16,7 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -35,12 +37,15 @@ const MINT_URL = /\/api\/auth\/token$/
 const REVOKE_URL = /\/api\/auth\/token\/revoke$/
 const WORKSPACE_TOKEN = 'workspace-token'
 
-function signInFirebase() {
+function signInFirebase(uid = 'user-a', idToken = 'firebase-id-token') {
   useAuthStore().currentUser = fromPartial<User>({
-    uid: 'user-a',
-    getIdToken: async () => 'firebase-id-token'
+    uid,
+    getIdToken: async () => idToken
   })
 }
+
+const revokeBearers = () =>
+  fetchRequests(REVOKE_URL).map((r) => r.headers.get('Authorization'))
 
 function respondWithPartnerNodeToken() {
   respondToFetch(MINT_URL, () =>
@@ -128,6 +133,7 @@ describe('queueAuthToken', () => {
       const listeners = new Set<(next: DesktopHostAuthState) => void>()
       const bridge = fromPartial<DesktopHostAuthBridge>({
         getState: async () => state,
+        signOut: vi.fn(async () => ({ status: 'signed_out' }) as const),
         getWorkspaceToken: async (workspaceId: string) =>
           state.status === 'signed_in' && state.workspaceId === workspaceId
             ? 'host-oauth-token'
@@ -139,6 +145,7 @@ describe('queueAuthToken', () => {
       })
       await startDesktopHostSession(bridge)
       return {
+        bridge,
         push: async (next: DesktopHostAuthState) => {
           listeners.forEach((listener) => listener(next))
           await nextTick()
@@ -233,5 +240,101 @@ describe('queueAuthToken', () => {
         'Bearer partner-node-token'
       )
     })
+
+    it('revokes with the host OAuth access token before signing the host out', async () => {
+      const { bridge } = await startHostSession(signedInAs('host-a'))
+      const revokesAtSignOut: number[] = []
+      vi.mocked(bridge.signOut).mockImplementation(async () => {
+        revokesAtSignOut.push(fetchRequests(REVOKE_URL).length)
+        return { status: 'signed_out' }
+      })
+
+      await useAuthStore().logout()
+
+      expect(revokeBearers()).toEqual(['Bearer host-oauth-token'])
+      expect(revokesAtSignOut).toEqual([1])
+    })
+  })
+})
+
+describe('sign-out', () => {
+  beforeEach(() => {
+    vi.mocked(signOut).mockResolvedValue(undefined)
+  })
+
+  it('revokes with the Firebase ID token before signing out, with nothing minted in this page load', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    signInFirebase()
+    const revokesAtSignOut: number[] = []
+    vi.mocked(signOut).mockImplementation(async () => {
+      revokesAtSignOut.push(fetchRequests(REVOKE_URL).length)
+    })
+
+    await useAuthStore().logout()
+
+    expect(revokeBearers()).toEqual(['Bearer firebase-id-token'])
+    expect(revokesAtSignOut).toEqual([1])
+  })
+
+  it('revokes only the previous account when switching accounts', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    signInFirebase()
+    respondWithPartnerNodeToken()
+    await queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+
+    await useAuthStore().logout()
+    signInFirebase('user-b', 'firebase-id-token-b')
+    await queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+
+    expect(revokeBearers()).toEqual(['Bearer firebase-id-token'])
+    expect(fetchRequests(MINT_URL)).toHaveLength(2)
+  })
+
+  it('revokes nothing on a workspace switch', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    signInFirebase()
+    respondToFetch(MINT_URL, (_input, init) => {
+      const { workspace_id } = JSON.parse(String(init?.body))
+      return Response.json({
+        token: `partner-node-${workspace_id}`,
+        expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+        workspace: { id: workspace_id, name: 'Team', type: 'team' },
+        role: 'owner',
+        permissions: []
+      })
+    })
+
+    await queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+    await queueAuthToken(WORKSPACE_TOKEN, 'ws-b')
+
+    expect(fetchRequests(REVOKE_URL)).toHaveLength(0)
+  })
+
+  it('sends nothing with the flag off', async () => {
+    signInFirebase()
+
+    await useAuthStore().logout()
+
+    expect(fetchRequests(REVOKE_URL)).toHaveLength(0)
+  })
+
+  it.for([
+    {
+      name: 'refused',
+      respond: () => new Response(null, { status: 500 })
+    },
+    {
+      name: 'unreachable',
+      respond: () => Promise.reject(new TypeError('offline'))
+    }
+  ])('signs out when the revoke is $name', async ({ respond }) => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    signInFirebase()
+    respondToFetch(REVOKE_URL, respond)
+
+    await expect(useAuthStore().logout()).resolves.toBeUndefined()
+
+    expect(signOut).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
   })
 })
