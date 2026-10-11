@@ -26,6 +26,7 @@ import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import {
   clearPreservedQuery,
@@ -3200,6 +3201,93 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
     return landings
   }
+
+  describe('the sign-in telemetry', () => {
+    afterEach(() => {
+      ssoFlowStore.finish()
+    })
+
+    const ssoSignIns = () =>
+      vi
+        .mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls.filter(
+          ([event]) => event.name === 'app:sso_sign_in_completed'
+        )
+
+    it('reports an SSO session after an attempt this tab continued, by id only', async () => {
+      const attempt = ssoFlowStore.markContinued('cloud_login')
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: { surface: 'cloud_login', flow_id: attempt.flowId }
+          }
+        ]
+      ])
+      expect(ssoFlowStore.current()).toBeUndefined()
+      expect(useTelemetry()?.trackAuth).not.toHaveBeenCalled()
+    })
+
+    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async () => {
+      await inAppThenLapsed(true)
+      await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      const [[shown]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'cloud_app',
+          trigger: 'session_expired',
+          presentation: 'redirect',
+          flow_id: expect.any(String)
+        }
+      })
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: {
+              surface: 'cloud_app',
+              flow_id: shown.properties.flow_id
+            }
+          }
+        ]
+      ])
+    })
+
+    it.for<{
+      name: string
+      arrange: () => void
+      session: ServerSession
+    }>([
+      {
+        name: 'an SSO session with no attempt',
+        arrange: () => {},
+        session: SSO_SESSION
+      },
+      {
+        name: 'an SSO session after an attempt only shown, never continued',
+        arrange: () => ssoFlowStore.start('cloud_login'),
+        session: SSO_SESSION
+      },
+      {
+        name: 'a Google session during an attempt',
+        arrange: () => ssoFlowStore.markContinued('cloud_login'),
+        session: { userId: 'user-a' }
+      }
+    ])('reports nothing for $name', async ({ arrange, session }) => {
+      arrange()
+
+      await loadPage(session)
+
+      expect(ssoSignIns()).toEqual([])
+    })
+  })
 
   describe('the hint', () => {
     it.for<{

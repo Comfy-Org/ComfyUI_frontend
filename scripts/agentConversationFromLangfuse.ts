@@ -63,9 +63,9 @@ export const zObservation = z
     name: z.string().nullish(),
     startTime: z.string(),
     endTime: z.string().nullish(),
-    input: z.unknown(),
-    output: z.unknown(),
-    metadata: z.unknown(),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    metadata: z.unknown().optional(),
     parentObservationId: z.string().nullish()
   })
   .passthrough()

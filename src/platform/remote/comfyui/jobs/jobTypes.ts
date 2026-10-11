@@ -47,8 +47,8 @@ const zExecutionError = z
     exception_message: z.string(),
     exception_type: z.string(),
     traceback: z.array(z.string()),
-    current_inputs: z.unknown(),
-    current_outputs: z.unknown()
+    current_inputs: z.unknown().optional(),
+    current_outputs: z.unknown().optional()
   })
   .passthrough()
 
@@ -148,12 +148,12 @@ export const zJobAssetsResponse = z.object({
 
 /** Schema for workflow container structure in job detail responses */
 export const zWorkflowContainer = z.object({
-  prompt: z.unknown(),
+  prompt: z.unknown().optional(),
   extra_data: z
     .object({
       extra_pnginfo: z
         .object({
-          workflow: z.unknown()
+          workflow: z.unknown().optional()
         })
         .nullish()
     })

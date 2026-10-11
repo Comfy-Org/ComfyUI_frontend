@@ -178,7 +178,7 @@ const zDocNodeFields = zComfyNode
     title: z.string().optional(),
     inputs: z.array(zDocSlot).optional(),
     outputs: z.array(zDocSlot).optional(),
-    properties: z.record(zNodeProperty.optional()).optional()
+    properties: z.record(z.string(), zNodeProperty.optional()).optional()
   })
 
 /**
@@ -207,10 +207,7 @@ function valueShape(value: unknown): string {
 }
 
 /** `absent` when the path's own key is missing, so it is not read as `undefined`. */
-function shapeAtPath(
-  root: unknown,
-  path: readonly (string | number)[]
-): string {
+function shapeAtPath(root: unknown, path: readonly PropertyKey[]): string {
   let cursor: unknown = root
   for (const [depth, key] of path.entries()) {
     if (cursor === null || typeof cursor !== 'object') return 'unreachable'

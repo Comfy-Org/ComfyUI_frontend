@@ -10202,15 +10202,6 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
-     * Authenticated assignment for the Agent free-use notice placement experiment. Always present and defaults to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned.
-     */
-    'agent-free-use-message-placement':
-      | 'control'
-      | 'top-banner'
-      | 'near-composer'
-      | 'above-input'
-      | 'inside-input'
-    /**
      * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
      */
     'agent-starter-prompt-set'?: 'control' | 'test'

@@ -54,8 +54,8 @@ describe('Live billing opt-in', () => {
         .object({
           suites: z.array(z.unknown()),
           config: z.object({
-            globalSetup: z.unknown(),
-            globalTeardown: z.unknown(),
+            globalSetup: z.unknown().optional(),
+            globalTeardown: z.unknown().optional(),
             projects: z.array(z.object({ name: z.string() }))
           })
         })
