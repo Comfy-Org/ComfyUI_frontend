@@ -685,7 +685,7 @@ export class LGraphNode
    */
   strokeStyles: Record<
     string,
-    (this: LGraphNode) => IDrawBoundingOptions | undefined
+    (this: LGraphNode, selected?: boolean) => IDrawBoundingOptions | undefined
   >
 
   /**
@@ -1130,9 +1130,10 @@ export class LGraphNode
   }
 
   private _getSelectedStrokeStyle(
-    this: LGraphNode
+    this: LGraphNode,
+    selected = this.selected
   ): IDrawBoundingOptions | undefined {
-    if (this.selected) {
+    if (selected) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
