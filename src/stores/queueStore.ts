@@ -394,6 +394,9 @@ export const useQueueStore = defineStore('queue', () => {
     const unresolvedJobIds = executionStore.trackedJobIds.filter(
       (jobId) => !activeJobIds.has(jobId) && !terminalJobIds.has(jobId)
     )
+    for (const jobId of missedJobLookups.keys()) {
+      if (!unresolvedJobIds.includes(jobId)) missedJobLookups.delete(jobId)
+    }
     const details = await Promise.all(
       unresolvedJobIds.map((jobId) => api.getJobDetail(jobId))
     )

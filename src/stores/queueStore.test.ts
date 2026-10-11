@@ -870,6 +870,39 @@ describe('useQueueStore', () => {
         'two consecutive misses means it is gone'
       ).toBeUndefined()
     })
+
+    it('resets the miss count when the tracked job reappears', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        ghost: {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'ghost'
+          }
+        }
+      }
+
+      mockGetQueue
+        .mockResolvedValueOnce({ Running: [], Pending: [] })
+        .mockResolvedValueOnce({
+          Running: [createRunningJob(1, 'ghost')],
+          Pending: []
+        })
+        .mockResolvedValueOnce({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+      vi.mocked(api.getJobDetail)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
+
+      await store.update()
+      await store.update()
+      await store.update()
+
+      expect(executionStore.trackedJobIds).toContain('ghost')
+    })
   })
 
   describe('update() - maxHistoryItems limit', () => {
