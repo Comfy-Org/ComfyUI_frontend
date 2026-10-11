@@ -220,3 +220,39 @@
 /src/components/sidebar/tabs/AssetsSidebarListView.stories.ts @Comfy-Org/comfy_frontend_devs
 /src/composables/sidebarTabs/useAssetsSidebarTab.ts @Comfy-Org/comfy_frontend_devs
 /src/composables/sidebarTabs/useAssetsSidebarTab.test.ts @Comfy-Org/comfy_frontend_devs
+
+/docs/architecture/domains/records/viewport-3d.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/model-3d.domain.json @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/camera-authoring.domain.json @Comfy-Org/comfy_frontend_devs
+/docs/architecture/domains/records/light-authoring.domain.json @Comfy-Org/comfy_frontend_devs
+/src/renderer/three/                             @Comfy-Org/comfy_frontend_devs
+/src/composables/useViewportNodeWiring.ts         @Comfy-Org/comfy_frontend_devs
+/src/composables/useViewportNodeWiring.test.ts    @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3d.test.ts              @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3dLazy.test.ts          @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3dAdvanced.ts           @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3dPreviewExtensions.ts  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3dPreviewExtensions.test.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/saveMesh.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/saveMesh.test.ts            @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/services/load3dService.test.ts              @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/cameraInfo/                 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/cameraInfo.ts               @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/cameraAngle/                @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/cameraAngle.ts              @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/cameraAngle.test.ts         @Comfy-Org/comfy_frontend_devs
+/src/components/cameraInfo/                      @Comfy-Org/comfy_frontend_devs
+/src/components/cameraAngle/                     @Comfy-Org/comfy_frontend_devs
+/src/composables/useCameraInfo.ts                @Comfy-Org/comfy_frontend_devs
+/src/composables/useCameraInfo.test.ts           @Comfy-Org/comfy_frontend_devs
+/src/composables/useCameraAngle.ts               @Comfy-Org/comfy_frontend_devs
+/src/composables/useCameraAngle.test.ts          @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/lightInfo/                  @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/lightInfo.ts                @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/lightInfo.test.ts           @Comfy-Org/comfy_frontend_devs
+/src/components/lightInfo/                       @Comfy-Org/comfy_frontend_devs
+/src/types/lightInfo.ts                          @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/LightInfoWidget.ts @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/LightInfoWidget.test.ts @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts @Comfy-Org/comfy_frontend_devs
