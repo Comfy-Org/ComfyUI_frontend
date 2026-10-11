@@ -214,8 +214,16 @@ export class Preview3DPipelineContext {
     await this.comfyPage.waitForAppReady()
   }
 
+  /**
+   * Reopening after a reload has to re-parse and re-render the model, which was
+   * given 30s before this went through `openPersistedWorkflow` and its 5s
+   * default. Kept here rather than in the spec so the budget lives with the
+   * pipeline that needs it.
+   */
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {
-    await this.comfyPage.workflow.openPersistedWorkflow(workflowName)
+    await this.comfyPage.workflow.openPersistedWorkflow(workflowName, {
+      idleTimeout: 30_000
+    })
   }
 
   async assertPreview3dModelPathAndLastTime(path: string): Promise<void> {

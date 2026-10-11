@@ -230,13 +230,21 @@ export class WorkflowHelper {
     })
   }
 
-  async openPersistedWorkflow(workflowName: string): Promise<void> {
+  /**
+   * @param idleTimeout How long to wait for the workflow to settle. The default
+   * suits a normal graph; a 3D reload was given 30s before this helper existed
+   * and passes its own.
+   */
+  async openPersistedWorkflow(
+    workflowName: string,
+    { idleTimeout }: { idleTimeout?: number } = {}
+  ): Promise<void> {
     const sidebar = this.comfyPage.menu.workflowsTab
     const wasOpen = await sidebar.selectedTabButton.isVisible()
     await sidebar.open()
     await sidebar.getPersistedItem(workflowName, { exact: true }).click()
     if (!wasOpen) await sidebar.close()
-    await this.waitForWorkflowIdle()
+    await this.waitForWorkflowIdle(idleTimeout)
     await expect
       .poll(async () =>
         (await this.getActiveWorkflowPath())?.endsWith(`${workflowName}.json`)

@@ -1207,7 +1207,8 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-b', '1', 'running', 3) }
       })
 
-      useWorkflowStore().activeWorkflow = workflowA
+      // activeWorkflow is already A, so the watcher fires off that first
+      // assignment once nextTick flushes.
       await nextTick()
 
       expect(store.activeJobId).toBeNull()
