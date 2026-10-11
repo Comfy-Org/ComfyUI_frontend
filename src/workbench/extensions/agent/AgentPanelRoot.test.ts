@@ -701,6 +701,7 @@ describe('AgentPanelRoot first-use experience', () => {
         screen.queryByTestId('agent-credits-exhausted-paywall')
       ).not.toBeInTheDocument()
     )
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
 
     expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
   })
