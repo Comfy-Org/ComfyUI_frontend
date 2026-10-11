@@ -40,6 +40,28 @@ describe('WorkshopAppCard', () => {
     ).toBeVisible()
   })
 
+  it('marks an app with the logo its name matches', () => {
+    render(WorkshopAppCard, {
+      props: { app: { ...app, name: 'Seedance Studio' } }
+    })
+    const mark = screen.getByTestId('model-card-provider')
+
+    expect(mark).toHaveTextContent('Comfy app')
+    expect(within(mark).getByTestId('model-card-provider-logo')).toHaveStyle({
+      maskImage: 'url(/icons/ai-models/bytedance.svg)'
+    })
+    expect(within(mark).queryByText('C', { exact: true })).toBeNull()
+  })
+
+  it('marks an app with the initial when no logo matches', () => {
+    render(WorkshopAppCard, { props: { app } })
+    const mark = screen.getByTestId('model-card-provider')
+
+    expect(mark).toHaveTextContent('Comfy app')
+    expect(within(mark).queryByTestId('model-card-provider-logo')).toBeNull()
+    expect(within(mark).getByText('C', { exact: true })).toBeInTheDocument()
+  })
+
   it.for([
     {
       thumbnail: { url: '/images/app.jpg', kind: 'image' },

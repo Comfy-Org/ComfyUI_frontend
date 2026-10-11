@@ -23,8 +23,8 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import { useApp } from '@/scripts/appInstance'
+import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -80,9 +80,10 @@ function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
 }
 
 function isAutoQueueOnChange(): boolean {
+  const { ui } = useApp()
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
+    (ui.autoQueueEnabled && ui.autoQueueMode === 'change')
   )
 }
 
@@ -346,10 +347,8 @@ export class ChangeTracker {
   }
 
   store() {
-    this.ds = {
-      scale: app.canvas.ds.scale,
-      offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
-    }
+    const { ds } = useApp().canvas
+    this.ds = { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
@@ -389,6 +388,7 @@ export class ChangeTracker {
   }
 
   restore() {
+    const app = useApp()
     if (this.ds) {
       app.canvas.ds.scale = this.ds.scale
       app.canvas.ds.offset = this.ds.offset
@@ -452,7 +452,7 @@ export class ChangeTracker {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !app.isGraphReady ||
+      !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -464,7 +464,9 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
       this.undoQueue.push(previousState)
@@ -485,7 +487,9 @@ export class ChangeTracker {
     )
       return
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -536,7 +540,7 @@ export class ChangeTracker {
         let restored = false
         this._restoringState = true
         try {
-          const result = await app.loadGraphData(
+          const result = await useApp().loadGraphData(
             prevState,
             false,
             false,
@@ -578,7 +582,7 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(app.canvas)) {
+  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(useApp().canvas)) {
     const shortcut = historyShortcut(e)
     if (!shortcut) return
     if (!selectOnly) {
@@ -612,8 +616,7 @@ export class ChangeTracker {
         if (e.repeat) return
 
         // If the mask editor is opened, we don't want to trigger on key events
-        const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.maskeditor_is_opended?.()) return
+        if (clipspace.maskEditorIsOpened?.()) return
 
         const activeEl = document.activeElement
         if (
@@ -638,7 +641,7 @@ export class ChangeTracker {
           e.key === 'Meta'
         if (keyIgnored) return
 
-        const selectOnlyAtKeydown = isSelectOnly(app.canvas)
+        const selectOnlyAtKeydown = isSelectOnly(useApp().canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
