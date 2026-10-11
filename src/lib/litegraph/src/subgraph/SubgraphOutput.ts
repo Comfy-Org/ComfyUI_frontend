@@ -1,8 +1,13 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  SubgraphInput,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { linkIdReservations, mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
@@ -11,8 +16,6 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'
 
@@ -155,4 +158,10 @@ export class SubgraphOutput extends SubgraphSlot {
     }
     this.linkIds.length = 0
   }
+}
+
+type RegisteredSubgraphOutput = SubgraphOutput
+
+declare module '../types/entityRegistry' {
+  interface SubgraphOutput extends RegisteredSubgraphOutput {}
 }

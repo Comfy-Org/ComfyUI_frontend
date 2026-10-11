@@ -1,4 +1,4 @@
-import type { LiteGraphGlobal } from './LiteGraphGlobal'
+import type { LiteGraphGlobal } from '@/lib/litegraph/src/types/entityRegistry'
 
 declare global {
   var __COMFY_LITEGRAPH_INSTANCE__: LiteGraphGlobal | undefined

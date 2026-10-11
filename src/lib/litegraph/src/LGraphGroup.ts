@@ -1,3 +1,7 @@
+import type {
+  LGraph,
+  LGraphCanvas
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -9,8 +13,6 @@ import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
-import type { LGraph } from './LGraph'
-import type { LGraphCanvas } from './LGraphCanvas'
 import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
@@ -498,4 +500,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return isInRect(x, y, this.boundingRect)
   }
   setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
+}
+
+type RegisteredLGraphGroup = LGraphGroup
+type RegisteredIGraphGroupFlags = IGraphGroupFlags
+
+declare module './types/entityRegistry' {
+  interface LGraphGroup extends RegisteredLGraphGroup {}
+  interface IGraphGroupFlags extends RegisteredIGraphGroupFlags {}
 }

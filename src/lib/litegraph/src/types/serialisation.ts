@@ -1,12 +1,17 @@
+import type {
+  LGraphConfig,
+  LGraphExtra,
+  SubgraphId,
+  IGraphGroupFlags,
+  SerialisedLLinkArray
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { UUID } from '@/utils/uuid'
 import type { LinkPresentation } from '@/types/linkPresentation'
 
-import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
-import type { IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeProperty } from '@/types/nodeProperty'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { SerialisedLLinkArray } from '../LLink'
-import type { FloatingRerouteSlot } from '../Reroute'
+
+import type { FloatingRerouteSlot } from '@/types/rerouteChain'
 import type {
   Dictionary,
   INodeFlags,
@@ -16,7 +21,7 @@ import type {
   Size
 } from '../interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './slots'
-import type { LiteGraph } from '../litegraph'
+import type { LiteGraphGlobal } from './entityRegistry'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
@@ -142,7 +147,7 @@ export interface ISerialisedGraph extends BaseExportedGraph {
   links: SerialisedLLinkArray[]
   floatingLinks?: SerialisableLLink[]
   groups: ISerialisedGroup[]
-  version: typeof LiteGraph.VERSION
+  version: LiteGraphGlobal['VERSION']
   extra?: LGraphExtra
 }
 

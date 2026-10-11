@@ -1,3 +1,13 @@
+import type {
+  LGraph,
+  Subgraph,
+  LGraphCanvas,
+  Reroute,
+  SubgraphNode,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
 import { toValue } from 'vue'
 
 import {
@@ -30,7 +40,8 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { NodeProperty, NodeState } from '@/types/nodeState'
+import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
@@ -51,12 +62,12 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph, Subgraph } from './LGraph'
+
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
-import type { LGraphCanvas } from './LGraphCanvas'
+
 import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
@@ -89,7 +100,7 @@ import {
   runExtensionSerializeHook
 } from './extensionPersistence'
 import { anchorRerouteChain } from './Reroute'
-import type { Reroute, RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { emitNodeFieldWrite } from './graphIntents'
@@ -123,7 +134,7 @@ import type {
 import type { Panel } from './types/panel'
 import { LiteGraph } from './litegraphInstance'
 import { isSubgraph } from './subgraph/subgraphTypeGuards'
-import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
+
 import {
   createBounds,
   isInRect,
@@ -138,8 +149,7 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
@@ -4620,3 +4630,9 @@ export class LGraphNode
 }
 
 provideGraphNodeGuard((item): item is LGraphNode => item instanceof LGraphNode)
+
+type RegisteredLGraphNode = LGraphNode
+
+declare module './types/entityRegistry' {
+  interface LGraphNode extends RegisteredLGraphNode {}
+}

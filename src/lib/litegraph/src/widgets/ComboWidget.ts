@@ -1,7 +1,8 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { clamp } from 'es-toolkit/compat'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type {
   ComboWidgetValues,

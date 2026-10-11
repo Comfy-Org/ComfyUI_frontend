@@ -1,9 +1,16 @@
+import type {
+  LGraphNode,
+  LLink,
+  LinkConnector,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+
+import type { RerouteId } from '@/types/rerouteId'
+
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
@@ -21,8 +28,7 @@ import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+
 import { provideSubgraphOutputGuard } from './subgraphTypeGuards'
 
 export class SubgraphOutputNode
@@ -173,3 +179,9 @@ function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
 }
 
 provideSubgraphOutputGuard(isSubgraphOutput)
+
+type RegisteredSubgraphOutputNode = SubgraphOutputNode
+
+declare module '../types/entityRegistry' {
+  interface SubgraphOutputNode extends RegisteredSubgraphOutputNode {}
+}

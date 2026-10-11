@@ -1,5 +1,5 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
+import type { LGraph, LLink } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { HiddenLinkBadge } from './linkBadges'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'

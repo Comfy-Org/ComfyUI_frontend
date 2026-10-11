@@ -1,9 +1,18 @@
+import type {
+  LGraph,
+  SubgraphId,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput,
+  SubgraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { isEqual } from 'es-toolkit'
-import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import {
   captureInputLayout,
   inputLinkId,
@@ -11,7 +20,7 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { toRerouteId } from '@/types/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
@@ -29,10 +38,8 @@ import type {
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
 
-import type { GraphOrSubgraph, Subgraph } from './Subgraph'
-import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphNode } from './SubgraphNode'
+
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface FilteredItems {

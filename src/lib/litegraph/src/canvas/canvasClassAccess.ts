@@ -1,5 +1,8 @@
-import type { ContextMenu } from '../ContextMenu'
-import type { LGraphNode } from '../LGraphNode'
+import type {
+  ContextMenu,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { ColorOption } from '../interfaces'
 import type {
   IContextMenuOptions,

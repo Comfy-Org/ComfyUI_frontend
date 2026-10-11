@@ -1,3 +1,4 @@
+import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Litegraph Link Adapter
  *
@@ -6,8 +7,7 @@
  * rendering data that can be consumed by the PathRenderer.
  * Maintains backward compatibility with existing litegraph integration.
  */
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {

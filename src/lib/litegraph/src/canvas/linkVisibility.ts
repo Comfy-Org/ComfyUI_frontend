@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LLink,
+  Reroute
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '../types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -5,9 +10,6 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
 import type { CanvasPointerEvent } from '../types/events'
 
 interface LinkMutationHost {

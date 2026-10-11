@@ -1,4 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 

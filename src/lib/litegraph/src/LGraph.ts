@@ -1,3 +1,4 @@
+import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
@@ -108,7 +109,7 @@ import {
 } from './utils/namedValuesShadowDiffTelemetry'
 
 import type { DragAndScaleState } from './DragAndScale'
-import type { LGraphCanvas } from './LGraphCanvas'
+
 import { canvasClass } from './canvas/canvasClassAccess'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
@@ -121,7 +122,7 @@ import {
   unregisterLinkTopology
 } from './LLink'
 import { LinkMap } from './LinkMap'
-import type { LinkId } from './LLink'
+import type { LinkId } from '@/types/linkId'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
   registerRerouteChain,
@@ -129,7 +130,7 @@ import {
   unregisterAllRerouteChains,
   unregisterRerouteChain
 } from './Reroute'
-import type { RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -3811,3 +3812,23 @@ export class Subgraph
 }
 
 provideSubgraphGuard((value): value is Subgraph => value instanceof Subgraph)
+
+type RegisteredLGraphConfig = LGraphConfig
+type RegisteredLGraphExtra = LGraphExtra
+type RegisteredLGraph = LGraph
+type RegisteredSubgraph = Subgraph
+type RegisteredSubgraphId = SubgraphId
+type RegisteredGraphOrSubgraph = GraphOrSubgraph
+type RegisteredBaseLGraph = BaseLGraph
+
+declare module './types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    SubgraphId: RegisteredSubgraphId
+    GraphOrSubgraph: RegisteredGraphOrSubgraph
+  }
+  interface LGraphConfig extends RegisteredLGraphConfig {}
+  interface LGraphExtra extends RegisteredLGraphExtra {}
+  interface LGraph extends RegisteredLGraph {}
+  interface Subgraph extends RegisteredSubgraph {}
+  interface BaseLGraph extends RegisteredBaseLGraph {}
+}

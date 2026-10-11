@@ -1,3 +1,7 @@
+import type {
+  LGraphNode,
+  LGraph
+} from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Slot Position Calculations
  *
@@ -5,8 +9,7 @@
  * This allows both litegraph nodes and the layout system to use the same
  * calculation logic while providing their own position data.
  */
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,

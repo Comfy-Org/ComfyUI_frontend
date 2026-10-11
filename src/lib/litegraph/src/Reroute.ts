@@ -1,3 +1,7 @@
+import type {
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
@@ -29,10 +33,9 @@ function hasPointLength(value: unknown): boolean {
 }
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkId } from '@/types/linkId'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
@@ -898,4 +901,10 @@ export function unregisterAllRerouteChains(
   graph: Pick<LGraph, 'reroutes'>
 ): void {
   for (const reroute of graph.reroutes.values()) unregisterRerouteChain(reroute)
+}
+
+type RegisteredReroute = Reroute
+
+declare module './types/entityRegistry' {
+  interface Reroute extends RegisteredReroute {}
 }

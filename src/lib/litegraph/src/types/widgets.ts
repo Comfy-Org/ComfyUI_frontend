@@ -1,3 +1,7 @@
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
@@ -18,7 +22,7 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
 export type { NodeBindable } from '../utils/type'

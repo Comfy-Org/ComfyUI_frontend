@@ -436,3 +436,11 @@ export class ContextMenu<TValue = unknown> {
     return false
   }
 }
+
+type RegisteredContextMenu<TValue = unknown> = ContextMenu<TValue>
+
+declare module './types/entityRegistry' {
+  interface ContextMenu<
+    _TValue = unknown
+  > extends RegisteredContextMenu<_TValue> {}
+}

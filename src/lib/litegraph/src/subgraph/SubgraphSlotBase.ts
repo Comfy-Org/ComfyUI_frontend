@@ -1,7 +1,15 @@
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphInputNode,
+  SubgraphOutput,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+
+import type { LinkId } from '@/types/linkId'
+import type { RerouteId } from '@/types/rerouteId'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -26,11 +34,6 @@ import type {
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
-
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D

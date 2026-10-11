@@ -1,8 +1,13 @@
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LinkId } from '@/types/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
@@ -11,9 +16,6 @@ import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexErro
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-
-import type { Subgraph } from './Subgraph'
-import type { SubgraphNode } from './SubgraphNode'
 
 export type ExecutionId = string
 
