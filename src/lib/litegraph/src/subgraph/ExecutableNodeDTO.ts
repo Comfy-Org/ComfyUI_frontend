@@ -9,7 +9,8 @@ import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphErro
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 import type { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
@@ -366,8 +367,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Prefer input with the same slot ID
     if (
       oppositeInput &&
-      LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
-      LiteGraph.isValidConnection(oppositeInput.type, type)
+      litegraph().isValidConnection(oppositeInput.type, outputType) &&
+      litegraph().isValidConnection(oppositeInput.type, type)
     ) {
       return slot
     }
@@ -379,8 +380,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Find first matching slot - prefer exact type
     return inputs.findIndex(
       (input) =>
-        LiteGraph.isValidConnection(input.type, outputType) &&
-        LiteGraph.isValidConnection(input.type, type)
+        litegraph().isValidConnection(input.type, outputType) &&
+        litegraph().isValidConnection(input.type, type)
     )
   }
 

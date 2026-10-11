@@ -2,7 +2,7 @@ import { clamp } from 'es-toolkit/compat'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type {
   ComboWidgetValues,
   IComboWidget,
@@ -169,7 +169,7 @@ export class ComboWidget
           }
         }
       }
-      const menu = new LiteGraph.ContextMenu<number>([], menuOptions)
+      const menu = new (litegraph().ContextMenu)<number>([], menuOptions)
 
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
@@ -187,7 +187,7 @@ export class ComboWidget
 
     // Show dropdown menu when user clicks on widget label
     const text_values = values != values_list ? Object.values(values) : values
-    new LiteGraph.ContextMenu(text_values, {
+    new (litegraph().ContextMenu)(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
