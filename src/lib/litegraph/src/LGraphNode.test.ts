@@ -787,7 +787,7 @@ describe('LGraphNode', () => {
 
       testNode.removeWidget(widget)
 
-      expect(() => testNode.addCustomWidget(widget)).not.toThrow()
+      testNode.addCustomWidget(widget)
       expect(testNode.widgets).toEqual([widget])
     })
 
