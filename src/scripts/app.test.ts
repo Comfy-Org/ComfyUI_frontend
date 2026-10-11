@@ -3272,9 +3272,6 @@ describe('ComfyApp', () => {
         setPreviews,
         "and applied once that job's own tab is in front"
       ).toHaveBeenCalled()
-      // But the job-keyed one must still happen. The queue panel reads the
-      // running job's thumbnail from here, and linearOutputStore re-applies the
-      // last latent preview when the user switches back to that tab.
       expect(
         useJobPreviewStore().previewsByPromptId['job-b'],
         'the background job keeps its own thumbnail'
