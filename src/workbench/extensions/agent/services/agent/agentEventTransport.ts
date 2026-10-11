@@ -1,5 +1,7 @@
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
+import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
+
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
 import type {
   AskUserResolution,
@@ -261,7 +263,7 @@ export function createAgentEventTransport(
 
   function notifyCanvasCaughtUp(workflowId?: string): void {
     if (workflowId !== undefined && lastWorkflowId !== undefined) {
-      if (workflowId !== lastWorkflowId) return
+      if (!areWorkflowIdsEquivalent(lastWorkflowId, workflowId)) return
     }
     // One observed live frame may confirm one waiting write. It must never
     // rewrite an older timeout or refusal: the frame may belong to a later

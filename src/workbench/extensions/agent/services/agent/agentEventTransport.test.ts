@@ -1246,13 +1246,14 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
 
-    transport.ingest(activeTab('workflow-a'))
+    transport.ingest(activeTab(workflowId))
     transport.ingest(toolCall('add_node', 'success'))
-    transport.notifyCanvasCaughtUp('workflow-b')
+    transport.notifyCanvasCaughtUp('8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f')
 
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
-    transport.notifyCanvasCaughtUp('workflow-a')
+    transport.notifyCanvasCaughtUp(workflowId.toUpperCase())
     expect(toolParts(message)[0]).toMatchObject({
       state: 'done',
       canvasConfirmed: true

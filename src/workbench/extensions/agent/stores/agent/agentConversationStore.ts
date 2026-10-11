@@ -2,6 +2,8 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
@@ -669,13 +671,23 @@ export const useAgentConversationStore = defineStore(
     function notifyCanvasCaughtUp(workflowId?: string): void {
       activeSlot.value?.transport.notifyCanvasCaughtUp(workflowId)
       for (const settledTransport of settledActiveTransports) {
-        if (settledTransport.targetWorkflowId() === workflowId)
+        if (
+          areWorkflowIdsEquivalent(
+            settledTransport.targetWorkflowId(),
+            workflowId
+          )
+        )
           settledTransport.notifyCanvasCaughtUp(workflowId)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values()) {
-        if (entry.transport.targetWorkflowId() === workflowId)
+        if (
+          areWorkflowIdsEquivalent(
+            entry.transport.targetWorkflowId(),
+            workflowId
+          )
+        )
           entry.transport.notifyCanvasCaughtUp(workflowId)
       }
     }

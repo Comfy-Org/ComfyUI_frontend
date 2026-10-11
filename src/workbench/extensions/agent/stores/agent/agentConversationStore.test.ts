@@ -340,25 +340,29 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
     store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
     // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
     expect(store.messages[0].streaming).toBe(false)
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'streaming'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'streaming' })
+      ])
+    )
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(workflowId.toUpperCase())
 
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'done'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'done' })
+      ])
+    )
   })
 
   // PM-1575 regression (finding #1/#9, high): the normal ordering on a
@@ -1970,7 +1974,7 @@ describe('useAgentConversationStore', () => {
     expect(store.messages[0].parts).toMatchObject([
       { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
     ])
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp('f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e')
     expect(store.messages[0].parts).toMatchObject([
       { type: 'tool', name: 'add_node', state: 'done', ok: true }
     ])
