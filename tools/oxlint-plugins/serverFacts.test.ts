@@ -350,6 +350,16 @@ const other = ch.role !== 'selection'
       code: `const isOwner = pendingServerFact('BE-1', role.value === 'owner')`
     },
     {
+      name: 'a runtime type guard that validates a payload shape',
+      code: `
+function isWorkspace(value: Partial<Workspace>): value is Workspace {
+  return value.role === 'owner' || value.role === 'member'
+}
+const isTeamPayload = (value: Payload): value is TeamPayload =>
+  value.tier === 'TEAM'
+`
+    },
+    {
       name: 'a lowercase client catalog tier key',
       code: `
 const isTeam = context.tier === 'team'
@@ -384,6 +394,21 @@ const isFixed = tier === 'free' || tier === 'founder'
           messageId: 'compared',
           data: { field: 'tier', literal: 'ENTERPRISE' }
         }
+      ]
+    },
+    {
+      name: 'a boolean helper, or a callback nested in a type guard',
+      code: `
+function isOwner(workspace: Workspace): boolean {
+  return workspace.role === 'owner'
+}
+function isTeam(value: Payload): value is TeamPayload {
+  return value.members.some((member) => member.role === 'owner')
+}
+`,
+      errors: [
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } },
+        { messageId: 'compared', data: { field: 'role', literal: 'owner' } }
       ]
     },
     {

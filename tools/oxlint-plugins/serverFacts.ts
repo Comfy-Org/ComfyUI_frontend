@@ -213,26 +213,22 @@ const COMPARISON_OPERATORS: ReadonlySet<string> = new Set([
   'instanceof'
 ])
 
-type FunctionNode = Extract<
-  AstNode,
-  { type: 'ArrowFunctionExpression' | 'FunctionExpression' }
->
+type FunctionLike =
+  | Extract<AstNode, { type: 'ArrowFunctionExpression' }>
+  | Extract<AstNode, { type: 'FunctionDeclaration' | 'FunctionExpression' }>
 
-function isFunctionNode(node: AstNode): node is FunctionNode {
-  return (
-    node.type === 'ArrowFunctionExpression' ||
-    node.type === 'FunctionExpression'
-  )
+function isFunctionLike(node: AstNode): node is FunctionLike {
+  return FUNCTION_TYPES.has(node.type)
 }
 
 function returnArguments(node: AstNode): AstNode[] {
   if (node.type === 'ReturnStatement')
     return node.argument ? [node.argument] : []
-  if (FUNCTION_TYPES.has(node.type)) return []
+  if (isFunctionLike(node)) return []
   return childNodes(node).flatMap(returnArguments)
 }
 
-function returnedValues({ body }: FunctionNode): AstNode[] {
+function returnedValues({ body }: FunctionLike): AstNode[] {
   return body.type === 'BlockStatement' ? returnArguments(body) : [body]
 }
 
@@ -240,11 +236,11 @@ function returnedValues({ body }: FunctionNode): AstNode[] {
 // argument a ref is seeded with.
 function boundValues(init: AstNode): AstNode[] {
   const expression = unwrap(init)
-  if (isFunctionNode(expression)) return returnedValues(expression)
+  if (isFunctionLike(expression)) return returnedValues(expression)
   if (expression.type !== 'CallExpression') return [expression]
   const first = expression.arguments.at(0)
   const callee = factName(expression.callee)
-  if (callee === 'computed' && first && isFunctionNode(first)) {
+  if (callee === 'computed' && first && isFunctionLike(first)) {
     return returnedValues(first)
   }
   return (callee === 'ref' || callee === 'shallowRef') && first
@@ -564,6 +560,46 @@ export const noCapabilityRecombination: Rule = {
   }
 }
 
+type Binary = VisitedNode<'BinaryExpression'>
+
+interface FactComparison {
+  field: string
+  literal: string
+  path: string | undefined
+}
+
+function factComparison(node: Binary): FactComparison | undefined {
+  if (!EQUALITY_OPERATORS.has(node.operator)) return undefined
+  const leftLiteral = stringLiteral(node.left)
+  const [literal, compared] =
+    leftLiteral === undefined
+      ? [stringLiteral(node.right), node.left]
+      : [leftLiteral, node.right]
+  const field = factName(compared)
+  if (literal === undefined || field === undefined) return undefined
+  return COMPARED_FACTS.get(field)?.(literal)
+    ? { field, literal, path: memberPath(compared) }
+    : undefined
+}
+
+function enclosingFunction(node: AstNode): FunctionLike | undefined {
+  const { parent } = node
+  if (parent === null) return undefined
+  return isFunctionLike(parent) ? parent : enclosingFunction(parent)
+}
+
+// A runtime guard such as `value is Workspace` validates a payload's shape.
+function isInsideTypeGuard(node: AstNode): boolean {
+  return (
+    enclosingFunction(node)?.returnType?.typeAnnotation.type ===
+    'TSTypePredicate'
+  )
+}
+
+function isExemptComparison(node: Binary): boolean {
+  return isInsidePendingFact(node) || isInsideTypeGuard(node)
+}
+
 export const noServerFactLiterals: Rule = {
   meta: {
     type: 'problem',
@@ -581,21 +617,9 @@ export const noServerFactLiterals: Rule = {
   create(context) {
     return {
       BinaryExpression(node) {
-        if (!EQUALITY_OPERATORS.has(node.operator)) return
-        const leftLiteral = stringLiteral(node.left)
-        const [literal, compared] =
-          leftLiteral === undefined
-            ? [stringLiteral(node.right), node.left]
-            : [leftLiteral, node.right]
-        const field = factName(compared)
-        if (
-          literal === undefined ||
-          field === undefined ||
-          !(COMPARED_FACTS.get(field)?.(literal) ?? false) ||
-          isInsidePendingFact(node)
-        ) {
-          return
-        }
+        const comparison = factComparison(node)
+        if (!comparison || isExemptComparison(node)) return
+        const { field, literal } = comparison
         context.report({
           node,
           messageId: 'compared',
