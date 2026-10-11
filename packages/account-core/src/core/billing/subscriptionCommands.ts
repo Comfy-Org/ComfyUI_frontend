@@ -39,6 +39,7 @@ import type {
   PendingBillingOperation
 } from './operationState.js'
 import { validateActionUrl } from './operationState.js'
+import type { ParsedBillingBody } from './sharedRead.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
 import type { BillingStatusReader } from './status.js'
 import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
@@ -327,7 +328,7 @@ export function createBillingCommands(
   function post<T>(
     route: string,
     body: unknown,
-    parse: (body: unknown) => z.SafeParseReturnType<unknown, T>,
+    parse: (body: unknown) => ParsedBillingBody<T>,
     key?: string
   ) {
     return readValidatedBillingResponse(

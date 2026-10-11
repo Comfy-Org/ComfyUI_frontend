@@ -74,7 +74,7 @@ import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageReso
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
@@ -177,7 +177,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.rootGraph.serialize(),
+      workflow: useApp().rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,

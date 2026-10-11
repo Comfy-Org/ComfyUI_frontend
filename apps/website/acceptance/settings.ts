@@ -28,7 +28,7 @@ export function liveSettings(
   const environment = z
     .enum(['prod', 'staging', 'test'])
     .parse(env.PUBLIC_WORKSHOP_CLOUD_ENV)
-  const url = new URL(z.string().url().parse(env.WORKSHOP_SITE_URL))
+  const url = new URL(z.url().parse(env.WORKSHOP_SITE_URL))
   if (
     url.protocol !== 'https:' ||
     url.username ||
@@ -50,7 +50,7 @@ export function requiredSetting(name: string): string {
 
 export function expectedCharge(slug: string, variant: string): number {
   const prices = z
-    .record(z.number().finite().positive())
+    .record(z.string(), z.number().positive())
     .parse(JSON.parse(requiredSetting('WORKSHOP_EXPECTED_CHARGES_JSON')))
   const price = prices[`${slug}/${variant}`]
   if (!price) throw new Error(`Missing reviewed charge for ${slug}/${variant}`)

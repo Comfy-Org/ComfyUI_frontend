@@ -9,6 +9,8 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -20,11 +22,13 @@ import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useAuthStore } from '@/stores/authStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 
 const redirectAfterAuth = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock(
@@ -103,7 +107,7 @@ async function renderLoginView(
   })
   await router.push(url)
   await router.isReady()
-  return render(CloudLoginView, {
+  const rendered = render(CloudLoginView, {
     global: {
       plugins: [
         router,
@@ -112,6 +116,7 @@ async function renderLoginView(
       stubs: { CloudSignInForm: SignInFormStub }
     }
   })
+  return { ...rendered, router }
 }
 
 afterEach(() => {
@@ -330,6 +335,108 @@ describe('CloudLoginView SSO', () => {
         email: 'ada@acme.com',
         returnTo: '/cloud/user-check'
       })
+    })
+
+    it('reports the SSO email as the attempt continuing to SSO', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+        name: 'app:sso_continue_clicked',
+        properties: { surface: 'cloud_login', flow_id: expect.any(String) }
+      })
+    })
+
+    it('still leaves for SSO when session storage refuses the attempt', async () => {
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('full', 'QuotaExceededError')
+      })
+      discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ name: 'app:sso_continue_clicked' })
+      )
+    })
+
+    it('reports nothing for an email without SSO', async () => {
+      discoverReplies({ sso: false })
+      await renderLoginView()
+
+      await continueWithSso('ada@example.com')
+
+      expect(await screen.findByText('auth.sso.notSso')).toBeInTheDocument()
+      expect(useTelemetry()?.trackSsoEvent).not.toHaveBeenCalled()
+    })
+
+    it('reports a return from the identity provider without signing in as cancelled', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView()
+      await continueWithSso('ada@acme.com')
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+
+      window.dispatchEvent(
+        Object.assign(new Event('pageshow'), { persisted: true })
+      )
+
+      const [[continued], [failed]] = vi.mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls
+      expect(failed).toEqual({
+        name: 'app:sso_sign_in_failed',
+        properties: {
+          surface: 'cloud_login',
+          reason: 'cancelled',
+          flow_id: continued.properties.flow_id
+        }
+      })
+    })
+
+    it.for<{ code: string; reason: string }>([
+      { code: 'SSO_INVALID_STATE', reason: 'state_mismatch' },
+      { code: 'SSO_ORG_NOT_ATTACHED', reason: 'org_not_attached' },
+      { code: 'SSO_IDP_ERROR', reason: 'server_error' }
+    ])(
+      'reports ?sso_error=$code as a $reason failure of the attempt that left',
+      async ({ code, reason }) => {
+        const attempt = ssoFlowStore.start('cloud_app')
+
+        await renderLoginView(`/cloud/login?sso_error=${code}`)
+
+        expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+          name: 'app:sso_sign_in_failed',
+          properties: { surface: 'cloud_app', reason, flow_id: attempt.flowId }
+        })
+        expect(ssoFlowStore.current()).toBeUndefined()
+      }
+    )
+
+    it('reports an ?sso_error once, dropping it from the URL but keeping its message', async () => {
+      ssoFlowStore.start('cloud_app')
+      const { router, unmount } = await renderLoginView(
+        '/cloud/login?sso_error=SSO_IDP_ERROR&previousFullPath=%2Fworkflows'
+      )
+
+      await waitFor(() =>
+        expect(router.currentRoute.value.query).toEqual({
+          previousFullPath: '/workflows'
+        })
+      )
+      expect(screen.getByText('auth.sso.errors.idpError')).toBeInTheDocument()
+      unmount()
+      render(CloudLoginView, {
+        global: {
+          plugins: [router, createI18n({ legacy: false, locale: 'en' })],
+          stubs: { CloudSignInForm: SignInFormStub }
+        }
+      })
+
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledOnce()
     })
 
     it('returns to the page the visitor came from', async () => {
@@ -583,7 +690,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     await signInWithFirebase()
 
     await waitFor(() =>
-      expect(presentSsoRequired).toHaveBeenCalledWith({
+      expect(presentSsoRequired).toHaveBeenCalledWith('firebase_sign_in', {
         email: 'ada@acme.com',
         returnTo
       })

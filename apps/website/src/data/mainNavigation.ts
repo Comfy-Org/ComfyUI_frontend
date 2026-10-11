@@ -150,13 +150,11 @@ export function getMainNavigation(
           items: [
             {
               label: t('nav.cinematicStudio'),
-              href: routes.cinematicStudio,
-              newTab: true
+              href: routes.cinematicStudio
             },
             ...when(hubSections.reshoot, {
               label: t('nav.reshoot'),
-              href: routes.reshoot,
-              newTab: true
+              href: routes.reshoot
             })
           ],
           allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }

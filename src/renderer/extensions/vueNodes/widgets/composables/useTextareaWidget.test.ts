@@ -34,7 +34,7 @@ function createTextareaSpec(
     cols: number
   }> = {}
 ): InputSpec {
-  return { type: 'TEXTAREA', name: 'text', ...overrides } as InputSpec
+  return { type: 'TEXTAREA', name: 'text', ...overrides }
 }
 
 describe('useTextareaWidget', () => {

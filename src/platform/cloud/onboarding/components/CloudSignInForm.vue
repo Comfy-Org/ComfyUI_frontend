@@ -63,7 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -82,6 +81,7 @@ import {
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
