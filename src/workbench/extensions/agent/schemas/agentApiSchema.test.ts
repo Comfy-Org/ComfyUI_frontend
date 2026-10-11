@@ -172,6 +172,23 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.success).toBe(true)
   })
 
+  it('accepts a persisted tool-call row with no status key or an explicit null status (dante01yoon review round 2 on #19621)', () => {
+    const noStatusKey = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'search_nodes'
+    })
+    const nullStatus = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'search_nodes',
+      status: null
+    })
+
+    expect(noStatusKey.success).toBe(true)
+    expect(nullStatus.success).toBe(true)
+  })
+
   it.for([null, 'not-an-array', 42, {}])(
     'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array (Cursor review finding 3 on #19621)',
     (toolCalls) => {

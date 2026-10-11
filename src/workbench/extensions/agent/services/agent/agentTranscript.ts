@@ -340,7 +340,11 @@ function parseToolCalls(
 
 /** A persisted tool-call `status` of `pending`/`running` is still in flight;
  * anything else (`success`/`error`/`ok`, or an unrecognized string) is
- * terminal — settled for good, independent of `isLive` clamping. */
+ * terminal — settled for good, independent of `isLive` clamping. This
+ * includes `undefined`: a tool part that reached `message.parts` through a
+ * path this module doesn't track in `toolCallStatusByMessage` has no known
+ * status, and the conservative default is to treat it as already settled so
+ * `appendAssistantContent`'s dedupe never overwrites it. */
 function isTerminalStatus(status: unknown): boolean {
   return status !== 'pending' && status !== 'running'
 }

@@ -137,7 +137,7 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   // key, and `.optional()` alone rejects that, failing this entry's
   // `safeParse` and dropping the whole tool-call row.
   tool_call_id: z.string().nullish(),
-  status: z.string(),
+  status: z.string().nullish(),
   duration_ms: z.number().nullish(),
   skill: zSkillName
 })

@@ -1132,21 +1132,35 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
-  it('drops a persisted tool call entry with no status field, since status is required by the generated contract', () => {
-    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
-    message.content = {
-      text: 'Done',
-      tool_calls: [
-        { id: 'audit-1', tool_call_id: 'call-1', tool_name: 'search_nodes' }
-      ]
+  it.for([
+    { id: 'audit-1', tool_call_id: 'call-1', tool_name: 'search_nodes' },
+    {
+      id: 'audit-1',
+      tool_call_id: 'call-1',
+      tool_name: 'search_nodes',
+      status: null
     }
+  ])(
+    'still produces a ToolPart for a persisted tool call entry missing status or carrying status: null (dante01yoon review round 2 on #19621): $status',
+    (toolCall) => {
+      const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+      message.content = {
+        text: 'Done',
+        tool_calls: [toolCall]
+      }
 
-    const transcript = normalizeAgentTranscript([message])
+      const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toEqual([
-      { type: 'text', text: 'Done', state: 'done' }
-    ])
-  })
+      expect(transcript.messages[0].parts).toContainEqual(
+        expect.objectContaining({
+          type: 'tool',
+          callId: 'call-1',
+          name: 'search_nodes',
+          state: 'done'
+        })
+      )
+    }
+  )
 
   it('does not fail the whole history load through zAgentMessages.parse() when one tool-call entry is malformed (regression for agent_history_load_failed)', () => {
     // A raw wire payload, not the pre-typed `row()` fixture: this goes
