@@ -139,10 +139,11 @@ const READY_AGENT = { state: 'ready', reason: null } as const
 // store's loader retries with exponential backoff, so an unmocked read costs
 // every test in this file several seconds of a request that cannot succeed here.
 const offerDeclined = ref(false)
+const consentOfferDeclined = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock(
   import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
   () => ({
-    consentOfferDeclined: () => Promise.resolve(offerDeclined.value),
+    consentOfferDeclined,
     recordConsentOfferDeclined: vi.fn(() => Promise.resolve())
   })
 )
@@ -228,6 +229,9 @@ describe('AgentPanel extension flag gate', () => {
     releaseFirstRunScreen()
     activeTour.value = null
     offerDeclined.value = false
+    consentOfferDeclined.mockImplementation(() =>
+      Promise.resolve(offerDeclined.value)
+    )
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
@@ -1244,15 +1248,17 @@ describe('AgentPanel extension flag gate', () => {
       offerDeclined.value = true
 
       await loadEntryAndSetup()
-      await flush()
+      const exited = await offerExited()
+      await vi.waitFor(() =>
+        expect(exited).toHaveBeenCalledExactlyOnceWith({
+          exit: 'consent_declined',
+          stage: 'startup',
+          retry_armed: false
+        })
+      )
 
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
-        exit: 'consent_declined',
-        stage: 'startup',
-        retry_armed: false
-      })
     })
 
     it('stays silent when a surface that was holding the offer releases it', async () => {
@@ -1264,26 +1270,67 @@ describe('AgentPanel extension flag gate', () => {
       Object.assign(consentStore, { accepted: false, isChecking: false })
 
       await loadEntryAndSetup()
-      await flush()
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'dialog_open'
-      })
+      const held = await notOffered()
+      await vi.waitFor(() =>
+        expect(held).toHaveBeenCalledExactlyOnceWith({
+          reason: 'dialog_open'
+        })
+      )
 
       offerDeclined.value = true
       closeDialog()
-      await flush()
-      await flush()
-
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+      const exited = await offerExited()
       // `retry_armed` reports the hold as the exit was taken, like every other
       // exit here, so it is true on the attempt that drops it. The exit value is
       // what says the offer is gone for good; this property never does.
-      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
-        exit: 'consent_declined',
-        stage: 'startup',
-        retry_armed: true
+      await vi.waitFor(() =>
+        expect(exited).toHaveBeenCalledExactlyOnceWith({
+          exit: 'consent_declined',
+          stage: 'startup',
+          retry_armed: true
+        })
+      )
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+    })
+
+    it("does not offer account B from account A's stale refusal result", async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let decideStartup = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decideStartup = resolve
       })
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(consentOfferDeclined).toHaveBeenCalledOnce()
+      )
+
+      offerDeclined.value = true
+      currentUser.value = { id: 'account-b' }
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await vi.waitFor(() =>
+        expect(consentOfferDeclined.mock.calls.length).toBeGreaterThan(1)
+      )
+
+      decideStartup(true)
+      const exited = await offerExited()
+      await vi.waitFor(() =>
+        expect(exited).toHaveBeenCalledExactlyOnceWith({
+          exit: 'consent_declined',
+          stage: 'startup',
+          retry_armed: false
+        })
+      )
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentConsent.AutoShown.account-b.workspace-a'
+        )
+      ).toBeNull()
     })
 
     it('does not suppress panel activation', async () => {
