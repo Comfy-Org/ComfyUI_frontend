@@ -144,7 +144,8 @@ export async function syncCampaignLinks(
       method,
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-User-Name': 'Campaign Links automation'
       },
       ...(body !== undefined && { body: JSON.stringify(body) }),
       redirect: 'error',

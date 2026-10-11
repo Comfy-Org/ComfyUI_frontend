@@ -87,7 +87,7 @@ describe('campaign link automation', () => {
     expect(() => buildCampaignLinks(input)).toThrow()
   })
 
-  it('skips existing and repeated links despite query order or deleted status', async () => {
+  it('skips existing and repeated links despite query order', async () => {
     const links = buildCampaignLinks({
       vertical: 'vfx',
       track: 'comfy-led',
@@ -98,7 +98,6 @@ describe('campaign link automation', () => {
         links: [
           {
             id: 'existing',
-            isDeleted: true,
             fullUrl:
               'https://comfy.org/vfx/?utm_content=sizzle_video_01&utm_campaign=comfy_vfx&utm_medium=ads&utm_source=linkedin'
           }
@@ -149,6 +148,9 @@ describe('campaign link automation', () => {
     expect(writes).toHaveLength(1)
     expect(writes[0]?.[0]).toBe(
       'https://utm-link-manager.pages.dev/api/links-batch'
+    )
+    expect(new Headers(writes[0]?.[1]?.headers).get('X-User-Name')).toBe(
+      'Campaign Links automation'
     )
     expect(JSON.parse(String(writes[0]?.[1]?.body))).toEqual({
       action: 'create',

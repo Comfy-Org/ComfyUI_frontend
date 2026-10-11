@@ -14,16 +14,23 @@ Campaign names follow the existing `comfy_vfx` convention, with `comfy_` or
 - **check** reads the manager and reports missing links without creating anything.
 - **create-drafts** creates missing records and reads them back to verify they saved.
 
-Duplicate detection compares full URLs with query parameters sorted, including
-soft-deleted records. Runs never edit or reactivate existing records. IDs for new
-records are deterministic. GitHub serializes runs to avoid overlapping writes.
+Duplicate detection compares full URLs returned by the manager with query
+parameters sorted. The manager excludes soft-deleted records, so a deleted URL
+may appear missing. If its deterministic ID already exists, creation fails;
+check the manager before rerunning. Runs never edit or reactivate existing
+records. GitHub serializes runs to avoid overlapping writes.
 It does not publish Bitly links, launch ads or change landing pages.
 
 Cloud activation requires merging this workflow onto `main` and configuring the
 `UTM_MANAGER_TOKEN` GitHub Actions secret with a credential verified by the UTM
-Manager owner. The deployed app uses Google sign-in and an app Bearer token;
-dedicated service authentication has not been verified. Do not copy a personal
-browser session into GitHub. No credential is embedded in code or output.
+Manager owner. The [manager backend](https://github.com/Comfy-Org/UTM_link_manager)
+validates requests against its production `ACCESS_TOKEN`. It does not enforce
+token expiry or endpoint scopes; the token grants access beyond draft creation.
+The owner must approve its use and configure it directly in GitHub from the
+production secret store. Rotation requires updating both services. Do not copy
+a personal browser session into GitHub. No credential is embedded in code or
+output. Drafts use the creator name `Campaign Links automation`; no person is
+impersonated.
 
 The target URLs use intended `comfy.org` production routes. They remain drafts
 until the campaign pages and partner assets receive launch clearance. Campaign
