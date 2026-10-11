@@ -1894,9 +1894,9 @@ describe('useNodeReplacement', () => {
         name: 'reads widgets_values_named instead of a compacted widgets_values',
         serialized: {
           widgets_values: ['lanczos', 3.5],
-          widgets_values_named: { upscale_method: 'lanczos', scale_by: 3.5 }
+          widgets_values_named: { upscale_method: 'lanczos', scale_by: 4.5 }
         },
-        expected: 3.5
+        expected: 4.5
       },
       {
         name: 'skips the transfer when widgets_values_named lacks the input',
