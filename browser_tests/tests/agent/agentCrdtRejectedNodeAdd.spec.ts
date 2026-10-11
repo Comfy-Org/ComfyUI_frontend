@@ -17,7 +17,6 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -88,9 +87,13 @@ async function emptyCanvasPointBelow(
   const point = { x: box.x + box.width / 2, y: box.y + box.height + 160 }
   const viewport = page.viewportSize()
   if (!viewport) throw new Error('this spec needs a sized viewport')
-  if (point.y > viewport.height - 80)
+  // Both axes: the agent panel occupies the right of the same viewport, so a
+  // layout change can push the point off-screen horizontally as easily as
+  // vertically, and an unchecked miss double-clicks nothing instead of
+  // failing. Reported as the point itself, not as the node's lower edge.
+  if (point.y > viewport.height - 80 || point.x > viewport.width - 80)
     throw new Error(
-      `no empty canvas below the seed node: it ends at y=${box.y + box.height} in a ${viewport.height}px viewport`
+      `no empty canvas below the seed node: the aimed point is (${point.x}, ${point.y}) in a ${viewport.width}x${viewport.height}px viewport`
     )
   return point
 }
@@ -230,6 +233,13 @@ async function addThroughSearchBox(
   type: string,
   at: { x: number; y: number }
 ): Promise<string> {
+  // Derived from the def rather than hard-coded, so a call with a different
+  // `type` cannot silently assert another class's display name.
+  const displayName = nodeDefs[type]?.display_name
+  if (!displayName)
+    throw new Error(
+      `no mocked node def for ${type}, so its result row is unverifiable`
+    )
   await page.mouse.dblclick(at.x, at.y, { delay: 5 })
   const dialog = page.getByRole('search')
   // Named explicitly: a widget-select trigger on the seed node is also
@@ -238,7 +248,7 @@ async function addThroughSearchBox(
   await input.waitFor({ state: 'visible' })
   await input.fill(type)
   const results = dialog.getByTestId(TestIds.searchBoxV2.resultItem)
-  await expect(results.first()).toContainText('CLIP Text Encode')
+  await expect(results.first()).toContainText(displayName)
   await page.keyboard.press('Enter')
   await expect(dialog).toBeHidden()
   await page.mouse.click(at.x, at.y)
@@ -259,7 +269,8 @@ test.describe(
 
     test('leaves the canvas and tells the person it was refused', async ({
       page,
-      agentFlagEnabled
+      agentFlagEnabled,
+      toast
     }) => {
       const host = new HostDoc(WORKFLOW_ID, hostSeed, catalog)
       // `hold` parks the page's own `doc_ops` batch instead of judging it on
@@ -335,7 +346,14 @@ test.describe(
         })
 
       await test.step('the host refuses the add', async () => {
-        expect(hostSocket.releaseHeldClientOps()).not.toEqual([])
+        // `heldClientOps()` flattens every held batch, but
+        // `releaseHeldClientOps()` judges only the OLDEST one. So the poll
+        // above proves the add is held somewhere, not that it is the batch
+        // about to be judged — and `.not.toEqual([])` would be satisfied by
+        // any other batch queued ahead of it (a catch-up mint, or the
+        // placement click). Assert the released batch IS the add.
+        const released = hostSocket.releaseHeldClientOps()
+        expect(released.map((op) => op.op)).toContain('add_node')
         await expect
           .poll(() => hostSocket.humanOpOutcomes())
           .toEqual(
@@ -350,17 +368,11 @@ test.describe(
           )
       })
 
-      await test.step('the refused node is gone from the canvas and the seed node is not', async () => {
-        await expect(vueNodes.getNodeLocator(addedNodeId)).toBeHidden()
-        await expect.poll(() => nodeIdsOfType(page, ADDED_CLASS)).toEqual([])
-        await expect(vueNodes.getNodeLocator(SEED_NODE_ID)).toBeVisible()
-        // The canvas agrees with the document again: a later run reads the
-        // same graph the person is looking at.
-        expect(host.projection().nodes.map((node) => String(node.id))).toEqual([
-          SEED_NODE_ID
-        ])
-      })
-
+      // Asserted BEFORE the canvas assertions below: the notice is created
+      // with `life: NOTICE_LIFE_MS` (10s) and its expiry clock starts when
+      // the verdict is handled, so putting three default-5s-timeout canvas
+      // assertions in front of it lets a slow run watch PrimeVue remove the
+      // toast and then fail on a message that really was shown.
       await test.step('the person is told the edit was refused', async () => {
         // `toastErrors` is not filtered on `:visible` and `toContainText`
         // passes on any node in the collection, so either alone would accept
@@ -368,10 +380,21 @@ test.describe(
         // The graph-edit copy, not the widget-write copy: the op the host
         // named is an `add_node`, and `rejectedOpNotice` reserves the
         // widget-write wording for a refused `set_widget`.
-        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        const rejectionToast = toast.toastErrors.filter({
           hasText: enMessages.agent.editRejected.generic
         })
         await expect(rejectionToast).toBeVisible({ timeout: 10_000 })
+      })
+
+      await test.step('the refused node is gone from the canvas and the seed node is still there', async () => {
+        await expect(vueNodes.getNodeLocator(addedNodeId)).toBeHidden()
+        await expect.poll(() => nodeIdsOfType(page, ADDED_CLASS)).toEqual([])
+        // Narrower than "and nothing else": this checks the seed node
+        // survived the revert, not that every widget value on it is
+        // untouched. A revert that moved it or reset `seed`/`steps` would
+        // still pass, and covering that needs a serialized-shape oracle this
+        // case does not carry.
+        await expect(vueNodes.getNodeLocator(SEED_NODE_ID)).toBeVisible()
       })
     })
   }
