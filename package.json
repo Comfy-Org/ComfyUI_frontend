@@ -115,7 +115,6 @@
     "@tiptap/extension-table": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
-    "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "@vueuse/router": "^14.4.0",
@@ -239,8 +238,7 @@
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
     "yaml": "catalog:",
-    "zip-dir": "^2.0.0",
-    "zod-to-json-schema": "catalog:"
+    "zip-dir": "^2.0.0"
   },
   "engines": {
     "node": ">=26.8.2 <27",
