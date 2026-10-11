@@ -10,6 +10,8 @@ import type {
 } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -123,8 +125,6 @@ export function useBillingDialogs() {
       return
     }
 
-    const { useSubscriptionDialog } =
-      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
     show(options)
   }
@@ -320,3 +320,5 @@ export function useBillingDialogs() {
     showDowngradeToPersonalDialog
   }
 }
+
+provideBillingDialogs(useBillingDialogs)
