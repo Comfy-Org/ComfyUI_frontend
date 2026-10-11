@@ -1,83 +1,62 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { until } from '@vueuse/core'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { api } from '@/scripts/api'
 
-const defaultSettingStore = {
-  get: vi.fn((key: string) => {
-    switch (key) {
-      case 'Comfy.Templates.SelectedModels':
-      case 'Comfy.Templates.SelectedUseCases':
-      case 'Comfy.Templates.SelectedRunsOn':
-        return []
-      case 'Comfy.Templates.SortBy':
-        return 'newest'
-      default:
-        return undefined
-    }
-  }),
-  set: vi.fn().mockResolvedValue(undefined)
-}
+let defaultSettingStore: ReturnType<typeof useSettingStore>
 
-const defaultRankingStore = {
-  computeDefaultScore: vi.fn(
-    (_date?: string, _rank?: number, usage: number = 0) => usage
-  ),
-  computeFreshness: vi.fn(() => 0.5),
-  largestUsageScore: 0
-}
+let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
-const mockSystemStatsStore = {
-  systemStats: {
-    system: {
-      os: 'linux'
-    }
-  }
-}
+let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => defaultSettingStore)
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/stores/templateRankingStore', () => ({
-  useTemplateRankingStore: vi.fn(() => defaultRankingStore)
-}))
-
-vi.mock('@/stores/systemStatsStore', () => ({
-  useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
-}))
-
-const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged,
-    trackSearchQuery: vi.fn()
-  }))
-}))
-
-vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
-  useSearchQueryTracking: vi.fn()
-}))
+vi.mock(
+  import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
+  () => ({
+    useSearchQueryTracking: vi.fn()
+  })
+)
 
 describe('useTemplateFiltering', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  beforeEach(async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial<Awaited<ReturnType<typeof api.getSystemStats>>>({
+        system: { os: 'linux' }
+      })
+    )
+    defaultSettingStore = useSettingStore()
+    defaultRankingStore = useTemplateRankingStore()
+    mockSystemStatsStore = useSystemStatsStore()
+    await until(() => mockSystemStatsStore.isInitialized).toBe(true)
+    defaultSettingStore.settingValues = {
+      'Comfy.Templates.SelectedModels': [],
+      'Comfy.Templates.SelectedUseCases': [],
+      'Comfy.Templates.SelectedRunsOn': [],
+      'Comfy.Templates.SortBy': 'newest'
+    }
+    vi.mocked(defaultSettingStore.set).mockResolvedValue(undefined)
+    vi.mocked(defaultRankingStore.computeDefaultScore).mockImplementation(
+      (_date, _rank, usage = 0) => usage
+    )
+    vi.mocked(defaultRankingStore.computeFreshness).mockReturnValue(0.5)
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-    mockSystemStatsStore.systemStats.system.os = 'linux'
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
+    mockSystemStatsStore.systemStats = fromPartial<
+      NonNullable<typeof mockSystemStatsStore.systemStats>
+    >({ system: { os: 'linux' } })
   })
 
   it('filters by search text, models, tags, and license with debounce handling', async () => {
-    vi.useFakeTimers()
-
     const templates = ref<TemplateInfo[]>([
       {
         name: 'api-template',
@@ -397,6 +376,15 @@ describe('useTemplateFiltering', () => {
       return composable
     }
 
+    // Search now defaults to Popular, so anything asserting the relevance
+    // pipeline must select Relevance or it silently measures usage instead.
+    async function searchByRelevance(templates: TemplateInfo[], query: string) {
+      const composable = await searchFor(templates, query)
+      composable.sortSelection.value = 'relevance'
+      await nextTick()
+      return composable
+    }
+
     it('matches "img2img" via abbreviation expansion', async () => {
       const templates = [
         buildTemplate({
@@ -433,7 +421,10 @@ describe('useTemplateFiltering', () => {
         })
       ]
 
-      const { filteredTemplates } = await searchFor(templates, 'flux upscale')
+      const { filteredTemplates } = await searchByRelevance(
+        templates,
+        'flux upscale'
+      )
 
       expect(names(filteredTemplates.value)[0]).toBe('flux_upscale')
     })
@@ -454,13 +445,16 @@ describe('useTemplateFiltering', () => {
         })
       ]
 
-      const { filteredTemplates } = await searchFor(templates, 'upscale')
+      const { filteredTemplates } = await searchByRelevance(
+        templates,
+        'upscale'
+      )
 
       // Near-identical text scores → the far more used template ranks first.
       expect(names(filteredTemplates.value)[0]).toBe('high_usage_upscale')
     })
 
-    it('keeps relevance order even when a usage sort is persisted', async () => {
+    it('defaults a search to Popular, ranking usage over match quality', async () => {
       const templates = [
         buildTemplate({
           name: 'exact_match',
@@ -477,17 +471,38 @@ describe('useTemplateFiltering', () => {
       ]
 
       const composable = useTemplateFiltering(ref(templates))
-      composable.sortBy.value = 'popular'
       composable.searchQuery.value = 'outpaint'
       await nextTick()
 
-      // Search defaults to relevance regardless of the persisted browse sort,
-      // so the exact title match wins over the high-usage weak match.
-      expect(composable.sortSelection.value).toBe('relevance')
+      expect(composable.sortSelection.value).toBe('popular')
+      expect(
+        names(composable.filteredTemplates.value)[0],
+        'the accepted cost of a Popular default: a weak high-usage match leads'
+      ).toBe('popular_weak_match')
+    })
+
+    it('still ranks by match quality once Relevance is selected', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'exact_match',
+          title: 'Outpaint Studio',
+          tags: ['Outpaint'],
+          usage: 1
+        }),
+        buildTemplate({
+          name: 'popular_weak_match',
+          title: 'Portrait Generator',
+          description: 'supports outpaint as a minor feature',
+          usage: 9000
+        })
+      ]
+
+      const composable = await searchByRelevance(templates, 'outpaint')
+
       expect(names(composable.filteredTemplates.value)[0]).toBe('exact_match')
     })
 
-    it('lets the user override relevance with another sort while searching', async () => {
+    it('lets the user override the search default with another sort', async () => {
       const templates = [
         buildTemplate({
           name: 'exact_low_usage',
@@ -505,34 +520,36 @@ describe('useTemplateFiltering', () => {
       const composable = useTemplateFiltering(ref(templates))
       composable.searchQuery.value = 'outpaint'
       await nextTick()
-      expect(composable.sortSelection.value).toBe('relevance')
-      expect(names(composable.filteredTemplates.value)[0]).toBe(
-        'exact_low_usage'
-      )
-
-      composable.sortSelection.value = 'popular'
-      await nextTick()
       expect(composable.sortSelection.value).toBe('popular')
       expect(names(composable.filteredTemplates.value)[0]).toBe(
         'weak_high_usage'
       )
+
+      composable.sortSelection.value = 'relevance'
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('relevance')
+      expect(names(composable.filteredTemplates.value)[0]).toBe(
+        'exact_low_usage'
+      )
     })
 
-    it('restores the browse sort when the search is cleared and keeps relevance ephemeral', async () => {
+    it('restores the browse sort when the search is cleared', async () => {
       const composable = useTemplateFiltering(
         ref([buildTemplate({ name: 'only', title: 'Only' })])
       )
-      composable.sortBy.value = 'popular'
+      composable.sortBy.value = 'newest'
 
       composable.searchQuery.value = 'only'
       await nextTick()
-      expect(composable.sortSelection.value).toBe('relevance')
+      expect(composable.sortSelection.value).toBe('popular')
 
       composable.searchQuery.value = ''
       await nextTick()
-      // Browse sort is untouched by the search; relevance is never persisted.
-      expect(composable.sortSelection.value).toBe('popular')
-      expect(composable.sortBy.value).toBe('popular')
+      expect(
+        composable.sortSelection.value,
+        'the search default must never overwrite the persisted browse sort'
+      ).toBe('newest')
+      expect(composable.sortBy.value).toBe('newest')
     })
 
     it('keeps a browse sort chosen mid-search ephemeral', async () => {
@@ -582,23 +599,20 @@ describe('useTemplateFiltering', () => {
     })
 
     it('reports the visible sort to telemetry, not the persisted browse sort', async () => {
-      vi.useFakeTimers()
-      try {
-        const composable = useTemplateFiltering(
-          ref([buildTemplate({ name: 'only', title: 'Only' })])
-        )
-        composable.sortBy.value = 'popular'
-        composable.searchQuery.value = 'only'
-        await nextTick()
-        await vi.runOnlyPendingTimersAsync()
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'newest'
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      await vi.runOnlyPendingTimersAsync()
 
-        // Searching shows relevance, so telemetry must report relevance, not popular.
-        expect(trackTemplateFilterChanged).toHaveBeenLastCalledWith(
-          expect.objectContaining({ sort_by: 'relevance' })
-        )
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(
+        useTelemetry()?.trackTemplateFilterChanged,
+        'telemetry must report the search default, not the persisted browse sort'
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort_by: 'popular' })
+      )
     })
 
     it('preserves relevance order after a model filter narrows the results', async () => {
@@ -617,8 +631,7 @@ describe('useTemplateFiltering', () => {
         })
       ]
 
-      const composable = useTemplateFiltering(ref(templates))
-      composable.searchQuery.value = 'upscale'
+      const composable = await searchByRelevance(templates, 'upscale')
       composable.selectedModels.value = ['Flux']
       await nextTick()
 
@@ -938,7 +951,6 @@ describe('useTemplateFiltering', () => {
     })
 
     it('distribution filter composes with search filter', async () => {
-      vi.useFakeTimers()
       setDistribution('cloud')
 
       const searchableTemplate: TemplateInfo = {
@@ -1061,7 +1073,7 @@ describe('useTemplateFiltering', () => {
 
     it('mac distribution matches templates with mac includeOnDistributions', () => {
       setDistribution('desktop')
-      mockSystemStatsStore.systemStats.system.os = 'darwin'
+      mockSystemStatsStore.systemStats!.system.os = 'darwin'
 
       const macTemplate: TemplateInfo = {
         name: 'mac-template',

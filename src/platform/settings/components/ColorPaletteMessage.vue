@@ -1,16 +1,17 @@
 <template>
-  <Message severity="info" icon="pi pi-palette" pt:text="w-full">
+  <Message severity="info">
+    <template #icon>
+      <i class="pi pi-palette" />
+    </template>
     <div class="flex items-center justify-between">
       <div>
         {{ $t('settingsCategories.ColorPalette') }}
       </div>
       <div class="actions">
-        <Select
+        <SingleSelect
           v-model="activePaletteId"
           class="w-44"
-          :options="palettes"
-          option-label="name"
-          option-value="id"
+          :options="paletteOptions"
         />
         <Button
           size="icon"
@@ -44,10 +45,11 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -56,6 +58,9 @@ const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
+const paletteOptions = computed(() =>
+  palettes.value.map(({ id, name }) => ({ name, value: id }))
+)
 
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()

@@ -8,7 +8,6 @@ import {
 
 describe('oauthState', () => {
   beforeEach(() => {
-    sessionStorage.clear()
     clearOAuthRequestId()
   })
 

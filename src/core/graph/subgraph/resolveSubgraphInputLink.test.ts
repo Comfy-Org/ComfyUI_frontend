@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
@@ -13,15 +11,7 @@ import {
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createSubgraphSetup(inputName: string): {
   subgraph: Subgraph
@@ -62,9 +52,7 @@ function addLinkedInteriorInput(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
-  vi.clearAllMocks()
 })
 
 describe('resolveSubgraphInputLink', () => {

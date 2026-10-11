@@ -34,7 +34,7 @@
     </div>
 
     <PricingTable
-      :reason
+      :reason="paymentIntentSource"
       class="flex-1"
       @choose-team-workspace="handleChooseTeam"
     />
@@ -163,9 +163,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
-const { onClose, reason, onChooseTeam } = defineProps<{
+const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   onChooseTeam?: () => void
 }>()
 
@@ -173,7 +174,7 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { isActiveSubscription } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -195,7 +196,7 @@ const telemetry = useTelemetry()
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
 watch(
-  () => isActiveSubscription.value,
+  () => canAccessSubscriptionFeatures.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
       emit('close', true)
@@ -234,7 +235,7 @@ const handleViewEnterprise = () => {
     is_external: true,
     source: 'subscription'
   })
-  window.open('https://www.comfy.org/cloud/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>
 

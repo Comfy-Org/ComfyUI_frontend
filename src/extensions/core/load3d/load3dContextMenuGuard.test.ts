@@ -17,7 +17,7 @@ function rightMouse(type: string, x: number, y: number, buttons = 2) {
 describe('attachContextMenuGuard', () => {
   let target: HTMLElement
   let onMenu: ReturnType<typeof vi.fn<(event: MouseEvent) => void>>
-  let dispose: () => void
+  let dispose: (() => void) | undefined
 
   beforeEach(() => {
     target = document.createElement('div')

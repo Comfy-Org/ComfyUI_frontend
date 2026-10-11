@@ -2,8 +2,8 @@ import { refDebounced } from '@vueuse/core'
 import { sortBy as sortByUtil } from 'es-toolkit'
 import Fuse from 'fuse.js'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed, toValue, ref } from 'vue'
+import type { MaybeRef } from 'vue'
 
 import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMediaAssetFilterStore'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
@@ -17,17 +17,20 @@ type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
  * Get timestamp from asset (either create_time or created_at)
  */
 const getAssetTime = (asset: AssetItem): number => {
-  return (
-    (asset.user_metadata?.create_time as number) ??
-    (asset.created_at ? new Date(asset.created_at).getTime() : 0)
-  )
+  const createTime = asset.user_metadata?.create_time
+  return typeof createTime === 'number'
+    ? createTime
+    : asset.created_at
+      ? new Date(asset.created_at).getTime()
+      : 0
 }
 
 /**
  * Get execution time from asset user_metadata
  */
 const getAssetExecutionTime = (asset: AssetItem): number => {
-  return (asset.user_metadata?.executionTimeInSeconds as number) ?? 0
+  const executionTime = asset.user_metadata?.executionTimeInSeconds
+  return typeof executionTime === 'number' ? executionTime : 0
 }
 
 function getDateThreshold(filter: MediaAssetDateFilter): number | null {
@@ -60,7 +63,7 @@ const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
  * Media Asset Filtering composable
  * Manages search, filter, and sort for media assets
  */
-export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
+export function useMediaAssetFiltering(assets: MaybeRef<readonly AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
@@ -74,11 +77,11 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     includeScore: true
   }
 
-  const fuse = computed(() => new Fuse(assets.value, fuseOptions))
+  const fuse = computed(() => new Fuse(toValue(assets), fuseOptions))
 
   const searchFiltered = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
-      return assets.value
+      return toValue(assets)
     }
 
     const results = fuse.value.search(debouncedSearchQuery.value)

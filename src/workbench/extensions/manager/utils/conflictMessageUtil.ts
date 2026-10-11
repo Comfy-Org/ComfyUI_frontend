@@ -28,11 +28,7 @@ export function getConflictMessage(
   }
 
   // For banned, pending, and import_failed, use simple message
-  if (
-    conflict.type === 'banned' ||
-    conflict.type === 'pending' ||
-    conflict.type === 'import_failed'
-  ) {
+  if (conflict.type === 'banned' || conflict.type === 'pending') {
     return t(messageKey)
   }
 

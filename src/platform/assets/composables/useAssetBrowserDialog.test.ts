@@ -1,22 +1,25 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  registerAssetBrowserModalComponent,
+  useAssetBrowserDialog
+} from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock('@/stores/dialogStore')
+vi.mock(import('@/i18n'))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, params?: Record<string, string>) => {
-    if (params) {
-      return `${key}:${JSON.stringify(params)}`
-    }
-    return key
-  }
-}))
+const AssetBrowserModalStub = { name: 'AssetBrowserModalStub' }
+
+beforeEach(() => {
+  registerAssetBrowserModalComponent(AssetBrowserModalStub)
+})
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-123',
     name: 'test-model.safetensors',
     size: 1024,
@@ -26,16 +29,19 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       filename: 'models/checkpoints/test-model.safetensors'
     },
     ...overrides
-  }
+  })
 }
 
 function setupDialogMocks() {
-  const mockShowDialog = vi.fn()
-  const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
-    showDialog: mockShowDialog,
-    closeDialog: mockCloseDialog
-  })
+  const dialogStore = useDialogStore()
+  const showDialog: (
+    options: Omit<Parameters<typeof dialogStore.showDialog>[0], 'props'> & {
+      props: AssetBrowserModalProps &
+        Required<Pick<AssetBrowserModalProps, 'onSelect' | 'onClose'>>
+    }
+  ) => ReturnType<typeof dialogStore.showDialog> = dialogStore.showDialog
+  const mockShowDialog = vi.mocked(showDialog)
+  const mockCloseDialog = vi.mocked(dialogStore.closeDialog)
 
   return { mockShowDialog, mockCloseDialog }
 }
@@ -56,14 +62,14 @@ describe('useAssetBrowserDialog', () => {
       const dialogCall = mockShowDialog.mock.calls[0][0]
       const onSelectHandler = dialogCall.props.onSelect
 
-      const mockAsset = {
+      const mockAsset = fromPartial<AssetItem>({
         id: 'test-asset-id',
         name: 'test.safetensors',
         size: 1024,
         created_at: '2025-10-01T00:00:00Z',
         tags: ['models', 'checkpoints'],
         user_metadata: { filename: 'selected-asset-path' }
-      }
+      })
       onSelectHandler(mockAsset)
 
       expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
@@ -104,6 +110,7 @@ describe('useAssetBrowserDialog', () => {
       expect(mockShowDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           key: 'global-asset-browser',
+          component: AssetBrowserModalStub,
           props: expect.objectContaining({
             showLeftPanel: true,
             assetType: 'models'

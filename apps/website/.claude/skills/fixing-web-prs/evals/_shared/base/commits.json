@@ -1,0 +1,10 @@
+[
+  {
+    "sha": "__HEAD__",
+    "author": { "login": "dana-comfy" },
+    "commit": {
+      "author": { "name": "Dana" },
+      "message": "feat(website): add the pricing subheading"
+    }
+  }
+]

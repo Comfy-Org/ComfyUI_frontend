@@ -112,9 +112,17 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
     if (stores.authStore.currentUser) {
       return {
-        customerId: stores.authStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
+        customerId: stores.authStore.currentUser.uid,
         customerEmail:
           stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+      }
+    }
+
+    const { sessionOnlyUser } = stores.authStore
+    if (sessionOnlyUser) {
+      return {
+        customerId: sessionOnlyUser.id,
+        customerEmail: sessionOnlyUser.email
       }
     }
 
@@ -155,10 +163,6 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
   private async hashSha1(value: string): Promise<string> {
     try {
-      if (!globalThis.crypto?.subtle || typeof TextEncoder === 'undefined') {
-        return EMPTY_CUSTOMER_VALUE
-      }
-
       const digestBuffer = await crypto.subtle.digest(
         'SHA-1',
         new TextEncoder().encode(value)

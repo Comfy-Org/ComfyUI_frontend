@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class TextWidget
@@ -10,8 +10,8 @@ export class TextWidget
 {
   constructor(widget: IStringWidget, node: LGraphNode) {
     super(widget, node)
-    this.type ??= 'string'
-    this.value = widget.value?.toString() ?? ''
+    this.type = extensionValue(this.type) ?? 'string'
+    this.value = extensionValue(widget.value)?.toString() ?? ''
   }
 
   /**
@@ -42,13 +42,13 @@ export class TextWidget
     canvas.prompt(
       'Value',
       this.value,
-      (v: string) => {
+      (v: string | null) => {
         if (v !== null) {
           this.setValue(v, { e, node, canvas })
         }
       },
       e,
-      this.options?.multiline ?? false
+      extensionValue(this.options)?.multiline ?? false
     )
   }
 }

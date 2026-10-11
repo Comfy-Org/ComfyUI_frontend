@@ -1,14 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useExtensionStore } from '@/stores/extensionStore'
 
 describe('extensionStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
       const store = useExtensionStore()
@@ -33,17 +27,16 @@ describe('extensionStore', () => {
 
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       try {
         store.loadDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Extension disabled.ext is disabled.'
         )
         expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
         expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
       } finally {
-        warnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })

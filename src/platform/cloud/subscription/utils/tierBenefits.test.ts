@@ -1,21 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-const mockRemoteConfig = vi.hoisted(() => ({
-  value: { free_tier_credits: 120 } as Record<string, unknown>
-}))
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: mockRemoteConfig
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const translate = (key: string) => `t:${key}`
 const formatNumber = (value: number) => `n:${value}`
 
 describe('getCommonTierBenefits', () => {
   beforeEach(() => {
-    mockRemoteConfig.value = { free_tier_credits: 120 }
+    remoteConfig.value = { free_tier_credits: 120 }
   })
 
   it('includes monthlyCredits only for the free tier when credits are configured', () => {
@@ -38,7 +33,7 @@ describe('getCommonTierBenefits', () => {
   })
 
   it('omits monthlyCredits for free tier when remoteConfig has no credits', () => {
-    mockRemoteConfig.value = {}
+    remoteConfig.value = {}
 
     const benefits = getCommonTierBenefits('free', translate, formatNumber)
 

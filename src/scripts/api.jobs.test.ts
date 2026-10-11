@@ -1,20 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-// Tests for api.getQueue and api.getHistory failure handling; fetchApi is stubbed.
-const serverError = () => ({ ok: false, status: 500 }) as Response
+const serverError = () => new Response(null, { status: 500 })
 
 describe('api jobs-namespace reads', () => {
   let fetchApiSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
     fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(serverError())
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('getQueue', () => {

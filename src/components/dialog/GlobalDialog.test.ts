@@ -1,12 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
@@ -19,8 +18,8 @@ import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/d
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(
-  '@/platform/workspace/composables/useSubscriptionCheckout',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -33,10 +32,16 @@ vi.mock(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: ref([]),
+        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -47,6 +52,10 @@ vi.mock(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -61,7 +70,17 @@ const i18n = createI18n({
       g: {
         cancel: 'Cancel',
         close: 'Close',
-        maximizeDialog: 'Maximize'
+        maximizeDialog: 'Maximize',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
       },
       workspacePanel: {
         members: {
@@ -87,6 +106,9 @@ const Body = defineComponent({
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 const ClosedNonModalDialog = defineComponent({
   name: 'ClosedNonModalDialog',
   setup: () => () =>
@@ -102,14 +124,6 @@ function mountDialog() {
 }
 
 describe('GlobalDialog renderer branching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders the Reka branch when renderer is omitted (default)', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -174,14 +188,6 @@ describe('GlobalDialog renderer branching', () => {
 })
 
 describe('GlobalDialog Reka parity with PrimeVue', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -265,6 +271,27 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     ).toBeInTheDocument()
   })
 
+  it('opens the save dialog with an accessible name and description', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: {
+        renderer: 'reka',
+        headless: true,
+        useAutomaticLabeling: true
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
   it('closes the dialog on Escape by default', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -318,13 +345,13 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const header = screen.getByText('Section classes').parentElement
     expect(header?.classList.contains('p-2')).toBe(true)
     // twMerge drops the default header padding in favor of headerClass
     expect(header?.classList.contains('px-4')).toBe(false)
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const body = screen.getByTestId('body').parentElement
     expect(body?.classList.contains('p-0')).toBe(true)
     expect(body?.classList.contains('px-4')).toBe(false)
@@ -365,14 +392,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 })
 
 describe('GlobalDialog Reka overlay scrim', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders a backdrop scrim for modal Reka dialogs', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -486,6 +505,74 @@ describe('GlobalDialog Reka overlay scrim', () => {
   })
 })
 
+describe('GlobalDialog Reka focus-outside binding', () => {
+  // Reka's DismissableLayer fires focus-outside off a real focus transition
+  // (blur inside the layer, then focusin on the new target), so drive the
+  // mounted binding by moving focus to a fresh element outside the dialog
+  // rather than dispatching a synthetic event.
+  async function moveFocusToPlainElementOutside() {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    return () => outside.remove()
+  }
+
+  it('dismisses on focus-outside by default', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-default',
+      title: 'Focus dismisses',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka', modal: false }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      await waitFor(() =>
+        expect(store.isDialogOpen('focus-default')).toBe(false)
+      )
+    } finally {
+      removeOutside()
+    }
+  })
+
+  it('does not dismiss on focus-outside when dismissOnFocusOutside is false', async () => {
+    // Exercises GlobalDialog's own template wiring
+    // `@focus-outside="(e) => onRekaFocusOutside(e, item.dialogComponentProps)"`
+    // through a mounted dialog — the direct `onRekaFocusOutside` unit test can't
+    // catch a regression that drops the props argument here. The positive
+    // control above proves the focus-outside path really fires, so this staying
+    // open isolates the opt-out flag rather than a dead event.
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-opted-out',
+      title: 'Focus blocked',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        modal: false,
+        dismissOnFocusOutside: false
+      }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      // Drain every pending microtask so a wrongful dismiss lands before we
+      // assert, regardless of how many awaits deep the handler chain runs.
+      await flushPromises()
+      expect(store.isDialogOpen('focus-opted-out')).toBe(true)
+    } finally {
+      removeOutside()
+    }
+  })
+})
+
 describe('shouldPreventRekaDismiss', () => {
   function makeEvent(target: Element | null) {
     let prevented = false
@@ -503,30 +590,43 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+    ['class', 'p-overlay-mask'],
+    ['class', 'p-dialog'],
+    ['data-toast-kind', 'info'],
+    ['data-toast-dock', '']
+  ] as const)(
+    'prevents dismiss when target is inside %j',
+    ([attribute, value]) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute(attribute, value)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      const event = makeEvent(inner)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('allows dismiss from the empty space beside a toast message', () => {
+    const container = document.createElement('ol')
+    container.setAttribute('data-testid', 'toast-viewport')
+    document.body.appendChild(container)
+
+    const event = makeEvent(container)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+    container.remove()
   })
 
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
@@ -551,22 +651,33 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
-      const overlay = document.createElement('div')
-      overlay.className = className
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+  it('focus-outside on a sibling PrimeVue dialog portal does not dismiss the parent', () => {
+    const overlay = document.createElement('div')
+    overlay.className = 'p-dialog'
+    const inner = document.createElement('button')
+    overlay.appendChild(inner)
+    document.body.appendChild(overlay)
 
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
+    const event = makeEvent(inner)
+    onRekaFocusOutside(event)
 
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
+    expect(event.defaultPrevented).toBe(true)
+    overlay.remove()
+  })
+
+  it('focus-outside on a toast does not dismiss the parent', () => {
+    const toast = document.createElement('div')
+    toast.dataset.toastKind = 'info'
+    const closeButton = document.createElement('button')
+    toast.appendChild(closeButton)
+    document.body.appendChild(toast)
+
+    const event = makeEvent(closeButton)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    toast.remove()
+  })
 
   it('focus-outside still dismisses when focus moves to a non-portal element', () => {
     const event = makeEvent(document.body)

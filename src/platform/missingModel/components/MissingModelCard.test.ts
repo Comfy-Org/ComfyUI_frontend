@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -11,22 +11,14 @@ import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
-import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
+import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
-const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockDownloadModel = vi.mocked(downloadModel)
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
-  const actual = await vi.importActual<typeof MissingModelDownload>(
-    '@/platform/missingModel/missingModelDownload'
-  )
-  return {
-    ...actual,
-    downloadModel: mockDownloadModel
-  }
-})
+vi.mock(import('@/platform/missingModel/missingModelDownload'), { spy: true })
 
-vi.mock('./MissingModelRow.vue', () => ({
+vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
   default: {
     name: 'MissingModelRow',
     template: `
@@ -52,11 +44,18 @@ vi.mock('./MissingModelRow.vue', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      get isCloud() {
+        return mockIsCloud.value
+      },
+      isDesktop: false,
+      isNightly: false
+    }) as const
+)
 
 import MissingModelCard from './MissingModelCard.vue'
 
@@ -121,9 +120,10 @@ function mountCard(
   props: Partial<{
     missingModelGroups: MissingModelGroup[]
   }> = {},
-  onLocateModel?: (nodeId: string) => void
+  onLocateModel?: (nodeId: string) => void,
+  initialGatedRepoUrls: Record<string, string> = {}
 ) {
-  const pinia = createTestingPinia({ createSpy: vi.fn })
+  useMissingModelStore().gatedRepoUrls = initialGatedRepoUrls
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
@@ -131,7 +131,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [pinia, PrimeVue, i18n]
+      plugins: [getActivePinia()!, PrimeVue, i18n]
     }
   })
 }
@@ -144,10 +144,25 @@ function getRowsIn(testId: string) {
   return within(screen.getByTestId(testId)).getAllByTestId('model-row')
 }
 
+function useGatedHintSentinels() {
+  i18n.global.setLocaleMessage('en', {
+    ...enMessages,
+    rightSidePanel: {
+      ...enMessages.rightSidePanel,
+      missingModels: {
+        ...enMessages.rightSidePanel.missingModels,
+        gatedModelsHintLabel: 'GATED NOTE:',
+        gatedModelsHint: 'SINGULAR GATED MODEL | {count} PLURAL GATED MODELS'
+      }
+    }
+  })
+}
+
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = true
+    mockDownloadModel.mockResolvedValue(undefined)
   })
 
   describe('Rendering & Props', () => {
@@ -287,7 +302,7 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = false
   })
 
@@ -325,21 +340,58 @@ describe('MissingModelCard (OSS)', () => {
     ).toBeVisible()
   })
 
-  it('shows gated model guidance in OSS', async () => {
+  it('clears and repeats the same announcement when gating returns', async () => {
+    useGatedHintSentinels()
     const group = makeGroup({ withDownloadUrls: true })
-    const url =
-      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
     mountCard({ missingModelGroups: [group] })
 
-    useMissingModelStore().gatedRepoUrls[url] =
-      'https://huggingface.co/comfy/test'
+    const status = screen.getByRole('status')
+    expect(status).toBeEmptyDOMElement()
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+
+    const store = useMissingModelStore()
+    const modelUrl =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    store.gatedRepoUrls[modelUrl] = 'https://huggingface.co/comfy/test'
     await nextTick()
 
-    const hint = screen.getByRole('note')
-    expect(within(hint).getByText('Note:')).toBeInTheDocument()
-    expect(hint).toHaveTextContent(
-      'Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.'
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'GATED NOTE: SINGULAR GATED MODEL'
     )
+    expect(status).toHaveTextContent('GATED NOTE: SINGULAR GATED MODEL')
+
+    delete store.gatedRepoUrls[modelUrl]
+    await nextTick()
+
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+    expect(status).toBeEmptyDOMElement()
+
+    store.gatedRepoUrls[modelUrl] = 'https://huggingface.co/comfy/test'
+    await nextTick()
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'GATED NOTE: SINGULAR GATED MODEL'
+    )
+    expect(status).toHaveTextContent('GATED NOTE: SINGULAR GATED MODEL')
+  })
+
+  it('shows plural guidance without announcing warm cached gating', () => {
+    useGatedHintSentinels()
+    const modelNames = ['first.safetensors', 'second.safetensors']
+    const group = makeGroup({ modelNames, withDownloadUrls: true })
+    const gatedRepoUrls = Object.fromEntries(
+      modelNames.map((name) => [
+        `https://huggingface.co/comfy/test/resolve/main/${name}`,
+        'https://huggingface.co/comfy/test'
+      ])
+    )
+
+    mountCard({ missingModelGroups: [group] }, undefined, gatedRepoUrls)
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'GATED NOTE: 2 PLURAL GATED MODELS'
+    )
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
   it('associates Download all with visible gated model guidance', async () => {
@@ -360,11 +412,18 @@ describe('MissingModelCard (OSS)', () => {
     )
   })
 
-  it('does not describe Download all with hidden gated guidance', () => {
+  it('does not show or describe untrusted gated guidance', async () => {
+    const group = makeGroup({ withDownloadUrls: true })
+    const url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
     mountCard({
-      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+      missingModelGroups: [group]
     })
 
+    useMissingModelStore().gatedRepoUrls[url] = 'https://example.com/untrusted'
+    await nextTick()
+
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
     expect(
       screen.getByTestId('missing-model-download-all')
     ).not.toHaveAttribute('aria-describedby')

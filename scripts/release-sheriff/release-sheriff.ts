@@ -1,18 +1,9 @@
-// Assigns the on-call release sheriff to backport and release version-bump
-// PRs. Run by pr-assign-release-sheriff.yaml; details in docs/release-process.md.
+// Assigns the release sheriff to backport, release version-bump and
+// automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
+// docs/release-process.md.
 import { execFileSync } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-
-// Datadog stores no GitHub identity and GitHub resolves only public commit
-// emails, so each rotation member's Datadog email maps to a login by hand here.
-const CONFIG = {
-  datadogSite: 'datadoghq.com',
-  // Empty until the Datadog schedule exists; the fallback owns PRs meanwhile.
-  scheduleId: '',
-  fallbackGithubLogin: 'christian-byrne',
-  githubLoginByEmail: {} as Record<string, string>
-}
 
 export interface PullRequestSummary {
   number: number
@@ -35,107 +26,96 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-// Users arrive in the JSON:API `included` array (via
-// include=responders.shifts.user), so the responder graph never needs walking.
-export function parseOnCallEmails(payload: unknown): string[] {
-  if (!isRecord(payload) || !Array.isArray(payload.included)) return []
+// Who the sheriff is, declared in a reviewed file in this repo rather than read
+// off the Datadog on-call rota: on-call pages for incidents and hands over
+// weekly, the sheriff shepherds releases. Details in docs/release-process.md.
+const SHERIFF_CONFIG_PATH = '.github/release-sheriff.json'
 
-  const emails = payload.included.flatMap((resource) => {
-    if (!isRecord(resource) || resource.type !== 'users') return []
-    if (!isRecord(resource.attributes)) return []
-    const { email } = resource.attributes
-    return typeof email === 'string' && email.trim() ? [email.trim()] : []
+// GitHub's own username rule: alphanumeric with single internal hyphens, 39
+// max. Syntax only — a well-formed login belonging to nobody still passes, and
+// is caught at run time by assigneeAccepted instead.
+const GITHUB_LOGIN = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/
+
+export interface SheriffConfig {
+  sheriff: string
+  backupReviewer: string
+}
+
+export interface SheriffConfigParse {
+  config: SheriffConfig | null
+  error: string | null
+}
+
+// Returns an error rather than falling back to someone: an unreadable sheriff
+// declaration is a fault a human must fix, and assigning *somebody* while the
+// file is wrong is how the previous placeholder config survived for weeks.
+export function parseSheriffConfig(raw: string): SheriffConfigParse {
+  const invalid = (reason: string): SheriffConfigParse => ({
+    config: null,
+    error: `${SHERIFF_CONFIG_PATH} ${reason}.`
   })
 
-  return [...new Set(emails)]
-}
-
-export interface OnCallLookup {
-  emails: string[]
-  warning: string | null
-}
-
-// Every failure degrades to an empty result plus a returned warning: PRs must
-// end up with the fallback owner, never unowned, and the caller owns logging.
-export async function fetchOnCallEmails(
-  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
-  credentials: { apiKey?: string; appKey?: string }
-): Promise<OnCallLookup> {
-  const { datadogSite, scheduleId } = config
-  const { apiKey, appKey } = credentials
-
-  if (!scheduleId) {
-    return {
-      emails: [],
-      warning: 'No Datadog On-Call schedule configured — using the fallback.'
-    }
-  }
-  if (!apiKey || !appKey) {
-    return {
-      emails: [],
-      warning:
-        'DATADOG_API_KEY / DATADOG_APP_KEY unavailable — using the fallback.'
-    }
-  }
-
-  const url = new URL(
-    `https://api.${datadogSite}/api/v2/on-call/schedules/${scheduleId}/responders`
-  )
-  url.searchParams.set('include', 'responders.shifts.user')
-  url.searchParams.set('filter[position]', 'current')
-
+  let parsed: unknown
   try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        'DD-API-KEY': apiKey,
-        'DD-APPLICATION-KEY': appKey
-      },
-      signal: AbortSignal.timeout(15_000)
-    })
-    if (!response.ok) {
-      return {
-        emails: [],
-        warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
-      }
+    parsed = JSON.parse(raw)
+  } catch {
+    return invalid('is not valid JSON')
+  }
+  if (!isRecord(parsed) || Array.isArray(parsed)) {
+    return invalid('is not a JSON object')
+  }
+
+  const usable = (value: unknown): value is string =>
+    typeof value === 'string' && value.trim() !== ''
+  const { sheriff, backupReviewer } = parsed
+  if (!usable(sheriff)) return invalid('has no usable "sheriff" login')
+  if (!usable(backupReviewer)) {
+    return invalid('has no usable "backupReviewer" login')
+  }
+  for (const [field, login] of [
+    ['sheriff', sheriff.trim()],
+    ['backupReviewer', backupReviewer.trim()]
+  ] as const) {
+    if (!GITHUB_LOGIN.test(login)) {
+      return invalid(
+        `has no usable "${field}" login: "${login}" is not a GitHub username`
+      )
     }
-    return { emails: parseOnCallEmails(await response.json()), warning: null }
-  } catch (error) {
+  }
+  // GitHub rejects a self-review request, so a backup who is the sheriff leaves
+  // sheriff-authored backports with nobody asked to review, waiting forever on
+  // the approval backport-auto-merge.yaml gates the merge on. Fail the PR that
+  // writes it rather than discovering it on a stalled release.
+  if (sheriff.trim().toLowerCase() === backupReviewer.trim().toLowerCase()) {
+    return invalid(
+      'names the same login as both "sheriff" and "backupReviewer"'
+    )
+  }
+
+  return {
+    config: { sheriff: sheriff.trim(), backupReviewer: backupReviewer.trim() },
+    error: null
+  }
+}
+
+// Neither outcome assigns anyone; the two are separated only so the operator
+// reading Slack is told whether the file is absent or merely unreadable.
+export function loadSheriffConfig(): SheriffConfigParse {
+  let raw: string
+  try {
+    raw = readFileSync(
+      new URL(`../../${SHERIFF_CONFIG_PATH}`, import.meta.url),
+      'utf8'
+    )
+  } catch (cause) {
+    const code = (cause as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') return { config: null, error: null }
     return {
-      emails: [],
-      warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
+      config: null,
+      error: `${SHERIFF_CONFIG_PATH} could not be read (${code ?? 'unknown error'}).`
     }
   }
-}
-
-export interface SheriffResolution {
-  login: string | null
-  source: 'datadog' | 'fallback' | 'none'
-  unmappedEmails: string[]
-}
-
-export function resolveSheriff(
-  emails: string[],
-  config: Pick<typeof CONFIG, 'fallbackGithubLogin' | 'githubLoginByEmail'>
-): SheriffResolution {
-  const loginByEmail = new Map(
-    Object.entries(config.githubLoginByEmail).map(([email, login]) => [
-      email.toLowerCase(),
-      login
-    ])
-  )
-
-  const unmappedEmails: string[] = []
-  for (const email of emails) {
-    const login = loginByEmail.get(email.toLowerCase())
-    if (login) return { login, source: 'datadog', unmappedEmails }
-    unmappedEmails.push(email)
-  }
-
-  const fallback = config.fallbackGithubLogin.trim()
-  return fallback
-    ? { login: fallback, source: 'fallback', unmappedEmails }
-    : { login: null, source: 'none', unmappedEmails }
+  return parseSheriffConfig(raw)
 }
 
 // The version number is required: a bare version-bump- prefix also matches
@@ -145,13 +125,23 @@ const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
 // matching would also catch PRs that are merely about backports.
 const BACKPORT_TITLE = '[backport'
 
+// Nobody owns what a robot opens: these sat unassigned for weeks, the oldest
+// weeks old, because no human felt addressed by them. The sheriff owns them.
+// gh reports GitHub Apps as "app/<slug>" and plain accounts by login.
+const AUTOMATION_AUTHORS = [
+  'app/dependabot',
+  'app/cloud-code-bot',
+  'comfy-pr-bot'
+]
+
 export function isSheriffPr(pr: PullRequestSummary): boolean {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
   return (
     labels.includes('backport') ||
     pr.title.toLowerCase().startsWith(BACKPORT_TITLE) ||
     labels.includes('release') ||
-    VERSION_BUMP_BRANCH.test(pr.headRefName)
+    VERSION_BUMP_BRANCH.test(pr.headRefName) ||
+    AUTOMATION_AUTHORS.includes(pr.author?.login ?? '')
   )
 }
 
@@ -159,26 +149,36 @@ export interface SheriffAction {
   number: number
   assign: boolean
   requestReview: boolean
+  reviewer: string | null
 }
 
 // Existing assignees and review requests are never overwritten, so a rotation
 // handover does not churn open PRs and a human who picked one up keeps it.
 export function planActions(
   prs: PullRequestSummary[],
-  sheriffLogin: string
+  sheriffLogin: string,
+  standby: string | null = null
 ): SheriffAction[] {
+  const normalized = sheriffLogin.toLowerCase()
+
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
 
     const assign = pr.assignees.length === 0
+    const reviewer =
+      pr.author?.login.toLowerCase() === normalized ? standby : sheriffLogin
+    const normalizedReviewer = reviewer?.toLowerCase()
     const requestReview =
+      reviewer !== null &&
       pr.reviewRequests.length === 0 &&
       pr.reviewDecision !== 'APPROVED' &&
-      pr.author?.login !== sheriffLogin &&
-      !pr.latestReviews.some((review) => review.author?.login === sheriffLogin)
+      pr.author?.login.toLowerCase() !== normalizedReviewer &&
+      !pr.latestReviews.some(
+        (review) => review.author?.login.toLowerCase() === normalizedReviewer
+      )
 
     return assign || requestReview
-      ? [{ number: pr.number, assign, requestReview }]
+      ? [{ number: pr.number, assign, requestReview, reviewer }]
       : []
   })
 }
@@ -192,6 +192,24 @@ function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8' })
 }
 
+// GitHub's GraphQL API occasionally returns 502/503; retry with backoff before
+// giving up so a transient gateway error doesn't degrade the whole run.
+function ghWithRetry(args: string[], retries = 3): string {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return gh(args)
+    } catch (err) {
+      if (attempt === retries) throw err
+      const delayMs = 2000 * attempt
+      warn(
+        `gh command failed (attempt ${attempt}/${retries}), retrying in ${delayMs}ms: ${String(err)}`
+      )
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs)
+    }
+  }
+  throw new Error('unreachable')
+}
+
 function ghPrList(selector: string[]): PullRequestSummary[] {
   const fixed = [
     'pr',
@@ -203,7 +221,7 @@ function ghPrList(selector: string[]): PullRequestSummary[] {
     '--json'
   ]
   const prs = JSON.parse(
-    gh([...fixed, PR_FIELDS, ...selector])
+    ghWithRetry([...fixed, PR_FIELDS, ...selector])
   ) as PullRequestSummary[]
   if (prs.length === QUERY_LIMIT) {
     warn(
@@ -220,7 +238,10 @@ function collectCandidatePrs(): PullRequestSummary[] {
     ...ghPrList(['--label', 'backport']),
     ...ghPrList(['--label', 'Release']),
     ...ghPrList(['--search', 'backport in:title']),
-    ...ghPrList(['--search', 'head:version-bump-'])
+    ...ghPrList(['--search', 'head:version-bump-']),
+    ...AUTOMATION_AUTHORS.flatMap((author) =>
+      ghPrList(['--search', `author:${author}`])
+    )
   ]
   const byNumber = new Map(found.map((pr) => [pr.number, pr]))
   return [...byNumber.values()]
@@ -231,60 +252,167 @@ function summary(line: string) {
   if (file) appendFileSync(file, `${line}\n`)
 }
 
+// A heredoc output ends at the first line equal to its delimiter, so a value
+// carrying that line would close the record early and let the rest parse as
+// further outputs. These messages are one line by construction; enforcing that
+// removes the possibility rather than picking a delimiter and hoping.
+export function singleLine(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+// Read by the workflow's failure step to say why in Slack, so the alert is
+// actionable without opening the run.
+function output(key: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT
+  if (file) {
+    appendFileSync(file, `${key}<<__EOF__\n${singleLine(value)}\n__EOF__\n`)
+  }
+}
+
+// Retried, because a 502 from one sweep would otherwise fail the run and page
+// #frontend-releases for something the next sweep fixes by itself — the muting
+// risk this workflow's own comments warn about.
+//
+// Fewer attempts than the read path, though: a read fails transiently (GraphQL
+// 502/503), while these fail permanently far more often — 422 for a reviewer
+// who is not a collaborator, 403 for an assignee without access. Backoff is
+// 2000ms * attempt and `Atomics.wait` blocks, so a third attempt would stall
+// the sweep six seconds per PR to re-confirm a certainty.
+const MUTATION_ATTEMPTS = 2
+
 function ghPost(path: string, field: string): boolean {
   try {
-    gh(['api', '--method', 'POST', path, '-f', field, '--silent'])
+    ghWithRetry(
+      ['api', '--method', 'POST', path, '-f', field, '--silent'],
+      MUTATION_ATTEMPTS
+    )
     return true
   } catch {
     return false
   }
 }
 
-async function main() {
-  const repo = process.env.GH_REPO
-  if (!repo) throw new Error('GH_REPO is required')
+// POST .../assignees silently ignores a login without push access and still
+// answers 201 with the issue body, so the echoed assignees list is the only
+// evidence the assignment actually took. A plain "did the call throw" check
+// reports success for a PR that is still unowned.
+export function assigneeAccepted(response: unknown, login: string): boolean {
+  if (!isRecord(response) || !Array.isArray(response.assignees)) return false
+  return response.assignees.some(
+    (assignee) =>
+      isRecord(assignee) &&
+      typeof assignee.login === 'string' &&
+      assignee.login.toLowerCase() === login.toLowerCase()
+  )
+}
 
-  const { emails, warning } = await fetchOnCallEmails(CONFIG, {
-    apiKey: process.env.DATADOG_API_KEY,
-    appKey: process.env.DATADOG_APP_KEY
-  })
-  if (warning) warn(warning)
-
-  const { login, source, unmappedEmails } = resolveSheriff(emails, CONFIG)
-  for (const email of unmappedEmails) {
-    warn(`Datadog on-call user ${email} has no githubLoginByEmail entry.`)
+// Adding an assignee is idempotent, so retrying a lost response re-reads the
+// same list rather than double-assigning.
+function ghAssign(path: string, login: string): boolean {
+  try {
+    const response: unknown = JSON.parse(
+      ghWithRetry(
+        ['api', '--method', 'POST', path, '-f', `assignees[]=${login}`],
+        MUTATION_ATTEMPTS
+      )
+    )
+    return assigneeAccepted(response, login)
+  } catch {
+    return false
   }
-  if (!login) {
-    warn('No release sheriff could be resolved — nothing will be assigned.')
-    return
-  }
+}
 
-  const actions = planActions(collectCandidatePrs(), login)
-  summary(`### Release sheriff: \`${login}\` (via ${source})`)
+function assignSheriff(
+  repo: string,
+  { number }: SheriffAction,
+  sheriff: string
+): boolean {
+  const path = `repos/${repo}/issues/${number}/assignees`
+  if (ghAssign(path, sheriff)) {
+    summary(`- Assigned #${number}`)
+    return true
+  }
+  warn(`Could not confirm #${number} was assigned to ${sheriff}`)
+  return false
+}
+
+function requestReviewFrom(
+  repo: string,
+  { number }: SheriffAction,
+  reviewer: string
+): boolean {
+  const path = `repos/${repo}/pulls/${number}/requested_reviewers`
+  if (ghPost(path, `reviewers[]=${reviewer}`)) {
+    summary(`- Requested review from \`${reviewer}\` on #${number}`)
+    return true
+  }
+  warn(`Could not request review from ${reviewer} on #${number}`)
+  return false
+}
+
+// Reported once rather than per PR: `degraded` is a single workflow output, and
+// appending a second record for one key is how a heredoc output misparses.
+export function reportUnhandled(unhandled: string[]) {
+  if (unhandled.length === 0) return
+  output(
+    'degraded',
+    `${unhandled.join('; ')}. Cause not established: GitHub drops an assignee ` +
+      'without push access and rejects a non-collaborator reviewer, but a ' +
+      'failed or unreadable API call is indistinguishable here.'
+  )
+  process.exitCode = 1
+}
+
+// standby is `string`, not `string | null`: parseSheriffConfig has already
+// proven backupReviewer non-empty and distinct from the sheriff, so unlike the
+// old rotation lookup this one cannot come back empty-handed.
+export function runAssignment(repo: string, sheriff: string, standby: string) {
+  const actions = planActions(collectCandidatePrs(), sheriff, standby)
+  summary(`### Release sheriff: \`${sheriff}\` (via ${SHERIFF_CONFIG_PATH})`)
   if (actions.length === 0) {
     summary('Nothing to do — every candidate PR already has an owner.')
     return
   }
 
-  for (const { number, assign, requestReview } of actions) {
-    if (assign) {
-      const path = `repos/${repo}/issues/${number}/assignees`
-      if (ghPost(path, `assignees[]=${login}`)) summary(`- Assigned #${number}`)
-      else warn(`Could not assign #${number} to ${login}`)
+  // The two calls are independent on purpose: a failed review request must not
+  // undo an assignment that succeeded, and vice versa.
+  const unhandled = actions.flatMap((action) => {
+    const failures: string[] = []
+    if (action.assign && !assignSheriff(repo, action, sheriff)) {
+      failures.push(
+        `#${action.number} is not confirmed assigned to \`${sheriff}\``
+      )
     }
+    const reviewer = action.requestReview ? action.reviewer : null
+    if (reviewer && !requestReviewFrom(repo, action, reviewer)) {
+      failures.push(
+        `#${action.number} has no confirmed review request for \`${reviewer}\``
+      )
+    }
+    return failures
+  })
+  reportUnhandled(unhandled)
+}
 
-    // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (requestReview) {
-      const path = `repos/${repo}/pulls/${number}/requested_reviewers`
-      if (ghPost(path, `reviewers[]=${login}`)) {
-        summary(`- Requested review on #${number}`)
-      } else {
-        warn(`Could not request review from ${login} on #${number}`)
-      }
-    }
+function main() {
+  const repo = process.env.GH_REPO
+  if (!repo) throw new Error('GH_REPO is required')
+
+  const { config, error } = loadSheriffConfig()
+  // No fallback: there is no sensible person to guess at, and a bad
+  // declaration should not have reached main in the first place -- the unit
+  // suite parses the shipped file on every PR that touches it.
+  if (!config) {
+    const message = error ?? `${SHERIFF_CONFIG_PATH} is missing.`
+    warn(message)
+    output('degraded', message)
+    process.exitCode = 1
+    return
   }
+
+  runAssignment(repo, config.sheriff, config.backupReviewer)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await main()
+  main()
 }

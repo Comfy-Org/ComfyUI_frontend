@@ -14,6 +14,7 @@
       class="size-7 shrink-0 rounded-full bg-muted-foreground/15 hover:bg-muted-foreground/25"
       :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
       :loading="loading"
+      :disabled="failed"
       @click.stop="togglePlayPause"
     >
       <i
@@ -25,6 +26,7 @@
 
     <div
       :ref="(el) => (waveformRef = el as HTMLElement)"
+      data-testid="wave-audio-waveform"
       :class="
         cn(
           'flex min-w-0 flex-1 cursor-pointer gap-px',
@@ -32,7 +34,7 @@
         )
       "
       :style="{ height: height + 'px' }"
-      @click="handleWaveformClick"
+      @click="onWaveformClick"
     >
       <div
         v-for="(bar, index) in bars"
@@ -78,6 +80,7 @@
     <div class="flex flex-col gap-1">
       <div
         ref="progressRef"
+        data-testid="wave-audio-progress"
         class="relative h-1 w-full cursor-pointer rounded-full bg-muted-foreground/20"
         @click="handleProgressClick"
       >
@@ -103,7 +106,7 @@
           size="icon-sm"
           class="size-8 rounded-full"
           :aria-label="$t('g.skipToStart')"
-          :disabled="loading"
+          :disabled="loading || failed"
           @click="seekToStart"
         >
           <i class="icon-[lucide--skip-back] size-4 text-base-foreground" />
@@ -114,6 +117,7 @@
           class="size-10 rounded-full bg-muted-foreground/15 hover:bg-muted-foreground/25"
           :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
           :loading="loading"
+          :disabled="failed"
           @click="togglePlayPause"
         >
           <i
@@ -127,7 +131,7 @@
           size="icon-sm"
           class="size-8 rounded-full"
           :aria-label="$t('g.skipToEnd')"
-          :disabled="loading"
+          :disabled="loading || failed"
           @click="seekToEnd"
         >
           <i class="icon-[lucide--skip-forward] size-4 text-base-foreground" />
@@ -140,7 +144,7 @@
           size="icon-sm"
           class="size-8 shrink-0 rounded-full"
           :aria-label="$t('g.volume')"
-          :disabled="loading"
+          :disabled="loading || failed"
           @click="toggleMute"
         >
           <i :class="cn(volumeIcon, 'size-4 text-base-foreground')" />
@@ -150,6 +154,7 @@
           :min="0"
           :max="100"
           :step="1"
+          :disabled="failed"
           class="flex-1"
           @update:model-value="(v) => (volume = (v?.[0] ?? 100) / 100)"
         />
@@ -159,17 +164,20 @@
 
   <audio
     :ref="(el) => (audioRef = el as HTMLAudioElement)"
-    :src
+    data-testid="wave-audio-media"
+    :src="mediaSrc"
     preload="metadata"
     class="hidden"
+    @error="onError"
   />
 </template>
 
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
+import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -188,6 +196,9 @@ const {
 }>()
 
 const progressRef = ref<HTMLElement>()
+
+const { src: mediaSrc, status, onError } = useRetryableMediaSrc(() => src)
+const failed = computed(() => status.value === 'failed')
 
 const {
   audioRef,
@@ -208,11 +219,17 @@ const {
   seekToRatio,
   handleWaveformClick
 } = useWaveAudioPlayer({
-  src: toRef(() => src),
+  src: mediaSrc,
   barCount
 })
 
+function onWaveformClick(event: MouseEvent) {
+  if (failed.value) return
+  handleWaveformClick(event)
+}
+
 function handleProgressClick(event: MouseEvent) {
+  if (failed.value) return
   if (!progressRef.value) return
   const rect = progressRef.value.getBoundingClientRect()
   seekToRatio((event.clientX - rect.left) / rect.width)

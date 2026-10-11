@@ -22,29 +22,34 @@
  *
  * Performance: This design can handle 10,000+ events without creating any timers
  * (except one for Linux detection), ensuring smooth scrolling performance.
- *
- * @vitest-environment jsdom
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+
+const HappyDomWheelEvent = WheelEvent
+
+class WheelEventWithModifiers extends HappyDomWheelEvent {
+  override readonly ctrlKey: boolean
+
+  constructor(type: string, eventInitDict: WheelEventInit = {}) {
+    super(type, eventInitDict)
+    this.ctrlKey = eventInitDict.ctrlKey ?? false
+  }
+}
 
 describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement
   let pointer: CanvasPointer
 
   beforeEach(() => {
+    vi.stubGlobal('WheelEvent', WheelEventWithModifiers)
     element = document.createElement('div')
     pointer = new CanvasPointer(element)
     // Mock performance.now() for timestamp-based testing
     vi.spyOn(performance, 'now').mockReturnValue(0)
     vi.spyOn(global, 'setTimeout')
     vi.spyOn(global, 'clearTimeout')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllTimers()
   })
 
   describe('Initial State', () => {
@@ -467,7 +472,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
       pointer.hasReceivedWheelEvent = true
-      vi.clearAllMocks()
     })
 
     it('should buffer possible Linux wheel event and create single timeout', () => {
@@ -689,7 +693,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
 
     it('should call clearLinuxBuffer method after 10ms timeout', () => {
       vi.spyOn(performance, 'now').mockReturnValue(500)
-      vi.useFakeTimers() // Use fake timers just for this test
 
       const event = new WheelEvent('wheel', {
         deltaY: 10,
@@ -702,8 +705,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       vi.runOnlyPendingTimers()
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
       expect(pointer.linuxBufferTimeoutId).toBeUndefined()
-
-      vi.useRealTimers() // Restore for other tests
     })
 
     it('should handle negative Linux wheel values', () => {

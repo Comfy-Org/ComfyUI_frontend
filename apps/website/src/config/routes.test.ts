@@ -1,14 +1,50 @@
 import { describe, expect, it } from 'vitest'
 
-import { localizeHref } from './routes'
+import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
+  it.for([
+    {
+      href: '/cloud#pricing',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud#pricing'
+    },
+    {
+      href: '/cloud?ref=nav',
+      locale: 'zh-CN',
+      expected: '/zh-CN/cloud?ref=nav'
+    },
+    { href: '/#features', locale: 'ja', expected: '/ja/#features' },
+    { href: '/about#team', locale: 'ja', expected: '/about#team' },
+    {
+      href: '/hub/models/local/4x-ultrasharp',
+      locale: 'zh-CN',
+      expected: '/hub/models/local/4x-ultrasharp'
+    },
+    {
+      href: '/terms-of-service#scope',
+      locale: 'zh-CN',
+      expected: '/terms-of-service#scope'
+    }
+  ] as const)(
+    'maps $href in $locale to $expected',
+    ({ href, locale, expected }) => {
+      expect(localizeHref(href, locale)).toBe(expected)
+    }
+  )
+
   it('prefixes an internal path for a non-default locale', () => {
     expect(localizeHref('/mcp', 'zh-CN')).toBe('/zh-CN/mcp')
   })
 
   it('leaves the default locale unprefixed', () => {
     expect(localizeHref('/mcp', 'en')).toBe('/mcp')
+    expect(localizeHref('/models/seedance-2/', 'zh-CN')).toBe(
+      '/models/seedance-2/'
+    )
+    expect(localizeHref('/models/sign-in?return=%2Fmodels', 'ja')).toBe(
+      '/models/sign-in?return=%2Fmodels'
+    )
   })
 
   it('passes external URLs through unchanged', () => {
@@ -17,7 +53,109 @@ describe('localizeHref', () => {
     ).toBe('https://docs.comfy.org/agent-tools/cloud')
   })
 
-  it('never prefixes locale-invariant routes', () => {
-    expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
+  it.for([
+    '/terms-of-service',
+    '/terms-of-service/',
+    '/models/',
+    '/hub/workflows/?category=product',
+    '/hub/apps/',
+    '/hub/apps/reshoot/'
+  ])('never prefixes the locale-invariant route %s', (href) => {
+    expect(localizeHref(href, 'zh-CN')).toBe(href)
+  })
+
+  it('links to translated enterprise pages', () => {
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/zh-CN/enterprise')
+    expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
+      '/zh-CN/enterprise/managed-builds'
+    )
+  })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
+})
+
+describe('getRoutes workshop', () => {
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    'keeps the workshop routes locale-invariant (%s)',
+    (locale) => {
+      const routes = getRoutes(locale)
+      expect([
+        routes.workshop,
+        routes.hubWorkflows,
+        routes.hubApps,
+        routes.workshopSignIn
+      ]).toEqual(['/hub/models/', '/hub/workflows/', '/hub/apps/', '/login/'])
+    }
+  )
+
+  it('still localizes the rest of the Japanese routes', () => {
+    expect(getRoutes('ja').home).toBe('/ja/')
+    expect(getRoutes('ja').cloud).toBe('/cloud/')
+  })
+})
+
+describe('getRoutes', () => {
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    'ends every %s page route with a slash',
+    (locale) => {
+      const slashless = Object.values(getRoutes(locale)).filter(
+        (path) => !path.endsWith('/')
+      )
+      expect(slashless).toEqual([])
+    }
+  )
+
+  it('keeps localized routes slash-terminated', () => {
+    expect(getRoutes('zh-CN').pricing).toBe('/zh-CN/pricing/')
+  })
+})
+
+describe('getRoutes models', () => {
+  it('serves the models catalog at its canonical path for zh-CN', () => {
+    expect(getRoutes('zh-CN').models).toBe('/hub/models/local/')
+  })
+})
+
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request/'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request/'
+    )
+  })
+})
+
+describe('apiKeysLink', () => {
+  it.for([
+    {
+      from: { onboarding: 'router' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
+    },
+    {
+      from: {
+        onboarding: 'models',
+        model: 'byteplus--seedream-5-pro--generate-images'
+      } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=byteplus--seedream-5-pro--generate-images'
+    },
+    {
+      from: { onboarding: 'models', model: undefined } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+    },
+    {
+      from: { onboarding: 'comfy_api' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=comfy_api'
+    }
+  ])('names the onboarding product and model: $href', ({ from, href }) => {
+    expect(apiKeysLink(from)).toBe(href)
+    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
   })
 })

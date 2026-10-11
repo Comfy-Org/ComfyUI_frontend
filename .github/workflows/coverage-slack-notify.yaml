@@ -20,7 +20,7 @@ jobs:
       github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -59,12 +59,31 @@ jobs:
           branch: main
           workflow: coverage-slack-notify.yaml
           name: e2e-coverage-baseline
+          # A partial merge skips the baseline upload, so the most recent run
+          # often has none. Walk back to the last run that does.
+          search_artifacts: true
           path: temp/e2e-coverage-baseline
           if_no_artifact_found: warn
 
+      # An incomplete shard merge is not comparable with a whole one, so it
+      # must neither be reported nor stored as the baseline the next run
+      # compares against.
+      # The artifact has to prove it is whole: anything unreadable counts as
+      # partial, so dropping the sidecar cannot quietly restore the old
+      # behaviour of publishing non-comparable numbers.
+      - name: Resolve E2E coverage completeness
+        id: e2e-meta
+        run: |
+          META=temp/e2e-coverage/coverage-metadata.json
+          COMPLETE=$(pnpm exec tsx scripts/coverage-metadata.ts "$META")
+          echo "complete=$COMPLETE" >> "$GITHUB_OUTPUT"
+          if [ "$COMPLETE" != 'true' ]; then
+            echo "::warning::E2E coverage is not a verified whole shard merge; skipping E2E trend reporting. Metadata: $(cat "$META" 2>/dev/null || echo absent)"
+          fi
+
       - name: Resolve merged PR metadata
         id: pr-meta
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const sha = context.payload.workflow_run.head_sha;
@@ -139,11 +158,18 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
+      # success(), not always(): the download above defaults to
+      # workflow_conclusion=success, so a baseline saved by a failing run can
+      # never be read back. Storing one would only add a dead artifact.
       - name: Save E2E coverage baseline
-        if: always() && hashFiles('temp/e2e-coverage/coverage.lcov') != ''
+        if: >
+          success() && steps.e2e-meta.outputs.complete == 'true' &&
+          hashFiles('temp/e2e-coverage/coverage.lcov') != ''
         uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-baseline
-          path: temp/e2e-coverage/coverage.lcov
+          # The whole directory, so the baseline keeps the sourceSha that lets
+          # a later report name the commit it is comparing against.
+          path: temp/e2e-coverage/
           retention-days: 90
           if-no-files-found: warn

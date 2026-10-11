@@ -104,12 +104,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
   })
 
   test.describe('Comfy.Graph.LiveSelection', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.NavigationMode': 'standard' } })
 
     test('selects nodes mid-drag when enabled', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Graph.LiveSelection', true)
@@ -188,6 +183,138 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     })
   })
 
+  test.describe('Comfy.Canvas.NavigationMode', () => {
+    test('picking a preset never persists custom', async ({ comfyPage }) => {
+      const modeWrites: unknown[] = []
+      comfyPage.page.on('request', (request) => {
+        if (
+          request.method() === 'POST' &&
+          request.url().endsWith('/api/settings/Comfy.Canvas.NavigationMode')
+        ) {
+          modeWrites.push(request.postDataJSON())
+        }
+      })
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      // A preset also writes the two overrides it implies; those writes must
+      // not read back as the user hand-picking an override.
+      expect(modeWrites).toContain('standard')
+      expect(modeWrites).not.toContain('custom')
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+      ).toBe('standard')
+    })
+
+    test('picking custom leaves the overrides untouched', async ({
+      comfyPage
+    }) => {
+      // Arrive on the standard pair first, so both overrides differ from their
+      // defaults and a handler that rewrote them would be caught.
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'custom'
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+      ).toBe('custom')
+      expect(
+        await comfyPage.settings.getSetting(
+          'Comfy.Canvas.LeftMouseClickBehavior'
+        )
+      ).toBe('select')
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+      ).toBe('panning')
+    })
+
+    // A mode stored before the overrides shipped in 1.27.4 is the only value on
+    // record, so they load as their defaults — which describe a different mode.
+    test.describe('stored without the override settings', () => {
+      test.use({
+        initialSettings: { 'Comfy.Canvas.NavigationMode': 'standard' }
+      })
+
+      test('keeps the stored preset through load', async ({ comfyPage }) => {
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('standard')
+      })
+
+      // Reads the server, not the store: the migration is idempotent, so an
+      // in-memory read passes whether or not the write ever landed.
+      test('persists the stored preset to the overrides', async ({
+        comfyPage
+      }) => {
+        expect(
+          await comfyPage.settings.getPersistedSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          )
+        ).toBe('select')
+        expect(
+          await comfyPage.settings.getPersistedSetting(
+            'Comfy.Canvas.MouseWheelScroll'
+          )
+        ).toBe('panning')
+      })
+    })
+
+    // Every profile that already loaded a 1.27.4+ build has the mode demoted to
+    // 'custom' with the overrides never written. The original choice is
+    // unrecoverable, so this pins the no-op as deliberate.
+    test.describe('already demoted to custom', () => {
+      test.use({
+        initialSettings: { 'Comfy.Canvas.NavigationMode': 'custom' }
+      })
+
+      test('is left as custom', async ({ comfyPage }) => {
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('custom')
+      })
+    })
+
+    test.describe('stored with only one override', () => {
+      test.use({
+        initialSettings: {
+          'Comfy.Canvas.NavigationMode': 'standard',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        }
+      })
+
+      test('fills the gap without overwriting the stored override', async ({
+        comfyPage
+      }) => {
+        expect(
+          await comfyPage.settings.getSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          )
+        ).toBe('select')
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+        ).toBe('zoom')
+
+        // select + zoom is no preset, so demoting the mode is correct here.
+        // Overwriting the stored 'zoom' to match the mode instead would
+        // discard a real preference, which is the bug this all started as.
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('custom')
+      })
+    })
+  })
+
   test.describe('Comfy.Canvas.LeftMouseClickBehavior', () => {
     test('override to panning makes empty left-drag pan the canvas', async ({
       comfyPage
@@ -238,19 +365,18 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
 
   test.describe('Pointer settings', () => {
     /**
-     * Press left-mouse at canvas-relative `pos`, hold for `holdMs` (0 = no
-     * hold), nudge by `(dx, dy)` absolute pixels, then release. Spec-local
-     * because it exists only to probe the CanvasPointer timing thresholds.
+     * Press left-mouse at canvas-relative `pos`, nudge by `(dx, dy)` absolute
+     * pixels, then release. Spec-local because it exists only to probe the
+     * CanvasPointer drift threshold.
      */
-    const holdDragAt = async (
+    const nudgeAt = async (
       comfyPage: ComfyPage,
       pos: { x: number; y: number },
-      opts: { dx: number; dy: number; holdMs: number }
+      opts: { dx: number; dy: number }
     ) => {
       const abs = await comfyPage.canvasOps.toAbsolute(pos)
       await comfyPage.page.mouse.move(abs.x, abs.y)
       await comfyPage.page.mouse.down()
-      await sleep(opts.holdMs)
       await comfyPage.page.mouse.move(abs.x + opts.dx, abs.y + opts.dy)
       await comfyPage.page.mouse.up()
       await comfyPage.nextFrame()
@@ -295,54 +421,9 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       })
     })
 
-    test('ClickBufferTime governs the click-vs-drag time threshold', async ({
-      comfyPage
-    }) => {
-      // Keep drift generous so only elapsed time distinguishes click vs drag.
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 20)
-      const node = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
-      const titlePos = await node.getTitlePosition()
-      const NUDGE = 2
-      const HOLD_MS = 250
-
-      await test.step(`Buffer=2000ms (hold=${HOLD_MS}ms within buffer) → click, node stays put`, async () => {
-        await comfyPage.settings.setSetting(
-          'Comfy.Pointer.ClickBufferTime',
-          2000
-        )
-        const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: HOLD_MS
-        })
-        const after = await node.getPosition()
-        expect(after.x).toBeCloseTo(before.x, 0)
-        expect(after.y).toBeCloseTo(before.y, 0)
-      })
-
-      await test.step(`Buffer=50ms (hold=${HOLD_MS}ms exceeds buffer) → drag, node moves`, async () => {
-        await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 50)
-        const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: HOLD_MS
-        })
-        const after = await node.getPosition()
-        expect(
-          Math.abs(after.x - before.x) + Math.abs(after.y - before.y)
-        ).toBeGreaterThan(0)
-      })
-    })
-
     test('ClickDrift governs the click-vs-drag distance threshold', async ({
       comfyPage
     }) => {
-      // Keep buffer generous so only drift distance matters.
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 2000)
       const node = (
         await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       )[0]
@@ -352,11 +433,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       await test.step(`Drift=20px (nudge=${NUDGE}px within tolerance) → click, node stays put`, async () => {
         await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 20)
         const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: 0
-        })
+        await nudgeAt(comfyPage, titlePos, { dx: NUDGE, dy: NUDGE })
         const after = await node.getPosition()
         expect(after.x).toBeCloseTo(before.x, 0)
         expect(after.y).toBeCloseTo(before.y, 0)
@@ -365,11 +442,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       await test.step(`Drift=1px (nudge=${NUDGE}px exceeds tolerance) → drag, node moves`, async () => {
         await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 1)
         const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: 0
-        })
+        await nudgeAt(comfyPage, titlePos, { dx: NUDGE, dy: NUDGE })
         const after = await node.getPosition()
         expect(
           Math.abs(after.x - before.x) + Math.abs(after.y - before.y)

@@ -38,21 +38,25 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <div
-          v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2"
-          data-testid="node-title"
-        >
-          <div class="flex-1 truncate">
-            <EditableText
-              :model-value="displayTitle"
-              :is-editing="isEditing"
-              :input-attrs="{ 'data-testid': 'node-title-input' }"
-              @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
-            />
-          </div>
-        </div>
+        <Tooltip :disabled="!tooltipText">
+          <TooltipTrigger as-child>
+            <div
+              class="flex min-w-0 flex-1 items-center gap-2"
+              data-testid="node-title"
+            >
+              <div class="flex-1 truncate">
+                <EditableText
+                  :model-value="displayTitle"
+                  :is-editing="isEditing"
+                  :input-attrs="{ 'data-testid': 'node-title-input' }"
+                  @edit="handleTitleEdit"
+                  @cancel="handleTitleCancel"
+                />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>{{ tooltipText }}</TooltipContent>
+        </Tooltip>
       </div>
 
       <CreditBadge
@@ -72,12 +76,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
@@ -89,7 +96,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   collapsed?: boolean
   priceBadges?: { required: string; rest?: string }[]
 }
@@ -114,29 +121,21 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || ''
+const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
+
+const tooltipText = computed(() =>
+  isEditing.value ? '' : getNodeDescription.value
 )
 
-const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
-  const description = getNodeDescription.value
-  return createTooltipConfig(description)
-})
-
-const resolveTitle = (info: VueNodeData | undefined) => {
+const resolveTitle = (info: NodeState | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')
   return resolveNodeDisplayName(info ?? null, {
     emptyLabel: untitledLabel,
-    untitledLabel,
-    st
+    untitledLabel
   })
 }
 
-// Local state for title to provide immediate feedback
-const displayTitle = ref(resolveTitle(nodeData))
+const displayTitle = computed(() => resolveTitle(nodeData))
 
 const bypassed = computed(
   (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
@@ -151,7 +150,7 @@ const statusBadge = computed((): NodeBadgeProps | undefined =>
       : undefined
 )
 
-const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
+const isPinned = computed(() => Boolean(nodeData?.flags.pinned))
 
 const headerShapeClass = computed(() => {
   if (collapsed) {
@@ -173,17 +172,6 @@ const headerShapeClass = computed(() => {
       return 'rounded-t-xl'
   }
 })
-
-// Watch for external changes to the node title or type
-watch(
-  () => [nodeData?.title, nodeData?.type] as const,
-  () => {
-    const next = resolveTitle(nodeData)
-    if (next !== displayTitle.value) {
-      displayTitle.value = next
-    }
-  }
-)
 
 // Event handlers
 const handleCollapse = () => {
