@@ -679,6 +679,7 @@ describe('AgentPanelRoot first-use experience', () => {
       'try again',
       'Send failed'
     )
+    await screen.findByText('Send failed')
 
     await vi.waitFor(() =>
       expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
