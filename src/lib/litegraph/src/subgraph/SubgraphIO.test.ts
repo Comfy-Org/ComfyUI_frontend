@@ -235,6 +235,72 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(output.getLinks()).toHaveLength(1)
     }
   )
+
+  subgraphTest(
+    'deduplicates the live link mirror before reconnecting an output',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      const first = output.connect(innerNode.outputs[0], innerNode)!
+      output.linkIds.push(first.id)
+
+      expect(() =>
+        output.connect(innerNode.outputs[0], innerNode)
+      ).not.toThrow()
+      expect(output.linkIds).toHaveLength(1)
+      expect(output.getLinks()).toHaveLength(1)
+    }
+  )
+
+  subgraphTest(
+    'does not repair a stale link mirror when an extension vetoes the connect',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      output.linkIds.push(toLinkId(998))
+      innerNode.onConnectOutput = () => false
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeUndefined()
+      expect(output.linkIds).toEqual([toLinkId(998)])
+    }
+  )
+
+  subgraphTest(
+    'ignores a link id that belongs to another target',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const unrelatedTarget = new LGraphNode('Unrelated Target')
+      unrelatedTarget.addInput('in', '*')
+      subgraph.add(unrelatedTarget)
+      const unrelatedLink = innerNode.connect(0, unrelatedTarget, 0)!
+      const output = subgraph.outputs[0]
+      output.linkIds.push(unrelatedLink.id)
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeDefined()
+      expect(output.linkIds).not.toContain(unrelatedLink.id)
+      expect(subgraph.getLink(unrelatedLink.id)).toBe(unrelatedLink)
+    }
+  )
+
+  subgraphTest(
+    're-reads output topology after an extension hook mutates it',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      output.connect(innerNode.outputs[0], innerNode)
+      innerNode.onConnectOutput = () => {
+        output.disconnect()
+        return true
+      }
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeDefined()
+      expect(output.getLinks()).toHaveLength(1)
+    }
+  )
 })
 
 describe('SubgraphIO - Boundary Connection Management', () => {

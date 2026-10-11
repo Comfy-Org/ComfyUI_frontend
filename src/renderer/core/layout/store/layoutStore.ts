@@ -1099,9 +1099,8 @@ class LayoutStoreImpl {
   ): boolean {
     const { nodeId } = operation
     const nodeKey = makeScopedLayoutKey(operation.graphId, nodeId)
-    // A remote add can legitimately replay under an id whose layout entry a
-    // stale node's owner never cleared (successor-owned state); tolerate it
-    // as a no-op rather than asserting, matching handleCreateGroup below.
+    // Stale or replayed creates can encounter successor-owned layout state;
+    // treat them as idempotent no-ops.
     if (this.ynodes.has(nodeKey)) return false
 
     this.ynodes.set(nodeKey, layoutToYNode(operation.layout))

@@ -80,6 +80,10 @@ const concreteWidgetsBySource = new WeakMap<
   IBaseWidget,
   WeakMap<LGraphNode, IBaseWidget>
 >()
+const sourcesByConcreteWidget = new WeakMap<
+  IBaseWidget,
+  WeakMap<LGraphNode, IBaseWidget>
+>()
 
 function rememberConcreteWidget(
   source: IBaseWidget,
@@ -92,6 +96,30 @@ function rememberConcreteWidget(
     concreteWidgetsBySource.set(source, widgetsByNode)
   }
   widgetsByNode.set(node, concrete)
+
+  let sourcesByNode = sourcesByConcreteWidget.get(concrete)
+  if (!sourcesByNode) {
+    sourcesByNode = new WeakMap()
+    sourcesByConcreteWidget.set(concrete, sourcesByNode)
+  }
+  sourcesByNode.set(node, source)
+}
+
+export function forgetConcreteWidget(
+  widget: IBaseWidget,
+  node: LGraphNode
+): void {
+  const source = sourcesByConcreteWidget.get(widget)?.get(node) ?? widget
+  const concrete = concreteWidgetsBySource.get(source)?.get(node)
+  concreteWidgetsBySource.get(source)?.delete(node)
+  sourcesByConcreteWidget.get(concrete ?? widget)?.delete(node)
+}
+
+export function getConcreteWidgetSource(
+  widget: IBaseWidget,
+  node: LGraphNode
+): IBaseWidget {
+  return sourcesByConcreteWidget.get(widget)?.get(node) ?? widget
 }
 
 function collectDescriptors(value: object) {
@@ -225,7 +253,9 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
     concrete && wrapLegacyWidgets
       ? adoptConcreteWidget(widget, concrete)
       : concrete
-  if (result && wrapLegacyWidgets) rememberConcreteWidget(widget, node, result)
+  if (result && wrapLegacyWidgets && !Object.is(result, widget)) {
+    rememberConcreteWidget(widget, node, result)
+  }
   return result
 }
 

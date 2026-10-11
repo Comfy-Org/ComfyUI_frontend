@@ -163,7 +163,7 @@ import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTeleme
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
+import { forgetConcreteWidget, toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -1975,20 +1975,26 @@ export class LGraphNode
   /**
    * remove an existing output slot
    */
-  removeOutput(slot: number): void {
+  removeOutput(slot: number | string): void {
     const { outputs } = this
-    if (!Number.isInteger(slot) || slot < 0 || slot >= outputs.length) return
+    const slotIndex = Number(slot)
+    if (
+      !Number.isInteger(slotIndex) ||
+      slotIndex < 0 ||
+      slotIndex >= outputs.length
+    )
+      return
 
     // Only disconnect if node is part of a graph
     if (this.graph) {
-      this.disconnectOutput(slot)
+      this.disconnectOutput(slotIndex)
     }
-    outputs.splice(slot, 1)
+    outputs.splice(slotIndex, 1)
 
     // Only update link indices if node is part of a graph. Ascending order:
     // each decrement re-keys the link to an already-processed slot index.
     if (this.graph) {
-      for (let oldSlot = slot + 1; oldSlot <= outputs.length; ++oldSlot) {
+      for (let oldSlot = slotIndex + 1; oldSlot <= outputs.length; ++oldSlot) {
         for (const link of outputLinks(this.graph, this.id, oldSlot)) {
           link.origin_slot--
         }
@@ -1998,13 +2004,13 @@ export class LGraphNode
       for (const floatingLink of this.graph.floatingLinks.values()) {
         if (
           floatingLink.origin_id === this.id &&
-          floatingLink.origin_slot > slot
+          floatingLink.origin_slot > slotIndex
         )
           floatingLink.origin_slot--
       }
     }
 
-    this.onOutputRemoved?.(slot)
+    this.onOutputRemoved?.(slotIndex)
     this.setDirtyCanvas(true, true)
   }
 
@@ -2042,17 +2048,23 @@ export class LGraphNode
   /**
    * remove an existing input slot
    */
-  removeInput(slot: number): void {
+  removeInput(slot: number | string): void {
     const { graph, inputs } = this
-    if (!Number.isInteger(slot) || slot < 0 || slot >= inputs.length) return
+    const slotIndex = Number(slot)
+    if (
+      !Number.isInteger(slotIndex) ||
+      slotIndex < 0 ||
+      slotIndex >= inputs.length
+    )
+      return
 
-    const slotInfo = legacyArrayItem(inputs, slot)
+    const slotInfo = legacyArrayItem(inputs, slotIndex)
     if (!slotInfo) return
 
     if (graph) {
       const previous = captureInputLayout(this)
       const nextInputs = [...previous.inputs]
-      nextInputs.splice(slot, 1)
+      nextInputs.splice(slotIndex, 1)
       const result = replaceNodeInputs(
         this,
         previous,
@@ -2064,14 +2076,14 @@ export class LGraphNode
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&
-          floatingLink.target_slot > slot
+          floatingLink.target_slot > slotIndex
         )
           floatingLink.target_slot--
       }
     } else {
-      inputs.splice(slot, 1)
+      inputs.splice(slotIndex, 1)
     }
-    this.onInputRemoved?.(slot, slotInfo)
+    this.onInputRemoved?.(slotIndex, slotInfo)
     this.setDirtyCanvas(true, true)
   }
 
@@ -2411,6 +2423,7 @@ export class LGraphNode
     widget.onRemove?.()
     if (id) useWidgetValueStore().deleteWidget(id)
     this.widgets.splice(widgetIndex, 1)
+    forgetConcreteWidget(widget, this)
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {

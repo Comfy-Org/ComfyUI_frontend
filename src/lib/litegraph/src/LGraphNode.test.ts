@@ -789,6 +789,39 @@ describe('LGraphNode', () => {
       expect(() => testNode.addCustomWidget(widget)).not.toThrow()
       expect(testNode.widgets).toEqual([widget])
     })
+
+    test('rebuilds a non-extensible wrapper after removal', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'value',
+        value: 1,
+        options: {},
+        y: 0
+      })
+      const first = testNode.addCustomWidget(widget)
+
+      testNode.removeWidget(first)
+      const second = testNode.addCustomWidget(widget)
+
+      expect(second).not.toBe(first)
+      expect(testNode.widgets).toEqual([second])
+    })
+
+    test('deduplicates repeated direct pushes of one legacy source', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = Object.preventExtensions<IBaseWidget>({
+        type: 'number',
+        name: 'value',
+        value: 1,
+        options: {},
+        y: 0
+      })
+
+      testNode.widgets = [widget, widget]
+
+      expect(testNode.widgets).toHaveLength(1)
+    })
   })
 
   describe('removeInput', () => {
@@ -800,6 +833,9 @@ describe('LGraphNode', () => {
       expect(() => testNode.removeInput(1)).not.toThrow()
       expect(() => testNode.removeInput(0.5)).not.toThrow()
       expect(testNode.inputs).toHaveLength(1)
+
+      testNode.removeInput('0')
+      expect(testNode.inputs).toHaveLength(0)
     })
   })
 
@@ -812,6 +848,9 @@ describe('LGraphNode', () => {
       expect(() => testNode.removeOutput(1)).not.toThrow()
       expect(() => testNode.removeOutput(0.5)).not.toThrow()
       expect(testNode.outputs).toHaveLength(1)
+
+      testNode.removeOutput('0')
+      expect(testNode.outputs).toHaveLength(0)
     })
   })
 

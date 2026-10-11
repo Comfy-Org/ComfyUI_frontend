@@ -46,22 +46,33 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
-    const existingLinks = this.getLinks()
-    const hasValidLinkCount = existingLinks.length <= 1
-    assert(
-      hasValidLinkCount,
-      'SubgraphOutput.connect: output has more than one existing link',
-      { existingLinkCount: existingLinks.length }
-    )
-    if (!hasValidLinkCount) return
+    const targetSlot = this.parent.slots.indexOf(this)
+    const getExistingLinks = () => {
+      const seen = new Set<LLink['id']>()
+      return this.linkIds.flatMap((id) => {
+        if (seen.has(id)) return []
+        const link = subgraph.getLink(id)
+        if (
+          !link ||
+          link.target_id !== this.parent.id ||
+          link.target_slot !== targetSlot
+        )
+          return []
+        seen.add(id)
+        return [link]
+      })
+    }
+    const hasValidLinkCount = (links: readonly LLink[]) => {
+      const isValid = links.length <= 1
+      assert(
+        isValid,
+        'SubgraphOutput.connect: output has more than one existing link',
+        { existingLinkCount: links.length }
+      )
+      return isValid
+    }
 
-    // Serialized slots may retain ids for links that no longer exist. Repair
-    // that mirror before reconnecting so stale ids cannot block or survive.
-    this.linkIds.splice(
-      0,
-      this.linkIds.length,
-      ...existingLinks.map(({ id }) => id)
-    )
+    if (!hasValidLinkCount(getExistingLinks())) return
 
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
@@ -69,10 +80,23 @@ export class SubgraphOutput extends SubgraphSlot {
     )
       return
 
-    // Link should not be present, but just in case, disconnect it
+    // Re-read after the extension hook because it may mutate topology.
+    const existingLinks = getExistingLinks()
+    if (!hasValidLinkCount(existingLinks)) return
     const existingLink = existingLinks.at(0)
-    if (existingLink != null) {
+    const canonicalLinkIds = existingLinks.map(({ id }) => id)
+    const mirrorNeedsRepair =
+      canonicalLinkIds.length !== this.linkIds.length ||
+      canonicalLinkIds.some((id, index) => this.linkIds[index] !== id)
+    const changeStarted = existingLink != null || mirrorNeedsRepair
+    if (changeStarted) {
       subgraph.beforeChange()
+    }
+
+    // Serialized slots may retain duplicate, dangling, or unrelated ids.
+    // Repair the mirror only after the hook approves and inside the change.
+    if (mirrorNeedsRepair) {
+      this.linkIds.splice(0, this.linkIds.length, ...canonicalLinkIds)
     }
 
     const linkId = mintLinkId(
@@ -91,7 +115,7 @@ export class SubgraphOutput extends SubgraphSlot {
     )
 
     if (!replaceLinkTopology(subgraph, existingLink, link)) {
-      if (existingLink) subgraph.afterChange()
+      if (changeStarted) subgraph.afterChange()
       return
     }
 

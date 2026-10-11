@@ -2,7 +2,11 @@ import { shallowReactive } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import {
+  forgetConcreteWidget,
+  getConcreteWidgetSource,
+  toConcreteWidget
+} from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { RefusedWidget } from '@/types/widgetId'
@@ -128,6 +132,7 @@ function refuseAmbiguousWidgets(
     }
     removed.add(finding.widget)
     releaseRefusedWidget(node, finding.widget, finding.name, report)
+    forgetConcreteWidget(finding.widget, node)
     report({ kind: 'refusal', finding })
   }
   if (removed.size) {
@@ -207,6 +212,21 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   })
   for (const [index, widget] of concreteWidgets.entries()) {
     widgets[index] = widget
+  }
+
+  // A non-adoptable legacy source may be pushed again after its wrapper is
+  // already present. Keep one wrapper without disturbing temporary duplicate
+  // concrete objects used by array reordering.
+  const seenWrappedSources = new Set<IBaseWidget>()
+  const uniqueWidgets = widgets.filter((widget) => {
+    const source = getConcreteWidgetSource(widget, node)
+    if (source === widget) return true
+    if (seenWrappedSources.has(source)) return false
+    seenWrappedSources.add(source)
+    return true
+  })
+  if (uniqueWidgets.length !== widgets.length) {
+    widgets.splice(0, widgets.length, ...uniqueWidgets)
   }
 
   if (!graphId) return
