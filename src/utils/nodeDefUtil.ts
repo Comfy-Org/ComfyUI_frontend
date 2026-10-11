@@ -28,7 +28,7 @@ const IGNORE_KEYS = new Set<string>([
   'dynamicPrompts'
 ])
 
-const getRange = (options: NumericInputOptions) => {
+const getRange = (options: Pick<NumericInputOptions, 'min' | 'max'>) => {
   const min = options.min ?? -Infinity
   const max = options.max ?? Infinity
   return { min, max }
@@ -37,7 +37,7 @@ const getRange = (options: NumericInputOptions) => {
 const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   spec1: T,
   spec2: T
-): T | null => {
+): InputSpec | null => {
   const type = spec1[0]
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
@@ -61,15 +61,15 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   }
 
   return mergeCommonInputSpec(
-    [type, { ...options1, ...mergedOptions }] as T,
-    [type, { ...options2, ...mergedOptions }] as T
+    [type, { ...options1, ...mergedOptions }],
+    [type, { ...options2, ...mergedOptions }]
   )
 }
 
 const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   spec1: T,
   spec2: T
-): T | null => {
+): InputSpec | null => {
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
 
@@ -84,8 +84,8 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   }
 
   return mergeCommonInputSpec(
-    ['COMBO', { ...options1, options: commonOptions }] as T,
-    ['COMBO', { ...options2, options: commonOptions }] as T
+    ['COMBO', { ...options1, options: commonOptions }],
+    ['COMBO', { ...options2, options: commonOptions }]
   )
 }
 

@@ -66,6 +66,18 @@ runs:
             SECTION_NAME='design-system-release'
             LINKS_VALUE='npm design-system|https://www.npmjs.com/package/@comfyorg/design-system/v/{{version}}'
             ;;
+          packages/account-core/package.json)
+            SECTION_NAME='account-core-release'
+            LINKS_VALUE='npm account-core|https://www.npmjs.com/package/@comfyorg/account-core/v/{{version}}'
+            ;;
+          packages/billing-contract/package.json)
+            SECTION_NAME='billing-contract-release'
+            LINKS_VALUE='npm billing-contract|https://www.npmjs.com/package/@comfyorg/billing-contract/v/{{version}}'
+            ;;
+          packages/ingest-types/package.json)
+            SECTION_NAME='ingest-types-release'
+            LINKS_VALUE='npm ingest-types|https://www.npmjs.com/package/@comfyorg/ingest-types/v/{{version}}'
+            ;;
         esac
 
         DIFF_PREFIX='v'

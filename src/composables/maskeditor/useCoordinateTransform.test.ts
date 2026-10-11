@@ -1,24 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoordinateTransform } from '@/composables/maskeditor/useCoordinateTransform'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-type MockStore = {
-  pointerZone: HTMLElement | null
-  canvasContainer: HTMLElement | null
-  maskCanvas: HTMLCanvasElement | null
-}
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-const mockStore: MockStore = {
-  pointerZone: null,
-  canvasContainer: null,
-  maskCanvas: null
-}
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
-
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))
@@ -36,7 +23,7 @@ const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return el
 }
 
@@ -59,15 +46,13 @@ const createCanvasWithRect = (
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return canvas
 }
 
 describe('useCoordinateTransform', () => {
   beforeEach(() => {
-    mockStore.pointerZone = null
-    mockStore.canvasContainer = null
-    mockStore.maskCanvas = null
+    mockStore = useMaskEditorStore()
   })
 
   describe('screenToCanvas', () => {
@@ -180,47 +165,35 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point and warn when pointerZone is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.canvasContainer = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
 
       const transform = useCoordinateTransform()
 
       expect(transform.screenToCanvas({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'screenToCanvas called before elements are available'
       )
-
-      warnSpy.mockRestore()
     })
 
     it('should return zero point when canvasContainer is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.pointerZone = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
 
       const transform = useCoordinateTransform()
 
       expect(transform.screenToCanvas({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalled()
-
-      warnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalled()
     })
 
     it('should return zero point when maskCanvas is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.pointerZone = createElementWithRect({})
       mockStore.canvasContainer = createElementWithRect({})
 
       const transform = useCoordinateTransform()
 
       expect(transform.screenToCanvas({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalled()
-
-      warnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalled()
     })
   })
 
@@ -333,47 +306,35 @@ describe('useCoordinateTransform', () => {
     })
 
     it('should return zero point and warn when pointerZone is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.canvasContainer = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
 
       const transform = useCoordinateTransform()
 
       expect(transform.canvasToScreen({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'canvasToScreen called before elements are available'
       )
-
-      warnSpy.mockRestore()
     })
 
     it('should return zero point when canvasContainer is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.pointerZone = createElementWithRect({})
       mockStore.maskCanvas = createCanvasWithRect({}, 100, 100)
 
       const transform = useCoordinateTransform()
 
       expect(transform.canvasToScreen({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalled()
-
-      warnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalled()
     })
 
     it('should return zero point when maskCanvas is missing', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       mockStore.pointerZone = createElementWithRect({})
       mockStore.canvasContainer = createElementWithRect({})
 
       const transform = useCoordinateTransform()
 
       expect(transform.canvasToScreen({ x: 10, y: 20 })).toEqual({ x: 0, y: 0 })
-      expect(warnSpy).toHaveBeenCalled()
-
-      warnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalled()
     })
   })
 })

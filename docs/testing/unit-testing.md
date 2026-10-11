@@ -24,7 +24,7 @@ import { nextTick } from 'vue'
 import { useServerLogs } from '@/composables/useServerLogs'
 
 // Mock dependencies
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn()
   }
@@ -130,7 +130,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 // Mock the api object
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn(),
     addEventListener: vi.fn(),
@@ -155,7 +155,7 @@ Mocking utility functions like debounce:
 // Mock debounce to execute immediately
 import { debounce } from 'es-toolkit/compat'
 
-vi.mock('es-toolkit/compat', () => ({
+vi.mock(import('es-toolkit/compat'), () => ({
   debounce: vi.fn((fn) => {
     // Return function that calls the input function immediately
     const mockDebounced = (...args: any[]) => fn(...args)
@@ -275,7 +275,7 @@ When mocking composables that return reactive refs, define the mock implementati
 // Example from: src/platform/updates/common/releaseStore.test.ts
 import { ref } from 'vue'
 
-vi.mock('@/path/to/composable', () => {
+vi.mock(import('@/path/to/composable'), () => {
   const doSomething = vi.fn()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -321,7 +321,7 @@ beforeEach(() => {
 })
 
 // ❌ Don't auto-mock then override — reactive refs won't work correctly
-vi.mock('@/path/to/composable')
+vi.mock(import('@/path/to/composable'))
 vi.mocked(useMyComposable).mockReturnValue({ isLoading: ref(false) })
 ```
 

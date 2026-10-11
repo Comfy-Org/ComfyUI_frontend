@@ -70,7 +70,9 @@
       "
       @update:model-value="onOtherChange"
     />
-    <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="text-xs text-destructive-background">
+      {{ errorMessage }}
+    </p>
   </fieldset>
   <div v-else class="flex flex-col gap-3">
     <label
@@ -87,7 +89,9 @@
       :class="inputClass"
       @update:model-value="onTextChange"
     />
-    <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="text-xs text-destructive-background">
+      {{ errorMessage }}
+    </p>
   </div>
 </template>
 

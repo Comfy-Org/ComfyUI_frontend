@@ -34,11 +34,20 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-function isLegacyFile(id: string): boolean {
-  return (
-    id.endsWith('.ts') &&
-    (id.includes('src/extensions/core') || id.includes('src/scripts'))
-  )
+function getLegacyRelativePath(id: string): string | null {
+  if (!id.endsWith('.ts')) return null
+
+  const relativePath = path
+    .relative(path.join(process.cwd(), 'src'), id)
+    .replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) return null
+
+  const isLegacyFile =
+    relativePath.startsWith('extensions/core/') ||
+    relativePath.startsWith('scripts/')
+
+  return isLegacyFile ? relativePath : null
 }
 
 function transformExports(code: string, id: string): ShimResult {
@@ -72,26 +81,23 @@ function transformExports(code: string, id: string): ShimResult {
 
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
-  const parts = id.split('/')
+  const parts = id.replace(/\\/g, '/').split('/')
   const fileName = parts[parts.length - 1]
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 
-export function comfyAPIPlugin(isDev: boolean): Plugin {
+export function comfyAPIPlugin(isDev: boolean) {
   return {
     name: 'comfy-api-plugin',
     apply: 'build',
     transform(code: string, id: string) {
       if (isDev) return null
 
-      if (isLegacyFile(id)) {
+      const relativePath = getLegacyRelativePath(id)
+      if (relativePath) {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {
-          const projectRoot = process.cwd()
-          const relativePath = path
-            .relative(path.join(projectRoot, 'src'), id)
-            .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
           let shimContent = `// Shim for ${relativePath}\n`
@@ -119,5 +125,5 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         }
       }
     }
-  }
+  } satisfies Plugin
 }

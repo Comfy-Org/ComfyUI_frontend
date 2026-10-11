@@ -6,7 +6,7 @@ import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
-import { resolveRel } from '../../utils/cta'
+import { resolveRel } from '@/utils/cta'
 
 const props = defineProps<{
   href?: string
@@ -37,7 +37,7 @@ const resolvedRel = computed(() =>
       )
     "
   >
-    <span class="ppformula-text-center">
+    <span class="flex items-center">
       <slot />
     </span>
   </component>

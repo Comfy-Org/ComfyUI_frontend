@@ -9,7 +9,8 @@
 import { zJobEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { resultItemType, zTaskOutput } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import { zTaskOutput } from '@/platform/remote/comfyui/execution/types'
 
 const zJobStatus = z.enum([
   'pending',
@@ -26,6 +27,7 @@ const zPreviewOutput = z
     type: resultItemType.optional(),
     nodeId: z.string(),
     mediaType: z.string(),
+    content: z.string().optional(),
     display_name: z.string().optional()
   })
   .passthrough()
@@ -45,8 +47,8 @@ const zExecutionError = z
     exception_message: z.string(),
     exception_type: z.string(),
     traceback: z.array(z.string()),
-    current_inputs: z.unknown(),
-    current_outputs: z.unknown()
+    current_inputs: z.unknown().optional(),
+    current_outputs: z.unknown().optional()
   })
   .passthrough()
 
@@ -146,15 +148,16 @@ export const zJobAssetsResponse = z.object({
 
 /** Schema for workflow container structure in job detail responses */
 export const zWorkflowContainer = z.object({
+  prompt: z.unknown().optional(),
   extra_data: z
     .object({
       extra_pnginfo: z
         .object({
-          workflow: z.unknown()
+          workflow: z.unknown().optional()
         })
-        .optional()
+        .nullish()
     })
-    .optional()
+    .nullish()
 })
 
 export type JobStatus = z.infer<typeof zJobStatus>

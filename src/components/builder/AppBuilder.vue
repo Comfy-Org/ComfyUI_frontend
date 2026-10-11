@@ -31,6 +31,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -138,7 +139,8 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
+  const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+  if (!isSelectInputsMode.value || visibility.surfaces.panel === 'never') return
 
   const widgetId = widget.widgetId
   if (!widgetId) return
@@ -203,7 +205,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         enable-empty-state
         :disabled="!appModeStore.selectedInputs.length"
         :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
-        :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
@@ -257,7 +258,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         enable-empty-state
         :disabled="!appModeStore.selectedOutputs.length"
         :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
-        :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
@@ -311,6 +311,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     to="body"
   >
     <div
+      data-testid="builder-selection-overlay"
       :class="
         cn(
           'pointer-events-auto absolute size-full',
@@ -352,7 +353,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 "
                 @pointerdown.stop
               >
-                <i class="bg-text-foreground icon-[lucide--check] size-full" />
+                <i class="icon-[lucide--check] size-full bg-base-foreground" />
               </div>
               <div
                 v-else

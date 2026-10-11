@@ -1,10 +1,22 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import {
+  computed,
+  effectScope,
+  reactive,
+  ref,
+  shallowReactive,
+  toValue,
+  watch
+} from 'vue'
+import type { EffectScope } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
@@ -12,20 +24,19 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  INPUT_TAG,
-  OUTPUT_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
-
-const INPUT_LIMIT = 100
 
 /**
  * Fetch input files from the internal API (OSS version)
@@ -45,15 +56,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
-}
-
-/**
- * Fetch input files from cloud service
- */
-async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag(INPUT_TAG, false, {
-    limit: INPUT_LIMIT
-  })
 }
 
 /**
@@ -90,18 +92,18 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() -
-      new Date(a.created_at ?? 0).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
-const FLAT_OUTPUT_PAGE_SIZE = 200
+const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const { flags } = useFeatureFlags()
 
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
@@ -122,34 +124,20 @@ export const useAssetsStore = defineStore('assets', () => {
   // the previous identity and must not commit.
   let identityGeneration = 0
 
-  // Pagination state
-  const historyOffset = ref(0)
-  const hasMoreHistory = ref(true)
-  const isLoadingMore = ref(false)
-
-  const allHistoryItems = ref<AssetItem[]>([])
-
-  const loadedIds = shallowReactive(new Set<string>())
-
-  const fetchInputFiles = isCloud
-    ? fetchInputFilesFromCloud
-    : fetchInputFilesFromAPI
-
   async function fetchInputFilesForCurrentIdentity(): Promise<AssetItem[]> {
     const generation = identityGeneration
     try {
-      const assets = await fetchInputFiles()
-      return generation === identityGeneration ? assets : inputAssets.value
+      const assets = await fetchInputFilesFromAPI()
+      return generation === identityGeneration ? assets : rawInputAssets.value
     } catch (err) {
-      if (generation !== identityGeneration) return inputAssets.value
+      if (generation !== identityGeneration) return rawInputAssets.value
       throw err
     }
   }
 
   const {
-    state: inputAssets,
+    state: rawInputAssets,
     isLoading: inputLoading,
-    error: inputError,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFilesForCurrentIdentity, [], {
     immediate: false,
@@ -159,237 +147,255 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
-    const result = await executeUpdateInputs()
-    assetService.invalidateInputAssetsIncludingPublic()
-    return result
+  const historyInputs: PagedList<AssetItem> = {
+    hasMore: false,
+    invalidate: async () => {
+      await executeUpdateInputs()
+    },
+    isLoading: inputLoading,
+    items: rawInputAssets,
+    loadMore: async () => false,
+    loadNew: async () => undefined
   }
 
-  /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
-   */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    const generation = identityGeneration
+  function useHistoryAssets(): PagedList<AssetItem> & { clear: () => void } {
+    // Pagination state
+    const historyOffset = ref(0)
+    const hasMoreHistory = ref(true)
+    const isLoadingMore = ref(false)
+    const allHistoryItems = ref<AssetItem[]>([])
+    const loadedIds = shallowReactive(new Set<string>())
 
-    // Reset state for initial load
-    if (!loadMore) {
+    /**
+     * Fetch history assets with pagination support
+     * @param loadMore - true for pagination (append), false for initial load (replace)
+     */
+    const fetchHistoryAssets = async (
+      loadMore = false
+    ): Promise<AssetItem[]> => {
+      const generation = identityGeneration
+
+      // Reset state for initial load
+      if (!loadMore) {
+        historyOffset.value = 0
+        hasMoreHistory.value = true
+        allHistoryItems.value = []
+        loadedIds.clear()
+      }
+
+      // Fetch from server with offset
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset: historyOffset.value
+      })
+
+      if (generation !== identityGeneration) return allHistoryItems.value
+
+      // Convert JobListItems to AssetItems
+      const newAssets = mapHistoryToAssets(history)
+
+      if (loadMore) {
+        // Filter out duplicates and insert in sorted order
+        for (const asset of newAssets) {
+          if (loadedIds.has(asset.id)) {
+            continue // Skip duplicates
+          }
+          loadedIds.add(asset.id)
+
+          // Find insertion index to maintain sorted order (newest first)
+          const assetTime = new Date(asset.created_at).getTime()
+          const insertIndex = allHistoryItems.value.findIndex(
+            (item) => new Date(item.created_at).getTime() < assetTime
+          )
+
+          if (insertIndex === -1) {
+            // Asset is oldest, append to end
+            allHistoryItems.value.push(asset)
+          } else {
+            // Insert at the correct position
+            allHistoryItems.value.splice(insertIndex, 0, asset)
+          }
+        }
+      } else {
+        // Initial load: replace all
+        allHistoryItems.value = newAssets
+        newAssets.forEach((asset) => loadedIds.add(asset.id))
+      }
+
+      // Update pagination state
+      historyOffset.value += BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+
+      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+        allHistoryItems.value = allHistoryItems.value.slice(
+          0,
+          MAX_HISTORY_ITEMS
+        )
+
+        // Clean up Set
+        removed.forEach((item) => loadedIds.delete(item.id))
+      }
+
+      return allHistoryItems.value
+    }
+
+    const historyAssets = ref<AssetItem[]>([])
+    const historyLoading = ref(false)
+    const historyError = ref<unknown>(null)
+    let historyQueue = Promise.resolve()
+    let refreshPromise: Promise<void> | undefined
+    let loadMorePromise: Promise<boolean> | undefined
+
+    /**
+     * Initial load of history assets
+     */
+    const doUpdateHistory = async () => {
+      const generation = identityGeneration
+      historyLoading.value = true
+      historyError.value = null
+      try {
+        await fetchHistoryAssets(false)
+        if (generation !== identityGeneration) return
+        historyAssets.value = allHistoryItems.value
+      } catch (err) {
+        console.error('Error fetching history assets:', err)
+        if (generation !== identityGeneration) return
+        historyError.value = err
+        // Keep existing data when error occurs
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
+      } finally {
+        if (generation === identityGeneration) historyLoading.value = false
+      }
+    }
+
+    const updateHistory = () => {
+      if (!refreshPromise) {
+        const operation = historyQueue.then(doUpdateHistory).finally(() => {
+          if (refreshPromise === operation) refreshPromise = undefined
+        })
+        refreshPromise = operation
+        historyQueue = operation
+      }
+      return refreshPromise
+    }
+
+    /**
+     * Load more history items (infinite scroll)
+     */
+    const doLoadMoreHistory = async () => {
+      const generation = identityGeneration
+      isLoadingMore.value = true
+      historyError.value = null
+
+      try {
+        await fetchHistoryAssets(true)
+        if (generation !== identityGeneration) return false
+        historyAssets.value = allHistoryItems.value
+        return true
+      } catch (err) {
+        console.error('Error loading more history:', err)
+        if (generation !== identityGeneration) return false
+        historyError.value = err
+        // Keep existing data when error occurs (consistent with updateHistory)
+        if (!historyAssets.value.length) {
+          historyAssets.value = []
+        }
+        return false
+      } finally {
+        if (generation === identityGeneration) isLoadingMore.value = false
+      }
+    }
+
+    const loadMoreHistory = () => {
+      if (!loadMorePromise) {
+        const operation = historyQueue.then(() =>
+          hasMoreHistory.value ? doLoadMoreHistory() : false
+        )
+        const settled = operation.finally(() => {
+          if (loadMorePromise === settled) loadMorePromise = undefined
+        })
+        loadMorePromise = settled
+        historyQueue = operation.then(() => undefined)
+      }
+      return loadMorePromise
+    }
+
+    /**
+     * Drop every loaded item and release the serialization queue, so a
+     * previous-identity request that never settles cannot starve the next
+     * identity's fetches. Callers bump identityGeneration first.
+     */
+    const clear = () => {
       historyOffset.value = 0
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
+      historyAssets.value = []
+      historyError.value = null
+      historyLoading.value = false
+      isLoadingMore.value = false
+      historyQueue = Promise.resolve()
+      refreshPromise = undefined
+      loadMorePromise = undefined
     }
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
-
-    if (generation !== identityGeneration) return allHistoryItems.value
-
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
-
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
-    }
-
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
-
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
-
-    return allHistoryItems.value
-  }
-
-  const historyAssets = ref<AssetItem[]>([])
-  const historyLoading = ref(false)
-  const historyError = ref<unknown>(null)
-
-  /**
-   * Initial load of history assets
-   */
-  const updateHistory = async () => {
-    const generation = identityGeneration
-    historyLoading.value = true
-    historyError.value = null
-    try {
-      await fetchHistoryAssets(false)
-      if (generation !== identityGeneration) return
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error fetching history assets:', err)
-      if (generation !== identityGeneration) return
-      historyError.value = err
-      // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      if (generation === identityGeneration) historyLoading.value = false
+    return {
+      clear,
+      hasMore: hasMoreHistory,
+      invalidate: updateHistory,
+      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
+      items: historyAssets,
+      loadMore: loadMoreHistory,
+      loadNew: updateHistory
     }
   }
 
-  /**
-   * Load more history items (infinite scroll)
-   */
-  const loadMoreHistory = async () => {
-    // Guard: prevent concurrent loads and check if more items available
-    if (!hasMoreHistory.value || isLoadingMore.value) return
+  const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let historyOutputs: ReturnType<typeof useHistoryAssets> | undefined
+  let assetsScope: EffectScope | undefined
+  watch(
+    () => flags.assetsEnabled,
+    (isAssets) => {
+      if (assetsScope) assetsScope.stop()
+      assetsScope = undefined
 
-    const generation = identityGeneration
-    isLoadingMore.value = true
-    historyError.value = null
-
-    try {
-      await fetchHistoryAssets(true)
-      if (generation !== identityGeneration) return
-      historyAssets.value = allHistoryItems.value
-    } catch (err) {
-      console.error('Error loading more history:', err)
-      if (generation !== identityGeneration) return
-      historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
-    } finally {
-      if (generation === identityGeneration) isLoadingMore.value = false
-    }
-  }
-
-  const flatOutputAssets = ref<AssetItem[]>([])
-  const flatOutputLoading = ref(false)
-  const flatOutputError = ref<unknown>(null)
-  const flatOutputOffset = ref(0)
-  const flatOutputHasMore = ref(true)
-  const flatOutputIsLoadingMore = ref(false)
-  const flatOutputSeenIds = new Set<string>()
-  let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
-
-  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
-    if (loadMore) {
-      if (!flatOutputHasMore.value) return flatOutputAssets.value
-      flatOutputIsLoadingMore.value = true
-    } else {
-      flatOutputLoading.value = true
-      flatOutputOffset.value = 0
-      flatOutputNextCursor = undefined
-      flatOutputHasMore.value = true
-      flatOutputSeenIds.clear()
-    }
-    flatOutputError.value = null
-
-    flatOutputInFlight = (async () => {
-      const generation = identityGeneration
-      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
-      try {
-        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
-          limit: FLAT_OUTPUT_PAGE_SIZE,
-          ...(requestedAfter !== undefined
-            ? { after: requestedAfter }
-            : { offset: flatOutputOffset.value })
+      historyOutputs = undefined
+      if (isAssets) {
+        assetsScope = effectScope()
+        assetsScope.run(() => {
+          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          outputAssets.value = new WrappedList(
+            flatAssets,
+            unflattenOutputAssets
+          )
         })
-        if (generation !== identityGeneration) return flatOutputAssets.value
-        const batch = page.assets
-        const fresh = loadMore
-          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : batch
-        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
-        flatOutputAssets.value = loadMore
-          ? [...flatOutputAssets.value, ...fresh]
-          : batch
-        flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor
-        const cursorStuck =
-          nextCursor !== undefined && nextCursor === requestedAfter
-        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
-        flatOutputHasMore.value =
-          fresh.length > 0 && page.has_more && !cursorStuck
-        return flatOutputAssets.value
-      } catch (err) {
-        console.error('Failed to fetch output assets:', err)
-        if (generation !== identityGeneration) return flatOutputAssets.value
-        flatOutputError.value = err
-        return loadMore ? flatOutputAssets.value : []
-      } finally {
-        // A reset already released the slot and may have started the new
-        // identity's fetch; releasing it again would strand that fetch.
-        if (generation === identityGeneration) {
-          if (loadMore) flatOutputIsLoadingMore.value = false
-          else flatOutputLoading.value = false
-          flatOutputInFlight = null
-        }
+      } else {
+        inputAssets.value = historyInputs
+        historyOutputs = useHistoryAssets()
+        outputAssets.value = historyOutputs
       }
-    })()
+    },
+    { immediate: true }
+  )
 
-    return flatOutputInFlight
-  }
+  async function loadOutputAsset(assetId: string): Promise<boolean> {
+    const assets = outputAssets.value
+    const hasAsset = () =>
+      toValue(assets.items).some(({ id }) => id === assetId)
 
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
-    if (flatOutputIsLoadingMore.value) return
-    await fetchFlatOutputs(true)
-  }
-
-  /**
-   * Patch preview_id/preview_url for a single asset already in memory,
-   * matched by name. Used after persistThumbnail succeeds so an open Asset
-   * panel reflects the new thumbnail without refetching the whole history.
-   * Match by name because the cloud assets API and the history API use
-   * different id spaces; name is the stable cross-API identifier.
-   */
-  const setAssetPreview = (
-    name: string,
-    previewId: string,
-    previewUrl: string
-  ) => {
-    const patch = (list: AssetItem[]) => {
-      const idx = list.findIndex((a) => a.name === name)
-      if (idx < 0) return
-      list[idx] = {
-        ...list[idx],
-        preview_id: previewId,
-        preview_url: previewUrl
-      }
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
+    ) {
+      if (!(await assets.loadMore())) break
     }
-    patch(historyAssets.value)
-    patch(allHistoryItems.value)
-    patch(inputAssets.value)
+    return hasAsset()
   }
 
   /**
@@ -398,7 +404,7 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
-    for (const asset of inputAssets.value) {
+    for (const asset of toValue(inputAssets.value.items)) {
       const hash = asset.hash
       if (hash) {
         map.set(hash, asset)
@@ -447,8 +453,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    *
    * Runs on every distribution; whether anything fetches through it is
-   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
-   * the authoritative off-cloud gate.
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
@@ -903,7 +909,7 @@ export const useAssetsStore = defineStore('assets', () => {
               category,
               state
             ] of modelStateByCategory.value.entries()) {
-              if (state.assets?.has(asset.id)) {
+              if (state.assets.has(asset.id)) {
                 categoriesToInvalidate.add(category)
               }
             }
@@ -975,38 +981,19 @@ export const useAssetsStore = defineStore('assets', () => {
   } = getModelState()
 
   /**
-   * Drop every locally cached asset — outputs, history, inputs and the model
-   * inventory — so the previous account's data stops rendering after an
-   * in-session identity change. Loading flags and single-flight slots are
-   * released too, so a previous-identity request that never settles cannot
-   * starve the new identity's fetches.
+   * Drop every locally cached asset — outputs, inputs and the model inventory —
+   * so the previous account's data stops rendering after an in-session
+   * identity change. Loading flags and serialization slots are released too,
+   * so a previous-identity request that never settles cannot starve the new
+   * identity's fetches.
    */
   const reset = () => {
     identityGeneration++
 
-    historyOffset.value = 0
-    hasMoreHistory.value = true
-    allHistoryItems.value = []
-    loadedIds.clear()
-    historyAssets.value = []
-    historyError.value = null
-    historyLoading.value = false
-    isLoadingMore.value = false
-
-    flatOutputAssets.value = []
-    flatOutputError.value = null
-    flatOutputOffset.value = 0
-    flatOutputHasMore.value = true
-    flatOutputSeenIds.clear()
-    flatOutputNextCursor = undefined
-    flatOutputInFlight = null
-    flatOutputLoading.value = false
-    flatOutputIsLoadingMore.value = false
-
-    inputAssets.value = []
-    inputError.value = undefined
+    rawInputAssets.value = []
     inputLoading.value = false
-    assetService.invalidateInputAssetsIncludingPublic()
+    historyOutputs?.clear()
+    if (flags.assetsEnabled) void invalidateAll()
 
     invalidateAllCategories()
     assetService.invalidateModelBuckets()
@@ -1020,7 +1007,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
-        .filter((provider) => provider.nodeDef?.name)
+        .filter((provider) => provider.nodeDef.name)
 
       const nodeTypeUpdates = providers.map((provider) =>
         updateModelsForNodeType(provider.nodeDef.name).then(
@@ -1052,34 +1039,15 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
-    historyAssets,
-    inputLoading,
-    historyLoading,
-    inputError,
-    historyError,
-    hasMoreHistory,
-    isLoadingMore,
+    outputAssets,
+    invalidateAll,
+    loadOutputAsset,
+    reset,
 
     // Deletion tracking
     deletingAssetIds,
     setAssetDeleting,
     isAssetDeleting,
-
-    // Actions
-    updateInputs,
-    updateHistory,
-    loadMoreHistory,
-    setAssetPreview,
-    reset,
-
-    // Flat output assets (cloud-only, tag-based)
-    flatOutputAssets,
-    flatOutputLoading,
-    flatOutputError,
-    flatOutputHasMore,
-    flatOutputIsLoadingMore,
-    updateFlatOutputs,
-    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

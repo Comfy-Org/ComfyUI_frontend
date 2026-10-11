@@ -16,6 +16,7 @@ function renderTag(
     label: string
     shape?: 'square' | 'rounded'
     removable?: boolean
+    interactive?: boolean
     onRemove?: (...args: unknown[]) => void
   },
   options?: { slots?: Record<string, string> }
@@ -43,6 +44,14 @@ describe('Tag', () => {
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 
+  it('gives interactive tags button semantics and keyboard focus', () => {
+    renderTag({ label: 'Open workflow', interactive: true })
+
+    expect(
+      screen.getByRole('button', { name: 'Open workflow' })
+    ).toHaveAttribute('tabindex', '0')
+  })
+
   it('emits remove event when remove button is clicked', async () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
@@ -50,6 +59,47 @@ describe('Tag', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove' }))
     expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  it.for(['{Enter}', ' '])(
+    'removes an interactive tag with the remove button using %s',
+    async (key) => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const onRemove = vi.fn()
+      render(Tag, {
+        props: {
+          label: 'Test',
+          interactive: true,
+          removable: true,
+          onRemove
+        },
+        attrs: { role: 'button', tabindex: 0, onClick },
+        global: { plugins: [i18n] }
+      })
+      const removeButton = screen.getByRole('button', { name: 'Remove' })
+
+      removeButton.focus()
+      await user.keyboard(key)
+
+      expect(onRemove).toHaveBeenCalledOnce()
+      expect(onClick).not.toHaveBeenCalled()
+    }
+  )
+
+  it('uses a context-specific remove label', () => {
+    render(Tag, {
+      props: {
+        label: 'KSampler',
+        removable: true,
+        removeLabel: 'Remove KSampler reference'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Remove KSampler reference' })
+    ).toBeInTheDocument()
   })
 
   it('renders icon slot content', () => {

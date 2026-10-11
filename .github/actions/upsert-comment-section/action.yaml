@@ -3,7 +3,8 @@ description: >
   Manage a consolidated PR comment with independently-updatable sections.
   Multiple CI workflows can share the same comment by using the same
   comment-marker and different section-names. Each workflow upserts only
-  its own section, leaving other sections intact.
+  its own section, leaving other sections intact. Sections always render in
+  the fixed order declared in the script, whichever workflow finished first.
 
 inputs:
   pr-number:
@@ -14,7 +15,10 @@ inputs:
     required: true
   section-content:
     description: Markdown content for this section
-    required: true
+    required: false
+  section-content-file:
+    description: Path to a Markdown file containing this section
+    required: false
   comment-marker:
     description: Top-level HTML comment marker shared by all sections in this comment
     required: false
@@ -31,13 +35,22 @@ runs:
         INPUT_PR_NUMBER: ${{ inputs.pr-number }}
         INPUT_SECTION_NAME: ${{ inputs.section-name }}
         INPUT_SECTION_CONTENT: ${{ inputs.section-content }}
+        INPUT_SECTION_CONTENT_FILE: ${{ inputs.section-content-file }}
         INPUT_COMMENT_MARKER: ${{ inputs.comment-marker }}
       with:
         github-token: ${{ inputs.token }}
         script: |
           const prNumber = Number(process.env.INPUT_PR_NUMBER)
           const sectionName = process.env.INPUT_SECTION_NAME
-          const sectionContent = process.env.INPUT_SECTION_CONTENT
+          const sectionContentFile = process.env.INPUT_SECTION_CONTENT_FILE
+          if (!sectionContentFile && !process.env.INPUT_SECTION_CONTENT) {
+            throw new Error(
+              'Either section-content or section-content-file is required'
+            )
+          }
+          const sectionContent = sectionContentFile
+            ? require('node:fs').readFileSync(sectionContentFile, 'utf8')
+            : process.env.INPUT_SECTION_CONTENT
           const commentMarker = process.env.INPUT_COMMENT_MARKER
 
           if (!/^[a-z0-9-]+$/.test(sectionName)) {
@@ -48,11 +61,45 @@ runs:
           const sectionEnd = `<!-- section:${sectionName}:end -->`
           const sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
 
-          // Escape special regex characters in delimiter strings
-          const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const sectionRegex = new RegExp(
-            `${escapeRegex(sectionStart)}[\\s\\S]*?${escapeRegex(sectionEnd)}`
-          )
+          // Sections render in this order whichever workflow finished first.
+          // Names not listed follow the listed ones, alphabetically.
+          const sectionOrder = [
+            'ci-metrics',
+            'release',
+            'design-system-release',
+            'account-core-release',
+            'billing-contract-release',
+            'ingest-types-release',
+            'playwright',
+            'storybook',
+            'chromatic',
+            'custom-nodes-e2e',
+            'custom-nodes-matrix',
+            'fallow',
+            'e2e',
+            'screenshot-update',
+            'preview',
+            'billing-web-preview'
+          ]
+          const sectionRank = (name) => {
+            const index = sectionOrder.indexOf(name)
+            return index === -1 ? sectionOrder.length : index
+          }
+          const sectionBlocks =
+            /<!-- section:([a-z0-9-]+):start -->[\s\S]*?<!-- section:\1:end -->/g
+          const sectionsOf = (body) =>
+            new Map(Array.from(body.matchAll(sectionBlocks), (m) => [m[1], m[0]]))
+          const assembleBody = (sections) => {
+            const names = [...sections.keys()].sort(
+              (a, b) => sectionRank(a) - sectionRank(b) || a.localeCompare(b)
+            )
+            return [commentMarker, ...names.map((name) => sections.get(name))].join('\n\n')
+          }
+          const withSection = (body, name, block) => {
+            const sections = sectionsOf(body)
+            sections.set(name, block)
+            return assembleBody(sections)
+          }
 
           // Every section-start marker in a body, used to detect whether a
           // concurrent writer's section was lost across our write.
@@ -85,7 +132,7 @@ runs:
                 await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: prNumber,
-                  body: `${commentMarker}\n${sectionBlock}`
+                  body: withSection('', sectionName, sectionBlock)
                 })
                 // Concurrent writers may have also created a comment; merge all
                 // sections from every duplicate into the lowest-id copy, verify,
@@ -103,25 +150,13 @@ runs:
                   markers.sort((a, b) => a.id - b.id)
                   const canonical = markers[0]
                   // Merge sections from all duplicates into the canonical body
-                  let mergedBody = canonical.body ?? ''
+                  const merged = sectionsOf(canonical.body ?? '')
                   for (const dup of markers.slice(1)) {
-                    const dupSections = (dup.body ?? '').match(
-                      /<!-- section:[a-z0-9-]+:start -->[\s\S]*?<!-- section:[a-z0-9-]+:end -->/g
-                    ) ?? []
-                    for (const block of dupSections) {
-                      const nameMatch = block.match(/<!-- section:([a-z0-9-]+):start -->/)
-                      if (!nameMatch) continue
-                      const name = nameMatch[1]
-                      const startTag = `<!-- section:${name}:start -->`
-                      const endTag = `<!-- section:${name}:end -->`
-                      const existingRegex = new RegExp(
-                        `${escapeRegex(startTag)}[\\s\\S]*?${escapeRegex(endTag)}`
-                      )
-                      mergedBody = existingRegex.test(mergedBody)
-                        ? mergedBody.replace(existingRegex, block)
-                        : mergedBody.trimEnd() + '\n\n' + block
+                    for (const [name, block] of sectionsOf(dup.body ?? '')) {
+                      merged.set(name, block)
                     }
                   }
+                  const mergedBody = assembleBody(merged)
                   try {
                     await github.rest.issues.updateComment({
                       ...context.repo,
@@ -160,9 +195,7 @@ runs:
 
             const body = existing.body ?? ''
             const expectedSections = sectionStartsIn(body)
-            const updated = sectionRegex.test(body)
-              ? body.replace(sectionRegex, sectionBlock)
-              : body.trimEnd() + '\n\n' + sectionBlock
+            const updated = withSection(body, sectionName, sectionBlock)
 
             try {
               await github.rest.issues.updateComment({

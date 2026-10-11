@@ -19,6 +19,7 @@ const MOCK_FOLDERS: Record<string, string[]> = {
 test.describe('Model library sidebar - tab', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -52,6 +53,7 @@ test.describe('Model library sidebar - folders', () => {
   // call during initialization hits the mock and populates the store.
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -69,16 +71,24 @@ test.describe('Model library sidebar - folders', () => {
   })
 
   test('Expanding a folder loads and shows models', async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.mockMetadata({
+      'sd_xl_base_1.0.safetensors': { 'modelspec.author': 'Stability AI' }
+    })
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Click the folder to expand it
-    await tab.getFolderByLabel('checkpoints').click()
+    await test.step('Expand the folder', async () => {
+      await tab.getFolderByLabel('checkpoints').click()
 
-    // Models should appear as leaf nodes
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
-    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
-    await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+      await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
+      await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+    })
+
+    await test.step('Hover a model to preview it', async () => {
+      await tab.getLeafByLabel('sd_xl_base_1.0').hover()
+      await expect(tab.modelPreview).toBeVisible()
+    })
   })
 
   test('Expanding a different folder shows its models', async ({
@@ -101,6 +111,7 @@ test.describe('Model library sidebar - folders', () => {
 test.describe('Model library sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -164,6 +175,7 @@ test.describe('Model library sidebar - refresh', () => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({
       checkpoints: ['model_a.safetensors']
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -193,6 +205,7 @@ test.describe('Model library sidebar - refresh', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -224,6 +237,7 @@ test.describe('Model library sidebar - empty state', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({})
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -237,6 +251,7 @@ test.describe('Model library sidebar - empty state', () => {
   test.describe('Model library sidebar - add node', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup()
       await comfyPage.nodeOps.clearGraph()
     })

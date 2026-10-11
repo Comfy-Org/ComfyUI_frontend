@@ -1,4 +1,4 @@
-import { hasKey, t, translationKeys } from '../i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
 
 type BlockType =
   | 'paragraph'
@@ -19,55 +19,37 @@ interface SectionConfig {
   blocks: BlockConfig[]
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+interface MessageGroup {
+  [key: string]: string | MessageGroup
 }
 
-function inferBlockType(
-  prefix: string,
-  sectionId: string,
-  i: number
-): BlockType {
-  const bp = `${prefix}.${sectionId}.block.${i}`
+function isMessageGroup(value: unknown): value is MessageGroup {
+  return typeof value === 'object' && value !== null
+}
 
-  if (hasKey(`${bp}.src`)) return 'image'
-  if (hasKey(`${bp}.text`)) return 'blockquote'
-  if (hasKey(`${bp}.role`)) return 'author'
-  if (hasKey(`${bp}.heading`)) return 'heading'
-  if (hasKey(`${bp}.ol`)) return 'ordered-list'
-
-  const value = hasKey(bp) ? t(bp as never) : ''
-  if (value.includes('\n')) return 'list'
+function inferBlockType(block: string | MessageGroup): BlockType {
+  if (typeof block === 'string') {
+    return block.includes('\n') ? 'list' : 'paragraph'
+  }
+  if (typeof block.src === 'string') return 'image'
+  if (typeof block.text === 'string') return 'blockquote'
+  if (typeof block.role === 'string') return 'author'
+  if (typeof block.heading === 'string') return 'heading'
+  if (typeof block.ol === 'string') return 'ordered-list'
   return 'paragraph'
 }
 
 export function deriveSections(prefix: string): SectionConfig[] {
-  const labelRegex = new RegExp(`^${escapeRegex(prefix)}\\.([^.]+)\\.label$`)
-  const sectionIds: string[] = []
+  const catalog: unknown = en
+  if (!isMessageGroup(catalog) || !isMessageGroup(catalog[prefix])) return []
 
-  for (const key of translationKeys) {
-    const match = key.match(labelRegex)
-    if (match && !sectionIds.includes(match[1])) {
-      sectionIds.push(match[1])
-    }
-  }
-
-  return sectionIds.map((id) => {
-    const hasTitle = hasKey(`${prefix}.${id}.title`)
-
-    const blockRegex = new RegExp(
-      `^${escapeRegex(prefix)}\\.${escapeRegex(id)}\\.block\\.(\\d+)(?:\\.|$)`
-    )
-    const blockIndices = new Set<number>()
-    for (const key of translationKeys) {
-      const match = key.match(blockRegex)
-      if (match) blockIndices.add(parseInt(match[1]))
-    }
-
-    const blocks = Array.from(blockIndices)
-      .sort((a, b) => a - b)
-      .map((i) => ({ type: inferBlockType(prefix, id, i) }))
-
-    return { id, hasTitle, blocks }
+  return Object.entries(catalog[prefix]).flatMap(([id, section]) => {
+    if (!isMessageGroup(section) || typeof section.label !== 'string') return []
+    const blocks = isMessageGroup(section.block)
+      ? Object.entries(section.block)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([, block]) => ({ type: inferBlockType(block) }))
+      : []
+    return [{ id, hasTitle: typeof section.title === 'string', blocks }]
   })
 }

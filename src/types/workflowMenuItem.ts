@@ -1,4 +1,4 @@
-import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
+import type { MenuItemAction } from '@/components/ui/menu/types'
 
 export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 
@@ -6,15 +6,13 @@ interface WorkflowMenuSeparator {
   separator: true
 }
 
-export interface WorkflowMenuAction {
+export interface WorkflowMenuAction extends Omit<
+  MenuItemAction,
+  'command' | 'key'
+> {
   separator?: false
   visible?: boolean
   id: string
-  label: string
-  icon?: string
   command?: () => void
-  disabled?: boolean
-  badge?: string
   isNew?: boolean
-  overlayIcon?: OverlayIconProps
 }
