@@ -5944,8 +5944,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Draw stroke styles
-    for (const getStyle of Object.values(node.strokeStyles)) {
-      const strokeStyle = getStyle.call(node)
+    for (const [name, getStyle] of Object.entries(node.strokeStyles)) {
+      const strokeStyle =
+        name === 'selected'
+          ? getStyle.call(node, _selected)
+          : getStyle.call(node)
       if (strokeStyle) {
         strokeShape(ctx, area, {
           shape,
