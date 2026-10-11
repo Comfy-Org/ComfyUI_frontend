@@ -15,14 +15,16 @@ function git(args: string[]): string {
   })
 }
 
-function diffArgs(argv: string[]): string[] {
-  if (argv.includes('--staged')) {
-    try {
-      return ['--cached', git(['rev-parse', '--verify', 'MERGE_HEAD']).trim()]
-    } catch {
-      return ['--cached']
-    }
+function stagedDiffArgs(): string[] {
+  try {
+    return ['--cached', git(['rev-parse', '--verify', 'MERGE_HEAD']).trim()]
+  } catch {
+    return ['--cached']
   }
+}
+
+function diffArgs(argv: string[]): string[] {
+  if (argv.includes('--staged')) return stagedDiffArgs()
   const baseIndex = argv.indexOf('--base')
   const base = baseIndex === -1 ? undefined : argv.at(baseIndex + 1)
   if (base === undefined) {
