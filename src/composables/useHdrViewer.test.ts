@@ -15,7 +15,8 @@ function fakeRenderer() {
     domElement: document.createElement('canvas')
   }
   return new Proxy(target, {
-    get: (object, key) => (object[key] ??= vi.fn(() => 1))
+    get: (object, key) =>
+      key === 'then' ? undefined : (object[key] ??= vi.fn(() => 1))
   })
 }
 

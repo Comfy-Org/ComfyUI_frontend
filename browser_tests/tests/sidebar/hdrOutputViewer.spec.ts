@@ -1,5 +1,4 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -39,6 +38,14 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
           contentType: 'image/x-exr'
         }
       })
+      // Only the subfolder URL serves the EXR, so a decoded viewer proves the URL.
+      await page.route('**/api/view**', async (route) => {
+        const url = new URL(route.request().url())
+        const wrongFolder =
+          url.searchParams.get('filename') === 'sky.exr' &&
+          url.searchParams.get('subfolder') !== 'renders'
+        await (wrongFolder ? route.fulfill({ status: 404 }) : route.fallback())
+      })
       await use()
     },
     { auto: true }
@@ -49,17 +56,6 @@ function hdrViewer(comfyPage: ComfyPage) {
   return comfyPage.page.getByRole('dialog').filter({ hasText: 'sky.exr' })
 }
 
-/** Resolves once the viewer requested the EXR from its subfolder. */
-function waitForSubfolderExr(page: Page) {
-  return page.waitForRequest((request) => {
-    const url = new URL(request.url())
-    return (
-      url.pathname.endsWith('/api/view') &&
-      url.searchParams.get('filename') === 'sky.exr' &&
-      url.searchParams.get('subfolder') === 'renders'
-    )
-  })
-}
 
 async function expectHdrViewerLoaded(comfyPage: ComfyPage) {
   const viewer = hdrViewer(comfyPage)
@@ -84,11 +80,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
         .getByRole('button', { name: 'Job History', exact: true })
         .click()
       const row = comfyPage.queuePanel.jobRow('hdr-job')
-
-      const requested = waitForSubfolderExr(comfyPage.page)
       await row.dblclick()
-
-      await requested
       await expectHdrViewerLoaded(comfyPage)
     })
   })
@@ -99,11 +91,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
     }) => {
       const tab = comfyPage.menu.assetsTab
       await tab.open()
-
-      const requested = waitForSubfolderExr(comfyPage.page)
       await tab.getAssetCardByName('sky').dblclick()
-
-      await requested
       await expectHdrViewerLoaded(comfyPage)
     })
 
@@ -113,11 +101,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
       const tab = comfyPage.menu.assetsTab
       await tab.open()
       await tab.rightClickAsset('sky')
-
-      const requested = waitForSubfolderExr(comfyPage.page)
       await comfyPage.contextMenu.clickMenuItemExact('Inspect asset')
-
-      await requested
       await expectHdrViewerLoaded(comfyPage)
     })
   })

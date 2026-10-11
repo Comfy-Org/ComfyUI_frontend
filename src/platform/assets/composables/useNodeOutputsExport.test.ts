@@ -13,7 +13,6 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
-import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -27,7 +26,11 @@ vi.mock(
   () => ({
     useGeneratedPreviewLookup: vi.fn(
       () => (_filename: string | undefined, assetId?: string) =>
-        assetId === 'sky-asset' ? '/api/assets/sky-preview/content' : ''
+        assetId === 'sky-asset'
+          ? '/api/assets/sky-preview/content'
+          : assetId
+            ? ''
+            : '/api/assets/filename-match/content'
     )
   })
 )
@@ -245,7 +248,7 @@ describe('useNodeOutputsExport', () => {
     expect(useAssetExportStore().exportList).toEqual([])
   })
 
-  it('shows HDR outputs by their generated preview, or a placeholder without one', async () => {
+  it('shows HDR outputs by their own generated preview, or a placeholder without one', async () => {
     const node = nodeWithOutputs([
       {
         filename: 'sky.exr',
@@ -259,17 +262,11 @@ describe('useNodeOutputsExport', () => {
         type: 'output',
         id: 'other-sky'
       },
+      { filename: 'sky.exr', subfolder: 'third', type: 'output' },
       { filename: 'a.png', type: 'output' }
     ])
 
-    const { showOutputsExportDialog } = mountComposable()
-    expect(useGeneratedPreviewLookup).not.toHaveBeenCalled()
-
-    showOutputsExportDialog(node)
-    const dialog = await screen.findByRole('dialog', {
-      name: 'Download Assets'
-    })
-    expect(useGeneratedPreviewLookup).toHaveBeenCalledOnce()
+    const { dialog } = await openExportDialog(node)
 
     const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
     expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
@@ -278,6 +275,6 @@ describe('useNodeOutputsExport', () => {
     ])
     expect(
       within(dialog).getAllByTestId('output-thumbnail-placeholder')
-    ).toHaveLength(1)
+    ).toHaveLength(2)
   })
 })
