@@ -433,12 +433,7 @@ function getApiWebSocketHostOverride(): string {
   if (typeof override !== 'string') {
     return ''
   }
-  const trimmed = override.trim()
-  if (!trimmed) {
-    return ''
-  }
-  console.debug('[ComfyUI] WebSocket host override active:', trimmed)
-  return trimmed
+  return override.trim()
 }
 
 export class ComfyApi extends EventTarget {
@@ -961,8 +956,11 @@ export class ComfyApi extends EventTarget {
     try {
       socket = new WebSocket(wsUrl)
     } catch (error) {
-      reportError(error, { errorType: 'websocket_construction_failure' })
-      console.error('Failed to open WebSocket connection:', error)
+      const reason = error instanceof Error ? error.name : 'UnknownError'
+      reportError(
+        new Error(`Failed to open WebSocket to ${wsHost} (${reason})`),
+        { errorType: 'websocket_construction_failure', surface: 'platform' }
+      )
       if (!isReconnect) {
         this._pollQueue()
       }

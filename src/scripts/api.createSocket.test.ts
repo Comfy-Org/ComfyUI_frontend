@@ -1,7 +1,12 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 interface StubSocket {
   url: string
@@ -10,6 +15,7 @@ interface StubSocket {
 
 describe('createSocket WebSocket host', () => {
   let sockets: StubSocket[]
+  let rejectedUrls: string[]
   let fetchApi: MockInstance<typeof api.fetchApi>
 
   const socketUrls = () => sockets.map((socket) => socket.url)
@@ -43,13 +49,16 @@ describe('createSocket WebSocket host', () => {
   }
 
   const stubUnusableWebSocket = () => {
-    vi.stubGlobal('WebSocket', function () {
-      throw new DOMException('invalid url', 'SyntaxError')
+    vi.stubGlobal('WebSocket', function (url: string) {
+      rejectedUrls.push(url)
+      throw new DOMException(`The URL '${url}' is invalid.`, 'SyntaxError')
     })
   }
 
   beforeEach(() => {
     sockets = []
+    rejectedUrls = []
+    vi.mocked(reportError).mockClear()
     api.socket = null
     api.api_host = 'localhost:8188'
     fetchApi = vi
@@ -68,56 +77,56 @@ describe('createSocket WebSocket host', () => {
     api.socket = null
   })
 
-  it('dials the configured host when the override is set', () => {
+  it('dials the configured host when the override is set', async () => {
     window.__COMFY_API_WS_HOST__ = 'ws.example.com'
 
-    api.init()
+    await api.init()
 
     expect(socketUrls()).toHaveLength(1)
     expect(socketUrls()[0]).toContain('://ws.example.com')
     expect(socketUrls()[0]).not.toContain('localhost:8188')
   })
 
-  it('preserves query parameters when the override is set', () => {
+  it('preserves query parameters when the override is set', async () => {
     window.__COMFY_API_WS_HOST__ = 'ws.example.com'
     window.name = 'session-123'
 
-    api.init()
+    await api.init()
 
     expect(socketUrls()[0]).toContain('clientId=session-123')
   })
 
-  it('falls back to api_host when the override is unset', () => {
-    api.init()
+  it('falls back to api_host when the override is unset', async () => {
+    await api.init()
 
     expect(socketUrls()).toHaveLength(1)
     expect(socketUrls()[0]).toContain('://localhost:8188')
   })
 
-  it('falls back to api_host when the override is an empty string', () => {
+  it('falls back to api_host when the override is an empty string', async () => {
     window.__COMFY_API_WS_HOST__ = ''
 
-    api.init()
+    await api.init()
 
     expect(socketUrls()[0]).toContain('://localhost:8188')
   })
 
-  it('falls back to api_host when the override is whitespace only', () => {
+  it('falls back to api_host when the override is whitespace only', async () => {
     window.__COMFY_API_WS_HOST__ = '   '
 
-    api.init()
+    await api.init()
 
     expect(socketUrls()[0]).toContain('://localhost:8188')
   })
 
-  it('ignores a prototype-pollution gadget and uses api_host', () => {
+  it('ignores a prototype-pollution gadget and uses api_host', async () => {
     Object.defineProperty(Object.prototype, '__COMFY_API_WS_HOST__', {
       value: 'evil.example.com',
       configurable: true,
       writable: true
     })
     try {
-      api.init()
+      await api.init()
 
       expect(socketUrls()[0]).toContain('://localhost:8188')
       expect(socketUrls()[0]).not.toContain('evil.example.com')
@@ -130,8 +139,11 @@ describe('createSocket WebSocket host', () => {
     stubUnusableWebSocket()
     window.__COMFY_API_WS_HOST__ = 'https://not a host'
 
-    expect(() => api.init()).not.toThrow()
+    await expect(api.init()).resolves.toBeUndefined()
     expect(api.socket).toBeNull()
+    expect(rejectedUrls).toEqual([
+      expect.stringContaining('://https://not a host/')
+    ])
 
     await vi.advanceTimersByTimeAsync(1000)
     expect(promptRequests()).toBe(1)
@@ -141,15 +153,32 @@ describe('createSocket WebSocket host', () => {
     stubUnusableWebSocket()
     window.__COMFY_API_WS_HOST__ = 'wss://ws.example.com'
 
-    expect(() => api.init()).not.toThrow()
+    await expect(api.init()).resolves.toBeUndefined()
     expect(api.socket).toBeNull()
+    expect(rejectedUrls).toEqual([
+      expect.stringContaining('://wss://ws.example.com/')
+    ])
 
     await vi.advanceTimersByTimeAsync(1000)
     expect(promptRequests()).toBe(1)
   })
 
+  it('reports a construction failure without the socket URL query', async () => {
+    stubUnusableWebSocket()
+    window.__COMFY_API_WS_HOST__ = 'https://not a host'
+    window.name = 'session-123'
+
+    await api.init()
+
+    expect(rejectedUrls[0]).toContain('clientId=session-123')
+    expect(reportError).toHaveBeenCalledOnce()
+    const [reported] = vi.mocked(reportError).mock.calls[0]
+    expect(String(reported)).toContain('https://not a host')
+    expect(String(reported)).not.toContain('session-123')
+  })
+
   it('falls back to polling when a constructed socket errors before opening', async () => {
-    api.init()
+    await api.init()
 
     dispatchToLatestSocket('error')
 
@@ -161,7 +190,7 @@ describe('createSocket WebSocket host', () => {
     stubUnusableWebSocket()
     window.__COMFY_API_WS_HOST__ = 'https://not a host'
 
-    api.init()
+    await api.init()
     await api.resetSocket()
 
     await vi.advanceTimersByTimeAsync(1000)
@@ -171,7 +200,7 @@ describe('createSocket WebSocket host', () => {
   it('stops polling once a socket opens', async () => {
     stubUnusableWebSocket()
     window.__COMFY_API_WS_HOST__ = 'https://not a host'
-    api.init()
+    await api.init()
     await vi.advanceTimersByTimeAsync(1000)
     expect(promptRequests()).toBe(1)
 
