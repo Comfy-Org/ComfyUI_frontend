@@ -2362,8 +2362,6 @@ export class LGraphNode
       this.widgets[existingIndex] = widget
     }
 
-    // The reactive widget list may synchronously reject an unrenamable
-    // duplicate name. Do not bind or restore a widget that did not survive.
     const widgetIndex = this.widgets.indexOf(widget)
     if (widgetIndex === -1) return widget
 
