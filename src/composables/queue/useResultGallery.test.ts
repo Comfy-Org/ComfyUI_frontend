@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 vi.mock(import('@/services/hdrViewerService'))
+vi.mock(import('@/services/jobOutputCache'), { spy: true })
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { openHdrViewer } from '@/services/hdrViewerService'
+import { getOutputsForTask } from '@/services/jobOutputCache'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
@@ -178,6 +180,31 @@ describe('useResultGallery', () => {
       '/api/view?filename=out.exr&subfolder=qa',
       'out.exr'
     )
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBe(-1)
+  })
+
+  it('does not open a slower gallery request over a later HDR selection', async () => {
+    const image = createResultItem('image.png')
+    const exr = createResultItem('/api/view?filename=out.exr')
+    exr.filename = 'out.exr'
+    const imageTask = createTask(image)
+    const hdrTask = createTask(exr)
+    let resolveOutputs!: (outputs: AugmentedResultItem[]) => void
+    vi.mocked(getOutputsForTask).mockReturnValueOnce(
+      new Promise((resolve) => (resolveOutputs = resolve))
+    )
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [imageTask, hdrTask]
+    )
+
+    const imageView = onViewItem(createJobViewItem('job-image', imageTask))
+    await onViewItem(createJobViewItem('job-hdr', hdrTask))
+    resolveOutputs([image])
+    await imageView
+
+    expect(openHdrViewer).toHaveBeenCalledOnce()
     expect(galleryItems.value).toEqual([])
     expect(galleryActiveIndex.value).toBe(-1)
   })

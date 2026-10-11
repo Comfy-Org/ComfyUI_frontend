@@ -63,7 +63,8 @@ function waitForSubfolderExr(page: Page) {
 
 async function expectHdrViewerLoaded(comfyPage: ComfyPage) {
   const viewer = hdrViewer(comfyPage)
-  await expect(viewer.getByTestId('hdr-viewer-canvas')).toBeVisible()
+  // Statistics only render once the texture has decoded.
+  await expect(viewer.getByText('Resolution', { exact: true })).toBeVisible()
   await expect(viewer.getByRole('alert')).toBeHidden()
   // The image lightbox would be a second dialog.
   await expect(comfyPage.page.getByRole('dialog')).toHaveCount(1)

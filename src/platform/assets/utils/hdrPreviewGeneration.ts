@@ -42,17 +42,21 @@ function withTabLock(name: string, task: () => Promise<void>) {
   // Web Locks only exist in secure contexts, e.g. not on a plain-http LAN IP.
   const locks = navigator.locks as LockManager | undefined
   if (!locks) return task()
-  return locks.request(name, { ifAvailable: true }, (lock) =>
-    lock ? task() : undefined
-  )
+  return locks.request(name, task)
+}
+
+async function gainedPreview(asset: AssetItem): Promise<boolean> {
+  return !lacksHdrPreview(await assetService.getAssetDetails(asset.id))
 }
 
 async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   try {
     await withTabLock(`hdr-preview:${asset.id}`, async () => {
+      // A tab that waited for the lock finds the holder's preview here.
+      if (await gainedPreview(asset)) return
       const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
-      // Another client may have attached a preview while this one rendered.
-      if (!lacksHdrPreview(await assetService.getAssetDetails(asset.id))) return
+      // Another browser may have attached one while this tab rendered.
+      if (await gainedPreview(asset)) return
       await attachPreview(asset, blob)
     })
   } catch (error) {

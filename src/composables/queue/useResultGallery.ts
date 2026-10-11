@@ -14,8 +14,10 @@ import { resultItemUrl } from '@/utils/resultItemUrl'
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<AugmentedResultItem[]>([])
+  let latestView = 0
 
   async function onViewItem(item: JobListItem) {
+    const view = ++latestView
     const previewOutput = item.taskRef?.previewOutput
     if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
       openHdrViewer(resultItemUrl(previewOutput), previewOutput.filename)
@@ -31,7 +33,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       : null
 
     // Request was superseded by a newer one
-    if (targetOutputs === null && targetTask) return
+    if ((targetOutputs === null && targetTask) || view !== latestView) return
 
     // Use target's outputs if available, otherwise fall back to all previews
     const items = targetOutputs?.length
