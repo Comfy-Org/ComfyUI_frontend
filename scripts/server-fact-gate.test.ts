@@ -237,7 +237,8 @@ describe('server-fact gate on a real diff', () => {
     run('branch', 'feature')
     writeFileSync(
       path.join(dir, gatedFile),
-      'export const canInvite = canInviteMembers.value || isPlanEnded.value\n'
+      'const { canInviteMembers } = useBillingCapabilities()\n' +
+        'export const canInvite = canInviteMembers.value || isPlanEnded.value\n'
     )
     run('add', gatedFile)
     run('commit', '-q', '-m', 'upstream finding')
