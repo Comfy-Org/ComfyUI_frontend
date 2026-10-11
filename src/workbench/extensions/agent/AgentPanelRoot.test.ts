@@ -665,33 +665,21 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(reportFreeUseNotice).not.toHaveBeenCalled()
   })
 
-  // The real window: a 402 records an inline card and nothing refreshes
-  // `/billing/status`, so the grant still reads funded. Suppression therefore
-  // has to come from the transcript, not from a second billing term.
-  it('says nothing about free turns beside an inline paywall before billing status refreshes', async () => {
-    placeFundedFreeUseNotice()
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await freeUseNotice()
-
-    useAgentConversationStore().recordPaywall(
-      toTurnId('msg-paywall'),
-      'continue'
-    )
-    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
-
-    await vi.waitFor(() =>
-      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
-    )
-  })
-
-  it('shows the notice again once the card is cleared', async () => {
+  it('hides the notice while any inline paywall remains unresolved', async () => {
     placeFundedFreeUseNotice()
     const conversation = useAgentConversationStore()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await freeUseNotice()
+
     conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    conversation.recordFailedSend(
+      toTurnId('msg-failed'),
+      'try again',
+      'Send failed'
+    )
+
     await vi.waitFor(() =>
       expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
     )

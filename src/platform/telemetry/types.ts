@@ -919,8 +919,6 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
  * outcome events cannot say: whether the notice was actually on screen in its
  * assigned arm, and what the viewer did with it.
  *
- * The arm lives on `app:agent_free_use_exposure` and nowhere else; outcomes are
- * joined to it by person. See the PR for that choice.
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'

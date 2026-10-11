@@ -75,7 +75,6 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
-import type { FreeUseVariant } from './experiments/freeUsePlacement'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -301,17 +300,22 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const unresolvedPaywallPending = computed(() =>
+  conversationEntries.value.some(
+    (entry) =>
+      entry.role === 'assistant' &&
+      entry.parts.some((part) => part.type === 'paywall')
+  )
+)
+
+// Only the standing recovery card uses latest-entry semantics. The free-use
+// claim remains hidden while any unresolved inline paywall is still visible.
 /**
- * The latest transcript entry is an inline Add credits card the user has not
- * cleared. `conversationEntries` drops a paywall part once `resolvePaywalls`
- * marks it resolved, so a part still present is a card still on screen — local
- * UI state, independent of any `/billing/status` read.
- *
- * The standing surface is suppressed while one is up, because the two render
- * the same copy. An older card may be scrolled away and must not hide the
- * standing recovery path after a later server-side refusal.
+ * Suppressed while the latest transcript entry is an unresolved inline card:
+ * the two render the same copy. An older card may be scrolled away and must not
+ * hide the standing recovery path after a later server-side refusal.
  */
-const inlinePaywallPending = computed(() => {
+const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (
     latestEntry?.role === 'assistant' &&
@@ -320,7 +324,7 @@ const inlinePaywallPending = computed(() => {
 })
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value) return false
-  return !inlinePaywallPending.value
+  return !latestEntryHasPaywall.value
 })
 
 const agentPanelStore = useAgentPanelStore()
@@ -1334,14 +1338,11 @@ const freeUseGrantActive = computed(
   () => subscription.value?.agentScopedHasFunds === true
 )
 
-/**
- * Render-only. The assignment and its exposure are untouched, so an arm keeps
- * its denominator whether or not this viewer was eligible or had a card up.
- */
-const freeUsePlacement = computed<FreeUseVariant>(() => {
-  if (!freeUseGrantActive.value) return 'control'
-  return inlinePaywallPending.value ? 'control' : freeUseVariant.value
-})
+const freeUsePlacement = computed(() =>
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
+    ? 'control'
+    : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(

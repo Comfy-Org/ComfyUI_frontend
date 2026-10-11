@@ -30,10 +30,6 @@ const dismissed = useLocalStorage(
   { writeDefaults: false }
 )
 
-/**
- * The storage key is account-scoped and re-read when the resolved id changes,
- * so the dismissal is only authoritative once auth has settled.
- */
 const visible = computed(() => isAuthInitialized.value && !dismissed.value)
 
 watch(

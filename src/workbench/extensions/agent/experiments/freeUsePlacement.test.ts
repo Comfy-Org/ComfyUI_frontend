@@ -4,7 +4,6 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -65,13 +64,10 @@ describe('useFreeUsePlacement', () => {
   ])(
     'renders control but reports no exposure when the flag is $label',
     ({ served }) => {
-      // The generated contract narrows this field to the served arms, which is
-      // the point of it. The case under test is a value the server contract
-      // says cannot arrive — a mid-deploy skew or a flag edited in PostHog —
-      // so it has to be written past the type to be exercised at all.
-      remoteConfig.value = {
+      const wireConfig: Record<string, unknown> = {
         [FREE_USE_PLACEMENT_FLAG]: served
-      } as RemoteConfig
+      }
+      remoteConfig.value = wireConfig
       authenticatedRemoteConfigState.value = 'authenticated'
       const { variant } = useFreeUsePlacement()
 

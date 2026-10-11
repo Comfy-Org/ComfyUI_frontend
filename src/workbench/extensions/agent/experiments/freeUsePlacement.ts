@@ -20,7 +20,7 @@ export const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 export const FREE_USE_VARIANTS = [
   'control',
   ...AGENT_FREE_USE_PLACEMENTS
-] as const
+] as const satisfies readonly AgentFreeUseVariant[]
 
 export type FreeUseVariant = AgentFreeUseVariant
 
