@@ -41,6 +41,9 @@
         :show-native-controls="
           fileKind === 'video' ? showNativeVideoControls : undefined
         "
+        :preview-started-at="
+          previewKind === 'video' ? previewStartedAt : undefined
+        "
         class="absolute inset-0"
         @download="handleDownload"
         @image-loaded="handleImageLoaded"
@@ -179,6 +182,7 @@ import {
 import { getAssetType } from '../composables/media/assetMappers'
 import { startAssetDrag } from '../utils/assetDragUtil'
 import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
+import { useAssetSelectionStore } from '../composables/useAssetSelectionStore'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -223,6 +227,7 @@ const {
 }>()
 
 const assetsStore = useAssetsStore()
+const selectionStore = useAssetSelectionStore()
 
 // Get deletion state from store
 const isDeleting = computed(() =>
@@ -256,6 +261,12 @@ const fileKind = computed((): MediaKind => {
 
 const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
+})
+
+// Join time for a selected video preview
+const previewStartedAt = computed(() => {
+  if (!asset || !selected || fileKind.value !== 'video') return null
+  return selectionStore.getSelectedAt(asset.id)
 })
 
 const canInspect = computed(() => isPreviewableMediaType(fileKind.value))

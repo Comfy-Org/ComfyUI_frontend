@@ -7,6 +7,7 @@
     <video
       v-if="status !== 'failed'"
       ref="videoElement"
+      :key="src"
       data-testid="media-asset-video"
       :src="src"
       :controls="shouldShowControls"
@@ -33,21 +34,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
-const { asset, showNativeControls = true } = defineProps<{
+const {
+  asset,
+  showNativeControls = true,
+  previewStartedAt = null
+} = defineProps<{
   asset: AssetMeta
   showNativeControls?: boolean
+  previewStartedAt?: number | null
 }>()
 
 const videoElement = ref<HTMLVideoElement | null>(null)
 const isHovered = ref(false)
 const isPlaying = ref(false)
+let playbackToken = 0
+let metadataWait: { token: number; startedAt: number } | null = null
 
 const { src, status, onError } = useRetryableMediaSrc(
   () => asset.src || undefined
@@ -70,6 +79,84 @@ const handleVideoError = () => {
   isPlaying.value = false
   onError()
 }
+
+const stopInPlacePreview = (video: HTMLVideoElement) => {
+  video.pause()
+  if (video.currentTime <= 0) return
+  try {
+    video.currentTime = 0
+  } catch {
+    // Metadata may not be available yet.
+  }
+}
+
+const seekToSelectionStart = (video: HTMLVideoElement, startedAt: number) => {
+  const elapsedSeconds = Math.max(0, (Date.now() - startedAt) / 1000)
+  const { duration } = video
+  if (!Number.isFinite(duration) || duration <= 0) return
+  const nextTime = elapsedSeconds % duration
+  if (Math.abs(video.currentTime - nextTime) <= 0.2) return
+  try {
+    video.currentTime = nextTime
+  } catch {
+    // Ignore seek failures before the media is seekable.
+  }
+}
+
+const startSelectionPlayback = (video: HTMLVideoElement, startedAt: number) => {
+  if ((previewStartedAt ?? null) !== startedAt) return
+  if (status.value === 'failed') return
+  seekToSelectionStart(video, startedAt)
+  void video.play().catch(() => {})
+}
+
+const onLoadedMetadata = () => {
+  const video = videoElement.value
+  const wait = metadataWait
+  if (!video || !wait) return
+  if (wait.token !== playbackToken) return
+  metadataWait = null
+  startSelectionPlayback(video, wait.startedAt)
+}
+
+useEventListener(videoElement, 'loadedmetadata', onLoadedMetadata)
+
+const onDurationChange = () => {
+  const video = videoElement.value
+  const startedAt = previewStartedAt ?? null
+  if (!video || startedAt == null || status.value === 'failed') return
+  seekToSelectionStart(video, startedAt)
+}
+
+useEventListener(videoElement, 'durationchange', onDurationChange)
+
+const beginSelectionPreview = (video: HTMLVideoElement, startedAt: number) => {
+  const token = ++playbackToken
+  if (video.readyState > 0) {
+    metadataWait = null
+    startSelectionPlayback(video, startedAt)
+    return
+  }
+
+  metadataWait = { token, startedAt }
+}
+
+// Join time only. A load-status watch pauses click-to-play on retry.
+watch(
+  [() => previewStartedAt ?? null, videoElement],
+  ([startedAt, video], previous) => {
+    if (!video) return
+    const previousStartedAt = previous?.[0] ?? null
+    if (startedAt == null) {
+      playbackToken++
+      metadataWait = null
+      if (previousStartedAt != null) stopInPlacePreview(video)
+      return
+    }
+    beginSelectionPreview(video, startedAt)
+  },
+  { flush: 'sync' }
+)
 
 async function onVideoClick(event: MouseEvent) {
   if (
