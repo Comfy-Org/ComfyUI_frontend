@@ -170,6 +170,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     if (!validate()) return
 
     const generation = formGeneration
+    const requestScope = store.scope
     loading.value = true
     try {
       const saved = await publishSkillPack({
@@ -177,10 +178,12 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         description: form.description,
         body: form.body
       })
-      store.upsertPack(saved)
+      if (!store.isCurrentScope(requestScope)) return
+      store.upsertPack(saved, requestScope)
       if (generation !== formGeneration) return
       visible.value = false
     } catch (error) {
+      if (!store.isCurrentScope(requestScope)) return
       handlePublishFailure(error, generation)
     } finally {
       loading.value = false

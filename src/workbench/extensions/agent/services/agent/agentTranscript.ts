@@ -4,6 +4,8 @@ import {
   zPersistedToolCallSummary
 } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { SkillReference } from '../../types/skillReference'
+import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
@@ -42,6 +44,7 @@ export interface NormalizedAgentTranscript {
   userTexts: Map<TurnId, string>
   userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+  userSkillReferences: Map<TurnId, SkillReference>
   latestWorkflowId?: string
   rowIds: Set<string>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
@@ -353,6 +356,7 @@ interface UserRowUpdate {
   text: string
   attachments?: UserAttachment[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
   workflowId?: string
 }
 
@@ -361,10 +365,15 @@ function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
     text,
     row.content?.workflow_references
   )
+  const prompt = parseSkillReferenceText(
+    referenceUpdate?.text ?? text,
+    referenceUpdate?.references
+  )
   return {
-    text: referenceUpdate?.text ?? text,
+    text: prompt.text,
     attachments: parseUserAttachments(row.content),
-    workflowReferences: referenceUpdate?.references,
+    workflowReferences: referenceUpdate ? prompt.workflowReferences : undefined,
+    skillReference: prompt.skillReference,
     workflowId: row.workflow_id || undefined
   }
 }
@@ -391,13 +400,17 @@ function recordUserRow(
   text: string,
   userTexts: Map<TurnId, string>,
   userAttachments: Map<TurnId, UserAttachment[]>,
-  userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+  userWorkflowReferences: Map<TurnId, WorkflowReference[]>,
+  userSkillReferences: Map<TurnId, SkillReference>
 ): string | undefined {
   const update = applyUserRow(row, text)
   userTexts.set(turnId, update.text)
   if (update.attachments) userAttachments.set(turnId, update.attachments)
   if (update.workflowReferences)
     userWorkflowReferences.set(turnId, update.workflowReferences)
+  if (update.skillReference)
+    userSkillReferences.set(turnId, update.skillReference)
+  else userSkillReferences.delete(turnId)
   return update.workflowId
 }
 
@@ -453,6 +466,7 @@ export function normalizeAgentTranscript(
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
   const userWorkflowReferences = new Map<TurnId, WorkflowReference[]>()
+  const userSkillReferences = new Map<TurnId, SkillReference>()
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
@@ -472,7 +486,8 @@ export function normalizeAgentTranscript(
         text,
         userTexts,
         userAttachments,
-        userWorkflowReferences
+        userWorkflowReferences,
+        userSkillReferences
       )
       if (workflowId) latestWorkflowId = workflowId
     }
@@ -497,6 +512,7 @@ export function normalizeAgentTranscript(
     userTexts,
     userAttachments,
     userWorkflowReferences,
+    userSkillReferences,
     latestWorkflowId,
     rowIds,
     assistantTurnIds: new Set(assistants.keys()),

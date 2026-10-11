@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import enMessages from '@/locales/en/main.json'
 
@@ -98,7 +98,7 @@ describe('useWidgetSelectActions', () => {
 
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(modelValue.value).toBe('existing.mp4')
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         enMessages.g.videoFilenameExtensionRequired
       )
     })
@@ -221,8 +221,7 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'Upload failed: Internal Server Error'
       )
     })
@@ -250,9 +249,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'fail.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Upload failed: HTTP 502'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Upload failed: HTTP 502')
     })
 
     it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
@@ -279,7 +276,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload.'
       )
     })
@@ -308,7 +305,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload (limit: 100 MB).'
       )
     })

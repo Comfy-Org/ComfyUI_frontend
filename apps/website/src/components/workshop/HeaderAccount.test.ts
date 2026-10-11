@@ -440,14 +440,11 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       screen.getByTestId('account-workspace-team-1').textContent
     ).toContain('成员')
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledWith(
-      undefined,
-      {
-        workspaceId: 'ws',
-        signal: expect.any(AbortSignal),
-        timeoutMs: 15_000
-      }
-    )
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'ws',
+      signal: expect.any(AbortSignal),
+      timeoutMs: 15_000
+    })
   })
 
   // A run belongs to the workspace paying for it. The playground guards every
@@ -467,12 +464,12 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
 
     await user.click(screen.getByTestId('run-leave-stay'))
 
     expect(cancel).not.toHaveBeenCalled()
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
   })
 
   it('cancels the run and switches once the reader accepts', async () => {
@@ -503,13 +500,10 @@ describe('HeaderAccount workspace switcher', () => {
 
     expect(cancel).toHaveBeenCalledOnce()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
   })
 
@@ -531,13 +525,10 @@ describe('HeaderAccount workspace switcher', () => {
     reportWorkshopRun(undefined)
 
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
     expect(cancel).not.toHaveBeenCalled()
     await waitFor(() =>
@@ -578,7 +569,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
     )
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
     expect(cancel).not.toHaveBeenCalled()
     expect(session.value).toEqual(replacement)
   })
@@ -615,7 +606,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
     )
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
     expect(cancel).not.toHaveBeenCalled()
     expect(session.value).toEqual(moved)
   })
@@ -643,13 +634,10 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
@@ -674,7 +662,7 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(target)
 
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
     )
     expect(target.getAttribute('data-disabled')).not.toBeNull()
     expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
@@ -697,7 +685,7 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
   })
 
   it('shows the failure line when the list cannot load', async () => {
@@ -780,7 +768,7 @@ describe('HeaderAccount workspace switcher', () => {
 
     await openSwitcher(user)
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     )
     session.value = {
       token: 'other-jwt',
@@ -823,7 +811,7 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     await vi.waitFor(() => expect(session.value).toEqual(newer))
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
     expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
   })
 
@@ -842,7 +830,7 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
   })
 
   it('restores the previous workspace after a failed switch', async () => {
@@ -869,22 +857,14 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenNthCalledWith(
-      1,
-      undefined,
-      {
-        workspaceId: 'team-1',
-        preserveCredentialOnTransientFailure: true
-      }
-    )
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenNthCalledWith(
-      2,
-      undefined,
-      {
-        workspaceId: 'ws',
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(useWorkshopSession().remint).toHaveBeenNthCalledWith(1, undefined, {
+      workspaceId: 'team-1',
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(useWorkshopSession().remint).toHaveBeenNthCalledWith(2, undefined, {
+      workspaceId: 'ws',
+      preserveCredentialOnTransientFailure: true
+    })
     expect(session.value).toBe(previous)
   })
 })

@@ -11,7 +11,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { authSchemasFor } from '@/config/auth-schemas'
 import { signInErrorMessage } from '@/config/auth-sign-in-state'
-import { addToast } from '@/config/auth-toast-state'
+import { authToast } from '@/config/auth-toast-state'
 import { requestedReturnPath } from '@/config/workshop-return'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -154,21 +154,17 @@ function reportSendFailure(error: unknown) {
     auth_action: 'password_reset'
   })
   const classification = classifyAuthError(error)
-  const severity = severityForAuthError(classification)
-  addToast({
-    severity,
-    summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
-    detail: signInErrorMessage(classification, locale, hostname)
+  const kind = severityForAuthError(classification)
+  authToast[kind](t(`g.${kind}`), {
+    description: signInErrorMessage(classification, locale, hostname)
   })
 }
 
 function reportSent() {
   state.value = 'sent'
-  addToast({
-    severity: 'success',
-    summary: t('auth.forgot.toastSummary'),
-    detail: t('auth.forgot.toastDetail'),
-    life: TOAST_LIFE_MS
+  authToast.success(t('auth.forgot.toastSummary'), {
+    description: t('auth.forgot.toastDetail'),
+    duration: TOAST_LIFE_MS
   })
   returnTimer = setTimeout(() => {
     window.location.assign(signInDestination())

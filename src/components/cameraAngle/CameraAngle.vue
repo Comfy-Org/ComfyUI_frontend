@@ -7,10 +7,13 @@
     @pointerdown.capture="openPreset = null"
   >
     <template #top>
-      <button
+      <Button
         v-for="option in viewModeOptions"
         :key="option.value"
-        v-tooltip.bottom="tip(option.tooltip)"
+        variant="textonly"
+        size="unset"
+        :tooltip="option.tooltip"
+        tooltip-side="bottom"
         type="button"
         :class="actionClass(viewMode === option.value)"
         :aria-pressed="viewMode === option.value"
@@ -19,25 +22,23 @@
       >
         <i :class="cn('size-4', option.icon)" />
         <span v-if="!compact">{{ option.label }}</span>
-      </button>
+      </Button>
       <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <button
-        v-tooltip.bottom="tip(previewLabel)"
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="previewLabel"
+        tooltip-side="bottom"
         type="button"
         :disabled="viewMode === 'object'"
-        :class="
-          cn(
-            actionClass(viewMode === 'camera' && previewVisible),
-            viewMode === 'object' && 'cursor-not-allowed opacity-40'
-          )
-        "
+        :class="actionClass(viewMode === 'camera' && previewVisible)"
         :aria-pressed="viewMode === 'camera' && previewVisible"
         :aria-label="previewLabel"
         @click="setPreviewVisible(!previewVisible)"
       >
         <i class="icon-[lucide--picture-in-picture-2] size-4" />
         <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
-      </button>
+      </Button>
       <span
         class="ml-auto min-w-0 truncate text-xs text-muted-foreground"
         :title="prompt"
@@ -89,8 +90,11 @@ import {
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
-import { actionClass, tip } from '@/components/load3d/menubar/menuBarStyles'
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -115,7 +119,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget

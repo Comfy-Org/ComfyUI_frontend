@@ -37,7 +37,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyW
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
@@ -94,15 +94,15 @@ function sessionErrorMessageKey(
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   if (
     err.code === 'SSO_REQUIRED' &&
-    presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+    presentSsoRequired('session_refused', {
+      email: useAuthStore().userEmail ?? undefined
+    })
   ) {
     return
   }
   console.error('Unified workspace auth revoked or invalid:', err)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t(
+  useToast().error(t('g.error'), {
+    description: t(
       sessionErrorMessageKey(
         isSessionErrorCode(err.code) ? err.code : 'TOKEN_EXCHANGE_FAILED'
       )
@@ -688,7 +688,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     // A reload would take down the SSO-required screen this refusal opens.
     if (
       refusalCode === 'SSO_REQUIRED' &&
-      presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+      presentSsoRequired('session_refused', {
+        email: useAuthStore().userEmail ?? undefined
+      })
     ) {
       clearWorkspaceContext()
       cancelWorkflowTransition?.()

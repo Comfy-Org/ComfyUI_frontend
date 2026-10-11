@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit/compat'
-import { createSharedComposable } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { createSharedComposable, useEventListener } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -63,8 +63,22 @@ export const useMissingNodes = createSharedComposable(() => {
     return !isRegisteredNodeDef
   }
 
+  const graphConfiguredCount = ref(0)
+  useEventListener(
+    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    'configured',
+    () => {
+      graphConfiguredCount.value++
+    }
+  )
+
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
+    void graphConfiguredCount.value
+
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return {}
+
+    const missingNodes = collectAllNodes(rootGraph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties.ver || ''))
   })
 

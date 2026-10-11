@@ -188,12 +188,21 @@ interface Scope {
   readonly upper?: Scope
 }
 
+interface RuleFixer {
+  replaceText(node: Node, text: string): unknown
+}
+
 interface RuleContext {
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
     getScope(node: Node): Scope
+    getText(node: Node): string
   }
-  report(descriptor: { node: Node; message: string }): void
+  report(descriptor: {
+    node: Node
+    message: string
+    fix?: (fixer: RuleFixer) => unknown
+  }): void
 }
 
 function unwrapChain(expression: Expression): Expression {
@@ -729,6 +738,102 @@ export const noRedundantFetchStub = {
         if (stubsFetch || spiesOnFetch) {
           context.report({ node, message: FETCH_STUB_MESSAGE })
         }
+      }
+    }
+  }
+}
+
+interface ObjectPattern extends Node {
+  readonly type: 'ObjectPattern'
+  readonly properties: readonly (Node & { readonly key?: Expression })[]
+}
+
+function destructuresExpect(param: Node): boolean {
+  return (
+    param.type === 'ObjectPattern' &&
+    (param as ObjectPattern).properties.some(
+      ({ key }) => key !== undefined && asIdentifier(key)?.name === 'expect'
+    )
+  )
+}
+
+function isVitestExpect(context: RuleContext, identifier: Identifier) {
+  const variable = resolvedVariable(context, identifier)
+  if (!variable?.defs.length) return true
+  return variable.defs.some(
+    (definition) =>
+      (definition.type === 'ImportBinding' &&
+        definition.parent.source?.value === 'vitest') ||
+      (definition.type === 'Parameter' &&
+        isFunctionExpression(definition.node) &&
+        definition.node.params.some(destructuresExpect))
+  )
+}
+
+function isExpectCall(context: RuleContext, call: CallExpression): boolean {
+  const callee = unwrapChain(call.callee)
+  const member = asMemberExpression(callee)
+  const target =
+    member && staticMemberName(member) === 'soft' ? member.object : callee
+  const identifier = asIdentifier(target)
+  return identifier?.name === 'expect' && isVitestExpect(context, identifier)
+}
+
+const PARENTHESIS_FREE_SUBJECTS = new Set([
+  'CallExpression',
+  'Identifier',
+  'MemberExpression',
+  'TSNonNullExpression'
+])
+
+function mockedRootOfSubject(
+  context: RuleContext,
+  subject: Expression
+): CallExpression | undefined {
+  let current = unwrapChain(subject)
+  while (
+    current.type === 'MemberExpression' ||
+    current.type === 'TSNonNullExpression'
+  ) {
+    if (current.type === 'MemberExpression') {
+      const member = current as MemberExpression
+      if (staticMemberName(member) === 'mock') return
+      current = unwrapChain(member.object)
+    } else {
+      current = unwrapChain(
+        (current as Node & { expression: Expression }).expression
+      )
+    }
+  }
+  if (current.type !== 'CallExpression') return
+  const call = current as CallExpression
+  return vitestMethodName(context, call) === 'mocked' &&
+    call.arguments.length > 0
+    ? call
+    : undefined
+}
+
+export const noMockedInExpect = {
+  meta: { fixable: 'code' },
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (node.arguments.length === 0 || !isExpectCall(context, node)) return
+        const mocked = mockedRootOfSubject(context, node.arguments[0])
+        if (!mocked) return
+        const [mockedValue] = mocked.arguments
+        const valueText = context.sourceCode.getText(mockedValue)
+        const needsParentheses =
+          mockedValue.type === 'SequenceExpression' ||
+          (mocked !== unwrapChain(node.arguments[0]) &&
+            !PARENTHESIS_FREE_SUBJECTS.has(mockedValue.type))
+        const replacement = needsParentheses ? `(${valueText})` : valueText
+        context.report({
+          node: mocked,
+          message:
+            'vi.mocked() only changes the type, and expect() accepts the function directly. Pass the function to expect() without vi.mocked().',
+          fix: (fixer) => fixer.replaceText(mocked, replacement)
+        })
       }
     }
   }

@@ -1,15 +1,22 @@
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useAgentComposerStore } from '../../../stores/agent/agentComposerStore'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import Composer from '../Composer.vue'
 import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null
@@ -39,11 +46,12 @@ class TestClipboardItem {
 
 function renderComposer() {
   const store = useAgentComposerStore()
+  const onSend = vi.fn<NonNullable<ComponentProps<typeof Composer>['onSend']>>()
   render(Composer, {
-    props: { hasWorkflowTarget: true, editableWorkflowId: 'target-A' },
+    props: { hasWorkflowTarget: true, editableWorkflowId: 'target-A', onSend },
     global: { plugins: [i18n], directives: { tooltip: () => {} } }
   })
-  return { store, editor: screen.getByRole('textbox') }
+  return { store, onSend, editor: screen.getByRole('textbox') }
 }
 
 describe('sent message workflow clipboard', () => {
@@ -88,7 +96,9 @@ describe('sent message workflow clipboard', () => {
       'Use @[Workflow: 参考 <B> 🐈]\n  @[Workflow: Missing]!\n@[Node: Sampler #12]\n@[File: notes.txt]'
     )
 
-    await user.type(editor, 'New: ')
+    await user.click(editor)
+    await user.paste('New: ')
+    expect(store.draft).toBe('New: ')
     await user.paste()
     expect(store.draft).toBe(
       'New: Use \n  !\n@[Node: Sampler #12]\n@[File: notes.txt]'
@@ -229,4 +239,117 @@ describe('sent message workflow clipboard', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.copied') })
     ).toBeVisible()
   })
+
+  it.for<{
+    operation: string
+    copy: (
+      user: UserEvent
+    ) => Promise<{ copiedText: string; pasteData: DataTransfer | undefined }>
+    copiedText: string
+    editorText: string
+    contentBefore: string
+    contentAfter: string
+    markerOffset: number
+  }>([
+    {
+      operation: 'button',
+      copy: async (user) => {
+        await user.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.copy') })
+        )
+        return {
+          copiedText: await navigator.clipboard.readText(),
+          pasteData: undefined
+        }
+      },
+      copiedText: 'Before /portrait.v2@[Workflow: Reference B] after',
+      editorText: 'Before /portrait.v2Reference B after',
+      contentBefore: 'Before ',
+      contentAfter: ' after',
+      markerOffset: 7
+    },
+    {
+      operation: 'selection',
+      copy: async (user) => {
+        await user.tab()
+        const label = document
+          .createTreeWalker(
+            screen.getByTestId('skill-reference'),
+            NodeFilter.SHOW_TEXT
+          )
+          .nextNode()
+        assert.exists(label)
+        const range = document.createRange()
+        range.setStart(label, 3)
+        range.setEndAfter(
+          screen.getByRole('button', { name: 'Open Reference B' })
+        )
+        document.getSelection()?.removeAllRanges()
+        document.getSelection()?.addRange(range)
+        const clipboard = await user.copy()
+        assert.exists(clipboard)
+        return {
+          copiedText: clipboard.getData('text/plain'),
+          pasteData: clipboard
+        }
+      },
+      copiedText: '/portrait.v2@[Workflow: Reference B]',
+      editorText: '/portrait.v2Reference B',
+      contentBefore: '',
+      contentAfter: '',
+      markerOffset: 0
+    }
+  ])(
+    'copies a deleted skill through $operation and preserves its description and adjacent workflows on resend',
+    async ({
+      copy,
+      copiedText,
+      editorText,
+      contentBefore,
+      contentAfter,
+      markerOffset
+    }) => {
+      const user = userEvent.setup()
+      render(UserMessage, {
+        props: {
+          text: 'Before  after',
+          workflowReferences: [
+            { id: 'workflow-B', name: 'Reference B', textOffset: 7 }
+          ],
+          skillReference: {
+            name: 'portrait.v2',
+            description: 'Original\nDescription',
+            textOffset: 7,
+            workflowIndex: 0
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+      const copied = await copy(user)
+      expect(copied.copiedText).toBe(copiedText)
+      const skills = useSkillPacksStore()
+      skills.flagsEnabled = true
+      vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+      vi.mocked(listSkillPacks).mockResolvedValue([])
+      const { editor, onSend } = renderComposer()
+      await user.click(editor)
+      await user.paste(copied.pasteData)
+      await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+      expect(editor).toHaveTextContent(editorText)
+      await user.click(screen.getByRole('button', { name: 'Send' }))
+      const marker =
+        '[Use the saved skill /portrait.v2](skill://portrait.v2?description=Original%0ADescription)'
+      expect(onSend).toHaveBeenCalledExactlyOnceWith(
+        `${contentBefore}${marker}${contentAfter}`,
+        [],
+        [
+          {
+            id: 'workflow-B',
+            name: 'Reference B',
+            textOffset: markerOffset + marker.length
+          }
+        ]
+      )
+    }
+  )
 })

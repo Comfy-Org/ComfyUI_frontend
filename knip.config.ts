@@ -60,6 +60,9 @@ const config: KnipConfig = {
     'tools/cicd/fast-lane': {
       project: ['src/**/*.ts']
     },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     }

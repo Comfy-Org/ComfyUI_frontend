@@ -204,15 +204,6 @@ vi.mock<unknown>(
   import('@/platform/assets/components/AssetExportProgressDialog.vue'),
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
-  () => stubModule
-)
-vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
-vi.mock<unknown>(
-  import('@/components/toast/RerouteMigrationToast.vue'),
-  () => stubModule
-)
 vi.mock<unknown>(import('@/components/MenuHamburger.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/components/dialog/UnloadWindowConfirmDialog.vue'),

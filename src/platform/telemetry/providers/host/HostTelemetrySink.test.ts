@@ -343,25 +343,12 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
-      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentFreeUseNotice({
-          action: 'dismissed',
-          placement: 'top-banner'
+        sink.trackAgentStarterPromptExposure({
+          '$feature/agent-starter-prompt-set': 'test'
         }),
-      properties: { action: 'dismissed', placement: 'top-banner' }
-    },
-    {
-      name: TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentFreeUseExposure({
-          placement: 'control',
-          '$feature/agent-free-use-message-placement': 'control'
-        }),
-      properties: {
-        placement: 'control',
-        '$feature/agent-free-use-message-placement': 'control'
-      }
+      properties: { '$feature/agent-starter-prompt-set': 'test' }
     },
     {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,

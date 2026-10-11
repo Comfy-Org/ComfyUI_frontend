@@ -60,7 +60,6 @@ export function mintBody(token: string) {
 }
 
 export function okFetch(token = 'jwt-1') {
-  return vi.fn<typeof fetch>(
-    async () => new Response(JSON.stringify(mintBody(token)), { status: 200 })
-  )
+  return async () =>
+    new Response(JSON.stringify(mintBody(token)), { status: 200 })
 }

@@ -1,5 +1,4 @@
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -37,8 +36,7 @@ function renderComponent(
 ) {
   return render(WidgetInputNumberInput, {
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [PrimeVue, i18n]
     },
     props: {
       widget,
@@ -182,7 +180,9 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
     await userEvent.hover(screen.getByRole('spinbutton'))
 
-    expect(screen.getByRole('tooltip')).toHaveTextContent(/precision limit/i)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /precision limit/i
+    )
   })
 
   it('does not show tooltip for safe integer values', async () => {

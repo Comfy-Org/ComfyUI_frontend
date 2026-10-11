@@ -388,7 +388,7 @@ describe('useWorkflowActionsMenu', () => {
     await deploy.command?.()
 
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).toHaveBeenCalledOnce()
   })
 
@@ -405,7 +405,7 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'deployToComfyApi.buttonLabel').command?.()
 
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).not.toHaveBeenCalled()
   })
 
@@ -453,13 +453,13 @@ describe('useWorkflowActionsMenu', () => {
       customWorkflow.value
     )
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).not.toHaveBeenCalled()
     expect(activation.finish).toBeTypeOf('function')
     activation.finish?.()
     await deploying
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).toHaveBeenCalledOnce()
   })
 })

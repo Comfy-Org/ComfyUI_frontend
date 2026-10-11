@@ -21,9 +21,9 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -70,7 +70,7 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    useToast().warning(t('assetBrowser.failedToCreateNode'))
     return null
   }
 }
@@ -322,7 +322,7 @@ export function getLinkTypeColor(typeName: string): string {
 
 export function resolveNode(
   nodeId: SerializedNodeId,
-  graph: LGraph | null | undefined = app.rootGraph
+  graph: LGraph | null | undefined = useApp().rootGraph
 ): LGraphNode | undefined {
   const parsedNodeId = parseNodeId(nodeId)
   if (!graph || !parsedNodeId) return undefined
@@ -337,7 +337,7 @@ export function resolveNode(
 export function resolveNodeWidget(
   nodeId: SerializedNodeId,
   widgetName?: string,
-  graph: LGraph = app.rootGraph
+  graph: LGraph = useApp().rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
   if (widgetName && typeof nodeId === 'string') {
     const locator = parseNodeLocatorId(nodeId)

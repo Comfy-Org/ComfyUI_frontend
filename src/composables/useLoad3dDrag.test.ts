@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/i18n'))
@@ -30,12 +30,9 @@ function createMockDragEvent(
 }
 
 describe('useLoad3dDrag', () => {
-  let mockToastStore: ReturnType<typeof useToastStore>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
-    mockToastStore = useToastStore()
-
     mockOnModelDrop = vi.fn()
   })
 
@@ -137,7 +134,7 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'load3d.unsupportedFileType'
       )
     })
@@ -217,7 +214,7 @@ describe('useLoad3dDrag', () => {
       await handleDrop(event)
 
       expect(mockOnModelDrop).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

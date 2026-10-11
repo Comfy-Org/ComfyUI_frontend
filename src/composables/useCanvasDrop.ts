@@ -15,6 +15,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isSelectOnly } from '@/utils/litegraphUtil'
+import { matchesWidgetName } from '@/utils/widgetBinding'
 
 export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
@@ -69,9 +70,10 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
               targetProvider = provider
             }
           }
-          if (targetGraphNode) {
-            const widget = targetGraphNode.widgets?.find(
-              (widget) => widget.name === targetProvider?.key
+          if (targetGraphNode && targetProvider) {
+            const { key } = targetProvider
+            const widget = targetGraphNode.widgets?.find((widget) =>
+              matchesWidgetName(widget.name, key)
             )
             if (widget) {
               widget.value = model.file_name

@@ -86,10 +86,10 @@ describe('useWorkshopSession', () => {
     initialFlag = false
     await bootSession()
 
-    expect(vi.mocked(workshopIdentity.activate)).not.toHaveBeenCalled()
+    expect(workshopIdentity.activate).not.toHaveBeenCalled()
     flag.value = true
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopIdentity.activate)).toHaveBeenCalledOnce()
+      expect(workshopIdentity.activate).toHaveBeenCalledOnce()
     )
   })
 
@@ -132,7 +132,7 @@ describe('useWorkshopSession', () => {
 
     await s.ensureFresh(popupUser)
 
-    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
+    expect(workshopSessionClient.ensureFresh).toHaveBeenCalledWith(
       popupUser,
       expect.objectContaining({ workspaceId: undefined })
     )
@@ -156,13 +156,10 @@ describe('useWorkshopSession', () => {
     })
 
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-9',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(workshopSessionClient.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-9',
+        preserveCredentialOnTransientFailure: true
+      })
     )
   })
 
@@ -186,7 +183,7 @@ describe('useWorkshopSession', () => {
     })
 
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+      expect(workshopSessionClient.remint).toHaveBeenCalledOnce()
     )
     expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
     expect(identifyWorkshopUser).toHaveBeenLastCalledWith(
@@ -231,16 +228,12 @@ describe('useWorkshopSession', () => {
     publish(authenticatedSnapshot())
 
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledTimes(2)
+      expect(workshopSessionClient.remint).toHaveBeenCalledTimes(2)
     )
-    expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenNthCalledWith(
-      2,
-      undefined,
-      {
-        workspaceId: 'ws',
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(workshopSessionClient.remint).toHaveBeenNthCalledWith(2, undefined, {
+      workspaceId: 'ws',
+      preserveCredentialOnTransientFailure: true
+    })
     expect(s.session.value).toEqual(okSession)
     expect(snapshot).toEqual(authenticatedSnapshot())
   })
@@ -282,7 +275,7 @@ describe('useWorkshopSession', () => {
         JSON.stringify({ uid: 'user-1', workspaceId: 'team-3' })
       )
     )
-    expect(vi.mocked(workshopSessionClient.remint)).not.toHaveBeenCalled()
+    expect(workshopSessionClient.remint).not.toHaveBeenCalled()
   })
 
   it('keeps the first workspace the user intentionally switches to', async () => {
@@ -306,7 +299,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(s.session.value).toEqual(team))
     expect(
-      vi.mocked(workshopSessionClient.remint),
+      workshopSessionClient.remint,
       'an intentional switch must not be mistaken for a boot-time restore'
     ).not.toHaveBeenCalled()
     expect(window.localStorage.getItem('workshop:workspace')).toBe(
@@ -326,7 +319,7 @@ describe('useWorkshopSession', () => {
     const s = await bootSession()
     publish(authenticatedSnapshot())
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+      expect(workshopSessionClient.remint).toHaveBeenCalledOnce()
     )
 
     publish({ phase: 'signed-out', user: null, session: undefined })
@@ -357,7 +350,7 @@ describe('useWorkshopSession', () => {
 
     await s.ensureFresh()
 
-    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
+    expect(workshopSessionClient.ensureFresh).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'team-3' })
     )
@@ -423,9 +416,7 @@ describe('useWorkshopSession', () => {
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
     flag.value = false
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(workshopSessionClient.clearStoredCredential)
-      ).toHaveBeenCalled()
+      expect(workshopSessionClient.clearStoredCredential).toHaveBeenCalled()
     )
 
     vi.mocked(workshopSessionClient.remint).mockResolvedValue({
@@ -443,12 +434,12 @@ describe('useWorkshopSession', () => {
     }
     flag.value = true
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopIdentity.activate)).toHaveBeenCalledTimes(2)
+      expect(workshopIdentity.activate).toHaveBeenCalledTimes(2)
     )
 
     await vi.waitFor(() =>
       expect(
-        vi.mocked(workshopSessionClient.remint),
+        workshopSessionClient.remint,
         'settling off ends one auth lifecycle; the next lifecycle must be allowed to restore the remembered workspace for the same uid'
       ).toHaveBeenCalledWith(undefined, {
         workspaceId: 'ws',

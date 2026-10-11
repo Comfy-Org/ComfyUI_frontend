@@ -101,6 +101,12 @@ const i18nPlugin = pluginI18n as unknown as ESLint.Plugin
 
 // .oxlintrc.json `ignorePatterns` is the shared ignore list for both linters;
 // the rest of the oxlint configs switch off ESLint rules oxlint already runs.
+const noTooltipDirective = {
+  selector: "VAttribute[directive=true][key.name.name='tooltip']",
+  message:
+    'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
+}
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
@@ -370,7 +376,7 @@ export default defineConfig([
                   'label',
                   'placeholder',
                   'title',
-                  'v-tooltip'
+                  'tooltip'
                 ],
                 img: ['alt']
               },
@@ -462,6 +468,34 @@ export default defineConfig([
         files: ['src/**/*.vue'],
         rules: {
           'vue/no-v-html': 'error'
+        }
+      },
+      {
+        name: 'comfy/design-system-tooltip',
+        files: ['src/**/*.vue'],
+        rules: {
+          'vue/no-restricted-syntax': ['error', noTooltipDirective]
+        }
+      },
+      {
+        name: 'comfy/single-tooltip-provider',
+        files: ['src/**/*.vue'],
+        ignores: [
+          'src/App.vue',
+          'src/components/graph/SelectionToolbox.vue',
+          'src/components/ui/tooltip/*.vue',
+          'src/renderer/core/layout/transform/TransformPane.vue'
+        ],
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            {
+              selector: "VElement[rawName='TooltipProvider']",
+              message:
+                'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
+            }
+          ]
         }
       }
     ]

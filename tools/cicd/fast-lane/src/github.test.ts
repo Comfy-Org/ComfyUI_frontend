@@ -11,14 +11,11 @@ function jsonResponse(body: unknown): Response {
 
 describe('GitHub client', () => {
   it('rejects a GraphQL response that reports errors with HTTP 200', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async () =>
-        jsonResponse({
-          data: null,
-          errors: [{ message: 'Could not resolve to a node' }]
-        })
-      )
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        data: null,
+        errors: [{ message: 'Could not resolve to a node' }]
+      })
     )
     const github = createGitHubClient('token', 'Comfy-Org/ComfyUI_frontend')
 
@@ -29,10 +26,9 @@ describe('GitHub client', () => {
 
   it('reads every page until a short page', async () => {
     const fullPage = Array.from({ length: 100 }, (_, id) => ({ id }))
-    const fetchPage = vi.fn<typeof fetch>(async (input) =>
+    vi.mocked(fetch).mockImplementation(async (input) =>
       jsonResponse(String(input).endsWith('page=1') ? fullPage : [{ id: 100 }])
     )
-    vi.stubGlobal('fetch', fetchPage)
     const github = createGitHubClient('token', 'Comfy-Org/ComfyUI_frontend')
 
     await expect(github.paginate('/pulls/42/reviews')).resolves.toHaveLength(
@@ -41,13 +37,11 @@ describe('GitHub client', () => {
   })
 
   it('refuses to send the token to another origin', async () => {
-    const fetchAny = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchAny)
     const github = createGitHubClient('token', 'Comfy-Org/ComfyUI_frontend')
 
     await expect(github.request('https://example.com/user')).rejects.toThrow(
       'Refusing to send credentials'
     )
-    expect(fetchAny).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

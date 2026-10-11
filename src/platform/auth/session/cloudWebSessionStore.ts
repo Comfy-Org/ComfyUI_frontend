@@ -42,6 +42,10 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import {
+  endSsoFlow,
+  trackSsoSignInCompleted
+} from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
@@ -50,6 +54,7 @@ import {
 } from '@/platform/auth/session/interactiveSignInMarker'
 import {
   forgetSsoHint,
+  isSsoSession,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
@@ -60,7 +65,7 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -137,13 +142,11 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   useTeamWorkspaceStore().resetForIdentityChange()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
-  useToastStore().add({
-    severity: 'info',
-    summary: t('auth.accountChanged.title'),
-    detail: t('auth.accountChanged.detail', {
+  useToast().info(t('auth.accountChanged.title'), {
+    description: t('auth.accountChanged.detail', {
       email: change.session.user.email
     }),
-    life: 8000
+    duration: 8000
   })
 }
 
@@ -344,7 +347,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
             })
           }
           if (failure.code === 'SSO_REQUIRED') {
-            presentSsoRequired({ email: session.user.email })
+            presentSsoRequired('session_refused', { email: session.user.email })
           }
           throw new WebSessionTokenError(
             error,
@@ -365,6 +368,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signedOutHere = false
       if (useFeatureFlags().flags.ssoEnabled) {
         rememberSignedInSession(next.session.user)
+        if (isSsoSession(next.session.user)) {
+          trackSsoSignInCompleted()
+        }
       }
     } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
       forgetSsoHint()
@@ -381,6 +387,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
+    endSsoFlow()
     if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) creating = createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
@@ -484,7 +491,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
       ssoRequired: ({ session }) =>
-        presentSsoRequired({ email: session.user.email })
+        presentSsoRequired('session_refused', { email: session.user.email })
     })
   }
 

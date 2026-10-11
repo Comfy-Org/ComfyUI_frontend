@@ -18,7 +18,7 @@
         <template v-else-if="isAllInstalled">
           <Button
             v-if="hasNightlyPacks"
-            v-tooltip.top="$t('manager.tryUpdateTooltip')"
+            :tooltip="$t('manager.tryUpdateTooltip')"
             variant="textonly"
             size="md"
             :disabled="isUpdatingSelected"

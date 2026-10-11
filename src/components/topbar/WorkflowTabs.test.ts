@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsTrigger } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -32,7 +33,7 @@ const distribution = vi.hoisted(() => ({
 const overflowObservers = vi.hoisted<
   Array<{
     isOverflowing: { value: boolean }
-    checkOverflow: ReturnType<typeof vi.fn>
+    checkOverflow: Mock<() => void>
   }>
 >(() => [])
 
@@ -59,22 +60,22 @@ vi.mock(import('@/composables/useWorkflowStatusDismissal'), () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/composables/element/useOverflowObserver'),
-  async () => {
-    const { ref } = await import('vue')
-    return {
-      useOverflowObserver: () => {
-        const observer = {
-          isOverflowing: ref(false),
-          checkOverflow: vi.fn()
-        }
-        overflowObservers.push(observer)
-        return observer
+vi.mock(import('@/composables/element/useOverflowObserver'), async () => {
+  const { readonly, ref } = await import('vue')
+  return {
+    useOverflowObserver: () => {
+      const isOverflowing = ref(false)
+      const checkOverflow: Mock<() => void> = vi.fn()
+      overflowObservers.push({ isOverflowing, checkOverflow })
+      return {
+        isOverflowing: readonly(isOverflowing),
+        disposed: readonly(ref(false)),
+        checkOverflow,
+        dispose: vi.fn()
       }
     }
   }
-)
+})
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -100,10 +101,6 @@ vi.mock(
     })
   })
 )
-
-vi.mock(import('@/utils/mouseDownUtil'), () => ({
-  whileMouseDown: vi.fn()
-}))
 
 vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
@@ -601,53 +598,34 @@ describe('WorkflowTabs selection and overflow', () => {
     ).toHaveAttribute('aria-selected', 'false')
   })
 
-  it('keeps overflow controls available when the tab strip overflows', async () => {
+  it('renders the overflow menu only while the strip overflows', async () => {
     renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    expect(
+      screen.queryByTestId('workflow-overflow-menu')
+    ).not.toBeInTheDocument()
 
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
-    expect(
-      screen.getByRole('button', { name: 'Scroll Left' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Scroll Right' })
-    ).toBeInTheDocument()
     expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
   })
 
   it('scrolls a newly active workflow into view', async () => {
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    await waitFor(() =>
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+    )
+    await nextTick()
+    overflowObservers[0].checkOverflow.mockClear()
+    scrollIntoView.mockClear()
 
     useWorkflowStore().activeWorkflow = secondWorkflow
 
-    await waitFor(() =>
-      expect(scrollIntoView).toHaveBeenCalledWith({
-        block: 'nearest',
-        inline: 'nearest'
-      })
-    )
-  })
-})
-
-describe('WorkflowTabs scrolling', () => {
-  it('reveals the active tab when the tab list overflows', async () => {
-    const workflowStore = useWorkflowStore()
-    const workflow = await workflowStore.createTemporary('active.json').load()
-    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
-    renderComponent()
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
-    workflowStore.attachWorkflow(workflow, 0)
-    workflowStore.activeWorkflow = workflow
-    await nextTick()
-
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
-    await nextTick()
-
     await waitFor(() => {
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledOnce()
       expect(scrollIntoView).toHaveBeenCalledWith({
         block: 'nearest',
         inline: 'nearest'
@@ -655,7 +633,126 @@ describe('WorkflowTabs scrolling', () => {
     })
   })
 
-  it('does not reveal the active tab again when overflow remains true', async () => {
+  it.for([
+    { propertyName: 'flex-shrink', resizesTabs: true },
+    { propertyName: 'background-color', resizesTabs: false }
+  ])(
+    'treats the end of a $propertyName transition as a tab resize: $resizesTabs',
+    async ({ propertyName, resizesTabs }) => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+      renderComponent()
+      await waitFor(() => expect(overflowObservers).toHaveLength(1))
+      await waitFor(() =>
+        expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+      )
+      await nextTick()
+      scrollIntoView.mockClear()
+      overflowObservers[0].checkOverflow.mockClear()
+
+      screen.getByRole('tab', { name: 'Second workflow' }).dispatchEvent(
+        Object.assign(new Event('transitionend', { bubbles: true }), {
+          propertyName
+        })
+      )
+      await nextTick()
+
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledTimes(
+        resizesTabs ? 1 : 0
+      )
+      expect(scrollIntoView).toHaveBeenCalledTimes(resizesTabs ? 1 : 0)
+    }
+  )
+})
+
+describe('WorkflowTabs scrolling', () => {
+  it.for([
+    {
+      name: 'pixel',
+      deltaX: 0,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7
+    },
+    {
+      name: 'line',
+      deltaX: 0,
+      deltaY: 2,
+      deltaMode: WheelEvent.DOM_DELTA_LINE,
+      expectedLeft: 32
+    },
+    {
+      name: 'page',
+      deltaX: 0,
+      deltaY: 1,
+      deltaMode: WheelEvent.DOM_DELTA_PAGE,
+      expectedLeft: 320
+    },
+    {
+      name: 'vertical-dominant diagonal',
+      deltaX: 2,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7
+    }
+  ])(
+    'handles $name wheel input once',
+    ({ deltaX, deltaY, deltaMode, expectedLeft }) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      Object.defineProperty(tabStrip, 'clientWidth', { value: 320 })
+      const event = new WheelEvent('wheel', {
+        deltaX,
+        deltaY,
+        deltaMode,
+        cancelable: true
+      })
+
+      tabStrip.dispatchEvent(event)
+
+      expect(scrollBy).toHaveBeenCalledExactlyOnceWith({ left: expectedLeft })
+      expect(event.defaultPrevented).toBe(true)
+    }
+  )
+
+  it('preserves horizontal wheel input', () => {
+    renderComponent()
+    const tabStrip = screen.getByTestId('workflow-tab-strip')
+    const scrollBy = vi.fn()
+    tabStrip.scrollBy = scrollBy
+    const event = new WheelEvent('wheel', {
+      deltaX: 7,
+      cancelable: true
+    })
+
+    tabStrip.dispatchEvent(event)
+
+    expect(scrollBy).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it.for(['ctrlKey', 'metaKey'] as const)(
+    'preserves %s-modified wheel input',
+    (modifier) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      const event = new WheelEvent('wheel', {
+        deltaY: 7,
+        cancelable: true
+      })
+      Object.defineProperty(event, modifier, { value: true })
+
+      tabStrip.dispatchEvent(event)
+
+      expect(scrollBy).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
+    }
+  )
+
+  it('does not reveal the active tab after unrelated overflow measurements', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
@@ -663,17 +760,22 @@ describe('WorkflowTabs scrolling', () => {
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     workflowStore.attachWorkflow(workflow, 0)
     workflowStore.activeWorkflow = workflow
+    await waitFor(() =>
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+    )
+    await nextTick()
     await nextTick()
 
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
-    await nextTick()
     scrollIntoView.mockClear()
-
+    overflowObservers[0].checkOverflow.mockClear()
     overflowObservers[0].isOverflowing.value = true
+
+    overflowObservers[0].checkOverflow()
+    overflowObservers[0].checkOverflow()
     await nextTick()
 
     expect(scrollIntoView).not.toHaveBeenCalled()
+
     unmount()
   })
 })

@@ -116,9 +116,9 @@ describe('useWorkshopCredits', () => {
 
     await mod.refreshWorkshopCredits({ force: true })
 
-    expect(
-      vi.mocked(workshopBalanceReader.refresh)
-    ).toHaveBeenCalledExactlyOnceWith({ force: true })
+    expect(workshopBalanceReader.refresh).toHaveBeenCalledExactlyOnceWith({
+      force: true
+    })
   })
 
   it('resets the client when the session goes unsettled', async () => {
@@ -174,7 +174,7 @@ describe('useWorkshopCredits start()', () => {
     mod.useWorkshopCredits()
     session.value = liveSession('token-a')
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopBalanceReader.refresh)).toHaveBeenCalled()
+      expect(workshopBalanceReader.refresh).toHaveBeenCalled()
     )
     const forcedBefore = vi
       .mocked(workshopBalanceReader.refresh)
@@ -329,7 +329,7 @@ describe('watchForTopUp', () => {
       workspaceName: 'Personal',
       previousCredits: 100
     })
-    expect(vi.mocked(workshopBalanceReader.refresh)).not.toHaveBeenCalled()
+    expect(workshopBalanceReader.refresh).not.toHaveBeenCalled()
   })
 
   it('retires a watch when the active workspace changes', async () => {
@@ -472,7 +472,7 @@ describe('watchForTopUp', () => {
       previousCredits: 100
     })
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopBalanceReader.refresh)).toHaveBeenCalledOnce()
+      expect(workshopBalanceReader.refresh).toHaveBeenCalledOnce()
     )
     session.value = liveSession('other-token', 'ws-2')
     publish({ status: 'ok', cents: 1_000 })

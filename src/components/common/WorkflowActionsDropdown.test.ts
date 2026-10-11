@@ -155,7 +155,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enter app mode' }))
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -175,7 +175,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(active)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
@@ -211,7 +211,7 @@ describe('WorkflowActionsDropdown', () => {
     inactive.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -247,7 +247,7 @@ describe('WorkflowActionsDropdown', () => {
     active.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
   })
 

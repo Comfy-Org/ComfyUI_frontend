@@ -48,9 +48,9 @@ test.describe('Top-up without a saved payment method', () => {
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
     await expect(
-      page
-        .locator('.p-toast-message.p-toast-message-error')
-        .getByText(/Add one via Settings → Plan & Credits → Manage billing/)
+      comfyPage.toast.toastErrors.filter({
+        hasText: /Add one via Settings → Plan & Credits → Manage billing/
+      })
     ).toBeVisible()
   })
 })

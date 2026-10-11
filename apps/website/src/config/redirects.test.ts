@@ -16,6 +16,7 @@ import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
   isInternalDestination,
+  linkStaleSources,
   siteRedirects,
   toVercelRedirects
 } from './redirects'
@@ -126,7 +127,13 @@ describe('the redirect list', () => {
   })
 
   it('reaches every destination in one hop', () => {
-    const sourceSet = new Set<string>(sources)
+    // A row that leaves its slash form to a page never redirects that form,
+    // so landing on the page is the last hop.
+    const sourceSet = new Set<string>(
+      siteRedirects
+        .filter(({ slashFormIsPageBecause }) => !slashFormIsPageBecause)
+        .map(({ source }) => source)
+    )
     expect(
       siteRedirects.filter(
         ({ destination }) =>
@@ -196,7 +203,19 @@ describe('generated Vercel rules', () => {
       '/minimax',
       '/minimax/',
       '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/zh-CN/minimax/',
+      '/gallery',
+      '/gallery/',
+      '/gallery.md',
+      '/zh-CN/gallery',
+      '/zh-CN/gallery/',
+      '/zh-CN/gallery.md',
+      '/launches',
+      '/launches/',
+      '/launches.md',
+      '/zh-CN/launches',
+      '/zh-CN/launches/',
+      '/zh-CN/launches.md'
     ])
   })
 
@@ -205,6 +224,22 @@ describe('generated Vercel rules', () => {
     expect(find('/login/')).toBeUndefined()
   })
 
+  it.for([
+    { source: '/about', destination: en.about },
+    { source: '/zh-CN/about', destination: zh.about }
+  ])(
+    'sends only $source to $destination permanently, never the page itself',
+    ({ source, destination }) => {
+      expect(find(source)).toEqual({
+        source,
+        destination,
+        permanent: true
+      })
+      expect(find(`${source}/`)).toBeUndefined()
+      expect(destination).toBe(`${source}/`)
+    }
+  )
+
   it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
     'leaves the destination %s unredirected',
     (path) => {
@@ -212,6 +247,37 @@ describe('generated Vercel rules', () => {
       expect(find(`${withoutSlash(path)}/`)).toBeUndefined()
     }
   )
+})
+
+describe('the retired gallery and launches pages', () => {
+  it.for([
+    ['/gallery/', '/customers/'],
+    ['/zh-CN/gallery/', '/zh-CN/customers/'],
+    ['/launches/', '/events/'],
+    ['/zh-CN/launches/', '/zh-CN/events/'],
+    ['/gallery.md', '/customers.md'],
+    ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
+    ['/launches.md', '/events.md'],
+    ['/zh-CN/launches.md', '/zh-CN/events.md']
+  ])('sends %s to %s with a 307', ([source, destination]) => {
+    expect(
+      toVercelRedirects(siteRedirects).find((row) => row.source === source)
+    ).toEqual({ source, destination, permanent: false })
+  })
+})
+
+describe('link-stale sources', () => {
+  it('leave out a bare source whose slash form is a page', () => {
+    expect(linkStaleSources).not.toContain('/about')
+    expect(linkStaleSources).not.toContain('/zh-CN/about')
+    expect(linkStaleSources).not.toContain('/login')
+  })
+
+  it('keep both slash forms of an ordinary redirect', () => {
+    expect(linkStaleSources).toEqual(
+      expect.arrayContaining(['/career', '/career/', '/press', '/press/'])
+    )
+  })
 })
 
 describe('Astro redirects', () => {
@@ -229,11 +295,11 @@ describe('Astro redirects', () => {
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
+            !/\.(md|txt)$/.test(source) &&
             !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    expect(Object.keys(astroRedirects)).toHaveLength(18)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -242,6 +308,7 @@ describe('Astro redirects', () => {
       status: 307,
       destination: '/zh-CN/minimax-h3/'
     })
+    expect(astroRedirects['/gallery.md']).toBeUndefined()
     expect(astroRedirects['/career']).toEqual({
       status: 308,
       destination: '/careers/'

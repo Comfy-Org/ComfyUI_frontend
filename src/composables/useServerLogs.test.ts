@@ -55,7 +55,7 @@ describe('useServerLogs', () => {
 
     await startListening()
 
-    expect(vi.mocked(useEventListener)).toHaveBeenCalledWith(
+    expect(useEventListener).toHaveBeenCalledWith(
       api,
       'logs',
       expect.any(Function)

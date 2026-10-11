@@ -21,7 +21,7 @@ import type {
 import { useCopy } from '@/composables/useCopy'
 import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { app } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -784,8 +784,8 @@ describe('usePaste', () => {
       await vi.waitFor(() => {
         expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
         expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'error' })
         )
       })
     }
@@ -807,8 +807,8 @@ describe('usePaste', () => {
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
   })
@@ -837,8 +837,8 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
@@ -887,12 +887,12 @@ describe('usePaste', () => {
       paste(otherApp)
 
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'info',
-          summary: 'Nothing to paste into this node'
+          kind: 'info',
+          title: 'Nothing to paste into this node'
         })
-      )
+      ])
     })
 
     it('runs the default paste only for the latest copy', () => {
@@ -937,7 +937,7 @@ describe('usePaste', () => {
         paste(clipboardData)
 
         expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
       }
     )
   })

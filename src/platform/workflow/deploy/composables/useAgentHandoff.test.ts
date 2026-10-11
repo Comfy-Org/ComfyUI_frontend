@@ -2,9 +2,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -175,6 +175,38 @@ describe('useAgentHandoff', () => {
     expect(brief).toContain('- `inpaint_v26.fooocus.patch`')
   })
 
+  it.for([
+    {
+      format: 'named',
+      nodeType: 'LoadLoraModel',
+      values: {
+        'loras.0.lora_name': 'A.safetensors',
+        'loras.2.lora_name': 'B.safetensors',
+        prompt: 'C.safetensors'
+      }
+    },
+    {
+      format: 'positional',
+      nodeType: 'LoadLoraTextEncoder',
+      values: ['B.safetensors', 0.5, true, 'A.safetensors', 1, false]
+    }
+  ])(
+    'lists repeated LoRA model fields in a $format workflow',
+    ({ nodeType, values }) => {
+      useNodeDefStore().nodeDefsByName = {
+        [nodeType]: fromPartial<ComfyNodeDefImpl>({ name: nodeType })
+      }
+      setActiveWorkflow('loras.json', {
+        nodes: [{ id: 1, type: nodeType, widgets_values: values }]
+      })
+
+      expect(useAgentHandoff().captureInputs().models).toEqual([
+        'A.safetensors',
+        'B.safetensors'
+      ])
+    }
+  )
+
   it('keeps the file when the brief did not reach the clipboard', async () => {
     setActiveWorkflow()
     vi.mocked(useCopyToClipboard().copyToClipboard).mockResolvedValueOnce(false)
@@ -209,7 +241,6 @@ describe('useAgentHandoff', () => {
         }
       }
     })
-    const toast = vi.spyOn(useToastStore(), 'add')
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
@@ -218,12 +249,13 @@ describe('useAgentHandoff', () => {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
     })
-    expect(toast).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'The brief for your agent could not be prepared. Try again.'
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
       })
-    )
+    ])
     expect(downloadBlob).not.toHaveBeenCalled()
   })
 
@@ -232,7 +264,6 @@ describe('useAgentHandoff', () => {
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
       throw new Error('download blocked')
     })
-    const toast = vi.spyOn(useToastStore(), 'add')
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
@@ -241,12 +272,13 @@ describe('useAgentHandoff', () => {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
     })
-    expect(toast).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'The brief for your agent could not be prepared. Try again.'
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
       })
-    )
+    ])
   })
 
   it('reads the graph after capturing an edit still in a focused field', async () => {

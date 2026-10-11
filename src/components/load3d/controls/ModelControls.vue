@@ -2,10 +2,8 @@
   <div class="flex flex-col">
     <div class="show-up-direction relative">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.upDirection'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.upDirection')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"
@@ -39,10 +37,8 @@
 
     <div v-if="materialModes.length > 0" class="show-material-mode relative">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.materialMode'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.materialMode')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"
@@ -76,10 +72,8 @@
 
     <div v-if="hasSkeleton">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.showSkeleton'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.showSkeleton')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         :class="cn('rounded-full', showSkeleton && 'bg-blue-500')"

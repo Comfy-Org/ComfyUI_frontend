@@ -2,6 +2,7 @@ import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
@@ -17,6 +18,13 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { registerApp } from '@/scripts/appRegistry'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
+import type { Clipspace } from '@/scripts/clipspace'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -53,7 +61,6 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -66,7 +73,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -79,8 +87,7 @@ import {
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
-  NodeExecutionOutput,
-  ResultItem
+  NodeExecutionOutput
 } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
@@ -95,6 +102,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
+import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -118,12 +126,15 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { ComfyExtension } from '@/types/comfy'
 import type {
-  ExtensionManager,
-  ToastMessageOptions
-} from '@/types/extensionTypes'
+  ComfyApp as IComfyApp,
+  ComfyExtension,
+  LoadGraphDataOptions,
+  QueuePromptOptions
+} from '@/types/comfy'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -164,6 +175,7 @@ import {
 } from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
+  migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -172,7 +184,7 @@ import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
+import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -198,7 +210,7 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -248,26 +260,6 @@ function syncPromotedComboHostOptions(rootGraph: LGraph): void {
   })
 }
 
-type Clipspace = {
-  widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
-  imgs?: HTMLImageElement[] | null
-  original_imgs?: HTMLImageElement[] | null
-  images?: ResultItem[] | null
-  selectedIndex: number
-  img_paste_mode: string
-  paintedIndex: number
-  combinedIndex?: number
-}
-
-/**
- * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
- * attribution only and never affects what gets executed.
- */
-export interface QueuePromptOptions {
-  queueNodeIds?: NodeExecutionId[]
-  intent?: WorkflowQueueIntent
-}
-
 function createNodeOutputsMutationView(
   outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
@@ -309,7 +301,7 @@ function createNodeOutputsMutationView(
   })
 }
 
-export class ComfyApp {
+export class ComfyApp implements IComfyApp {
   /**
    * List of entries to queue
    */
@@ -327,14 +319,36 @@ export class ComfyApp {
   private processingQueue: boolean = false
 
   /**
-   * Content Clipboard
-   * @type {serialized node object}
+   * Content Clipboard, kept as statics for custom-node compatibility.
+   * State lives in `@/scripts/clipspace`.
    */
-  static clipspace: Clipspace | null = null
-  static clipspace_invalidate_handler: (() => void) | null = null
+  static get clipspace(): Clipspace | null {
+    return clipspace.current
+  }
+  static set clipspace(value: Clipspace | null) {
+    clipspace.current = value
+  }
+  static get clipspace_invalidate_handler(): (() => void) | null {
+    return clipspace.invalidateHandler
+  }
+  static set clipspace_invalidate_handler(value: (() => void) | null) {
+    clipspace.invalidateHandler = value
+  }
+  static get clipspace_return_node(): LGraphNode | null {
+    return clipspace.returnNode
+  }
+  static set clipspace_return_node(value: LGraphNode | null) {
+    clipspace.returnNode = value
+  }
   static open_maskeditor: (() => void) | null = null
-  static maskeditor_is_opended: (() => boolean) | null = null
-  static clipspace_return_node: LGraphNode | null = null
+  static get maskeditor_is_opended(): (() => boolean) | null {
+    return clipspace.maskEditorIsOpened
+  }
+  static set maskeditor_is_opended(value: (() => boolean) | null) {
+    clipspace.maskEditorIsOpened = value
+  }
+  static copyToClipspace = copyToClipspace
+  static pasteFromClipspace = pasteFromClipspace
 
   vueAppReady: boolean
   api: ComfyApi
@@ -354,7 +368,15 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
-  private rootGraphInternal: LGraph | undefined
+  private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
+
+  private get rootGraphInternal(): LGraph | undefined {
+    return this.rootGraphRef.value
+  }
+
+  private set rootGraphInternal(graph: LGraph | undefined) {
+    this.rootGraphRef.value = graph
+  }
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
@@ -373,7 +395,10 @@ export class ComfyApp {
     return this.rootGraphInternal
   }
 
-  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  /**
+   * Whether the root graph has been initialized. Safe to check without
+   * triggering error logs, and reactive, so it can be watched.
+   */
   get isGraphReady(): boolean {
     return !!this.rootGraphInternal
   }
@@ -574,172 +599,13 @@ export class ComfyApp {
   }
 
   static onClipspaceEditorSave() {
-    if (ComfyApp.clipspace_return_node) {
-      ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node)
+    if (clipspace.returnNode) {
+      pasteFromClipspace(clipspace.returnNode)
     }
   }
 
   static onClipspaceEditorClosed() {
-    ComfyApp.clipspace_return_node = null
-  }
-
-  static copyToClipspace(node: LGraphNode) {
-    let widgets = null
-    if (node.widgets) {
-      widgets = node.widgets.map(({ type, name, value }) => ({
-        type,
-        name,
-        value
-      }))
-    }
-
-    let imgs = undefined
-    let orig_imgs = undefined
-    if (node.imgs != undefined) {
-      imgs = []
-      orig_imgs = []
-
-      for (let i = 0; i < node.imgs.length; i++) {
-        imgs[i] = new Image()
-        imgs[i].src = node.imgs[i].src
-        orig_imgs[i] = imgs[i]
-      }
-    }
-
-    let selectedIndex = 0
-    if (node.imageIndex) {
-      selectedIndex = node.imageIndex
-    }
-
-    const paintedIndex = imgs ? imgs.length + 1 : 1
-    const combinedIndex = imgs ? imgs.length + 2 : 2
-
-    // for vueNodes mode
-    const images = useNodeOutputStore().getNodeOutputs(node)?.images
-
-    ComfyApp.clipspace = {
-      widgets: widgets,
-      imgs: imgs,
-      original_imgs: orig_imgs,
-      images: images,
-      selectedIndex: selectedIndex,
-      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
-      paintedIndex: paintedIndex,
-      combinedIndex: combinedIndex
-    }
-
-    ComfyApp.clipspace_return_node = null
-
-    if (ComfyApp.clipspace_invalidate_handler) {
-      ComfyApp.clipspace_invalidate_handler()
-    }
-  }
-
-  static pasteFromClipspace(node: LGraphNode) {
-    if (ComfyApp.clipspace) {
-      // image paste
-      let combinedImgSrc: string | undefined
-      if (
-        ComfyApp.clipspace.combinedIndex !== undefined &&
-        ComfyApp.clipspace.imgs &&
-        ComfyApp.clipspace.combinedIndex < ComfyApp.clipspace.imgs.length
-      ) {
-        combinedImgSrc =
-          ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
-      }
-      if (ComfyApp.clipspace.imgs && node.imgs) {
-        // Update node.images even if it's initially undefined (vueNodes mode)
-        if (ComfyApp.clipspace.images) {
-          const images =
-            ComfyApp.clipspace['img_paste_mode'] == 'selected'
-              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
-              : ComfyApp.clipspace.images
-          useNodeOutputStore().setNodeOutputImages(node, images)
-        }
-
-        // deep-copy to cut link with clipspace
-        if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-          const img = new Image()
-          img.src =
-            ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-          node.imgs = [img]
-          node.imageIndex = 0
-        } else {
-          const imgs = []
-          for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-            imgs[i] = new Image()
-            imgs[i].src = ComfyApp.clipspace.imgs[i].src
-            node.imgs = imgs
-          }
-        }
-      }
-
-      // Paste the RGB canvas if paintedindex exists
-      if (
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
-        node.imgs
-      ) {
-        const paintedImg = new Image()
-        paintedImg.src =
-          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
-        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
-      }
-
-      // Store only combined image inside the node if it exists
-      if (node.imgs && combinedImgSrc) {
-        const combinedImg = new Image()
-        combinedImg.src = combinedImgSrc
-        node.imgs = [combinedImg]
-      }
-
-      if (node.widgets) {
-        if (ComfyApp.clipspace.images) {
-          const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-          const index = node.widgets.findIndex((obj) => obj.name === 'image')
-          if (index >= 0) {
-            if (
-              node.widgets[index].type != 'image' &&
-              typeof node.widgets[index].value == 'string' &&
-              clip_image.filename
-            ) {
-              node.widgets[index].value =
-                (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
-                clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : '')
-            } else {
-              node.widgets[index].value = clip_image
-            }
-          }
-        }
-        if (ComfyApp.clipspace.widgets) {
-          ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
-            const prop = node.widgets?.find(
-              (obj) => obj.type === type && obj.name === name
-            )
-            if (prop && prop.type != 'button') {
-              const valueObj = value as Record<string, unknown> | undefined
-              if (
-                prop.type != 'image' &&
-                typeof prop.value == 'string' &&
-                valueObj?.filename
-              ) {
-                const resultItem = value as ResultItem
-                prop.value =
-                  (resultItem.subfolder ? resultItem.subfolder + '/' : '') +
-                  resultItem.filename +
-                  (resultItem.type ? ` [${resultItem.type}]` : '')
-              } else {
-                prop.value = value
-                prop.callback?.(value)
-              }
-            }
-          })
-        }
-      }
-
-      app.canvas.setDirty(true)
-    }
+    clipspace.returnNode = null
   }
 
   /**
@@ -777,7 +643,7 @@ export class ComfyApp {
               surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
-            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+            useToast().warning(t('toastMessages.assetDropFailed'))
           }
           return
         }
@@ -823,7 +689,11 @@ export class ComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
+        useToast().warning(
+          t('toastMessages.dropFileError', {
+            error: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     })
 
@@ -1004,9 +874,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      useExtensionService().loadExtensions()
-    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1021,10 +888,8 @@ export class ComfyApp {
         useSubgraphService().registerNewSubgraph(subgraph, data)
       } catch (err) {
         console.error('Failed to register subgraph', err)
-        useToastStore().add({
-          severity: 'error',
-          summary: 'Failed to register subgraph',
-          detail: err instanceof Error ? err.message : String(err)
+        useToast().error(t('toastMessages.failedToRegisterSubgraph'), {
+          description: getErrorMessage(err) ?? t('g.unknownError')
         })
       }
     })
@@ -1310,15 +1175,7 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    options: {
-      checkForRerouteMigration?: boolean
-      openSource?: WorkflowOpenSource
-      shareId?: string
-      deferWarnings?: boolean
-      skipAssetScans?: boolean
-      silentAssetErrors?: boolean
-      workflowNavigationId?: number
-    } = {}
+    options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
@@ -1395,10 +1252,26 @@ export class ComfyApp {
         findLegacyRerouteNodes(graphData).length &&
         noNativeReroutes(graphData)
       ) {
-        useToastStore().add({
-          group: 'reroute-migration',
-          severity: 'warn'
-        })
+        const toast = useToast()
+        const migrationToastId = toast.warning(
+          t('toastMessages.migrateToLitegraphReroute'),
+          {
+            action: {
+              label: t('g.migrate'),
+              onClick: async () => {
+                await this.loadGraphData(
+                  migrateLegacyRerouteNodes(
+                    this.rootGraph.serialize() as unknown as WorkflowJSON04
+                  ),
+                  false,
+                  false,
+                  useWorkflowStore().activeWorkflow
+                )
+                toast.dismiss(migrationToastId)
+              }
+            }
+          }
+        )
       }
 
       useSubgraphService().loadSubgraphs(graphData)
@@ -1849,10 +1722,14 @@ export class ComfyApp {
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const workspaceAuthToken = await useAuthStore().getWorkspaceAuthToken()
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
+    const comfyOrgAuthToken = await queueAuthToken(
+      workspaceAuthToken,
+      executionWorkspaceId
+    )
     const workspaceChangedWhileAuthenticating =
       (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
         workspaceGenerationBeforeAuthentication !==
@@ -2164,7 +2041,7 @@ export class ComfyApp {
   }
 
   showErrorOnFileLoad(file: File) {
-    useToastStore().addAlert(
+    useToast().warning(
       t('toastMessages.fileLoadError', { fileName: file.name })
     )
   }
@@ -2302,16 +2179,14 @@ export class ComfyApp {
       )
       switch (outcome) {
         case 'core-nodes-unavailable':
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
           return
         case 'not-a1111':
           this.showErrorOnFileLoad(file)
           return
         case 'imported-without-embeddings':
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          useToast().warning(t('g.warning'), {
+            description: t('toastMessages.a1111EmbeddingsUnavailable')
           })
           break
         case 'imported':
@@ -2773,38 +2648,31 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
+    const requestToastId = this.vueAppReady
+      ? useToast().info(t('g.update'), {
+          description: t('toastMessages.updateRequested')
+        })
+      : undefined
 
     try {
       await this.reloadNodeDefs()
 
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'success',
-          summary: t('g.updated'),
-          detail: t('toastMessages.nodeDefinitionsUpdated'),
-          life: 1000
+        useToast().success(t('g.updated'), {
+          description: t('toastMessages.nodeDefinitionsUpdated'),
+          duration: 1000
         })
       }
     } catch (error) {
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
       throw error
     } finally {
-      if (this.vueAppReady) {
-        useToastStore().remove(requestToastMessage)
+      if (requestToastId !== undefined) {
+        useToast().dismiss(requestToastId)
       }
     }
   }
@@ -2847,3 +2715,4 @@ export class ComfyApp {
 }
 
 export const app = new ComfyApp()
+registerApp(app)

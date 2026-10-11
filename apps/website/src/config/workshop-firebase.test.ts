@@ -118,7 +118,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
 
     expect(deleteFn).toHaveBeenCalledTimes(2)
     expect(
-      vi.mocked(captureSignupRollbackFailure),
+      captureSignupRollbackFailure,
       'a double delete failure orphans the account; without the event nobody ever learns'
     ).toHaveBeenCalledOnce()
   })
@@ -134,7 +134,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
       signUpWorkshopWithEmail('a@b.example', 'hunter22!', 'cf-token')
     ).rejects.toThrow('Customer provisioning failed')
 
-    expect(vi.mocked(captureSignupRollbackFailure)).not.toHaveBeenCalled()
+    expect(captureSignupRollbackFailure).not.toHaveBeenCalled()
   })
 })
 

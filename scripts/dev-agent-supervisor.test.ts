@@ -103,11 +103,7 @@ describe('waitForStartup', () => {
   })
 
   it('preserves a fatal exit when HTTP becomes ready at the same boundary', async () => {
-    vi.mocked(fetch).mockImplementation(
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(new Response(null, { status: 200 }))
-    )
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }))
     const child = {
       exitCode: null,
       signalCode: null

@@ -21,6 +21,36 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores a skill and adjacent workflow references in their original order from message text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'Use [A](workflow://wf-a)[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)[B](workflow://wf-b) today',
+      workflow_references: [
+        { workflow_id: 'wf-a', name: 'A' },
+        { workflow_id: 'wf-b', name: 'B' }
+      ]
+    }
+    const transcript = normalizeAgentTranscript([message])
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Use  today')
+    expect(transcript.userWorkflowReferences.get(toTurnId('turn-a'))).toEqual([
+      { id: 'wf-a', name: 'A', textOffset: 4 },
+      { id: 'wf-b', name: 'B', textOffset: 4 }
+    ])
+    expect(transcript).toMatchObject({
+      userSkillReferences: new Map([
+        [
+          'turn-a',
+          {
+            name: 'portrait',
+            description: 'Use defaults',
+            textOffset: 4,
+            workflowIndex: 1
+          }
+        ]
+      ])
+    })
+  })
+
   it('restores inline reference positions from the persisted message text', () => {
     const message = row(1, 'user', 'turn-a', '', 'row-1')
     message.content = {
