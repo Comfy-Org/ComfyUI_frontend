@@ -114,6 +114,10 @@ const {
    * composer; see AgentPanelRoot's `creditsExhausted` for why it exists.
    */
   creditsExhausted?: boolean
+  /**
+   * Render no free-use notice in any placement, whatever arm is assigned. The
+   * caller owns the policy; see AgentPanelRoot's `freeUseGrantActive`.
+   */
   suppressFreeUseNotice?: boolean
   sessionId?: string | null
   currentChatReady?: boolean
