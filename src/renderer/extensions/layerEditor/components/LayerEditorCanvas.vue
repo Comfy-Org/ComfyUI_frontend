@@ -3,7 +3,7 @@
     ref="viewportRef"
     tabindex="0"
     data-testid="layer-editor-viewport"
-    class="relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-base-background outline-none"
+    class="relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-base-background outline-none focus-visible:ring-1 focus-visible:ring-border-default"
     :style="{ cursor: viewportCursor }"
     @pointerdown="session.onPointerDown"
     @pointermove="session.onPointerMove"
@@ -34,7 +34,9 @@
       class="absolute inset-0 flex items-center justify-center"
       data-testid="layer-editor-gl-unavailable"
     >
-      <span class="text-danger rounded-md bg-base-background px-4 py-2 text-sm">
+      <span
+        class="rounded-md bg-base-background px-4 py-2 text-sm text-destructive-background"
+      >
         {{ t('layerEditor.webglUnavailable') }}
       </span>
     </div>
@@ -67,7 +69,9 @@ const checkerboardStyle = {
 }
 
 let firstLayout = true
-useResizeObserver(viewportRef, () => {
+useResizeObserver(viewportRef, (entries) => {
+  const rect = entries[0]?.contentRect
+  if (!rect.width || !rect.height) return
   if (firstLayout) {
     firstLayout = false
     session.fitView()

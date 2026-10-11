@@ -42,7 +42,7 @@ export function computeAncestorExecutionIds(
 }
 
 export function computeActiveGraphIds(
-  rootGraph: LGraph | null,
+  rootGraph: LGraph | undefined,
   currentGraph: LGraph | null,
   ancestorExecutionIds: Set<NodeExecutionId>
 ): Set<string> {

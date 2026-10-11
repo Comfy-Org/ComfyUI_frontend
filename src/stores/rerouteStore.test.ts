@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -48,13 +46,8 @@ function link(id: number, targetSlot: number, parentId?: number): LinkTopology {
 }
 
 describe('useRerouteStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const owner = store.registerReroute(graphA, chain(1))
     assert(owner)
 
@@ -62,7 +55,7 @@ describe('useRerouteStore', () => {
 
     const usurper = chain(1, 7)
     expect(store.registerReroute(graphA, usurper)).toBeUndefined()
-    expect(error).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)
@@ -96,7 +89,7 @@ describe('useRerouteStore', () => {
     expect(store.deleteReroute(graphA, registered)).toBe(false)
   })
 
-  it('re-registers a chain after deleting its owner bucket', () => {
+  it('reuses a deleted reroute id for a replacement chain', () => {
     const store = useRerouteStore()
     const registered = store.registerReroute(graphA, chain(1))
     assert(registered)

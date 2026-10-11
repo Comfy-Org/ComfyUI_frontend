@@ -7,16 +7,16 @@
     >
       <BatchNavigation
         v-model="beforeIndex"
-        :count="beforeBatchCount"
+        :count="beforeImages.length"
         data-testid="before-batch"
       >
         <template #label>{{ $t('imageCompare.batchLabelA') }}</template>
       </BatchNavigation>
-      <div v-if="beforeBatchCount <= 1" />
+      <div v-if="beforeImages.length <= 1" />
 
       <BatchNavigation
         v-model="afterIndex"
-        :count="afterBatchCount"
+        :count="afterImages.length"
         data-testid="after-batch"
       >
         <template #label>{{ $t('imageCompare.batchLabelB') }}</template>
@@ -32,7 +32,7 @@
       <img
         v-if="afterImage"
         :src="afterImage"
-        :alt="afterAlt"
+        :alt="$t('imageCompare.afterAlt')"
         draggable="false"
         class="absolute inset-0 size-full object-contain"
       />
@@ -40,7 +40,7 @@
       <img
         v-if="beforeImage"
         :src="beforeImage"
-        :alt="beforeAlt"
+        :alt="$t('imageCompare.beforeAlt')"
         draggable="false"
         class="absolute inset-0 size-full object-contain"
         :style="
@@ -83,22 +83,26 @@
 import { useMouseInElement } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
+import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
+import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import BatchNavigation from './BatchNavigation.vue'
 
-export interface ImageCompareValue {
-  beforeImages?: string[]
-  afterImages?: string[]
-  beforeAlt?: string
-  afterAlt?: string
-  initialPosition?: number
-}
-
-// Image compare widgets typically don't have v-model, they display comparison
-const props = defineProps<{
-  widget: SimplifiedWidget<ImageCompareValue | string>
+const { widget, nodeId } = defineProps<{
+  widget: SimplifiedWidget<string[]>
+  nodeId: NodeId
 }>()
+
+const node = computed(() => {
+  const locatorId = widget.nodeLocatorId
+  const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
+  return owner || app.canvas.graph?.getNodeById(nodeId)
+})
+
+const { beforeImages, afterImages } = useImageCompareImages(node)
 
 const containerRef = ref<HTMLElement | null>(null)
 const sliderPosition = ref(50)
@@ -113,71 +117,22 @@ watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
   }
 })
 
-function isSingleImage(
-  value: ImageCompareValue | string | undefined
-): value is string {
-  return typeof value === 'string'
-}
-
-const parsedValue = computed(() => {
-  const value = props.widget.value
-  return isSingleImage(value) ? null : value
-})
-
-const beforeBatchCount = computed(
-  () => parsedValue.value?.beforeImages?.length ?? 0
-)
-
-const afterBatchCount = computed(
-  () => parsedValue.value?.afterImages?.length ?? 0
-)
-
 const showBatchNav = computed(
-  () => beforeBatchCount.value > 1 || afterBatchCount.value > 1
+  () => beforeImages.value.length > 1 || afterImages.value.length > 1
 )
 
-// Reset indices when batch data changes
-watch(
-  () => parsedValue.value?.beforeImages,
-  () => {
-    beforeIndex.value = 0
-  }
-)
-
-watch(
-  () => parsedValue.value?.afterImages,
-  () => {
-    afterIndex.value = 0
-  }
-)
-
-const beforeImage = computed(() => {
-  const value = props.widget.value
-  if (isSingleImage(value)) return value
-  return value?.beforeImages?.[beforeIndex.value] ?? ''
+watch(beforeImages, (images) => {
+  if (beforeIndex.value >= images.length) beforeIndex.value = 0
 })
 
-const afterImage = computed(() => {
-  const value = props.widget.value
-  if (isSingleImage(value)) return ''
-  return value?.afterImages?.[afterIndex.value] ?? ''
+watch(afterImages, (images) => {
+  if (afterIndex.value >= images.length) afterIndex.value = 0
 })
+
+const beforeImage = computed(() => beforeImages.value[beforeIndex.value] ?? '')
+const afterImage = computed(() => afterImages.value[afterIndex.value] ?? '')
 
 const hasCompareImages = computed(() =>
   Boolean(beforeImage.value && afterImage.value)
 )
-
-const beforeAlt = computed(() => {
-  const value = props.widget.value
-  return !isSingleImage(value) && value?.beforeAlt
-    ? value.beforeAlt
-    : 'Before image'
-})
-
-const afterAlt = computed(() => {
-  const value = props.widget.value
-  return !isSingleImage(value) && value?.afterAlt
-    ? value.afterAlt
-    : 'After image'
-})
 </script>

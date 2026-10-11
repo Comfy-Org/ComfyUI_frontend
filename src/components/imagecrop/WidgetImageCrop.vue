@@ -46,7 +46,7 @@
           v-if="!isLoading"
           :class="
             cn(
-              'absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
+              'absolute box-content cursor-move border border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
               isDisabled && 'pointer-events-none opacity-60'
             )
           "

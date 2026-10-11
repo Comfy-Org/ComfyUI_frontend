@@ -15,6 +15,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'Release')
     permissions:
       contents: write
+      issues: write # labels are applied through the issues API
 
     steps:
       - name: Checkout repository
@@ -177,17 +178,13 @@ jobs:
             COLOR="${COLORS[$PREFIX]}"
             DESCRIPTION="Backport PRs for ${PREFIX} ${BRANCH_BASE}"
 
-            if gh label view "$LABEL" >/dev/null 2>&1; then
-              gh label edit "$LABEL" \
-                --color "$COLOR" \
-                --description "$DESCRIPTION"
-              echo "🔄 Updated label $LABEL"
-            else
-              gh label create "$LABEL" \
-                --color "$COLOR" \
-                --description "$DESCRIPTION"
-              echo "✨ Created label $LABEL"
-            fi
+            # --force creates the label when missing and updates its color and
+            # description when it already exists, so re-runs never hard-fail.
+            gh label create "$LABEL" \
+              --color "$COLOR" \
+              --description "$DESCRIPTION" \
+              --force
+            echo "✅ Ensured label $LABEL"
           done
 
           MIN_LABELS_TO_KEEP=3

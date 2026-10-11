@@ -5,13 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
-// canvasStore transitively imports the app singleton; stub it so the real
-// ComfyApp module never loads during these unit tests.
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { selected_nodes: null } }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -24,8 +20,7 @@ const i18n = createI18n({
 describe('useGroupMenuOptions.getGroupColorOptions', () => {
   it('applies the same colour as the circle-swatch picker (LGraphCanvas.node_colors groupcolor)', () => {
     const group = new LGraphGroup('Test Group')
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedItems = [group]
+    setCanvasSelection([group])
 
     let submenu: { label: string; action: () => void }[] = []
     const Wrapper = defineComponent({

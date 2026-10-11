@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -12,13 +10,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      graph_mouse: [0, 0]
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
@@ -83,10 +75,6 @@ function createSourceNode(options: {
 }
 
 describe('applyFirstWidgetValueToGraph', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('returns early when the source widget is missing', () => {
     const targetCallback = vi.fn()
     const targetWidget = createWidget('value', 'unchanged', targetCallback)

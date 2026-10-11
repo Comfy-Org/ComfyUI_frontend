@@ -7,8 +7,6 @@ export class BooleanWidget
   extends BaseWidget<IBooleanWidget>
   implements IBooleanWidget
 {
-  override type = 'toggle' as const
-
   override drawWidget(
     ctx: CanvasRenderingContext2D,
     options: DrawWidgetOptions

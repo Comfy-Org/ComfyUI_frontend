@@ -1,8 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearCompositorLayers,
   getCompositorBBoxes,
+  getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
@@ -10,18 +12,20 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 import { toNodeId } from '@/types/nodeId'
 
 import './imageCompositor'
 
 const capturedExtensions = vi.hoisted<ComfyExtension[]>(() => [])
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        capturedExtensions.push(ext)
+      }
+    })
 }))
 
 const nodeId = toNodeId(11)
@@ -31,8 +35,7 @@ function makeNode() {
   const savedValue = { layers: [] }
   const compositorWidget = {
     name: 'compositor',
-    value: savedValue,
-    callback: vi.fn()
+    value: savedValue
   } as unknown as IBaseWidget
   const priorOnExecuted = vi.fn()
   const priorOnRemoved = vi.fn()
@@ -44,8 +47,10 @@ function makeNode() {
     onRemoved: priorOnRemoved,
     constructor: { comfyClass: 'ImageCompositor' },
     widgets: [compositorWidget],
-    widgets_values: [savedValue],
-    graph: { setDirtyCanvas: vi.fn() }
+    graph: {
+      rootGraph: { id: 'test-graph' },
+      setDirtyCanvas: vi.fn()
+    }
   } as unknown as LGraphNode
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
@@ -110,6 +115,29 @@ describe('ImageCompositor extension', () => {
     expect(getCompositorBBoxes(node)).toBeUndefined()
   })
 
+  it('caches the document canvas reported by the backend', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a'],
+      compositor_canvas: [{ w: 1280, h: 1280 }]
+    })
+
+    expect(getCompositorCanvas(node)).toEqual({ w: 1280, h: 1280 })
+  })
+
+  it('leaves the canvas cache empty when the output has none', () => {
+    const { node } = createdNode()
+
+    node.onExecuted?.({
+      compositor_layers: [{ filename: 'a.png' }],
+      compositor_inputs: ['hash-a']
+    })
+
+    expect(getCompositorCanvas(node)).toBeUndefined()
+  })
+
   it('resets the compositor widget when the state is stale', () => {
     const { node, compositorWidget } = createdNode()
 
@@ -120,8 +148,6 @@ describe('ImageCompositor extension', () => {
     })
 
     expect(compositorWidget.value).toEqual({})
-    expect(compositorWidget.callback).toHaveBeenCalledWith({})
-    expect(node.widgets_values).toEqual([{}])
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalled()
   })
 

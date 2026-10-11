@@ -2,10 +2,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useApp } from '@/scripts/appInstance'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -28,18 +29,23 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
 
+  /** Candidates to display; `null` while the missing models warning is off. */
+  const visibleMissingModelCandidates = computed(() =>
+    isMissingWarningVisible('models') ? missingModelCandidates.value : null
+  )
+
   const hasMissingModels = computed(
-    () => !!missingModelCandidates.value?.length
+    () => !!visibleMissingModelCandidates.value?.length
   )
 
   const missingModelCount = computed(
-    () => missingModelCandidates.value?.length ?? 0
+    () => visibleMissingModelCandidates.value?.length ?? 0
   )
 
   const missingModelNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    if (!missingModelCandidates.value) return ids
-    for (const m of missingModelCandidates.value) {
+    if (!visibleMissingModelCandidates.value) return ids
+    for (const m of visibleMissingModelCandidates.value) {
       // Promoted-widget candidates are scoped to the subgraph host node
       // (`nodeId`) but originate at an interior node (`sourceExecutionId`);
       // both execution ids carry the missing model.
@@ -51,8 +57,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const missingModelWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
-    if (!missingModelCandidates.value) return keys
-    for (const m of missingModelCandidates.value) {
+    if (!visibleMissingModelCandidates.value) return keys
+    for (const m of visibleMissingModelCandidates.value) {
       keys.add(`${String(m.nodeId)}::${m.widgetName}`)
     }
     return keys
@@ -64,7 +70,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const activeMissingModelGraphIds = computed(() =>
     computeActiveGraphIds(
-      app.rootGraph,
+      useApp().rootGraphOrUndefined,
       canvasStore.currentGraph,
       missingModelAncestorExecutionIds.value
     )
@@ -256,7 +262,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({
+      await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })
@@ -264,10 +270,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       if (isAbortError(error)) return
 
       console.error('Failed to refresh missing models:', error)
-      useToastStore().add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('rightSidePanel.missingModels.refreshFailed')
+      useToast().error(t('g.error'), {
+        description: t('rightSidePanel.missingModels.refreshFailed')
       })
     } finally {
       isRefreshingMissingModels.value = false
@@ -276,6 +280,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   return {
     missingModelCandidates,
+    visibleMissingModelCandidates,
     isRefreshingMissingModels,
     hasMissingModels,
     missingModelCount,

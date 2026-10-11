@@ -1,10 +1,13 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
 import type {
   ExportedSubgraph,
@@ -52,6 +55,18 @@ export function remapLinkReferences(
   for (const extension of data.extra?.linkExtensions ?? []) {
     extension.id = toLinkId(remap(extension.id))
   }
+
+  const presentation = data.extra?.linkPresentation
+  if (!presentation) return
+
+  for (const [key, value] of Object.entries(presentation)) {
+    const linkId = parseLinkId(key)
+    if (linkId === undefined) continue
+    const remappedKey = String(remap(linkId))
+    if (remappedKey === key) continue
+    presentation[remappedKey] ??= value
+    delete presentation[key]
+  }
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
@@ -59,30 +74,86 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
 ): T {
   if (!data.links?.length) return data
 
-  const survivorByTarget = new Map<string, ReturnType<typeof linkFields>>()
+  const referencedInputLinks = new Set(
+    (data.nodes ?? []).flatMap((node) =>
+      (node.inputs ?? []).flatMap((input) =>
+        input.link == null ? [] : [input.link]
+      )
+    )
+  )
+  const survivorIndexByTarget = new Map<string, number>()
   const survivorByDuplicateId = new Map<number, number>()
-  const links = data.links.filter((link) => {
+  const links: ConfiguredLink[] = []
+  for (const link of data.links) {
     const fields = linkFields(link)
     const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
-    const survivor = survivorByTarget.get(key)
-    if (!survivor) {
-      survivorByTarget.set(key, fields)
-      return true
+    const survivorIndex = survivorIndexByTarget.get(key)
+    if (survivorIndex === undefined) {
+      survivorIndexByTarget.set(key, links.length)
+      links.push(link)
+      continue
     }
-    if (
+    const survivor = linkFields(links[survivorIndex])
+    const isExactDuplicate =
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
+    let droppedLinkId = fields.id
+    let survivorLinkId = survivor.id
+    if (
+      !isExactDuplicate &&
+      referencedInputLinks.has(fields.id) &&
+      !referencedInputLinks.has(survivor.id)
     ) {
+      links[survivorIndex] = link
+      for (const [id, survivorId] of survivorByDuplicateId) {
+        if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
+      }
+      survivorByDuplicateId.set(survivor.id, fields.id)
+      droppedLinkId = survivor.id
+      survivorLinkId = fields.id
+    } else {
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
-    return false
-  })
+    if (!isExactDuplicate) {
+      const targetNodeId = toNodeId(fields.target_id)
+      console.warn('Dropping competing link to an occupied input', {
+        droppedLinkId,
+        survivorLinkId,
+        targetNodeId,
+        targetSlot: fields.target_slot
+      })
+      useTelemetry()?.trackLinkDedupDrop({
+        droppedLinkId,
+        survivorLinkId,
+        target: `${targetNodeId}:${fields.target_slot}`
+      })
+    }
+  }
   if (links.length === data.links.length) return data
 
   const normalized = Object.assign({}, data, { links })
-  if (!survivorByDuplicateId.size) return normalized
-
   const cloned = cloneDeep(normalized)
+  const presentation = cloned.extra?.linkPresentation
+  if (presentation) {
+    const survivorById = new Map(
+      links.map((link) => {
+        const fields = linkFields(link)
+        return [fields.id, fields]
+      })
+    )
+    for (const link of data.links) {
+      const fields = linkFields(link)
+      const survivorId = survivorByDuplicateId.get(fields.id)
+      if (survivorId === undefined || survivorId === fields.id) continue
+      const survivor = survivorById.get(survivorId)
+      if (
+        survivor &&
+        (toNodeId(fields.origin_id) !== toNodeId(survivor.origin_id) ||
+          fields.origin_slot !== survivor.origin_slot)
+      )
+        delete presentation[fields.id]
+    }
+  }
   remapLinkReferences(cloned, survivorByDuplicateId)
   return cloned
 }
@@ -106,36 +177,120 @@ export function detachSerialisedLinks(
   return linkByInputName
 }
 
+function groupNameOf(inputName: string): string | undefined {
+  const separator = inputName ? inputName.lastIndexOf('.') : -1
+  return separator < 1 ? undefined : inputName.slice(0, separator)
+}
+
+/**
+ * Whether a group widget on `node` owns `inputName`'s slot. Group widgets
+ * (dynamic combos) name their child inputs `<group widget name>.<key>` and
+ * replace the whole set whenever their own value changes.
+ */
+function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
+  const groupName = groupNameOf(inputName)
+  if (groupName === undefined) return false
+
+  return node.widgets?.some((widget) => widget.name === groupName) ?? false
+}
+
+/**
+ * Whether a registered autogrow group owns `inputName`'s slot.
+ *
+ * Autogrow groups grow and renumber their own slots while the graph
+ * configures, and realigning their links by name that early destroys them
+ * (see `browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts`,
+ * "loads with both reference images connected").
+ *
+ * Ownership comes from the registry `applyAutogrow` populates, under the same
+ * key autogrow's own connection handler resolves a slot's group by. A group
+ * is not a widget, so there is no widget name to match a prefix against as
+ * {@link isGroupWidgetChildInput} does, and the dotted name alone will not
+ * serve: `INodeInputSlot.name` is an arbitrary string, so an ordinary input
+ * may be dotted without belonging to any group.
+ *
+ * The registry only covers groups the selected option laid out. Children of
+ * an option that is not selected still reach this filter, because
+ * `ComfyNode.configure` appends every serialized input the definition lacks.
+ * Realigning those is harmless: their group's handler bails on the same
+ * missing key, so nothing renumbers behind the move.
+ */
+function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
+  const groupName = groupNameOf(inputName)
+  if (groupName === undefined) return false
+
+  const autogrowGroups = node.comfyDynamic?.autogrow
+  return (
+    autogrowGroups !== undefined && Object.hasOwn(autogrowGroups, groupName)
+  )
+}
+
+/**
+ * Realigns a node's input links by name before its group widget values are
+ * applied, for nodes that have a group widget child input.
+ *
+ * Applying a group widget's value rebuilds every child input of the group and
+ * hands each surviving link to the new input of the same name. A link sitting
+ * on the wrong slot — the node definition lays out the default option's
+ * children, while `target_slot` counts the serialized layout — is handed to an
+ * input that the selected option does not define, and is dropped. Through a
+ * subgraph boundary that demotes the promoted widget to a disconnected input
+ * slot.
+ *
+ * The node's ordinary inputs join the batch so that a link still occupying a
+ * child's destination slot is moved in the same atomic update instead of
+ * blocking it. Links owned by an autogrow group are left to
+ * {@link LGraph.configure}'s final pass.
+ */
+export function realignGroupWidgetChildLinks(
+  node: LGraphNode,
+  nodeData: Pick<ISerialisedNode, 'id' | 'inputs'>
+): void {
+  const { graph } = node
+  if (!graph) return
+
+  const inputs = nodeData.inputs?.filter(
+    (input) => !isAutogrowGroupInput(node, input.name)
+  )
+  if (!inputs?.some((input) => isGroupWidgetChildInput(node, input.name)))
+    return
+
+  realignInputLinkSlots(graph, [[node.id, { id: nodeData.id, inputs }]])
+}
+
 /**
  * Re-points each link's `target_slot` at the configured input with the same
  * name as the serialized input that references it. Replays moved connections
  * because dynamic inputs may grow additional named slots in response.
  *
  * @param graph The graph whose links to realign
- * @param nodesData The serialized node data the graph's nodes were configured
- * from
+ * @param nodesData The final node id paired with the serialized data that
+ * configured it
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>
+  nodesData: Iterable<readonly [NodeId, Pick<ISerialisedNode, 'id' | 'inputs'>]>
 ): void {
-  for (const nodeData of nodesData) {
-    const node = graph.getNodeById(toNodeId(nodeData.id))
+  for (const [nodeId, nodeData] of nodesData) {
+    const node = graph.getNodeById(nodeId)
     if (!node) continue
 
     const referencedNames = new Map<LLink, string[]>()
     for (const input of nodeData.inputs ?? []) {
       if (input.link == null) continue
       const link = graph.links.get(toLinkId(input.link))
-      if (!link || link.target_id !== toNodeId(nodeData.id)) continue
+      if (!link || link.target_id !== nodeId) continue
       const names = referencedNames.get(link) ?? []
       names.push(input.name)
       referencedNames.set(link, names)
     }
 
-    for (let pass = 0; pass < referencedNames.size; pass++) {
+    const skipped = new Set<LLink>()
+    let successfulPasses = 0
+    while (successfulPasses < referencedNames.size) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
+        if (skipped.has(link)) continue
         const slots = node.inputs.flatMap((input, slot) =>
           names.includes(input.name) ? [slot] : []
         )
@@ -147,26 +302,97 @@ export function realignInputLinkSlots(
       }
       if (!moved.length) break
 
+      const unmatched = [...referencedNames].flatMap(([link, names]) =>
+        node.inputs.some((input) => names.includes(input.name)) ? [] : [link]
+      )
+      const destinationSlots = new Set(moved.map(({ slot }) => slot))
+      const removals = unmatched.filter(
+        (link) =>
+          graph.links.has(link.id) && destinationSlots.has(link.target_slot)
+      )
+
       const updates: EndpointUpdate[] = moved.map(({ link, slot }) => ({
         topology: link._state,
         patch: { targetSlot: slot }
       }))
+      const removedConnections = removals.map((link) => ({
+        connection: link.resolve(graph),
+        link
+      }))
       const result = useLinkStore().updateEndpoints(
         graphScopeOf(graph),
-        updates
+        updates,
+        removals.map((link) => link._state)
       )
       if (!result.ok) {
         console.error('Failed to realign input link slots', result.error)
-        break
+        const participantIds = new Set([
+          ...moved.map(({ link }) => link.id),
+          ...removals.map((link) => link.id)
+        ])
+        const blocked = moved.filter(({ link, slot }) => {
+          const occupant = useLinkStore().getInputSlotLink(
+            graphScopeOf(graph),
+            link.target_id,
+            slot
+          )
+          return occupant && !participantIds.has(occupant.id)
+        })
+        for (const { link } of blocked.length ? blocked : moved) {
+          skipped.add(link)
+        }
+        continue
+      }
+      successfulPasses++
+
+      for (const { connection, link } of removedConnections) {
+        link.disconnect(graph)
+        graph.incrementVersion()
+        if (connection.inputNode && connection.input) {
+          try {
+            connection.inputNode.onConnectionsChange?.(
+              NodeSlotType.INPUT,
+              link.target_slot,
+              false,
+              link,
+              connection.input
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
+        if (connection.outputNode && connection.output) {
+          try {
+            connection.outputNode.onConnectionsChange?.(
+              NodeSlotType.OUTPUT,
+              link.origin_slot,
+              false,
+              link,
+              connection.output
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
       }
       for (const { link, slot } of moved) {
-        node.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          slot,
-          true,
-          link,
-          node.inputs[slot]
-        )
+        try {
+          node.onConnectionsChange?.(
+            NodeSlotType.INPUT,
+            slot,
+            true,
+            link,
+            node.inputs[slot]
+          )
+        } catch (error) {
+          console.error(`Failed to notify realigned link ${link.id}`, error)
+        }
       }
     }
   }

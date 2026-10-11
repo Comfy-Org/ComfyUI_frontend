@@ -1,8 +1,8 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import LearningDirectoryPage from '../../components/learning/LearningDirectoryPage.astro'
-import type { LearningCategory } from '../../data/learningTutorials'
-import { populatedCategories } from '../../data/learningTutorials'
+import LearningDirectoryPage from '@/components/learning/LearningDirectoryPage.astro'
+import type { LearningCategory } from '@/data/learningTutorials'
+import { populatedCategories } from '@/data/learningTutorials'
 
 export const getStaticPaths: GetStaticPaths = () =>
   populatedCategories.map((category) => ({ params: { slug: category } }))

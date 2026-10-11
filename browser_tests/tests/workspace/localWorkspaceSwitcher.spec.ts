@@ -5,6 +5,7 @@ import {
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('Local workspace switcher', { tag: '@auth' }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -22,7 +23,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     page.on('request', (request) => {
       if (!request.url().includes('/api/billing/')) return
       billingRequestUrls.push(request.url())
-      billingAuthorizationHeaders.push(request.headers().authorization ?? '')
+      billingAuthorizationHeaders.push(request.headers().authorization)
       if (new URL(request.url()).origin === localOrigin) {
         localBillingRequestUrls.push(request.url())
       }
@@ -65,7 +66,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     )
     await expect(scopeCaption).toBeVisible()
     await scopeCaption.locator('..').locator('.pi-info-circle').hover()
-    await expect(page.getByRole('tooltip')).toHaveText(
+    await expect(new Tooltip(page).open).toHaveText(
       'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
     )
 
@@ -94,5 +95,60 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     expect(
       await page.evaluate(() => document.body.dataset.workspaceSwitchDocument)
     ).toBe('original')
+  })
+
+  test('Run button queues while the workspace has no active subscription', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+
+    const promptRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/prompt')
+    )
+    await comfyPage.runButton.click()
+
+    expect((await promptRequest).postDataJSON()).toEqual(
+      expect.objectContaining({ prompt: expect.anything() })
+    )
+  })
+
+  test('queues with the target workspace after a delayed switch', async ({
+    comfyPage,
+    workspaceSwitchTokenGate
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+    const promptRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/prompt')
+    )
+
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      .click()
+    await workspaceSwitchTokenGate.requestReceived
+    await page.evaluate(() => {
+      void window.app!.queuePrompt(0)
+    })
+    workspaceSwitchTokenGate.release()
+
+    expect((await promptRequest).postDataJSON()).toEqual(
+      expect.objectContaining({
+        extra_data: expect.objectContaining({
+          auth_token_comfy_org: 'mock-workspace-token-ws-team'
+        })
+      })
+    )
   })
 })

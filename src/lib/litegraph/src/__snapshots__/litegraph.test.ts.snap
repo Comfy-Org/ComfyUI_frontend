@@ -169,7 +169,7 @@ LiteGraphGlobal {
   "node_images_path": "",
   "node_types_by_file_extension": {},
   "onDeprecationWarning": [
-    [Function],
+    [MockFunction warn],
   ],
   "overlapBounding": [Function],
   "pointerevents_method": "pointer",

@@ -1,7 +1,7 @@
 <template>
   <Button
-    v-show="isRefreshable"
-    v-tooltip.top="t('g.refreshNode')"
+    v-if="isRefreshable"
+    :tooltip="t('g.refreshNode')"
     variant="muted-textonly"
     :aria-label="t('g.refreshNode')"
     data-testid="refresh-button"

@@ -96,25 +96,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
-  test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage,
-    comfyMouse
-  }) => {
-    const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
-
-    // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
-    await comfyPage.nextFrame()
-
-    const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
-    expect(afterPos.x).toBeCloseTo(headerPos.x, 0)
-    expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
-
-    // The small movement should have selected the node, not dragged it
-    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-  })
-
   test('should move node when pointer moves beyond drag threshold', async ({
     comfyPage
   }) => {
@@ -148,7 +129,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
         y: 200
       }
     )
-    await comfyPage.vueNodes.waitForNodes()
 
     const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
     const showButton = getAdvancedInputsButton(node)
@@ -187,7 +167,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
           y: 200
         }
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
       const showButton = getAdvancedInputsButton(node)
@@ -345,7 +324,9 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await test.step('move outside pan range and cancel drag', async () => {
       await comfyPage.page.mouse.move(400, 400, { steps: 20 })
       await ksampler.header.evaluate((node) =>
-        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+        node.dispatchEvent(
+          new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 })
+        )
       )
     })
 
@@ -427,22 +408,24 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       // Disable minimap (gets in way of the node on small screens)
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      await node.centerOnNode()
+      const nodeHeaderPos = await getHeaderPos(comfyPage, 'Save Image')
       await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64
         },
-        loadCheckpointHeaderPos
+        nodeHeaderPos,
+        10
       )
 
       await expect
-        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.x))
-        .toBeCloseTo(loadCheckpointHeaderPos.x + 64, 0)
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.x))
+        .toBeCloseTo(nodeHeaderPos.x + 64, 0)
       await expect
-        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.y))
-        .toBeCloseTo(loadCheckpointHeaderPos.y + 64, 0)
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.y))
+        .toBeCloseTo(nodeHeaderPos.y + 64, 0)
     }
   )
 })

@@ -55,8 +55,8 @@ links are not indexed.
 ## Decision 3: Two public queries, mirroring the input pair
 
 ```ts
-isOutputSlotConnected(graphId, nodeId, slot): boolean
-getOutputSlotLinks(graphId, nodeId, slot): ReadonlySet<LinkTopology>
+isOutputSlotConnected(scope: GraphScope, nodeId, slot): boolean
+getOutputSlotLinks(scope: GraphScope, nodeId, slot): ReadonlySet<LinkTopology>
 ```
 
 These match `isInputSlotConnected` / `getInputSlotLink` in name and shape.
@@ -84,7 +84,7 @@ and serialization. Those can keep reading the mirror indefinitely; they
 are not renderer policy and nothing blocks on them.
 
 Migrated readers: the output dot's connected state (`NodeSlots`), the
-minimap link extraction (`AbstractMinimapDataSource`), the drag-start
+minimap link extraction (`MinimapDataSource`), the drag-start
 disconnect check (`useSlotLinkInteraction`, where one store query replaces
 a mirror read plus a `slotFloatingLinks` scan), widget value propagation
 (`widgetValuePropagation`), and matchType link revalidation
@@ -94,9 +94,9 @@ a mirror read plus a `slotFloatingLinks` scan), widget value propagation
 
 `NodeSlots.vue` passes `connected` to each slot:
 
-- input: `linkStore.isInputSlotConnected(rootGraphId, nodeId, index)`
+- input: `linkStore.isInputSlotConnected(graphScopeOf(graph), nodeId, index)`
   (already available)
-- output: `linkStore.isOutputSlotConnected(rootGraphId, nodeId, index)`
+- output: `linkStore.isOutputSlotConnected(graphScopeOf(graph), nodeId, index)`
   (Decision 3)
 
 `InputSlot` and `OutputSlot` already forward `connected` to the

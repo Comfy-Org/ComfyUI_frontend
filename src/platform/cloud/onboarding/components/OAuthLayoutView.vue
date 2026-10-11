@@ -3,19 +3,22 @@
     class="dark-theme relative h-svh w-screen overflow-y-auto bg-primary-comfy-ink font-sans text-primary-comfy-canvas"
   >
     <i
-      class="absolute top-6 left-6 icon-[comfy--comfy-logo] h-5 w-22 text-brand-yellow md:h-6 md:w-26"
+      class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6"
       aria-hidden="true"
     />
     <RouterView />
   </div>
-  <GlobalToast />
+  <Toaster />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import GlobalToast from '@/components/toast/GlobalToast.vue'
+import Toaster from '@/components/ui/toast/Toaster.vue'
+import { useDocumentDarkTheme } from '@/platform/cloud/onboarding/composables/useDocumentDarkTheme'
+
+useDocumentDarkTheme()
 
 onMounted(() => {
   document.getElementById('splash-loader')?.remove()

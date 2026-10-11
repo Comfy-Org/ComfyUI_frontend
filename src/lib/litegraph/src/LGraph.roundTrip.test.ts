@@ -1,12 +1,12 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
-import floatingLink from './__fixtures__/assets/floatingLink.json'
-import linkedNodes from './__fixtures__/assets/linkedNodes.json'
-import reroutesComplex from './__fixtures__/assets/reroutesComplex.json'
+import floatingLink from './__fixtures__/assets/floatingLink.json' with { type: 'json' }
+import linkedNodes from './__fixtures__/assets/linkedNodes.json' with { type: 'json' }
+import reroutesComplex from './__fixtures__/assets/reroutesComplex.json' with { type: 'json' }
 
 /**
  * Loading a workflow and saving it again must not lose entities.
@@ -56,15 +56,7 @@ const FIXTURE_NODE_TYPES = {
   }
 >
 
-const originalNodeTypes = Object.fromEntries(
-  Object.keys(FIXTURE_NODE_TYPES).map((type) => [
-    type,
-    LiteGraph.registered_node_types[type]
-  ])
-)
-const originalFixtureNode = LiteGraph.Nodes.FixtureNode
-
-beforeAll(() => {
+beforeEach(() => {
   for (const [type, shape] of Object.entries(FIXTURE_NODE_TYPES)) {
     class FixtureNode extends LGraphNode {
       constructor(title?: string) {
@@ -80,18 +72,6 @@ beforeAll(() => {
     }
     LiteGraph.registerNodeType(type, FixtureNode)
   }
-})
-
-afterAll(() => {
-  for (const type of Object.keys(FIXTURE_NODE_TYPES)) {
-    const originalNodeType = originalNodeTypes[type]
-    if (originalNodeType)
-      LiteGraph.registered_node_types[type] = originalNodeType
-    else delete LiteGraph.registered_node_types[type]
-  }
-
-  if (originalFixtureNode) LiteGraph.Nodes.FixtureNode = originalFixtureNode
-  else delete LiteGraph.Nodes.FixtureNode
 })
 
 interface RoundTripFixture {
@@ -117,7 +97,9 @@ const fixtures: RoundTripFixture[] = [
 function roundTrip(source: ISerialisedGraph) {
   const loaded = new LGraph(structuredClone(source))
   expect(loaded.nodes.filter((n) => n.has_errors)).toEqual([])
-  return loaded.serialize()
+  const serialized = loaded.serialize()
+  loaded.clear()
+  return serialized
 }
 
 /**
@@ -125,7 +107,7 @@ function roundTrip(source: ISerialisedGraph) {
  * output, widget value or title still passes.
  */
 function nodeKeys(graph: Pick<ISerialisedGraph, 'nodes'>) {
-  return (graph.nodes ?? [])
+  return graph.nodes
     .map((node) =>
       JSON.stringify({
         id: node.id,
@@ -161,8 +143,8 @@ function rerouteKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
       JSON.stringify({
         id: reroute.id,
         parentId: reroute.parentId ?? null,
-        pos: reroute.pos ?? null,
-        linkIds: [...(reroute.linkIds ?? [])].sort(ascending),
+        pos: reroute.pos,
+        linkIds: [...reroute.linkIds].sort(ascending),
         floating: reroute.floating ?? null
       })
     )
@@ -186,25 +168,21 @@ function linkExtensionKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
  * works. Every assertion below runs through this so a fixture that later loses
  * its reroutes degrades into a failure rather than a silent no-op.
  */
-function expectPreserved(before: string[], after: string[]) {
+function expectPreserved<T>(before: T[], after: T[]) {
   expect(before.length).toBeGreaterThan(0)
   expect(after).toEqual(before)
 }
 
-/**
- * Links and groups are compared whole, not counted. A count survives a link
- * being renumbered, repointed at a different slot, or replaced outright.
- */
 function linkKeys(graph: Pick<ISerialisedGraph, 'links'>) {
-  return (graph.links ?? []).map((link) => JSON.stringify(link)).sort()
+  return graph.links.map((link) => JSON.stringify(link)).sort()
 }
 
 function floatingLinkKeys(graph: Pick<ISerialisedGraph, 'floatingLinks'>) {
-  return (graph.floatingLinks ?? []).map((link) => JSON.stringify(link)).sort()
+  return [...(graph.floatingLinks ?? [])].sort((a, b) => ascending(a.id, b.id))
 }
 
 function groupKeys(graph: Pick<ISerialisedGraph, 'groups'>) {
-  return (graph.groups ?? [])
+  return graph.groups
     .map(({ id, title, bounding }) => JSON.stringify({ id, title, bounding }))
     .sort()
 }
@@ -266,19 +244,13 @@ describe('LGraph round trip preserves the input', () => {
         )
       })
 
-      test('keeps every group, by identity and bounds', () => {
-        const grouped = withGroups(graph)
-
-        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
-      })
-
       test('does not mutate the workflow it was given', () => {
         const untouched = structuredClone(graph)
         const subject = structuredClone(graph)
 
         new LGraph(subject).serialize()
 
-        expect(subject).toEqual(untouched)
+        expect(subject).toStrictEqual(untouched)
       })
 
       test('is stable when saved twice', () => {
@@ -289,4 +261,10 @@ describe('LGraph round trip preserves the input', () => {
       })
     })
   }
+
+  test('keeps every group, by identity and bounds', () => {
+    const grouped = withGroups(fixtures[0].graph)
+
+    expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
+  })
 })

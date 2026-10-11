@@ -14,8 +14,8 @@ References to commands, replay, transactions, or CRDT transport describe possibl
 later architecture, not requirements for this data-centralization phase.
 
 The governing decisions remain
-[ADR 0003](../../adr/0003-crdt-based-layout-system.md) and
-[ADR 0008](../../adr/0008-entity-component-system.md). See
+[ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) and
+[ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md). See
 [ECS Decision Traceability](ecs-decision-traceability.md) for principle-level
 status and [ECS Target Architecture](../ecs-target-architecture.md) for the
 target.
@@ -46,7 +46,7 @@ target.
 - **Compatibility view/mirror:** `LGraphNode`, `LGraphGroup`, and `Reroute`
   geometry accessors/views read and write the store; local tuple buffers and
   geometry versions support the legacy API and hot path.
-- **Reads:** `getNodeLayoutRef`, geometry queries, `createGeometryView`, canvas
+- **Reads:** `getNodeLayoutRef`, geometry queries, `createMutationView`, canvas
   rendering, hit testing, and class geometry accessors.
 - **Writes:** `LayoutOperation` through `applyOperation` / `applyOperations`,
   `useLayoutMutations`, and `graphLayoutAttachment` helpers.

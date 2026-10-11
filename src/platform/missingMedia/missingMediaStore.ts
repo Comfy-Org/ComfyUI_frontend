@@ -1,16 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   computeActiveGraphIds,
   computeAncestorExecutionIds,
   createVerificationAbortController
 } from '@/platform/missing/missingCandidateHelpers'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 
@@ -21,24 +23,41 @@ import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
  */
 export const useMissingMediaStore = defineStore('missingMedia', () => {
   const canvasStore = useCanvasStore()
+  const templateInputDownloadStore = useTemplateInputDownloadStore()
 
   const missingMediaCandidates = ref<MissingMediaCandidate[] | null>(null)
 
-  const hasMissingMedia = computed(() => !!missingMediaCandidates.value?.length)
+  /** Candidates to display; `null` while the missing media warning is off. */
+  const visibleMissingMediaCandidates = computed(() =>
+    isMissingWarningVisible('media') ? missingMediaCandidates.value : null
+  )
+
+  /** Visible candidates the user can still act on, excluding in-flight template input downloads. */
+  const actionableMissingMediaCandidates = computed(() =>
+    (visibleMissingMediaCandidates.value ?? []).filter(
+      ({ name }) => !templateInputDownloadStore.blockingFilenames.has(name)
+    )
+  )
+
+  const hasMissingMedia = computed(
+    () => actionableMissingMediaCandidates.value.length > 0
+  )
 
   const missingMediaCount = computed(
-    () => missingMediaCandidates.value?.length ?? 0
+    () => actionableMissingMediaCandidates.value.length
   )
 
   const missingMediaNodeIds = computed(
     () =>
-      new Set(missingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? [])
+      new Set(
+        actionableMissingMediaCandidates.value.map((m) => String(m.nodeId))
+      )
   )
 
   /** `nodeId::widgetName` keys, so per-widget render lookups stay O(1). */
   const missingMediaWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
-    for (const candidate of missingMediaCandidates.value ?? []) {
+    for (const candidate of actionableMissingMediaCandidates.value) {
       keys.add(`${String(candidate.nodeId)}::${candidate.widgetName}`)
     }
     return keys
@@ -50,7 +69,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   const activeMissingMediaGraphIds = computed(() =>
     computeActiveGraphIds(
-      app.rootGraph,
+      useApp().rootGraphOrUndefined,
       canvasStore.currentGraph,
       missingMediaAncestorExecutionIds.value
     )
@@ -112,11 +131,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       // Preserve candidates without a nodeId; they cannot belong to any
       // subgraph scope. The type marks nodeId as required, but defensive
       // handling matches the rest of the missing-media code.
-      if (m.nodeId == null) {
+      const nodeId: unknown = m.nodeId
+      if (nodeId == null) {
         remaining.push(m)
         continue
       }
-      if (!String(m.nodeId).startsWith(prefix)) {
+      if (!String(nodeId).startsWith(prefix)) {
         remaining.push(m)
       }
     }
@@ -145,6 +165,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   return {
     missingMediaCandidates,
+    visibleMissingMediaCandidates,
     hasMissingMedia,
     missingMediaCount,
     missingMediaNodeIds,

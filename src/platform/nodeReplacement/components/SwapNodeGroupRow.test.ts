@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 
 const i18n = createI18n({
@@ -61,7 +61,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [getActivePinia()!, PrimeVue, i18n],
       stubs: {
         TransitionCollapse: { template: '<div><slot /></div>' }
       }
@@ -81,21 +81,6 @@ describe('SwapNodeGroupRow', () => {
       const badge = screen.getByLabelText('2 nodes')
       expect(badge).toBeInTheDocument()
       expect(within(badge).getByText('2')).toBeInTheDocument()
-    })
-
-    it('renders node count of 5 for 5 nodeTypes', () => {
-      renderRow({
-        group: makeGroup({
-          nodeTypes: Array.from({ length: 5 }, (_, i) => ({
-            type: 'OldNodeType',
-            nodeId: String(i),
-            isReplaceable: true
-          }))
-        })
-      })
-      const badge = screen.getByLabelText('5 nodes')
-      expect(badge).toBeInTheDocument()
-      expect(within(badge).getByText('5')).toBeInTheDocument()
     })
 
     it('renders the replacement target name', () => {

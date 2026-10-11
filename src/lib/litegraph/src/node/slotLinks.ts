@@ -1,4 +1,5 @@
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdateError } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -6,7 +7,7 @@ import type { RerouteId } from '@/types/rerouteId'
 
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { slotFloatingLinks } from '../LLink'
 import type { LLink } from '../LLink'
 import { NodeSlotType } from '../types/globalEnums'
@@ -65,6 +66,20 @@ export function outputLinkIds(
   return ids.sort((a, b) => a - b)
 }
 
+export function nodeLinkIds(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: Pick<LGraphNode, 'id' | 'inputs' | 'outputs'>
+): LinkId[] {
+  const inputIds = node.inputs.flatMap((_, slot) => {
+    const id = inputLinkId(graph, node.id, slot)
+    return id === undefined ? [] : [id]
+  })
+  const outputIds = node.outputs.flatMap((_, slot) =>
+    outputLinkIds(graph, node.id, slot)
+  )
+  return [...inputIds, ...outputIds]
+}
+
 /**
  * Snapshot of the links leaving an output slot, resolved in the owning
  * graph. Safe to disconnect links while iterating the result.
@@ -92,6 +107,10 @@ interface InputReplacement {
   link: LLink
   slot: number
 }
+
+export type InputReplacementResult =
+  | { ok: true; replacements: InputReplacement[] }
+  | { ok: false; error: EndpointUpdateError }
 
 export function finalizeInputLinkRemoval(
   node: LGraphNode,
@@ -150,7 +169,7 @@ export function replaceNodeInputs(
   finalInputs: readonly INodeInputSlot[],
   assignments: ReadonlyMap<INodeInputSlot, LLink> = previous.links,
   keepReroutes = false
-): InputReplacement[] {
+): InputReplacementResult {
   if (
     node.inputs.length !== previous.inputs.length ||
     node.inputs.some((input, slot) => input !== previous.inputs[slot])
@@ -191,10 +210,10 @@ export function replaceNodeInputs(
     )
     if (!result.ok) {
       console.error('Failed to replace node inputs', result.error)
-      return []
+      return result
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)
-    for (const { link, slot } of removals.toReversed()) {
+    for (const { link, slot } of [...removals].reverse()) {
       finalizeInputLinkRemoval(
         node,
         previous.inputs[slot],
@@ -210,5 +229,8 @@ export function replaceNodeInputs(
   }
 
   const oldInputs = new Set(previous.inputs)
-  return finalAssignments.filter(({ input }) => !oldInputs.has(input))
+  return {
+    ok: true,
+    replacements: finalAssignments.filter(({ input }) => !oldInputs.has(input))
+  }
 }

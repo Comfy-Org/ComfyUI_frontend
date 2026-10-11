@@ -1,7 +1,5 @@
 // oxlint-disable no-misused-spread -- spreading an LLink is what these tests reproduce
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -46,24 +44,23 @@ function insertionScenario(consumerCount: number) {
 }
 
 describe('plain-object copies of LLink (uncovered)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it.fails('carries topology onto a spread copy of a link', () => {
+  it('carries topology onto a spread copy of a link', () => {
     const { graph, link } = connectedPair(toRerouteId(7))
-    const copy: Partial<LLink> = { ...graph.links[link.id] }
+    const stored = graph.links[link.id]
+    stored.type = 'FLOAT'
+    stored.parentId = toRerouteId(8)
+    const copy: Partial<LLink> = { ...stored }
 
     expect(copy.id).toBe(link.id)
-    expect(copy.type).toBe(link.type)
+    expect(copy.type).toBe('FLOAT')
     expect(copy.origin_id).toBe(link.origin_id)
     expect(copy.origin_slot).toBe(link.origin_slot)
     expect(copy.target_id).toBe(link.target_id)
     expect(copy.target_slot).toBe(link.target_slot)
-    expect(copy.parentId).toBe(link.parentId)
+    expect(copy.parentId).toBe(toRerouteId(8))
   })
 
-  it.fails('rewires Custom-Scripts consumers from copied links (#15594)', () => {
+  it('rewires Custom-Scripts consumers from copied links (#15594)', () => {
     const { graph, source, consumers, inserted } = insertionScenario(2)
     const saved: Partial<LLink>[] = source.outputs[1].links!.map((id) => ({
       ...graph.links[id]

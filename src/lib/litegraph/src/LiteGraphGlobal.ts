@@ -5,21 +5,25 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
-  CreateNodeOptions,
   Dictionary,
+  INodeFlags,
   ISlotType,
+  Point,
   Rect,
+  Size,
   WhenNullish
 } from './interfaces'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -29,6 +33,34 @@ import {
   TitleMode
 } from './types/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions {
+  pos?: Point
+  size?: Size
+  properties?: Dictionary<NodeProperty | undefined>
+  flags?: Partial<INodeFlags>
+  mode?: LGraphEventMode
+  color?: string
+  bgcolor?: string
+  boxcolor?: string
+  title?: string
+  shape?: RenderShape
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
+}
+
+export interface SlotTypeDefaultNodeOpts {
+  node?: string
+  title?: string
+  properties?: Record<string, NodeProperty>
+  inputs?: [string, string][]
+  outputs?: [string, string][]
+  json?: Parameters<LGraphNode['configure']>[0]
+}
+
+type SlotTypeDefaultNode = string | SlotTypeDefaultNodeOpts
+type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -232,12 +264,12 @@ export class LiteGraphGlobal {
    * specify for each IN slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_in: Record<string, string[]> = {}
+  slot_types_default_in: Record<string, SlotTypeDefault> = {}
   /**
    * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_out: Record<string, string[]> = {}
+  slot_types_default_out: Record<string, SlotTypeDefault> = {}
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
@@ -408,8 +440,6 @@ export class LiteGraphGlobal {
    * @param base_class class containing the structure of a node
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
-    if (!base_class.prototype)
-      throw 'Cannot register a simple object, it must be a class with a prototype'
     base_class.type = type
 
     const classname = base_class.name
@@ -420,12 +450,21 @@ export class LiteGraphGlobal {
     base_class.title ||= classname
 
     // extend class
+    const targetPrototype = base_class.prototype as unknown as Record<
+      string,
+      unknown
+    >
+    const sourcePrototype = LGraphNode.prototype as unknown as Record<
+      string,
+      unknown
+    >
     for (const i in LGraphNode.prototype) {
-      // @ts-expect-error #576 This functionality is deprecated and should be removed.
-      base_class.prototype[i] ||= LGraphNode.prototype[i]
+      targetPrototype[i] ||= sourcePrototype[i]
     }
 
-    const prev = this.registered_node_types[type]
+    const prev = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (prev && this.debug) {
       console.warn('replacing node type:', type)
     }
@@ -452,18 +491,22 @@ export class LiteGraphGlobal {
    */
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class =
-      typeof type === 'string' ? this.registered_node_types[type] : type
+      typeof type !== 'string'
+        ? type
+        : Object.hasOwn(this.registered_node_types, type)
+          ? this.registered_node_types[type]
+          : undefined
     if (!base_class) throw `node type not found: ${String(type)}`
 
     delete this.registered_node_types[String(base_class.type)]
 
-    const name = base_class.constructor.name
-    if (name) delete this.Nodes[name]
+    const name = base_class.name
+    if (name && this.Nodes[name] === base_class) delete this.Nodes[name]
   }
 
   /**
    * Save a slot type and his node
-   * @param type name of the node or the node constructor itself
+   * @param type the node instance whose class is registered for the slot type
    * @param slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
    */
   registerNodeAndSlotType(
@@ -472,15 +515,7 @@ export class LiteGraphGlobal {
     out?: boolean
   ): void {
     out ||= false
-    const base_class =
-      typeof type === 'string' &&
-      // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-      this.registered_node_types[type] !== 'anonymous'
-        ? this.registered_node_types[type]
-        : type
-
-    // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-    const class_type = base_class.constructor.type
+    const class_type = type.constructor.type
 
     let allTypes: string[]
     if (typeof slot_type === 'string') {
@@ -500,7 +535,7 @@ export class LiteGraphGlobal {
       register[slotType] ??= { nodes: [] }
 
       const { nodes } = register[slotType]
-      if (!nodes.includes(class_type)) nodes.push(class_type)
+      if (class_type && !nodes.includes(class_type)) nodes.push(class_type)
 
       // check if is a new type
       const types = out ? this.slot_types_out : this.slot_types_in
@@ -534,7 +569,9 @@ export class LiteGraphGlobal {
     title?: string,
     options?: CreateNodeOptions
   ): LGraphNode | null {
-    const base_class = this.registered_node_types[type]
+    const base_class = Object.hasOwn(this.registered_node_types, type)
+      ? this.registered_node_types[type]
+      : undefined
     if (!base_class) {
       if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
       return null
@@ -554,12 +591,7 @@ export class LiteGraphGlobal {
     }
 
     if (!node.title && title) node.title = title
-    node.properties ||= {}
-    node.properties_info ||= []
-    node.flags ||= {}
     // call onresize?
-    node.size ||= node.computeSize()
-    node.pos ||= [this.DEFAULT_POSITION[0], this.DEFAULT_POSITION[1]]
     node.mode ||= LGraphEventMode.ALWAYS
 
     // extra options
@@ -662,12 +694,12 @@ export class LiteGraphGlobal {
   ): WhenNullish<T, null> {
     if (obj == null) return null as WhenNullish<T, null>
 
-    const r = JSON.parse(JSON.stringify(obj))
-    if (!target) return r
+    const r: Record<string, unknown> = JSON.parse(JSON.stringify(obj))
+    if (!target) return r as WhenNullish<T, null>
 
+    const targetRecord = target as unknown as Record<string, unknown>
     for (const i in r) {
-      // @ts-expect-error deprecated
-      target[i] = r[i]
+      targetRecord[i] = r[i]
     }
     return target
   }
@@ -731,25 +763,19 @@ export class LiteGraphGlobal {
   /* helper for interaction: pointer, touch, mouse Listeners
     used by LGraphCanvas DragAndScale ContextMenu */
   pointerListenerAdd(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvIn: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.addEventListener ||
-      !sEvIn ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvIn || typeof fCall !== 'function') return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == 'pointer' && !window.PointerEvent) {
+    if (sMethod == 'pointer' && !Reflect.has(window, 'PointerEvent')) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
       console.warn(
         `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
@@ -795,20 +821,19 @@ export class LiteGraphGlobal {
       case 'move':
       case 'over':
       case 'out':
-      // @ts-expect-error - intentional fallthrough
       case 'enter': {
-        oDOM.addEventListener(sMethod + sEvent, fCall, capture)
+        return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
       }
       // only pointerevents
       // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
         if (sMethod != 'mouse') {
           return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
         }
+        return oDOM.addEventListener(sEvent, fCall, capture)
       }
       // not "pointer" || "mouse"
       // falls through
@@ -818,18 +843,12 @@ export class LiteGraphGlobal {
   }
 
   pointerListenerRemove(
-    oDOM: Node,
+    oDOM: Node | null,
     sEvent: string,
     fCall: (e: Event) => boolean | void,
     capture = false
   ): void {
-    if (
-      !oDOM ||
-      !oDOM.removeEventListener ||
-      !sEvent ||
-      typeof fCall !== 'function'
-    )
-      return
+    if (!oDOM || !sEvent || typeof fCall !== 'function') return
 
     switch (sEvent) {
       // both pointer and move events
@@ -838,7 +857,6 @@ export class LiteGraphGlobal {
       case 'move':
       case 'over':
       case 'out':
-      // @ts-expect-error - intentional fallthrough
       case 'enter': {
         if (
           this.pointerevents_method == 'pointer' ||
@@ -849,14 +867,15 @@ export class LiteGraphGlobal {
             fCall,
             capture
           )
+          return
         }
+        return oDOM.removeEventListener(sEvent, fCall, capture)
       }
       // only pointerevents
       // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
-      // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
         if (this.pointerevents_method == 'pointer') {
           return oDOM.removeEventListener(
@@ -865,6 +884,7 @@ export class LiteGraphGlobal {
             capture
           )
         }
+        return oDOM.removeEventListener(sEvent, fCall, capture)
       }
       // not "pointer" || "mouse"
       // falls through
@@ -879,7 +899,9 @@ export class LiteGraphGlobal {
 
   distance = distance
 
-  colorToString(c: [number, number, number, number]): string {
+  colorToString(
+    c: [number, number, number] | [number, number, number, number]
+  ): string {
     return `rgba(${Math.round(c[0] * 255).toFixed()},${Math.round(
       c[1] * 255
     ).toFixed()},${Math.round(c[2] * 255).toFixed()},${
@@ -929,14 +951,11 @@ export class LiteGraphGlobal {
     }
     hex = hex.toUpperCase()
     const hex_alphabets = '0123456789ABCDEF'
-    const value = new Array(3)
-    let k = 0
-    let int1, int2
+    const value: number[] = []
     for (let i = 0; i < 6; i += 2) {
-      int1 = hex_alphabets.indexOf(hex.charAt(i))
-      int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
-      value[k] = int1 * 16 + int2
-      k++
+      const int1 = hex_alphabets.indexOf(hex.charAt(i))
+      const int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
+      value.push(int1 * 16 + int2)
     }
     return value
   }
@@ -977,7 +996,7 @@ export class LiteGraphGlobal {
   ): void {
     for (const i in origin) {
       // copy class properties
-      // eslint-disable-next-line no-prototype-builtins
+      // oxlint-disable-next-line no-prototype-builtins
       if (target.hasOwnProperty(i)) continue
       target[i] = origin[i]
     }
@@ -989,11 +1008,11 @@ export class LiteGraphGlobal {
       // copy prototype properties
       for (const i in originProto) {
         // only enumerable
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (!originProto.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (targetProto.hasOwnProperty(i)) continue
 
         // Use Object.getOwnPropertyDescriptor to copy getters/setters properly

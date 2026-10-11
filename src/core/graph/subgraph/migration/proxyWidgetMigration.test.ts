@@ -25,12 +25,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 beforeEach(() => {
   resetSubgraphFixtureState()
@@ -61,9 +56,7 @@ function getPromotedInputValue(
 ): TWidgetValue | undefined {
   const input = host.inputs.find((input) => input.name === name)
   if (!input?.widgetId) return undefined
-  return useWidgetValueStore().getWidget(input.widgetId)?.value as
-    | TWidgetValue
-    | undefined
+  return useWidgetValueStore().getWidget(input.widgetId)?.value
 }
 
 function addPrimitiveWithTargets(
@@ -747,6 +740,7 @@ describe('flushProxyWidgetMigration', () => {
         })
 
       const reloadedGraph = new LGraph()
+      serialized.id = reloadedGraph.id
       const subgraph = host.subgraph
       const instanceData = host.serialize()
       LiteGraph.registerNodeType(
@@ -757,17 +751,13 @@ describe('flushProxyWidgetMigration', () => {
           }
         }
       )
-      try {
-        reloadedGraph.configure(serialized)
-      } finally {
-        LiteGraph.unregisterNodeType(subgraph.id)
-      }
+      reloadedGraph.configure(serialized)
 
       const reloadedHost = reloadedGraph.getNodeById(host.id)
       expect(reloadedHost?.properties.proxyWidgets).toBeUndefined()
       expect(
         usePreviewExposureStore().getExposures(
-          host.rootGraph.id,
+          reloadedGraph.id,
           String(host.id)
         )
       ).toEqual([

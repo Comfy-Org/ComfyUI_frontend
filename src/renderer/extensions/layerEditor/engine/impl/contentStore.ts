@@ -40,7 +40,7 @@ export class DefaultContentStore implements ContentStore {
   }
 
   collectGarbage(liveIds: Set<string>): void {
-    for (const id of [...this.entries.keys()]) {
+    for (const id of Array.from(this.entries.keys())) {
       if (!liveIds.has(id)) this.entries.delete(id)
     }
   }

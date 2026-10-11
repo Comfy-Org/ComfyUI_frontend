@@ -48,7 +48,10 @@ Stable definitions are in `src/types/graphScopeId.ts`,
 
 `LGraph.state` holds the four monotonic counters. Subgraphs delegate allocation
 to the root state rather than maintaining independent ID spaces. During load,
-`LGraph.reserveIds()` recursively observes IDs before new entities are minted.
+ID reservation happens per-node at add time: `LGraph.add` mints or observes the
+node ID, then `attachNodeToStores` retries registration with freshly minted IDs
+until the store accepts one (`LGraph.ts:1148-1169`,
+`nodeShellLifecycle.ts:19-24`).
 `linkStore` and `rerouteStore` then store entities under a root bucket and an
 owning-graph partition. Owner filtering prevents topology queries in one
 definition from seeing another definition's entities even though IDs share a
@@ -74,7 +77,7 @@ cross-definition node, link, reroute, and group collisions from the root
 allocator. Remaps also patch regular and floating link endpoints, reroute and
 group references, promoted-widget references, and proxy-widget metadata.
 
-`deduplicateLinks()` in `src/lib/litegraph/src/linkDeduplication.ts` separately
+`normalizeConfiguredTopology()` in `src/lib/litegraph/src/linkDeduplication.ts` separately
 enforces one live link per target slot, removes duplicate topology, remaps
 references, and realigns serialized slot mirrors after nodes are configured.
 Runtime registration is deliberately not a repair boundary. `linkStore` and

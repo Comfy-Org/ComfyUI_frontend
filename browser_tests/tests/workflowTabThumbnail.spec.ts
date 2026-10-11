@@ -4,19 +4,8 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   async function getTab(comfyPage: ComfyPage, index: number) {
-    const tab = comfyPage.page
-      .locator(`.workflow-tabs .p-togglebutton`)
-      .nth(index)
-    return tab
+    return comfyPage.menu.topbar.getTab(index)
   }
 
   async function getTabPopover(
@@ -73,6 +62,18 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       'Unsaved Workflow'
     )
     await expect(thumbnailImg).toBeVisible()
+    const tab = await getTab(comfyPage, 0)
+    const popover = comfyPage.page.getByRole('dialog')
+    await expect(async () => {
+      const tabBox = await tab.boundingBox()
+      const popoverBox = await popover.boundingBox()
+      if (!tabBox || !popoverBox) throw new Error('Missing tab preview bounds')
+      expect(popoverBox.x).toBeLessThan(tabBox.x + tabBox.width)
+      expect(popoverBox.x + popoverBox.width).toBeGreaterThan(tabBox.x)
+      const gap = popoverBox.y - (tabBox.y + tabBox.height)
+      expect(gap).toBeGreaterThanOrEqual(0)
+      expect(gap).toBeLessThanOrEqual(16)
+    }).toPass({ timeout: 5000 })
   })
 
   test('Should not show thumbnail for active tab', async ({ comfyPage }) => {
@@ -83,6 +84,18 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       'Unsaved Workflow (2)'
     )
     await expect(thumbnailImg).toBeHidden()
+  })
+
+  test('Ctrl/Cmd+S saves while a tab thumbnail is visible', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    const popover = await getTabPopover(comfyPage, 0)
+    await expect(popover).not.toHaveAttribute('aria-modal', 'true')
+
+    await comfyPage.page.keyboard.press('ControlOrMeta+s')
+
+    await expect(comfyPage.menu.topbar.getSaveDialog()).toBeVisible()
   })
 
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {
@@ -108,6 +121,10 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   }
 
   test('Thumbnail should update when switching tabs', async ({ comfyPage }) => {
+    // Multiple workflow switches and thumbnail renders can exceed the default
+    // timeout on loaded CI workers.
+    test.slow()
+
     // Wait for initial workflow to load
     await comfyPage.nextFrame()
 
@@ -147,8 +164,9 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     expect(tab1ThumbnailBefore).toBe(tab1ThumbnailAfter)
 
     // Step 3: Adding another node should cause thumbnail to change
-    // We're on tab 0, add a node
-    await addNode(comfyPage, 'loaders', 'Load VAE')
+    // The nested context menu is already covered above; repeating it here made
+    // this thumbnail assertion depend on unrelated menu timing.
+    await comfyPage.nodeOps.addNode('VAELoader', undefined, { x: 200, y: 200 })
     await comfyPage.nextFrame()
 
     // Switch to tab 1 and back to update tab 0's thumbnail

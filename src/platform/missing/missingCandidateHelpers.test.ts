@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 import {
   computeActiveGraphIds,
@@ -11,14 +9,9 @@ import {
   createVerificationAbortController
 } from './missingCandidateHelpers'
 
-const mocks = vi.hoisted(() => ({
-  getActiveGraphNodeIds: vi.fn()
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof GraphTraversalUtil>()),
-  getActiveGraphNodeIds: mocks.getActiveGraphNodeIds
-}))
+const getActiveGraphNodeIdsSpy = vi.mocked(getActiveGraphNodeIds)
 
 describe('createVerificationAbortController', () => {
   it('create returns a fresh, non-aborted controller', () => {
@@ -79,27 +72,22 @@ describe('computeAncestorExecutionIds', () => {
 })
 
 describe('computeActiveGraphIds', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    mocks.getActiveGraphNodeIds.mockReset()
-  })
-
   it('returns an empty set when the root graph is unavailable', () => {
-    const result = computeActiveGraphIds(null, null, new Set())
+    const result = computeActiveGraphIds(undefined, null, new Set())
     expect(result.size).toBe(0)
-    expect(mocks.getActiveGraphNodeIds).not.toHaveBeenCalled()
+    expect(getActiveGraphNodeIdsSpy).not.toHaveBeenCalled()
   })
 
   it('delegates to getActiveGraphNodeIds with the current graph', () => {
     const rootGraph = new LGraph()
     const currentGraph = new LGraph()
-    mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['1']))
+    getActiveGraphNodeIdsSpy.mockReturnValue(new Set(['1']))
 
     const ancestors = computeAncestorExecutionIds(['65'])
     const result = computeActiveGraphIds(rootGraph, currentGraph, ancestors)
 
     expect(result).toEqual(new Set(['1']))
-    const [root, active, ids] = mocks.getActiveGraphNodeIds.mock.calls[0]
+    const [root, active, ids] = getActiveGraphNodeIdsSpy.mock.calls[0]
     expect(root).toBe(rootGraph)
     expect(active).toBe(currentGraph)
     expect(ids).toBe(ancestors)
@@ -107,12 +95,12 @@ describe('computeActiveGraphIds', () => {
 
   it('falls back to the root graph when no current graph is given', () => {
     const rootGraph = new LGraph()
-    mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['9']))
+    getActiveGraphNodeIdsSpy.mockReturnValue(new Set(['9']))
 
     const result = computeActiveGraphIds(rootGraph, null, new Set())
 
     expect(result).toEqual(new Set(['9']))
-    const [root, active] = mocks.getActiveGraphNodeIds.mock.calls[0]
+    const [root, active] = getActiveGraphNodeIdsSpy.mock.calls[0]
     expect(root).toBe(rootGraph)
     expect(active).toBe(rootGraph)
   })

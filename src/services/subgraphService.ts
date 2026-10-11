@@ -3,9 +3,10 @@ import type {
   ExportedSubgraphInstance,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { normalizeSubgraphDefinitionIds } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useLitegraphService } from './litegraphService'
@@ -64,14 +65,20 @@ export const useSubgraphService = () => {
     const subgraphs = graphData.definitions?.subgraphs
     if (!subgraphs) return
 
+    const normalized = normalizeSubgraphDefinitionIds(
+      subgraphs,
+      graphData.nodes
+    )
+    graphData.definitions!.subgraphs = normalized.subgraphs
+    if (normalized.rootNodes) graphData.nodes = normalized.rootNodes
     // Assertion: overriding Zod schema
-    const exportedSubgraphs = subgraphs as ExportedSubgraph[]
+    const exportedSubgraphs = normalized.subgraphs as ExportedSubgraph[]
     const missingSubgraphs = exportedSubgraphs.filter(
-      ({ id }) => !comfyApp.rootGraph.subgraphs.has(id)
+      ({ id }) => !useApp().rootGraph.subgraphs.has(id)
     )
     const createdSubgraphs =
-      comfyApp.rootGraph.createSubgraphs(missingSubgraphs)
-    const loadedSubgraphs = new Map(comfyApp.rootGraph.subgraphs)
+      useApp().rootGraph.createSubgraphs(missingSubgraphs)
+    const loadedSubgraphs = new Map(useApp().rootGraph.subgraphs)
     for (const [index, data] of missingSubgraphs.entries()) {
       loadedSubgraphs.set(data.id, createdSubgraphs[index])
     }

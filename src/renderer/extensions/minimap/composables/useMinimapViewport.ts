@@ -44,7 +44,7 @@ export function useMinimapViewport(
     if (!c) return
 
     const canvasEl = c.canvas
-    const dpr = window.devicePixelRatio || 1
+    const dpr = c.dpr
 
     canvasDimensions.value = {
       width: canvasEl.clientWidth || canvasEl.width / dpr,

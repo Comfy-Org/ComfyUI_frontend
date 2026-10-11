@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -35,8 +33,6 @@ function createConnectedGraph(targetCount: number) {
 }
 
 describe('slotLinks', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('reports presence, ids, and resolved links for an output slot', () => {
     const { graph, source } = createConnectedGraph(2)
 
@@ -267,20 +263,27 @@ describe('slotLinks', () => {
     assignments.set(target.inputs[0], stale)
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
-    ).toEqual([])
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'unowned-topology',
-      message: `Link ${stale.id} does not own its current placement`
+    ).toEqual({
+      ok: false,
+      error: {
+        code: 'unowned-topology',
+        message: `Link ${stale.id} does not own its current placement`
+      }
     })
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to replace node inputs',
+      {
+        code: 'unowned-topology',
+        message: `Link ${stale.id} does not own its current placement`
+      }
+    )
 
     expect(target.getInputLink(0)).toBe(kept)
     expect(target.getInputLink(1)).toBe(removed)
     expect(onConnectionsChange).not.toHaveBeenCalled()
-    consoleError.mockRestore()
   })
 
   it('rejects duplicate input objects without changing topology', () => {

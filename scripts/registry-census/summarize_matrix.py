@@ -71,6 +71,7 @@ DELTA_CRITERION_LABEL = 'entry-clean delta vs previous run'
 
 EXPECTED_ROW_KEYS = (
     'selfCheck',
+    'vueNodesMode',
     'load',
     'loadedOk',
     'ops',
@@ -117,6 +118,7 @@ def evaluate(
     run_id: str = '',
     expect_shards: int | None = None,
     stale: dict | None = None,
+    renderer: str = '',
 ) -> Verdict:
     if not rows:
         return Verdict(2, ['no matrix rows to summarize'])
@@ -160,6 +162,30 @@ def evaluate(
             lines.append(f'  {key}: {len(packs)} row(s): {_named(packs)}')
         lines.append('')
         return Verdict(2, lines)
+
+    if renderer:
+        expected_vue_mode = renderer == 'vue'
+        expected_mode_label = str(expected_vue_mode).lower()
+        observed_vue_modes = Counter(
+            'true'
+            if row['vueNodesMode'] is True
+            else 'false'
+            if row['vueNodesMode'] is False
+            else type(row['vueNodesMode']).__name__
+            for row in done
+        )
+        if set(observed_vue_modes) != {expected_mode_label}:
+            lines.append(
+                f'RENDERER MODE MISMATCH: {renderer} expected'
+                f' vueNodesMode = {expected_mode_label}, observed'
+                f' {dict(sorted(observed_vue_modes.items()))}.'
+                ' Verdict withheld.'
+            )
+            return Verdict(2, lines)
+        lines.append(
+            f'renderer: {renderer}'
+            f' (vueNodesMode = {expected_mode_label})'
+        )
 
     # build_matrix.py marks a pack indeterminate when it cannot tell which
     # files ComfyUI would actually serve. Those packs still run - the row is
@@ -455,6 +481,7 @@ def evaluate(
             'staleRegistry': (
                 str(stale.get('reason', 'unspecified')) if stale else None
             ),
+            'renderer': renderer or None,
             'runId': run_id,
             'verdict': 'PASS',
         },
@@ -513,6 +540,11 @@ def main() -> int:
         )
         return 2
 
+    renderer = os.environ.get('MATRIX_RENDERER', '')
+    if renderer not in ('', 'legacy', 'vue'):
+        print(f'MATRIX_RENDERER is invalid: {renderer!r}', file=sys.stderr)
+        return 2
+
     prev_path = os.environ.get('MATRIX_PREV', '')
     prev = (
         _read_json(prev_path, 'previous metrics')
@@ -536,6 +568,7 @@ def main() -> int:
         os.environ.get('MATRIX_RUN_ID', ''),
         int(expect_raw) if expect_raw else None,
         stale,
+        renderer,
     )
 
     report = '\n'.join(verdict.lines)
@@ -543,7 +576,8 @@ def main() -> int:
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         with open(summary, 'a', encoding='utf-8') as fh:
-            fh.write('## Ecosystem matrix\n\n```\n' + report + '\n```\n')
+            title = 'Ecosystem matrix' + (f' ({renderer})' if renderer else '')
+            fh.write(f'## {title}\n\n```\n{report}\n```\n')
 
     metrics_out = os.environ.get('MATRIX_METRICS_OUT', '')
     if metrics_out and verdict.metrics is not None:

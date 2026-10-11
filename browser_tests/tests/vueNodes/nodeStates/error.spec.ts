@@ -8,14 +8,13 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
-  dismissErrorOverlay,
-  enableErrorsOverlay
+  dismissErrorOverlay
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -23,6 +22,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
+const WARNING_CLASS = /ring-warning-background/
 const SLOT_ERROR_CLASS = /before:ring-error/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
@@ -104,14 +104,14 @@ async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
 }
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
-  test('should display error state when node is missing (node from workflow is not installed)', async ({
+  test('should display warning state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     await expect(
       comfyPage.vueNodes.getNodeInnerWrapper(UNKNOWN_NODE_ID)
-    ).toHaveClass(ERROR_CLASS)
+    ).toHaveClass(WARNING_CLASS)
   })
 
   test('should display error state when node causes execution error', async ({
@@ -128,8 +128,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('validation errors', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
@@ -335,12 +338,15 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('subgraph propagation', { tag: '@subgraph' }, () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await cleanupFakeModel(comfyPage)
     })
 
-    test('parent subgraph node shows error ring when an interior node is missing', async ({
+    test('parent subgraph node shows warning ring when an interior node is missing', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
@@ -350,10 +356,10 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
-    test('parent subgraph node shows error ring when an interior node has a missing model', async ({
+    test('parent subgraph node shows warning ring when an interior node has a missing model', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
@@ -365,7 +371,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
     test('parent subgraph node shows error ring when an interior node fails execution', async ({
@@ -385,11 +391,9 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
-      exec.executionError(
-        'mocked-prompt',
-        INNER_EXECUTION_ID,
-        'boom inside the subgraph'
-      )
+      const jobId = await exec.run()
+      await comfyPage.nextFrame()
+      exec.executionError(jobId, INNER_EXECUTION_ID, 'boom inside the subgraph')
 
       await expect(innerWrapper).toHaveClass(ERROR_CLASS)
     })

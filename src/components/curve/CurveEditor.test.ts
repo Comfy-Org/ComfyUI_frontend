@@ -22,9 +22,9 @@ describe('CurveEditor', () => {
       [0, 0],
       [1, 1]
     ])
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(container.querySelector('svg')).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
     const curvePath = getCurvePath()
     expect(curvePath).toBeInTheDocument()
     expect(curvePath.getAttribute('d')).toBeTruthy()
@@ -36,9 +36,9 @@ describe('CurveEditor', () => {
       [0.5, 0.7],
       [1, 1]
     ])
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(container.querySelectorAll('circle')).toHaveLength(3)
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('renders histogram path when provided', () => {
@@ -102,7 +102,7 @@ describe('CurveEditor', () => {
     ]
     const { container } = renderEditor(points)
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
     expect(container.querySelectorAll('circle')).toHaveLength(3)
 
     await fireEvent.pointerDown(container.querySelectorAll('circle')[1], {
@@ -116,6 +116,6 @@ describe('CurveEditor', () => {
       pointerId: 1
     })
     expect(container.querySelectorAll('circle')).toHaveLength(2)
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   })
 })

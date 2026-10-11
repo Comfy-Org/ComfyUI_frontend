@@ -12,7 +12,7 @@ const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isNightly() {
     return mockIsNightly.value
   },

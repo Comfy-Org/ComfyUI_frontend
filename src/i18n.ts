@@ -154,7 +154,7 @@ export function setBackendNodeText(
 ): void {
   backendNodeText.clear()
   for (const def of defs) {
-    if (typeof def?.name !== 'string') continue
+    if (typeof def.name !== 'string') continue
     const entry: Partial<Record<NodeDefTextField, string>> = {}
     if (typeof def.display_name === 'string' && def.display_name) {
       entry.display_name = def.display_name
@@ -292,11 +292,13 @@ const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
   en: enMessages
 }
 
+export const FALLBACK_LOCALE = 'en'
+
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
   locale: getDefaultLocale(),
-  fallbackLocale: 'en',
+  fallbackLocale: FALLBACK_LOCALE,
   escapeParameter: true,
   messages,
   // Ignore warnings for locale options as each option is in its own language.

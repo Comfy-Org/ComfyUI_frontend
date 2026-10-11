@@ -1,30 +1,14 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
+
 import AppModeToolbar from './AppModeToolbar.vue'
 
-const appModeState = vi.hoisted(() => ({
-  enableAppBuilder: true,
-  hasNodes: true
-}))
-const enterBuilder = vi.hoisted(() => vi.fn())
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ enableAppBuilder: appModeState.enableAppBuilder })
-}))
-
-vi.mock('@/stores/appModeStore', async () => {
-  const { computed, reactive } = await import('vue')
-  return {
-    useAppModeStore: () =>
-      reactive({
-        enterBuilder,
-        hasNodes: computed(() => appModeState.hasNodes)
-      })
-  }
-})
+vi.mock(import('@/composables/useAppMode'))
 
 const BUILD_AN_APP = 'Build an app'
 
@@ -53,8 +37,9 @@ function renderToolbar() {
 
 describe('AppModeToolbar', () => {
   beforeEach(() => {
-    appModeState.enableAppBuilder = true
-    appModeState.hasNodes = true
+    useAppMode().enableAppBuilder.value = true
+    Object.assign(useAppModeStore(), { hasNodes: true })
+    vi.mocked(useAppModeStore().enterBuilder).mockResolvedValue(undefined)
   })
 
   it('shows an enabled build button and enters the builder on click', async () => {
@@ -65,18 +50,18 @@ describe('AppModeToolbar', () => {
 
     await user.click(button)
 
-    expect(enterBuilder).toHaveBeenCalled()
+    expect(useAppModeStore().enterBuilder).toHaveBeenCalled()
   })
 
   it('disables the build button when there are no nodes', () => {
-    appModeState.hasNodes = false
+    Object.assign(useAppModeStore(), { hasNodes: false })
     renderToolbar()
 
     expect(screen.getByRole('button', { name: BUILD_AN_APP })).toBeDisabled()
   })
 
   it('hides the build button when app building is disabled', () => {
-    appModeState.enableAppBuilder = false
+    useAppMode().enableAppBuilder.value = false
     renderToolbar()
 
     expect(
