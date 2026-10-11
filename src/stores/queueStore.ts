@@ -407,12 +407,8 @@ export const useQueueStore = defineStore('queue', () => {
         if (terminalStatuses.has(detail.status)) terminalJobIds.add(detail.id)
         return
       }
-      // Absent from the queue, from this page of history, and from
-      // /jobs/{id}. Such a job is not running, and leaving it tracked keeps
-      // useQueuePolling awake for the rest of the session, refetching and
-      // logging a miss every cycle. fetchJobDetail returns undefined for a
-      // transient network error as well as for a 404, so evict on the second
-      // consecutive miss rather than the first.
+      // fetchJobDetail returns undefined for a network error too, so wait for a
+      // second miss.
       const misses = (missedJobLookups.get(jobId) ?? 0) + 1
       if (misses >= 2) {
         missedJobLookups.delete(jobId)
