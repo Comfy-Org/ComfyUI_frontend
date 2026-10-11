@@ -164,12 +164,15 @@ export function createLocalWebAuthBridge(
 
     async completeSignIn() {
       const url = new URL(env.pageUrl())
+      const isRedirect =
+        url.searchParams.has('code') || url.searchParams.has('error')
+      if (!isRedirect) return { kind: 'none' }
+
       const pending = takePendingSignIn(env.sessionStorage)
       const response = readAuthorizationResponse(
         url.searchParams,
         pending?.state
       )
-      if (response.kind === 'none') return { kind: 'none' }
 
       CALLBACK_PARAMS.forEach((param) => url.searchParams.delete(param))
       env.replaceUrl(url.href)
@@ -177,7 +180,7 @@ export function createLocalWebAuthBridge(
       if (response.kind === 'denied') {
         return { kind: 'failed', reason: 'denied', error: response.error }
       }
-      if (response.kind === 'state-mismatch' || !pending) {
+      if (response.kind !== 'code' || !pending) {
         return { kind: 'failed', reason: 'state-mismatch' }
       }
       const result = await exchangeAuthorizationCode(

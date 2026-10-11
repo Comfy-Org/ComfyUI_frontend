@@ -162,12 +162,25 @@ describe('completeSignIn', () => {
     expect(storage.items.size).toBe(0)
   })
 
-  it('leaves a page without a redirect untouched', async () => {
-    const { bridge, env } = setup()
+  it('leaves a page without a redirect untouched, keeping the pending sign-in for the callback', async () => {
+    const { bridge, env, page, storage } = setup()
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-1', state: 'state-1' })
+    )
 
     await expect(bridge.completeSignIn()).resolves.toEqual({ kind: 'none' })
     expect(env.replaceUrl).not.toHaveBeenCalled()
     expect(env.fetchImpl).not.toHaveBeenCalled()
+
+    page.url = 'http://127.0.0.1:8188/?code=code-1&state=state-1'
+    await expect(bridge.completeSignIn()).resolves.toEqual({
+      kind: 'signed_in'
+    })
+    expect(formOf(env.fetchImpl.mock.calls[0][1])).toMatchObject({
+      code: 'code-1',
+      code_verifier: 'verifier-1'
+    })
   })
 
   it.for([
