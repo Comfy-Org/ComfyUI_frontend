@@ -148,6 +148,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         })
         await expect(node).toBeVisible()
         await agentPanel.enterNodeSelectionMode()
+        await comfyPage.canvasOps.waitForViewToSettle()
         await expect(node).toBeInViewport()
         await clickThroughInertLayer(page, node.getByTestId('node-title'))
         await expect(node).toHaveClass(/outline-node-component-outline/)
