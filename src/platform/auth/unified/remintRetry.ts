@@ -5,7 +5,12 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
+import {
+  presentForRefusal,
+  presentForResponse
+} from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -13,9 +18,6 @@ import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
 } from '@/platform/telemetry/types'
-import type * as SsoRequired from '@/platform/auth/sso/ssoRequired'
-
-type SsoRequiredModule = typeof SsoRequired
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -30,10 +32,7 @@ let cachedUnifiedFlags:
  */
 export async function shouldRemintCloudRequest(): Promise<boolean> {
   if (!isCloud) return false
-  if (!cachedUnifiedFlags) {
-    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-    cachedUnifiedFlags = useFeatureFlags().flags
-  }
+  if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
   return cachedUnifiedFlags.unifiedCloudAuthEnabled
 }
 
@@ -110,11 +109,9 @@ function fetchRequestHeaders(
 }
 
 /** Best-effort: the SSO screen never replaces the 403 the caller is owed. */
-async function presentSsoRequired(
-  present: (sso: SsoRequiredModule) => unknown
-): Promise<void> {
+async function presentSsoRequired(present: () => unknown): Promise<void> {
   try {
-    await present(await import('@/platform/auth/sso/ssoRequired'))
+    await present()
   } catch (error) {
     reportError(error, {
       surface: 'auth',
@@ -150,9 +147,7 @@ export async function fetchWithUnifiedRemint(
       : input
   const response = await fetch(input, init)
   if (response.status === 403 && isCloud) {
-    await presentSsoRequired(({ presentForResponse }) =>
-      presentForResponse(response)
-    )
+    await presentSsoRequired(() => presentForResponse(response))
   }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
@@ -210,7 +205,7 @@ async function presentSsoRefusal(error: unknown): Promise<void> {
   if (!isCloud || !axios.isAxiosError(error)) return
   const response = error.response
   if (response?.status !== 403) return
-  await presentSsoRequired(({ presentForRefusal }) =>
+  await presentSsoRequired(() =>
     presentForRefusal(response.status, response.data)
   )
 }
