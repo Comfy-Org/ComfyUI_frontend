@@ -12,7 +12,10 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import type { AgentFreeUseNoticeMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentFreeUseNoticeMetadata,
+  AgentFreeUsePlacement
+} from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
@@ -29,13 +32,15 @@ const PLACEMENTS = FREE_USE_PLACEMENTS.filter(
 
 function mount(
   freeUsePlacement: FreeUseVariant,
-  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void
+  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void,
+  creditsExhausted = false
 ) {
   return render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
       freeUsePlacement,
+      creditsExhausted,
       onFreeUseNotice
     },
     global: {
@@ -77,29 +82,53 @@ describe('AgentPanel free-use placement', () => {
     expect(notices[0]).toHaveAttribute('data-placement', variant)
   })
 
-  it.for([
-    ['top-banner', true, false, false],
-    ['near-composer', false, false, false],
-    ['above-input', false, true, false],
-    ['inside-input', false, true, true]
-  ] as const)(
-    'renders %s in its region',
-    ([variant, beforePrompts, inComposer, inInputBox]) => {
-      mount(variant)
+  // DES-1221's four cells are four nested regions, outermost first. Visual
+  // ordering *within* a region is geometry, which a jsdom test cannot see, so
+  // `agentFreeUsePlacement.spec.ts` asserts that in a real browser; what this
+  // level establishes is which region each arm renders into.
+  const REGIONS = [
+    'agent-panel-footer',
+    'agent-composer',
+    'composer-input-box'
+  ] as const
+  type Region = (typeof REGIONS)[number]
 
-      const prompts = screen.getByTestId('suggested-prompts')
+  function noticeIn(region: Region) {
+    return within(screen.getByTestId(region)).queryByRole('note', {
+      name: 'Free use notice'
+    })
+  }
+
+  const CASES: readonly [AgentFreeUsePlacement, readonly Region[]][] = [
+    ['top-banner', []],
+    ['near-composer', ['agent-panel-footer']],
+    ['above-input', ['agent-panel-footer', 'agent-composer']],
+    [
+      'inside-input',
+      ['agent-panel-footer', 'agent-composer', 'composer-input-box']
+    ]
+  ]
+
+  it.for(CASES)('renders %s in its region', ([variant, containing]) => {
+    mount(variant)
+
+    expect(notice()).toBeInTheDocument()
+    for (const region of REGIONS) {
+      expect(Boolean(noticeIn(region))).toBe(containing.includes(region))
+    }
+  })
+
+  it.for(PLACEMENTS)(
+    'says nothing about free turns at %s once credits are exhausted',
+    (variant) => {
+      const onFreeUseNotice = vi.fn()
+      mount(variant, onFreeUseNotice, true)
+
       expect(
-        Boolean(
-          notice().compareDocumentPosition(prompts) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-        )
-      ).toBe(beforePrompts)
-      expect(screen.getByTestId('agent-composer').contains(notice())).toBe(
-        inComposer
-      )
-      expect(screen.getByTestId('composer-input-box').contains(notice())).toBe(
-        inInputBox
-      )
+        screen.getByTestId('agent-credits-exhausted-paywall')
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+      expect(onFreeUseNotice).not.toHaveBeenCalled()
     }
   )
 

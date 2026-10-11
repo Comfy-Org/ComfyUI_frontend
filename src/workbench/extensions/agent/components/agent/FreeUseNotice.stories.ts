@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import '../../agentPanel.css'
 
@@ -7,9 +8,14 @@ import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
 // The notice hides itself for good once dismissed, and the flag is shared
 // localStorage rather than a prop. Clearing it per story keeps a dismissal in
-// one story from blanking every later snapshot.
+// one story from blanking every later snapshot. The key is scoped per account,
+// so clear the prefix rather than one exact key.
 function withFreshDismissal() {
-  localStorage.removeItem(FREE_USE_NOTICE_DISMISSED_KEY)
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(FREE_USE_NOTICE_DISMISSED_KEY)) {
+      localStorage.removeItem(key)
+    }
+  }
   return {
     template:
       '<div class="agent-scope w-[388px] bg-base-background"><story /></div>'
@@ -22,22 +28,25 @@ const meta: Meta<typeof FreeUseNotice> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
+  args: { placement: 'top-banner', onNotice: fn() },
+  // DES-1221 cells b–e differ only in this prop, so the Controls panel walks
+  // the arms and the URL links any one of them.
+  argTypes: {
+    placement: {
+      control: 'select',
+      options: ['top-banner', 'near-composer', 'above-input', 'inside-input']
+    }
+  },
   decorators: [withFreshDismissal]
 }
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** DES-1221 cell b: full-bleed under the panel header. */
-export const TopBanner: Story = { args: { placement: 'top-banner' } }
+/** Cell b: full-bleed under the panel header. */
+export const Default: Story = {}
 
-/** Cell c: inset card sitting on the panel background, above the composer. */
-export const NearComposer: Story = { args: { placement: 'near-composer' } }
-
-/** Cell d: full width inside the composer, between the tab row and the input. */
-export const AboveInput: Story = { args: { placement: 'above-input' } }
-
-/** Cell e: inset inside the input box, above the prompt field. */
+/** Cell e: inset inside the input box, which supplies its own container. */
 export const InsideInput: Story = {
   args: { placement: 'inside-input' },
   decorators: [
@@ -49,13 +58,15 @@ export const InsideInput: Story = {
 }
 
 // The notice is a translucent blue over whatever sits behind it, so the copy
-// and the link both have to stay legible when base-background flips.
-export const TopBannerLight: Story = {
-  args: { placement: 'top-banner' },
+// and the link both have to stay legible when base-background flips. Theme is
+// a toolbar global, but only story exports are snapshotted, so light needs an
+// export to get visual coverage at all — as in RunNoticeBanner and
+// AgentConsentCard beside it.
+export const DefaultLight: Story = {
   globals: { theme: 'light' }
 }
 
-export const NearComposerLight: Story = {
-  args: { placement: 'near-composer' },
+export const InsideInputLight: Story = {
+  ...InsideInput,
   globals: { theme: 'light' }
 }

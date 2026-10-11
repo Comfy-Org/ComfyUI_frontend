@@ -22,6 +22,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentFreeUsePlacement,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -1311,14 +1312,33 @@ const { copy } = useClipboard({ legacy: true })
  * reading the flag here keeps the exposure — and the experiment's
  * denominator — to the panel openers the hypothesis is about.
  */
-const { variant: freeUsePlacement } = useFreeUsePlacement()
+const {
+  variant: freeUsePlacement,
+  attributeExperiment: attributeFreeUseExperiment
+} = useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
+// This component's lifetime is one panel open, so a per-instance record is
+// per-open without a module global to reset.
+const reportedFreeUsePlacements = new Set<AgentFreeUsePlacement>()
+
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  // A QA override forces a placement without moving the PostHog assignment,
+  // so these interactions would otherwise land in whichever arm PostHog
+  // served. `useFreeUsePlacement` withholds exposure for the same reason.
+  if (!attributeFreeUseExperiment) return
+  // Every placement sits behind `!showHistory`, so opening chat history
+  // remounts the notice and `shown` fires again for the same viewer. It is the
+  // experiment's on-screen signal and the denominator of dismissed/shown, so
+  // count it once per panel open rather than once per mount.
+  if (metadata.action === 'shown') {
+    if (reportedFreeUsePlacements.has(metadata.placement)) return
+    reportedFreeUsePlacements.add(metadata.placement)
+  }
   useTelemetry()?.trackAgentFreeUseNotice(metadata)
 }
 

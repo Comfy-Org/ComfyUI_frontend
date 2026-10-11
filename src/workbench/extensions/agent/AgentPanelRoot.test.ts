@@ -616,23 +616,88 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
+  function placeFreeUseNotice(attributeExperiment = true) {
+    // The notice is about turns this viewer can still take, so the arms it is
+    // measured over are funded. This suite's default is an exhausted
+    // workspace, which is the one state the notice must not appear in.
+    paywallHasFunds.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner') })
+      fromPartial({ variant: ref('top-banner'), attributeExperiment })
     )
+  }
+
+  function freeUseNotice() {
+    return screen.findByRole('note', { name: 'Free use notice' })
+  }
+
+  it('forwards free-use notice telemetry with its rendered placement', async () => {
+    placeFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const notice = await screen.findByRole('note', {
-      name: 'Free use notice'
-    })
     await userEvent.click(
-      within(notice).getByRole('button', { name: 'Dismiss' })
+      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
     )
 
     expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
       action: 'dismissed',
       placement: 'top-banner'
     })
+  })
+
+  // The analysis splits outcomes by the variant PostHog assigned, so a forced
+  // placement's interactions belong to no arm.
+  it('reports nothing about the notice while a QA override forces its placement', async () => {
+    placeFreeUseNotice(false)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(useTelemetry()!.trackAgentFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  // `shown` is the experiment's on-screen signal and the denominator of
+  // dismissed/shown. Every placement sits behind `!showHistory`, so a history
+  // round trip remounts the notice for a viewer already counted once.
+  it('counts one impression per panel open across a history round trip', async () => {
+    placeFreeUseNotice()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await freeUseNotice()
+    const panelStore = useAgentPanelStore()
+    panelStore.view = {
+      screen: 'history',
+      previousThreadId: null,
+      selection: { status: 'idle' }
+    }
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+    panelStore.view = { screen: 'chat' }
+    await freeUseNotice()
+
+    expect(
+      useTelemetry()!.trackAgentFreeUseNotice
+    ).toHaveBeenCalledExactlyOnceWith({
+      action: 'shown',
+      placement: 'top-banner'
+    })
+  })
+
+  // "Your first few turns are free." and the standing exhausted paywall would
+  // otherwise render in the same footer, contradicting each other.
+  it('says nothing about free turns beside the exhausted paywall', async () => {
+    placeFreeUseNotice()
+    paywallHasFunds.value = false
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeInTheDocument()
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(useTelemetry()!.trackAgentFreeUseNotice).not.toHaveBeenCalled()
   })
 })
 
@@ -5091,26 +5156,32 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
-  it('does not claim the minimap graph-activity layer when setup throws', () => {
-    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
-      throw new Error('setup failed')
-    })
-    // Mounted without Testing Library, whose error handler lets a failed
-    // setup finish mounting; Vue itself aborts the mount.
-    const app = createApp(AgentPanelRoot).use(i18n)
-    expect(() => app.mount(document.createElement('div'))).toThrow(
-      'setup failed'
-    )
-
-    renderWithSelectedTarget().unmount()
-
-    expect(reportError).not.toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        errorType: 'minimap_decoration_layer_duplicate'
+  it.for([
+    ['useBillingContext', useBillingContext],
+    ['useFreeUsePlacement', useFreeUsePlacement]
+  ] as const)(
+    'does not claim the minimap graph-activity layer when %s throws in setup',
+    ([, composable]) => {
+      vi.mocked(composable).mockImplementationOnce(() => {
+        throw new Error('setup failed')
       })
-    )
-  })
+      // Mounted without Testing Library, whose error handler lets a failed
+      // setup finish mounting; Vue itself aborts the mount.
+      const app = createApp(AgentPanelRoot).use(i18n)
+      expect(() => app.mount(document.createElement('div'))).toThrow(
+        'setup failed'
+      )
+
+      renderWithSelectedTarget().unmount()
+
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'minimap_decoration_layer_duplicate'
+        })
+      )
+    }
+  )
 
   it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
     workflowStore.activeWorkflow = addTab('workflows/current.json')
