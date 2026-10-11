@@ -4,6 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import NodeOutputsExportDialog from '@/platform/assets/components/NodeOutputsExportDialog.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
+import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
 import { useAssetZipExport } from '@/platform/assets/composables/useAssetZipExport'
 import type { DownloadableOutput } from '@/platform/assets/utils/outputExportUtil'
 import {
@@ -14,6 +15,7 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 
 const EXPORT_DIALOG_KEY = 'node-outputs-export'
@@ -26,6 +28,7 @@ export function useNodeOutputsExport() {
   const dialogStore = useDialogStore()
   const { downloadFiles } = useAssetDownload()
   const { startZipExport } = useAssetZipExport()
+  const findGeneratedPreviewUrl = useGeneratedPreviewLookup()
 
   function getDownloadableOutputs(node: LGraphNode): DownloadableOutput[] {
     return (nodeOutputStore.getNodeOutputs(node)?.images ?? []).filter(
@@ -35,6 +38,14 @@ export function useNodeOutputsExport() {
 
   function hasMultipleOutputs(node: LGraphNode): boolean {
     return getDownloadableOutputs(node).length > 1
+  }
+
+  /** The backend can't render EXR/HDR thumbnails; use their generated preview, if any. */
+  function thumbnailUrl(output: DownloadableOutput): string {
+    if (isHdrImageFilename(output.filename)) {
+      return findGeneratedPreviewUrl(output.filename)
+    }
+    return getGridThumbnailUrl(outputFileUrl(output))
   }
 
   function closeExportDialog() {
@@ -52,7 +63,7 @@ export function useNodeOutputsExport() {
       props: {
         items: outputs.map((output) => ({
           name: output.filename,
-          thumbnailUrl: getGridThumbnailUrl(outputFileUrl(output))
+          thumbnailUrl: thumbnailUrl(output)
         })),
         onCancel: closeExportDialog,
         onExport: (selectedIndices: number[]) => {

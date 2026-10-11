@@ -21,6 +21,13 @@ import { useNodeOutputsExport } from './useNodeOutputsExport'
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(
+  import('@/platform/assets/composables/useGeneratedPreviewLookup'),
+  () => ({
+    useGeneratedPreviewLookup: () => (filename: string | undefined) =>
+      filename === 'sky.exr' ? '/api/assets/sky-preview/content' : ''
+  })
+)
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn(),
   downloadFileAsBlob: vi.fn()
@@ -233,5 +240,24 @@ describe('useNodeOutputsExport', () => {
       })
     ])
     expect(useAssetExportStore().exportList).toEqual([])
+  })
+
+  it('shows HDR outputs by their generated preview, or a placeholder without one', async () => {
+    const node = nodeWithOutputs([
+      { filename: 'sky.exr', subfolder: 'renders', type: 'output' },
+      { filename: 'dusk.exr', type: 'output' },
+      { filename: 'a.png', type: 'output' }
+    ])
+
+    const { dialog } = await openExportDialog(node)
+
+    const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
+    expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
+      '/api/assets/sky-preview/content',
+      expect.stringContaining('filename=a.png')
+    ])
+    expect(
+      within(dialog).getAllByTestId('output-thumbnail-placeholder')
+    ).toHaveLength(1)
   })
 })
