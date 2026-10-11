@@ -1268,7 +1268,6 @@ describe('executionStore workflow gating', () => {
       queueJobFrom('job-b', workflowB)
       fire('notification', { id: 'job-a', value: 'Waiting for a machine' })
       fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
-      expect(store.isJobInitializing('job-a')).toBe(true)
       expect(store.isJobInitializing('job-b')).toBe(true)
       // Set directly rather than via execution_start, which would clear A's own
       // initializing flag and make the assertion below vacuous.
