@@ -785,9 +785,9 @@ export const useWorkflowService = () => {
     // No transition means no load opened one, so there is nothing this publish
     // could be ordered against: stay retracted rather than write unordered.
     const activated = useWorkspaceStore().workflow.activeWorkflow
-    if (activated && app.isGraphReady && transition !== undefined) {
+    if (activated && useApp().isGraphReady && transition !== undefined) {
       useDocumentLifecycleStore().activate(
-        toRootGraphId(app.rootGraph.id),
+        toRootGraphId(useApp().rootGraph.id),
         transition
       )
     }
