@@ -56,7 +56,6 @@ function hdrViewer(comfyPage: ComfyPage) {
   return comfyPage.page.getByRole('dialog').filter({ hasText: 'sky.exr' })
 }
 
-
 async function expectHdrViewerLoaded(comfyPage: ComfyPage) {
   const viewer = hdrViewer(comfyPage)
   // Statistics only render once the texture has decoded.

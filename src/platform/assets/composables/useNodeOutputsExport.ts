@@ -46,7 +46,9 @@ export function useNodeOutputsExport() {
    */
   function thumbnailUrl(output: DownloadableOutput): string {
     if (isHdrImageFilename(output.filename)) {
-      return output.id ? findGeneratedPreviewUrl(output.filename, output.id) : ''
+      return output.id
+        ? findGeneratedPreviewUrl(output.filename, output.id)
+        : ''
     }
     return getGridThumbnailUrl(outputFileUrl(output))
   }
