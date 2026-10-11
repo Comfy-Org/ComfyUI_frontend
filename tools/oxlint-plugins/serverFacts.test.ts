@@ -350,6 +350,13 @@ const other = ch.role !== 'selection'
       code: `const isOwner = pendingServerFact('BE-1', role.value === 'owner')`
     },
     {
+      name: 'a lowercase client catalog tier key',
+      code: `
+const isTeam = context.tier === 'team'
+const isFixed = tier === 'free' || tier === 'founder'
+`
+    },
+    {
       name: 'includes on a list of messages',
       code: `const seen = messageIds.includes(id)`
     }
@@ -377,6 +384,28 @@ const other = ch.role !== 'selection'
           messageId: 'compared',
           data: { field: 'tier', literal: 'ENTERPRISE' }
         }
+      ]
+    },
+    {
+      name: 'every server tier compared with a literal',
+      code: `
+const a = tier === 'FREE'
+const b = tier === 'STANDARD'
+const c = tier === 'CREATOR'
+const d = tier === 'PRO'
+const e = tier === 'FOUNDERS_EDITION'
+const f = tier === 'TEAM'
+`,
+      errors: [
+        { messageId: 'compared', data: { field: 'tier', literal: 'FREE' } },
+        { messageId: 'compared', data: { field: 'tier', literal: 'STANDARD' } },
+        { messageId: 'compared', data: { field: 'tier', literal: 'CREATOR' } },
+        { messageId: 'compared', data: { field: 'tier', literal: 'PRO' } },
+        {
+          messageId: 'compared',
+          data: { field: 'tier', literal: 'FOUNDERS_EDITION' }
+        },
+        { messageId: 'compared', data: { field: 'tier', literal: 'TEAM' } }
       ]
     },
     {

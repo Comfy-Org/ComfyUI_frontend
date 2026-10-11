@@ -1,3 +1,4 @@
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import type { RuleTester } from 'oxlint/plugins-dev'
 
 type Rule = Parameters<RuleTester['run']>[1]
@@ -47,12 +48,22 @@ const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
 
 const ROLE_VALUES: ReadonlySet<string> = new Set(['owner', 'member', 'admin'])
 const isRoleValue = (literal: string) => ROLE_VALUES.has(literal)
+const SERVER_TIERS: Record<SubscriptionTier, true> = {
+  FREE: true,
+  STANDARD: true,
+  CREATOR: true,
+  PRO: true,
+  FOUNDERS_EDITION: true,
+  TEAM: true,
+  ENTERPRISE: true
+}
+const isServerTier = (literal: string) => Object.hasOwn(SERVER_TIERS, literal)
 const anyString = () => true
 
 const COMPARED_FACTS: ReadonlyMap<string, (literal: string) => boolean> =
   new Map([
     ['role', isRoleValue],
-    ['tier', anyString],
+    ['tier', isServerTier],
     ['billingStatus', anyString],
     ['subscriptionStatus', anyString],
     ['billing_status', anyString],
