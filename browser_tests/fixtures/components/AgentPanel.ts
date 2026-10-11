@@ -234,28 +234,22 @@ export class AgentPanel {
   }
 
   /**
-   * Denies the next turn with one admission denial, and answers with the count
-   * of POSTs that reached the route.
+   * Denies EVERY turn with this admission denial for the rest of the test.
    *
-   * The count is not bookkeeping: the denial is one-shot, so every later POST
-   * falls through to the success handler. Without counting, a client that
-   * wrongly auto-retried a non-retryable denial would have its retry quietly
-   * succeed — possibly replacing the alert — and the regression would read as
-   * a pass.
+   * Not one-shot. With a one-shot route, a client that wrongly auto-retried a
+   * non-retryable denial would have its retry succeed against the fixture's
+   * success handler and could replace the alert the caller is asserting on —
+   * so the one state that must not corrupt the assertions is the one a
+   * fallthrough allows.
    */
-  async rejectNextTurn({
+  async rejectEveryTurn({
     status,
     body,
     retryAfterSeconds
-  }: AgentAdmissionDenialMock): Promise<() => number> {
-    let posts = 0
+  }: AgentAdmissionDenialMock): Promise<void> {
     // Scoped to POST so the agent fixture's GET handler still serves history.
     await this.page.route('**/api/agent/threads/*/messages', async (route) => {
       if (route.request().method() !== 'POST') {
-        return route.fallback()
-      }
-      posts += 1
-      if (posts > 1) {
         return route.fallback()
       }
       await route.fulfill({
@@ -265,7 +259,6 @@ export class AgentPanel {
         body: JSON.stringify(body)
       })
     })
-    return () => posts
   }
 
   async openWorkSummary(): Promise<void> {
