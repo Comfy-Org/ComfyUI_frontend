@@ -199,7 +199,10 @@ export function createAgentEventTransport(
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
-  const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
+  const pendingCanvasSync = new Map<
+    ToolPart,
+    { timer: ReturnType<typeof setTimeout>; workflowId?: string }
+  >()
   // PM-1575: the outcome count as of the last time some tool part actually
   // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
   // at this transport's own creation. `canvasSyncBaseline` below hands each
@@ -226,8 +229,8 @@ export function createAgentEventTransport(
   }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
-    const timer = pendingCanvasSync.get(part)
-    if (timer !== undefined) clearTimeout(timer)
+    const pending = pendingCanvasSync.get(part)
+    if (pending !== undefined) clearTimeout(pending.timer)
     pendingCanvasSync.delete(part)
   }
 
@@ -253,8 +256,18 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function confirmNextPendingCanvasSync(): void {
-    const next = pendingCanvasSync.keys().next().value
+  function confirmNextPendingCanvasSync(workflowId?: string): void {
+    let next: ToolPart | undefined
+    for (const [part, pending] of pendingCanvasSync) {
+      if (
+        workflowId !== undefined &&
+        (pending.workflowId === undefined ||
+          !areWorkflowIdsEquivalent(pending.workflowId, workflowId))
+      )
+        continue
+      next = part
+      break
+    }
     if (next === undefined) return
     settlePendingCanvasSync(next, true)
     claimCanvasSyncOutcome()
@@ -262,13 +275,10 @@ export function createAgentEventTransport(
   }
 
   function notifyCanvasCaughtUp(workflowId?: string): void {
-    if (workflowId !== undefined && lastWorkflowId !== undefined) {
-      if (!areWorkflowIdsEquivalent(lastWorkflowId, workflowId)) return
-    }
     // One observed live frame may confirm one waiting write. It must never
     // rewrite an older timeout or refusal: the frame may belong to a later
     // tool call, a collaborator, or a human edit.
-    confirmNextPendingCanvasSync()
+    confirmNextPendingCanvasSync(workflowId)
   }
 
   function hasPendingCanvasSync(): boolean {
@@ -347,14 +357,14 @@ export function createAgentEventTransport(
       settlePendingCanvasSync(part, false)
       return
     }
-    pendingCanvasSync.set(
-      part,
-      setTimeout(() => {
+    pendingCanvasSync.set(part, {
+      workflowId: lastWorkflowId,
+      timer: setTimeout(() => {
         // The timer expiring is the absence of an observation, not one.
         settlePendingCanvasSync(part, false)
         emit(snapshotMessage(message))
       }, STALE_AFTER_MS)
-    )
+    })
   }
 
   /**

@@ -1260,6 +1260,32 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     })
   })
 
+  it('matches each pending write to the workflow that produced it', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+    const workflowA = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const workflowB = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+
+    transport.ingest(activeTab(workflowA))
+    transport.ingest(toolCall('add_node', 'success', 'write-a'))
+    transport.ingest(activeTab(workflowB))
+    transport.ingest(toolCall('add_node', 'success', 'write-b'))
+    transport.notifyCanvasCaughtUp(workflowB)
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[1]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+
+    transport.notifyCanvasCaughtUp(workflowA)
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
   it('does not downgrade a confirmed write on terminal-frame redelivery', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
