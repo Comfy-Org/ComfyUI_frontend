@@ -32,7 +32,6 @@ const {
   mockMaxSeats,
   mockIsInPersonalWorkspace,
   mockHasTeamPlan,
-  mockHasLapsedTeamPlan,
   mockIsPlanLoading,
   mockIsOnTeamPlan,
   mockHasMultipleMembers,
@@ -71,7 +70,6 @@ const {
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
-    mockHasLapsedTeamPlan: ref(false),
     mockIsPlanLoading: ref(false),
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
@@ -117,7 +115,6 @@ vi.mock<unknown>(
       ),
       isPlanLoading: mockIsPlanLoading,
       isOnTeamPlan: mockIsOnTeamPlan,
-      hasLapsedTeamPlan: mockHasLapsedTeamPlan,
       hasMultipleMembers: mockHasMultipleMembers,
       showSearch: mockShowSearch,
       showViewTabs: mockShowViewTabs,
@@ -263,7 +260,6 @@ describe('MembersPanelContent', () => {
     mockMaxSeats.value = 20
     mockIsInPersonalWorkspace.value = false
     mockHasTeamPlan.value = true
-    mockHasLapsedTeamPlan.value = false
     mockIsPlanLoading.value = false
     mockIsOnTeamPlan.value = true
     mockHasMultipleMembers.value = true
@@ -647,7 +643,6 @@ describe('MembersPanelContent', () => {
 
     it('does not show a reactivate action for a lapsed Team plan', () => {
       mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
       mockIsOnTeamPlan.value = false
       renderComponent()
 
