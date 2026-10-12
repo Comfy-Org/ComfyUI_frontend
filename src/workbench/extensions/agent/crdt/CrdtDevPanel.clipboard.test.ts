@@ -73,7 +73,6 @@ describe('CrdtDevPanel clipboard controls', () => {
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()
-    reportError.mockClear()
     Object.defineProperty(window.navigator, 'clipboard', {
       configurable: true,
       value: { writeText }
