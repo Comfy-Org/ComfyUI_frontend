@@ -152,7 +152,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         filename:
           node.comfyClass === 'LoadImageOutput' ? request.filename : filepath,
         ...(image.subfolder != null && { subfolder: image.subfolder }),
-        type: rootFolder
+        type: rootFolder,
+        ...(image.preview_id && { preview_id: image.preview_id })
       })
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
