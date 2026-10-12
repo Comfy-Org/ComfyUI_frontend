@@ -72,7 +72,22 @@ export interface DocOpMinterDeps {
    * when the document holds no such node.
    */
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
+  /**
+   * False until the bound document has caught up, unless this tab already
+   * sent the root host's `add_node` into the same document.
+   */
+  mayWritePromotedHost(nodeId: NodeId): boolean
+  onWidgetWriteRefused(): void
 }
+
+type PromotedWriteRefusal =
+  | { reason: 'unpromoted_widget'; liveNames: readonly string[] }
+  | { reason: 'doc_not_synced' }
+  | {
+      reason: 'layout_drift'
+      liveNames: readonly string[]
+      doc: DocPromotedWidgets
+    }
 
 export interface DocOpMinter {
   detach(): void
@@ -188,41 +203,22 @@ function isValueWidgetWrite(
   return isValueWidget(widget, stored)
 }
 
-/**
- * The positional payload a write to a PROMOTED widget needs (schema Amendment
- * A15). A subgraph instance's `type` is a definition UUID, so the pinned
- * catalog never describes it and the document stores its promoted values as
- * one opaque positional array (schema §1.2) that no name can address: a named
- * `set_widget` against such a node is rejected outright (`opaque_widgets`),
- * which bounced edits to a promoted widget while the agent held the document
- * (PM-1995). A host nested inside another definition still takes the interior
- * route below and is still refused.
- *
- * `value_index` is the widget's position among the node's widget-backed
- * inputs — the order `SubgraphNode.serialize` builds `widgets_values` in and
- * the order `applyHostWidgets` reads it back in. The document is consulted
- * only to REFUSE a write it would misplace, never as the index itself: its
- * `inputs` mirror can widget-mark fewer slots than `widgets_values` has
- * entries, so an index taken from it lands on another widget's value.
- */
 function promotedHostWrite(
-  node: LGraphNode | null,
+  node: LGraphNode,
   event: IntentOf<'set_widget'>,
-  docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
-): PromotedHostWrite | null {
-  if (!node?.isSubgraphNode()) return null
+  deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
+): PromotedHostWrite | PromotedWriteRefusal {
   const hostInputs = node.inputs.flatMap((input) =>
     input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
   )
   const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
-  if (valueIndex === -1) return null
   const liveNames = hostInputs.map((input) => input.name)
-  const doc = docPromotedWidgets()
-  if (!documentAcceptsLiveIndex(doc, liveNames)) {
-    if (doc) onOrderDrift(liveNames, doc)
-    return null
-  }
+  if (valueIndex === -1) return { reason: 'unpromoted_widget', liveNames }
+  if (!deps.mayWritePromotedHost(event.nodeId))
+    return { reason: 'doc_not_synced' }
+  const doc = deps.docPromotedWidgets(event.nodeId)
+  if (doc !== null && !documentAcceptsLiveIndex(doc, liveNames))
+    return { reason: 'layout_drift', liveNames, doc }
   const widgetValueStore = useWidgetValueStore()
   return {
     value_index: valueIndex,
@@ -277,9 +273,8 @@ function routedWidgetOperation(
   rootGraphId: string,
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
-  docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
-): GraphOperation | null {
+  deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
+): GraphOperation | PromotedWriteRefusal | null {
   const operation = {
     op: 'set_widget',
     node_id: event.nodeId,
@@ -290,13 +285,8 @@ function routedWidgetOperation(
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
     if (!node?.isSubgraphNode()) return operation
-    const promoted = promotedHostWrite(
-      node,
-      event,
-      docPromotedWidgets,
-      onOrderDrift
-    )
-    return promoted ? { ...operation, promoted } : null
+    const promoted = promotedHostWrite(node, event, deps)
+    return 'reason' in promoted ? promoted : { ...operation, promoted }
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
@@ -371,10 +361,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
-  // Budgeted for the minter's whole life, not per flush: this one sits on the
-  // keystroke-paced widget path, where a per-flush budget reports every
-  // character typed into a drifted host.
-  const reportedDrift = new Set<string>()
+  const reportedRefusals = new Set<string>()
   let flushScheduled = false
   let detached = false
 
@@ -385,6 +372,28 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     queueMicrotask(flush)
   }
 
+  function mintAddNodeOperation(
+    graph: LGraph,
+    node: LGraphNode
+  ): GraphOperation | null {
+    if (node.graph !== graph) return null
+    const snapshot = wireNodeSnapshot(node)
+    if (!snapshot) {
+      console.error(
+        '[agent-crdt] add_node mint dropped: no snapshot for node',
+        node.id
+      )
+      return null
+    }
+    return {
+      op: 'add_node',
+      node_id: node.id,
+      class_type: snapshot.type,
+      pos: [node.pos[0], node.pos[1]],
+      node: snapshot
+    }
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -392,30 +401,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
-    const operations: GraphOperation[] = []
-    for (const entry of batch) {
-      if (entry.kind === 'op') {
-        operations.push(entry.operation)
-        continue
-      }
-      const { graph, node } = entry
-      if (node.graph !== graph) continue
-      const snapshot = wireNodeSnapshot(node)
-      if (!snapshot) {
-        console.error(
-          '[agent-crdt] add_node mint dropped: no snapshot for node',
-          node.id
-        )
-        continue
-      }
-      operations.push({
-        op: 'add_node',
-        node_id: node.id,
-        class_type: snapshot.type,
-        pos: [node.pos[0], node.pos[1]],
-        node: snapshot
-      })
-    }
+    const operations = batch.flatMap((entry) => {
+      const operation =
+        entry.kind === 'op'
+          ? entry.operation
+          : mintAddNodeOperation(entry.graph, entry.node)
+      return operation ? [operation] : []
+    })
     if (operations.length > 0) deps.enqueue(operations)
   }
 
@@ -470,16 +462,28 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       : null
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = routedWidgetOperation(
-      graph,
-      rootGraphId,
-      event,
-      owner,
-      () => deps.docPromotedWidgets(event.nodeId),
-      (liveNames, doc) =>
+    const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
+    if (routed === null) return
+    if ('reason' in routed) {
+      reportRefusal(rootGraphId, event, routed)
+      deps.onWidgetWriteRefused()
+      return
+    }
+    schedule({ kind: 'op', operation: routed })
+  }
+
+  function reportRefusal(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal
+  ): void {
+    const host = String(event.nodeId)
+    switch (refusal.reason) {
+      case 'layout_drift': {
+        const { liveNames, doc } = refusal
         reportOnce(
-          `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
-          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
+          `promoted_drift:${rootGraphId}:${host}`,
+          `Subgraph host ${host} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
           'agent_crdt_promoted_widget_order_drift',
           {
             nodeId: event.nodeId,
@@ -488,10 +492,37 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
             docDeclaredNames: doc.declaredNames,
             docPromotedNames: doc.promotedNames
           },
-          reportedDrift
+          reportedRefusals
         )
-    )
-    if (operation) schedule({ kind: 'op', operation })
+        return
+      }
+      case 'unpromoted_widget':
+        reportOnce(
+          `promoted_unpromoted:${rootGraphId}:${host}:${event.name}`,
+          `Widget ${event.name} on subgraph host ${host} is not one of its promoted inputs [${refusal.liveNames.join(', ')}]; refusing to mint`,
+          'agent_crdt_promoted_widget_not_promoted',
+          {
+            nodeId: event.nodeId,
+            widget: event.name,
+            liveNames: refusal.liveNames
+          },
+          reportedRefusals
+        )
+        return
+      case 'doc_not_synced':
+        reportOnce(
+          `promoted_unsynced:${rootGraphId}:${host}`,
+          `Subgraph host ${host} was edited before the bound document caught up; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_doc_not_synced',
+          { nodeId: event.nodeId, widget: event.name },
+          reportedRefusals
+        )
+        return
+      default: {
+        const unhandled: never = refusal
+        return unhandled
+      }
+    }
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {

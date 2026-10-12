@@ -10,6 +10,18 @@ const agentAlternates: LocaleAlternate[] = [
   { locale: 'zh-CN', path: '/zh-CN/agent/' }
 ]
 
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
+const socialHrefs: readonly (string | null)[] = socialChannels.map(
+  ([, href]) => href
+)
+
 describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
@@ -118,9 +130,46 @@ describe('SiteFooter', () => {
       ['Comfy MCP', routes.mcp],
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
-      ['Launches', routes.launches],
       ['Supported Models', routes.models]
     ])
+  })
+
+  it.for([
+    ['en', 'Follow Comfy', 'opens in new tab'],
+    ['zh-CN', '关注 Comfy', '在新标签页中打开']
+  ] as const)(
+    'shows the social channels as icon links opening in a new tab (%s)',
+    ([locale, name, newTab]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const links = within(
+        screen.getByRole('navigation', { name })
+      ).getAllByRole('link')
+      expect(
+        links.map((link) => [
+          link.textContent.replace(/\s+/g, ' ').trim(),
+          link.getAttribute('href'),
+          link.getAttribute('target'),
+          link.getAttribute('rel')
+        ])
+      ).toEqual(
+        socialChannels.map(([label, href]) => [
+          `${label} (${newTab})`,
+          href,
+          '_blank',
+          'noopener'
+        ])
+      )
+    }
+  )
+
+  it('lists no social channel as a text link in Resources', () => {
+    render(SiteFooter)
+
+    const hrefs = within(screen.getByRole('navigation', { name: 'Resources' }))
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+    expect(hrefs.filter((href) => socialHrefs.includes(href))).toEqual([])
   })
 
   it('keeps Docs in Resources, opening in a new tab', () => {
@@ -133,23 +182,15 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Launches and Supported Models only in Features', () => {
+  it('keeps Supported Models out of every column but Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
       const nav = screen.getByRole('navigation', { name: column })
-      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
       expect(
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
-    const features = screen.getByRole('navigation', { name: 'Features' })
-    expect(
-      within(features).getByRole('link', { name: 'Launches' })
-    ).toBeTruthy()
-    expect(
-      within(features).getByRole('link', { name: 'Supported Models' })
-    ).toBeTruthy()
   })
 
   it('hands the page alternates and the reader locale to the switcher', () => {

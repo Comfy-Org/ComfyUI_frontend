@@ -4,10 +4,8 @@
   >
     <BatchCountEdit />
     <Button
-      v-tooltip.bottom="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
       :variant="queueButtonVariant"
       size="unset"
       :class="

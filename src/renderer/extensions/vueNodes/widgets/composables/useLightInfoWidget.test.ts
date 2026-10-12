@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { createDefaultLight } from '@/extensions/core/lightInfo/types'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { useLightInfoWidget } from './useLightInfoWidget'
 
@@ -12,7 +11,7 @@ function addEditorWidget(defaultValue: unknown) {
     type: 'LIGHT_INFO_PREVIEW',
     name: 'editor_state',
     default: defaultValue
-  } as InputSpec)
+  })
   return { node, widget }
 }
 
