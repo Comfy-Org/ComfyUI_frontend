@@ -10,7 +10,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
-import { linkHideFrame } from './linkHideTransition'
+import { linkHideSnap } from './linkHideTransition'
 import {
   hideLink,
   hideLinks,
@@ -28,12 +28,6 @@ function createHost(events: string[] = []) {
     ),
     prompt: vi.fn()
   }
-}
-
-function linkHideFrameAlpha(
-  ...args: Parameters<typeof linkHideFrame>
-): number | undefined {
-  return linkHideFrame(...args)?.alpha
 }
 
 describe('link visibility mutations', () => {
@@ -155,13 +149,13 @@ describe('link visibility mutations', () => {
 
     hideLinks(host, scope, [first, second])
 
-    expect(linkHideFrameAlpha(scope.rootGraphId, first, now)).toBe(1)
-    expect(linkHideFrameAlpha(scope.rootGraphId, second, now)).toBe(1)
+    expect(linkHideSnap(scope.rootGraphId, first, now)).toBeDefined()
+    expect(linkHideSnap(scope.rootGraphId, second, now)).toBeDefined()
 
     showLink(host, scope, first)
 
-    expect(linkHideFrameAlpha(scope.rootGraphId, first, now)).toBeUndefined()
-    expect(linkHideFrameAlpha(scope.rootGraphId, second, now)).toBe(1)
+    expect(linkHideSnap(scope.rootGraphId, first, now)).toBeUndefined()
+    expect(linkHideSnap(scope.rootGraphId, second, now)).toBeDefined()
   })
 
   it('does not restart the transition for a link that was already hidden', () => {
@@ -174,9 +168,7 @@ describe('link visibility mutations', () => {
 
     hideLinks(host, scope, [alreadyHidden, visible])
 
-    expect(
-      linkHideFrameAlpha(scope.rootGraphId, alreadyHidden, now)
-    ).toBeUndefined()
-    expect(linkHideFrameAlpha(scope.rootGraphId, visible, now)).toBe(1)
+    expect(linkHideSnap(scope.rootGraphId, alreadyHidden, now)).toBeUndefined()
+    expect(linkHideSnap(scope.rootGraphId, visible, now)).toBeDefined()
   })
 })

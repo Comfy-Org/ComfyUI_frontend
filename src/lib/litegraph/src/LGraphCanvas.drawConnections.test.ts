@@ -46,7 +46,6 @@ function createMockCtx(): CanvasRenderingContext2D {
       .fn()
       .mockReturnValue({ width: 50, actualBoundingBoxAscent: 8 }),
     closePath: vi.fn(),
-    setLineDash: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),
     setTransform: vi.fn(),
@@ -1107,7 +1106,7 @@ describe('drawConnections hidden links', () => {
     { name: 'hiding link first', hidingIndex: 0 },
     { name: 'visible link first', hidingIndex: 1 }
   ])(
-    'draws a hiding link without taking a shared reroute or hit areas: $name',
+    'snaps a hiding link back without taking a shared reroute: $name',
     ({ hidingIndex }) => {
       const firstLink = createHiddenLink()
       const source = graph.getNodeById(firstLink.origin_id)
@@ -1140,10 +1139,10 @@ describe('drawConnections hidden links', () => {
       expect(canvas.renderedPaths.has(reroute)).toBe(true)
       expect(canvas.renderedPaths.has(hiding)).toBe(false)
       expect(drawReroute).toHaveBeenCalledOnce()
-      expect(ctx.setLineDash).toHaveBeenCalled()
-      expect(
-        queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(hiding))
-      ).toBeUndefined()
+      expect(ctx.bezierCurveTo).toHaveBeenCalledTimes(4)
+      expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(hiding))).toBe(
+        hiding.id
+      )
       expect(canvas.dirty_bgcanvas).toBe(true)
     }
   )

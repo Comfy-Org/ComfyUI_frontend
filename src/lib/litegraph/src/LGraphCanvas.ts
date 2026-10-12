@@ -51,18 +51,13 @@ import {
   setRevealedLinks
 } from './canvas/linkRevealState'
 import {
-  LINK_HIDE_TRANSITION,
   cancelLinkHideTransition,
   clearRootLinkHideTransitions,
   hasLinkHideTransitions,
-  linkHideDashPattern,
-  linkHideFrame,
-  linkHideLabelScale
+  linkHideLabelScale,
+  linkHideSnap
 } from './canvas/linkHideTransition'
-import type { LinkHideFrame } from './canvas/linkHideTransition'
-import type { LinkBadgeLayout } from './canvas/linkBadges'
 import { bezierHead, bezierTail, linkSpline } from './canvas/linkSnapGeometry'
-import type { CubicBezier } from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -91,7 +86,6 @@ import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
-  dropLinkBadgeHitAreas,
   drawHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
@@ -488,6 +482,15 @@ function connectSearchBoxNodeTo(
       ? nodeTo.slots[slotIndex].type
       : nodeTo.inputs[slotIndex].type
   )
+}
+
+interface SnappingLink {
+  link: LLink
+  snap: number
+  startPos: Point
+  endPos: Point
+  startDirection?: LinkDirection
+  endDirection?: LinkDirection
 }
 
 /**
@@ -6084,15 +6087,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.default_link_color
     )
     const renderedRerouteSegments = new Set<Reroute>()
-    const hidingLinks: {
-      link: LLink
-      frame: LinkHideFrame
-      layout: LinkBadgeLayout
-      startPos: Point
-      endPos: Point
-      startDirection?: LinkDirection
-      endDirection?: LinkDirection
-    }[] = []
+    const snappingLinks: SnappingLink[] = []
 
     const renderConnection = (
       link: LLink,
@@ -6105,13 +6100,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
         cancelLinkHideTransition(graphScope.rootGraphId, link.id)
       } else if (hiddenLayout) {
-        const frame = linkHideFrame(graphScope.rootGraphId, link.id, now)
-        if (frame === undefined) return
+        const snap = linkHideSnap(graphScope.rootGraphId, link.id, now)
+        if (snap === undefined) return
 
-        hidingLinks.push({
+        snappingLinks.push({
           link,
-          frame,
-          layout: hiddenLayout,
+          snap,
           startPos,
           endPos,
           startDirection,
@@ -6207,9 +6201,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    const hidingRerouteSegments = new Set(renderedRerouteSegments)
-    for (const hiding of hidingLinks)
-      this._renderHidingLink(ctx, hiding, hidingRerouteSegments, now)
+    for (const snapping of snappingLinks)
+      this._renderSnappingLink(ctx, snapping)
 
     if (graph.floatingLinks.size > 0) {
       this._renderFloatingLinks(
@@ -6262,12 +6255,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    const hidingLinkIds = new Set(hidingLinks.map(({ link }) => link.id))
-    dropLinkBadgeHitAreas(this, hidingLinkIds)
     for (const [linkId, layout] of hiddenLinkLayouts) {
-      const scale = linkHideLabelScale(graphScope.rootGraphId, linkId, now)
-      if (scale !== undefined)
-        drawHiddenLinkBadges(ctx, layout, margin_area, scale)
+      drawHiddenLinkBadges(
+        ctx,
+        layout,
+        margin_area,
+        linkHideLabelScale(graphScope.rootGraphId, linkId, now)
+      )
     }
 
     if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
@@ -6356,132 +6350,34 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = globalAlpha
   }
 
-  private _renderHidingLink(
-    ctx: CanvasRenderingContext2D,
-    hiding: {
-      link: LLink
-      frame: LinkHideFrame
-      layout: LinkBadgeLayout
-      startPos: Point
-      endPos: Point
-      startDirection?: LinkDirection
-      endDirection?: LinkDirection
-    },
-    rerouteSegments: Set<Reroute>,
-    now: number
-  ): void {
-    const { linkMarkerShape } = this
-    this.linkMarkerShape = LinkMarkerShape.None
-    try {
-      if (hiding.frame.style !== 'dotted') {
-        this._renderSnappingLink(ctx, hiding)
-      } else {
-        this._renderDottedLink(ctx, hiding, rerouteSegments, now)
-      }
-    } finally {
-      this.linkMarkerShape = linkMarkerShape
-    }
-  }
-
-  private _renderDottedLink(
-    ctx: CanvasRenderingContext2D,
-    hiding: {
-      link: LLink
-      frame: LinkHideFrame
-      startPos: Point
-      endPos: Point
-      startDirection?: LinkDirection
-      endDirection?: LinkDirection
-    },
-    rerouteSegments: Set<Reroute>,
-    now: number
-  ): void {
-    const { link, frame, startPos, endPos, startDirection, endDirection } =
-      hiding
-    const hitTestedPaths = this.renderedPaths
-    this.renderedPaths = new Set(hitTestedPaths)
-    ctx.save()
-    ctx.globalAlpha *= frame.alpha
-    ctx.setLineDash(linkHideDashPattern(this.connections_width))
-    this._renderAllLinkSegments(
-      ctx,
-      link,
-      startPos,
-      endPos,
-      [],
-      rerouteSegments,
-      now,
-      startDirection,
-      endDirection
-    )
-    ctx.restore()
-    this.renderedPaths = hitTestedPaths
-  }
-
   private _renderSnappingLink(
     ctx: CanvasRenderingContext2D,
     {
       link,
-      frame,
+      snap,
       startPos,
       endPos,
       startDirection = LinkDirection.RIGHT,
       endDirection = LinkDirection.LEFT
-    }: {
-      link: LLink
-      frame: LinkHideFrame
-      startPos: Point
-      endPos: Point
-      startDirection?: LinkDirection
-      endDirection?: LinkDirection
-    }
+    }: SnappingLink
   ): void {
+    const remaining = Math.abs(1 - snap) / 2
+    if (remaining === 0) return
     const spline = linkSpline(startPos, endPos, startDirection, endDirection)
-    const progress = frame.retract
-    const fading = Math.min(1, Math.max(0, 1 - progress))
-    let halves: CubicBezier[]
-    let widthScale = 1
-    let alpha = 1
-    switch (frame.style) {
-      case 'reel': {
-        const remaining = Math.abs(1 - progress)
-        halves = remaining === 0 ? [] : [bezierHead(spline, remaining)]
-        break
-      }
-      case 'thin':
-        halves = [spline]
-        widthScale = fading
-        alpha = Math.sqrt(fading)
-        break
-      case 'drop': {
-        const sag = LINK_HIDE_TRANSITION.dropSag * progress
-        const [p0, p1, p2, p3] = spline
-        halves = [[p0, [p1[0], p1[1] + sag], [p2[0], p2[1] + sag], p3]]
-        alpha = fading
-        break
-      }
-      default: {
-        const remaining = Math.abs(1 - progress) / 2
-        halves =
-          remaining === 0
-            ? []
-            : [bezierHead(spline, remaining), bezierTail(spline, remaining)]
-      }
-    }
-    if (halves.length === 0 || widthScale === 0 || alpha === 0) return
-
+    const halves = [
+      bezierHead(spline, remaining),
+      bezierTail(spline, remaining)
+    ]
     const color =
       link.color ||
       LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
       this.default_link_color
-    const width = this.connections_width * widthScale
-    const strokes: [CanvasColour, number][] = [[color, width]]
+    const strokes: [CanvasColour, number][] = [[color, this.connections_width]]
     if (this.render_connections_border && !this.low_quality) {
-      strokes.unshift(['rgba(0,0,0,0.5)', width + 4 * widthScale])
+      strokes.unshift(['rgba(0,0,0,0.5)', this.connections_width + 4])
     }
 
     ctx.save()
-    ctx.globalAlpha *= alpha
     ctx.lineCap = 'round'
     for (const [strokeStyle, lineWidth] of strokes) {
       ctx.strokeStyle = strokeStyle

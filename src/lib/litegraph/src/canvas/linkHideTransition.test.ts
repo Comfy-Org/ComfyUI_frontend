@@ -7,18 +7,16 @@ import {
   LINK_HIDE_TRANSITION,
   cancelLinkHideTransition,
   hasLinkHideTransitions,
-  linkHideDashPattern,
   linkHideLabelScale,
-  linkHideFrame,
+  linkHideSnap,
+  springEase,
   startLinkHideTransitions
 } from './linkHideTransition'
 
 const ROOT = toRootGraphId('root')
 const LINK_A = toLinkId(1)
 const LINK_B = toLinkId(2)
-const { holdMs, fadeMs, labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
-const LINE_END = holdMs + fadeMs
-const END = LINE_END + labelPopMs
+const { snapMs, labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
 
 function stubReducedMotion(reduce: boolean) {
   vi.stubGlobal(
@@ -37,55 +35,48 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function linkHideFrameAlpha(
-  ...args: Parameters<typeof linkHideFrame>
-): number | undefined {
-  return linkHideFrame(...args)?.alpha
-}
+describe('springEase', () => {
+  it('starts at rest, recoils once by under ten percent, and settles', () => {
+    const samples = Array.from({ length: 101 }, (_, i) => springEase(i / 100))
+
+    expect(samples[0]).toBe(0)
+    expect(Math.max(...samples)).toBeGreaterThan(1)
+    expect(Math.max(...samples)).toBeLessThan(1.1)
+    expect(samples[100]).toBeCloseTo(1, 1)
+  })
+})
 
 describe('linkHideTransition', () => {
-  it('holds fully opaque, fades, then expires', () => {
+  it('snaps the link back, then expires', () => {
     startLinkHideTransitions(ROOT, [LINK_A], 0)
 
-    expect(linkHideFrameAlpha(ROOT, LINK_A, holdMs)).toBe(1)
-    expect(linkHideFrameAlpha(ROOT, LINK_A, holdMs + fadeMs / 2)).toBe(0.5)
-    expect(linkHideFrameAlpha(ROOT, LINK_A, LINE_END)).toBeUndefined()
-    expect(hasLinkHideTransitions(ROOT, END - 1)).toBe(true)
-    expect(hasLinkHideTransitions(ROOT, END)).toBe(false)
+    expect(linkHideSnap(ROOT, LINK_A, 0)).toBe(0)
+    expect(linkHideSnap(ROOT, LINK_A, snapMs / 2)).toBeGreaterThan(0.9)
+    expect(hasLinkHideTransitions(ROOT, snapMs - 1)).toBe(true)
+    expect(linkHideSnap(ROOT, LINK_A, snapMs)).toBeUndefined()
+    expect(hasLinkHideTransitions(ROOT, snapMs)).toBe(false)
   })
 
-  it('pops the labels in once the line has faded', () => {
+  it('pops the labels in alongside the snap', () => {
     startLinkHideTransitions(ROOT, [LINK_A], 0)
 
-    expect(linkHideLabelScale(ROOT, LINK_A, LINE_END)).toBeCloseTo(
-      labelPopFromScale
-    )
-    expect(
-      linkHideLabelScale(ROOT, LINK_A, LINE_END + labelPopMs / 2)
-    ).toBeGreaterThan(1)
-    expect(linkHideLabelScale(ROOT, LINK_A, END)).toBe(1)
+    expect(linkHideLabelScale(ROOT, LINK_A, 0)).toBeCloseTo(labelPopFromScale)
+    expect(linkHideLabelScale(ROOT, LINK_A, labelPopMs / 2)).toBeGreaterThan(1)
+    expect(linkHideLabelScale(ROOT, LINK_A, labelPopMs)).toBe(1)
   })
 
   it('animates a batch together', () => {
     startLinkHideTransitions(ROOT, [LINK_A, LINK_B], 0)
 
-    expect(linkHideFrameAlpha(ROOT, LINK_A, holdMs + 50)).toBe(
-      linkHideFrameAlpha(ROOT, LINK_B, holdMs + 50)
-    )
-  })
-
-  it('stops redrawing once every transition has expired unread', () => {
-    startLinkHideTransitions(ROOT, [LINK_A], 0)
-
-    expect(hasLinkHideTransitions(ROOT, END)).toBe(false)
+    expect(linkHideSnap(ROOT, LINK_A, 50)).toBe(linkHideSnap(ROOT, LINK_B, 50))
   })
 
   it('cancels one link without touching the rest of its batch', () => {
     startLinkHideTransitions(ROOT, [LINK_A, LINK_B], 0)
 
     expect(cancelLinkHideTransition(ROOT, LINK_A)).toBe(true)
-    expect(linkHideFrameAlpha(ROOT, LINK_A, 10)).toBeUndefined()
-    expect(linkHideFrameAlpha(ROOT, LINK_B, 10)).toBe(1)
+    expect(linkHideSnap(ROOT, LINK_A, 10)).toBeUndefined()
+    expect(linkHideSnap(ROOT, LINK_B, 10)).toBeDefined()
     expect(cancelLinkHideTransition(ROOT, LINK_A)).toBe(false)
   })
 
@@ -94,11 +85,7 @@ describe('linkHideTransition', () => {
 
     startLinkHideTransitions(ROOT, [LINK_A], 0)
 
-    expect(linkHideFrameAlpha(ROOT, LINK_A, 0)).toBeUndefined()
+    expect(linkHideSnap(ROOT, LINK_A, 0)).toBeUndefined()
     expect(hasLinkHideTransitions(ROOT, 0)).toBe(false)
-  })
-
-  it('scales the dash pattern with the line width', () => {
-    expect(linkHideDashPattern(4)).toEqual([6, 6])
   })
 })

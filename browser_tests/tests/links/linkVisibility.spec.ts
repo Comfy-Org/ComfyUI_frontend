@@ -86,7 +86,7 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     })
   })
 
-  test('a hidden link leaves as a dotted line and settles behind its badge', async ({
+  test('a hidden link snaps back and settles behind its badge', async ({
     comfyPage,
     linkVisibility
   }) => {

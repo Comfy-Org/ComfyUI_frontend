@@ -1,106 +1,26 @@
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-export const LINK_HIDE_EASINGS = {
-  linear: (t: number) => t,
-  easeOutCubic: (t: number) => 1 - (1 - t) ** 3,
-  easeOutQuint: (t: number) => 1 - (1 - t) ** 5,
-  easeOutBack: (t: number) => {
-    const c1 = LINK_HIDE_TRANSITION.snapOvershoot
-    return 1 + (c1 + 1) * (t - 1) ** 3 + c1 * (t - 1) ** 2
-  },
-  easeOutElastic: (t: number) => {
-    if (t <= 0) return 0
-    if (t >= 1) return 1
-    const { elasticDecay, elasticFrequency } = LINK_HIDE_TRANSITION
-    return (
-      2 ** (-elasticDecay * t) *
-        Math.sin((t * elasticFrequency - 0.75) * ((2 * Math.PI) / 3)) +
-      1
-    )
-  },
-  spring: (t: number) => {
-    const { elasticDecay, elasticFrequency } = LINK_HIDE_TRANSITION
-    const angle = elasticFrequency * t
-    return (
-      1 -
-      Math.exp(-elasticDecay * t) *
-        (Math.cos(angle) + (elasticDecay / elasticFrequency) * Math.sin(angle))
-    )
-  },
-  easeOutBounce: (t: number) => {
-    const n1 = 7.5625
-    const d1 = 2.75
-    if (t < 1 / d1) return n1 * t * t
-    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75
-    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375
-    return n1 * (t -= 2.625 / d1) * t + 0.984375
-  }
-} satisfies Record<string, (t: number) => number>
-
-export type LinkHideEasing = keyof typeof LINK_HIDE_EASINGS
-export const LINK_HIDE_STYLES = [
-  'elastic',
-  'reel',
-  'thin',
-  'drop',
-  'dotted'
-] as const
-export type LinkHideStyle = (typeof LINK_HIDE_STYLES)[number]
-
-export const LINK_HIDE_TRANSITION: {
-  style: LinkHideStyle
-  holdMs: number
-  fadeMs: number
-  dashOnWidths: number
-  dashOffWidths: number
-  snapMs: number
-  snapEasing: LinkHideEasing
-  snapOvershoot: number
-  elasticDecay: number
-  elasticFrequency: number
-  dropSag: number
-  labelPopMs: number
-  labelPopDelayMs: number
-  labelPopFromScale: number
-  labelPopOvershoot: number
-} = {
-  style: 'dotted',
-  holdMs: 200,
-  fadeMs: 200,
-  dashOnWidths: 1.5,
-  dashOffWidths: 1.5,
+export const LINK_HIDE_TRANSITION = {
   snapMs: 380,
-  snapEasing: 'spring',
-  snapOvershoot: 0.6,
-  elasticDecay: 4.5,
-  elasticFrequency: 5.5,
-  dropSag: 90,
+  springDamping: 4.5,
+  springFrequency: 5.5,
   labelPopMs: 150,
-  labelPopDelayMs: 0,
   labelPopFromScale: 0.9,
   labelPopOvershoot: 1.70158
-}
+} as const
 
-/** One frame of a link's hide transition: its opacity, and how far its two halves have snapped back toward their badges. */
-export interface LinkHideFrame {
-  style: LinkHideStyle
-  alpha: number
-  retract: number
-}
+const startedAtByRoot = new Map<RootGraphId, Map<LinkId, number>>()
 
-function lineMs(): number {
-  const { style, holdMs, fadeMs, snapMs } = LINK_HIDE_TRANSITION
-  return style === 'dotted' ? holdMs + fadeMs : snapMs
-}
-
-function labelStartMs(): number {
-  const { style, labelPopDelayMs } = LINK_HIDE_TRANSITION
-  return style === 'dotted' ? lineMs() : labelPopDelayMs
-}
-
-function totalMs(): number {
-  return Math.max(lineMs(), labelStartMs() + LINK_HIDE_TRANSITION.labelPopMs)
+/** A damped spring from 0 to 1 that starts at rest and recoils once, slightly, past 1. */
+export function springEase(t: number): number {
+  const { springDamping, springFrequency } = LINK_HIDE_TRANSITION
+  const angle = springFrequency * t
+  return (
+    1 -
+    Math.exp(-springDamping * t) *
+      (Math.cos(angle) + (springDamping / springFrequency) * Math.sin(angle))
+  )
 }
 
 function easeOutBack(t: number): number {
@@ -109,7 +29,10 @@ function easeOutBack(t: number): number {
   return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
 }
 
-const startedAtByRoot = new Map<RootGraphId, Map<LinkId, number>>()
+function totalMs(): number {
+  const { snapMs, labelPopMs } = LINK_HIDE_TRANSITION
+  return Math.max(snapMs, labelPopMs)
+}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -158,38 +81,28 @@ function elapsedSinceHide(
   cancelLinkHideTransition(rootGraphId, linkId)
 }
 
-/** The frame to draw for a link mid-transition, or `undefined` once its line has gone or never started. */
-export function linkHideFrame(
-  rootGraphId: RootGraphId,
-  linkId: LinkId,
-  now: number
-): LinkHideFrame | undefined {
-  const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
-  if (elapsed === undefined || elapsed >= lineMs()) return
-  const { style, holdMs, fadeMs, snapMs, snapEasing } = LINK_HIDE_TRANSITION
-  if (style !== 'dotted') {
-    return {
-      style,
-      alpha: 1,
-      retract: LINK_HIDE_EASINGS[snapEasing](elapsed / snapMs)
-    }
-  }
-  const alpha = elapsed <= holdMs ? 1 : 1 - (elapsed - holdMs) / fadeMs
-  return { style, alpha, retract: 0 }
-}
-
-/** Scale of a hidden link's labels as they pop in: `undefined` before they appear, 1 once settled. */
-export function linkHideLabelScale(
+/** How far each half of a hiding link has snapped back toward its socket, or `undefined` once the snap is over. */
+export function linkHideSnap(
   rootGraphId: RootGraphId,
   linkId: LinkId,
   now: number
 ): number | undefined {
   const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
+  const { snapMs } = LINK_HIDE_TRANSITION
+  if (elapsed === undefined || elapsed >= snapMs) return
+  return springEase(elapsed / snapMs)
+}
+
+/** Scale of a hidden link's labels as they pop in alongside the snap; 1 once settled. */
+export function linkHideLabelScale(
+  rootGraphId: RootGraphId,
+  linkId: LinkId,
+  now: number
+): number {
+  const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
   if (elapsed === undefined) return 1
-  const sinceLabelStart = elapsed - labelStartMs()
-  if (sinceLabelStart < 0) return
   const { labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
-  const progress = Math.min(1, sinceLabelStart / labelPopMs)
+  const progress = Math.min(1, elapsed / labelPopMs)
   return labelPopFromScale + (1 - labelPopFromScale) * easeOutBack(progress)
 }
 
@@ -205,9 +118,4 @@ export function hasLinkHideTransitions(
   if (startedAt.size > 0) return true
   startedAtByRoot.delete(rootGraphId)
   return false
-}
-
-export function linkHideDashPattern(lineWidth: number): number[] {
-  const { dashOnWidths, dashOffWidths } = LINK_HIDE_TRANSITION
-  return [lineWidth * dashOnWidths, lineWidth * dashOffWidths]
 }
