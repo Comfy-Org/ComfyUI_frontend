@@ -119,17 +119,12 @@ describe('MarkdownStream', () => {
     )
   })
 
-  // The local agent links previews on the ComfyUI it drives, by loopback
-  // address. Opened from another machine that host is the reader's own
-  // computer, so the panel re-homes the reference onto the page's origin.
   describe('a panel opened away from the machine running the agent', () => {
     const loopback =
       'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
-    // The page's own API route, not a bare origin: a reverse-proxied install
-    // is served under a subpath and a dev server only proxies `/api`.
     const onPageApi = `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
 
-    it('renders a loopback asset image against the page origin', () => {
+    it('renders a loopback asset image on the page API route', () => {
       render(MarkdownStream, {
         props: { text: `![a duck](${loopback})` },
         global: { plugins: [i18n] }
@@ -140,7 +135,7 @@ describe('MarkdownStream', () => {
       )
     })
 
-    it('renders a loopback image inside prose against the page origin', () => {
+    it('renders a loopback image inside prose on the page API route', () => {
       render(MarkdownStream, {
         props: { text: `Here it is ![a duck](${loopback}) — enjoy.` },
         global: { plugins: [i18n] }
@@ -151,10 +146,12 @@ describe('MarkdownStream', () => {
       )
     })
 
-    it('leaves a remote ComfyUI host alone', () => {
+    it('leaves a remote ComfyUI host alone beside a re-homed one', () => {
       const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
       render(MarkdownStream, {
-        props: { text: `Rendered ![gen](${remote}) remotely.` },
+        props: {
+          text: `Rendered ![gen](${remote}) remotely and ![a duck](${loopback}) here.`
+        },
         global: { plugins: [i18n] }
       })
       expect(screen.getByRole('img', { name: 'gen' })).toHaveAttribute(

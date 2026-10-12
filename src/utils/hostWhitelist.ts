@@ -1,5 +1,6 @@
 /**
- * Whitelisting helper for enabling SSO on safe, local-only hosts.
+ * Host classification: `isHostWhitelisted` enables SSO on safe, local-only
+ * hosts, and `isLoopbackHost` recognises hosts that only name this machine.
  *
  * Built-ins (always allowed):
  *   • 'localhost' and any subdomain of '.localhost' (e.g., app.localhost)
@@ -37,17 +38,9 @@ export function normalizeHost(input: string): string {
 }
 
 /**
- * Hosts that can only ever mean "the computer this URL was written on", so a
- * URL naming one is unreachable from anywhere else.
- *
- * Wider than the loopback addresses alone: a server bound to an unspecified
- * address (`0.0.0.0`, `::`) listens on every interface, and a URL that names
- * one still resolves to the reader's own machine. Accepts the spellings a
- * `URL` can hand back, including the IPv4-mapped IPv6 form it serialises as
- * `[::ffff:7f00:1]`.
- *
- * Deliberately not {@link isHostWhitelisted}, which also allows `*.comfy.org`
- * for SSO and would classify a cloud host as local.
+ * Whether a host can only name the machine the URL was written on: loopback,
+ * the unspecified addresses, or IPv4-mapped loopback. Unlike
+ * {@link isHostWhitelisted}, it excludes `*.comfy.org`.
  */
 export function isLoopbackHost(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
@@ -115,11 +108,6 @@ function isIPv6Loopback(h: string): boolean {
   return leftCount + rightCount <= 6
 }
 
-/**
- * The unspecified addresses. A server bound to one listens on every
- * interface, so a URL naming it was written on the machine serving it.
- * `URL` serialises the IPv6 form as `[::]`, which normalizeHost unbrackets.
- */
 function isUnspecifiedAddress(h: string): boolean {
   return h === '0.0.0.0' || h === '::'
 }
@@ -131,8 +119,10 @@ const V6_MAPPED_DOTTED_RE = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i
 
 function isIPv4MappedLoopback(h: string): boolean {
   const hex = V6_MAPPED_HEX_RE.exec(h)
-  // The high half of the embedded address carries the first octet.
-  if (hex) return parseInt(hex[1], 16) >> 8 === 127
+  if (hex) {
+    const firstOctet = parseInt(hex[1], 16) >> 8
+    return firstOctet === 127
+  }
   const dotted = V6_MAPPED_DOTTED_RE.exec(h)
   return dotted ? isIPv4Loopback(dotted[1]) : false
 }

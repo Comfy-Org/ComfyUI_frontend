@@ -160,12 +160,9 @@ describe('hostWhitelist utils', () => {
       '::1',
       '0:0:0:0:0:0:0:1',
       '[0:0:0:0:0:0:0:1]',
-      // Bound to every interface, so a URL naming it was written here.
       '0.0.0.0',
       '::',
       '[::]',
-      // IPv4-mapped IPv6, in both the dotted form and the hex form `URL`
-      // serializes it to.
       '::ffff:127.0.0.1',
       '[::ffff:7f00:1]'
     ])('treats %o as this machine', (input) => {
@@ -182,7 +179,7 @@ describe('hostWhitelist utils', () => {
       'localhost.evil.com',
       '2001:db8::1',
       '::ffff:10.0.0.1',
-      // Allowed for SSO by isHostWhitelisted, but it is not this machine.
+      '[::ffff:a00:5]',
       'cloud.comfy.org'
     ])('does NOT treat %o as this machine', (input) => {
       expect(isLoopbackHost(input)).toBe(false)

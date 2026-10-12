@@ -23,14 +23,9 @@ function firstTokenAssets(text: string) {
   return tokenReplyAssets(marked.lexer(text)[0])
 }
 
-// The local agent writes previews as absolute URLs of the ComfyUI it drives.
-// Opened from any machine but the one running it, that loopback host is the
-// reader's own computer and every chat image is broken.
-const PANEL = 'http://100.74.161.87:8190'
 const LOOPBACK_VIEW =
   'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
 
-/** Serve the panel from a subpath, the way a reverse proxy does. */
 function servedUnder(subpath: string) {
   const original = api.api_base
   api.api_base = subpath
@@ -40,53 +35,22 @@ function servedUnder(subpath: string) {
 }
 
 describe('resolveAgentAssetUrl', () => {
-  it.for([
-    ['http://127.0.0.1:8188/view?filename=a.png', '/api/view?filename=a.png'],
-    [
-      'http://localhost:8188/api/view?filename=a.png',
-      '/api/view?filename=a.png'
-    ],
-    ['http://[::1]:8188/view?filename=a.png', '/api/view?filename=a.png'],
-    [
-      'http://0.0.0.0:8188/viewvideo?filename=a.mp4',
-      '/api/viewvideo?filename=a.mp4'
-    ],
-    [
-      'http://127.1.2.3:8188/vhs/viewaudio?filename=a.mp3',
-      '/api/vhs/viewaudio?filename=a.mp3'
-    ]
-  ])('re-homes %s onto the page origin', ([href, path]) => {
-    expect(resolveAgentAssetUrl(href, PANEL)).toBe(`${PANEL}${path}`)
-  })
-
   it('keeps the whole query, including an empty subfolder', () => {
-    expect(resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)).toBe(
-      `${PANEL}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
-    )
-  })
-
-  it('defaults to the page the panel is served from', () => {
     expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
       `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
     )
   })
 
-  // Scheme-relative: absolute in everything but its scheme, so `new URL()`
-  // alone throws on it and the loopback host would survive.
-  it('re-homes a scheme-relative loopback URL onto the page origin', () => {
-    expect(
-      resolveAgentAssetUrl('//localhost:8188/view?filename=a.png', PANEL)
-    ).toBe(`${PANEL}/api/view?filename=a.png`)
+  it('re-homes a scheme-relative loopback URL onto the page API', () => {
+    expect(resolveAgentAssetUrl('//localhost:8188/view?filename=a.png')).toBe(
+      `${window.location.origin}/api/view?filename=a.png`
+    )
   })
 
-  // A reverse-proxied install is the case the re-homing exists for, and it is
-  // the one a bare origin cannot serve: `new URL('/view?…', origin)` resolves
-  // against the origin ROOT and drops the subpath, so every re-homed image
-  // 404s on exactly the deployment that needed the fix.
   it('keeps the subpath a reverse-proxied install is served under', () => {
     servedUnder('/ComfyBackendDirect')
-    expect(resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)).toBe(
-      `${PANEL}/ComfyBackendDirect/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
+      `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
     )
   })
 
@@ -99,9 +63,6 @@ describe('resolveAgentAssetUrl', () => {
     )
   })
 
-  // An <img> cannot send a header, so a web session names its workspace in the
-  // query. Re-homing through the API helper is what applies that; building the
-  // URL from an origin would hand the reader a 404 on cloud.
   it('names the workspace when the page is on a web session', () => {
     onTestFinished(
       provideWebSessionRequests(
@@ -115,36 +76,9 @@ describe('resolveAgentAssetUrl', () => {
     )
   })
 
-  // `pnpm dev`: the panel is served from one loopback port and the agent
-  // drives a ComfyUI on another, so the reference it writes already loads.
-  // Re-homing must not break it — and the reason it does not is the `/api`
-  // prefix, which is what `vite.config.mts` proxies. A bare `/view` on the
-  // dev server's own origin is not proxied and would 404, which is the whole
-  // argument for re-homing through the API helper rather than skipping the
-  // rewrite whenever the page itself happens to be on loopback.
-  it('re-homes onto the proxied api route when the page is itself loopback', () => {
-    const dev = 'http://localhost:5173'
-    expect(resolveAgentAssetUrl(LOOPBACK_VIEW, dev)).toBe(
-      `${dev}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
-    )
-  })
-
-  // Two ComfyUI instances on one machine is exactly the case a
-  // "skip when the page origin is loopback" guard would get wrong: the panel
-  // on :8000 cannot reach :8188's `/view` by port alone either.
-  it('re-homes a loopback asset served from a different loopback port', () => {
-    const desktop = 'http://127.0.0.1:8000'
-    expect(
-      resolveAgentAssetUrl('http://127.0.0.1:8188/view?filename=a.png', desktop)
-    ).toBe(`${desktop}/api/view?filename=a.png`)
-  })
-
-  // Applied to its own output: the re-homed URL no longer names a loopback
-  // host, so a second pass must not prefix `/api` twice. MarkdownStream does
-  // exactly this when a prose image is clicked and reclassified from the DOM.
   it('is idempotent', () => {
-    const once = resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)
-    expect(resolveAgentAssetUrl(once, PANEL)).toBe(once)
+    const once = resolveAgentAssetUrl(LOOPBACK_VIEW)
+    expect(resolveAgentAssetUrl(once)).toBe(once)
   })
 
   it('keeps a fragment out of the scoped query', () => {
@@ -162,26 +96,24 @@ describe('resolveAgentAssetUrl', () => {
 
   it('leaves a scheme-relative remote URL alone', () => {
     const remote = '//cdn.example.com/view?filename=a.png'
-    expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
+    expect(resolveAgentAssetUrl(remote)).toBe(remote)
   })
 
   it('leaves a genuinely remote ComfyUI host alone', () => {
     const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
-    expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
+    expect(resolveAgentAssetUrl(remote)).toBe(remote)
   })
 
-  // A cloud reply never carries a loopback URL, and its own asset host is
-  // left exactly as authored, so the cloud panel is unaffected.
   it('leaves a cloud asset host alone', () => {
     const cloud = 'https://cloud.comfy.org/api/view?filename=a.png'
-    expect(resolveAgentAssetUrl(cloud, PANEL)).toBe(cloud)
+    expect(resolveAgentAssetUrl(cloud)).toBe(cloud)
   })
 
   it('leaves a relative URL alone', () => {
-    expect(resolveAgentAssetUrl('/api/view?filename=a.png', PANEL)).toBe(
+    expect(resolveAgentAssetUrl('/api/view?filename=a.png')).toBe(
       '/api/view?filename=a.png'
     )
-    expect(resolveAgentAssetUrl('view?filename=a.png', PANEL)).toBe(
+    expect(resolveAgentAssetUrl('view?filename=a.png')).toBe(
       'view?filename=a.png'
     )
   })
@@ -190,32 +122,26 @@ describe('resolveAgentAssetUrl', () => {
     'http://127.0.0.1:8188/prompt',
     'http://127.0.0.1:8086/docs',
     'http://127.0.0.1:8188/view/extra?filename=a.png',
-    // Not a route ComfyUI serves; the only place it appeared was a second,
-    // hand-maintained copy of the media-route list.
-    'http://127.0.0.1:8188/viewaudio?filename=a.mp3'
-  ])('leaves the non-media loopback URL %s alone', (href) => {
-    expect(resolveAgentAssetUrl(href, PANEL)).toBe(href)
+    'http://127.0.0.1:8188/viewaudio?filename=a.mp3',
+    'ftp://127.0.0.1:8188/view?filename=a.png'
+  ])('leaves the loopback URL %s alone', (href) => {
+    expect(resolveAgentAssetUrl(href)).toBe(href)
   })
 
-  // Every media route the repo recognises, not a narrower second list: an
-  // agent reply carrying VHS audio or an asset-id reference was left pointed
-  // at the reader's own machine while `/view` was fixed.
   it.for([
-    '/view?filename=a.png',
-    '/viewvideo?filename=a.mp4',
-    '/vhs/viewvideo?filename=a.webm',
-    '/vhs/viewaudio?filename=a.wav',
-    '/assets/abc123/content',
-    '/api/view?filename=a.png',
-    '/api/vhs/viewaudio?filename=a.wav'
-  ])('re-homes the canonical media route %s', (route) => {
-    expect(resolveAgentAssetUrl(`http://127.0.0.1:8188${route}`, PANEL)).toBe(
-      `${PANEL}${api.apiURL(route)}`
+    ['/view?filename=a.png', '/api/view?filename=a.png'],
+    ['/viewvideo?filename=a.mp4', '/api/viewvideo?filename=a.mp4'],
+    ['/vhs/viewvideo?filename=a.webm', '/api/vhs/viewvideo?filename=a.webm'],
+    ['/vhs/viewaudio?filename=a.wav', '/api/vhs/viewaudio?filename=a.wav'],
+    ['/assets/abc123/content', '/api/assets/abc123/content'],
+    ['/api/view?filename=a.png', '/api/view?filename=a.png'],
+    ['/api/vhs/viewaudio?filename=a.wav', '/api/vhs/viewaudio?filename=a.wav']
+  ])('re-homes the canonical media route %s', ([route, path]) => {
+    expect(resolveAgentAssetUrl(`http://127.0.0.1:8188${route}`)).toBe(
+      `${window.location.origin}${path}`
     )
   })
 
-  // Spellings that can only mean this machine. Each fails open, so a missed
-  // one leaves the preview broken exactly as before the fix.
   it.for([
     'localhost',
     'localhost.',
@@ -229,37 +155,25 @@ describe('resolveAgentAssetUrl', () => {
     '[::]'
   ])('treats %s as this machine', (host) => {
     expect(
-      resolveAgentAssetUrl(`http://${host}:8188/view?filename=a.png`, PANEL)
-    ).toBe(`${PANEL}/api/view?filename=a.png`)
+      resolveAgentAssetUrl(`http://${host}:8188/view?filename=a.png`)
+    ).toBe(`${window.location.origin}/api/view?filename=a.png`)
   })
 
   it('reaches ReplyAsset urls through classifyAssetUrl', () => {
-    expect(classifyAssetUrl(LOOPBACK_VIEW, PANEL)).toEqual({
-      url: `${PANEL}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`,
+    expect(classifyAssetUrl(LOOPBACK_VIEW)).toEqual({
+      url: `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`,
       filename: 'ComfyUI_00005_.png',
       kind: 'image'
     })
   })
 
-  // The inline <img> goes through rewriteAgentAssetHtml, which takes no base,
-  // while the reply-asset preview goes through classifyAssetUrl, which does.
-  // The two must land on the same ROUTE for one URL — the origin may differ,
-  // since that is what the caller's base names, but the base path and the
-  // `/api` prefix come from the API helper and so cannot diverge.
-  it('reaches the same route as the html rewrite whatever base it is handed', () => {
+  it('re-homes onto the page whatever base classifyAssetUrl is handed', () => {
     servedUnder('/ComfyBackendDirect')
-    const route = (url: string) => {
-      const parsed = new URL(url)
-      return `${parsed.pathname}${parsed.search}`
-    }
-    const fromHtml = rewriteAgentAssetHtml(`<img src="${LOOPBACK_VIEW}">`)
-    const src = /src="([^"]+)"/.exec(fromHtml)?.[1].replaceAll('&amp;', '&')
-    const fromClassify = classifyAssetUrl(LOOPBACK_VIEW, `${PANEL}/api`)
-
-    expect(route(src!)).toBe(
-      '/ComfyBackendDirect/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
+    expect(
+      classifyAssetUrl(LOOPBACK_VIEW, 'http://100.74.161.87:8190/api')?.url
+    ).toBe(
+      `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
     )
-    expect(route(fromClassify!.url)).toBe(route(src!))
   })
 })
 
@@ -299,11 +213,8 @@ describe('rewriteAgentAssetHtml', () => {
     expect(out).toContain(
       `srcset="${window.location.origin}/api/view?filename=a.webp"`
     )
-    expect(out).not.toContain('localhost:8188')
   })
 
-  // srcset separates candidates by a comma AFTER the descriptors, not by every
-  // comma: a URL may carry commas of its own (a filename, a CDN transform).
   it('keeps a comma inside a candidate URL as part of that URL', () => {
     const out = rewriteAgentAssetHtml(
       '<img srcset="http://127.0.0.1:8188/view?filename=a,b.png 1x, http://127.0.0.1:8188/view?filename=c.png 2x">'
@@ -311,7 +222,6 @@ describe('rewriteAgentAssetHtml', () => {
     expect(out).toContain(
       `srcset="${window.location.origin}/api/view?filename=a,b.png 1x, ${window.location.origin}/api/view?filename=c.png 2x"`
     )
-    expect(out).not.toContain('127.0.0.1')
   })
 
   it('resolves a candidate that follows leading whitespace', () => {
@@ -332,6 +242,17 @@ describe('rewriteAgentAssetHtml', () => {
     )
   })
 
+  it.for([
+    ['a.png 1x ((), http://127.0.0.1:8188/view?filename=b.png 2x', true],
+    ['a.png 1x (x, http://127.0.0.1:8188/view?filename=b.png 2x)', false]
+  ] as const)(
+    'ends a descriptor only at a comma outside parentheses in %s',
+    ([srcset, rehomed]) => {
+      const out = rewriteAgentAssetHtml(`<img srcset="${srcset}">`)
+      expect(out.includes(`${window.location.origin}/api/view`)).toBe(rehomed)
+    }
+  )
+
   it('leaves a srcset of remote candidates alone', () => {
     const html =
       '<img srcset="https://cdn.example.com/a.png 1x, https://cdn.example.com/a@2x.png 2x">'
@@ -344,17 +265,6 @@ describe('rewriteAgentAssetHtml', () => {
     expect(rewriteAgentAssetHtml(untouched)).toBe(untouched)
   })
 
-  // Rewriting one URL must not edit unrelated markup. Parsing the html as a
-  // whole DOCUMENT and returning `body.innerHTML` does: the parser relocates
-  // what cannot sit directly in <body>, so table markup loses its wrapper
-  // here, and in a real browser a leading <style> or <title> — both permitted
-  // by the sanitizing in renderMarkdownToHtml — is hoisted into <head> and
-  // dropped outright. The loss is conditional on some *other* URL in the same
-  // reply having been rewritten, so one reply renders two ways depending on
-  // whether it happens to carry a loopback asset at all.
-  //
-  // Only the table half is asserted: this suite runs on happy-dom, whose
-  // parser does not reproduce the <head> hoisting a browser performs.
   it('leaves markup it is not rewriting exactly as it found it', () => {
     const orphan = '<tr><td>a</td></tr>'
     const out = rewriteAgentAssetHtml(
@@ -364,9 +274,6 @@ describe('rewriteAgentAssetHtml', () => {
     expect(out).toContain(`${window.location.origin}/api/view?`)
   })
 
-  // A srcset needing no rewrite must come back byte-identical, even when it is
-  // spelled unlike the re-serializer's output: re-emitting it would flip the
-  // document to rewritten and re-serialize everything for no gain.
   it('leaves a remote srcset exactly as authored while rewriting a sibling', () => {
     const odd =
       '<img srcset="https://cdn.example.com/a.png 1x,https://cdn.example.com/b.png  2x,">'
@@ -380,9 +287,6 @@ describe('rewriteAgentAssetHtml', () => {
     expect(out).toContain('srcset=" , ,  "')
   })
 
-  // The streaming path skips the parse for prose that cannot carry a loopback
-  // reference, so the prefilter must not reject a spelling the classifier
-  // accepts — a miss there is a silently broken preview, not a slow one.
   it.for([
     'localhost',
     'localhost.',
@@ -392,7 +296,10 @@ describe('rewriteAgentAssetHtml', () => {
     '[0:0:0:0:0:0:0:1]',
     '[::ffff:127.0.0.1]',
     '0.0.0.0',
-    '[::]'
+    '[::]',
+    '2130706433',
+    '0x7f000001',
+    '0'
   ])('still parses html whose only loopback spelling is %s', (host) => {
     const out = rewriteAgentAssetHtml(
       `<img src="http://${host}:8188/view?filename=a.png">`

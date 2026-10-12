@@ -1,16 +1,6 @@
 const MEDIA_ROUTE =
   /^(?:\/api)?\/(?:view|viewvideo|vhs\/viewvideo|vhs\/viewaudio|assets\/[^/?#]+\/content)(?:\?|$)/
 
-/**
- * Whether a route is one of the media routes a browser fetches without
- * headers, because an `<img>` or `<video>` src cannot carry any.
- *
- * This is the one list. Anything that has to recognise a media URL asks here
- * rather than keeping a second, narrower copy that drifts — the agent panel's
- * loopback re-homing kept one that missed `/vhs/viewvideo`, `/vhs/viewaudio`
- * and `/assets/<id>/content` while accepting a `/viewaudio` that no route
- * serves.
- */
 export function isMediaRoute(route: string): boolean {
   return MEDIA_ROUTE.test(route)
 }
