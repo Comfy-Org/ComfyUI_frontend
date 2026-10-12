@@ -59,8 +59,8 @@ const beforeAfter: ModelLaunchBeforeAfter = {
       afterSrc: `${placeholderClipBase}/cloud/ai-models/gpt-image-2.webm`
     },
     {
-      id: 'true-hdr',
-      label: { en: 'True HDR', 'zh-CN': 'True HDR' },
+      id: 'sdr-to-hdr',
+      label: { en: 'SDR-to-HDR', 'zh-CN': 'SDR 转 HDR' },
       caption: {
         en: 'SDR in, HDR out. Best viewed on an HDR display.',
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
@@ -145,8 +145,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Convert SDR footage to HDR in a single node with True HDR.',
-          'zh-CN': '使用 True HDR，一个节点即可将 SDR 素材转换为 HDR。'
+          en: 'Convert SDR footage to HDR.',
+          'zh-CN': '将 SDR 素材转换为 HDR。'
         },
         media: media.goldfish,
         href: nvidiaRtxLinks.download
