@@ -32,7 +32,6 @@ beforeEach(() => stubReducedMotion(false))
 afterEach(() => {
   cancelLinkHideTransition(ROOT, LINK_A)
   cancelLinkHideTransition(ROOT, LINK_B)
-  vi.unstubAllGlobals()
 })
 
 describe('springEase', () => {
