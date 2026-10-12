@@ -89,6 +89,11 @@ watch(
               modelThumbnails.value[url] = preview
               return
             }
+            if (
+              !new URL(url, window.location.origin).searchParams.has('filename')
+            ) {
+              return
+            }
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
             const generated = await generateModelThumbnail(

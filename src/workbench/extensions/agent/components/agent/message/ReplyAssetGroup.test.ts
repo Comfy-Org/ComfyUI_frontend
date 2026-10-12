@@ -50,7 +50,7 @@ const audio: ReplyAsset = {
   kind: 'audio'
 }
 const model: ReplyAsset = {
-  url: 'https://x/mesh.glb',
+  url: 'https://x/api/view?filename=mesh.glb',
   filename: 'mesh.glb',
   kind: '3D'
 }
@@ -193,7 +193,7 @@ describe('ReplyAssetGroup', () => {
       expect.objectContaining({
         key: 'asset-3d-viewer',
         title: 'mesh.glb',
-        props: { modelUrl: 'https://x/mesh.glb' }
+        props: { modelUrl: 'https://x/api/view?filename=mesh.glb' }
       })
     )
     expect(screen.queryByTestId('lightbox')).not.toBeInTheDocument()
@@ -251,7 +251,24 @@ describe('ReplyAssetGroup', () => {
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
     expect(generateModelThumbnail).toHaveBeenCalledWith(
-      'https://x/mesh.glb',
+      'https://x/api/view?filename=mesh.glb',
+      'mesh.glb',
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('generates thumbnails only for model URLs that name a filename query', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const pathStyleModel: ReplyAsset = {
+      url: 'https://x/models/scene.glb',
+      filename: 'scene.glb',
+      kind: '3D'
+    }
+    renderGroup([pathStyleModel, model])
+
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    expect(generateModelThumbnail).toHaveBeenCalledWith(
+      'https://x/api/view?filename=mesh.glb',
       'mesh.glb',
       expect.any(AbortSignal)
     )
