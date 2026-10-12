@@ -51,12 +51,29 @@ describe('LGraphNode configure named values shadow diff', () => {
     LiteGraph.namedValuesRestore = false
   })
 
-  it('applies supplied named values and still reports the shadow mismatch when the flag is off', () => {
+  it('applies legacy positional values and still reports the shadow mismatch when the flag is off', () => {
     LiteGraph.namedValuesRestore = false
 
     node.configure(mismatchInfo())
 
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        mismatch_widget_count: 1,
+        checked_widget_count: 2
+      })
+    )
+  })
+
+  it('applies named values with a per-call opt-in while the flag stays off', () => {
+    LiteGraph.namedValuesRestore = false
+
+    node.configure(mismatchInfo(), { restoreNamed: true })
+
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([15, 12345])
+    expect(LiteGraph.namedValuesRestore).toBe(false)
     expect(
       useTelemetry()?.trackNamedValuesShadowDiffMismatch
     ).toHaveBeenCalledExactlyOnceWith(

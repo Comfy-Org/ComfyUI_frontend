@@ -41,11 +41,14 @@ describe('LGraphNode widget ordering', () => {
         mode: 0
       } satisfies ISerialisedNode
 
-      node.configure({
-        ...info,
-        widgets_values: positional,
-        widgets_values_named: named
-      })
+      node.configure(
+        {
+          ...info,
+          widgets_values: positional,
+          widgets_values_named: named
+        },
+        { restoreNamed: true }
+      )
 
       expect([seed.value, steps.value, extra.value]).toEqual([12345, 37, 9])
 
@@ -240,7 +243,8 @@ describe('LGraphNode widget ordering', () => {
         addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
 
         node.configure(
-          mockNode(undefined, { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' })
+          mockNode(undefined, { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' }),
+          { restoreNamed: !namedValuesRestore }
         )
 
         expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])

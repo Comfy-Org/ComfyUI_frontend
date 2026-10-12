@@ -114,7 +114,7 @@ describe('widget value null contract', () => {
       expect(node.widgets?.map(({ value }) => value)).toEqual([30, null, 12345])
     })
 
-    it('round trips a null widget value with the global flag off', () => {
+    it('restores a null widget value through the indexed path', () => {
       LiteGraph.namedValuesRestore = false
       const { graph } = makeGraphWithWidget(null)
 
@@ -140,7 +140,6 @@ describe('widget value null contract', () => {
       LiteGraph.namedValuesRestore = false
       const { graph, node } = makeGraphWithWidget(DEFAULT_VALUE)
       const base = node.serialize()
-      base.widgets_values_named = undefined
 
       node.configure({ ...base, widgets_values: [] })
       expect(firstWidget(graph).value).toBe(DEFAULT_VALUE)
