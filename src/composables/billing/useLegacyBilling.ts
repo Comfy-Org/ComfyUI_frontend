@@ -97,6 +97,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const occupiedSeats = computed(() => null)
 
   const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
+  const agentScopedHasFunds = computed(
+    () => legacySubscriptionStatus.value?.scoped_has_funds?.agent
+  )
   const subscription = computed<SubscriptionInfo | null>(() => {
     // A past-due legacy status has no tier and is inactive, yet must still
     // reach the payment-recovery banner.
@@ -118,7 +121,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: hasFunds.value,
-      agentHasFunds: hasFunds.value
+      agentHasFunds: hasFunds.value,
+      agentScopedHasFunds: agentScopedHasFunds.value
     }
   })
 

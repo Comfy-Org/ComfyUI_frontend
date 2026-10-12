@@ -49,6 +49,16 @@ describe('useLegacyBilling', () => {
       expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
     })
 
+    it('maps the legacy Agent-scoped balance when the server reports it', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentScopedHasFunds).toBe(
+        false
+      )
+    })
+
     it('keeps a tierless past-due status as a subscription', () => {
       useInactiveStatus(
         statusWith({
