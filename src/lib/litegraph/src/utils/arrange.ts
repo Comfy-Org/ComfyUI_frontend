@@ -1,5 +1,20 @@
 import type { LGraphNode } from '../LGraphNode'
-import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
+import type { Direction } from '../interfaces'
+
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
+
+export interface IBoundaryNodes {
+  top: LGraphNode
+  right: LGraphNode
+  bottom: LGraphNode
+  left: LGraphNode
+}
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
@@ -8,8 +23,8 @@ import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
  * `null` if no nodes were supplied or the first node was falsy.
  */
 export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
-  const valid = nodes?.find((x) => x)
-  if (!valid) return null
+  if (nodes.length === 0) return null
+  const valid = nodes[0]
 
   let top = valid
   let right = valid
@@ -17,7 +32,6 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
   let left = valid
 
   for (const node of nodes) {
-    if (!node) continue
     const [x, y] = node.pos
     const [width, height] = node.size
 
@@ -44,7 +58,7 @@ export function distributeNodes(
   nodes: LGraphNode[],
   horizontal?: boolean
 ): NewNodePosition[] {
-  const nodeCount = nodes?.length
+  const nodeCount = nodes.length
   if (!(nodeCount > 1)) return []
 
   const index = horizontal ? 0 : 1
@@ -91,8 +105,6 @@ export function alignNodes(
   direction: Direction,
   align_to?: LGraphNode
 ): NewNodePosition[] {
-  if (!nodes) return []
-
   const boundary =
     align_to === undefined
       ? getBoundaryNodes(nodes)

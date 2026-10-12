@@ -1,8 +1,13 @@
+import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-comfyhub-publish'
+
+/** Reka's default `md` frame is 576px — too narrow for this 1400px layout. */
+const PUBLISH_CONTENT_CLASS =
+  'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh] rounded-2xl overflow-hidden'
 
 export function useComfyHubPublishDialog() {
   const dialogService = useDialogService()
@@ -18,12 +23,34 @@ export function useComfyHubPublishDialog() {
       component: ComfyHubPublishDialog,
       props: {
         onClose: hide
+      },
+      dialogComponentProps: {
+        size: 'full',
+        contentClass: PUBLISH_CONTENT_CLASS
+      }
+    })
+  }
+
+  /** Extension-facing entry point; also used by the e2e publish fixture. */
+  async function showPublishDialog(): Promise<void> {
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: ComfyHubPublishDialog,
+      props: {
+        onClose: hide,
+        // Falls through to the BaseModalLayout root — keeps the e2e
+        // publish-dialog selector working without the PrimeVue pt hook.
+        'data-testid': 'publish-dialog'
+      },
+      dialogComponentProps: {
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
   }
 
   return {
     show,
-    hide
+    hide,
+    showPublishDialog
   }
 }

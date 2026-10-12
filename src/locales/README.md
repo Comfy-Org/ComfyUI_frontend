@@ -6,12 +6,18 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 
 - en (English)
 - zh (中文)
+- zh-TW (繁體中文)
 - ru (Русский)
 - ja (日本語)
 - ko (한국어)
 - fr (Français)
 - es (Español)
+- ar (عربي)
 - tr (Türkçe)
+- pt-BR (Português (BR))
+- fa (فارسی)
+- he (עברית)
+- it (Italiano)
 
 ## How to Add a New Language
 

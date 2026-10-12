@@ -40,7 +40,7 @@
             v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
-            class="focus-visible:ring-ring m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+            class="m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
             :title="displayModelName"
             @click="handleModelLabelClick"
           >
@@ -127,16 +127,57 @@
 
       <template v-else>
         <Button
+          v-if="showGatedRepoAction"
+          :tooltip="t('rightSidePanel.missingModels.gatedModelTooltip')"
+          :as="usesNativeModelAccess ? 'button' : 'a'"
+          :type="usesNativeModelAccess ? 'button' : undefined"
+          :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
+          :target="usesNativeModelAccess ? undefined : '_blank'"
+          :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
+          data-testid="missing-model-gated-access"
+          variant="muted-textonly"
+          size="icon"
+          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+          :aria-label="
+            t(
+              usesNativeModelAccess
+                ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
+                : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+          @click="handleOpenGatedRepo"
+        >
+          <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
+        </Button>
+        <Button
           v-if="showDownloadAction"
           data-testid="missing-model-download"
           variant="secondary"
           size="sm"
           class="shrink-0 focus-visible:ring-inset"
-          :aria-label="`${t('g.download')} ${model.name}`"
+          :aria-label="
+            t(
+              'rightSidePanel.missingModels.downloadModel',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+          :aria-describedby="
+            showGatedRepoAction ? gatedDownloadDescriptionId : undefined
+          "
           @click="handleDownload"
         >
           {{ t('g.download') }}
         </Button>
+        <span
+          v-if="showGatedRepoAction"
+          :id="gatedDownloadDescriptionId"
+          hidden
+        >
+          {{ t('rightSidePanel.missingModels.gatedModelDownloadTooltip') }}
+        </span>
       </template>
 
       <Button
@@ -170,7 +211,7 @@
           <div class="flex min-h-8 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -195,7 +236,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -212,13 +260,13 @@ import {
   getModelStateKey,
   getNodeDisplayLabel
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
+import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
-  downloadModel,
-  fetchModelMetadata,
   isModelDownloadable,
+  isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
@@ -279,6 +327,13 @@ const store = useMissingModelStore()
 const { selectedLibraryModel } = storeToRefs(store)
 const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
+const {
+  fileSizeFor,
+  gatedRepoUrlFor,
+  prefetchModelMetadata,
+  downloadMissingModel,
+  openModelAccessPage
+} = useMissingModelDownload()
 
 const expanded = computed(
   () =>
@@ -315,12 +370,22 @@ const downloadable = computed(() => {
 })
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
+const gatedRepoUrl = computed(() => {
+  const url = model.representative.url
+  const repoUrl = url ? gatedRepoUrlFor(url) : undefined
+  return repoUrl && isTrustedHuggingFaceUrl(repoUrl) ? repoUrl : undefined
+})
+const showGatedRepoAction = computed(
+  () => showDownloadAction.value && !!gatedRepoUrl.value
+)
+const usesNativeModelAccess = !!window.__comfyDesktop2?.openModelAccessPage
+const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
 
   const url = model.representative.url
-  const size = url ? store.fileSizes[url] : undefined
+  const size = url ? fileSizeFor(url) : undefined
   return size ? formatSize(size) : undefined
 })
 const modelTypeLabel = computed(
@@ -362,32 +427,29 @@ onMounted(() => {
   if (isCloud) return
 
   const url = model.representative.url
-  if (url && !store.fileSizes[url]) {
-    fetchModelMetadata(url)
-      .then((metadata) => {
-        if (metadata.fileSize !== null) {
-          store.setFileSize(url, metadata.fileSize)
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn(
-          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
-          error
-        )
-      })
+  if (url && downloadable.value) {
+    void prefetchModelMetadata(url)
   }
 })
 
 function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
-      { name: rep.name, url: rep.url, directory: rep.directory },
-      store.folderPaths
-    )
+    downloadMissingModel({
+      name: rep.name,
+      url: rep.url,
+      directory: rep.directory
+    })
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }
+}
+
+function handleOpenGatedRepo() {
+  if (!usesNativeModelAccess) return
+
+  const repoUrl = gatedRepoUrl.value
+  if (repoUrl) void openModelAccessPage(repoUrl)
 }
 
 function handleLocatePrimary() {

@@ -1,23 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-const mockActiveWorkflow = vi.hoisted(() => ({
-  value: { filename: 'my-workflow.json' } as { filename: string } | null
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
-  })
-}))
-
-const { useComfyHubPublishWizard } = await import('./useComfyHubPublishWizard')
+const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
+  await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockActiveWorkflow.value = { filename: 'my-workflow.json' }
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      filename: 'my-workflow.json'
+    })
   })
 
   describe('createDefaultFormData', () => {
@@ -27,7 +20,7 @@ describe('useComfyHubPublishWizard', () => {
     })
 
     it('defaults name to empty string when no active workflow', () => {
-      mockActiveWorkflow.value = null
+      useWorkflowStore().activeWorkflow = null
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.name).toBe('')
     })
@@ -144,6 +137,23 @@ describe('useComfyHubPublishWizard', () => {
   })
 
   describe('applyPrefill', () => {
+    it('restores the published Hub title instead of the workflow filename', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('Published title')
+    })
+
+    it('does not overwrite a Hub title edited before prefill resolves', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.name = 'New title'
+
+      applyPrefill({ name: 'Published title' })
+
+      expect(formData.value.name).toBe('New title')
+    })
+
     it('restores the existing thumbnail URL into the form', () => {
       const { applyPrefill, formData } = useComfyHubPublishWizard()
       applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
@@ -197,5 +207,50 @@ describe('useComfyHubPublishWizard', () => {
         'https://cdn.example.com/sample.png'
       )
     })
+
+    it('restores models, customNodes, tutorialUrl, and metadata', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+      expect(formData.value.models).toEqual(['SDXL'])
+      expect(formData.value.customNodes).toEqual(['Impact Pack'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/abc')
+      expect(formData.value.metadata).toEqual({ extra: 'value' })
+    })
+
+    it('does not overwrite models, customNodes, tutorialUrl, or metadata already set by the user', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.models = ['User model']
+      formData.value.customNodes = ['User node']
+      formData.value.tutorialUrl = 'https://youtube.com/user'
+      formData.value.metadata = { user: 'value' }
+
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+
+      expect(formData.value.models).toEqual(['User model'])
+      expect(formData.value.customNodes).toEqual(['User node'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/user')
+      expect(formData.value.metadata).toEqual({ user: 'value' })
+    })
+  })
+
+  it('caches the published Hub title by workflow path', () => {
+    const { formData } = useComfyHubPublishWizard()
+    formData.value.name = 'Published title'
+
+    cachePublishPrefill('workflows/cache-title.json', formData.value)
+
+    expect(getCachedPrefill('workflows/cache-title.json')).toEqual(
+      expect.objectContaining({ name: 'Published title' })
+    )
   })
 })

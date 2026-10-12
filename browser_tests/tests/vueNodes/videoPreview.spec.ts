@@ -290,10 +290,10 @@ test.describe(
         )
 
         await loadVideoFixture.resizeFromCorner('SE', 180, 0)
+        const getWidth = async () =>
+          (await loadVideoFixture.boundingBox())?.width ?? -1
         await comfyPage.nextFrame()
-        await expect
-          .poll(loadVideoFixture.pollWidth)
-          .toBeGreaterThan(nodeBox.width + 100)
+        await expect.poll(getWidth).toBeGreaterThan(nodeBox.width + 100)
         const layout = await expectCenteredVideoPreview(loadVideo.preview)
         expect(
           layout.wrapperWidth - initialLayout.wrapperWidth,
@@ -315,10 +315,10 @@ test.describe(
         )
 
         await loadVideoFixture.resizeFromCorner('SE', 0, 180)
+        const getHeight = async () =>
+          (await loadVideoFixture.boundingBox())?.height ?? -1
         await comfyPage.nextFrame()
-        await expect
-          .poll(loadVideoFixture.pollHeight)
-          .toBeGreaterThan(nodeBox.height + 100)
+        await expect.poll(getHeight).toBeGreaterThan(nodeBox.height + 100)
         const layout = await expectCenteredVideoPreview(loadVideo.preview)
         expect(
           layout.wrapperHeight - initialLayout.wrapperHeight,
@@ -334,7 +334,7 @@ test.describe(
         await expect(loadVideo.navigationDots).toBeHidden()
 
         try {
-          await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+          await comfyPage.menu.topbar.setVueNodesEnabled(false)
           await comfyPage.nextFrame()
           await comfyPage.page.evaluate(
             (names) => {
@@ -351,7 +351,7 @@ test.describe(
             [file1, file2]
           )
         } finally {
-          await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+          await comfyPage.menu.topbar.setVueNodesEnabled(true)
           await comfyPage.nextFrame()
         }
 

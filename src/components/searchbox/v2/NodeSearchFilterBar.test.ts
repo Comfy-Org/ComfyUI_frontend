@@ -4,18 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
-import {
-  createMockNodeDef,
-  setupTestPinia,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
+import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-    setupTestPinia()
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
     settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
@@ -53,7 +48,7 @@ describe(NodeSearchFilterBar, () => {
   }
 
   const buttonTexts = () =>
-    screen.getAllByRole('button').map((b) => b.textContent?.trim())
+    screen.getAllByRole('button').map((b) => b.textContent.trim())
 
   it.for([
     { prop: 'hasFavorites', label: 'Bookmarked' },

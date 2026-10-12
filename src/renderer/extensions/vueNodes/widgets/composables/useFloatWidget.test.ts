@@ -3,14 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
   addValueControlWidgets: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    settings: {}
-  })
 }))
 
 const { onFloatValueChange } = _for_testing

@@ -1,11 +1,11 @@
-import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
@@ -63,8 +63,9 @@ export function useTemplateUrlLoader() {
   /**
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
+   * @returns the id of the template that loaded, if one did
    */
-  const loadTemplateFromUrl = async () => {
+  const loadTemplateFromUrl = async (): Promise<string | undefined> => {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
@@ -108,33 +109,26 @@ export function useTemplateUrlLoader() {
     try {
       await templateWorkflows.loadTemplates()
 
-      const success = await templateWorkflows.loadWorkflowTemplate(
+      const result = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
         sourceParam
       )
 
-      if (!success) {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('templateWorkflows.error.templateNotFound', {
-            templateName: templateParam
-          })
-        })
-      } else if (modeParam === 'linear') {
+      if (result !== 'loaded') return
+
+      if (modeParam === 'linear') {
         // Set linear mode after successful template load
         useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
+      return sourceParam === 'default' ? templateParam : undefined
     } catch (error) {
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',
         error
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate')
+      toast.error(t('g.error'), {
+        description: t('templateWorkflows.error.loading')
       })
     } finally {
       cleanupUrlParams()

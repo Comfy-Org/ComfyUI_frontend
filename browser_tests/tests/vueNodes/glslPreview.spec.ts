@@ -7,6 +7,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -187,7 +188,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
   test.describe('standalone node', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_standalone')
-      await comfyPage.vueNodes.waitForNodes(1)
     })
 
     test('renders a blob preview into the node after execution', async ({
@@ -367,7 +367,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
   test.describe('with primitive float source', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_float')
-      await comfyPage.vueNodes.waitForNodes(2)
     })
 
     test('refreshes preview when upstream PrimitiveFloat value changes', async ({
@@ -406,7 +405,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
   test.describe('with upstream LoadImage', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_loadimage')
-      await comfyPage.vueNodes.waitForNodes(2)
     })
 
     const LOAD_IMAGE_NODE_ID = '2'
@@ -457,7 +455,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
   test.describe('with primitive int source', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_int')
-      await comfyPage.vueNodes.waitForNodes(2)
     })
 
     test('refreshes preview when upstream PrimitiveInt value changes', async ({
@@ -495,7 +492,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
   test.describe('with primitive boolean source', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_with_bool')
-      await comfyPage.vueNodes.waitForNodes(2)
     })
 
     test('upstream PrimitiveBoolean value flows through as the u_bool0 uniform', async ({
@@ -532,7 +528,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/glsl_shader_in_subgraph')
-      await comfyPage.vueNodes.waitForNodes(1)
     })
 
     test('renders a GLSL blob preview on the outer subgraph node', async ({
@@ -564,7 +559,6 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'nodes/glsl_shader_subgraph_with_float'
       )
-      await comfyPage.vueNodes.waitForNodes(1)
     })
 
     test('extracts uniform sources from inner upstream widgets', async ({
@@ -585,6 +579,64 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await expect(subgraph.previewImage).toBeVisible()
       await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
+    })
+  })
+
+  test.describe('GLSL inside a subgraph with a promoted uniform widget', () => {
+    const SUBGRAPH_NODE_ID = '1'
+    const SUBGRAPH_TITLE = 'GLSL Subgraph With Float'
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'nodes/glsl_shader_subgraph_with_float'
+      )
+    })
+
+    // Regression guard for #13875: editing a promoted host widget must reach the
+    // GLSL preview renderer.
+    test('reflects promoted host widget edits in the preview', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const subgraph = new GLSLShaderNode(
+        comfyPage,
+        SUBGRAPH_NODE_ID,
+        SUBGRAPH_TITLE
+      )
+
+      await test.step('promote the interior float value onto the host node', async () => {
+        await comfyPage.vueNodes.enterSubgraph(SUBGRAPH_NODE_ID)
+        const interiorFloat = comfyPage.vueNodes.getNodeByTitle(
+          PRIMITIVE_FLOAT_NODE_TITLE
+        )
+        await comfyPage.subgraph.promoteWidget(interiorFloat, 'value')
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, SUBGRAPH_NODE_ID))
+          .toContain('value')
+      })
+
+      // Interior float defaults to 1.0; shader writes vec4(u_float0, 0, 0, 1).
+      await subgraph.simulateExecutionOutput(ws)
+      const initialSrc = await subgraph.waitForBlobSrc()
+      await subgraph.expectEveryPixelToBe([255, 0, 0, 255], 2)
+
+      await test.step('editing the promoted host widget re-renders the preview', async () => {
+        const promotedValue = comfyPage.vueNodes.getWidgetByName(
+          SUBGRAPH_TITLE,
+          'value'
+        )
+        const { input } =
+          comfyPage.vueNodes.getInputNumberControls(promotedValue)
+        await expect(input).toBeVisible()
+        await input.fill('0')
+        await input.blur()
+
+        await expect.poll(() => subgraph.getPreviewSrc()).not.toBe(initialSrc)
+        await expect.poll(() => subgraph.getPreviewSrc()).toMatch(/^blob:/)
+        await subgraph.expectEveryPixelToBe([0, 0, 0, 255], 2)
+      })
     })
   })
 })

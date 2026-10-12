@@ -7,7 +7,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -49,6 +49,14 @@ let draining = false
 let retriggerRequested = false
 
 let authWatcherInstalled = false
+
+let activeRouter: Router | null = null
+
+function onAuthHandoffRoute(): boolean {
+  return (
+    activeRouter?.currentRoute.value.meta.defersDesktopLoginRedemption === true
+  )
+}
 
 function getCodeState(code: string): CodeRedemptionState {
   const existing = codeStates.get(code)
@@ -92,11 +100,9 @@ function handleTransientFailure(
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('desktopLogin.failedSummary'),
-    detail: t('desktopLogin.failedDetail'),
-    life: 6000
+  useToast().error(t('desktopLogin.failedSummary'), {
+    description: t('desktopLogin.failedDetail'),
+    duration: 6000
   })
 }
 
@@ -109,11 +115,26 @@ async function confirmRedemption(
 ): Promise<boolean> {
   if (state.approvedUserUid === uid) return true
   const confirmed = await useDialogService().confirm({
+    key: 'global-desktop-login-confirm',
     title: t('desktopLogin.confirmSummary'),
     message: t('desktopLogin.confirmMessage')
   })
   if (confirmed !== true) return false
   state.approvedUserUid = uid
+  return true
+}
+
+function settledForSsoSession(
+  code: string,
+  state: CodeRedemptionState
+): boolean {
+  const auth = useAuthStore()
+  if (auth.currentUser !== null || !auth.signedInWithSso) return false
+  settle(code, state)
+  useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
+    description: t('desktopLogin.ssoUnavailableDetail'),
+    duration: 8000
+  })
   return true
 }
 
@@ -125,10 +146,16 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  if (settledForSsoSession(code, state)) return
+
   // No session yet (e.g. code captured on the login page): keep the stash and
   // let a post-login trigger redeem it.
   const user = useAuthStore().currentUser
   if (!user) return
+
+  // Mid-handoff the imminent hard reload would destroy an open dialog; keep
+  // the stash and let the reloaded app prompt on a stable route.
+  if (onAuthHandoffRoute()) return
 
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
@@ -180,22 +207,18 @@ async function redeemCode(code: string): Promise<void> {
 
   if (response.ok) {
     settle(code, state)
-    useToastStore().add({
-      severity: 'success',
-      summary: t('desktopLogin.successSummary'),
-      detail: t('desktopLogin.successDetail'),
-      life: 4000
+    useToast().success(t('desktopLogin.successSummary'), {
+      description: t('desktopLogin.successDetail'),
+      duration: 4000
     })
     return
   }
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
-    useToastStore().add({
-      severity: 'error',
-      summary: t('desktopLogin.expiredSummary'),
-      detail: t('desktopLogin.expiredDetail'),
-      life: 6000
+    useToast().error(t('desktopLogin.expiredSummary'), {
+      description: t('desktopLogin.expiredDetail'),
+      duration: 6000
     })
     return
   }
@@ -203,6 +226,11 @@ async function redeemCode(code: string): Promise<void> {
   // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
+}
+
+export function hasPendingDesktopLoginCode(): boolean {
+  const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
@@ -252,10 +280,14 @@ function installAuthWatcherOnce(): void {
  * the cloud backend; redeeming the code from a signed-in browser session,
  * with the user's approval, releases a one-time custom token to that poll
  * and signs the desktop app in. The preserved-query tracker (configured in
- * router.ts) strips the code from the URL at capture time, so the stash is
- * the only place it lives.
+ * router.ts) strips the code from the URL at capture time, so the
+ * sessionStorage-backed stash is the only place it lives.
+ *
+ * Routes flagged `meta.defersDesktopLoginRedemption` suppress the prompt:
+ * the auth handoff ends in a hard reload that only the stash survives.
  */
 export function installDesktopLoginRedemption(router: Router): void {
+  activeRouter = router
   router.afterEach(() => {
     installAuthWatcherOnce()
     void redeemPendingDesktopLoginCode()

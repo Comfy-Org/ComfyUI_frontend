@@ -161,6 +161,7 @@ LiteGraphGlobal {
   "macTrackpadGestures": false,
   "middle_click_slot_add_default_node": false,
   "mouseWheelScroll": "panning",
+  "namedValuesRestore": false,
   "nodeLightness": undefined,
   "nodeOpacity": 1,
   "node_box_coloured_by_mode": false,
@@ -168,7 +169,7 @@ LiteGraphGlobal {
   "node_images_path": "",
   "node_types_by_file_extension": {},
   "onDeprecationWarning": [
-    [Function],
+    [MockFunction warn],
   ],
   "overlapBounding": [Function],
   "pointerevents_method": "pointer",

@@ -17,16 +17,6 @@ test.describe(
   'Template distribution filtering count',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
-      await comfyPage.settings.setSetting(
-        'Comfy.Templates.SelectedUseCases',
-        []
-      )
-      await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
-      await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
-    })
-
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
       comfyPage,
       templateApi
@@ -229,10 +219,7 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
-      const clearButton = comfyPage.templatesDialog.root.getByRole('button', {
-        name: /Clear Filters/i
-      })
-      await clearButton.click()
+      await comfyPage.templatesDialog.clearFilters.click()
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 

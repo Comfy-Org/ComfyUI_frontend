@@ -11,10 +11,10 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  getStopDiscountedMonthlyUsd
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
@@ -223,7 +223,7 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[comfy--credits] size-3 shrink-0',
+              'icon-[lucide--coins] size-3 shrink-0',
               i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
             )
           "

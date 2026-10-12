@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
@@ -130,9 +130,8 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toBeDefined()
     expect(metadata.prompt).toBeDefined()
 
-    const prompt = metadata.prompt as Record<string, any>
-    expect(prompt.node1.class_type).toBe('TestNode')
-    expect(prompt.node1.inputs.seed).toBe(123456)
+    expect(metadata.prompt?.node1.class_type).toBe('TestNode')
+    expect(metadata.prompt?.node1.inputs.seed).toBe(123456)
   })
 
   it('should handle string JSON content', async () => {
@@ -180,8 +179,6 @@ describe('GLTF binary metadata parser', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     const file = new File([new Uint8Array(16)], 'test.glb')
 
     it('resolves empty when the FileReader fires error', async () => {

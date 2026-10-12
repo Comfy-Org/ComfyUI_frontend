@@ -1,23 +1,61 @@
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+
+const IMPLICIT_ASSET_ROOT = 'input'
+const ANNOTATION_SUFFIX = /\s*\[(input|output|temp)\]\s*$/i
 
 const hasAnnotation = (filepath: string): boolean =>
-  /\[(input|output|temp)\]/i.test(filepath)
+  ANNOTATION_SUFFIX.test(filepath)
 
-const createAnnotation = (filepath: string, rootFolder = 'input'): string =>
-  !hasAnnotation(filepath) && rootFolder !== 'input' ? ` [${rootFolder}]` : ''
+const createAnnotation = (
+  filepath: string,
+  rootFolder = IMPLICIT_ASSET_ROOT
+): string =>
+  !hasAnnotation(filepath) && rootFolder !== IMPLICIT_ASSET_ROOT
+    ? ` [${rootFolder}]`
+    : ''
 
 const createPath = (filename: string, subfolder = ''): string =>
   subfolder ? `${subfolder}/${filename}` : filename
 
+type AnnotatedPathOptions = {
+  rootFolder?: ResultItemType
+  subfolder?: string
+}
+
+export function parseAnnotatedPath(
+  filepath: string,
+  fallbackRoot: string = IMPLICIT_ASSET_ROOT
+): { filepath: string; rootFolder: string } {
+  const match = ANNOTATION_SUFFIX.exec(filepath)
+  if (!match) return { filepath, rootFolder: fallbackRoot }
+
+  const annotation = match[1].toLowerCase()
+  return {
+    filepath: filepath.slice(0, match.index),
+    rootFolder:
+      annotation === 'output' || annotation === 'temp'
+        ? annotation
+        : IMPLICIT_ASSET_ROOT
+  }
+}
+
 /** Creates annotated filepath in format used by folder_paths.py */
+export function createAnnotatedPath(item: ResultItem): string
+export function createAnnotatedPath(
+  item: string,
+  options?: AnnotatedPathOptions
+): string
 export function createAnnotatedPath(
   item: string | ResultItem,
-  options: { rootFolder?: string; subfolder?: string } = {}
+  options: AnnotatedPathOptions = {}
 ): string {
-  const { rootFolder = 'input', subfolder } = options
+  const { rootFolder = IMPLICIT_ASSET_ROOT, subfolder } = options
   if (typeof item === 'string')
     return `${createPath(item, subfolder)}${createAnnotation(item, rootFolder)}`
-  return `${createPath(item.filename ?? '', item.subfolder)}${
-    item.type && item.type !== rootFolder ? ` [${item.type}]` : ''
-  }`
+  const filename = item.filename ?? ''
+  return `${createPath(filename, item.subfolder)}${createAnnotation(
+    filename,
+    item.type
+  )}`
 }

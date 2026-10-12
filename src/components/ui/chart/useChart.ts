@@ -1,9 +1,10 @@
-import type { ChartData, ChartOptions, ChartType } from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import {
   BarController,
   BarElement,
   CategoryScale,
   Chart,
+  Colors,
   Filler,
   Legend,
   LinearScale,
@@ -12,14 +13,17 @@ import {
   PointElement,
   Tooltip
 } from 'chart.js'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, toRaw, watch } from 'vue'
 
 import type { Ref } from 'vue'
+
+export type SupportedChartType = 'bar' | 'line'
 
 Chart.register(
   BarController,
   BarElement,
   CategoryScale,
+  Colors,
   Filler,
   Legend,
   LinearScale,
@@ -35,13 +39,14 @@ function getCssVar(name: string): string {
     .trim()
 }
 
-function getDefaultOptions(type: ChartType): ChartOptions {
+function getDefaultOptions(type: SupportedChartType): ChartOptions {
   const foreground = getCssVar('--color-base-foreground') || '#ffffff'
   const muted = getCssVar('--color-muted-foreground') || '#8a8a8a'
 
   return {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
         align: 'start',
@@ -62,8 +67,8 @@ function getDefaultOptions(type: ChartType): ChartOptions {
                 '#888'
               return {
                 text: dataset.label ?? '',
-                fillStyle: color as string,
-                strokeStyle: color as string,
+                fillStyle: color,
+                strokeStyle: color,
                 lineWidth: 0,
                 pointStyle: 'circle' as const,
                 hidden: !chart.isDatasetVisible(i),
@@ -124,73 +129,58 @@ function getDefaultOptions(type: ChartType): ChartOptions {
 }
 
 export function useChart(
-  canvasRef: Ref<HTMLCanvasElement | null>,
-  type: Ref<ChartType>,
-  data: Ref<ChartData>,
-  options?: Ref<ChartOptions | undefined>
+  canvasRef: Readonly<Ref<HTMLCanvasElement | null>>,
+  type: Readonly<Ref<SupportedChartType>>,
+  data: Readonly<Ref<ChartData>>
 ) {
-  const chartInstance = ref<Chart | null>(null)
+  let chart: Chart | undefined
+
+  function copyData(): ChartData {
+    const { datasets, labels, ...rest } = toRaw(data.value)
+    return {
+      ...rest,
+      labels: labels && [...labels],
+      datasets: datasets.map((dataset) => ({
+        ...dataset,
+        data: Array.isArray(dataset.data) ? [...dataset.data] : dataset.data
+      }))
+    }
+  }
 
   function createChart() {
     if (!canvasRef.value) return
 
-    chartInstance.value?.destroy()
-
-    const defaults = getDefaultOptions(type.value)
-    const merged = options?.value
-      ? deepMerge(defaults, options.value)
-      : defaults
-
-    chartInstance.value = new Chart(canvasRef.value, {
+    chart?.destroy()
+    chart = new Chart(canvasRef.value, {
       type: type.value,
-      data: data.value,
-      options: merged
+      data: copyData(),
+      options: getDefaultOptions(type.value)
     })
   }
 
   onMounted(createChart)
 
-  watch([type, data, options ?? ref(undefined)], () => {
-    if (chartInstance.value) {
-      chartInstance.value.data = data.value
-      chartInstance.value.options = options?.value
-        ? deepMerge(getDefaultOptions(type.value), options.value)
-        : getDefaultOptions(type.value)
-      chartInstance.value.update()
-    }
-  })
+  watch(type, createChart)
+
+  watch(
+    data,
+    () => {
+      if (!chart) return
+      const next = copyData()
+      const previousCount = chart.data.datasets.length
+      for (const [index, dataset] of next.datasets.entries()) {
+        if (index >= previousCount) break
+        const { hidden } = chart.getDatasetMeta(index)
+        if (typeof hidden === 'boolean') dataset.hidden = hidden
+      }
+      chart.data = next
+      chart.update()
+    },
+    { deep: true }
+  )
 
   onBeforeUnmount(() => {
-    chartInstance.value?.destroy()
-    chartInstance.value = null
+    chart?.destroy()
+    chart = undefined
   })
-
-  return { chartInstance }
-}
-
-function deepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Record<string, unknown>
-): T {
-  const result = { ...target } as Record<string, unknown>
-  for (const key of Object.keys(source)) {
-    const srcVal = source[key]
-    const tgtVal = result[key]
-    if (
-      srcVal &&
-      typeof srcVal === 'object' &&
-      !Array.isArray(srcVal) &&
-      tgtVal &&
-      typeof tgtVal === 'object' &&
-      !Array.isArray(tgtVal)
-    ) {
-      result[key] = deepMerge(
-        tgtVal as Record<string, unknown>,
-        srcVal as Record<string, unknown>
-      )
-    } else {
-      result[key] = srcVal
-    }
-  }
-  return result as T
 }

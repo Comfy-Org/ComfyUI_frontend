@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrompre"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Ouvrir l’éditeur de calques pour le nœud sélectionné"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },
@@ -227,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Rejouer l’intégration"
+  },
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },
@@ -274,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Définir les alias de recherche du sous-graphe"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Expérimental : Activer AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Performance du canvas"

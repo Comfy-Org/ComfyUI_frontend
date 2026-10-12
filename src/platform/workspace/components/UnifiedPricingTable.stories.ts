@@ -5,10 +5,7 @@ import UnifiedPricingTable from './UnifiedPricingTable.vue'
 /**
  * The unified pricing table (B4 / FE-934): one table for the new billing model,
  * with a personal/team **plan** toggle on a single workspace (Gamma-style).
- *
- * Note: the personal/team toggle itself only renders when `teamWorkspacesEnabled`
- * is on (a server flag, off in Storybook), so these stories drive the view via
- * `initialPlanMode` instead. Personal prices fall back to the static
+ * Personal prices fall back to the static
  * `TIER_PRICING` (no API in Storybook); the team column uses the locked DES-197
  * credit-slider stops.
  */

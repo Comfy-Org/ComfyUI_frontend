@@ -1,6 +1,5 @@
 declare const __COMFYUI_FRONTEND_VERSION__: string
 declare const __COMFYUI_FRONTEND_COMMIT__: string
-declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
@@ -65,7 +64,7 @@ interface SyftDisabledClient {
 }
 
 interface Window {
-  __CONFIG__: {
+  __CONFIG__?: {
     gtm_container_id?: string
     ga_measurement_id?: string
     mixpanel_token?: string

@@ -13,7 +13,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -30,9 +30,10 @@ const { t } = useI18n()
 
 const createPayload = (
   uninstallItem: NodePack
-): ManagerComponents['schemas']['ManagerPackInfo'] => {
+): ManagerComponents['schemas']['ManagerPackInfo'] | undefined => {
   if (!uninstallItem.id) {
-    throw new Error('Node ID is required for uninstallation')
+    console.error('Node ID is required for uninstallation')
+    return
   }
 
   return {
@@ -41,8 +42,11 @@ const createPayload = (
   }
 }
 
-const uninstallPack = (item: NodePack) =>
-  managerStore.uninstallPack(createPayload(item))
+const uninstallPack = (item: NodePack) => {
+  const payload = createPayload(item)
+  if (!payload) return
+  return managerStore.uninstallPack(payload)
+}
 
 const uninstallItems = async () => {
   if (!nodePacks?.length) return

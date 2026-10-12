@@ -4,11 +4,11 @@ import { cva } from 'cva'
 export { default as ButtonMask } from './ButtonMask.vue'
 
 export const buttonMaskVariants = cva({
-  base: 'group/button-mask relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'group/button-mask relative inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
-      ghost: 'text-primary-comfy-yellow bg-transparent'
+      ghost: 'bg-transparent text-primary-comfy-yellow'
     },
     size: {
       default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
@@ -36,7 +36,7 @@ export const buttonMaskBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-xl transition-all duration-500',
   variants: {
     variant: {
-      solid: 'text-primary-comfy-yellow bg-primary-comfy-ink',
+      solid: 'bg-primary-comfy-ink text-primary-comfy-yellow',
       ghost: 'bg-primary-comfy-yellow text-primary-comfy-ink'
     },
     size: {
@@ -48,26 +48,28 @@ export const buttonMaskBadgeVariants = cva({
       left: ''
     }
   },
+  // Hover slide effects are gated to md+: mobile has no hover input, so the
+  // icon stays put there.
   compoundVariants: [
     {
       size: 'default',
       iconPosition: 'right',
-      class: 'right-1 group-hover/button-mask:right-[calc(100%-36px)]'
+      class: 'right-1 md:group-hover/button-mask:right-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'right',
-      class: 'right-1 group-hover/button-mask:right-[calc(100%-52px)]'
+      class: 'right-1 md:group-hover/button-mask:right-[calc(100%-52px)]'
     },
     {
       size: 'default',
       iconPosition: 'left',
-      class: 'left-1 group-hover/button-mask:left-[calc(100%-36px)]'
+      class: 'left-1 md:group-hover/button-mask:left-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'left',
-      class: 'left-1 group-hover/button-mask:left-[calc(100%-52px)]'
+      class: 'left-1 md:group-hover/button-mask:left-[calc(100%-52px)]'
     }
   ],
   defaultVariants: {
@@ -78,7 +80,7 @@ export const buttonMaskBadgeVariants = cva({
 })
 
 export const BUTTON_MASK_LABEL_CLASS = [
-  'ppformula-text-center relative inline-block align-baseline',
+  'relative inline-block align-baseline',
   '[will-change:mask-size,-webkit-mask-size]',
   '[mask-image:linear-gradient(black,black)] [-webkit-mask-image:linear-gradient(black,black)]',
   'mask-no-repeat [-webkit-mask-repeat:no-repeat]',
@@ -87,7 +89,7 @@ export const BUTTON_MASK_LABEL_CLASS = [
   'data-[icon-position=left]:[mask-position:0_0] data-[icon-position=left]:[-webkit-mask-position:0_0]',
   'data-[hidden=true]:[mask-size:0%_100%] data-[hidden=true]:[-webkit-mask-size:0%_100%]',
   'data-[hidden=false]:[mask-size:100%_100%] data-[hidden=false]:[-webkit-mask-size:100%_100%]',
-  'group-hover/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
+  'md:group-hover/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] md:group-hover/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
   'group-focus-visible/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
 ].join(' ')
 

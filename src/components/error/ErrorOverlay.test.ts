@@ -1,19 +1,20 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import ErrorOverlay from './ErrorOverlay.vue'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
 import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/components/rightSidePanel/errors/useErrorGroups'
-import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
+import ErrorOverlay from './ErrorOverlay.vue'
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },
@@ -25,44 +26,24 @@ const mockErrorGroups = vi.hoisted(() => ({
 
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
-vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => mockErrorGroups
-}))
+vi.mock<unknown>(
+  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  () => ({
+    useErrorGroups: () => mockErrorGroups
+  })
+)
 
-vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
+vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    isGraphReady: false,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
   getExecutionIdByNode: vi.fn(),
   getNodeByExecutionId: vi.fn()
-}))
-
-const mockOpenPanel = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({ openPanel: mockOpenPanel })
-}))
-
-const mockCanvasStore = vi.hoisted(() => ({
-  linearMode: false,
-  canvas: null,
-  currentGraph: null,
-  updateSelectedItems: vi.fn()
-}))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
 }))
 
 function createTestI18n() {
@@ -73,11 +54,14 @@ function createTestI18n() {
       en: {
         g: {
           close: 'Close',
-          dismiss: 'Dismiss'
+          dismiss: 'Dismiss',
+          error: 'Error',
+          warning: 'Warning'
         },
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.',
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.',
           viewDetails: 'View details'
         },
         linearMode: {
@@ -103,17 +87,10 @@ function makeNodeError(messages: string[]): NodeError {
 }
 
 function renderOverlay(props: { appMode?: boolean } = {}) {
-  const pinia = createPinia()
-  setActivePinia(pinia)
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [pinia, createTestI18n()],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
+      plugins: [createTestI18n()]
     }
   })
 }
@@ -125,21 +102,61 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingModelGroups.value = []
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
-    mockOpenPanel.mockClear()
-    mockCanvasStore.linearMode = false
-    mockCanvasStore.canvas = null
-    mockCanvasStore.currentGraph = null
-    mockCanvasStore.updateSelectedItems.mockClear()
+    useCanvasStore().linearMode = false
+    useCanvasStore().canvas = null
+    useCanvasStore().currentGraph = null
+  })
+
+  it.for([
+    {
+      group: { type: 'missing_model', severity: 'missing' } as const,
+      label: 'Warning'
+    },
+    {
+      group: {
+        type: 'execution' as const,
+        severity: 'error' as const,
+        cards: []
+      },
+      label: 'Error'
+    }
+  ])('announces $label with aggregate issue copy', ({ group, label }) => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing media',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      },
+      {
+        ...group,
+        groupKey: group.type,
+        displayTitle: 'Another issue',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    renderOverlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 issues found')
+    expect(screen.getByRole('status')).toContainElement(screen.getByText(label))
   })
 
   it('renders a single overlay message without list markup', async () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -152,9 +169,9 @@ describe('ErrorOverlay', () => {
     renderOverlay()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -173,10 +190,12 @@ describe('ErrorOverlay', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -189,9 +208,9 @@ describe('ErrorOverlay', () => {
     renderOverlay({ appMode: true })
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 

@@ -3,12 +3,16 @@
  * This file can be imported without pulling in the entire THREE.js bundle
  */
 
-export const SUPPORTED_EXTENSIONS = new Set([
+export const SUPPORTED_MESH_EXTENSIONS = new Set([
   '.gltf',
   '.glb',
   '.obj',
   '.fbx',
-  '.stl',
+  '.stl'
+])
+
+export const SUPPORTED_EXTENSIONS = new Set([
+  ...SUPPORTED_MESH_EXTENSIONS,
   '.spz',
   '.splat',
   '.ply',

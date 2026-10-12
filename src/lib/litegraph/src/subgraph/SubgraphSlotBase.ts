@@ -7,21 +7,24 @@ import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedS
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
   Point,
   ReadOnlyRect,
   Size
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type {
+  CanvasPointerEvent,
+  Hoverable
+} from '@/lib/litegraph/src/types/events'
 import type {
   Serialisable,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import type { SubgraphInput } from './SubgraphInput'
@@ -71,8 +74,6 @@ export abstract class SubgraphSlot
   }
 
   override set pos(value) {
-    if (!value || value.length < 2) return
-
     this._pos[0] = value[0]
     this._pos[1] = value[1]
   }
@@ -96,7 +97,7 @@ export abstract class SubgraphSlot
     super(slot.name, slot.type)
 
     Object.assign(this, slot)
-    this.id = slot.id ?? createUuidv4()
+    this.id = slot.id
     this.type = slot.type
     this.parent = parent
   }

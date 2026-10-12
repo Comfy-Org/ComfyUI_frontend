@@ -4,6 +4,7 @@ import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const baseChallenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'preview-csrf-token',
   client_display_name: 'Comfy Desktop',
@@ -28,7 +29,13 @@ const baseChallenge: OAuthConsentChallenge = {
 
 const meta: Meta<typeof OAuthConsentView> = {
   title: 'Cloud/OAuth/Consent',
-  component: OAuthConsentView
+  component: OAuthConsentView,
+  decorators: [
+    () => ({
+      template:
+        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6" aria-hidden="true" /><story /></div>'
+    })
+  ]
 }
 export default meta
 type Story = StoryObj<typeof meta>
@@ -93,6 +100,19 @@ export const ComfyCli: Story = {
     initialChallenge: {
       ...baseChallenge,
       client_display_name: 'Comfy CLI'
+    }
+  }
+}
+
+export const RemoteWebClient: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Claude',
+      resource_display_name: 'Comfy Cloud MCP',
+      client_application_type: 'web',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      scopes: ['comfy-mcp:tools:calls']
     }
   }
 }

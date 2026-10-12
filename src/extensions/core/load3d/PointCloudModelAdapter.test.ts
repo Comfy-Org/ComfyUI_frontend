@@ -1,31 +1,30 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import type { ModelLoadContext } from './ModelAdapter'
 import * as ModelAdapterModule from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 
-const mockSettingGet = vi.fn<(key: string) => unknown>()
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: mockSettingGet })
-}))
-
-vi.mock('@/scripts/metadata/ply', () => ({
+vi.mock(import('@/scripts/metadata/ply'), () => ({
   isPLYAsciiFormat: vi.fn().mockReturnValue(false)
 }))
 
 const plyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 const fastPlyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 
-vi.mock('three/examples/jsm/loaders/PLYLoader', () => ({
-  PLYLoader: class {
-    setPath = vi.fn()
-    parse = plyLoaderParse
-  }
+vi.mock(import('three/examples/jsm/loaders/PLYLoader'), () => ({
+  PLYLoader: fromAny(
+    class {
+      setPath = vi.fn()
+      parse = plyLoaderParse
+    }
+  )
 }))
 
-vi.mock('./loader/FastPLYLoader', () => ({
+vi.mock(import('./loader/FastPLYLoader'), () => ({
   FastPLYLoader: class {
     parse = fastPlyLoaderParse
   }
@@ -64,10 +63,6 @@ function makeContext(
 }
 
 describe('PointCloudModelAdapter', () => {
-  beforeEach(() => {
-    mockSettingGet.mockReset()
-  })
-
   describe('identity', () => {
     it('handles the ply extension', () => {
       const adapter = new PointCloudModelAdapter()
@@ -93,7 +88,7 @@ describe('PointCloudModelAdapter', () => {
 
   describe('load', () => {
     beforeEach(() => {
-      mockSettingGet.mockReturnValue('three')
+      vi.mocked(useSettingStore().get).mockReturnValue('three')
       vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
         new ArrayBuffer(0)
       )

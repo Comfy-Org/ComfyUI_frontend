@@ -1,0 +1,213 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "115de7a9d9e34410cffb9ecfd268e993b11a50fb"
+  },
+  "schema": 3,
+  "corpus": {
+    "count": 40,
+    "nodeTypesSha256": "1e652681b9d77e556c25fd7eb1b6850416622ef68a4635db4d471971aecda9fb"
+  },
+  "nodes": {
+    "VHS_AudioToVHSAudio": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VHS_BatchManager": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VHS_DuplicateImages": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_DuplicateLatents": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_DuplicateMasks": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_GetImageCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VHS_GetLatentCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VHS_GetMaskCount": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "VHS_LoadAudio": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_LoadAudioUpload": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_LoadImagePath": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_LoadImages": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_LoadImagesPath": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_LoadVideo": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_LoadVideoFFmpeg": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_LoadVideoFFmpegPath": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_LoadVideoPath": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_MergeImages": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_MergeLatents": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_MergeMasks": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_PruneOutputs": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_SelectEveryNthImage": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectEveryNthLatent": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectEveryNthMask": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectFilename": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectImages": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectLatents": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectLatest": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SelectMasks": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SplitImages": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SplitLatents": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_SplitMasks": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_Unbatch": {
+      "connectFirst": ["+output:unbatched:INT", "-output:unbatched:*"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["+output:unbatched:*", "-output:unbatched:INT"]
+    },
+    "VHS_VAEDecodeBatched": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_VAEEncodeBatched": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "VHS_VHSAudioToAudio": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_VideoCombine": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "VHS_VideoInfo": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_VideoInfoLoaded": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": "NO_PRODUCER"
+    },
+    "VHS_VideoInfoSource": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": "NO_PRODUCER"
+    }
+  }
+}

@@ -2,10 +2,8 @@
   <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.openIn3DViewer'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.openIn3DViewer')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"
@@ -23,6 +21,7 @@ import { useI18n } from 'vue-i18n'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -41,10 +40,7 @@ const openIn3DViewer = () => {
     component: Load3DViewerContent,
     props: props,
     dialogComponentProps: {
-      renderer: 'reka',
-      size: 'full',
-      contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
-      maximizable: true,
+      ...LOAD3D_VIEWER_DIALOG_PROPS,
       onClose: async () => {
         await useLoad3dService().handleViewerClose(props.node)
       }

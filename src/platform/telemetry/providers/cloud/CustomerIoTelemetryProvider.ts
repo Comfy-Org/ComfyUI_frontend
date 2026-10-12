@@ -1,7 +1,11 @@
 import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
 import { omit, withTimeout } from 'es-toolkit'
+import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
@@ -30,6 +34,7 @@ interface QueuedEvent {
 interface CustomerIoIdentity {
   userId: string
   email?: string
+  locale: string
 }
 
 /**
@@ -55,41 +60,57 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       site_id: siteId,
       user_id: userIdOverride
     } = window.__CONFIG__?.customer_io ?? {}
-    this.sessionIdentity = userIdOverride ? { userId: userIdOverride } : null
+    this.sessionIdentity = userIdOverride
+      ? { userId: userIdOverride, locale: i18n.global.locale.value }
+      : null
     if (!writeKey || !siteId) {
       this.isEnabled = false
       return
     }
 
     void import('@customerio/cdp-analytics-browser')
-      .then(({ AnalyticsBrowser, InAppPlugin }) => {
+      .then(async ({ AnalyticsBrowser, InAppPlugin }) => {
         const analytics = AnalyticsBrowser.load({ writeKey })
-        const inAppRegistration = analytics.register(
-          InAppPlugin({
-            siteId,
-            events: null,
-            anonymousInApp: false,
-            _env: undefined,
-            _logging: undefined,
-            colorScheme: 'system'
+        const inAppRegistration = analytics
+          .register(
+            InAppPlugin({
+              siteId,
+              events: null,
+              anonymousInApp: false,
+              _env: undefined,
+              _logging: undefined,
+              colorScheme: 'system'
+            })
+          )
+          .catch((error) => {
+            reportError(error, {
+              surface: 'platform',
+              errorType: 'customerio_in_app_plugin_registration_failure'
+            })
           })
-        )
-        this.analytics = analytics
 
+        await whenStoresReady()
+        this.analytics = analytics
         const currentUser = useCurrentUser()
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
             userId: userIdOverride || user.id,
-            email: currentUser.userEmail.value || undefined
+            email: currentUser.userEmail.value || undefined,
+            locale: i18n.global.locale.value
           }
           this.sessionIdentity = identity
           return this.enqueueOperation(() => this.identify(identity))
         }
 
         if (userIdOverride && !currentUser.resolvedUserInfo.value) {
-          void this.enqueueOperation(() =>
-            this.identify({ userId: userIdOverride })
-          )
+          void this.enqueueOperation(() => {
+            const identity = {
+              userId: userIdOverride,
+              locale: i18n.global.locale.value
+            }
+            this.sessionIdentity = identity
+            return this.identify(identity)
+          })
         }
         currentUser.onUserResolved((user) => {
           void identifyResolvedUser(user)
@@ -98,19 +119,18 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
           this.sessionIdentity = null
           void this.enqueueOperation(() => this.resetIdentity())
         })
+        watch(i18n.global.locale, (locale) => {
+          if (!this.sessionIdentity) return
+          const identity = { ...this.sessionIdentity, locale }
+          this.sessionIdentity = identity
+          void this.enqueueOperation(() => this.identify(identity))
+        })
 
         void this.flushQueue()
-        void inAppRegistration
-          .catch((error) => {
-            console.error(
-              'Failed to initialize Customer.io in-app plugin:',
-              error
-            )
-          })
-          .finally(() => {
-            this.isPageViewTrackingReady = true
-            this.flushPageView()
-          })
+        void inAppRegistration.finally(() => {
+          this.isPageViewTrackingReady = true
+          this.flushPageView()
+        })
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
@@ -151,7 +171,8 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
     if (
       this.identifiedUser?.userId === identity.userId &&
-      this.identifiedUser.email === identity.email
+      this.identifiedUser.email === identity.email &&
+      this.identifiedUser.locale === identity.locale
     ) {
       return
     }
@@ -161,7 +182,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       await withTimeout(async () => {
         await analytics.identify(
           identity.userId,
-          identity.email ? { email: identity.email } : undefined
+          identity.email
+            ? { email: identity.email, locale: identity.locale }
+            : { locale: identity.locale }
         )
       }, SDK_OPERATION_TIMEOUT_MS)
     } catch (error) {
@@ -213,7 +236,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private sendPageView(): void {
-    void this.analytics?.page()?.catch((error) => {
+    void Promise.resolve(this.analytics?.page()).catch((error) => {
       console.error('Failed to track Customer.io page view:', error)
     })
   }
@@ -239,7 +262,8 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     const identity = metadata.user_id
       ? {
           userId: metadata.user_id,
-          email: metadata.email || undefined
+          email: metadata.email || undefined,
+          locale: i18n.global.locale.value
         }
       : undefined
     this.track(

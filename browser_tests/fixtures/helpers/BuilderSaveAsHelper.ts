@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class BuilderSaveAsHelper {
-  /** The save-as dialog (scoped by aria-labelledby). */
+  /** The save-as dialog (scoped by its stable dialog key). */
   public readonly dialog: Locator
   /** The post-save success dialog (scoped by aria-labelledby). */
   public readonly successDialog: Locator
@@ -21,7 +21,7 @@ export class BuilderSaveAsHelper {
   public readonly overwriteButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.dialog = this.page.locator('[aria-labelledby="builder-save"]')
+    this.dialog = this.page.locator('[data-dialog-key="builder-save"]')
     this.successDialog = this.page.locator(
       '[aria-labelledby="builder-save-success"]'
     )

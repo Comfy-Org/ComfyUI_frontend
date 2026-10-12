@@ -2,7 +2,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -10,10 +9,18 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    value instanceof Promise ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { then?: unknown }).then === 'function')
+  )
+}
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -24,33 +31,6 @@ export const useExtensionService = () => {
     wrapWithErrorHandlingAsync,
     toastErrorHandler
   } = useErrorHandling()
-
-  /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  const loadExtensions = async () => {
-    extensionStore.loadDisabledExtensionNames(
-      settingStore.get('Comfy.Extension.Disabled')
-    )
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) => !extension.includes('extensions/core'))
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
 
   /**
    * Register an extension with the app
@@ -76,7 +56,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets(useApp())
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -85,7 +65,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, useApp()),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -143,8 +123,7 @@ export const useExtensionService = () => {
     ? (...args: Rest) => R
     : T
 
-  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol> &
-    string
+  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol>
 
   type ComfyExtensionMethod<T extends KnownExtensionMethods> =
     ComfyExtension[T] extends (...args: unknown[]) => unknown
@@ -169,7 +148,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
+            results.push(fn.call(ext, ...args, useApp()))
           }
         } catch (error) {
           console.error(
@@ -186,7 +165,12 @@ export const useExtensionService = () => {
 
   /**
    * Invoke an async extension callback
-   * Each callback will be invoked concurrently
+   * Each callback will be invoked concurrently, in extension order. Only
+   * extensions that define the callback do any work, and only promises that
+   * callbacks actually return are awaited (callbacks that return
+   * synchronously are never wrapped in a promise). The resolved array holds
+   * the results of the callbacks that ran, so it is not index-aligned with
+   * the extensions.
    * @param {string} method The extension callback to execute
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
@@ -195,48 +179,53 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    return await Promise.all(
-      extensionStore.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            const fn = ext[method]
-            if (typeof fn !== 'function') {
-              return
-            }
+    const logError = (ext: ComfyExtension, error: unknown) =>
+      console.error(
+        `Error calling extension '${ext.name}' method '${method}'`,
+        { error },
+        { extension: ext },
+        { args }
+      )
 
-            // Set current extension name for legacy compatibility tracking
-            if (method === 'setup') {
+    // This runs once per node def per extension, so avoid allocating promises
+    // or closures for extensions that do not define the hook.
+    const pending: unknown[] = []
+    for (const ext of extensionStore.enabledExtensions) {
+      // The property read is inside the try so a throwing getter or Proxy trap
+      // only affects its own extension.
+      try {
+        const fn = ext[method]
+        if (typeof fn !== 'function') continue
+
+        if (method === 'setup') {
+          // Track the current extension for legacy compatibility
+          pending.push(
+            (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
-            }
-
-            const result = await fn.call(ext, ...args, app)
-
-            // Clear current extension after setup
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            return result
-          } catch (error) {
-            // Clear current extension on error too
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
+              try {
+                return await fn.call(ext, ...args, useApp())
+              } finally {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+            })().catch((error) => logError(ext, error))
+          )
+          continue
         }
-      })
-    )
+
+        const result: unknown = fn.call(ext, ...args, useApp())
+        pending.push(
+          isPromiseLike(result)
+            ? Promise.resolve(result).catch((error) => logError(ext, error))
+            : result
+        )
+      } catch (error) {
+        logError(ext, error)
+      }
+    }
+    return await Promise.all(pending)
   }
 
   return {
-    loadExtensions,
     registerExtension,
     invokeExtensions,
     invokeExtensionsAsync

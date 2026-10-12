@@ -129,8 +129,8 @@ onMounted(() => {
 .upload-model-dialog {
   width: 90vw;
   max-width: 800px;
-  min-height: min(400px, 80vh);
-  max-height: 90vh;
+  height: min(400px, 80vh);
+  max-height: 100%;
 }
 
 @media (min-width: 640px) {

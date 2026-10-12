@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
@@ -86,14 +89,14 @@ const precision = computed(() => {
 const stepValue = computed(() => {
   // Use step2 (correct input spec value) if available
   if (props.widget.options?.step2 !== undefined) {
-    return Number(props.widget.options.step2)
+    return props.widget.options.step2
   }
   // Use step / 10 for custom large step values (> 10) to match litegraph behavior
   // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
   // We skip default step values (1, 10) to avoid affecting normal widgets
   const step = props.widget.options?.step as number | undefined
   if (step !== undefined && step > 10) {
-    return Number(step) / 10
+    return step / 10
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {
@@ -153,37 +156,41 @@ const inputAriaAttrs = computed(() => ({
 
 <template>
   <WidgetLayoutField :widget :root-class="props.rootClass">
-    <ScrubableNumberInput
-      v-model="modelValue"
-      v-tooltip="buttonTooltip"
-      :aria-label="widget.name"
-      :min="filteredProps.min"
-      :max="filteredProps.max"
-      :step="stepValue"
-      :display-value="formattedValue"
-      :disabled="isDisabled"
-      :hide-buttons="buttonsDisabled"
-      :parse-value="parseWidgetValue"
-      :input-attrs="inputAriaAttrs"
-      :class="
-        cn(
-          WidgetInputBaseClass,
-          'relative flex grow text-xs',
-          useWidgetHeight()
-        )
-      "
-    >
-      <template #background>
-        <div
-          class="pointer-events-none absolute size-full overflow-clip rounded-md"
+    <Tooltip :disabled="!buttonTooltip">
+      <TooltipTrigger as-child>
+        <ScrubableNumberInput
+          v-model="modelValue"
+          :aria-label="widget.name"
+          :min="filteredProps.min"
+          :max="filteredProps.max"
+          :step="stepValue"
+          :display-value="formattedValue"
+          :disabled="isDisabled"
+          :hide-buttons="buttonsDisabled"
+          :parse-value="parseWidgetValue"
+          :input-attrs="inputAriaAttrs"
+          :class="
+            cn(
+              WidgetInputBaseClass,
+              'relative flex grow text-xs',
+              useWidgetHeight()
+            )
+          "
         >
-          <div
-            class="size-full bg-primary-background/15"
-            :style="{ width: `${sliderWidth}%` }"
-          />
-        </div>
-      </template>
-      <slot />
-    </ScrubableNumberInput>
+          <template #background>
+            <div
+              class="pointer-events-none absolute size-full overflow-clip rounded-md"
+            >
+              <div
+                class="size-full bg-primary-background/15"
+                :style="{ width: `${sliderWidth}%` }"
+              />
+            </div>
+          </template>
+          <slot />
+        </ScrubableNumberInput>
+      </TooltipTrigger>
+      <TooltipContent>{{ buttonTooltip }}</TooltipContent>
+    </Tooltip>
   </WidgetLayoutField>
 </template>

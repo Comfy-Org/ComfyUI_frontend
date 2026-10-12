@@ -33,7 +33,7 @@ export class PublishDialog extends BaseDialog {
     this.backButton = this.footer.getByRole('button', { name: 'Back' })
     this.nextButton = this.footer.getByRole('button', { name: 'Next' })
     this.publishButton = this.footer.getByRole('button', {
-      name: 'Publish to ComfyHub'
+      name: 'Publish to Comfy Workflows'
     })
   }
 

@@ -1,10 +1,8 @@
-// PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs) teleport to body. Reka treats clicks on body-portaled
-// elements as outside its dialog and would auto-dismiss on the first
-// interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
+// PrimeVue Dialogs (the node search box and GlobalDialog's `primevue`
+// renderer) teleport to body. Reka treats clicks on body-portaled elements as
+// outside its dialog and would auto-dismiss on the first interaction. Treat a
+// click on a PrimeVue Dialog or its mask as inside.
+const PRIMEVUE_OVERLAY_SELECTORS = '.p-overlay-mask, .p-dialog'
 
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
@@ -12,9 +10,14 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // dismiss itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
 
-const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
+// Dismissing a toast or using a docked progress panel over a dialog must not
+// take the dialog with it; the empty viewport space beside a toast stays an
+// ordinary scrim click.
+const TOAST_SELECTORS = '[data-toast-kind], [data-toast-dock]'
+
+const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}, ${TOAST_SELECTORS}`
 
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 
@@ -32,10 +35,9 @@ export function onRekaPointerDownOutside(
 ) {
   // Stacked dialogs each render an independent Reka `Dialog` root, so a lower
   // dialog's DismissableLayer sees a pointer-down that opened (or landed on)
-  // the dialog above it as "outside" and would dismiss itself — including via
-  // the upper dialog's overlay, whose element matches none of the portal
-  // selectors below. Only the top-most dialog may dismiss on an outside
-  // pointer, mirroring the escape-key handling in `GlobalDialog`.
+  // the dialog above it as "outside" and would dismiss itself. Only the
+  // top-most dialog may dismiss on an outside pointer, mirroring the escape-key
+  // handling in `GlobalDialog`.
   if (!isActive) {
     event.preventDefault()
     return

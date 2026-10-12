@@ -2,9 +2,9 @@ import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   NodeError,
-  NodeProgressState,
-  PromptResponse
-} from '@/schemas/apiSchema'
+  PromptFailureResponse
+} from '@/platform/remote/comfyui/types'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -14,6 +14,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+  beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
 /**
@@ -77,7 +78,7 @@ export class ExecutionHelper {
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest } = options
+    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -88,6 +89,7 @@ export class ExecutionHelper {
       PROMPT_ROUTE_PATTERN,
       async (route) => {
         await onPromptRequest?.(route.request().postDataJSON())
+        await beforePromptResponse?.(jobId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -110,7 +112,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',
@@ -188,7 +190,7 @@ export class ExecutionHelper {
   executed(
     jobId: string,
     nodeId: string,
-    output: Record<string, unknown>
+    output: Record<string, unknown> | null | undefined
   ): void {
     this.requireWs().send(
       JSON.stringify({
@@ -231,6 +233,28 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_error` WS event carrying cloud validation node errors. */
+  validationError(
+    jobId: string,
+    nodeId: string,
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          exception_message: JSON.stringify({ node_errors: nodeErrors }),
+          exception_type: 'prompt_outputs_failed_validation',
+          traceback: []
+        }
+      })
+    )
+  }
+
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
     this.requireWs().send(
@@ -255,6 +279,24 @@ export class ExecutionHelper {
         data: { prompt_id: jobId, node: nodeId, value, max }
       })
     )
+  }
+
+  /**
+   * Put a single node into the `running` state at the given step progress,
+   * emitting both the `progress_state` and `progress` events the backend sends.
+   */
+  nodeRunning(jobId: string, nodeId: string, value: number, max: number): void {
+    const state: NodeProgressState = {
+      node_id: nodeId,
+      display_node_id: nodeId,
+      real_node_id: nodeId,
+      prompt_id: jobId,
+      state: 'running',
+      value,
+      max
+    }
+    this.progressState(jobId, { [nodeId]: state })
+    this.progress(jobId, nodeId, value, max)
   }
 
   /** Send `progress_state` WS event with per-node execution state. */

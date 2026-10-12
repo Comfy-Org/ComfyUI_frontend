@@ -33,7 +33,7 @@ function createImportFailedDialog() {
     onClose?: () => void
   ) => {
     if (conflictedPackages && conflictedPackages.length > 0) {
-      void show({
+      show({
         conflictedPackages,
         dialogComponentProps: {
           onClose

@@ -3,19 +3,20 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Pack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { GridPack } from '@/data/cloudNodes'
+import type { Locale } from '@/i18n/translations'
 
-import { useFilteredPacks } from '../../composables/useFilteredPacks'
-import type { PackSortMode } from '../../composables/useFilteredPacks'
-import { t } from '../../i18n/translations'
-import SectionLabel from '../common/SectionLabel.vue'
+import { useFilteredPacks } from '@/composables/useFilteredPacks'
+import type { PackSortMode } from '@/composables/useFilteredPacks'
+import { translationsFor } from '@/i18n/translations'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 import PackCard from './PackCard.vue'
 
 const { locale = 'en', packs } = defineProps<{
   locale?: Locale
-  packs: readonly Pack[]
+  packs: readonly GridPack[]
 }>()
+const { t } = translationsFor(locale)
 
 const query = defineModel<string>('query', { default: '' })
 const sortMode = ref<PackSortMode>('downloads')
@@ -32,12 +33,12 @@ const { filteredPacks } = useFilteredPacks({
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <div class="flex flex-col gap-3">
         <SectionLabel>
-          {{ t('cloudNodes.hero.label', locale) }}
+          {{ t('cloudNodes.hero.label') }}
         </SectionLabel>
         <h2
-          class="text-primary-comfy-canvas text-3xl/tight font-medium md:text-4xl"
+          class="text-3xl/tight font-medium text-primary-comfy-canvas md:text-4xl"
         >
-          {{ t('cloudNodes.section.heading', locale) }}
+          {{ t('cloudNodes.section.heading') }}
         </h2>
       </div>
 
@@ -45,60 +46,62 @@ const { filteredPacks } = useFilteredPacks({
         class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
       >
         <label for="cloud-nodes-search" class="sr-only">
-          {{ t('cloudNodes.search.label', locale) }}
+          {{ t('cloudNodes.search.label') }}
         </label>
         <input
           id="cloud-nodes-search"
           v-model="query"
-          :placeholder="t('cloudNodes.search.placeholder', locale)"
+          :placeholder="t('cloudNodes.search.placeholder')"
           :class="
             cn(
-              'bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas placeholder:text-primary-warm-gray/80 w-full rounded-2xl border px-4 py-3 text-sm md:max-w-md'
+              'w-full rounded-2xl border border-primary-warm-gray/30 bg-transparency-white-t4 px-4 py-3 text-sm text-primary-comfy-canvas placeholder:text-primary-warm-gray/80 md:max-w-md'
             )
           "
           data-testid="cloud-nodes-search"
         />
 
         <label for="cloud-nodes-sort" class="sr-only">
-          {{ t('cloudNodes.sort.label', locale) }}
+          {{ t('cloudNodes.sort.label') }}
         </label>
         <select
           id="cloud-nodes-sort"
           v-model="sortMode"
-          class="bg-transparency-white-t5 border-primary-warm-gray/30 text-primary-comfy-canvas w-full appearance-none rounded-2xl border bg-size-[0.65rem_0.65rem] bg-position-[right_1rem_center] bg-no-repeat py-3 pr-12 pl-4 text-sm md:w-64"
+          class="w-full appearance-none rounded-2xl border border-primary-warm-gray/30 bg-transparency-white-t4 bg-size-[0.65rem_0.65rem] bg-position-[right_1rem_center] bg-no-repeat py-3 pr-12 pl-4 text-sm text-primary-comfy-canvas md:w-64"
           :style="{
             backgroundImage:
               'url(\'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22 fill=%22%23a39b8d%22><path d=%22M6 9.2L1.4 4.6 2.8 3.2 6 6.4l3.2-3.2 1.4 1.4z%22/></svg>\')'
           }"
         >
           <option value="downloads">
-            {{ t('cloudNodes.sort.downloads', locale) }}
+            {{ t('cloudNodes.sort.downloads') }}
           </option>
           <option value="mostNodes">
-            {{ t('cloudNodes.sort.mostNodes', locale) }}
+            {{ t('cloudNodes.sort.mostNodes') }}
           </option>
-          <option value="az">{{ t('cloudNodes.sort.az', locale) }}</option>
+          <option value="az">
+            {{ t('cloudNodes.sort.az') }}
+          </option>
           <option value="recentlyUpdated">
-            {{ t('cloudNodes.sort.recentlyUpdated', locale) }}
+            {{ t('cloudNodes.sort.recentlyUpdated') }}
           </option>
         </select>
       </div>
 
       <p
         v-if="filteredPacks.length === 0"
-        class="text-primary-warm-gray rounded-2xl border border-dashed border-current/30 px-5 py-6 text-sm"
+        class="rounded-2xl border border-dashed border-current/30 px-5 py-6 text-sm text-primary-warm-gray"
       >
-        <span class="text-primary-comfy-canvas block text-base font-semibold">
-          {{ t('cloudNodes.empty.heading', locale) }}
+        <span class="block text-base font-semibold text-primary-comfy-canvas">
+          {{ t('cloudNodes.empty.heading') }}
         </span>
-        <span class="mt-2 block">{{ t('cloudNodes.empty.body', locale) }}</span>
+        <span class="mt-2 block">{{ t('cloudNodes.empty.body') }}</span>
       </p>
 
       <div
         v-else
         class="grid grid-cols-1 gap-5 md:grid-cols-2"
         role="list"
-        :aria-label="t('cloudNodes.list.ariaLabel', locale)"
+        :aria-label="t('cloudNodes.list.ariaLabel')"
       >
         <PackCard
           v-for="pack in filteredPacks"

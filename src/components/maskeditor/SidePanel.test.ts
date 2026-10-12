@@ -7,21 +7,27 @@ import SidePanel from '@/components/maskeditor/SidePanel.vue'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-vi.mock('@/components/maskeditor/SettingsPanelContainer.vue', () => ({
-  default: {
-    name: 'SettingsPanelContainerStub',
-    template: '<div data-testid="settings-panel-stub">settings</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/SettingsPanelContainer.vue'),
+  () => ({
+    default: {
+      name: 'SettingsPanelContainerStub',
+      template: '<div data-testid="settings-panel-stub">settings</div>'
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/ImageLayerSettingsPanel.vue', () => ({
-  default: {
-    name: 'ImageLayerSettingsPanelStub',
-    props: ['toolManager'],
-    template:
-      '<div data-testid="image-layer-stub">image-layer:{{ toolManager?.tag ?? "none" }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/ImageLayerSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'ImageLayerSettingsPanelStub',
+      props: ['toolManager'],
+      template:
+        '<div data-testid="image-layer-stub">image-layer:{{ toolManager?.tag ?? "none" }}</div>'
+    }
+  })
+)
 
 describe('SidePanel', () => {
   it('should render both child panels', () => {

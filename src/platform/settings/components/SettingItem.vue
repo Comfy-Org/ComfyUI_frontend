@@ -6,32 +6,41 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
-      <Tag
-        v-if="setting.experimental"
-        v-tooltip="{
-          value: $t('g.experimental'),
-          showDelay: 600
-        }"
-      >
-        <template #icon>
-          <i-material-symbols:experiment-outline />
-        </template>
-      </Tag>
+      <Badge
+        v-if="setting.id === 'Comfy.Locale'"
+        severity="primary"
+        class="pi pi-language"
+      />
+      <Tooltip v-if="setting.experimental">
+        <TooltipTrigger as-child>
+          <Badge severity="primary">
+            <template #icon>
+              <i-material-symbols:experiment-outline />
+            </template>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>{{ $t('g.experimental') }}</TooltipContent>
+      </Tooltip>
     </template>
   </FormItem>
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingOption, SettingParams } from '@/platform/settings/types'
-import type { Settings } from '@/schemas/apiSchema'
+import type {
+  SettingOption,
+  SettingParams,
+  Settings
+} from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
@@ -40,11 +49,13 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-function translateOptions(options: (SettingOption | string)[]) {
+function translateOptions(
+  options:
+    | (SettingOption | string)[]
+    | ((value: unknown) => (SettingOption | string)[])
+) {
   if (typeof options === 'function') {
-    // @ts-expect-error: Audit and deprecate usage of legacy options type:
-    // (value) => [string | {text: string, value: string}]
-    return translateOptions(options(props.setting.value ?? ''))
+    return translateOptions(options(settingValue.value))
   }
 
   return options.map((option) => {
@@ -77,9 +88,10 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = async <K extends keyof Settings>(
-  newValue: Settings[K]
-) => {
-  await settingStore.set(props.setting.id, newValue)
+async function updateSettingValue(newValue: unknown) {
+  await settingStore.set(
+    props.setting.id,
+    newValue as Settings[typeof props.setting.id]
+  )
 }
 </script>
