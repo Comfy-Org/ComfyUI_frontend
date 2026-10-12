@@ -257,8 +257,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
           'zh-CN': '这些节点是开源的吗？'
         },
         answer: {
-          en: `The nodes are. All three are published on [GitHub](${nvidiaRtxLinks.github}) and install as a ComfyUI custom node. The nvidia-vfx library they call is Nvidia's proprietary SDK and is not open source.`,
-          'zh-CN': `节点是开源的。三个节点均已发布在 [GitHub](${nvidiaRtxLinks.github}) 上，可作为 ComfyUI 自定义节点安装。它们调用的 nvidia-vfx 库是 Nvidia 的专有 SDK，并不开源。`
+          en: `Yes. All three nodes are published on [GitHub](${nvidiaRtxLinks.github}) and install as a ComfyUI custom node. The nodes are licensed Apache-2.0, so they are free for commercial use. The nvidia-vfx library they depend on is distributed by Nvidia under its own proprietary license.`,
+          'zh-CN': `是的。三个节点均已发布在 [GitHub](${nvidiaRtxLinks.github}) 上，可作为 ComfyUI 自定义节点安装。节点采用 Apache-2.0 许可，可免费用于商业用途。它们依赖的 nvidia-vfx 库由 Nvidia 以其专有许可分发。`
         }
       },
       {
