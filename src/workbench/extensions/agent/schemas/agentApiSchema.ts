@@ -112,12 +112,8 @@ const SKILL_NAME_MAX = 256
  */
 const zSkillName = z
   .string()
+  .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
-  .transform((skill) =>
-    typeof skill === 'string'
-      ? Array.from(skill).slice(0, SKILL_NAME_MAX).join('')
-      : skill
-  )
 
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
@@ -350,6 +346,6 @@ export function isAgentEvent(type: string): type is AgentWsEvent['type'] {
 
 export function parseAgentWsEvent(
   value: unknown
-): z.SafeParseReturnType<unknown, AgentWsEvent> {
+): z.ZodSafeParseResult<AgentWsEvent> {
   return zAgentWsEvent.safeParse(value)
 }

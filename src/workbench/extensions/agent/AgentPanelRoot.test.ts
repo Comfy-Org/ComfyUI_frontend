@@ -244,6 +244,7 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
+  isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
@@ -342,11 +343,8 @@ beforeEach(() => {
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBilling.type),
-      canAccessSubscriptionFeatures: computed(
-        () =>
-          paywallBilling.status !== 'paused' &&
-          paywallBilling.status !== 'payment_failed'
-      ),
+      billingStatus: computed(() => paywallBilling.status),
+      canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -459,6 +457,7 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
@@ -625,13 +624,16 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  function placeFreeUseNotice(attributeExperiment = true) {
-    // The notice is about turns this viewer can still take, so the arms it is
-    // measured over are funded. This suite's default is an exhausted
-    // workspace, which is the one state the notice must not appear in.
+  const reportFreeUseNotice = vi.fn()
+
+  function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
+    paywallAgentScopedHasFunds.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner'), attributeExperiment })
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
     )
   }
 
@@ -639,74 +641,57 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
-    placeFreeUseNotice()
+  it('forwards free-use notice interactions to the experiment', async () => {
+    placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(
       within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'dismissed',
-      placement: 'top-banner'
-    })
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
   })
 
-  // The analysis splits outcomes by the variant PostHog assigned, so a forced
-  // placement's interactions belong to no arm.
-  it('reports nothing about the notice while a QA override forces its placement', async () => {
-    placeFreeUseNotice(false)
+  it.for([
+    { label: 'the grant is spent but paid credits remain', scoped: false },
+    { label: 'no scoped balance is reported at all', scoped: undefined }
+  ])('says nothing about free turns when $label', async ({ scoped }) => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFunds.value = scoped
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await userEvent.click(
-      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
-    )
+    await screen.findByRole('textbox')
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).not.toHaveBeenCalled()
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
   })
 
-  // `shown` is the experiment's on-screen signal and the denominator of
-  // dismissed/shown. Every placement sits behind `!showHistory`, so a history
-  // round trip remounts the notice for a viewer already counted once.
-  it('counts one impression per panel open across a history round trip', async () => {
-    placeFreeUseNotice()
+  it('hides the notice while any inline paywall remains unresolved', async () => {
+    placeFundedFreeUseNotice()
+    const conversation = useAgentConversationStore()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await freeUseNotice()
-    const panelStore = useAgentPanelStore()
-    panelStore.view = {
-      screen: 'history',
-      previousThreadId: null,
-      selection: { status: 'idle' }
-    }
+
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    conversation.recordFailedSend(
+      toTurnId('msg-failed'),
+      'try again',
+      'Send failed'
+    )
+    await screen.findByText('Send failed')
+
     await vi.waitFor(() =>
       expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
     )
-    panelStore.view = { screen: 'chat' }
-    await freeUseNotice()
 
-    expect(
-      useTelemetry()!.trackAgentFreeUseNotice
-    ).toHaveBeenCalledExactlyOnceWith({
-      action: 'shown',
-      placement: 'top-banner'
-    })
-  })
+    conversation.resolvePaywalls()
 
-  // "Your first few turns are free." and the standing exhausted paywall would
-  // otherwise render in the same footer, contradicting each other.
-  it('says nothing about free turns beside the exhausted paywall', async () => {
-    placeFreeUseNotice()
-    paywallHasFunds.value = false
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(
-      await screen.findByTestId('agent-credits-exhausted-paywall')
-    ).toBeInTheDocument()
-
-    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
-    expect(useTelemetry()!.trackAgentFreeUseNotice).not.toHaveBeenCalled()
+    expect(await freeUseNotice()).toBeInTheDocument()
   })
 })
 
@@ -1324,7 +1309,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
         subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
         tier,
         type: computed(() => 'workspace'),
-        canAccessSubscriptionFeatures: computed(() => true),
+        billingStatus: computed(() => 'paid'),
         fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
@@ -1664,50 +1649,6 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     paywallAgentHasFunds.value = true
   })
 
-  it('does not hide the free-use notice for a scoped balance that never held funds', async () => {
-    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('near-composer') })
-    )
-    observeAgentScopedFunds(false)
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-
-    expect(
-      await screen.findByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).toBeInTheDocument()
-  })
-
-  it('hides the free-use notice only while the credit transition notice is visible', async () => {
-    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('near-composer') })
-    )
-    observeAgentScopedFunds(true)
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-    observeAgentScopedFunds(false)
-    const notice = await screen.findByTestId(NOTICE)
-
-    expect(
-      screen.queryByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).not.toBeInTheDocument()
-
-    await userEvent.click(
-      within(notice).getByRole('button', {
-        name: i18n.global.t('agent.dismiss')
-      })
-    )
-
-    expect(
-      await screen.findByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).toBeInTheDocument()
-  })
-
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
     observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1802,20 +1743,17 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
-  it.for([{ status: 'paused' }, { status: 'payment_failed' }] as const)(
-    'withholds the notice while billing is $status',
-    async ({ status }) => {
-      paywallBilling.status = status
-      observeAgentScopedFunds(true)
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      await screen.findByRole('textbox')
+  it('withholds the notice while the workspace has no active subscription', async () => {
+    paywallBilling.isActive = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
 
-      observeAgentScopedFunds(false)
-      await nextTick()
+    observeAgentScopedFunds(false)
+    await nextTick()
 
-      expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
-    }
-  )
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
 
   it('defers the notice until the billing capability read settles', async () => {
     paywallCapabilities.isReady = false
@@ -1940,16 +1878,19 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it.for([
     {
       subscription: null,
+      isActive: false,
       effectiveFunds: false
     },
     {
       subscription: 'STANDARD' as const,
+      isActive: true,
       effectiveFunds: false
     }
   ])(
     'shows for subscription=$subscription without effective funds',
-    async ({ subscription, effectiveFunds }) => {
+    async ({ subscription, isActive, effectiveFunds }) => {
       paywallBilling.tier = subscription
+      paywallBilling.isActive = isActive
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -5414,32 +5355,26 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
-  it.for([
-    ['useBillingContext', useBillingContext],
-    ['useFreeUsePlacement', useFreeUsePlacement]
-  ] as const)(
-    'does not claim the minimap graph-activity layer when %s throws in setup',
-    ([, composable]) => {
-      vi.mocked(composable).mockImplementationOnce(() => {
-        throw new Error('setup failed')
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useBillingContext).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
       })
-      // Mounted without Testing Library, whose error handler lets a failed
-      // setup finish mounting; Vue itself aborts the mount.
-      const app = createApp(AgentPanelRoot).use(i18n)
-      expect(() => app.mount(document.createElement('div'))).toThrow(
-        'setup failed'
-      )
-
-      renderWithSelectedTarget().unmount()
-
-      expect(reportError).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'minimap_decoration_layer_duplicate'
-        })
-      )
-    }
-  )
+    )
+  })
 
   it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
     workflowStore.activeWorkflow = addTab('workflows/current.json')

@@ -185,6 +185,12 @@ export function useFeatureFlags() {
         true
       )
     },
+    get partnerNodeTokenEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PARTNER_NODE_TOKEN,
+        remoteConfig.value.partner_node_token
+      )
+    },
     get userSecretsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,

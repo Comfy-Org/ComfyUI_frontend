@@ -692,6 +692,8 @@ export type AgentConsentOfferExit =
   | 'card_already_seen'
   /** Panel activation owns consent timing, so the automatic offer is dropped. */
   | 'activation_opened_panel'
+  /** The bounded panel-discovery window is complete and the panel is closed. */
+  | 'activation_window_complete'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -900,22 +902,23 @@ interface AgentStarterPromptExperimentMetadata {
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
 /**
- * Interactions with the notice itself. The experiment's primary outcome and
- * guardrails are all read off events that already exist — `agent_panel_opened`,
- * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
- * by the PostHog variant property. This event adds only what those cannot say:
- * whether the notice was actually on screen in its assigned arm, and what the
- * viewer did with it.
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
+ *
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
+import { FREE_USE_VARIANTS } from '../../experiments/freeUsePlacement'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import '../../agentPanel.css'
@@ -27,7 +27,7 @@ const meta: Meta<typeof AgentPanel> = {
     workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
   },
   argTypes: {
-    freeUsePlacement: { control: 'select', options: FREE_USE_PLACEMENTS }
+    freeUsePlacement: { control: 'select', options: FREE_USE_VARIANTS }
   },
   decorators: [
     () => ({
@@ -102,20 +102,12 @@ export const ChipStates: Story = {
   }
 }
 
-/**
- * DES-1221 / FE-3142. One notice, five arms, and nothing else moves: the
- * starter prompts and the composer placeholder are identical in every cell, so
- * placement is the only variable between them. Side-by-side is the point here
- * — the question the design asks is which cell reads best against the others —
- * so this stays a grid while `freeUsePlacement` is also a Controls option for
- * walking one arm at a time.
- */
 export const FreeUsePlacements: Story = {
   name: 'DES-1221 a–e / placement arms',
   render: (args) => ({
     components: { AgentPanel },
     setup() {
-      return { placements: FREE_USE_PLACEMENTS, args }
+      return { placements: FREE_USE_VARIANTS, args }
     },
     template: `
       <div class="flex h-screen gap-4 overflow-x-auto">

@@ -55,6 +55,33 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  // `enabled` goes false and then true in place on an identity change — a
+  // Desktop host switch, or a sign-out/sign-in seen from another tab — while
+  // `isOpen` stays true. That restores through the watcher rather than
+  // `open()`, so anything reset in only one of the two survives into the next
+  // epoch: the free-use flags did, and the second epoch reported no exposure
+  // and no impression while its dismissal still went out.
+  it('starts a fresh free-use epoch when the panel restores without open()', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+    store.reportedFreeUseExposure = true
+    store.reportedFreeUseImpression = true
+
+    store.enabled = false
+    await nextTick()
+    store.enabled = true
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+      source: 'restored'
+    })
+    expect(store.isOpen).toBe(true)
+    expect(store.reportedFreeUseExposure).toBe(false)
+    expect(store.reportedFreeUseImpression).toBe(false)
+  })
+
   it('emits exactly one opened event for a user click while the panel is enabled', async () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true

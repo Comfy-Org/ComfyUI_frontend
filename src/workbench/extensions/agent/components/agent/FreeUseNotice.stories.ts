@@ -3,14 +3,12 @@ import { fn } from 'storybook/test'
 
 import '../../agentPanel.css'
 
+import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+
 import FreeUseNotice from './FreeUseNotice.vue'
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
-// The notice hides itself for good once dismissed, and the flag is shared
-// localStorage rather than a prop. Clearing it per story keeps a dismissal in
-// one story from blanking every later snapshot. The key is scoped per account,
-// so clear the prefix rather than one exact key.
-function withFreshDismissal() {
+function clearFreeUseNoticeDismissals() {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(FREE_USE_NOTICE_DISMISSED_KEY)) {
       localStorage.removeItem(key)
@@ -29,15 +27,10 @@ const meta: Meta<typeof FreeUseNotice> = {
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
   args: { placement: 'top-banner', onNotice: fn() },
-  // DES-1221 cells b–e differ only in this prop, so the Controls panel walks
-  // the arms and the URL links any one of them.
   argTypes: {
-    placement: {
-      control: 'select',
-      options: ['top-banner', 'near-composer', 'above-input', 'inside-input']
-    }
+    placement: { control: 'select', options: AGENT_FREE_USE_PLACEMENTS }
   },
-  decorators: [withFreshDismissal]
+  decorators: [clearFreeUseNoticeDismissals]
 }
 
 export default meta

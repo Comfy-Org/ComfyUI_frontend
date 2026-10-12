@@ -17,13 +17,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -69,6 +66,7 @@ import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/comp
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
@@ -159,6 +157,7 @@ const {
   subscription,
   tier: subscriptionTier,
   type: billingType,
+  billingStatus,
   canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
@@ -287,16 +286,19 @@ const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const agentScopedHasFunds = computed(
   () => subscription.value?.agentScopedHasFunds
 )
-const billingSignalsTrusted = computed(
-  () =>
-    consentAccepted.value &&
-    billingType.value === 'workspace' &&
-    capabilityReadSettled.value &&
-    canAccessSubscriptionFeatures.value
-)
 const creditsExhausted = computed(() => {
-  if (!billingSignalsTrusted.value) return false
+  if (!consentAccepted.value) return false
+  if (billingType.value !== 'workspace') return false
+  // Same gate as the impression report above: an unsettled read cannot say
+  // which presentation is right, and a card naming the wrong remediation is
+  // worse than no card.
+  if (!capabilityReadSettled.value) return false
   if (agentHasFunds.value !== false) return false
+  if (
+    billingStatus.value === 'paused' ||
+    billingStatus.value === 'payment_failed'
+  )
+    return false
   // A standing card must offer a next step. Refusal-anchored inline cards can
   // still explain member, sales-managed, or unavailable states without a CTA.
   return ['subscribed', 'subscriptionRequired', 'local'].includes(
@@ -304,18 +306,31 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const unresolvedPaywallPending = computed(() =>
+  conversationEntries.value.some(
+    (entry) =>
+      entry.role === 'assistant' &&
+      entry.parts.some((part) => part.type === 'paywall')
+  )
+)
+
+// Only the standing recovery card uses latest-entry semantics. The free-use
+// claim remains hidden while any unresolved inline paywall is still visible.
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  return !(
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
+})
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  return !latestEntryHasPaywall.value
 })
 
 const agentPanelStore = useAgentPanelStore()
@@ -331,7 +346,10 @@ const showCreditTransitionNotice = computed(
       agentPanelStore.creditTransitionNotice,
       billingIdentity.value
     ) &&
-    billingSignalsTrusted.value &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    canAccessSubscriptionFeatures.value &&
     agentScopedHasFunds.value === false &&
     agentHasFunds.value === true
 )
@@ -1327,55 +1345,31 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-/**
- * DES-1221. This component mounts only while the panel is on screen, so
- * reading the flag here keeps the exposure — and the experiment's
- * denominator — to the panel openers the hypothesis is about.
- */
-const {
-  variant: freeUsePlacement,
-  attributeExperiment: attributeFreeUseExperiment
-} = useFreeUsePlacement()
-/**
- * Interim, until #20706 removes the FREE-during-BETA claim outright: the
- * free-use notice renders directly below this notice in the composer stack, so
- * leaving it on would tell the user Agent use is free in the same breath as
- * telling them it now bills the workspace balance — the PM-2005 defect itself,
- * and against the standing ruling never to imply Agent use is free.
- *
- * This suppresses the rendered treatment only. Experiment exposure is reported
- * from useFreeUsePlacement on setup, so a suppressed user is still logged as
- * exposed; whether that should also change is the open product question on
- * r4205002263 and is deliberately not decided here.
- */
-const displayedFreeUsePlacement = computed(() =>
-  showCreditTransitionNotice.value ? 'control' : freeUsePlacement.value
-)
+// DES-1221. Read while the panel is on screen, so the experiment's denominator
+// is the panel openers the hypothesis is about.
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-// This component's lifetime is one panel open, so a per-instance record is
-// per-open without a module global to reset.
-const reportedFreeUsePlacements = new Set<AgentFreeUsePlacement>()
+/**
+ * `Try your first chat for free!` is a claim about the Agent's own granted
+ * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
+ * is the whole gate: an absent field, an unsettled read and a rail that reports
+ * no scoped balance all fail closed without a separate branch.
+ */
+const freeUseGrantActive = computed(
+  () => subscription.value?.agentScopedHasFunds === true
+)
 
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  // A QA override forces a placement without moving the PostHog assignment,
-  // so these interactions would otherwise land in whichever arm PostHog
-  // served. `useFreeUsePlacement` withholds exposure for the same reason.
-  if (!attributeFreeUseExperiment) return
-  // Every placement sits behind `!showHistory`, so opening chat history
-  // remounts the notice and `shown` fires again for the same viewer. It is the
-  // experiment's on-screen signal and the denominator of dismissed/shown, so
-  // count it once per panel open rather than once per mount.
-  if (metadata.action === 'shown') {
-    if (reportedFreeUsePlacements.has(metadata.placement)) return
-    reportedFreeUsePlacements.add(metadata.placement)
-  }
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+const freeUsePlacement = computed(() =>
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
+    ? 'control'
+    : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1951,7 +1945,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="displayedFreeUsePlacement"
+      :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"

@@ -2,14 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigRevision
+  remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
+import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
 import {
   FREE_USE_PLACEMENT_FLAG,
   useFreeUsePlacement
@@ -24,22 +23,26 @@ describe('useFreeUsePlacement', () => {
   beforeEach(() => {
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfig.value = {}
-    remoteConfigRevision.value = 0
   })
 
-  it('uses a known authenticated assignment', async () => {
-    const { variant } = useFreeUsePlacement()
+  it('uses a known authenticated assignment and attributes it', async () => {
+    const { variant, reportNotice } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
     remoteConfig.value = {
       'agent-free-use-message-placement': 'above-input'
     }
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
     await vi.waitFor(() => expect(variant.value).toBe('above-input'))
     expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
       placement: 'above-input',
-      '$feature/agent-free-use-message-placement': 'above-input'
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'above-input'
+    })
+
+    reportNotice({ action: 'shown', placement: 'above-input' })
+    expect(useTelemetry()?.trackAgentFreeUseNotice).toHaveBeenCalledWith({
+      action: 'shown',
+      placement: 'above-input'
     })
   })
 
@@ -55,31 +58,23 @@ describe('useFreeUsePlacement', () => {
     })
   })
 
-  // `control` is one of the five arms, so reporting the not-enrolled fallback
-  // as `control` would file non-enrolled clients into the control cohort and
-  // overstate the experiment's denominator.
-  it('renders control but reports no exposure when the flag is absent', () => {
-    remoteConfig.value = {}
-    authenticatedRemoteConfigState.value = 'authenticated'
-    const { variant } = useFreeUsePlacement()
+  it.for([
+    { label: 'absent', served: undefined },
+    { label: 'unknown', served: 'sidebar' }
+  ])(
+    'renders control but reports no exposure when the flag is $label',
+    ({ served }) => {
+      const wireConfig: Record<string, unknown> = {
+        [FREE_USE_PLACEMENT_FLAG]: served
+      }
+      remoteConfig.value = wireConfig
+      authenticatedRemoteConfigState.value = 'authenticated'
+      const { variant } = useFreeUsePlacement()
 
-    expect(variant.value).toBe('control')
-    expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
-  })
-
-  it('renders control but reports no exposure for an unknown flag value', () => {
-    const config: RemoteConfig = {}
-    Object.defineProperty(config, FREE_USE_PLACEMENT_FLAG, {
-      enumerable: true,
-      value: 'unknown'
-    })
-    remoteConfig.value = config
-    authenticatedRemoteConfigState.value = 'authenticated'
-    const { variant } = useFreeUsePlacement()
-
-    expect(variant.value).toBe('control')
-    expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
-  })
+      expect(variant.value).toBe('control')
+      expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    }
+  )
 
   it('prefers session and dev overrides for QA', () => {
     authenticatedRemoteConfigState.value = 'authenticated'
@@ -87,45 +82,72 @@ describe('useFreeUsePlacement', () => {
     vi.mocked(getDevOverride).mockReturnValue('near-composer')
     vi.mocked(getSessionOverride).mockReturnValue('inside-input')
 
-    const { variant, attributeExperiment } = useFreeUsePlacement()
+    const { variant, reportNotice } = useFreeUsePlacement()
+    reportNotice({ action: 'shown', placement: 'inside-input' })
 
     expect(variant.value).toBe('inside-input')
-    expect(attributeExperiment).toBe(false)
     expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackAgentFreeUseNotice).not.toHaveBeenCalled()
   })
 
-  // `/features` can stay pending or fail outright. Waiting on it would leave a
-  // reviewer in `control` with no sign the override was read at all.
   it('applies a QA override before authenticated config loads', () => {
     vi.mocked(getSessionOverride).mockReturnValue('top-banner')
 
-    const { variant, attributeExperiment } = useFreeUsePlacement()
+    const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('top-banner')
-    expect(attributeExperiment).toBe(false)
     expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
   })
 
   it('ignores an unrecognised QA override rather than rendering it', () => {
+    vi.mocked(console.warn).mockImplementation(() => {})
     vi.mocked(getDevOverride).mockReturnValue('sidebar')
 
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
     expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('sidebar')
+    )
   })
 
-  it('attributes an unoverridden assignment to the experiment', async () => {
-    const { attributeExperiment } = useFreeUsePlacement()
-
-    expect(attributeExperiment).toBe(true)
-    remoteConfig.value = {
-      'agent-free-use-message-placement': 'near-composer'
-    }
+  it('reports exposure and the impression once per panel open', () => {
+    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
-    await vi.waitFor(() =>
-      expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalled()
-    )
+    const telemetry = useTelemetry()
+
+    useFreeUsePlacement().reportNotice({
+      action: 'shown',
+      placement: 'top-banner'
+    })
+    useFreeUsePlacement().reportNotice({
+      action: 'shown',
+      placement: 'top-banner'
+    })
+
+    expect(telemetry?.trackAgentFreeUseExposure).toHaveBeenCalledTimes(1)
+    expect(telemetry?.trackAgentFreeUseNotice).toHaveBeenCalledTimes(1)
+
+    useAgentPanelStore().isOpen = false
+    useAgentPanelStore().open()
+    useFreeUsePlacement().reportNotice({
+      action: 'shown',
+      placement: 'top-banner'
+    })
+
+    expect(telemetry?.trackAgentFreeUseExposure).toHaveBeenCalledTimes(2)
+    expect(telemetry?.trackAgentFreeUseNotice).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not deduplicate interactions other than the impression', () => {
+    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
+    authenticatedRemoteConfigState.value = 'authenticated'
+    const { reportNotice } = useFreeUsePlacement()
+
+    reportNotice({ action: 'learn_more_clicked', placement: 'top-banner' })
+    reportNotice({ action: 'learn_more_clicked', placement: 'top-banner' })
+
+    expect(useTelemetry()?.trackAgentFreeUseNotice).toHaveBeenCalledTimes(2)
   })
 })

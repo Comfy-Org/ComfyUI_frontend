@@ -352,6 +352,7 @@ describe('useWorkspaceBilling', () => {
 
     it.for([
       { scopedHasFunds: undefined, expected: undefined },
+      { scopedHasFunds: { agent: true }, expected: true },
       { scopedHasFunds: { agent: false }, expected: false }
     ])(
       'maps scoped_has_funds $scopedHasFunds to the Agent-scoped balance $expected',
