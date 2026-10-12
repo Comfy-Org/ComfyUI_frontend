@@ -361,7 +361,7 @@
   --node-component-surface-highlight: var(--color-smoke-800);
   --node-component-surface-hovered: var(--surface-600);
   --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-surface: var(--color-charcoal-600);
+  --node-component-surface: var(--surface-600);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-component-disabled: var(--color-alpha-charcoal-600-30);
   --node-divider: var(--color-charcoal-500);
