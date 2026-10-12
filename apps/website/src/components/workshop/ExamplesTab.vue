@@ -53,10 +53,11 @@ const samplesOnly = computed(
 )
 // A sample exists to be judged, and on a phone it was 144px wide: an 81px
 // preview of a generated image decides nothing. Several take four fifths of
-// the row so the next one peeks in, and a lone one takes the row it has, both
-// held to the 18rem past which a card gains nothing and a lone one would
-// otherwise swallow the screen.
-const phoneWidth = computed(() => (examples.length === 1 ? 'w-full' : 'w-4/5'))
+// the row so the next one peeks in, held to the 18rem past which a card gains
+// nothing; a lone one takes the whole row.
+const phoneWidth = computed(() =>
+  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
+)
 const desktopGridColumns = computed(() =>
   examples.length === 3
     ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'
@@ -112,7 +113,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        :class="cn('shrink-0 snap-start max-sm:max-w-72 sm:w-auto', phoneWidth)"
+        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
         data-testid="example-item"
       >
         <figure class="flex flex-col gap-2">
