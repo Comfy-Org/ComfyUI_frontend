@@ -2,17 +2,19 @@ name: Commit Snapshot Updates
 description: >
   Downloads the snapshot-update artifacts of an E2E run, or those
   stage-rewritten-snapshots uploaded in the current run, merges their images
-  into the Playwright config directory, reports how much each baseline changed, and
-  commits and pushes the result to the PR branch.
+  into the directory Playwright runs from, reports how much each baseline
+  changed, and commits and pushes the result to the PR branch.
 
   Requires the PR branch to be checked out with a token that may push to it.
 
 inputs:
-  artifact-pattern:
-    description: Glob matching the artifacts to merge, e.g. snapshot-updates-*
+  artifact-prefix:
+    description: Prefix of the artifacts to merge, e.g. snapshot-updates-
     required: true
   config-dir:
-    description: Directory of the Playwright config, relative to the workspace
+    description: >
+      Directory Playwright runs from, relative to the workspace; snapshot
+      paths in the artifacts are relative to it
     required: false
     default: .
   snapshot-paths:
@@ -28,8 +30,7 @@ inputs:
     required: true
   message:
     description: First line of the commit message
-    required: false
-    default: '[automated] Update test expectations'
+    required: true
   run-id:
     description: E2E run to take the artifacts from; empty for the current run
     required: false
@@ -60,16 +61,16 @@ runs:
           exit 1
         fi
 
-    - name: Download rewritten snapshots
+    - name: Download snapshot updates
       uses: actions/download-artifact@v8
       with:
-        pattern: ${{ inputs.artifact-pattern }}
+        pattern: ${{ inputs.artifact-prefix }}*
         run-id: ${{ inputs.run-id }}
         github-token: ${{ inputs.run-id && github.token || '' }}
         path: ${{ runner.temp }}/snapshot-updates
         merge-multiple: true
 
-    - name: Merge rewritten snapshots
+    - name: Merge snapshot updates
       shell: bash
       env:
         CONFIG_DIR: ${{ inputs.config-dir }}
@@ -103,7 +104,7 @@ runs:
         fi
 
         if command -v compare >/dev/null 2>&1; then
-          echo "Measuring ${#changed[@]} rewritten snapshot(s) with ImageMagick"
+          echo "Measuring ${#changed[@]} updated snapshot(s) with ImageMagick"
         else
           echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
         fi
@@ -126,7 +127,6 @@ runs:
           px=''
           if command -v compare >/dev/null 2>&1; then
             px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
-            # Non-numeric means differing geometry or a decode failure.
             case "$px" in
               ''|*[!0-9]*) px='' ;;
             esac
@@ -146,12 +146,12 @@ runs:
         rm -f "$tmp_old"
 
         if [ "$small" -gt 0 ]; then
-          echo "::warning::${small} rewritten baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each rewrite corresponds to a test you expected to change before merging."
+          echo "::warning::${small} updated baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each update corresponds to a test you expected to change before merging."
         fi
 
         cat "$REPORT"
         {
-          echo "### Rewritten snapshots (${#changed[@]})"
+          echo "### Updated snapshots (${#changed[@]})"
           echo
           cat "$REPORT"
         } >> "$GITHUB_STEP_SUMMARY"
@@ -196,7 +196,7 @@ runs:
             echo
             echo 'Screenshot capture is not bit-deterministic; small pixel'
             echo 'deltas are usually text rasterization noise. Confirm each'
-            echo 'rewrite corresponds to a test expected to change.'
+            echo 'update corresponds to a test expected to change.'
           fi
         } > "$COMMIT_MESSAGE_FILE"
 

@@ -6,6 +6,12 @@ on:
   issue_comment:
     types: [created, edited]
 
+# GitHub keeps one pending run per concurrency group, so only update requests
+# share the PR's group; other comment events would displace a queued request.
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event.label.name == 'Update Website Screenshots' || startsWith(github.event.comment.body, '/update-website-screenshots') || github.event.comment.user.login == 'github-actions[bot]') && (github.event.issue.number || github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -18,6 +24,7 @@ jobs:
         github.event.label.name == 'Update Website Screenshots' ) ||
       ( github.event.issue.pull_request &&
         github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
         (
           github.event.comment.author_association == 'OWNER' ||
           github.event.comment.author_association == 'MEMBER' ||
@@ -63,6 +70,10 @@ jobs:
               ...context.repo,
               pull_number: prNumber
             })
+            if (pr.head.repo?.full_name !== pr.base.repo.full_name) {
+              core.setFailed('Fork PRs cannot be updated: this workflow cannot push to a fork.')
+              return
+            }
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
             core.setOutput('head-sha', pr.head.sha)
@@ -94,8 +105,6 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    concurrency:
-      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
     permissions:
       contents: read
       actions: read
@@ -104,8 +113,11 @@ jobs:
       run-id: ${{ steps.harvest.outputs.run-id }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/harvest-snapshot-updates
+          persist-credentials: false
 
-      - name: Harvest rewritten screenshots from the E2E run
+      - name: Find the E2E run's screenshot updates
         id: harvest
         uses: ./.github/actions/harvest-snapshot-updates
         with:
@@ -115,7 +127,6 @@ jobs:
           job-prefix: website-e2e-shard
           comment-body: ${{ github.event.comment.body }}
           wait-minutes: '30'
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   update-screenshots:
     needs: [setup, harvest]
@@ -129,7 +140,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.setup.outputs.branch }}
+          ref: ${{ needs.setup.outputs.head-sha }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -147,9 +158,7 @@ jobs:
         run: pnpm --filter @comfyorg/website build:e2e
 
       - name: Update screenshots
-        id: update-screenshots
         run: pnpm --filter @comfyorg/website test:visual:update
-        continue-on-error: true
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
@@ -159,8 +168,7 @@ jobs:
           path: apps/website/playwright-report/
           retention-days: 14
 
-      - name: Checkout snapshot actions from the trusted ref
-        if: steps.update-screenshots.outcome == 'success'
+      - name: Checkout snapshot actions from the workflow's ref
         uses: actions/checkout@v7
         with:
           path: trusted
@@ -168,27 +176,14 @@ jobs:
           persist-credentials: false
 
       - name: Stage rewritten screenshots
-        if: steps.update-screenshots.outcome == 'success'
         uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
           config-dir: apps/website
           artifact-name: website-snapshot-updates-full
 
-      - name: Fail when the rerun did not pass
-        if: steps.update-screenshots.outcome != 'success'
-        run: |
-          echo "::error::The --update-snapshots rerun failed; see the uploaded report. Nothing was committed."
-          exit 1
-
   commit:
     needs: [setup, harvest, update-screenshots]
-    if: >-
-      ${{
-        !cancelled() &&
-        needs.setup.result == 'success' &&
-        needs.harvest.result == 'success' &&
-        (needs.update-screenshots.result == 'success' || needs.update-screenshots.result == 'skipped')
-      }}
+    if: ${{ !cancelled() && (needs.harvest.outputs.mode == 'harvest' || needs.update-screenshots.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -203,7 +198,7 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      - name: Checkout snapshot actions from the trusted ref
+      - name: Checkout snapshot actions from the workflow's ref
         uses: actions/checkout@v7
         with:
           path: trusted
@@ -214,7 +209,7 @@ jobs:
         id: commit
         uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
-          artifact-pattern: website-snapshot-updates-*
+          artifact-prefix: website-snapshot-updates-
           config-dir: apps/website
           snapshot-paths: apps/website/e2e/
           branch: ${{ needs.setup.outputs.branch }}

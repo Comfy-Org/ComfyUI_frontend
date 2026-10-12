@@ -7,6 +7,12 @@ on:
   issue_comment:
     types: [created, edited]
 
+# GitHub keeps one pending run per concurrency group, so only update requests
+# share the PR's group; other comment events would displace a queued request.
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event.label.name == 'New Browser Test Expectations' || startsWith(github.event.comment.body, '/update-playwright') || github.event.comment.user.login == 'github-actions[bot]') && (github.event.issue.number || github.event.number) || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -14,6 +20,7 @@ jobs:
       ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
       ( github.event.issue.pull_request &&
         github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
         (
           github.event.comment.author_association == 'OWNER' ||
           github.event.comment.author_association == 'MEMBER' ||
@@ -59,8 +66,8 @@ jobs:
           {
             echo "pr-number=${PR_NUMBER}"
             gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
-              --json headRefName,headRefOid \
-              --jq '"branch=\(.headRefName)\nhead-sha=\(.headRefOid)"'
+              --json headRefName,headRefOid,isCrossRepository \
+              --jq 'if .isCrossRepository then error("Fork PRs cannot be updated: this workflow cannot push to a fork.") else "branch=\(.headRefName)\nhead-sha=\(.headRefOid)" end'
           } >> "$GITHUB_OUTPUT"
 
       - name: Find Update Comment
@@ -85,8 +92,6 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    concurrency:
-      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
     permissions:
       contents: read
       actions: read
@@ -96,8 +101,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/harvest-snapshot-updates
+          persist-credentials: false
 
-      - name: Harvest rewritten snapshots from the E2E run
+      - name: Find the E2E run's snapshot updates
         id: harvest
         uses: ./.github/actions/harvest-snapshot-updates
         with:
@@ -106,7 +114,6 @@ jobs:
           artifact-prefix: snapshot-updates-
           job-prefix: playwright-tests
           comment-body: ${{ github.event.comment.body }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     needs: [setup, harvest]
@@ -120,7 +127,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.setup.outputs.branch }}
+          ref: ${{ needs.setup.outputs.head-sha }}
 
       # issue_comment loads this workflow from the default branch. Resolve the
       # image from the checked-out PR so regenerated snapshots match its CI.
@@ -207,7 +214,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.setup.outputs.branch }}
+          ref: ${{ needs.setup.outputs.head-sha }}
       - name: Download built frontend
         uses: actions/download-artifact@v8
         with:
@@ -230,7 +237,7 @@ jobs:
         run: pnpm exec playwright test --update-snapshots --reporter=json,html --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
-      - name: Checkout snapshot actions from the trusted ref
+      - name: Checkout snapshot actions from the workflow's ref
         uses: actions/checkout@v7
         with:
           path: trusted
@@ -310,15 +317,7 @@ jobs:
 
   merge-and-commit:
     needs: [setup, harvest, build, update-snapshots-sharded]
-    if: >-
-      ${{
-        !cancelled() &&
-        needs.setup.result == 'success' &&
-        needs.harvest.result == 'success' &&
-        needs.build.result != 'failure' &&
-        needs.build.result != 'cancelled' &&
-        (needs.update-snapshots-sharded.result == 'success' || needs.update-snapshots-sharded.result == 'skipped')
-      }}
+    if: ${{ !cancelled() && (needs.harvest.outputs.mode == 'harvest' || needs.update-snapshots-sharded.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -331,7 +330,7 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      - name: Checkout snapshot actions from the trusted ref
+      - name: Checkout snapshot actions from the workflow's ref
         uses: actions/checkout@v7
         with:
           path: trusted
@@ -342,7 +341,7 @@ jobs:
         id: commit
         uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
-          artifact-pattern: snapshot-updates-*
+          artifact-prefix: snapshot-updates-
           snapshot-paths: browser_tests/
           branch: ${{ needs.setup.outputs.branch }}
           head-sha: ${{ needs.setup.outputs.head-sha }}

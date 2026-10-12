@@ -7,7 +7,7 @@ description: >
 
 inputs:
   config-dir:
-    description: Directory of the Playwright config, relative to the workspace
+    description: Directory Playwright runs from, relative to the workspace
     required: false
     default: .
   artifact-name:
@@ -31,14 +31,11 @@ runs:
       run: |
         set -euo pipefail
 
-        # Container jobs run as a different user than the checkout.
         git config --global --add safe.directory "$(pwd)"
         cd "$CONFIG_DIR"
 
-        changed_files=$( (
-          git diff --name-only --relative -- . 2>/dev/null || true
-          git ls-files --others --exclude-standard -- . 2>/dev/null || true
-        ) | sort -u | grep -E '\-snapshots/' || true )
+        all_changes=$(git diff --name-only --relative -- . && git ls-files --others --exclude-standard -- .)
+        changed_files=$(printf '%s\n' "$all_changes" | sort -u | grep -E -- '-snapshots/' || true)
 
         if [ -z "$changed_files" ]; then
           echo "No snapshot changes"
