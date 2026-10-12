@@ -8057,6 +8057,11 @@ describe('AgentPanelRoot workflow binding', () => {
           screen.getByRole('button', { name: 'Landscape chat' })
         ).toBeDisabled()
         expect(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        ).toBeDisabled()
+        expect(
           screen.queryByRole('heading', {
             name: i18n.global.t('agent.history')
           })
@@ -8074,6 +8079,11 @@ describe('AgentPanelRoot workflow binding', () => {
             expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
           )
           expect(screen.getByRole('textbox')).toBeInTheDocument()
+          expect(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.chatOptions')
+            })
+          ).toBeEnabled()
         } else {
           expect(
             await screen.findByText(i18n.global.t('agent.historyOpenFailed'))

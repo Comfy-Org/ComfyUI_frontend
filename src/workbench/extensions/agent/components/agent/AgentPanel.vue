@@ -479,6 +479,7 @@ defineExpose({
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
+                :disabled="openingChat"
                 class="size-6 shrink-0"
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
