@@ -46,11 +46,6 @@ export class SubgraphOutput extends SubgraphSlot {
       : this.linkIds.length !== 0
   }
 
-  private repairLinkMirror(existingLink: LLink | undefined): void {
-    this.linkIds.splice(0, this.linkIds.length)
-    if (existingLink) this.linkIds.push(existingLink.id)
-  }
-
   override connect(
     slot: INodeOutputSlot,
     node: LGraphNode,
@@ -86,7 +81,10 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Serialized slots may retain duplicate, dangling, or unrelated ids.
     // Repair the mirror only after the hook approves and inside the change.
-    if (mirrorNeedsRepair) this.repairLinkMirror(existingLink)
+    if (mirrorNeedsRepair) {
+      this.linkIds.splice(0, this.linkIds.length)
+      if (existingLink) this.linkIds.push(existingLink.id)
+    }
 
     const linkId = mintLinkId(
       subgraph.state,

@@ -1,9 +1,10 @@
-import type { ChainedCallback } from '@/lib/litegraph/src/utils/chainCallback'
+import type {
+  Callable,
+  ChainedCallback
+} from '@/lib/litegraph/src/utils/chainCallback'
 import { chainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 
-export { rebaseChainCallback } from '@/lib/litegraph/src/utils/chainCallback'
-
-export function useChainCallback<O, T>(
+export function useChainCallback<O, T extends Callable>(
   originalCallback: T | undefined,
   ...callbacks: ChainedCallback<O, T>[]
 ) {

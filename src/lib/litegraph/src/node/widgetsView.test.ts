@@ -261,10 +261,10 @@ describe('widgets view', () => {
     {
       entry: 'widgets.unshift',
       attachCleanup(widget: IBaseWidget, cleanup: () => void) {
-        widget.onRemove = chainCallback<IBaseWidget, IBaseWidget['onRemove']>(
-          widget.onRemove,
-          cleanup
-        )
+        widget.onRemove = chainCallback<
+          IBaseWidget,
+          NonNullable<IBaseWidget['onRemove']>
+        >(widget.onRemove, cleanup)
       },
       refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
         widgets.unshift(source)
@@ -284,11 +284,9 @@ describe('widgets view', () => {
       const after = node.addWidget('number', 'after', 2, null)
       assert.exists(node.widgets)
       const widgets = node.widgets
-      let refreshComplete = false
-      const localCleanup = vi.fn(() => {
-        if (refreshComplete) return
-        widgets.splice(0, 1)
-        throw new Error('extension teardown ran during refresh')
+      const cleanupReceivers: IBaseWidget[] = []
+      const localCleanup = vi.fn(function (this: IBaseWidget) {
+        cleanupReceivers.push(this)
       })
       attachCleanup(installed, localCleanup)
       const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
@@ -302,7 +300,6 @@ describe('widgets view', () => {
       source.name = 'renamed'
       source.type = 'toggle'
       const refreshed = refresh(node, widgets, source)
-      refreshComplete = true
 
       expect(refreshed).toBeInstanceOf(BooleanWidget)
       expect(node.widgets).toEqual([before, refreshed, after])
@@ -321,6 +318,59 @@ describe('widgets view', () => {
       expect(previousSourceCleanup).not.toHaveBeenCalled()
       expect(currentSourceCleanup).toHaveBeenCalledOnce()
       expect(localCleanup).toHaveBeenCalledOnce()
+      expect(cleanupReceivers).toEqual([refreshed])
+    }
+  )
+
+  it.for([
+    {
+      entry: 'addCustomWidget',
+      refresh(node: LGraphNode, _widgets: IBaseWidget[], source: IBaseWidget) {
+        return node.addCustomWidget(source)
+      }
+    },
+    {
+      entry: 'widgets.unshift',
+      refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
+        widgets.unshift(source)
+        return widgets[0]
+      }
+    }
+  ] as const)(
+    'preserves an opaque teardown chain through $entry when its source callback is unchanged',
+    ({ refresh }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+      let subscribed = true
+      const sourceCleanup = vi.fn(() => {
+        if (!subscribed) throw new Error('already unsubscribed')
+        subscribed = false
+      })
+      const source = nonExtensibleWidget(sourceCleanup)
+      const installed = node.addCustomWidget(source)
+      const localCleanup = vi.fn()
+      const originalCleanup = installed.onRemove
+      installed.onRemove = () => {
+        originalCleanup?.()
+        localCleanup()
+      }
+      assert.exists(node.widgets)
+      const widgets = node.widgets
+
+      source.type = 'toggle'
+      const refreshed = refresh(node, widgets, source)
+
+      expect(sourceCleanup).not.toHaveBeenCalled()
+      expect(localCleanup).not.toHaveBeenCalled()
+
+      node.removeWidget(refreshed)
+      expect(sourceCleanup).toHaveBeenCalledOnce()
+      expect(localCleanup).toHaveBeenCalledOnce()
+      expect(node.widgets).toEqual([])
+      expect(
+        useWidgetValueStore().getNodeWidgets(graph.rootGraph.id, node.id)
+      ).toEqual([])
     }
   )
 

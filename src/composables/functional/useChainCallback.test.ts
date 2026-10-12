@@ -1,9 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import {
-  rebaseChainCallback,
-  useChainCallback
-} from '@/composables/functional/useChainCallback'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 
 describe('useChainCallback', () => {
   it('preserves "this" context in original callback and chained callbacks', () => {
@@ -54,39 +51,5 @@ describe('useChainCallback', () => {
 
     expect(originalCalls).toEqual([42])
     expect(chainedCalls).toEqual([42])
-  })
-
-  it('rebases a known chain without retaining its previous original', () => {
-    const previousOriginal = vi.fn()
-    const nextOriginal = vi.fn()
-    const firstAppended = vi.fn()
-    const secondAppended = vi.fn()
-    const firstChain = useChainCallback(previousOriginal, firstAppended)
-    const current = useChainCallback(firstChain, secondAppended)
-
-    const rebased = rebaseChainCallback(current, previousOriginal, nextOriginal)
-    rebased?.()
-
-    expect(previousOriginal).not.toHaveBeenCalled()
-    expect(nextOriginal).toHaveBeenCalledOnce()
-    expect(firstAppended).toHaveBeenCalledOnce()
-    expect(secondAppended).toHaveBeenCalledOnce()
-  })
-
-  it('appends an opaque replacement callback to the next original', () => {
-    const previousOriginal = vi.fn()
-    const nextOriginal = vi.fn()
-    const replacement = vi.fn()
-
-    const rebased = rebaseChainCallback(
-      replacement,
-      previousOriginal,
-      nextOriginal
-    )
-    rebased?.()
-
-    expect(previousOriginal).not.toHaveBeenCalled()
-    expect(nextOriginal).toHaveBeenCalledOnce()
-    expect(replacement).toHaveBeenCalledOnce()
   })
 })

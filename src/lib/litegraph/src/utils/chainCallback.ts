@@ -4,78 +4,80 @@ export type ChainedCallback<O, T> =
     : never
 
 interface CallbackChain {
-  originalCallback: unknown
-  callbacks: readonly unknown[]
+  originalCallback: Callable | undefined
+  callbacks: readonly Callable[]
 }
 
-const callbackChains = new WeakMap<object, CallbackChain>()
+export type Callable = (...args: never[]) => unknown
+type CallbackSignature<T extends Callable> = T extends (
+  this: infer O,
+  ...args: infer P
+) => infer R
+  ? (this: O, ...args: P) => R
+  : never
 
-/**
- * Chain multiple callbacks together.
- *
- * @param originalCallback - The original callback to chain.
- * @param callbacks - The callbacks to chain.
- * @returns A new callback that chains the original callback with the callbacks.
- */
-export function chainCallback<O, T>(
+const callbackChains = new WeakMap<Callable, CallbackChain>()
+
+function chainCallbacks(
+  originalCallback: Callable | undefined,
+  callbacks: readonly Callable[]
+): Callable {
+  const chained = function (this: unknown, ...args: never[]) {
+    let result: unknown
+    if (originalCallback) {
+      result = Reflect.apply(originalCallback, this, args)
+    }
+    for (const callback of callbacks) {
+      Reflect.apply(callback, this, args)
+    }
+    return result
+  }
+
+  callbackChains.set(chained, { originalCallback, callbacks })
+  return chained
+}
+
+export function chainCallback<O, T extends Callable>(
   originalCallback: T | undefined,
   ...callbacks: ChainedCallback<O, T>[]
 ) {
   type Args = NonNullable<T> extends (...args: infer P) => unknown ? P : never
   type Ret = NonNullable<T> extends (...args: unknown[]) => infer R ? R : never
 
-  const chainedCallback = function (this: O, ...args: Args) {
-    if (typeof originalCallback === 'function') {
-      ;(originalCallback as (this: O, ...args: Args) => Ret).call(this, ...args)
-    }
-    for (const callback of callbacks) {
-      callback.call(this, ...args)
-    }
-  } as (this: O, ...args: Args) => Ret
-
-  callbackChains.set(chainedCallback, { originalCallback, callbacks })
-  return chainedCallback
+  return chainCallbacks(originalCallback, callbacks) as (
+    this: O,
+    ...args: Args
+  ) => Ret
 }
 
-/**
- * Move a callback chain to a replacement owner without retaining its stale
- * original callback or losing callbacks appended by consumers.
- */
-export function rebaseChainCallback<T>(
+export function rebaseChainCallback<T extends Callable>(
   currentCallback: T | undefined,
   previousOriginal: T | undefined,
   nextOriginal: T | undefined
-): T | undefined {
-  const rebaseKnownChain = (
-    callback: T | undefined
-  ): { callback: T | undefined; found: boolean } => {
-    if (callback === previousOriginal) {
-      return { callback: nextOriginal, found: true }
-    }
-    if (typeof callback !== 'function') return { callback, found: false }
+): CallbackSignature<T> | undefined
+export function rebaseChainCallback(
+  currentCallback: Callable | undefined,
+  previousOriginal: Callable | undefined,
+  nextOriginal: Callable | undefined
+): Callable | undefined {
+  if (previousOriginal === nextOriginal) return currentCallback
+  if (!currentCallback) return nextOriginal
 
-    const chain = callbackChains.get(callback)
-    if (!chain) return { callback, found: false }
-    const rebasedOriginal = rebaseKnownChain(
-      chain.originalCallback as T | undefined
-    )
-    if (!rebasedOriginal.found) return { callback, found: false }
-
-    return {
-      callback: chainCallback<unknown, T>(
-        rebasedOriginal.callback,
-        ...(chain.callbacks as ChainedCallback<unknown, T>[])
-      ) as T,
-      found: true
+  const appendedCallbacks: Callable[] = []
+  let original: Callable | undefined = currentCallback
+  while (original !== previousOriginal) {
+    if (!original) break
+    const chain = callbackChains.get(original)
+    if (!chain) {
+      return chainCallbacks(nextOriginal, [currentCallback])
     }
+    appendedCallbacks.unshift(...chain.callbacks)
+    original = chain.originalCallback
   }
 
-  const rebased = rebaseKnownChain(currentCallback)
-  if (rebased.found) return rebased.callback
-  if (typeof currentCallback !== 'function') return nextOriginal
+  if (original === previousOriginal) {
+    return chainCallbacks(nextOriginal, appendedCallbacks)
+  }
 
-  return chainCallback<unknown, T>(
-    nextOriginal,
-    currentCallback as ChainedCallback<unknown, T>
-  ) as T
+  return chainCallbacks(nextOriginal, [currentCallback])
 }
