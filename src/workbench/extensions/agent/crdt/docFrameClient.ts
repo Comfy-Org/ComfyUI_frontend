@@ -1,161 +1,199 @@
-import type { DocResetData } from '@comfyorg/ingest-types'
+import type {
+  DocOpsResultData,
+  DocResetData,
+  DocUpdateData,
+  ServerDocFrame as IngestServerDocFrame
+} from '@comfyorg/ingest-types'
+import {
+  zDocOpsResultData,
+  zDocOpsResultFrame,
+  zDocResetData,
+  zDocResetFrame,
+  zDocUpdateData,
+  zDocUpdateFrame
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyApi } from '@/scripts/api'
+import type { DocOp, PendingIngestClientDocFrame } from '@/scripts/apiDocFrames'
+
+import { wireLog } from './crdtLog'
+
+export type { DocOpFailure } from '@comfyorg/ingest-types'
+export type { DocOp } from '@/scripts/apiDocFrames'
 
 export const DOC_PROTOCOL_VERSION = 1
-/** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
-const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
-const MAX_WORKFLOW_ID_LENGTH = 128
-const MAX_ACTOR_LENGTH = 256
-const MAX_AWARENESS_STATE_BYTES = 8 << 10
-const MAX_DOC_OPS_PER_FRAME = 256
-const MAX_OP_ID_LENGTH = 128
-const MAX_ERROR_CODE_LENGTH = 128
-const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
-const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
-const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
 
-export interface DocOp {
-  op_id: string
-  actor: string
-  [key: string]: unknown
+function boundedUtf8(value: string, bytes: number): boolean {
+  return value.length <= bytes && utf8.encode(value).length <= bytes
 }
 
-export interface DocUpdate {
-  workflowId: string
-  seq: number
+const workflowId = zDocUpdateData.shape.workflow_id.refine((value) =>
+  boundedUtf8(value, 128)
+)
+const actor = zDocUpdateData.shape.actor
+  .unwrap()
+  .refine((value) => boundedUtf8(value, 256))
+const sequence = z
+  .unknown()
+  .refine(
+    (value): boolean => typeof value === 'number' || typeof value === 'bigint'
+  )
+  .pipe(zDocUpdateData.shape.seq)
+  .refine((value) => value >= 0n && value <= BigInt(Number.MAX_SAFE_INTEGER))
+  .transform(Number)
+const code = zDocOpsResultData.shape.code
+  .unwrap()
+  .refine((value) => boundedUtf8(value, 128))
+const message = zDocOpsResultData.shape.message
+  .unwrap()
+  .refine((value) => boundedUtf8(value, 8 << 10))
+const opId = zDocUpdateData.shape.op_ids
+  .unwrap()
+  .element.refine((value) => boundedUtf8(value, 128))
+const opIds = z.array(opId).refine((value) => value.length <= 256)
+const common = { workflow_id: workflowId }
+const resultMetadata = {
+  ...common,
+  seq: sequence.optional(),
+  code: code.optional(),
+  message: message.optional()
+}
+
+const pendingIngestDocSubscribed = zDocOpsResultData
+  .pick({
+    v: true,
+    workflow_id: true,
+    ok: true,
+    seq: true,
+    code: true,
+    message: true
+  })
+  .extend({ ...resultMetadata, expected_seq: sequence.optional() })
+const pendingIngestDocReseedResult = pendingIngestDocSubscribed
+  .omit({ expected_seq: true })
+  .extend({ outcome: code.optional() })
+const pendingIngestAwareness = z.object({
+  v: zDocUpdateData.shape.v,
+  ...common,
+  actor,
+  state: z
+    .record(z.string(), z.unknown())
+    .refine((value) => {
+      try {
+        return boundedUtf8(JSON.stringify(value), 8 << 10)
+      } catch {
+        return false
+      }
+    })
+    .optional(),
+  expires_at: sequence.optional()
+})
+
+const serverDocFrame = z.discriminatedUnion('type', [
+  zDocUpdateFrame.extend({
+    data: zDocUpdateData.extend({
+      ...common,
+      seq: sequence,
+      lineage_seq: sequence,
+      actor: actor.optional(),
+      op_ids: opIds.optional(),
+      update_b64: zDocUpdateData.shape.update_b64
+        .refine((value) => value.length <= 8 << 20)
+        .pipe(z.base64().min(1))
+        .pipe(
+          z.string().refine((value) => {
+            const tail = value.slice(-4)
+            return btoa(atob(tail)) === tail
+          })
+        )
+    })
+  }),
+  zDocResetFrame.extend({
+    data: zDocResetData.extend({
+      ...common,
+      seq: sequence,
+      lineage_seq: sequence,
+      actor: actor.optional()
+    })
+  }),
+  zDocOpsResultFrame.extend({
+    data: zDocOpsResultData.extend({
+      ...resultMetadata,
+      applied: opIds.optional(),
+      skipped: opIds.optional(),
+      failed: zDocOpsResultData.shape.failed
+        .unwrap()
+        .extend({
+          op_id: opId.optional(),
+          code,
+          message
+        })
+        .optional()
+    })
+  }),
+  z.object({
+    type: z.enum(['doc_subscribed']),
+    data: pendingIngestDocSubscribed
+  }),
+  z.object({
+    type: z.enum(['doc_reseed_result']),
+    data: pendingIngestDocReseedResult
+  }),
+  z.object({ type: z.enum(['awareness']), data: pendingIngestAwareness })
+])
+
+type WithWorkflowId<T extends { workflow_id: string }> = Omit<
+  T,
+  'v' | 'workflow_id'
+> & { workflowId: T['workflow_id'] }
+
+export type DocUpdate = WithWorkflowId<
+  Pick<DocUpdateData, 'workflow_id' | 'seq' | 'actor'>
+> & {
   update: Uint8Array
-  actor?: string
-  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
-  opIds?: string[]
+  opIds?: DocUpdateData['op_ids']
 }
-
-export interface DocSubscribed {
-  workflowId: string
-  ok: boolean
-  seq?: number
-  expectedSeq?: number
-  code?: string
-  message?: string
+export type DocReset = WithWorkflowId<Omit<DocResetData, 'lineage_seq'>> & {
+  lineageSeq: DocResetData['lineage_seq']
 }
-
-export interface DocOpFailure {
-  index: number
-  /** Absent when the relay cannot map the failing index to an op id. */
-  op_id?: string
-  code: string
-  message: string
+export type DocOpsResult = WithWorkflowId<DocOpsResultData> &
+  Required<Pick<DocOpsResultData, 'applied' | 'skipped'>>
+export type DocSubscribed = WithWorkflowId<
+  Omit<z.output<typeof pendingIngestDocSubscribed>, 'expected_seq'>
+> & {
+  expectedSeq?: z.output<typeof pendingIngestDocSubscribed>['expected_seq']
 }
-
-export interface DocOpsResult {
-  workflowId: string
-  ok: boolean
-  seq?: number
-  applied: string[]
-  skipped: string[]
-  code?: string
-  message?: string
-  /** Validated diagnostics for the first rejected operation in a batch. */
-  failed?: DocOpFailure
-}
-
-export interface DocReseedResult {
-  workflowId: string
-  ok: boolean
-  seq?: number
-  outcome?: string
-  code?: string
-  message?: string
-}
-
-interface DocAwareness {
-  workflowId: string
-  actor: string
-  state?: Record<string, unknown>
+export type DocReseedResult = WithWorkflowId<
+  z.output<typeof pendingIngestDocReseedResult>
+>
+type DocAwareness = WithWorkflowId<
+  Omit<z.output<typeof pendingIngestAwareness>, 'expires_at'>
+> & {
   expiresAt?: number
 }
-
-/**
- * Host→follower lineage break: the document was re-minted, so updates from
- * before this frame do NOT compose with what comes after. Deliberately
- * payload-less — the fresh state arrives through the ordinary subscribe
- * catch-up path, never a second snapshot channel.
- */
-export interface DocReset {
-  workflowId: string
-  seq: number
-  lineageSeq: number
-  actor?: string
+type DocFrameData = {
+  doc_update: DocUpdate
+  doc_reset: DocReset
+  doc_ops_result: DocOpsResult
+  doc_subscribed: DocSubscribed
+  doc_reseed_result: DocReseedResult
+  awareness: DocAwareness
 }
-
-export type ServerDocFrame =
-  | { type: 'doc_update'; data: DocUpdate }
-  | { type: 'doc_subscribed'; data: DocSubscribed }
-  | { type: 'doc_ops_result'; data: DocOpsResult }
-  | { type: 'doc_reset'; data: DocReset }
-  | { type: 'doc_reseed_result'; data: DocReseedResult }
-  | { type: 'awareness'; data: DocAwareness }
-
-/** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
-export interface DocFrameTransport {
-  /**
-   * Best-effort send. Returns `true` when the frame left the transport and
-   * `false` when the transport cannot currently carry it (socket not OPEN).
-   *
-   * It MUST NOT throw. "The socket is not connected yet" is a normal,
-   * recoverable state of a follower that mounted while `createSocket` was still
-   * awaiting its auth token — not an exception. Throwing here aborted the
-   * `watch(..., { immediate: true })` subscribe (leaving the follower
-   * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
-   * (leaking listeners and a live projector). Callers reconcile intent against
-   * the returned boolean instead.
-   */
-  send(frame: string): boolean
-  addEventListener(type: string, listener: EventListener): void
-  removeEventListener(type: string, listener: EventListener): void
-}
-
-interface WireData {
-  v?: unknown
-  workflow_id?: unknown
-  seq?: unknown
-  expected_seq?: unknown
-  update_b64?: unknown
-  actor?: unknown
-  op_ids?: unknown
-  ok?: unknown
-  code?: unknown
-  message?: unknown
-  applied?: unknown
-  skipped?: unknown
-  failed?: unknown
-  state?: unknown
-  expires_at?: unknown
-  index?: unknown
-  op_id?: unknown
-  outcome?: unknown
-}
-
-function decodeBase64(value: string): Uint8Array | null {
-  if (value === '' || value.length % 4 !== 0) return null
-  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
-  if (value.length > MAX_DOC_UPDATE_B64_LENGTH) return null
-
-  // `atob` is permissive about missing padding, so require canonical standard
-  // base64 before decoding the untrusted wire value.
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(value)) return null
-
-  if (padding === 2 && !BASE64_DOUBLE_PADDING_END.test(value)) return null
-  if (padding === 1 && !BASE64_SINGLE_PADDING_END.test(value)) return null
-
-  try {
-    const binary = atob(value)
-    return Uint8Array.from(binary, (character) => character.charCodeAt(0))
-  } catch {
-    return null
-  }
-}
+type FrameType =
+  | IngestServerDocFrame['type']
+  | 'doc_subscribed'
+  | 'doc_reseed_result'
+  | 'awareness'
+export type DecodedServerDocFrame = {
+  [K in FrameType]: { type: K; data: DocFrameData[K] }
+}[FrameType]
+export type DocFrameTransport = Pick<
+  ComfyApi,
+  'sendDocFrame' | 'registerFrameHandler'
+>
 
 export function encodeBase64(value: Uint8Array): string {
   let binary = ''
@@ -163,354 +201,110 @@ export function encodeBase64(value: Uint8Array): string {
   return btoa(binary)
 }
 
-function parseWireData(value: unknown): WireData | null {
-  return typeof value === 'object' && value !== null ? value : null
-}
-
-function parseRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? Object.fromEntries(Object.entries(value))
-    : null
-}
-
-function isAbsent(value: unknown): value is null | undefined {
-  return value === null || value === undefined
-}
-
-function hasBoundedUtf8Length(value: string, maxBytes: number): boolean {
-  return value.length <= maxBytes && utf8.encode(value).length <= maxBytes
-}
-
-function isValidWorkflowId(value: string): boolean {
-  return (
-    value.length > 0 &&
-    hasBoundedUtf8Length(value, MAX_WORKFLOW_ID_LENGTH) &&
-    !/[\0\n\r\t :*?[\]]/.test(value)
-  )
-}
-
-function isValidActor(value: string): boolean {
-  if (
-    value.length === 0 ||
-    !hasBoundedUtf8Length(value, MAX_ACTOR_LENGTH) ||
-    /[\0\n\r\t ]/.test(value)
-  )
-    return false
-  if (value === 'system:mint') return true
-  const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
-  return match !== null
-}
-
-/**
- * Attribution on effect frames is advisory, unlike awareness's actor key.
- * Preserve the load-bearing effect and omit attribution that fails grammar.
- */
-function parseAdvisoryActor(value: unknown): string | undefined {
-  return typeof value === 'string' && isValidActor(value) ? value : undefined
-}
-
-function isSequence(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
-}
-
-function parseSequence(value: unknown): number | null {
-  if (isSequence(value)) return value
-  if (
-    typeof value === 'bigint' &&
-    value >= 0n &&
-    value <= BigInt(Number.MAX_SAFE_INTEGER)
-  )
-    return Number(value)
-  return null
-}
-
-function isValidOpId(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    hasBoundedUtf8Length(value, MAX_OP_ID_LENGTH) &&
-    !/[\0\n\r\t]/.test(value)
-  )
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.length <= MAX_DOC_OPS_PER_FRAME &&
-    value.every(isValidOpId)
-  )
-}
-
-function parseBoundedString(
-  value: unknown,
-  maxBytes: number
-): string | undefined {
-  return typeof value === 'string' && hasBoundedUtf8Length(value, maxBytes)
-    ? value
-    : undefined
-}
-
-/**
- * The relay serialises `applied`/`skipped` with `omitempty`, so an empty list
- * arrives as an absent field. Absent means empty; present-but-malformed is a
- * protocol violation.
- */
-function parseOptionalStringArray(value: unknown): string[] | null {
-  if (isAbsent(value)) return []
-  return isStringArray(value) ? value : null
-}
-
-function parseDocOpFailure(value: unknown): DocOpFailure | null {
-  const failure = parseWireData(value)
-  if (
-    failure === null ||
-    !isSequence(failure.index) ||
-    (!isAbsent(failure.op_id) && !isValidOpId(failure.op_id)) ||
-    typeof failure.code !== 'string' ||
-    !hasBoundedUtf8Length(failure.code, MAX_ERROR_CODE_LENGTH) ||
-    typeof failure.message !== 'string' ||
-    !hasBoundedUtf8Length(failure.message, MAX_ERROR_MESSAGE_LENGTH)
-  )
-    return null
-
-  return {
-    index: failure.index,
-    ...(!isAbsent(failure.op_id) && { op_id: failure.op_id }),
-    code: failure.code,
-    message: failure.message
-  }
-}
-
-// Defence in depth behind the server's identical cap. The counts are not
-// byte-identical: Go's json.Marshal HTML-escapes `<`, `>` and `&`, so the
-// server always counts >= this and is the stricter of the two.
-function encodedJsonSize(value: Record<string, unknown>): number | null {
-  try {
-    const encoded = JSON.stringify(value)
-    if (encoded.length > MAX_AWARENESS_STATE_BYTES) return encoded.length
-    return utf8.encode(encoded).length
-  } catch {
-    return null
-  }
-}
-
-function parseDocReseedResult(
-  workflowId: string,
-  ok: boolean,
-  data: WireData
-): DocReseedResult {
-  const outcome = parseBoundedString(data.outcome, MAX_ERROR_CODE_LENGTH)
-  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
-  return {
-    workflowId,
-    ok,
-    ...(isSequence(data.seq) && { seq: data.seq }),
-    ...(outcome !== undefined && { outcome }),
-    ...(code !== undefined && { code }),
-    ...(message !== undefined && { message })
-  }
-}
-
-function parseDocSubscribed(
-  workflowId: string,
-  ok: boolean,
-  data: WireData
-): DocSubscribed {
-  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
-  return {
-    workflowId,
-    ok,
-    ...(isSequence(data.seq) && { seq: data.seq }),
-    ...(isSequence(data.expected_seq) && { expectedSeq: data.expected_seq }),
-    ...(code !== undefined && { code }),
-    ...(message !== undefined && { message })
-  }
-}
-
-type ServerFrameParsers = {
-  [K in ServerDocFrame['type']]: (
-    workflowId: string,
-    data: WireData
-  ) => Extract<ServerDocFrame, { type: K }> | null
-}
-
-function parseResultMetadata(data: WireData) {
-  const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
-  const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
-  const seq = parseSequence(data.seq)
-  return {
-    ...(seq !== null && { seq }),
-    ...(code !== undefined && { code }),
-    ...(message !== undefined && { message })
-  }
-}
-
-function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
-  const stateSize = encodedJsonSize(state)
-  return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
-}
-
-type AwarenessStateResult =
-  | { kind: 'present'; state: Record<string, unknown> }
-  | { kind: 'absent' }
-  | { kind: 'invalid' }
-
-function parseAwarenessState(value: unknown): AwarenessStateResult {
-  if (isAbsent(value)) return { kind: 'absent' }
-  const state = parseRecord(value)
-  if (state === null || !fitsAwarenessBudget(state)) return { kind: 'invalid' }
-  return { kind: 'present', state }
-}
-
-const serverFrameParsers: ServerFrameParsers = {
-  doc_update: (workflowId, data) => {
-    const seq = parseSequence(data.seq)
-    if (seq === null || typeof data.update_b64 !== 'string') return null
-    const update = decodeBase64(data.update_b64)
-    if (update === null) return null
-    if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
-    const actor = parseAdvisoryActor(data.actor)
-    return {
-      type: 'doc_update',
-      data: {
-        workflowId,
-        seq,
-        update,
-        ...(actor !== undefined && { actor }),
-        ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
-      }
-    }
-  },
-  doc_subscribed: (workflowId, data) =>
-    typeof data.ok === 'boolean'
-      ? {
-          type: 'doc_subscribed',
-          data: parseDocSubscribed(workflowId, data.ok, data)
+export function parseServerDocFrame(
+  value: unknown
+): DecodedServerDocFrame | null {
+  const parsed = serverDocFrame.safeParse(value)
+  if (!parsed.success) return null
+  const frame = parsed.data
+  switch (frame.type) {
+    case 'doc_update': {
+      const { workflow_id, seq, actor, op_ids, update_b64 } = frame.data
+      return {
+        type: frame.type,
+        data: {
+          workflowId: workflow_id,
+          seq,
+          actor,
+          opIds: op_ids,
+          update: Uint8Array.from(atob(update_b64), (char) =>
+            char.charCodeAt(0)
+          )
         }
-      : null,
-  doc_ops_result: (workflowId, data) => {
-    if (typeof data.ok !== 'boolean') return null
-    const applied = parseOptionalStringArray(data.applied)
-    const skipped = parseOptionalStringArray(data.skipped)
-    if (applied === null || skipped === null) return null
-    const failed = parseDocOpFailure(data.failed) ?? undefined
-    return {
-      type: 'doc_ops_result',
-      data: {
-        workflowId,
-        ok: data.ok,
-        applied,
-        skipped,
-        ...parseResultMetadata(data),
-        ...(failed !== undefined && { failed })
       }
     }
-  },
-  doc_reset: (workflowId, data) => {
-    const reset: Partial<Record<keyof DocResetData, unknown>> = data
-    const seq = parseSequence(reset.seq)
-    const lineageSeq = parseSequence(reset.lineage_seq)
-    if (seq === null || lineageSeq === null) return null
-    const actor = parseAdvisoryActor(reset.actor)
-    return {
-      type: 'doc_reset',
-      data: {
-        workflowId,
-        seq,
-        lineageSeq,
-        ...(actor !== undefined && { actor })
+    case 'doc_reset': {
+      const { v, workflow_id, lineage_seq, ...data } = frame.data
+      return {
+        type: frame.type,
+        data: { ...data, workflowId: workflow_id, lineageSeq: lineage_seq }
       }
     }
-  },
-  doc_reseed_result: (workflowId, data) =>
-    typeof data.ok === 'boolean'
-      ? {
-          type: 'doc_reseed_result',
-          data: parseDocReseedResult(workflowId, data.ok, data)
+    case 'doc_ops_result': {
+      const { v, workflow_id, ...data } = frame.data
+      return {
+        type: frame.type,
+        data: {
+          ...data,
+          workflowId: workflow_id,
+          applied: data.applied ?? [],
+          skipped: data.skipped ?? []
         }
-      : null,
-  awareness: (workflowId, data) => {
-    if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
-    const parsed = parseAwarenessState(data.state)
-    if (parsed.kind === 'invalid') return null
-    if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
-    return {
-      type: 'awareness',
-      data: {
-        workflowId,
-        actor: data.actor,
-        ...(parsed.kind === 'present' && { state: parsed.state }),
-        ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
+      }
+    }
+    case 'doc_subscribed': {
+      const { v, workflow_id, expected_seq, ...data } = frame.data
+      return {
+        type: frame.type,
+        data: {
+          ...data,
+          workflowId: workflow_id,
+          ...(expected_seq !== undefined && { expectedSeq: expected_seq })
+        }
+      }
+    }
+    case 'doc_reseed_result': {
+      const { v, workflow_id, ...data } = frame.data
+      return { type: frame.type, data: { ...data, workflowId: workflow_id } }
+    }
+    case 'awareness': {
+      const { v, workflow_id, expires_at, ...data } = frame.data
+      return {
+        type: frame.type,
+        data: { ...data, workflowId: workflow_id, expiresAt: expires_at }
       }
     }
   }
-}
-
-export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
-  if (typeof value !== 'object' || value === null) return null
-  const frame = value as { type?: unknown; data?: unknown }
-  const data = parseWireData(frame.data)
-  if (
-    data === null ||
-    data.v !== DOC_PROTOCOL_VERSION ||
-    typeof data.workflow_id !== 'string' ||
-    !isValidWorkflowId(data.workflow_id)
-  )
-    return null
-
-  if (typeof frame.type !== 'string' || !isServerFrameType(frame.type))
-    return null
-  return serverFrameParsers[frame.type](data.workflow_id, data)
-}
-
-function isServerFrameType(type: string): type is ServerDocFrame['type'] {
-  return Object.hasOwn(serverFrameParsers, type)
 }
 
 export class DocFrameClient extends EventTarget {
-  private readonly listeners = new Map<string, EventListener>()
+  private readonly unregister: (() => void)[] = []
 
   constructor(private readonly transport: DocFrameTransport) {
     super()
     const reportedTypes = new Set<string>()
-    for (const type of [
-      'doc_update',
-      'doc_subscribed',
-      'doc_ops_result',
-      'doc_reset',
-      'doc_reseed_result',
-      'awareness'
-    ]) {
-      const listener: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const parsed = parseServerDocFrame({ type, data: event.detail })
-        if (parsed) {
-          this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
-          return
-        }
-        if (reportedTypes.has(type)) return
-        reportedTypes.add(type)
-        reportError(new Error('Discarded invalid server document frame'), {
-          surface: 'agent',
-          errorType: 'agent_crdt_invalid_server_frame',
-          tags: { frame_type: type },
-          level: 'warning'
+    for (const type of serverDocFrame.options.flatMap(
+      (schema) => schema.shape.type.options
+    )) {
+      this.unregister.push(
+        transport.registerFrameHandler(type, (data) => {
+          const parsed = parseServerDocFrame({ type, data })
+          if (parsed) {
+            this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
+            return
+          }
+          if (reportedTypes.has(type)) return
+          reportedTypes.add(type)
+          reportError(new Error('Discarded invalid server document frame'), {
+            surface: 'agent',
+            errorType: 'agent_crdt_invalid_server_frame',
+            tags: { frame_type: type },
+            level: 'warning'
+          })
         })
-      }
-      this.listeners.set(type, listener)
-      transport.addEventListener(type, listener)
+      )
     }
   }
 
-  /** @returns whether the subscribe frame actually left the transport. */
   subscribe(workflowId: string, stateVector: Uint8Array): boolean {
-    return this.send('doc_subscribe', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      state_vector_b64: encodeBase64(stateVector),
-      supports_reseed: true
+    return this.send({
+      type: 'doc_subscribe',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        state_vector_b64: encodeBase64(stateVector),
+        supports_reseed: true
+      }
     })
   }
 
@@ -519,39 +313,39 @@ export class DocFrameClient extends EventTarget {
     expectedSeq: number,
     workflow: Record<string, unknown>
   ): boolean {
-    return this.send('doc_reseed', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      expected_seq: expectedSeq,
-      workflow
+    return this.send({
+      type: 'doc_reseed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        expected_seq: expectedSeq,
+        workflow
+      }
     })
   }
 
-  /** @returns whether the unsubscribe frame actually left the transport. */
   unsubscribe(workflowId: string): boolean {
-    return this.send('doc_unsubscribe', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId
+    return this.send({
+      type: 'doc_unsubscribe',
+      data: { v: DOC_PROTOCOL_VERSION, workflow_id: workflowId }
     })
   }
 
-  /** @returns whether the ops frame actually left the transport. */
   sendOps(workflowId: string, tab: string, ops: readonly DocOp[]): boolean {
-    return this.send('doc_ops', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: workflowId,
-      tab,
-      ops
+    return this.send({
+      type: 'doc_ops',
+      data: { v: DOC_PROTOCOL_VERSION, workflow_id: workflowId, tab, ops }
     })
   }
 
   destroy(): void {
-    for (const [type, listener] of this.listeners)
-      this.transport.removeEventListener(type, listener)
-    this.listeners.clear()
+    for (const unregister of this.unregister) unregister()
+    this.unregister.length = 0
   }
 
-  private send(type: string, data: Record<string, unknown>): boolean {
-    return this.transport.send(JSON.stringify({ type, data }))
+  private send(frame: PendingIngestClientDocFrame): boolean {
+    const delivered = this.transport.sendDocFrame(frame)
+    wireLog.trace('ws_out', 'outbound frame', { delivered, frame })
+    return delivered
   }
 }

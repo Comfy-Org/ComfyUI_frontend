@@ -47,10 +47,20 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
   private listeners = 0
 
-  send(frame: string): boolean {
+  sendDocFrame(
+    frame: Parameters<DocFrameTransport['sendDocFrame']>[0]
+  ): boolean {
     if (!this.open) throw new Error('The ComfyUI WebSocket is not connected')
-    this.sent.push(frame)
+    this.sent.push(JSON.stringify(frame))
     return true
+  }
+
+  registerFrameHandler(type: string, handler: (data: unknown) => void) {
+    const listener = (event: Event) => {
+      if (event instanceof CustomEvent) handler(event.detail)
+    }
+    this.addEventListener(type, listener)
+    return () => this.removeEventListener(type, listener)
   }
 
   override addEventListener(type: string, listener: EventListener): void {
@@ -95,6 +105,7 @@ function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
     v: 1,
     workflow_id: workflowId,
     seq,
+    lineage_seq: 0,
     update_b64: encodeBase64(update)
   }
 }
@@ -1511,13 +1522,10 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
     const { transport, bridge } = wire()
     const replaced: unknown[] = []
     const switchEvents: string[] = []
-    const send = transport.send.bind(transport)
-    vi.spyOn(transport, 'send').mockImplementation((frame) => {
-      const { type, data } = JSON.parse(frame) as {
-        type: string
-        data?: { workflow_id?: string }
-      }
-      if (type === 'doc_subscribe' && data?.workflow_id === 'wf-2')
+    const send = transport.sendDocFrame.bind(transport)
+    vi.spyOn(transport, 'sendDocFrame').mockImplementation((frame) => {
+      const { type, data } = frame
+      if (type === 'doc_subscribe' && data.workflow_id === 'wf-2')
         switchEvents.push('subscribe')
       return send(frame)
     })
@@ -1535,17 +1543,12 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
 
     bridge.subscribe('wf-2')
 
-    // The old lineage is dropped wholesale — wf-2's history is never folded
-    // into wf-1's doc, which would put both workflows' nodes on one canvas.
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
     expect(replaced).toEqual([{ workflowId: 'wf-2' }])
     expect(switchEvents).toEqual(['replaced', 'subscribe'])
 
-    // The old subscription is released, and the new subscribe carries the
-    // FRESH doc's state vector — the empty one — never wf-1's, which the host
-    // would use to compute a nonsense delta against wf-2's history.
     expect(transport.framesOfType('doc_unsubscribe')).toHaveLength(1)
     const subscribes = transport.framesOfType('doc_subscribe') as {
       data: { workflow_id: string; state_vector_b64: string }
@@ -1556,7 +1559,6 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
       encodeBase64(Y.encodeStateVector(new Y.Doc()))
     )
 
-    // The next wf-2 update lands on the fresh lineage.
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-2'))
     expect(bridge.follower.updatesApplied).toBe(1)
   })

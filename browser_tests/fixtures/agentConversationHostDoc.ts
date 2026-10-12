@@ -18,7 +18,7 @@ import type {
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { DecodedServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
@@ -40,7 +40,7 @@ type HostLinkTuple = [
 // The shape the fake host puts on the wire; production's parseServerDocFrame
 // validates each one at send time.
 export interface HostFrame {
-  type: ServerDocFrame['type']
+  type: DecodedServerDocFrame['type']
   data: Record<string, unknown>
 }
 
@@ -346,6 +346,7 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: 1,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds

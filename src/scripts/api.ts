@@ -24,6 +24,7 @@ import {
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
+import type { PendingIngestClientDocFrame } from '@/scripts/apiDocFrames'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
@@ -800,6 +801,21 @@ export class ComfyApi extends EventTarget {
       this.getWrappedListener(callback as EventListener),
       options
     )
+  }
+
+  sendDocFrame(frame: PendingIngestClientDocFrame): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false
+    this.socket.send(JSON.stringify(frame))
+    return true
+  }
+
+  registerFrameHandler(
+    type: string,
+    handler: (data: unknown) => void
+  ): () => void {
+    const listener = (event: CustomEvent<unknown>) => handler(event.detail)
+    this.addCustomEventListener(type, listener)
+    return () => this.removeCustomEventListener(type, listener)
   }
 
   addCustomEventListener(
