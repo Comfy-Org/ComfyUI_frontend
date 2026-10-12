@@ -1,27 +1,29 @@
 import { computed, onMounted, onScopeDispose, shallowRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import type { FormValues } from '../config/workshop-playground'
-import { validateForm } from '../config/workshop-playground'
-import { initialWorkshopPageState } from '../config/workshop-page-state'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { refreshWorkshopCredits } from '../config/workshop-credits'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { FormValues } from '@/config/workshop-playground'
+import { validateForm } from '@/config/workshop-playground'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { markWorkshopCreditsDirty } from '@/config/workshop-credits'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
-} from '../config/workshop-workflow-api'
-import { createWorkflowController } from '../config/workshop-workflow-controller'
-import type { WorkflowState } from '../config/workshop-workflow-state'
-import { workflowStorage } from '../config/workshop-workflow-storage'
-import { workshopIdempotencyKey } from '../config/workshop-snippets'
-import { captureWorkshopEvent } from '../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+} from '@/config/workshop-workflow-api'
+import { createWorkflowController } from '@/config/workshop-workflow-controller'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowSettled } from '@/config/workshop-workflow-response'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import {
+  workshopExecutionFailureAnalytics,
   workshopFieldErrorCodes,
   workshopModelAnalytics,
   workshopWorkflowFailureAnalytics
-} from '../scripts/workshop-analytics'
+} from '@/scripts/workshop-analytics'
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,
@@ -74,7 +76,8 @@ export function useWorkflowRun(
               ...workshopWorkflowFailureAnalytics(
                 new WorkshopWorkflowError('execution_failed'),
                 initial.schema
-              )
+              ),
+              ...workshopExecutionFailureAnalytics(next.observation.failure)
             }
     captureWorkshopEvent({
       name: 'run_finished',
@@ -112,10 +115,25 @@ export function useWorkflowRun(
     }
   })
 
+  const unchargedRuns = new Set<string>()
+
+  function observeCharge(previous: WorkflowState, next: WorkflowState) {
+    if (!('record' in next) || next.record.stage !== 'run') return
+    const submittedHere =
+      'record' in previous && previous.record.stage === 'intent'
+    const seenUnfinished =
+      next.observation !== undefined && !workflowSettled(next.observation)
+    if (submittedHere || seenUnfinished) unchargedRuns.add(next.record.runId)
+  }
+
   async function settle(command?: Promise<void>) {
     await command
     if (lifetime.signal.aborted || !sameCaller()) return
-    if (state.value.phase === 'settled') await refreshWorkshopCredits()
+    if (
+      state.value.phase === 'settled' &&
+      unchargedRuns.delete(state.value.observation.run.id)
+    )
+      markWorkshopCreditsDirty()
   }
 
   onMounted(async () => {
@@ -134,7 +152,9 @@ export function useWorkflowRun(
         storage,
         onChange: (next) => {
           if (!lifetime.signal.aborted && sameCaller()) {
+            const previous = state.value
             state.value = next
+            observeCharge(previous, next)
             observeAttempt(next)
           }
         }

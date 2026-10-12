@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,22 +16,12 @@ import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockMaxSeats = ref<number | null>(73)
 const mockOccupiedSeats = ref<number | null>(0)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -232,9 +223,12 @@ describe('InviteMemberDialogContent', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
@@ -259,9 +253,12 @@ describe('InviteMemberDialogContent', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
@@ -410,6 +407,40 @@ describe('InviteMemberDialogContent', () => {
       }
     })
 
+    it('swaps the footer label to Copied and reverts after the reset window', async () => {
+      vi.useFakeTimers()
+      try {
+        mockInviteListAfterSend([
+          pendingInviteFor('a@b.com', 'tok-a'),
+          pendingInviteFor('c@d.com', 'tok-c')
+        ])
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime
+        })
+        renderDialog()
+        await inviteAndConfirm(user, 'a@b.com c@d.com{Enter}')
+        await waitFor(() => expect(copyAllButton()).toBeInTheDocument())
+
+        await user.click(copyAllButton()!)
+        expect(
+          await screen.findByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).toBeInTheDocument()
+        expect(copyAllButton()).not.toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(2100)
+        expect(copyAllButton()).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', {
+            name: 'workspacePanel.inviteLinks.copied'
+          })
+        ).not.toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('copies the bare URL from the singular footer action', async () => {
       mockInviteListAfterSend([pendingInviteFor('a@b.com', 'tok-a')])
       const { user } = renderDialog()
@@ -429,16 +460,12 @@ describe('InviteMemberDialogContent', () => {
       vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
         .mockResolvedValueOnce([])
         .mockRejectedValue(new Error('nope'))
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const { user } = renderDialog()
 
       await inviteAndConfirm(user, 'a@b.com{Enter}')
 
       expect(screen.getByText('a@b.com')).toBeInTheDocument()
       expect(copyLinkButtons()).toHaveLength(0)
-      consoleError.mockRestore()
     })
 
     // pendingInviteFor derives the id from the email, so the tests above pass

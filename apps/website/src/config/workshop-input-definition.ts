@@ -18,6 +18,9 @@ export const workshopInputDefinitionSchema = z.object({
     'media'
   ]),
   defaultSource: z.enum(['router', 'curated']).optional(),
+  // Like ComfyUI's "randomize" seed control: left empty, the input gets a
+  // fresh value within its schema bounds on every workflow run.
+  randomize: z.literal(true).optional(),
   unit: z.enum(['seconds', 'pixels', 'fps']).optional(),
   optionLabels: z.record(z.string(), z.string().min(1)).optional(),
   imageSource: z.literal('url').optional(),

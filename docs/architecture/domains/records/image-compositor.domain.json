@@ -1,0 +1,63 @@
+{
+  "id": "image-compositor",
+  "capability": "Image compositor",
+  "description": "Layered image-composition presentation, editing orchestration, extension registration, Vue-node adaptation, and LiteGraph widget integration.",
+  "modules": [
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/types.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/imageCompositor.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/imageCompositor.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Compositor sessions preserve layer state and save behavior",
+      "checks": [
+        "src/renderer/extensions/compositor/composables/compositorSession.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorSave.test.ts",
+        "src/renderer/extensions/compositor/composables/useCompositorAutoSave.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorLayerState.test.ts",
+        "src/renderer/extensions/compositor/composables/useCompositorLayers.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorWidgets.test.ts",
+        "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+        "src/extensions/core/imageCompositor.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
+    "Layer state and save behavior remain characterized independently of presentation."
+  ],
+  "deepImports": "enforced"
+}

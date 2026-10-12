@@ -92,7 +92,8 @@ function subscription(tier: string | null): SubscriptionInfo | null {
     renewalDate: null,
     endDate: null,
     isCancelled: false,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }
   Object.defineProperty(result, 'tier', { value: tier })
   return result

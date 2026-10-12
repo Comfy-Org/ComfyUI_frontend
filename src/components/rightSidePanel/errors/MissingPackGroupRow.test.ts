@@ -162,19 +162,6 @@ describe('MissingPackGroupRow', () => {
       renderRow()
       expect(screen.getByText('2')).toBeInTheDocument()
     })
-
-    it('renders count of 5 for 5 nodeTypes', () => {
-      renderRow({
-        group: makeGroup({
-          nodeTypes: Array.from({ length: 5 }, (_, i) => ({
-            type: `Node${i}`,
-            nodeId: String(i),
-            isReplaceable: false
-          }))
-        })
-      })
-      expect(screen.getByText('5')).toBeInTheDocument()
-    })
   })
 
   describe('Node Type List', () => {

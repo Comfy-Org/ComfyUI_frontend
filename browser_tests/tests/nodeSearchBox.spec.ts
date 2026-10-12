@@ -71,6 +71,21 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
 
+  test('Enter adds the top match after typing a query', async ({
+    comfyPage
+  }) => {
+    const initialSamplers =
+      await comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced')
+    await comfyPage.canvasOps.doubleClick()
+    await comfyPage.searchBox.typeQuery('KSampler Advanced')
+    await comfyPage.searchBox.waitForFirstResult('KSampler (Advanced)')
+    await comfyPage.searchBox.submitSelectedResult()
+
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced'))
+      .toHaveLength(initialSamplers.length + 1)
+  })
+
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.disconnectEdge()
@@ -102,11 +117,15 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.canvasOps.dragAndDrop(outputSlotPos, emptySpacePos)
       await comfyPage.page.keyboard.up('Shift')
 
-      // Select the second item as the first item is always reroute
       await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
-        suggestionIndex: 0
+        exact: true
       })
       await waitForSearchInsertion(comfyPage, initialNodeCount)
+      await expect
+        .poll(() =>
+          comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')
+        )
+        .toHaveLength(3)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'auto-linked-node-batch.png'
       )
@@ -136,10 +155,12 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.canvasOps.doubleClick()
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
-    await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
+    await comfyPage.searchBox.resultsListbox.waitFor({ state: 'visible' })
 
-    const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
-    await expect(firstResult).toHaveAttribute('aria-label', node)
+    const firstResult = comfyPage.searchBox.resultsListbox
+      .getByRole('option')
+      .first()
+    await expect(firstResult).toHaveAccessibleName(node)
   })
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
@@ -186,6 +207,34 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await expectFilterChips(comfyPage, ['MODEL'])
     })
+
+    for (const { key, target } of [
+      { key: 'Tab', target: 'Add' },
+      { key: 'Shift+Tab', target: 'Input Type' }
+    ]) {
+      test(`${key} leaves the filter dropdown for ${target}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterButton.click()
+        const panel = comfyPage.searchBox.filterSelectionPanel
+        await panel.selectFilterType('Input Type')
+        await panel.root
+          .getByRole('button', { name: 'Single-select dropdown' })
+          .click()
+        const search = comfyPage.page.getByRole('combobox', {
+          name: 'Search',
+          exact: true
+        })
+        await expect(search).toBeFocused()
+
+        await search.press(key)
+
+        await expect(search).toBeHidden()
+        await expect(
+          panel.root.getByRole('button', { name: target, exact: true })
+        ).toBeFocused()
+      })
+    }
 
     test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage

@@ -16,6 +16,10 @@ runs:
       shell: bash
       run: pnpm locale:check
 
+    - name: Verify website locale integrity
+      shell: bash
+      run: pnpm --filter @comfyorg/website locale:check
+
     - name: Verify ADR naming and index
       shell: bash
       run: pnpm adr:check

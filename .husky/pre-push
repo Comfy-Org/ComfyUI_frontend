@@ -11,4 +11,9 @@ if [ -n "${CI-}" ]; then
 fi
 
 pnpm knip 1>&2
-pnpm fallow:audit 1>&2
+git fetch --quiet --no-tags origin main
+base="$(git merge-base HEAD FETCH_HEAD)"
+diff_file="$(mktemp)"
+trap 'rm -f "$diff_file"' 0
+git diff --unified=0 --relative "$base"...HEAD -- > "$diff_file"
+pnpm fallow:audit --changed-since "$base" --diff-file "$diff_file" 1>&2

@@ -9,7 +9,6 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -247,7 +246,7 @@ describe('DomWidgets while picking nodes for the agent', () => {
   ])(
     'picking=$picking renders the widget layer inert=$inert',
     ({ picking, inert }) => {
-      useAgentNodeSelectionStore().isActive = picking
+      useCanvasStore().isPickingNodes = picking
 
       render(DomWidgets, { global: { stubs: { DomWidget: true } } })
 

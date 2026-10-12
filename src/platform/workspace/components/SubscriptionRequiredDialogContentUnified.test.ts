@@ -1,3 +1,4 @@
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -130,6 +131,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
+    remoteConfig.value = {}
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockCheckoutStep.value = 'pricing'
     mockPreviewVariant.value = null
@@ -192,6 +194,20 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
     expect(screen.getByTestId('payment-element-enabled')).toHaveTextContent(
       'false'
+    )
+  })
+
+  it('initializes the payment element on the server key alone, with no build-time key', () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+
+    renderComponent()
+
+    expect(screen.getByTestId('payment-element-enabled')).toHaveTextContent(
+      'true'
     )
   })
 

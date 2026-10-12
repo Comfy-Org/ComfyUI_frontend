@@ -13,7 +13,7 @@ import type {
 } from '@comfyorg/account-core/session'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
 
-import { createTimeoutSignal } from '../utils/abortSignal'
+import { createTimeoutSignal } from '@/utils/abortSignal'
 
 export type BalanceState =
   /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */
@@ -101,9 +101,9 @@ export function createBalanceReader(
     // mint names the read's own workspace: a target-less mint resolves the
     // personal workspace and would silently switch a team session.
     if (result.status === 'error' && result.unauthorized) {
-      const reminted = await session.remint(owner, {
-        workspaceId: snapshot.session.workspace.id
-      })
+      const reminted = await session
+        .remint(owner, { workspaceId: snapshot.session.workspace.id })
+        .catch(() => undefined)
       if (reminted?.status === 'ok') {
         token = reminted.session.token
         result = await fetchBalance(token)

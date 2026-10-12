@@ -1,23 +1,48 @@
-import type { PostHog } from 'posthog-js'
+import {
+  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
+import type { CaptureResult, PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+import {
+  COMFY_POSTHOG_OPTIONS,
+  DEFAULT_POSTHOG_API_HOST
+} from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -30,6 +55,8 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -40,9 +67,7 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -53,6 +78,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -91,17 +118,18 @@ import type {
 } from '../../types'
 import {
   CANCELLATION_STAGE_EVENTS,
-  CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+
+const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
+  shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
+  sent: TelemetryEvents.IN_APP_SURVEY_SENT,
+  dismissed: TelemetryEvents.IN_APP_SURVEY_DISMISSED
+}
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -130,13 +158,34 @@ interface DesktopEntryProps {
   desktop_device_id?: string
 }
 
-function readDesktopEntryProps(): DesktopEntryProps | null {
+interface DesktopEntryAttribution {
+  props: DesktopEntryProps
+  source: 'url' | 'persisted'
+}
+
+function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
+  if (!event) return null
+  event.properties.client = window.__comfyDesktop2 ? 'desktop' : 'web'
+  event.properties.deployment = 'cloud'
+  return event
+}
+
+function readDesktopEntryAttribution(
+  posthog: PostHog
+): DesktopEntryAttribution | null {
   const params = new URLSearchParams(window.location.search)
-  if (params.get('utm_source') !== 'comfy.desktop') return null
-  const props: DesktopEntryProps = { source_app: 'desktop' }
-  const deviceId = params.get('desktop_device_id')
-  if (deviceId) props.desktop_device_id = deviceId
-  return props
+  const isDesktopEntry = params.get('utm_source') === 'comfy.desktop'
+  if (!isDesktopEntry && posthog.get_property('source_app') !== 'desktop') {
+    return null
+  }
+  const deviceId: unknown = isDesktopEntry
+    ? params.get('desktop_device_id')
+    : posthog.get_property('desktop_device_id')
+  const props: DesktopEntryProps =
+    typeof deviceId === 'string' && deviceId
+      ? { source_app: 'desktop', desktop_device_id: deviceId }
+      : { source_app: 'desktop' }
+  return { props, source: isDesktopEntry ? 'url' : 'persisted' }
 }
 
 /**
@@ -156,7 +205,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
-  private desktopEntryProps: DesktopEntryProps | null = null
+  private desktopEntryAttribution: DesktopEntryAttribution | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
@@ -179,27 +228,23 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value.posthog_config ?? {}
             this.posthog.init(apiKey, {
-              api_host: windowConfig?.posthog_api_host || 'https://t.comfy.org',
-              ui_host: 'https://us.posthog.com',
-              autocapture: false,
-              capture_pageview: 'history_change',
-              capture_pageleave: false,
-              persistence: 'localStorage+cookie',
+              api_host:
+                windowConfig?.posthog_api_host || DEFAULT_POSTHOG_API_HOST,
+              ...COMFY_POSTHOG_OPTIONS,
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              person_profiles: 'identified_only',
               ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              before_send: createPostHogBeforeSend()
+              before_send: [stampPlatformAxes, createPostHogBeforeSend()]
             })
             this.isInitialized = true
-            // Before flushEventQueue so pre-init events also carry the
-            // platform super properties.
-            this.registerPlatformProps()
-            this.flushEventQueue()
+            this.desktopEntryAttribution = readDesktopEntryAttribution(
+              this.posthog
+            )
             this.registerDesktopEntryProps()
+            this.flushEventQueue()
 
             await whenStoresReady()
             const currentUser = useCurrentUser()
@@ -221,6 +266,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             // pre-init logout handling would defeat the simplification.
             currentUser.onUserLogout(() => {
               this.posthog?.reset(true)
+              this.registerDesktopEntryProps()
             })
           })
           .catch((error) => {
@@ -345,24 +391,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  private registerPlatformProps(): void {
-    if (!this.posthog) return
-    try {
-      this.posthog.register({
-        client: window.__comfyDesktop2 ? 'desktop' : 'web',
-        deployment: 'cloud'
-      })
-    } catch (error) {
-      console.error('Failed to register platform props:', error)
-    }
-  }
-
   private registerDesktopEntryProps(): void {
-    if (!this.posthog) return
-    const props = readDesktopEntryProps()
-    if (!props) return
-    this.desktopEntryProps = props
+    if (!this.posthog || !this.desktopEntryAttribution) return
+    const { props } = this.desktopEntryAttribution
     try {
+      if (!props.desktop_device_id) {
+        this.posthog.unregister('desktop_device_id')
+      }
       this.posthog.register(props)
     } catch (error) {
       console.error('Failed to register desktop entry props:', error)
@@ -372,11 +407,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   // Persisted onto the person so backend-fired billing events inherit
   // desktop_device_id via person-on-events at ingest.
   private setDesktopEntryPersonProperties(): void {
-    if (!this.posthog || !this.desktopEntryProps) return
+    if (!this.posthog || this.desktopEntryAttribution?.source !== 'url') return
     const now = new Date().toISOString()
     try {
       this.posthog.people.set({
-        ...this.desktopEntryProps,
+        ...this.desktopEntryAttribution.props,
         last_seen_via_desktop: now
       })
       this.posthog.people.set_once({ first_seen_via_desktop: now })
@@ -430,6 +465,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
       metadata
     )
+  }
+
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
@@ -506,15 +549,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.trackEvent(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
     )
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    this.trackEvent(
-      getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
-    )
+    const name = getCheckoutJourneyTelemetryEventName(event)
+    const payload = getCloudAppCheckoutJourneyTelemetryEventPayload(event)
+    if (event.phase === 'abandoned' && event.exit === 'page_exit') {
+      this.captureOnTeardown(name, payload)
+      return
+    }
+    this.trackEvent(name, payload)
   }
 
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
@@ -523,6 +569,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {
@@ -565,6 +617,23 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to set PostHog user properties:', error)
       }
     }
+  }
+
+  trackInAppSurvey(
+    stage: InAppSurveyStage,
+    { surveyId, responses = {}, properties = {} }: InAppSurveyEvent
+  ): void {
+    const responseProperties = Object.fromEntries(
+      Object.entries(responses).map(([questionId, answer]) => [
+        `$survey_response_${questionId}`,
+        answer
+      ])
+    )
+    this.captureRaw(IN_APP_SURVEY_EVENTS[stage], {
+      ...properties,
+      ...responseProperties,
+      $survey_id: surveyId
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
@@ -681,6 +750,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
+      // Sampled here rather than carried from the click: no successful run
+      // path puts an asynchronous boundary between the two calls, so a carried
+      // value could only differ from this read on a click that never executed
+      // — and there it would linger and attach a stale panel state to an
+      // unrelated later run.
+      agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined
@@ -779,6 +854,26 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -791,6 +886,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_ERROR, metadata)
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
@@ -821,6 +921,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

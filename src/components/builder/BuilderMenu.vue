@@ -1,6 +1,6 @@
 <template>
-  <Popover :show-arrow="false" class="min-w-56 p-3">
-    <template #button>
+  <Menu v-model:open="open" :items="menuItems" class="min-w-56">
+    <template #trigger>
       <button
         :class="
           cn(
@@ -18,31 +18,16 @@
         <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
       </button>
     </template>
-    <template #default="{ close }">
-      <template v-for="(item, index) in menuItems" :key="item.label">
-        <div v-if="index > 0" class="my-1 border-t border-border-default" />
-        <Button
-          variant="textonly"
-          size="unset"
-          class="flex w-full items-center justify-start gap-3 rounded-md px-3 py-2 text-sm"
-          :disabled="item.disabled"
-          @click="item.action(close)"
-        >
-          <i :class="cn(item.icon, 'size-4')" />
-          {{ item.label }}
-        </Button>
-      </template>
-    </template>
-  </Popover>
+  </Menu>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -57,44 +42,46 @@ const { setMode } = useAppMode()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
+const open = ref(false)
 
-const menuItems = computed(() => [
+const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.save'),
     icon: 'icon-[lucide--save]',
     disabled: !hasOutputs.value,
-    action: onSave
+    command: onSave
   },
+  { separator: true },
   {
     label: t('builderMenu.enterAppMode'),
     icon: 'icon-[lucide--panels-top-left]',
-    action: onEnterAppMode
+    command: onEnterAppMode
   },
+  { separator: true },
   {
     label: t('builderMenu.exitAppBuilder'),
     icon: 'icon-[lucide--x]',
-    action: onExitBuilder
+    command: onExitBuilder
   }
 ])
 
-async function onSave(close: () => void) {
+async function onSave({ originalEvent }: MenuItemCommandEvent) {
+  originalEvent.preventDefault()
   const workflow = workflowStore.activeWorkflow
   if (!workflow) return
   try {
-    await workflowService.saveWorkflow(workflow)
-    close()
+    const saved = await workflowService.saveWorkflow(workflow)
+    if (saved) open.value = false
   } catch (error) {
     toastErrorHandler(error)
   }
 }
 
-function onEnterAppMode(close: () => void) {
+function onEnterAppMode() {
   setMode('app')
-  close()
 }
 
-function onExitBuilder(close: () => void) {
+function onExitBuilder() {
   appModeStore.exitBuilder()
-  close()
 }
 </script>

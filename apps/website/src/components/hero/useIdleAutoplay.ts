@@ -3,7 +3,7 @@ import { useElementVisibility, useRafFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { AutoplayState } from './idleAutoplay'
 import { advanceAutoplay, isAutoplayDone, startAutoplay } from './idleAutoplay'
 import type { CameraPose } from './cameraVocabulary'

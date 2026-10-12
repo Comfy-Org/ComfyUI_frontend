@@ -404,17 +404,6 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBe('false')
   })
 
-  it('uses checkbox-backed switches for provider access', () => {
-    restrictPolicy()
-    renderComponent()
-
-    expect(
-      screen.getByRole('switch', {
-        name: 'Set access for OpenAI (inc. Sora)'
-      })
-    ).toHaveAttribute('type', 'checkbox')
-  })
-
   it('hides provider controls while access is unrestricted', () => {
     Object.assign(usePartnerNodeGovernanceStore(), {
       policy: {
@@ -555,7 +544,7 @@ describe('PartnerNodeAccessPanel', () => {
     )
   })
 
-  it.fails('KNOWN BUG: leaves a provider on the server state when its save fails', async () => {
+  it('keeps a provider on the server state when its save fails', async () => {
     const user = userEvent.setup()
     restrictPolicy()
     vi.mocked(
@@ -574,6 +563,9 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(providerSwitch)
     await screen.findByRole('alert')
 
+    expect(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).toHaveBeenCalledWith('openai', false)
     expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
   })
 

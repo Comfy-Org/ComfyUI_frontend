@@ -1,15 +1,20 @@
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import type { Hoverable } from '@/lib/litegraph/src/types/events'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   CanvasColour,
@@ -47,7 +52,21 @@ export abstract class SubgraphIONodeBase<
     return this._boundingRect
   }
 
-  selected: boolean = false
+  get selected(): boolean {
+    return isSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id)
+    )
+  }
+
+  set selected(value: boolean) {
+    setSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id),
+      value
+    )
+  }
+
   pinned: boolean = false
   readonly removable = false
 

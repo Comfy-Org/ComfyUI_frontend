@@ -63,12 +63,18 @@ const nodeCanonicalFields = {
   widgets_values_named: true
 } satisfies Record<Exclude<keyof ISerialisedNode, 'extensions'>, true>
 
+export type NodeCanonicalField = keyof typeof nodeCanonicalFields
+
 export const NODE_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
   Object.keys(nodeCanonicalFields)
 )
 
-type GraphCanonicalField = Exclude<
-  keyof (SerialisableGraph & ExportedSubgraph & ISerialisedGraph),
+export function isNodeCanonicalField(key: string): key is NodeCanonicalField {
+  return NODE_CANONICAL_FIELDS.has(key)
+}
+
+export type GraphCanonicalField = Exclude<
+  keyof SerialisableGraph | keyof ExportedSubgraph | keyof ISerialisedGraph,
   'extensions'
 >
 
@@ -101,6 +107,10 @@ const graphCanonicalFields = {
 export const GRAPH_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
   Object.keys(graphCanonicalFields)
 )
+
+export function isGraphCanonicalField(key: string): key is GraphCanonicalField {
+  return GRAPH_CANONICAL_FIELDS.has(key)
+}
 
 const isJsonValue = (
   value: unknown,

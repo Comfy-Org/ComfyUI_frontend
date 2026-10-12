@@ -7,7 +7,7 @@ import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
@@ -209,6 +209,7 @@ export class ComfyWorkflow extends UserFile {
       })
     } catch (error) {
       reportError(error, {
+        surface: 'graph',
         errorType: 'error_loading_dialog_service_prompt_save'
       })
       return null

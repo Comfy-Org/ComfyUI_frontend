@@ -49,7 +49,14 @@ owns category order, translated labels, and the highlighted workflow in each.
 input bindings, and selected outputs. A page is visible only when its id matches
 an execution entry. Prepare this data offline when adding a workflow; the website
 does not inspect APP widgets or compile graphs. Keep downloadable graphs and SVG
-previews under `public/workflows/prepared/` consistent with the prepared request.
+previews under `public/workflow-graphs/` consistent with the prepared request.
+
+Workshop apps are listed the same way. An `APP` line in
+`workshop-workflows.jsonl` (`{"id":"apps/<slug>","type":"APP","app":"<page>"}`)
+names the app page that runs it, and a matching `workshop-display.json` entry
+(`type: "APP"`, same id and slug) supplies the card's name, description,
+thumbnail and rank. Each app is listed on `/hub/apps/` and served at
+`/hub/apps/<slug>/`, behind the `workshop-apps-enabled` flag.
 
 Pair each example with its actual input media and output. Pin external assets to
 immutable revisions, check their media type and CORS headers, and validate the

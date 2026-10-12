@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -6,6 +7,7 @@ import { parseBillingEntry } from '@comfyorg/billing-contract'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 
 const h = vi.hoisted(() => ({
   session: undefined as AccountCredential | undefined,
@@ -73,6 +75,26 @@ describe('HostedSurface', () => {
       'href',
       'https://testcloud.comfy.org/?settings=plan-credits'
     )
+  })
+
+  it('reports a click on the way back to the product', async () => {
+    vi.spyOn(window, 'close').mockImplementation(() => {})
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const sent = trackedBillingEvents()
+    renderSurface()
+
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Return to ComfyUI' })
+    )
+
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'host_link'
+      }
+    ])
   })
 
   it('sends the visitor back into the workspace the session was minted for', () => {
