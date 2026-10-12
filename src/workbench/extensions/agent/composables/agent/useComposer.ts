@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { composerPromptForSend } from '../../utils/composerPrompt'
+import { composerPromptForSubmission } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
@@ -36,7 +36,7 @@ export function useComposer(options: UseComposerOptions) {
     }
     if (!canSend.value) return
     options.onSend(
-      composerPromptForSend(prompt.value).text.trim(),
+      composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value
     )
   }
@@ -91,7 +91,9 @@ export function useComposer(options: UseComposerOptions) {
     prompt,
     promptEpoch,
     applyEditorPrompt: store.applyEditorPrompt,
+    resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,
+    setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,
     workflowReferences,
     canSend,

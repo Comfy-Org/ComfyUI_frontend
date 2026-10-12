@@ -26,6 +26,7 @@ function renderComposer() {
   return { store, target, editor: screen.getByRole('textbox') }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('workflow reference clipboard', () => {
   beforeEach(() => vi.useRealTimers())
 

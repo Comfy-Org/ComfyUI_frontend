@@ -1,18 +1,17 @@
 <template>
   <Menu :items="translatedItems" class="comfy-command-menu">
     <template #trigger="{ open }">
-      <button
-        v-tooltip="{
-          value: t('sideToolbar.labels.menu'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('sideToolbar.labels.menu')"
+        tooltip-side="right"
         data-testid="comfy-menu-button"
         type="button"
         :aria-label="t('sideToolbar.labels.menu')"
         :class="
           cn(
-            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-interface-panel-hover-surface',
             open &&
               'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
           )
@@ -29,7 +28,7 @@
             mode="fill"
           />
         </div>
-      </button>
+      </Button>
     </template>
   </Menu>
 </template>
@@ -41,6 +40,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'

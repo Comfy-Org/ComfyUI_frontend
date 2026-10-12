@@ -11,28 +11,48 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
-import { getMainNavigation } from '@/data/mainNavigation'
-import type { NavItem } from '@/data/mainNavigation'
+import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import type { HubSections, NavItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const mainNavigation = computed(() => getMainNavigation(locale))
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
+  locale?: Locale
+  hubSections?: HubSections
+}>()
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 const currentPath = useCurrentPath()
 
-function isNavItemActive(navItem: NavItem, path: string): boolean {
+function ownsPath(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
-  const onLeafPage = mainNavigation.value.some(
-    (item) => item.href && isHrefActive(item.href, path)
-  )
   return (
-    !onLeafPage &&
-    (navItem.columns?.some((column) =>
+    !!navItem.activePathPrefix &&
+    `${path}/`.startsWith(navItem.activePathPrefix)
+  )
+}
+
+function columnsAt(navItem: NavItem, placement: 'main' | 'footer') {
+  return (navItem.columns ?? []).filter(
+    (column) => (column.placement ?? 'main') === placement
+  )
+}
+
+function columnGap(navItem: NavItem): string {
+  return navItem.columns?.some((column) => column.description)
+    ? 'gap-10'
+    : 'gap-16'
+}
+
+function isNavItemActive(navItem: NavItem, path: string): boolean {
+  if (ownsPath(navItem, path)) return true
+  if (!navItem.columns) return false
+  return (
+    !mainNavigation.value.some((item) => ownsPath(item, path)) &&
+    navItem.columns.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ??
-      false)
+    )
   )
 }
 </script>
@@ -57,15 +77,13 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <div class="w-max">
-              <ul class="flex gap-16">
+              <ul :class="cn('flex', columnGap(navItem))">
                 <NavFeaturedCard
                   v-if="navItem.featured"
                   :featured="navItem.featured"
                 />
                 <NavColumn
-                  v-for="(column, columnIndex) in navItem.columns.filter(
-                    (column) => column.placement !== 'footer'
-                  )"
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'main')"
                   :key="column.header ?? columnIndex"
                   :column="column"
                   :locale="locale"
@@ -73,17 +91,11 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
                 />
               </ul>
               <ul
-                v-if="
-                  navItem.columns.some(
-                    (column) => column.placement === 'footer'
-                  )
-                "
+                v-if="columnsAt(navItem, 'footer').length"
                 class="mt-6 border-t border-primary-warm-gray/20 pt-5"
               >
                 <NavColumn
-                  v-for="(column, columnIndex) in navItem.columns.filter(
-                    (column) => column.placement === 'footer'
-                  )"
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'footer')"
                   :key="column.header ?? columnIndex"
                   :column="column"
                   :locale="locale"

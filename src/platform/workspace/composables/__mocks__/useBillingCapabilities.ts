@@ -9,6 +9,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
   canChangeSeats: computed(() => false),
+  canManageMembers: computed(() => false),
   canInviteMembers: computed(() => false),
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
