@@ -253,6 +253,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { getImageFilenameFromUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -312,13 +313,18 @@ function outputAssetId(url: string): string | undefined {
   const node = nodeId ? resolveNode(nodeId) : undefined
   if (!node) return undefined
   const params = new URL(url, location.href).searchParams
-  return nodeOutputStore
-    .getNodeOutputs(node)
-    ?.images?.find(
-      (output) =>
-        output.filename === params.get('filename') &&
-        (output.subfolder ?? '') === (params.get('subfolder') ?? '')
-    )?.id
+  // Matches the filename and root the node's image URLs are built with.
+  return nodeOutputStore.getNodeOutputs(node)?.images?.find((output) => {
+    const { filepath, rootFolder } = parseAnnotatedPath(
+      output.filename ?? '',
+      output.type
+    )
+    return (
+      filepath === params.get('filename') &&
+      rootFolder === params.get('type') &&
+      (output.subfolder ?? '') === (params.get('subfolder') ?? '')
+    )
+  })?.id
 }
 const outputAssetIds = computed(() => imageUrls.map(outputAssetId))
 
