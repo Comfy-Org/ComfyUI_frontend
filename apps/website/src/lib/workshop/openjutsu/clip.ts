@@ -30,6 +30,10 @@ export function gridFrames(chosen: number): number {
   return Math.min(MAX_FRAMES, needed + ((short + GRID_STEP) % GRID_STEP))
 }
 
+/** Seconds H3 generates beyond the part chosen; nothing when the grid length fits. */
+export const spareSeconds = (chosen: number) =>
+  Math.max(0, gridFrames(chosen) / FPS - chosen)
+
 /** The part of the clip a swap runs on. */
 export interface SwapWindow {
   /** Seconds into the clip. */

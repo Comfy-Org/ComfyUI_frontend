@@ -38,6 +38,16 @@ describe('swapWorkflow', () => {
     expect(graph.out.inputs.video).toEqual(['cut', 0])
   })
 
+  it.for([7.3, 6.6, 14.375])(
+    'saves a %s s part uncut when H3 generates no more than it',
+    (seconds) => {
+      const exact = swapWorkflow({ ...request, seconds })
+
+      expect(exact.cut).toBeUndefined()
+      expect(exact.out.inputs.video).toEqual(['130', 0])
+    }
+  )
+
   it('saves the result in the source shape, whatever the canvas', () => {
     expect(graph.fit.inputs).toMatchObject({ width: 756, height: 1344 })
     expect(graph['130'].inputs.images).toEqual(['fit', 0])
