@@ -580,11 +580,12 @@ export class ComfyApp {
   }
 
   /**
-   * @deprecated /view responses carry validators, so URLs no longer need a
-   * cache-busting param. Always returns an empty string.
+   * @deprecated The frontend no longer cache-busts /view URLs: the server
+   * revalidates them and versions each output. Kept for extensions.
    */
   getRandParam() {
-    return ''
+    if (isCloud) return ''
+    return '&rand=' + Math.random()
   }
 
   static onClipspaceEditorSave() {

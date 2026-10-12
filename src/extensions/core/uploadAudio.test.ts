@@ -63,8 +63,9 @@ vi.mock(import('@/i18n'))
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/utils/audioUtils'),
   () => ({
-    getResourceURL: (subfolder, filename, type = 'input') =>
-      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
+    getResourceURL: (subfolder, filename, type = 'input', version) =>
+      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}` +
+      (version ? `&version=${version}` : ''),
     splitFilePath: (path) => ['', path]
   })
 )
@@ -289,6 +290,29 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+
+  it('puts the output version in the audio URL so a rewritten file reloads', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const domWidget = {
+      element: document.createElement('audio'),
+      options: {}
+    }
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => domWidget),
+      constructor: { nodeData: { output_node: true } }
+    })
+    AUDIO_UI(node, 'audioUI')
+
+    node.onExecuted!({
+      audio: [
+        { filename: 'out.wav', subfolder: '', type: 'output', version: 'v2' }
+      ]
+    })
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=out.wav&subfolder=&type=output&version=v2'
+    )
   })
 })
 

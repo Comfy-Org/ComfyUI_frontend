@@ -179,6 +179,7 @@ describe('useBoundingBoxesSources', () => {
       }
       const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
       const before = backgroundUrl.value
+      expect(before).toBe('/api/view?filename=bg.png&type=input')
 
       const consumer = new LGraphNode('Consumer')
       consumer.addInput('bboxes', 'BOUNDING_BOX')

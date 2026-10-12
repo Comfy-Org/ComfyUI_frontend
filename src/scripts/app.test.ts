@@ -332,10 +332,6 @@ describe('ComfyApp', () => {
     )
   })
 
-  it('adds no cache-busting param to /view URLs', () => {
-    expect(app.getRandParam()).toBe('')
-  })
-
   describe('loadGraphData', () => {
     function prepareResourceReload() {
       app.canvasElRef.value = document.createElement('canvas')
