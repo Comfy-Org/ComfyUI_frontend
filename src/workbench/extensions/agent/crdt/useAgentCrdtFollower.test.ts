@@ -1404,8 +1404,6 @@ describe('useAgentCrdtFollower', () => {
         graph.value = fakeGraph
         await nextTick()
 
-        // The discard is reported once, against the frame that was dropped;
-        // the later flush must not re-report it as applied.
         expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
         expect(
           useTelemetry()?.trackAgentGraphProjection
@@ -1534,9 +1532,6 @@ describe('useAgentCrdtFollower', () => {
       vi.mocked(useTelemetry()!.trackAgentGraphProjection).mockClear()
 
       graph.value = fakeGraph
-      // The echo throws away collected changes that were going somewhere. A
-      // discard must still report zero: those nodes never reached the canvas,
-      // and `added_count` is what a dashboard reads as applied work.
       projectionState.discardPending.mockReturnValueOnce({
         added: ['3'],
         removed: ['9']
@@ -1867,8 +1862,6 @@ describe('useAgentCrdtFollower', () => {
       [ops[1]]
     )
     expect(projectionState.applyCollected).not.toHaveBeenCalled()
-    // `reverted`, not `applied`: this op id is the rejected human op's, so the
-    // two must not be read as the same stage downstream.
     expect(useTelemetry()?.trackAgentGraphProjection).toHaveBeenLastCalledWith({
       op_id: ops[1].op_id,
       op_count: 1,

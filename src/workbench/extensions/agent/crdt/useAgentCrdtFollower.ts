@@ -103,7 +103,6 @@ const NOTHING_APPLIED: FrameOutcome = {
   nodes: { added: [], removed: [] }
 }
 
-/** Agent-minted and actorless frames; `human:` writes are excluded. */
 function isAgentFrame(actor: string | undefined): boolean {
   return actor === undefined || actor.startsWith('agent:')
 }
@@ -432,7 +431,7 @@ function startAgentCrdtFollower(
   ): boolean => {
     if (getGraph() === null) return false
     const projectionOutcome = projection.revertRejected(workflowId, rejected)
-    if (!projectionOutcome.applied) return false
+    if (!projectionOutcome.applied) return true
     reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
     reportAgentProjection(
       {
@@ -480,13 +479,7 @@ function startAgentCrdtFollower(
       ])
       return
     }
-    if (
-      !applyRejectedOps(
-        workflowId,
-        rejected,
-        outcome.result.seq ?? bridge.lastSequence
-      )
-    )
+    if (!applyRejectedOps(workflowId, rejected, outcome.result.seq))
       pendingRejected.set(workflowId, [
         ...(pendingRejected.get(workflowId) ?? []),
         ...rejected
@@ -524,7 +517,6 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
-  /** Deferred agent and actorless frames per workflow, in arrival order. */
   const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
   const reportMaterialized = (
     workflowId: string,

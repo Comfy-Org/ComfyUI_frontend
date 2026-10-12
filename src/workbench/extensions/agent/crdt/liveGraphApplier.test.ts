@@ -1236,9 +1236,6 @@ describe('LiveGraphApplier', () => {
       throw new Error('inner hook exploded')
     }
 
-    // The inner apply fails on its own terms. Its one failure must not land on
-    // the outer frame, and unwinding it must not take the outer frame's count
-    // with it — a single shared counter passes every other case in this file.
     let inner: ReturnType<typeof applier.applyChanges> | undefined
     outer.onRemoved = () => {
       inner = applier.applyChanges(

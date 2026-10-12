@@ -157,9 +157,6 @@ test.describe(
           hostTelemetry.find(
             ({ event, properties }) =>
               event === 'app:agent_graph_projection' &&
-              // Narrowed, not coerced: `properties` is `Record<string,
-              // unknown>` on the wire, and `Number('1')` would let a string
-              // through a check whose whole job is the payload's shape.
               typeof properties.removed_count === 'number' &&
               properties.removed_count > 0
           )
