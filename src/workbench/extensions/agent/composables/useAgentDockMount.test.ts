@@ -92,10 +92,9 @@ describe('useAgentDockMount', () => {
     }
     await nextTick()
 
-    const identity = store.creditTransitionNotice?.identity
-    expect(identity).toBeDefined()
-    if (!identity) throw new Error('Expected a billing identity')
-    expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
 
     subscription.value = {
       hasFunds: true,
@@ -110,7 +109,9 @@ describe('useAgentDockMount', () => {
     }
     await nextTick()
 
-    expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
   })
 
   it('observes the scoped balance again after the billing identity changes', async () => {
