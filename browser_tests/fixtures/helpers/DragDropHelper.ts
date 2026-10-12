@@ -37,10 +37,6 @@ export class DragDropHelper {
     options: {
       fileName?: string
       filePath?: string
-      /**
-       * Zero-filled bytes built in the page; shipping a large disk file
-       * through `page.evaluate` is slow.
-       */
       generatedFile?: { name: string; type: string; byteLength: number }
       url?: string
       dropPosition?: Position

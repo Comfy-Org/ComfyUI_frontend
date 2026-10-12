@@ -77,8 +77,6 @@ test.describe(
     }, testInfo) => {
       await agentPanel.open()
 
-      // The cloud backend advertises a limit above the client fallback, and
-      // re-sends `feature_flags` on every socket open.
       await comfyPage.featureFlags.setServerFlagsPersistent({
         max_upload_size: PINNED_UPLOAD_LIMIT_BYTES
       })
@@ -94,7 +92,6 @@ test.describe(
         { exact: true }
       )
 
-      // Sparse: only `File.size` is read before the limit refuses it.
       const path = testInfo.outputPath(oversized.name)
       await writeFile(path, '')
       await truncate(path, oversized.byteLength)
@@ -112,10 +109,6 @@ test.describe(
       await expect(agentPanel.attachmentChip(oversized.name)).toHaveCount(0)
     })
 
-    // Live-defect pin: the picker attaches any file, but `onPanelDrop` filters
-    // through `isAgentAttachable`, which has no csv entry, so the drop falls
-    // through to the graph loader. Either making csv attachable or refusing it
-    // on both routes satisfies the parity assertion.
     test('gives the same answer for a .csv whether it is picked or dropped', async ({
       agentPanel,
       comfyPage

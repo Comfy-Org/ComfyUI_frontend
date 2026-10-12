@@ -43,7 +43,6 @@ test.describe(
       await expect(runningRow).toHaveCount(1)
       const spinner = runningRow.locator('.animate-spin')
       await expect(spinner).toBeVisible()
-      // A present class does not prove motion: read the resolved animation.
       const motion = await spinner.evaluate((element) => {
         const style = getComputedStyle(element)
         return {
@@ -98,15 +97,10 @@ test.describe(
       })
       expect(overflow.hiddenWidth).toBeLessThanOrEqual(1)
       expect(overflow.hiddenHeight).toBeLessThanOrEqual(1)
-      // Descender ink clipped by a tight line box does not show up in scrollHeight.
       expect(overflow.lineHeightPx).toBeGreaterThan(overflow.fontSizePx)
-      // The scroll metrics only see the row's own box; this also catches
-      // clipping by the conversation scrollport or the panel.
       await expect(thinkingRow).toBeInViewport({ ratio: 1 })
     })
 
-    // Live-defect pin: `agent.workedForSeconds` and `agent.workedForMinutes`
-    // exist in the locale but `WorkSummary.vue` only renders `agent.worked`.
     test('names how long the finished turn took', async ({
       agentPanel,
       getWebSocket,
