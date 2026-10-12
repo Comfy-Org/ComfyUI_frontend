@@ -13,7 +13,10 @@ import {
 } from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
 import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
-import { registerFaceSizes } from './quadWireframe/faceSizesRegistry'
+import {
+  faceSizesFor,
+  registerFaceSizes
+} from './quadWireframe/faceSizesRegistry'
 
 function createMockEventManager(): EventManagerInterface {
   return {
@@ -161,6 +164,20 @@ describe('line resource ownership', () => {
     disposeObject3D(line, new Set())
     expect(geometryDispose).toHaveBeenCalledOnce()
     expect(materialDispose).toHaveBeenCalledOnce()
+  })
+})
+
+describe('cloneObject3DResources', () => {
+  it('keeps n-gon face sizes on cloned mesh geometry', () => {
+    const sourceGeometry = new THREE.BoxGeometry()
+    const faceSizes = new Uint32Array([4, 4, 4, 4, 4, 4])
+    registerFaceSizes(sourceGeometry, faceSizes)
+    const mesh = new THREE.Mesh(sourceGeometry, new THREE.MeshBasicMaterial())
+
+    cloneObject3DResources(mesh)
+
+    expect(mesh.geometry).not.toBe(sourceGeometry)
+    expect(faceSizesFor(mesh.geometry)).toBe(faceSizes)
   })
 })
 
@@ -445,22 +462,34 @@ describe('SceneModelManager', () => {
       expect(matDispose).toHaveBeenCalled()
     })
 
-    it('disposes parked original materials outside original mode', async () => {
-      const { manager } = createManager()
-      const model = createMeshModel()
-      const mesh = model.children[0]
-      if (!(mesh instanceof THREE.Mesh) || Array.isArray(mesh.material)) {
-        throw new Error('Expected a mesh with one material')
+    it.for([
+      {
+        mode: 'normal',
+        shared: (manager: SceneModelManager) => manager.normalMaterial
+      },
+      {
+        mode: 'wireframe',
+        shared: (manager: SceneModelManager) => manager.occluderMaterial
       }
-      const originalMaterial = mesh.material
-      const dispose = vi.spyOn(originalMaterial, 'dispose')
+    ] as const)(
+      'disposes the parked original but keeps the shared $mode material',
+      async ({ mode, shared }) => {
+        const { manager } = createManager()
+        const model = createMeshModel()
+        const mesh = model.children[0]
+        assert.instanceOf(mesh, THREE.Mesh)
+        assert.instanceOf(mesh.material, THREE.Material)
+        const disposeOriginal = vi.spyOn(mesh.material, 'dispose')
+        const disposeShared = vi.spyOn(shared(manager), 'dispose')
 
-      await manager.setupModel(model)
-      manager.setMaterialMode('normal')
-      manager.clearModel()
+        await manager.setupModel(model)
+        manager.setMaterialMode(mode)
+        manager.clearModel()
 
-      expect(dispose).toHaveBeenCalledOnce()
-    })
+        expect(disposeOriginal).toHaveBeenCalledOnce()
+        expect(disposeShared).not.toHaveBeenCalled()
+      }
+    )
 
     it('disposes points geometry and materials', async () => {
       const { manager } = createManager()
@@ -1107,7 +1136,7 @@ describe('SceneModelManager', () => {
       expect(mainModels).toHaveLength(1)
     })
 
-    it('disposes parked original materials while rebuilding', () => {
+    it('disposes the parked original and per-mode materials while rebuilding', () => {
       const { manager } = createPLYManager()
       manager.setMaterialMode('wireframe')
       const wireframeModel = manager.currentModel
@@ -1116,11 +1145,14 @@ describe('SceneModelManager', () => {
       assert.instanceOf(mesh, THREE.Mesh)
       const originalMaterial = manager.originalMaterials.get(mesh)
       assert.instanceOf(originalMaterial, THREE.Material)
-      const dispose = vi.spyOn(originalMaterial, 'dispose')
+      assert.instanceOf(mesh.material, THREE.MeshBasicMaterial)
+      const disposeOriginal = vi.spyOn(originalMaterial, 'dispose')
+      const disposeWireframe = vi.spyOn(mesh.material, 'dispose')
 
       manager.setMaterialMode('pointCloud')
 
-      expect(dispose).toHaveBeenCalledOnce()
+      expect(disposeOriginal).toHaveBeenCalledOnce()
+      expect(disposeWireframe).toHaveBeenCalledOnce()
     })
   })
 })

@@ -14,6 +14,10 @@ import type {
   UpDirection
 } from './interfaces'
 import { QuadWireframeManager } from './quadWireframe/QuadWireframeManager'
+import {
+  faceSizesFor,
+  registerFaceSizes
+} from './quadWireframe/faceSizesRegistry'
 
 type ResourceRenderable = THREE.Mesh | THREE.Points | THREE.Line
 
@@ -79,7 +83,10 @@ function cloneMaterialResources(material: THREE.Material): THREE.Material {
 export function cloneObject3DResources(object: THREE.Object3D): void {
   object.traverse((child) => {
     if (!isResourceRenderable(child)) return
-    child.geometry = child.geometry.clone()
+    const geometry = child.geometry.clone()
+    const faceSizes = faceSizesFor(child.geometry)
+    if (faceSizes) registerFaceSizes(geometry, faceSizes)
+    child.geometry = geometry
     child.material = Array.isArray(child.material)
       ? child.material.map(cloneMaterialResources)
       : cloneMaterialResources(child.material)
@@ -134,7 +141,8 @@ export class SceneModelManager implements ModelManagerInterface {
       this.standardMaterial,
       this.wireframeMaterial,
       this.depthMaterial,
-      this.clayMaterial
+      this.clayMaterial,
+      this.occluderMaterial
     ])
   }
 
@@ -287,10 +295,18 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   private restoreOriginalMaterials(model: THREE.Object3D): void {
+    const preserved = this.preservedMaterials
     model.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
       const original = this.originalMaterials.get(child)
-      if (original) child.material = original
+      if (!original || original === child.material) return
+      const replaced = Array.isArray(child.material)
+        ? child.material
+        : [child.material]
+      for (const material of replaced) {
+        if (!preserved.has(material)) material.dispose()
+      }
+      child.material = original
     })
   }
 
