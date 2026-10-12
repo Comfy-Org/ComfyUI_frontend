@@ -305,12 +305,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.rejectStaleUpdate(update, isCatchUp)) return
 
     if (this.rejectSequenceGap(update)) return
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    this.attemptFirstSeq ??= update.seq
-    if (this.attemptLastSeq === null || update.seq > this.attemptLastSeq)
-      this.attemptLastSeq = update.seq
-
+    this.recordAppliedSequence(update.seq)
     this.follower.applyRemoteUpdate(update.update)
     this.recordIntegratedSequence(update.seq, isCatchUp)
 
@@ -336,6 +331,12 @@ export class LayoutFollowerBridge extends EventTarget {
       })
     )
     return true
+  }
+
+  private recordAppliedSequence(seq: number): void {
+    this.lastSeq = Math.max(this.lastSeq ?? seq, seq)
+    this.attemptFirstSeq ??= seq
+    this.attemptLastSeq = Math.max(this.attemptLastSeq ?? seq, seq)
   }
 
   private rejectSequenceGap(update: DocUpdate): boolean {
@@ -423,17 +424,18 @@ export class LayoutFollowerBridge extends EventTarget {
             expectedSeq: subscribed.expectedSeq
           }
         : null
-    if (subscribed.ok) {
-      this.reseedBlockedUntilConfirmedWorkflowId = null
-      this.ackSeq = subscribed.seq ?? 0
-      this.catchUpPending = this.ackSeq > 0
-    } else {
+    if (!subscribed.ok) {
       this.ackSeq = null
       this.catchUpPending = false
       this.sentWorkflowId = null
+      this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+      return
     }
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.ackSeq = subscribed.seq ?? 0
+    this.catchUpPending = this.ackSeq > 0
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
-    if (subscribed.ok) this.rejectPreAckGap(subscribed.workflowId)
+    this.rejectPreAckGap(subscribed.workflowId)
   }
 
   private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
