@@ -50,6 +50,7 @@ const runApproval = (
       thread_id: 'th',
       ask_id: askId,
       kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
       prompt: 'Run workflow?',
       options: [
         { id: 'run', label: 'Run' },
@@ -2101,7 +2102,7 @@ describe('useAgentConversationStore', () => {
       store.startTurn(T1)
       store.ingest(delta('t1', 'building your workflow'))
 
-      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'pick_a_model' }))
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'ask_user' }))
 
       expect(
         store.messages[0].parts.some((part) => part.type === 'runApproval')
@@ -2111,8 +2112,8 @@ describe('useAgentConversationStore', () => {
         expect.objectContaining({
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
-            reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
+            reason: 'unrendered-kind',
+            ask_kind: 'ask_user'
           })
         })
       )

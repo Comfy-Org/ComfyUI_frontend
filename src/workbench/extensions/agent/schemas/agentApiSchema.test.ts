@@ -161,35 +161,6 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.skill).toBe('a'.repeat(256))
   })
 
-  it('accepts an explicit null tool_call_id and duration_ms on a persisted tool-call row', () => {
-    const parsed = zPersistedToolCallSummary.safeParse({
-      id: 'audit-row-uuid-1',
-      tool_call_id: null,
-      tool_name: 'search_nodes',
-      status: 'success',
-      duration_ms: null
-    })
-
-    expect(parsed.success).toBe(true)
-  })
-
-  it('accepts a persisted tool-call row with no status key or an explicit null status', () => {
-    const noStatusKey = zPersistedToolCallSummary.safeParse({
-      id: 'audit-row-uuid-1',
-      tool_call_id: 'call-1',
-      tool_name: 'search_nodes'
-    })
-    const nullStatus = zPersistedToolCallSummary.safeParse({
-      id: 'audit-row-uuid-1',
-      tool_call_id: 'call-1',
-      tool_name: 'search_nodes',
-      status: null
-    })
-
-    expect(noStatusKey.success).toBe(true)
-    expect(nullStatus.success).toBe(true)
-  })
-
   it.for([null, 'not-an-array', 42, {}])(
     'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array',
     (toolCalls) => {

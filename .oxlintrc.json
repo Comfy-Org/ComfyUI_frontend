@@ -38,6 +38,7 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
+    "comfy/no-agent-ingest-passthrough": "error",
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-relative-packages": "error",
     "comfy/no-js-private-class-members": "error",

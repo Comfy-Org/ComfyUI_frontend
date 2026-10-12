@@ -4,7 +4,10 @@ import type {
   noComfyPageSetupCall as NoComfyPageSetupCall,
   preferInitialSettings as PreferInitialSettings
 } from './comfyPageSetup'
-import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
+import type {
+  noAgentIngestPassthrough as NoAgentIngestPassthrough,
+  noDuplicateIngestType as NoDuplicateIngestType
+} from './comfyIngestTypes'
 import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
   noRelativePackages as NoRelativePackages,
@@ -48,7 +51,10 @@ const { noComfyPageSetupCall, preferInitialSettings } = requireFrom(
   noComfyPageSetupCall: typeof NoComfyPageSetupCall
   preferInitialSettings: typeof PreferInitialSettings
 }
-const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
+const { noAgentIngestPassthrough, noDuplicateIngestType } = requireFrom(
+  './comfyIngestTypes.ts'
+) as {
+  noAgentIngestPassthrough: typeof NoAgentIngestPassthrough
   noDuplicateIngestType: typeof NoDuplicateIngestType
 }
 const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
@@ -125,6 +131,7 @@ const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-agent-ingest-passthrough': noAgentIngestPassthrough,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
