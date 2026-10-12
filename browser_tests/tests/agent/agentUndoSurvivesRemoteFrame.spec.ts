@@ -1,60 +1,61 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
-
-const CASE = 'agent-rec-text-only-answer'
-const PROMPT_NODE_ID = '6'
-const PROMPT_WIDGET = 'text'
+import {
+  ADDITIVE_CANVAS_CASE,
+  ADDITIVE_READINESS_NODE_ID,
+  ADDITIVE_READINESS_WIDGET
+} from '@e2e/fixtures/data/agent/agentCanvasAdditive'
 
 test.describe(
-  'Undo while the Agent follows the canvas',
+  'Agent undo survives a remote frame',
   { tag: ['@cloud', '@agent', '@canvas', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
+    test.use({ conversationCase: ADDITIVE_CANVAS_CASE, humanOpsHost: 'apply' })
 
     test('keeps an echoed node addition undone after the next remote frame', async ({
       agentConversation,
-      page
+      comfyPage
     }, testInfo) => {
-      test.setTimeout(90_000)
-
-      await test.step('bind the Agent follower to the visible workflow', async () => {
+      await test.step('replay the recorded text-only Agent turn', async () => {
         await agentConversation.runTurns()
       })
 
       const nodeId =
-        await test.step('add a node and wait for its host echo to reach the canvas', async () => {
+        await test.step('add a note and wait for the host echo to land', async () => {
           const addedNodeId = await agentConversation.addNoteThroughSearchBox({
             x: 400,
             y: 400
           })
-          const node = agentConversation.vueNodes.getNodeLocator(addedNodeId)
-          await expect(node).toBeVisible()
           await agentConversation.waitForHumanOps(1)
-          await expect(node).toBeVisible()
+          await agentConversation.waitForPendingFrames(
+            ADDITIVE_READINESS_NODE_ID,
+            ADDITIVE_READINESS_WIDGET,
+            'note echo landed'
+          )
+          await expect(
+            agentConversation.vueNodes.getNodeLocator(addedNodeId)
+          ).toBeVisible()
           return addedNodeId
         })
 
-      await test.step('undo the echoed addition', async () => {
-        await page.locator('#graph-canvas').press('Control+KeyZ')
-        await nextFrame(page)
-        await expect(
-          agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).toBeHidden()
-        await agentConversation.waitForHumanOps(2)
+      await test.step('undo the addition and wait for the host to drop it', async () => {
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() => agentConversation.hostNodeIds())
+          .not.toContain(nodeId)
       })
 
-      await test.step('an unrelated remote frame does not resurrect the node', async () => {
+      await test.step('the next remote frame does not resurrect the node', async () => {
         await agentConversation.waitForPendingFrames(
-          PROMPT_NODE_ID,
-          PROMPT_WIDGET,
-          'later remote frame landed'
+          ADDITIVE_READINESS_NODE_ID,
+          ADDITIVE_READINESS_WIDGET,
+          'next remote frame landed'
         )
         await agentConversation.attachEvidence(testInfo, 'after-remote-frame')
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).toBeHidden()
+        ).toHaveCount(0)
       })
     })
   }
