@@ -62,9 +62,7 @@
     "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types",
-    // Loaded by the E2E workflows through `playwright test --reporter`.
-    "@comfyorg/snapshot-updates-reporter"
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [

@@ -22,9 +22,7 @@ const config: KnipConfig = {
         '!worktrees/**',
         '!src/__ecs_matrix__/**'
       ],
-      ignore: ['scripts/registry-census/detection-proof/**'],
-      // Loaded by the E2E workflows through `playwright test --reporter`.
-      ignoreDependencies: ['@comfyorg/snapshot-updates-reporter']
+      ignore: ['scripts/registry-census/detection-proof/**']
     },
     'packages/account-core': {
       project: ['src/**/*.{js,ts}']
@@ -57,8 +55,7 @@ const config: KnipConfig = {
       // Models pages are registered by the release-gate integration.
       entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
       // Executed by models-snippets.test.ts inside the generated Node examples.
-      // The snapshot reporter is loaded by `playwright test --reporter` in CI.
-      ignoreDependencies: ['mime-types', '@comfyorg/snapshot-updates-reporter']
+      ignoreDependencies: ['mime-types']
     },
     'tools/architecture': {
       project: ['src/**/*.ts']

@@ -158,7 +158,6 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
-    "@comfyorg/snapshot-updates-reporter": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",
