@@ -1,8 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
+import Toaster from '@/components/ui/toast/Toaster.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -326,27 +327,22 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  // A permanent seen-message set would pass the suppression test above and
-  // then silence every later rejection for the follower's lifetime.
-  it('speaks again once the throttle window has passed', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
+  it('shows a later rejection after the user dismisses the notice', async () => {
     const { submit } = mountFollower()
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
-    await vi.advanceTimersByTimeAsync(10_001)
+    useToast().dismiss(useToast().toasts[0].id)
+    expect(toastDescriptions()).toEqual([])
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT),
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
 
-  it('still speaks for a rejection of another kind inside that window', async () => {
+  it('replaces the notice with the latest rejection instead of stacking it', async () => {
     const { submit } = mountFollower()
+    render(Toaster, { global: { plugins: [i18n] } })
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(
@@ -354,9 +350,13 @@ describe('a human edit the doc host rejects', () => {
     )
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT),
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
+    await nextTick()
+    expect(screen.getAllByTestId('toast')).toHaveLength(1)
+    const announcement = screen.getByRole('alert', { name: 'Notification' })
+    expect(announcement).toHaveTextContent(GENERIC_REJECTION_TEXT)
+    expect(announcement).not.toHaveTextContent(WIDGET_REJECTION_TEXT)
   })
 
   it('stays silent when the host applies the edit', async () => {
