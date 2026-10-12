@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "اختر زاوية كاميرا حول موضوع مع معاينة ثلاثية الأبعاد. يُخرج camera_info لعُقد ثلاثية الأبعاد ووصفًا نصيًا بسيطًا بالإنجليزية للّقطات لاستخدامه في المطالبات.",
+    "display_name": "إنشاء مطالبة زاوية الكاميرا",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "الزاوية السمتية حول الموضوع بالدرجات. 0 هو الأمام، و90 الجانب الأيمن، و180 الخلف."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "صورة مرجعية اختيارية تُعرض على الواجهة الأمامية لمكعب الموضوع في المعاينة ثلاثية الأبعاد."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "الارتفاع بالدرجات. القيم السالبة تنظر إلى الأعلى من الأسفل، والموجبة تنظر إلى الأسفل من الأعلى."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "تقريب العدسة على الموضوع: 0 لقطة واسعة، و10 لقطة مقرّبة. يُنقل إلى camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "كاني",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "أول قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "ارفع دقة صورة باستخدام Crystal Upscaler من Clarity AI، وهو مُحسّن دقة عالي الدقة يظل وفيًا للأصل ويستعيد الوجوه والبشرة والملمس الدقيق. الحد الأقصى للإخراج: 100 ميغابكسل.",
+    "display_name": "ترقية Clarity AI Crystal للدقة",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "إنشاء camera_info. وضع 'orbit' يوجه الكاميرا حول الهدف باستخدام yaw/pitch/distance؛ وضع 'look_at' يضع الكاميرا في موقع محدد في العالم. الإحداثيات في فضاء العالم للمشاهد (نظام اليد اليمنى، المحور Y للأعلى).",
+    "description": "أنشئ camera_info. يستخدم وضع 'orbit' الانحراف/الميل/المسافة حول الهدف للتوجيه؛ ويضع 'look_at' الكاميرا عند موضع عالمي. الإحداثيات هي فضاء العالم الخاص بالمشاهد (يميني الاتجاه، والمحور Y للأعلى).",
     "display_name": "إنشاء معلومات الكاميرا",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "الإسقاط المستخدم بواسطة Render Splat: منظور (تقريب المسافات) أو متوازي (خطوط متوازية)."
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "رمز اللغة",
-        "tooltip": "رمز اللغة وفق معيار ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+        "tooltip": "رمز اللغة ISO 639-1 (مثل 'en' و'es' و'ja'). اتركه فارغًا للكشف التلقائي."
       },
       "model": {
         "name": "النموذج",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "رمز اللغة",
-        "tooltip": "رمز اللغة حسب ISO-639-1 أو ISO-639-3 (مثال: 'en'، 'es'، 'fra'). اتركه فارغًا للكشف التلقائي."
+        "tooltip": "رمز اللغة ISO 639-1 (مثل 'en' و'es' و'ja'). اتركه فارغًا للكشف التلقائي."
       },
       "model": {
         "name": "النموذج",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "تعزيز التشابه"
-      },
-      "model_speed": {
-        "name": "السرعة"
-      },
-      "model_style": {
-        "name": "النمط"
-      },
-      "model_use_speaker_boost": {
-        "name": "استخدام تعزيز المتحدث"
       },
       "output_format": {
         "name": "صيغة الإخراج",
@@ -5834,6 +5884,52 @@
       },
       "width": {
         "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "يُنشئ صورة باستخدام FLUX 3 من مطالبة، أو يحرر ويجمع ما يصل إلى 10 صور مرجعية. أشر إلى المراجع في المطالبة بصيغة الصورة 1، الصورة 2، وهكذا.",
+    "display_name": "صورة Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع 'auto' أول صورة مرجعية، أو يختار نسبة من المطالبة."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "مربعات اختيارية من Create Bounding Boxes لوضع كائنات أو نص في المخرجات. المواضع نسبية إلى اللوحة، لذا اجعلها بنفس نسبة أبعاد المخرجات."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "اسمح للنموذج بالبحث في المطالبة باستخدام بحث الويب والصور قبل الإنشاء."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صور مرجعية اختيارية، حتى 10 إجمالًا، وبحجم 256x256 بكسل على الأقل لكل منها."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ما يجب إنشاؤه، أو التعديل المطلوب إجراؤه. تُفسَّر المطالبة وتُوسَّع قبل الإنشاء."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "حجم الإخراج بنسبة العرض إلى الارتفاع المختارة: 0.75K تساوي نحو 0.6 ميغابكسل، و1K تساوي 1 MP، و1.5K تساوي 2.4 MP، و2K تساوي 4.2 MP، و4K تساوي 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "درجة تسامح الإشراف، حيث 0 هي الأكثر صرامة."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ يختار FLUX 3 بذرته الخاصة، لذا تكون النتائج الفعلية غير حتمية بغض النظر عن هذه القيمة."
       }
     },
     "outputs": {
@@ -6803,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "توليد أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
-    "display_name": "نانا موز 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -6853,7 +6949,7 @@
       },
       "2": {
         "name": "صورة التفكير",
-        "tooltip": "أول صورة من عملية تفكير النموذج. متوفرة فقط عند مستوى التفكير العالي ونمط الاستجابة صورة+نص."
+        "tooltip": "الصورة الأولى من عملية تفكير النموذج. متاحة فقط مع نمط IMAGE+TEXT."
       }
     }
   },
@@ -7434,7 +7530,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبة العرض إلى الارتفاع",
-        "tooltip": "نسبة العرض إلى الارتفاع للفيديو الناتج."
+        "tooltip": "نسبة أبعاد الفيديو الناتج. يتم تجاهلها عند توفير صورة إدخال؛ ويتبع الفيديو نسبة أبعاد الصورة."
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -7453,11 +7549,11 @@
       },
       "prompt": {
         "name": "المطالبة",
-        "tooltip": "وصف نصي للفيديو المطلوب. اختياري لـ grok-imagine-video-1.5 عند توفير صورة إدخال."
+        "tooltip": "وصف نصي للفيديو المطلوب. اختياري لنماذج grok-imagine-video-1.5 عند توفير صورة إدخال."
       },
       "resolution": {
         "name": "الدقة",
-        "tooltip": "دقة فيديو الإخراج. تتوفر 1080p فقط لـ grok-imagine-video-1.5."
+        "tooltip": "دقة الفيديو الناتج. دقة 1080p غير متاحة لـ grok-imagine-video."
       },
       "seed": {
         "name": "البذرة",
@@ -10327,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "ألبس شخصًا قطعة ملابس. تكون النتيجة بنفس حجم صورة الشخص، بحد أقصى 2048px لأطول ضلع.",
+    "display_name": "Kling للقياس الافتراضي",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "الملابس المراد إلباسها: صورة منتج، أو عرض مسطّح، أو عارضة أزياء، أو صورة لشخص يرتديها. يمكن أن تنقل صورة الشخص الذي يرتديها بقية ذلك الزي. الملابس فقط؛ الأحذية والحقائب والإكسسوارات غير مدعومة."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "أوقفه للسماح بتغيير الوضعية من أجل عرض أفضل للزي."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "صورة لشخص واحد، ويُفضّل أن تكون مواجهة للأمام أو بزاوية ثلاثة أرباع. تُصغَّر الصور التي يتجاوز أحد أضلاعها 2048px أولًا."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم seed فيما إذا كانت العقدة ستُشغَّل مجددًا؛ النتائج غير حتمية بغض النظر عن seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
     "display_name": "Kling 3.0 فيديو",
@@ -11285,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "تطبيق عملية مع CFG على الكامن",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "أوقف تطبيق العملية عند هذا الجزء من جدول إزالة التشويش الخاص بالنموذج. 1 هي النهاية."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "ابدأ تطبيق العملية عند هذا الجزء من جدول إزالة التشويش الخاص بالنموذج. 0 هي البداية."
       }
     },
     "outputs": {
@@ -11524,6 +11658,24 @@
       },
       "samples": {
         "name": "عينات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "امزج كامل latent باتجاه latent المرجعي، مع تغيير حجم المرجع باستخدام استيفاء أقرب جار عند الحاجة.",
+    "display_name": "مزج عمليات latent",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "القيمة 0 تترك latent دون تغيير؛ والقيمة 1 تطابق latent المرجعي بعد تغيير حجمه."
       }
     },
     "outputs": {
@@ -11933,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "كامن"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "طبّق مكدسًا من LoRA على نموذج انتشار. أضف صفًا لكل LoRA؛ يختار كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (النموذج)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "يطبّق كل صف LoRA واحدة على النموذج."
+      },
+      "loras_$add": {
+        "name": "إضافة LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 مفعّلة"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 strength"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج الانتشار الذي ستُطبّق عليه LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدّل."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "طبّق مجموعة من LoRA على مشفّر النص clip. أضف صفًا واحدًا لكل LoRA؛ يحدد كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (مشفّر النص)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "مشفّر النص clip الذي ستُطبّق عليه LoRA."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "يطبّق كل صف LoRA واحدة على مشفّر النص."
+      },
+      "loras_$add": {
+        "name": "إضافة LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "تم تمكين LoRA #1"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "قوة LoRA #1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مشفّر النص clip المعدّل."
       }
     }
   },
@@ -18481,7 +18707,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحيح",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
       "value": {
@@ -18632,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "تحويل صورة نقطية إلى SVG باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل صورة إلى SVG",
+    "display_name": "تحويل صورة Quiver إلى SVG (قديم)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18676,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "حوّل صورة نقطية إلى SVG متجهي باستخدام Quiver AI.",
+    "display_name": "تحويل صورة Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتحويل SVG إلى رسوم متجهية."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "إنشاء SVG من وصف نصي باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل نص إلى SVG",
+    "display_name": "تحويل نص Quiver إلى SVG (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18715,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "أنشئ SVG من مطالبة نصية باستخدام Quiver AI.",
+    "display_name": "تحويل نص Quiver إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء SVG."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_instructions": {
+        "name": "التعليمات"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -22372,7 +22688,7 @@
   "SeedNode": {
     "display_name": "البذرة",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "التحكم بعد التوليد"
       },
       "seed": {
@@ -27513,6 +27829,79 @@
         "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
       },
       "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "أنشئ فيديو من إطار بداية وموجّه اختياري. يحافظ الناتج على نسبة أبعاد صورة الإدخال.",
+    "display_name": "توليد فيديو من صورة باستخدام Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "إطار بداية الفيديو المُولَّد. يجب أن تكون نسبة الأبعاد بين 1:5 و5:1."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "صوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "أنشئ فيديو من صور مرجعية وصوت مرجعي اختياري وموجّه.",
+    "display_name": "توليد فيديو من مراجع باستخدام Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة_الأبعاد"
+      },
+      "model_audio": {
+        "name": "صوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
         "name": "البذرة"
       }
     },
