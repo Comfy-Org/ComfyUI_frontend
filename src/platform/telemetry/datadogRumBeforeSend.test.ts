@@ -71,6 +71,17 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('keeps a first-party CSP block of a noise host when the stack carries the report header', () => {
+    const header =
+      "csp_violation: 'https://www.googletagmanager.com/gtm.js' blocked by 'script-src-elem' directive"
+    const event = createErrorEvent(
+      header,
+      `${header}\n    at loadGtm (https://cloud.comfy.org/assets/app.js:1:2)`
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('drops a CSP block whose /assets/ frame is served by a noise host', () => {
     const event = createErrorEvent(
       "csp_violation: 'https://www.facebook.com/tr/' blocked by 'img-src' directive",

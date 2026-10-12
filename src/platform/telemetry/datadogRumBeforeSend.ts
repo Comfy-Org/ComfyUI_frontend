@@ -23,18 +23,20 @@ function isStackFrameLine(line: string): boolean {
   return /^\s*at\s/.test(line) || /@https?:\/\//.test(line)
 }
 
+function stackFrameLines(stack?: string): string[] {
+  return stack?.split('\n').filter(isStackFrameLine) ?? []
+}
+
 export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   if (!stack) return { origin: 'third_party' }
 
-  for (const line of stack.split('\n')) {
-    // Only real stack frames decide origin. A report's `stack` is prefixed by
-    // its message header (`csp_violation: '<blockedURI>' blocked by ...`), so
-    // scanning every line lets a vendor- or attacker-controlled blocked URI
-    // such as `https://cdn.vendor.com/assets/pixel.js` read as first party, or
-    // one containing `/extensions/<name>/` be attributed to an extension that
-    // does not exist.
-    if (!isStackFrameLine(line)) continue
-
+  // Only real stack frames decide origin. A report's `stack` is prefixed by
+  // its message header (`csp_violation: '<blockedURI>' blocked by ...`), so
+  // scanning every line lets a vendor- or attacker-controlled blocked URI
+  // such as `https://cdn.vendor.com/assets/pixel.js` read as first party, or
+  // one containing `/extensions/<name>/` be attributed to an extension that
+  // does not exist.
+  for (const line of stackFrameLines(stack)) {
     const extensionFolder = /\/extensions\/([^/?#]+)\//.exec(line)?.[1]
     if (extensionFolder) {
       return FIRST_PARTY_EXTENSION_FOLDERS.has(extensionFolder)
@@ -71,7 +73,7 @@ function isFirstPartyCspViolation(event: RumErrorEvent): boolean {
   const { message, stack } = event.error
   return (
     message.startsWith('csp_violation:') &&
-    !namesRumNoiseHost(stack) &&
+    !stackFrameLines(stack).some(namesRumNoiseHost) &&
     classifyRumErrorOrigin(stack).origin === 'first_party'
   )
 }
