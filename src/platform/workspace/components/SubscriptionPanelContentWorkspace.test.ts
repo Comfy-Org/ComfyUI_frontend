@@ -1,5 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
@@ -206,17 +207,11 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
 )
 
 const i18n = createI18n({
@@ -791,7 +786,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('falls back to the per-member price when the subscribed stop id is stale', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockCurrentTeamCreditStop.value = {
       id: 'team_unknown',
       credits_monthly: 1,
@@ -801,8 +795,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('shows cents when the subscribed stop price is not a whole dollar', () => {
@@ -1371,7 +1364,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('menuitem', { name: 'Edit workspace details' })
     )
-    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useWorkspaceDialogs().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', async () => {
@@ -1496,7 +1489,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
-    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1515,7 +1510,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toHaveAttribute('aria-disabled', 'true')
 
     await user.click(screen.getByRole('menuitem', { name: 'Cancel plan' }))
-    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useBillingDialogs().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       END_DATE_ISO
     )
   })

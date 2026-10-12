@@ -343,14 +343,11 @@ describe('authored Router task defaults', () => {
     const model = modelFor(
       'byteplus--seedream-5-pro-layer-separation--edit-images'
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        async () =>
-          new Response(new Uint8Array([137, 80, 78, 71]), {
-            headers: { 'Content-Type': 'image/png' }
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(new Uint8Array([137, 80, 78, 71]), {
+          headers: { 'Content-Type': 'image/png' }
+        })
     )
     const page = initialWorkshopPageState(model)
     expect(page.firstExample).toBeDefined()

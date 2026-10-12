@@ -2,11 +2,13 @@ import { createSharedComposable } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
+  const { bringNodeToFront } = useNodeZIndex()
 
   function getNode(nodeId: NodeId) {
     return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
@@ -62,7 +64,9 @@ function useNodeEventHandlersIndividual() {
 
     event.preventDefault()
 
+    const raise = !node.selected && !node.flags.pinned
     canvasStore.canvas.processSelect(node, event, true)
+    if (raise) bringNodeToFront(nodeId)
   }
 
   return {

@@ -6,7 +6,8 @@
     <Button
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"
-      v-tooltip.bottom="button.tooltip"
+      :tooltip="button.tooltip"
+      tooltip-side="bottom"
       :aria-label="button.tooltip || button.label"
       :class="button.class"
       variant="muted-textonly"

@@ -455,7 +455,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   })
 
   it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -478,7 +477,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
-    warn.mockRestore()
   })
 })
 
@@ -1364,7 +1362,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
   })
 
   it('refuses to project a doc whose schema_version is newer than this build', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1381,12 +1378,10 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
-    expect(error).toHaveBeenCalled()
-    error.mockRestore()
+    expect(console.error).toHaveBeenCalled()
   })
 
   it('un-latches when a later same-lineage frame restores a readable schema_version', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1439,11 +1434,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     ])
     expect(bridge.lastSchemaError).toBeNull()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
-    error.mockRestore()
   })
 
   it('refuses a doc that declares no schema_version at all', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1460,11 +1453,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
-    error.mockRestore()
   })
 
   it('un-latches an undefined schema_version once a later frame merges a defined one', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -1497,11 +1488,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
     expect(bridge.lastSchemaError).toBeNull()
-    error.mockRestore()
   })
 
   it('reads the version through the package public API, not a local copy', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => {
       assertReadableSchema(doc)
@@ -1514,7 +1503,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(() => {
       assertReadableSchema(doc)
     }).toThrow(/KA-11/)
-    error.mockRestore()
   })
 })
 
@@ -1607,7 +1595,6 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
   })
 
   it('a switch on a dead socket still replaces the doc and announces it', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     const replaced: unknown[] = []
     bridge.addEventListener('follower_replaced', (event) => {
@@ -1654,7 +1641,6 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
   })
 
   it('is not dispatched while the frame cannot leave a closed socket', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     const sent = observeSent(bridge)
 

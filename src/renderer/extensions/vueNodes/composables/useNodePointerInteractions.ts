@@ -34,6 +34,8 @@ interface Press {
   releaseCapture?: () => void
 }
 
+const pressCancellers = new Map<number, () => void>()
+
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
@@ -63,6 +65,11 @@ export function useNodePointerInteractions(
   function clearPress() {
     const completedPress = press
     press = null
+    if (
+      completedPress &&
+      pressCancellers.get(completedPress.event.pointerId) === cancelPress
+    )
+      pressCancellers.delete(completedPress.event.pointerId)
     completedPress?.releaseCapture?.()
     if (completedPress?.movingNode) layoutStore.isDraggingVueNodes.value = false
   }
@@ -154,14 +161,13 @@ export function useNodePointerInteractions(
     }
 
     if (event.button !== 0) return
-    if (press) {
-      if (press.event.pointerId !== event.pointerId) return
-      cancelPress()
-    }
+    if (press && press.event.pointerId !== event.pointerId) return
+    pressCancellers.get(event.pointerId)?.()
 
     const nodeId = pressNode(event)
     const captureTarget =
       event.target instanceof Element ? event.target : undefined
+    pressCancellers.set(event.pointerId, cancelPress)
     press = {
       nodeId,
       event,

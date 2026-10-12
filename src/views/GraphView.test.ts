@@ -11,7 +11,6 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
@@ -27,9 +26,6 @@ beforeEach(() => {
   vi.mocked(useMenuItemStore().registerCoreMenuCommands).mockImplementation(
     () => {}
   )
-  vi.mocked(
-    useBottomPanelStore().registerCoreBottomPanelTabs
-  ).mockResolvedValue(undefined)
 })
 
 const apiMock = vi.hoisted(() =>
@@ -86,6 +82,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
   registerCoreSidebarTabs: vi.fn()
 }))
+
+vi.mock(
+  import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
+  () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
@@ -171,6 +172,10 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
+  import('@/platform/assets/components/AssetBrowserModal.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule
 )
@@ -197,15 +202,6 @@ vi.mock<unknown>(
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/AssetExportProgressDialog.vue'),
-  () => stubModule
-)
-vi.mock<unknown>(
-  import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
-  () => stubModule
-)
-vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
-vi.mock<unknown>(
-  import('@/components/toast/RerouteMigrationToast.vue'),
   () => stubModule
 )
 vi.mock<unknown>(import('@/components/MenuHamburger.vue'), () => stubModule)

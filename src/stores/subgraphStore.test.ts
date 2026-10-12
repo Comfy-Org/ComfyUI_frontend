@@ -8,6 +8,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -284,7 +285,6 @@ describe('useSubgraphStore', () => {
   })
 
   it('should handle global blueprint with empty data gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -295,16 +295,14 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
-    consoleSpy.mockRestore()
   })
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -317,16 +315,17 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ description: 'Network error', kind: 'error' })
+    ])
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
-    consoleSpy.mockRestore()
   })
 
   it('should load valid global blueprints even when others fail', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -342,9 +341,8 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalled()
+    expect(console.error).toHaveBeenCalled()
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
-    consoleSpy.mockRestore()
   })
 
   describe('search_aliases support', () => {
