@@ -259,14 +259,15 @@ async function save() {
           {{ t('cmsEditor.draftNotice', { revision: draft }) }}
         </p>
       </div>
-      <div class="flex gap-2">
-        <AdminButton href="/hub/models/">{{
+      <div class="flex max-w-full flex-wrap gap-2">
+        <AdminButton href="/hub/models/" size="lg" class="w-40">{{
           t('cmsEditor.cancel')
         }}</AdminButton
         ><AdminButton
           type="submit"
           variant="primary"
           size="lg"
+          class="w-40 bg-primary-comfy-yellow text-primary-comfy-ink hover:bg-primary-comfy-yellow/90 focus-visible:outline-primary-comfy-yellow"
           :icon="Save"
           :disabled="blocked"
           >{{
@@ -464,7 +465,7 @@ async function save() {
               :value="typeof file.name === 'string' ? file.name : ''"
               :class="inputClass"
               @input="editWorkflowName(index, $event)"
-            /><code class="break-all text-xs">{{
+            /><code class="text-xs break-all">{{
               objectValue(file.file).id
             }}</code></label
           ><AdminButton @click="removeWorkflowFile(index)">{{
@@ -497,11 +498,19 @@ async function save() {
         />
       </div>
     </details>
-    <footer class="flex justify-end gap-2">
-      <AdminButton href="/hub/models/">{{ t('cmsEditor.cancel') }}</AdminButton
-      ><AdminButton type="submit" variant="primary" :disabled="blocked">{{
-        t('cmsEditor.save')
-      }}</AdminButton>
+    <footer class="flex flex-wrap justify-end gap-2">
+      <AdminButton href="/hub/models/" size="lg" class="w-40">{{
+        t('cmsEditor.cancel')
+      }}</AdminButton
+      ><AdminButton
+        type="submit"
+        variant="primary"
+        size="lg"
+        :icon="Save"
+        class="w-40 bg-primary-comfy-yellow text-primary-comfy-ink hover:bg-primary-comfy-yellow/90 focus-visible:outline-primary-comfy-yellow"
+        :disabled="blocked"
+        >{{ t('cmsEditor.save') }}</AdminButton
+      >
     </footer>
   </form>
 </template>

@@ -267,6 +267,17 @@ try {
     await expect(edit).toHaveAttribute('href', /^\/admin\/content\/[0-9a-f-]{36}\/edit$/)
     await edit.click()
     await expect(page.getByRole('heading', { name: 'Edit content', exact: true })).toBeVisible()
+    for (const area of ['header', 'footer']) {
+      const actions = page.locator('form').locator(area)
+      const cancel = await actions.getByRole('link', { name: 'Cancel', exact: true }).boundingBox()
+      const save = actions.getByRole('button', { name: 'Save changes', exact: true })
+      const bounds = await save.boundingBox()
+      if (!cancel || !bounds) throw new Error('Editor actions missing')
+      expect(bounds.height).toBe(40)
+      expect(bounds.height).toBe(cancel.height)
+      expect(bounds.width).toBe(cancel.width)
+      await expect(save).toHaveCSS('background-color', 'rgb(242, 255, 89)')
+    }
   }
   const anonymous = await request.newContext({
     baseURL: remote.origin,

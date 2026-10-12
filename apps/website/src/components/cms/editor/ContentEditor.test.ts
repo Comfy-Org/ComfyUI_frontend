@@ -41,6 +41,15 @@ function setup(existing = true) {
 }
 
 describe('staff page editor', () => {
+  it('uses matching large Cancel/Save controls and Comfy yellow on both Save buttons', () => {
+    setup()
+    for (const cancel of screen.getAllByRole('link', { name: 'Cancel', exact: true }))
+      expect(cancel).toHaveClass('h-10', 'w-40')
+    for (const save of screen.getAllByRole('button', { name: 'Save changes', exact: true })) {
+      expect(save).toHaveClass('h-10', 'w-40', 'bg-primary-comfy-yellow', 'text-primary-comfy-ink')
+      expect(save).not.toHaveClass('bg-admin-fg')
+    }
+  })
   it('opening EDIT reads the supplied snapshot without saving or uploading', () => {
     setup()
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue(
