@@ -37,6 +37,8 @@ async function conditioningLinks(page: Page) {
       )
       .map(([x, , width]) => x + width)
     const left = Math.max(right - 40, ...blockingEdges.map((x) => x + 4))
+    if (left >= right)
+      throw new Error('No empty canvas between the KSampler and its neighbour')
     return {
       ids: slots.map(({ id }) => String(id)),
       from: app.canvasPosToClientPos([left, top]),
