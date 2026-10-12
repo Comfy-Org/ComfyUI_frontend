@@ -262,7 +262,7 @@ describe('actual catalog staging console', () => {
       }
     })
     expect(
-      screen.queryByRole('button', { name: 'Approve all matching' })
+      screen.queryByRole('button', { name: 'Approve Selected' })
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: /History|All content/ })
@@ -284,6 +284,7 @@ describe('actual catalog staging console', () => {
     const initial = fixtureReview()
     const updated = fixtureReview()
     if (updated.items[0]) updated.items[0].decision = 'APPROVED'
+    updated.unresolved_count = 0
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(Response.json(updated))
@@ -293,17 +294,18 @@ describe('actual catalog staging console', () => {
       props: { initial, csrf: 'a'.repeat(64), canApply: true, canEdit: true }
     })
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Approve all matching' })
+      screen.getByRole('checkbox', { name: 'Select all matching results' })
     )
     expect(
-      screen.getByRole('button', { name: 'Confirm decision' })
+      screen.getByRole('button', { name: 'Approve Selected' })
     ).toBeDisabled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(fetcher).not.toHaveBeenCalled()
     await fireEvent.click(
       screen.getByRole('checkbox', { name: /unfiltered action/ })
     )
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Confirm decision' })
+      screen.getByRole('button', { name: 'Approve Selected' })
     )
     await waitFor(() =>
       expect(
@@ -317,11 +319,16 @@ describe('actual catalog staging console', () => {
       expected_count: 1,
       confirm_all: true,
       status: 'APPROVED',
-      review: { expected_draft_generation: 5 }
+      review: { expected_draft_generation: 5 },
+      selected_uids: [initial.items[0]?.content.uid]
     })
     expect(
-      screen.getByRole('combobox', { name: 'Decision for Review fixture' })
-    ).toHaveValue('APPROVED')
+      screen.getByRole('button', { name: 'Decision for Review fixture' })
+    ).toHaveTextContent('APPROVED')
+    expect(screen.getByRole('link', { name: 'Next →' })).toHaveAttribute(
+      'href',
+      '/admin/catalog/final-review'
+    )
   })
   it('fails stale decisions closed and requires a reload before any next staging action', async () => {
     vi.stubGlobal(
@@ -337,13 +344,14 @@ describe('actual catalog staging console', () => {
       }
     })
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Defer all matching' })
+      screen.getByRole('checkbox', { name: 'Select all matching results' })
     )
+
     await fireEvent.click(
       screen.getByRole('checkbox', { name: /unfiltered action/ })
     )
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Confirm decision' })
+      screen.getByRole('button', { name: 'Defer Selected' })
     )
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -351,13 +359,129 @@ describe('actual catalog staging console', () => {
       )
     )
     expect(
-      screen.getByRole('button', { name: 'Approve all matching' })
+      screen.getByRole('button', { name: 'Approve Selected' })
     ).toBeDisabled()
     expect(
       screen.getByRole('button', { name: 'Apply filters / reload' })
     ).toBeEnabled()
     expect(
-      screen.getByRole('combobox', { name: 'Decision for Review fixture' })
-    ).toHaveValue('NEW')
+      screen.getByRole('button', { name: 'Decision for Review fixture' })
+    ).toHaveTextContent('NEW')
+  })
+  it('approves a checkbox subset against the full frozen filter without changing unchecked records', async () => {
+    const initial = fixtureReview()
+    const first = initial.items[0]
+    if (!first) throw new Error('Missing test row')
+    initial.items.push({
+      ...structuredClone(first),
+      content: {
+        ...structuredClone(first.content),
+        uid: '00000000-0000-4000-8000-000000000020',
+        document: { title: 'Unchecked media' },
+        type: 'media'
+      }
+    })
+    const updated = structuredClone(initial)
+    initial.unresolved_count = 2
+    updated.unresolved_count = 1
+    if (updated.items[0]) updated.items[0].decision = 'APPROVED'
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(updated))
+      .mockResolvedValueOnce(Response.json(updated))
+    vi.stubGlobal('fetch', fetcher)
+    render(CatalogStaging, {
+      props: { initial, csrf: 'a'.repeat(64), canApply: true, canEdit: true }
+    })
+    expect(screen.getByText('PHASE 1')).toBeVisible()
+    expect(screen.getByText('Approve or defer all new content.')).toBeVisible()
+    expect(screen.queryByRole('link', { name: /Edit/ })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Approve Selected' })
+    ).toBeDisabled()
+    await fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Select Review fixture' })
+    )
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Approve Selected' })
+    )
+    expect(
+      screen.queryByRole('checkbox', { name: /unfiltered action/ })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.getByText('Decisions saved. Live content is unchanged.')
+      ).toBeVisible()
+    )
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({
+      expected_count: 2,
+      expected_selection_digest: initial.selection_digest,
+      selected_uids: [first.content.uid],
+      confirm_all: false
+    })
+    expect(
+      screen.getByRole('button', { name: 'Decision for Unchecked media' })
+    ).toHaveTextContent('NEW')
+    expect(
+      screen.getByRole('button', { name: 'Decision for Review fixture' })
+    ).toHaveTextContent('APPROVED')
+    expect(
+      screen.getByRole('button', { name: 'Approve Selected' })
+    ).toBeDisabled()
+  })
+  it.each([1, 4])(
+    'blocks Next for %i undecided entries even when filters show only an approved row',
+    (count) => {
+      const initial = fixtureReview()
+      initial.filter = { statuses: ['APPROVED'] }
+      initial.unresolved_count = count
+      if (initial.items[0]) initial.items[0].decision = 'APPROVED'
+      render(CatalogStaging, {
+        props: {
+          initial,
+          csrf: 'a'.repeat(64),
+          canApply: true,
+          canEdit: true
+        }
+      })
+      expect(screen.getByRole('button', { name: 'Next →' })).toBeDisabled()
+      expect(
+        screen.queryByRole('link', { name: 'Next →' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `You still have ${count} entries not approved or deferred.`
+        )
+      ).toBeVisible()
+    }
+  )
+  it('shows NEW as a warning badge, not a select widget; decisions open on demand', async () => {
+    render(CatalogStaging, {
+      props: {
+        initial: fixtureReview(),
+        csrf: 'a'.repeat(64),
+        canApply: true,
+        canEdit: true
+      }
+    })
+    const badge = screen.getByRole('button', {
+      name: 'Decision for Review fixture'
+    })
+    expect(badge).toHaveAttribute(
+      'title',
+      'All New Items must be set to approve or deferred.'
+    )
+    expect(
+      screen.queryByRole('combobox', { name: 'Decision for Review fixture' })
+    ).not.toBeInTheDocument()
+    await fireEvent.keyDown(badge, { key: 'ArrowDown' })
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', { name: 'APPROVED' })).toBeVisible()
+    )
+    expect(screen.getByRole('menuitem', { name: 'DEFERRED' })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'NEW' })
+    ).not.toBeInTheDocument()
   })
 })

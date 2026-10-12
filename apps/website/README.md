@@ -1,6 +1,18 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+The local CCC review console has two phases: decide every pending change
+(including previously deferred work), then inspect the complete Final review.
+`Next` stays disabled while the authoritative, unfiltered unresolved count is
+nonzero. Row trash and `Delete Changes` discard Draft edits only, with an exact
+scope confirmation; they do not delete LIVE content or immutable history.
+`Add Content` is beside the selection actions. Publication remains unavailable
+until its outstanding backend/media acceptance gates are complete.
+
+`scripts/check-catalog-review-ui.ts` checks the real local/ngrok console on
+desktop/mobile using an explicitly supplied fixture credential file. It creates
+and revokes only its own invitation and makes no catalog content mutations.
+No demo credentials, invitations or local media belong in Git.
 
 ## CCC review discovery
 

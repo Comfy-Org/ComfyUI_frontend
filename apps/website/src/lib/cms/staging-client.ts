@@ -2,7 +2,7 @@ import type { ReviewFilter } from './staging-review'
 import { filterQuery } from './staging-review'
 
 export async function reviewRequest(
-  operation: 'staging' | 'final-review' | 'exit',
+  operation: 'staging' | 'final-review' | 'exit' | 'discard-changes',
   options: {
     filter?: ReviewFilter
     csrf?: string

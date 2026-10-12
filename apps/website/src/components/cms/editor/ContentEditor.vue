@@ -412,7 +412,7 @@ async function save() {
             :draft
             :csrf
             :locale
-            role="hero"
+            media-role="hero"
             @update="media('hero', $event)"
             @busy="busy"
           />
@@ -425,7 +425,7 @@ async function save() {
             :draft
             :csrf
             :locale
-            role="thumbnail"
+            media-role="thumbnail"
             @update="media('thumbnail', $event)"
             @busy="busy"
           />
@@ -476,7 +476,7 @@ async function save() {
           :draft
           :csrf
           :locale
-          role="workflow-file"
+          media-role="workflow-file"
           @update="workflowFile"
           @busy="busy"
         />
