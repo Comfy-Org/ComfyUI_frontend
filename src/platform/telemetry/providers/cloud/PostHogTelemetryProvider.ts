@@ -38,8 +38,11 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -568,6 +571,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }
 
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.lastTriggerSource = properties.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
@@ -855,6 +864,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentStarterPromptExposureMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
