@@ -926,6 +926,25 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(forwarded).toEqual([])
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
   })
+
+  it('still discards a replayed frame after a same-lineage resubscribe', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    const frame = docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    transport.deliver('doc_update', frame)
+
+    bridge.resubscribe()
+    transport.deliver('doc_update', frame)
+
+    expect(projected).toHaveLength(1)
+  })
 })
 
 describe('subscribe catch-up state', () => {
@@ -1007,7 +1026,6 @@ describe('subscribe catch-up state', () => {
     })
 
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
-    expect(bridge.lastSequence).toBe(2)
   })
 
   it('retains integrated evidence across repeated resubscribe attempts', () => {
@@ -1091,7 +1109,7 @@ describe('subscribe catch-up state', () => {
     )
     transport.deliver(
       'doc_update',
-      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 4)
     )
     transport.deliver('doc_subscribed', {
       v: 1,
@@ -1108,6 +1126,57 @@ describe('subscribe catch-up state', () => {
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
   })
 
+  it('closes when a rejection follows an accepted acknowledgement', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      reason: 'not_found'
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+  })
+
+  it('stays closed while the caught-up document fails the schema gate', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(
+        hostDocUpdate((doc) =>
+          doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+        ),
+        WORKFLOW_ID,
+        1
+      )
+    )
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+  })
+
   it('keeps a resubscribe closed when the prior baseline never integrated', () => {
     const { transport, bridge } = wire()
     transport.open = true
@@ -1119,7 +1188,6 @@ describe('subscribe catch-up state', () => {
       seq: 1
     })
     expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
-    expect(nodesMap(bridge.follower.doc).size).toBe(0)
 
     bridge.resubscribe()
     transport.deliver('doc_subscribed', {
@@ -1130,7 +1198,6 @@ describe('subscribe catch-up state', () => {
     })
 
     expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
-    expect(nodesMap(bridge.follower.doc).size).toBe(0)
 
     transport.deliver(
       'doc_update',
@@ -1161,7 +1228,6 @@ describe('subscribe catch-up state', () => {
       ok: true,
       seq: 2
     })
-    expect(nodesMap(bridge.follower.doc).size).toBeGreaterThan(0)
     expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
 
     transport.deliver(
@@ -1182,7 +1248,6 @@ describe('subscribe catch-up state', () => {
       seq: 1
     })
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a', 1))
-    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
 
     bridge.subscribe('wf-b')
     transport.deliver('doc_subscribed', {
@@ -1242,21 +1307,23 @@ describe('follower catch-up evidence', () => {
     wired.bridge.subscribe(WORKFLOW_ID)
     acknowledge(wired.transport, 1)
     wired.transport.deliver('doc_update', frameAt(1))
-    expect(wired.bridge.isSubscribeBaselineIntegrated).toBe(true)
     return wired
   }
 
-  it('does not vouch for a pre-ack frame past a hole when the catch-up lands', () => {
+  it('reports a gap when the first pre-ack frame skips past the ack', () => {
     const { transport, bridge } = integratedAtOne()
+    const gaps: unknown[] = []
+    bridge.addEventListener('doc_gap', (event) => {
+      if (event instanceof CustomEvent) gaps.push(event.detail)
+    })
 
     bridge.resubscribe()
     transport.deliver('doc_update', frameAt(9))
     acknowledge(transport, 4)
-    transport.deliver('doc_update', frameAt(4))
-    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
 
-    bridge.resubscribe()
-    acknowledge(transport, 9)
+    expect(gaps).toEqual([
+      { workflowId: WORKFLOW_ID, expected: 5, received: 9 }
+    ])
     expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
   })
 

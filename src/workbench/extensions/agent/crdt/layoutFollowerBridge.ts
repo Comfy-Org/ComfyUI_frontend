@@ -47,10 +47,6 @@ function trySend(send: () => boolean): boolean {
   }
 }
 
-// Past this many out-of-order frames the evidence is dropped (failing
-// closed); the next catch-up restores it.
-const MAX_APPLIED_ABOVE_INTEGRATED = 10_000
-
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
  * re-dispatches them. It does NOT touch the layout store: the semantic doc is
@@ -105,26 +101,23 @@ export class LayoutFollowerBridge extends EventTarget {
   private schemaError: FollowerSchemaError | null = null
   /** Highest doc seq applied to the current follower document. */
   private lastSeq: number | null = null
-  /** Highest doc seq applied since the current subscribe frame was sent. */
+  /** First and highest doc seqs applied since the current subscribe was sent. */
+  private attemptFirstSeq: number | null = null
   private attemptLastSeq: number | null = null
   /** Highest contiguous server seq proven to exist in the follower document. */
   private integratedSeq: number | null = null
-  /** Applied seqs above {@link integratedSeq} still waiting on a predecessor. */
-  private readonly appliedAboveIntegrated = new Set<number>()
   /**
    * The host's seq at the moment it acknowledged the current subscribe
-   * (`doc_subscribed.seq`); `null` until that ack lands. It is NOT an applied
-   * baseline — the catch-up carrying that very seq may still be in flight, or
-   * may never come when the follower was already current — so it never gates
-   * a frame as stale. It only arms the gap detector before the first applied
-   * update and stands in for {@link lastSeq} in {@link lastSequence} while no
-   * update has been applied.
+   * (`doc_subscribed.seq`, `0` when absent); `null` until that ack lands. It is
+   * NOT an applied baseline — the catch-up carrying that very seq may still be
+   * in flight, or may never come when the follower was already current — so it
+   * never gates a frame as stale. It raises the gap baseline to at least the
+   * ack, identifies the catch-up, and is the seq {@link integratedSeq} must
+   * reach before {@link isSubscribeBaselineIntegrated} opens.
    */
   private ackSeq: number | null = null
-  private subscribeAcknowledged = false
-  private subscribeBaselineIntegrated = false
   /**
-   * Armed by the ack, disarmed by the first applied frame whose seq equals
+   * Armed by an ack with seq > 0, disarmed by the first applied frame whose seq equals
    * {@link ackSeq}. The relay joins the fanout BEFORE it acks, so a live frame
    * N+1 can reach the follower ahead of `doc_subscribed(seq=N)` and the
    * catch-up `doc_update(seq=N)`. The catch-up is the only frame carrying what
@@ -159,11 +152,10 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   /**
-   * The host seq this follower is known to be at: the last applied update, or
-   * — before any update has been applied for the current subscribe — the seq
-   * the host acknowledged. An already-current follower receives an ack and no
-   * catch-up, so without the fallback the outbound op `baseVersion` would sit
-   * at 0 until the next live frame.
+   * The host seq this follower is known to be at: the higher of the last
+   * applied update and the current subscribe's ack. An already-current
+   * follower receives an ack and no catch-up, so without the ack the outbound
+   * op `baseVersion` would lag the host until the next live frame.
    */
   get lastSequence(): number {
     return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
@@ -171,8 +163,9 @@ export class LayoutFollowerBridge extends EventTarget {
 
   get isSubscribeBaselineIntegrated(): boolean {
     return (
-      this.subscribeAcknowledged &&
-      this.subscribeBaselineIntegrated &&
+      this.ackSeq !== null &&
+      this.integratedSeq !== null &&
+      this.integratedSeq >= this.ackSeq &&
       this.schemaError === null
     )
   }
@@ -240,11 +233,10 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
+      this.attemptFirstSeq = null
       this.attemptLastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
-      this.subscribeAcknowledged = false
-      this.subscribeBaselineIntegrated = false
       this.dispatchEvent(
         new CustomEvent('doc_subscribe_sent', {
           detail: { workflowId: desired }
@@ -338,9 +330,9 @@ export class LayoutFollowerBridge extends EventTarget {
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
     // a live frame overtook the ack: see {@link catchUpPending}.
-    // Deliberately compares against lastSeq, never ackSeq: while lastSeq is
-    // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
-    // leave the follower on an empty doc (KA-11).
+    // Deliberately compares against lastSeq, never ackSeq: on a fresh doc the
+    // catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and leave the
+    // follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (this.rejectStaleUpdate(update, isCatchUp)) return
 
@@ -348,13 +340,15 @@ export class LayoutFollowerBridge extends EventTarget {
     // asks the host for a same-lineage state-vector delta using this EXACT
     // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
     //
-    // Before the first applied update the detector is armed from the ack seq
-    // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
-    // both contiguous with it, so neither trips it, while a first frame at
-    // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
+    // Before the ack only this attempt's own applied frames arm the detector,
+    // so the first frame after a send is checked when the ack lands instead
+    // (see {@link rejectPreAckGap}). Once the ack (seq N) lands it is armed
+    // from max(N, this attempt's last applied seq): the catch-up (seq N) and
+    // the next live frame are both contiguous with it.
     if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
+    this.attemptFirstSeq ??= update.seq
     if (this.attemptLastSeq === null || update.seq > this.attemptLastSeq)
       this.attemptLastSeq = update.seq
 
@@ -400,23 +394,36 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   private rejectSequenceGap(update: DocUpdate): boolean {
-    const acknowledgedBaseline =
-      this.subscribeAcknowledged && this.ackSeq !== null
-        ? Math.max(this.attemptLastSeq ?? 0, this.ackSeq)
-        : this.attemptLastSeq
-    const baseline = acknowledgedBaseline
+    const baseline =
+      this.ackSeq === null
+        ? this.attemptLastSeq
+        : Math.max(this.attemptLastSeq ?? 0, this.ackSeq)
     if (baseline === null || update.seq <= baseline + 1) return false
+    this.reportGap(update.workflowId, baseline + 1, update.seq)
+    return true
+  }
+
+  /**
+   * The first frame applied after a send is not gap-checked, because nothing
+   * arms the detector before the ack. A first frame past ack + 1 means the
+   * relay dropped the frames in between, and the catch-up at the ack will not
+   * carry them.
+   */
+  private rejectPreAckGap(workflowId: string): void {
+    if (
+      this.ackSeq === null ||
+      this.attemptFirstSeq === null ||
+      this.attemptFirstSeq <= this.ackSeq + 1
+    )
+      return
+    this.reportGap(workflowId, this.ackSeq + 1, this.attemptFirstSeq)
+  }
+
+  private reportGap(workflowId: string, expected: number, received: number) {
     this.dispatchEvent(
-      new CustomEvent('doc_gap', {
-        detail: {
-          workflowId: update.workflowId,
-          expected: baseline + 1,
-          received: update.seq
-        }
-      })
+      new CustomEvent('doc_gap', { detail: { workflowId, expected, received } })
     )
     this.resubscribe()
-    return true
   }
 
   private isReadableUpdate(update: DocUpdate): boolean {
@@ -460,13 +467,11 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
     this.lastSeq = null
+    this.attemptFirstSeq = null
     this.attemptLastSeq = null
     this.integratedSeq = null
-    this.appliedAboveIntegrated.clear()
     this.ackSeq = null
     this.catchUpPending = false
-    this.subscribeAcknowledged = false
-    this.subscribeBaselineIntegrated = false
   }
 
   /**
@@ -501,70 +506,36 @@ export class LayoutFollowerBridge extends EventTarget {
         : null
     if (subscribed.ok) {
       this.reseedBlockedUntilConfirmedWorkflowId = null
-      this.acceptSubscribeBaseline(subscribed.seq)
+      this.ackSeq = subscribed.seq ?? 0
+      this.catchUpPending = this.ackSeq > 0
     } else {
-      this.subscribeAcknowledged = false
-      this.subscribeBaselineIntegrated = false
       this.ackSeq = null
       this.catchUpPending = false
       this.sentWorkflowId = null
     }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+    if (subscribed.ok) this.rejectPreAckGap(subscribed.workflowId)
   }
 
-  private acceptSubscribeBaseline(seq: number | undefined): void {
-    this.ackSeq = seq ?? 0
-    this.subscribeAcknowledged = true
-    this.subscribeBaselineIntegrated =
-      this.ackSeq > 0 &&
-      this.integratedSeq !== null &&
-      this.integratedSeq >= this.ackSeq
-    this.catchUpPending = this.ackSeq > 0
-  }
-
+  /**
+   * A catch-up is the full document at its seq, and every frame applied in
+   * this attempt is contiguous with it (the detector checked the rest), so it
+   * vouches for everything applied so far. A live frame vouches only for
+   * itself, and only when it directly follows what is already integrated.
+   */
   private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
     if (isCatchUp) {
-      this.recordCatchUpSequence(seq)
-    } else if (this.isNextIntegratedSequence(seq)) {
-      this.integratedSeq = seq
-    } else if (seq > (this.integratedSeq ?? 0)) {
-      this.appliedAboveIntegrated.add(seq)
-    }
-    this.drainAppliedAboveIntegrated()
-    this.subscribeBaselineIntegrated = this.hasIntegratedSubscribeBaseline()
-  }
-
-  /** A catch-up vouches for its own seq only, never for frames beyond it. */
-  private recordCatchUpSequence(seq: number): void {
-    this.catchUpPending = false
-    this.integratedSeq = Math.max(this.integratedSeq ?? 0, seq)
-    for (const held of this.appliedAboveIntegrated)
-      if (held <= this.integratedSeq) this.appliedAboveIntegrated.delete(held)
-  }
-
-  private drainAppliedAboveIntegrated(): void {
-    if (this.integratedSeq !== null)
-      while (this.appliedAboveIntegrated.delete(this.integratedSeq + 1))
-        this.integratedSeq += 1
-    if (this.appliedAboveIntegrated.size > MAX_APPLIED_ABOVE_INTEGRATED)
-      this.appliedAboveIntegrated.clear()
-  }
-
-  private isNextIntegratedSequence(seq: number): boolean {
-    return (
+      this.catchUpPending = false
+      this.integratedSeq = Math.max(
+        this.integratedSeq ?? 0,
+        this.lastSeq ?? seq
+      )
+    } else if (
       (this.integratedSeq !== null && seq === this.integratedSeq + 1) ||
-      (this.subscribeAcknowledged && this.ackSeq === 0 && seq === 1)
-    )
-  }
-
-  private hasIntegratedSubscribeBaseline(): boolean {
-    return (
-      this.subscribeAcknowledged &&
-      this.ackSeq !== null &&
-      this.integratedSeq !== null &&
-      this.integratedSeq > 0 &&
-      this.integratedSeq >= this.ackSeq
-    )
+      (this.ackSeq === 0 && seq === 1)
+    ) {
+      this.integratedSeq = seq
+    }
   }
 
   private readonly onDocReseedResult: EventListener = (event) => {
