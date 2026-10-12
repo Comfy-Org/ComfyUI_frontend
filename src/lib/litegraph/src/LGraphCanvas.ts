@@ -60,6 +60,7 @@ import {
 } from './canvas/linkHideTransition'
 import type { LinkHideFrame } from './canvas/linkHideTransition'
 import type { LinkBadgeLayout } from './canvas/linkBadges'
+import { bezierHead, bezierTail, linkSpline } from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -6420,7 +6421,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     {
       link,
       frame,
-      layout,
       startPos,
       endPos,
       startDirection = LinkDirection.RIGHT,
@@ -6428,47 +6428,41 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }: {
       link: LLink
       frame: LinkHideFrame
-      layout: LinkBadgeLayout
       startPos: Point
       endPos: Point
       startDirection?: LinkDirection
       endDirection?: LinkDirection
     }
   ): void {
-    const middle: Point = [
-      (startPos[0] + endPos[0]) / 2,
-      (startPos[1] + endPos[1]) / 2
-    ]
-    const towards = (target: Point): Point => [
-      middle[0] + (target[0] - middle[0]) * frame.retract,
-      middle[1] + (target[1] - middle[1]) * frame.retract
+    const remaining = Math.abs(1 - frame.retract) / 2
+    if (remaining === 0) return
+    const spline = linkSpline(startPos, endPos, startDirection, endDirection)
+    const halves = [
+      bezierHead(spline, remaining),
+      bezierTail(spline, remaining)
     ]
     const color =
       link.color ||
       LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
       this.default_link_color
-    this.renderLink(
-      ctx,
-      startPos,
-      towards(layout.outputTip),
-      null,
-      false,
-      null,
-      color,
-      startDirection,
-      LinkDirection.CENTER
-    )
-    this.renderLink(
-      ctx,
-      towards(layout.inputTip),
-      endPos,
-      null,
-      false,
-      null,
-      color,
-      LinkDirection.CENTER,
-      endDirection
-    )
+    const strokes: [CanvasColour, number][] = [[color, this.connections_width]]
+    if (this.render_connections_border && !this.low_quality) {
+      strokes.unshift(['rgba(0,0,0,0.5)', this.connections_width + 4])
+    }
+
+    ctx.save()
+    ctx.lineCap = 'round'
+    for (const [strokeStyle, lineWidth] of strokes) {
+      ctx.strokeStyle = strokeStyle
+      ctx.lineWidth = lineWidth
+      ctx.beginPath()
+      for (const [from, c1, c2, to] of halves) {
+        ctx.moveTo(from[0], from[1])
+        ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], to[0], to[1])
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
   }
 
   private _renderAllLinkSegments(

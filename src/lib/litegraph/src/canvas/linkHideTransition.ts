@@ -21,8 +21,11 @@ export const LINK_HIDE_EASINGS = {
   },
   spring: (t: number) => {
     const { elasticDecay, elasticFrequency } = LINK_HIDE_TRANSITION
+    const angle = elasticFrequency * t
     return (
-      1 - Math.exp(-elasticDecay * 0.6 * t) * Math.cos(elasticFrequency * t)
+      1 -
+      Math.exp(-elasticDecay * t) *
+        (Math.cos(angle) + (elasticDecay / elasticFrequency) * Math.sin(angle))
     )
   },
   easeOutBounce: (t: number) => {
@@ -59,11 +62,11 @@ export const LINK_HIDE_TRANSITION: {
   fadeMs: 200,
   dashOnWidths: 1.5,
   dashOffWidths: 1.5,
-  snapMs: 450,
+  snapMs: 380,
   snapEasing: 'spring',
   snapOvershoot: 0.6,
-  elasticDecay: 14,
-  elasticFrequency: 10,
+  elasticDecay: 4.5,
+  elasticFrequency: 5.5,
   labelPopMs: 150,
   labelPopDelayMs: 0,
   labelPopFromScale: 0.9,
