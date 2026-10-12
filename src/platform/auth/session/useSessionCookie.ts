@@ -1,4 +1,5 @@
 import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -45,13 +46,12 @@ export const useSessionCookie = () => {
 
   const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    const text = typeof message === 'string' ? message : response.statusText
+    const refusal = zErrorResponse.partial().safeParse(errorData).data
+    const text = refusal?.message ?? response.statusText
     if (isSsoRequiredRefusal(response.status, errorData)) {
       return new SsoRequiredSessionError(text)
     }
-    const code = (errorData as { code?: unknown } | null)?.code
-    return response.status === 401 && code === 'SESSION_REVOKED'
+    return response.status === 401 && refusal?.code === 'SESSION_REVOKED'
       ? new SessionRevokedError(text)
       : new Error(text)
   }
