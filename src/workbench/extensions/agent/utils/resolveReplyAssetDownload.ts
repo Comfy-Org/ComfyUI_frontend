@@ -25,12 +25,7 @@ async function displayFilename(asset: ReplyAsset): Promise<string> {
   return name ? preserveExtension(name, asset.filename) : fallback
 }
 
-/**
- * Reply asset URLs are model-influenced, so only the exact same-origin
- * `/api/view` route is allowed to carry the caller's credentials. Every other
- * URL is fetched credentialless: `credentials: 'omit'` stays in force across
- * redirects, so signed CDN downloads keep working without origin cookies.
- */
+/** Authenticates only the exact same-origin API view route; every other URL is fetched without credentials. */
 export async function resolveReplyAssetDownload(
   asset: ReplyAsset
 ): Promise<FetchedAssetDownload> {
