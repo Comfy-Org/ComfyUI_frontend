@@ -1,9 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  resolveAgentPaywallPresentation,
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './agentPaywallPresentation'
+
+describe('resolveAgentPaywallPresentation', () => {
+  it('offers local top-up without cloud capabilities or a workspace role', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        isCloud: false,
+        role: undefined,
+        tier: null,
+        canTopUp: false,
+        canSubscribeSelfServe: false,
+        hasResolvedCapabilities: false
+      })
+    ).toEqual({ kind: 'local' })
+  })
+})
 
 describe('toAgentPaywallReason', () => {
   it.for([
