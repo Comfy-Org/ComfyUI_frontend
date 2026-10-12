@@ -140,7 +140,7 @@ test.describe(
         pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
         threads: []
       }
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )
       const runModePreference: AgentRunModePreference = {

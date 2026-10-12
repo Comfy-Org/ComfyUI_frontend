@@ -453,7 +453,7 @@ export class IdCollisionHarness {
       threads: [],
       pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
     }
-    await page.route('**/api/agent/threads', (route) =>
+    await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threads))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {

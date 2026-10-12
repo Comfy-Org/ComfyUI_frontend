@@ -667,7 +667,7 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
+    await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute({ threads: [] }))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {

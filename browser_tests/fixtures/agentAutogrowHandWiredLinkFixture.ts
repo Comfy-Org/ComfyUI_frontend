@@ -218,7 +218,7 @@ async function setUpFixture(page: Page) {
     'apply'
   )
   await hostSocket.install()
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
   )
   await page.route('**/api/agent/run-mode', (route) =>

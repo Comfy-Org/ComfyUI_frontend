@@ -49,7 +49,7 @@ async function seedOneThread(page: Parameters<typeof bootAgentApp>[0]) {
     ]
   } satisfies AgentThreadListResponse
 
-  await page.route('**/agent/threads', (route) =>
+  await page.route('**/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(response))
   )
 }

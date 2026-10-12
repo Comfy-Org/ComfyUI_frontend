@@ -165,7 +165,7 @@ test.describe(
         // stub: the saved workflow is in the user's workflow list from boot,
         // but its tab is never opened.
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', async (route) => {

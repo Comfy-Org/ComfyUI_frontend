@@ -401,7 +401,7 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(
       jsonRoute({
         threads: [

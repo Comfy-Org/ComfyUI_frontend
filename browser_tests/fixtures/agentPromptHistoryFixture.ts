@@ -54,7 +54,7 @@ export const promptHistoryTest = base.extend<{
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const threads: AgentThreadListResponse = {
         threads: threadId
           ? [

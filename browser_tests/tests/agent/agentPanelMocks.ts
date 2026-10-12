@@ -452,7 +452,7 @@ async function mockAgentBoot(
     threads: [],
     pagination: { offset: 0, limit: 100, total: 0, has_more: false }
   }
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   const storedConsent: GlobalSetting = {

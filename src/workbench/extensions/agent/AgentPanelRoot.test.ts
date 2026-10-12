@@ -495,6 +495,11 @@ function agentThread({
   }
 }
 
+/** The Chat history list request, which carries a page query. */
+function isThreadListUrl(url: string): boolean {
+  return url.split('?')[0].endsWith('/api/agent/threads')
+}
+
 function agentThreadList(
   threads: AgentThreadSummary[] = []
 ): AgentThreadListResponse {
@@ -1914,8 +1919,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (isThreadListUrl(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4379,8 +4383,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (isThreadListUrl(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4419,8 +4422,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (isThreadListUrl(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4447,7 +4449,7 @@ describe('AgentPanelRoot history', () => {
   async function renderWithActiveThread(): Promise<void> {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return url.endsWith('/api/agent/threads')
+      return isThreadListUrl(url)
         ? new Response(
             JSON.stringify(
               agentThreadList([
@@ -4664,7 +4666,7 @@ describe('AgentPanelRoot history', () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
-      if (url.endsWith('/api/agent/threads')) {
+      if (isThreadListUrl(url)) {
         return new Response(
           JSON.stringify(
             agentThreadList([
@@ -4709,7 +4711,7 @@ describe('AgentPanelRoot history', () => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
+        if (isThreadListUrl(url))
           return json(
             200,
             agentThreadList([
@@ -4810,7 +4812,7 @@ describe('AgentPanelRoot history', () => {
   it('marks the restored thread as the current session', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return url.endsWith('/api/agent/threads')
+      return isThreadListUrl(url)
         ? new Response('{"threads":[]}', {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
@@ -4840,7 +4842,7 @@ describe('AgentPanelRoot transcript copy', () => {
     async (loaded) => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
-        return url.endsWith('/api/agent/threads')
+        return isThreadListUrl(url)
           ? new Response(
               JSON.stringify(
                 agentThreadList([

@@ -8,7 +8,10 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type {
+  AgentThreadSummary,
+  CloudWorkflowEntry
+} from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -319,6 +322,108 @@ describe('agentRestClient route + method', () => {
       'wf-5'
     ])
     expect(listing.complete).toBe(true)
+  })
+})
+
+describe('listThreads pagination', () => {
+  function threadPage(
+    ids: string[],
+    hasMore: boolean,
+    nextCursor?: string
+  ): Response {
+    const threads: AgentThreadSummary[] = ids.map((id) => ({
+      id,
+      title: id,
+      preview: '',
+      workflow_id: '',
+      status: 'active',
+      message_count: 1,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+      last_message_at: '2026-10-01T00:00:00Z'
+    }))
+    return jsonResponse(200, {
+      threads,
+      pagination: {
+        offset: 0,
+        limit: 100,
+        total: ids.length,
+        has_more: hasMore,
+        next_cursor: nextCursor
+      }
+    })
+  }
+
+  function requestedRoutes(): string[] {
+    return vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)
+  }
+
+  it('follows next_cursor at the maximum page size until has_more is false', async () => {
+    respond(threadPage(['th-1', 'th-2'], true, 'next page'))
+    respond(threadPage(['th-3'], false))
+
+    const threads = await makeClient().listThreads()
+
+    expect(requestedRoutes()).toEqual([
+      '/agent/threads?limit=100',
+      '/agent/threads?limit=100&after=next%20page'
+    ])
+    expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'gives no cursor',
+      pages: [threadPage(['th-1'], true)],
+      listed: ['th-1']
+    },
+    {
+      name: 'repeats a cursor it already gave',
+      pages: [threadPage(['th-1'], true, 'a'), threadPage(['th-2'], true, 'a')],
+      listed: ['th-1', 'th-2']
+    }
+  ])(
+    'keeps the threads read so far when the server $name',
+    async ({ pages, listed }) => {
+      pages.forEach(respond)
+
+      const threads = await makeClient().listThreads()
+
+      expect(api.fetchApi).toHaveBeenCalledTimes(pages.length)
+      expect(threads.map(({ id }) => id)).toEqual(listed)
+      expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+        `[agent] thread list truncated at ${listed.length} entries`
+      )
+    }
+  )
+
+  // A partial list could hide chats that an earlier full refresh showed.
+  it.for([
+    {
+      name: 'an HTTP error',
+      fail: () => respond(jsonResponse(503, { error: 'unavailable' })),
+      error: { name: 'AgentApiError', status: 503 }
+    },
+    {
+      name: 'a network error',
+      fail: () =>
+        vi
+          .mocked(api.fetchApi)
+          .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+      error: { name: 'TypeError' }
+    },
+    {
+      name: 'a malformed body',
+      fail: () => respond(jsonResponse(200, { threads: [] })),
+      error: { name: 'ZodError' }
+    }
+  ])('rejects when a later page fails with $name', async ({ fail, error }) => {
+    respond(threadPage(['th-1'], true, 'page-2'))
+    fail()
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject(error)
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
   })
 })
 

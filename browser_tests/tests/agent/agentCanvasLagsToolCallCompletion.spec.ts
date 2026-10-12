@@ -150,7 +150,7 @@ async function driveThroughToolCallDone(
     socket.send(JSON.stringify(frame))
   }
 
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {

@@ -1,5 +1,6 @@
 import type {
   AgentPostMessageRequest,
+  PaginationInfo,
   UploadImageResponse,
   WorkflowResponse
 } from '@comfyorg/ingest-types'
@@ -44,7 +45,8 @@ import type {
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 
-const CLOUD_WORKFLOW_PAGE_SIZE = 100
+/** The largest page the cursor-paged list endpoints serve. */
+const LIST_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -559,6 +561,47 @@ export function createAgentRestClient() {
     }
   }
 
+  /**
+   * Reads every page of a cursor-paged list. Stops early, with a warning and
+   * `complete: false`, when the server reports more pages but gives no new
+   * cursor.
+   */
+  async function listAllPages<
+    Page extends { pagination: PaginationInfo },
+    Item
+  >(
+    operation: AgentApiOperation,
+    path: string,
+    schema: z.ZodType<Page>,
+    itemsOf: (page: Page) => Item[],
+    label: string
+  ): Promise<{ items: Item[]; complete: boolean }> {
+    const items: Item[] = []
+    let hasMore: boolean
+    let cursor: string | undefined
+    const seenCursors = new Set<string>()
+    do {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const page = await request(
+        operation,
+        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        { method: 'GET' },
+        schema
+      )
+      items.push(...itemsOf(page))
+      hasMore = page.pagination.has_more
+      if (hasMore) {
+        const nextCursor = page.pagination.next_cursor
+        if (!nextCursor || seenCursors.has(nextCursor)) break
+        seenCursors.add(nextCursor)
+        cursor = nextCursor
+      }
+    } while (hasMore)
+    if (hasMore)
+      console.warn(`[agent] ${label} truncated at ${items.length} entries`)
+    return { items, complete: !hasMore }
+  }
+
   async function postMessage(
     threadId: string,
     req: PostMessageInput
@@ -596,13 +639,14 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
+    const { items } = await listAllPages(
       'list_threads',
       '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
+      zAgentThreads,
+      (page) => page.threads,
+      'thread list'
     )
-    return page.threads
+    return items
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -626,32 +670,14 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const entries: CloudWorkflowEntry[] = []
-    let hasMore: boolean
-    let cursor: string | undefined
-    const seenCursors = new Set<string>()
-    do {
-      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-      const result = await request(
-        'list_cloud_workflows',
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
-        { method: 'GET' },
-        zCloudWorkflowIndex
-      )
-      entries.push(...result.data)
-      hasMore = result.pagination.has_more
-      if (hasMore) {
-        const nextCursor = result.pagination.next_cursor
-        if (!nextCursor || seenCursors.has(nextCursor)) break
-        seenCursors.add(nextCursor)
-        cursor = nextCursor
-      }
-    } while (hasMore)
-    if (hasMore)
-      console.warn(
-        `[agent] cloud workflow index truncated at ${entries.length} entries`
-      )
-    return { entries, complete: !hasMore }
+    const { items, complete } = await listAllPages(
+      'list_cloud_workflows',
+      '/workflows',
+      zCloudWorkflowIndex,
+      (page) => page.data,
+      'cloud workflow index'
+    )
+    return { entries: items, complete }
   }
 
   async function getCloudWorkflow(

@@ -78,7 +78,7 @@ test.describe(
       test.setTimeout(60_000)
 
       let resolveThreadsRefetch: (() => void) | undefined
-      await page.route('**/api/agent/threads', async (route) => {
+      await page.route('**/api/agent/threads?*', async (route) => {
         await route.fulfill(jsonRoute(staleThreadList))
         resolveThreadsRefetch?.()
       })
