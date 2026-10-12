@@ -916,6 +916,30 @@ describe('useFeatureFlags', () => {
       )
     })
 
+    it.for([
+      { served: true, reported: true },
+      { served: undefined, reported: false }
+    ])(
+      'reports unified_web_session as $reported when the server serves $served',
+      ({ served, reported }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        remoteConfigState.value = 'authenticated'
+        authenticatedRemoteConfigState.value = 'authenticated'
+        remoteConfig.value = { unified_web_session: served }
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (_path, defaultValue) => defaultValue
+        )
+
+        const stop = startFeatureFlagTelemetry()
+        onTestFinished(stop)
+
+        expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
+          ServerFeatureFlag.UNIFIED_WEB_SESSION,
+          reported
+        )
+      }
+    )
+
     it('does not report when getters are only read', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
