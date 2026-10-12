@@ -61,9 +61,11 @@ interface BadgeEndpoint {
 
 const endpointsByHost = new WeakMap<object, BadgeEndpoint[]>()
 const expandedStacksByHost = new WeakMap<object, Set<string>>()
+const drawnStackKeysByHost = new WeakMap<object, Set<string>>()
 
 export function clearLinkBadgeHitAreas(host: object): void {
   endpointsByHost.delete(host)
+  drawnStackKeysByHost.delete(host)
 }
 
 function containsPoint([left, top, width, height]: Rect, x: number, y: number) {
@@ -100,9 +102,8 @@ export function toggleLinkBadgeStack(host: object, stackKey: string): void {
 export function collapseLinkBadgeStacks(host: object): boolean {
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
-  return !!endpointsByHost
-    .get(host)
-    ?.some(({ hitArea }) => hitArea.stackKey && expanded?.has(hitArea.stackKey))
+  const drawn = drawnStackKeysByHost.get(host)
+  return [...(expanded ?? [])].some((stackKey) => drawn?.has(stackKey))
 }
 
 function linkTypeText(type: LLink['type']): string {
@@ -112,14 +113,11 @@ function linkTypeText(type: LLink['type']): string {
 
 function stackTypeText(
   linkIds: readonly LinkId[],
-  hiddenLinks: readonly HiddenLinkBadge[]
+  typeTextByLinkId: ReadonlyMap<LinkId, string>
 ): string {
-  const types = new Set(
-    hiddenLinks
-      .filter(({ link }) => linkIds.includes(link.id))
-      .map(({ link }) => linkTypeText(link.type))
-  )
-  return types.size === 1 ? [...types][0] : '*'
+  const types = new Set(linkIds.map((linkId) => typeTextByLinkId.get(linkId)))
+  const [type] = types
+  return types.size === 1 && type ? type : '*'
 }
 
 export function linkBadgeText(
@@ -286,6 +284,9 @@ export function layoutHiddenLinkBadges(
   const layouts = new Map<LinkId, LinkBadgePair>()
   const endpoints: BadgeEndpoint[] = []
   const stackHeads = new Map<string, BadgeEndpoint>()
+  const typeTextByLinkId = new Map(
+    hiddenLinks.map(({ link }) => [link.id, linkTypeText(link.type)])
+  )
   const addEndpoint = (spec: EndpointSpec) => {
     const endpoint = createBadgeEndpoint(ctx, spec)
     endpoints.push(endpoint)
@@ -298,7 +299,7 @@ export function layoutHiddenLinkBadges(
     const head = addEndpoint({
       ...spec,
       rank: BADGE_RANK.stackHead,
-      text: `${stackTypeText(linkIds, hiddenLinks)} ×${linkIds.length}`,
+      text: `${stackTypeText(linkIds, typeTextByLinkId)} ×${linkIds.length}`,
       linkIds,
       stackKey,
       layers: expanded?.has(stackKey)
@@ -430,8 +431,12 @@ export function drawHiddenLinkBadges(
   host: object,
   visibleArea: ReadOnlyRect
 ): void {
+  const drawnStackKeys = new Set<string>()
   for (const endpoint of endpointsByHost.get(host) ?? []) {
     const bounds = getConnectorBounds(endpoint.socket, endpoint.hitArea)
-    if (overlapBounding(bounds, visibleArea)) drawBadgeEndpoint(ctx, endpoint)
+    if (!overlapBounding(bounds, visibleArea)) continue
+    drawBadgeEndpoint(ctx, endpoint)
+    if (endpoint.hitArea.stackKey) drawnStackKeys.add(endpoint.hitArea.stackKey)
   }
+  drawnStackKeysByHost.set(host, drawnStackKeys)
 }

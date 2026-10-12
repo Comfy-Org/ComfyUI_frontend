@@ -567,4 +567,14 @@ describe('hidden link badge stacks', () => {
 
     expect(collapseLinkBadgeStacks(host)).toBe(false)
   })
+
+  it('reports no collapse when the expanded stack was drawn off screen', () => {
+    const host = {}
+    const ctx = createContext()
+    toggleLinkBadgeStack(host, 'output:4:0')
+    layoutHiddenLinkBadges(host, ctx, fanOut([undefined, undefined]))
+    drawHiddenLinkBadges(ctx, host, [5000, 5000, 10, 10])
+
+    expect(collapseLinkBadgeStacks(host)).toBe(false)
+  })
 })

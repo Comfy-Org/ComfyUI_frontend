@@ -2775,6 +2775,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           toggleLinkBadgeStack(this, stackKey)
           this.dirty_bgcanvas = true
         }
+        pointer.onDoubleClick = () => {}
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -2903,14 +2904,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.allow_dragcanvas
     ) {
       this.setupCanvasDrag(e, pointer)
-    }
-
-    const { onClick } = pointer
-    if (onClick) {
-      pointer.onClick = (eUp) => {
-        onClick(eUp)
-        if (collapseLinkBadgeStacks(this)) this.dirty_bgcanvas = true
-      }
     }
   }
 
@@ -4066,6 +4059,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
     const isClick = pointer.up(e)
     if (isClick) {
+      if (
+        e.button === 0 &&
+        !queryLinkBadgeHitAtPoint(this, e.canvasX, e.canvasY) &&
+        collapseLinkBadgeStacks(this)
+      ) {
+        this.dirty_bgcanvas = true
+      }
       pointer.isDown = false
       pointer.isDouble = false
       // Required until all link behaviour is added to Pointer API
