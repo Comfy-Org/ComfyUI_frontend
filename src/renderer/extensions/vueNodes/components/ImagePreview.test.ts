@@ -214,6 +214,26 @@ describe('ImagePreview', () => {
     ])
   })
 
+  it('tells apart a temp and an output HDR image with the same name and folder', () => {
+    vi.mocked(resolveNode).mockReturnValue(createMockLGraphNode({ id: 1 }))
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [
+        { filename: 'img.exr', subfolder: 'qa', type: 'temp', id: 'temp' },
+        { filename: 'img.exr', subfolder: 'qa', type: 'output', id: 'out' }
+      ]
+    })
+
+    renderImagePreview({
+      nodeId: '1',
+      imageUrls: ['/api/view?filename=img.exr&subfolder=qa&type=output']
+    })
+
+    expect(screen.getByRole('img', { name: 'img.exr' })).toHaveAttribute(
+      'src',
+      '/api/assets/out-preview/content'
+    )
+  })
+
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({
       imageUrls: ['/api/view?filename=out.exr&type=output']
