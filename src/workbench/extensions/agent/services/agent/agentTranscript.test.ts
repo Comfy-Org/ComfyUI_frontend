@@ -969,7 +969,7 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('upgrades a stale clamped-failure part when a later row in the turn settles the same call (Cursor review finding 1 on #19621)', () => {
+  it('upgrades a stale clamped-failure part when a later row in the turn settles the same call', () => {
     const first = row(1, 'assistant', 'turn-a', '', 'row-1')
     first.content = {
       tool_calls: [
@@ -1050,7 +1050,7 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('falls back to id for callId when tool_call_id is an empty string (Cursor review finding 4 on #19621)', () => {
+  it('falls back to id for callId when tool_call_id is an empty string', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
@@ -1071,7 +1071,7 @@ describe('normalizeAgentTranscript', () => {
     )
   })
 
-  it('does not collide two entries that both have an empty-string tool_call_id onto the same callId (Cursor review finding 4 on #19621)', () => {
+  it('does not collide two entries that both have an empty-string tool_call_id onto the same callId', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
@@ -1098,7 +1098,7 @@ describe('normalizeAgentTranscript', () => {
     ).toHaveLength(2)
   })
 
-  it('drops an id-only tool-call entry on a live row rather than seeding it under the audit id (Cursor review finding 5 on #19621)', () => {
+  it('drops an id-only tool-call entry on a live row rather than seeding it under the audit id', () => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')
     message.status = 'streaming'
     message.content = {
@@ -1141,7 +1141,7 @@ describe('normalizeAgentTranscript', () => {
       status: null
     }
   ])(
-    'still produces a ToolPart for a persisted tool call entry missing status or carrying status: null (dante01yoon review round 2 on #19621): $status',
+    'still produces a ToolPart for a persisted tool call entry missing status or carrying status: null: $status',
     (toolCall) => {
       const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
       message.content = {

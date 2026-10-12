@@ -265,7 +265,7 @@ function toolPartOptionalFields(
 /**
  * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
  * picking only the fields this function actually reads (`id`/`tool_call_id`,
- * `tool_name`, `status`, `duration_ms`) so an unrelated field a real
+ * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
  * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
  * which are never read) can't sink an otherwise-usable entry. Maps a valid
  * entry onto the same `ToolPart` the live WebSocket path builds from
@@ -284,7 +284,8 @@ function parseToolCallEntry(
       tool_call_id: true,
       tool_name: true,
       status: true,
-      duration_ms: true
+      duration_ms: true,
+      skill: true
     })
     .safeParse(entry)
   if (!parsed.success) return undefined

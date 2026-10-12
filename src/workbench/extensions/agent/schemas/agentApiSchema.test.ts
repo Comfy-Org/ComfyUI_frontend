@@ -9,7 +9,8 @@ import {
   zAgentMessage,
   zAgentMessages,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  zPersistedToolCallSummary
 } from './agentApiSchema'
 import type { ZodTypeAny } from 'zod'
 
@@ -160,7 +161,7 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.skill).toBe('a'.repeat(256))
   })
 
-  it('accepts an explicit null tool_call_id and duration_ms on a persisted tool-call row (Cursor review finding 2 on #19621)', () => {
+  it('accepts an explicit null tool_call_id and duration_ms on a persisted tool-call row', () => {
     const parsed = zPersistedToolCallSummary.safeParse({
       id: 'audit-row-uuid-1',
       tool_call_id: null,
@@ -172,7 +173,7 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.success).toBe(true)
   })
 
-  it('accepts a persisted tool-call row with no status key or an explicit null status (dante01yoon review round 2 on #19621)', () => {
+  it('accepts a persisted tool-call row with no status key or an explicit null status', () => {
     const noStatusKey = zPersistedToolCallSummary.safeParse({
       id: 'audit-row-uuid-1',
       tool_call_id: 'call-1',
@@ -190,7 +191,7 @@ describe('agentApiSchema contract subtleties', () => {
   })
 
   it.for([null, 'not-an-array', 42, {}])(
-    'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array (Cursor review finding 3 on #19621)',
+    'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array',
     (toolCalls) => {
       expect(() =>
         zAgentMessages.parse([
@@ -219,20 +220,12 @@ describe('agentApiSchema contract subtleties', () => {
         status: 'complete',
         content: {
           text: 'Done',
-          tool_calls: [
-            {
-              id: 'audit-row-uuid-1',
-              tool_call_id: 'call-1',
-              tool_name: 'load_skill',
-              status: 'success',
-              skill: 'a'.repeat(300)
-            }
-          ]
+          tool_calls: [{ unexpected: 'shape' }]
         }
       }
     ])
 
-    expect(parsed[0].content?.tool_calls?.[0].skill).toBe('a'.repeat(256))
+    expect(parsed[0].content?.tool_calls).toEqual([{ unexpected: 'shape' }])
   })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
