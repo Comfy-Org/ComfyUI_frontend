@@ -122,10 +122,11 @@ it('publishes exact nominal, generic, and union types without augmentation depen
     }
   )
   expect(result.succeeded).toBe(true)
-  expect(readFileSync(join(root, 'bundle.d.ts'), 'utf8')).not.toContain(
-    'entityRegistry'
-  )
+  const bundle = readFileSync(join(root, 'bundle.d.ts'), 'utf8')
+  expect(bundle).not.toContain('entityRegistry')
+  rmSync(root, { recursive: true, force: true })
   writeFiles(root, {
+    'bundle.d.ts': bundle,
     'consumer.ts': `
       import { Graph, Node, Box } from './bundle'
       type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false
@@ -143,6 +144,7 @@ it('publishes exact nominal, generic, and union types without augmentation depen
   })
   const consumer = ts.createProgram([join(root, 'consumer.ts')], {
     ...options,
+    skipLibCheck: false,
     noEmit: true
   })
   expect(
