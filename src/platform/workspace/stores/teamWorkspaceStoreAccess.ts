@@ -1,14 +1,24 @@
+import { assert } from '@/base/assert'
+
 interface TeamWorkspaceStoreAccess {
   readonly activeWorkspaceId: string | null
   forgetRevokedActiveWorkspace(workspaceId: string): boolean
 }
 
-/** `useTeamWorkspaceStore` for `workspaceAuthStore`, which it imports. */
-export let useTeamWorkspaceStoreAccess: () => TeamWorkspaceStoreAccess
+let providedUseTeamWorkspaceStore: (() => TeamWorkspaceStoreAccess) | undefined
 
 /** Called by `teamWorkspaceStore` when it loads. */
 export function provideTeamWorkspaceStore(
   useStore: () => TeamWorkspaceStoreAccess
 ): void {
-  useTeamWorkspaceStoreAccess = useStore
+  providedUseTeamWorkspaceStore = useStore
+}
+
+/** `useTeamWorkspaceStore` for `workspaceAuthStore`, which it imports. */
+export function useTeamWorkspaceStoreAccess(): TeamWorkspaceStoreAccess {
+  assert(
+    providedUseTeamWorkspaceStore,
+    'teamWorkspaceStore has not provided itself'
+  )
+  return providedUseTeamWorkspaceStore()
 }
