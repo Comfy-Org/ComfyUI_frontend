@@ -5,12 +5,6 @@ import type { NodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
 
-/**
- * Exposed store interface for the workflow store.
- * Explicitly typed to avoid trigger following error:
- * error TS7056: The inferred type of this node exceeds the maximum length the
- * compiler will serialize. An explicit type annotation is needed.
- */
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
