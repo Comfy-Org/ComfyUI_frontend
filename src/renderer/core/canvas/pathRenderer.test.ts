@@ -169,6 +169,39 @@ describe('CanvasPathRenderer', () => {
     })
   })
 
+  describe('polyline', () => {
+    it('records the linear vertices it draws', () => {
+      const link = makeLink({ startDirection: 'right', endDirection: 'left' })
+
+      renderer.drawLink(
+        createMockCtx(),
+        link,
+        makeContext({ style: { mode: 'linear', connectionWidth: 3 } })
+      )
+
+      expect(link.polyline).toEqual([
+        { x: 0, y: 0 },
+        { x: 15, y: 0 },
+        { x: 185, y: 100 },
+        { x: 200, y: 100 }
+      ])
+    })
+
+    it('samples a spline from its start to its end', () => {
+      const link = makeLink({ startDirection: 'right', endDirection: 'left' })
+
+      renderer.drawLink(
+        createMockCtx(),
+        link,
+        makeContext({ style: { mode: 'spline', connectionWidth: 3 } })
+      )
+
+      expect(link.polyline?.length).toBeGreaterThan(2)
+      expect(link.polyline?.at(0)).toEqual({ x: 0, y: 0 })
+      expect(link.polyline?.at(-1)).toEqual({ x: 200, y: 100 })
+    })
+  })
+
   describe('linear path mode', () => {
     it('builds a 4-point path with directional offsets', () => {
       const ctx = createMockCtx()

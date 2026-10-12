@@ -353,6 +353,10 @@ export class LitegraphLinkAdapter {
         const rerouteId = extras.reroute ? extras.reroute.id : null
         layoutStore.updateLinkSegmentLayout(link.id, rerouteId, {
           path: path,
+          polyline: linkData.polyline ?? [
+            linkData.startPoint,
+            linkData.endPoint
+          ],
           bounds: bounds,
           centerPos: centerPos
         })

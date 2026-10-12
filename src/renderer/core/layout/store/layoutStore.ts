@@ -16,6 +16,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
+  Bounds,
   CreateNodeOperation,
   CreateRerouteOperation,
   DeleteNodeOperation,
@@ -48,7 +49,8 @@ import {
 } from '@/renderer/core/layout/utils/geometry'
 import {
   REROUTE_RADIUS,
-  pointInBounds
+  pointInBounds,
+  polylineIntersectsBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
@@ -584,6 +586,7 @@ class LayoutStoreImpl {
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
       existing.path = layout.path
+      existing.polyline = layout.polyline
       return
     }
 
@@ -691,6 +694,17 @@ class LayoutStoreImpl {
     }
 
     return null
+  }
+
+  /** Links with any drawn segment inside or crossing the bounds. */
+  queryLinkIdsInBounds(bounds: Bounds): Set<LinkId> {
+    const linkIds = new Set<LinkId>()
+    for (const key of this.linkSegmentSpatialIndex.query(bounds)) {
+      const segment = this.linkSegmentLayouts.get(key)
+      if (segment && polylineIntersectsBounds(segment.polyline, bounds))
+        linkIds.add(segment.linkId)
+    }
+    return linkIds
   }
 
   /**
