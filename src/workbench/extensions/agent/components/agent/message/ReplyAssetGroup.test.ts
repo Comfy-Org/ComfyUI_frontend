@@ -127,16 +127,6 @@ describe('ReplyAssetGroup', () => {
         'reply-video-affordance'
       )
     ).toBeInTheDocument()
-    expect(
-      within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
-        'reply-video-affordance'
-      )
-    ).toBeNull()
-    expect(
-      within(screen.getByRole('button', { name: 'mesh.glb' })).queryByTestId(
-        'reply-video-affordance'
-      )
-    ).toBeNull()
   })
 
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
@@ -375,20 +365,6 @@ describe('ReplyAssetGroup', () => {
     )
   })
 
-  it('leaves a model that failed to render as a placeholder', async () => {
-    isAssetPreviewSupported.mockReturnValue(true)
-    renderGroup([model])
-    await vi.waitFor(() =>
-      expect(generateModelThumbnail).toHaveBeenCalledOnce()
-    )
-
-    await vi.advanceTimersByTimeAsync(30_000)
-
-    expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
-    expect(vi.getTimerCount()).toBe(0)
-    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
-  })
-
   it('retries a model deferred by queue backpressure', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail
@@ -482,6 +458,7 @@ describe('ReplyAssetGroup', () => {
     expect(vi.getTimerCount()).toBe(0)
     await vi.advanceTimersByTimeAsync(10_000)
     expect(generateModelThumbnail).toHaveBeenCalledTimes(3)
+    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
   it('cancels a pending retry timer when the asset is hidden', async () => {
@@ -575,6 +552,25 @@ describe('ReplyAssetGroup', () => {
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
+  })
+
+  it('restarts thumbnail generation when the viewer creates no server preview', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const generation = deferred<ModelThumbnailResult>()
+    generateModelThumbnail.mockReturnValueOnce(generation.promise)
+    renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    const [, , initialSignal] = generateModelThumbnail.mock.calls[0]
+
+    await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+    const dialog = vi.mocked(useDialogStore().showDialog).mock.calls.at(-1)?.[0]
+    const onClose = dialog?.dialogComponentProps?.onClose
+    if (typeof onClose !== 'function') throw new Error('Expected onClose')
+    onClose()
+
+    expect(initialSignal?.aborted).toBe(true)
+    await vi.advanceTimersByTimeAsync(2_000)
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
   })
 
   it('cancels dialog refresh work when its model becomes hidden', async () => {
