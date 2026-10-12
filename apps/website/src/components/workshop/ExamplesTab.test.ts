@@ -133,3 +133,21 @@ it('refuses a pick while the form it would fill is busy', async () => {
   await user.click(screen.getByTestId('example-card'))
   expect(emitted().open).toBeUndefined()
 })
+
+it('marks only the example the page is showing', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      activeId: 'second',
+      examples: [
+        example({ id: 'first', title: 'First' }),
+        example({ id: 'second', title: 'Second' })
+      ]
+    }
+  })
+  const [first, second] = screen.getAllByTestId('example-card')
+  expect(first.getAttribute('aria-current')).toBeNull()
+  expect(second.getAttribute('aria-current')).toBe('true')
+  expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+  expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+})

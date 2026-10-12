@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, Music2 } from '@lucide/vue'
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
@@ -28,6 +28,7 @@ const {
   disabled?: boolean
 }>()
 const { t } = translationsFor(locale)
+const headingId = useId()
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
@@ -76,9 +77,13 @@ function actionFor(example: PlaygroundExample, active = false) {
 </script>
 
 <template>
-  <section class="flex flex-col gap-4" data-testid="examples-tab">
+  <section
+    :aria-labelledby="headingId"
+    class="flex flex-col gap-4"
+    data-testid="examples-tab"
+  >
     <div class="flex flex-col gap-1">
-      <h2 class="text-sm font-bold text-primary-warm-white">
+      <h2 :id="headingId" class="text-sm font-bold text-primary-warm-white">
         {{
           t(
             samplesOnly
@@ -134,7 +139,7 @@ function actionFor(example: PlaygroundExample, active = false) {
                 cn(
                   'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                   example.id === activeId
-                    ? 'ring-2 ring-primary-comfy-yellow'
+                    ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:ring-4'
                     : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
                 )
               "
