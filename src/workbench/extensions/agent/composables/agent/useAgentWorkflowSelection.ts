@@ -76,6 +76,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    cloudListingContains,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -233,6 +234,12 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  /**
+   * The listing can omit version-less drafts, so a complete listing that omits
+   * the id is not conclusive: `GET /api/workflows/{id}` decides, and only its
+   * 404 means deleted. A workflow the complete listing includes, or that lookup
+   * finds live, may open without a local target.
+   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean
@@ -245,7 +252,7 @@ export function useAgentWorkflowSelection({
       return {
         outcome: 'open',
         target,
-        allowUnresolved: listed && resolver.cloudListingContains(workflowId)
+        allowUnresolved: listed && cloudListingContains(workflowId)
       }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
