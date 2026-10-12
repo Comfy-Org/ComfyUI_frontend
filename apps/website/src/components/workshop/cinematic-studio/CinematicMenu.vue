@@ -26,13 +26,15 @@ const {
   heading,
   triggerClass,
   side = 'top',
-  tooltip = false
+  tooltip = false,
+  showHeading = true
 } = defineProps<{
   options: readonly MenuOption[]
   heading: string
   triggerClass?: string
   side?: 'top' | 'bottom'
   tooltip?: boolean
+  showHeading?: boolean
 }>()
 
 const value = defineModel<string>({ required: true })
@@ -63,9 +65,11 @@ const triggerLabel = computed(() => {
             align="start"
             :side-offset="8"
             :collision-padding="8"
+            :aria-label="heading"
             class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
           >
             <DropdownMenuLabel
+              v-if="showHeading"
               class="px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
             >
               {{ heading }}

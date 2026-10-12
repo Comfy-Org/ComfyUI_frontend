@@ -80,8 +80,23 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await expect(dialog.apiKeyButton).toBeVisible()
   })
 
-  test('Should show forgot password link on sign-in form', async () => {
+  test('Should show forgot password as a keyboard-focusable text action', async () => {
     await expect(dialog.forgotPasswordLink).toBeVisible()
+    await expect(dialog.forgotPasswordLink).toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)'
+    )
+    await expect(dialog.forgotPasswordLink).toHaveCSS('border-width', '0px')
+    await expect(dialog.forgotPasswordLink).toHaveCSS('padding', '0px')
+    const buttonFont = await dialog.signInButton.evaluate(
+      (button) => getComputedStyle(button).fontFamily
+    )
+    await expect(dialog.forgotPasswordLink).toHaveCSS('font-family', buttonFont)
+
+    await dialog.emailInput.focus()
+    await dialog.emailInput.press('Tab')
+    await expect(dialog.forgotPasswordLink).toBeFocused()
+    await expect(dialog.forgotPasswordLink).not.toHaveCSS('box-shadow', 'none')
   })
 
   test('Should close dialog via close button', async () => {

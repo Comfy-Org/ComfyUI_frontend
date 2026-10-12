@@ -37,6 +37,8 @@ vi.mock(import('@/extensions/core/load3dAdvanced'), () => ({}))
 vi.mock(import('@/extensions/core/load3dPreviewExtensions'), () => ({}))
 vi.mock(import('@/extensions/core/saveMesh'), () => ({}))
 vi.mock(import('@/extensions/core/cameraInfo'), () => ({}))
+vi.mock(import('@/extensions/core/cameraAngle'), () => ({}))
+vi.mock(import('@/extensions/core/lightInfo'), () => ({}))
 
 type Hook = (
   nodeType: typeof LGraphNode,

@@ -12,6 +12,7 @@ import {
   zAutogrowOptions,
   zDynamicComboOption,
   zDynamicComboSpecV2,
+  zDynamicGroupInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 
@@ -30,12 +31,25 @@ interface DynamicControl {
 
 const none = () => []
 
+const MAX_SPEC_DRIFT_REPORTS = 10
+const reportedSpecDrift = new Set<string>()
+
 function warnSpecDrift(
   spec: InputSpecV2,
   error: ZodError,
   optionIndex?: number
 ): void {
+  const location = JSON.stringify([spec.name, spec.type, optionIndex])
+  if (
+    reportedSpecDrift.has(location) ||
+    reportedSpecDrift.size >= MAX_SPEC_DRIFT_REPORTS
+  )
+    return
+
+  reportedSpecDrift.add(location)
+
   reportError(new Error('Unable to parse dynamic node input specification'), {
+    surface: 'graph',
     errorType: 'error_parsing_node_input_spec',
     tags: {
       failure_kind: 'degraded',
@@ -89,6 +103,17 @@ function parseDynamicComboOptions(
 }
 
 const dynamicControls = {
+  COMFY_DYNAMICGROUP_V3: {
+    nestedInputs: (spec) => {
+      const parsed = zDynamicGroupInputSpec.safeParse([spec.type, spec])
+      if (!parsed.success) {
+        warnSpecDrift(spec, parsed.error)
+        return []
+      }
+      return [parsed.data[1].template]
+    },
+    ownTypes: none
+  },
   COMFY_AUTOGROW_V3: {
     nestedInputs: (spec) => {
       const parsed = zAutogrowOptions.safeParse(spec)

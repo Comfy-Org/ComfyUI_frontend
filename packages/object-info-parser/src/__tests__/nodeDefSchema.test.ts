@@ -23,6 +23,75 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 }
 
 describe('validateNodeDef', () => {
+  it.for([
+    { min: 2, max: 1 },
+    { max: 21 },
+    { max: -1 },
+    { min: 0.5 },
+    { template: 'invalid' },
+    { template: {} },
+    {
+      template: {
+        required: {
+          nested: [
+            'COMFY_DYNAMICGROUP_V3',
+            { min: 1, template: { required: { value: ['STRING', {}] } } }
+          ]
+        }
+      }
+    },
+    { template: { required: { nested: ['COMFY_AUTOGROW_V3', {}] } } },
+    { template: { required: { nested: ['COMFY_DYNAMICCOMBO_V3', {}] } } },
+    { template: { required: { value: ['FLOAT', { forceInput: true }] } } },
+    { template: { required: { 'bad.name': ['STRING', {}] } } },
+    {
+      template: {
+        required: { value: ['STRING', {}] },
+        optional: { value: ['STRING', {}] }
+      }
+    }
+  ])(
+    'rejects malformed DynamicGroup definitions at the boundary: %j',
+    (options) => {
+      expect(
+        validateComfyNodeDef(
+          {
+            ...EXAMPLE_NODE_DEF,
+            input: {
+              required: {
+                rows: [
+                  'COMFY_DYNAMICGROUP_V3',
+                  {
+                    template: { required: { value: ['STRING', {}] } },
+                    ...options
+                  }
+                ]
+              }
+            }
+          },
+          () => {}
+        )
+      ).toBeNull()
+    }
+  )
+
+  it('retains valid DynamicGroup template options and supplies count defaults', () => {
+    const template = {
+      required: {
+        model: ['COMBO', { remote: { route: '/models', refresh_button: true } }]
+      },
+      optional: { strength: ['FLOAT', { default: 1 }] }
+    }
+    const parsed = validateComfyNodeDef({
+      ...EXAMPLE_NODE_DEF,
+      input: { required: { rows: ['COMFY_DYNAMICGROUP_V3', { template }] } }
+    })
+    expect(parsed?.input?.required?.rows).toEqual([
+      'COMFY_DYNAMICGROUP_V3',
+      { template, min: 0, max: 20 }
+    ])
+  })
+
   it('accepts a valid node definition', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
@@ -35,7 +104,8 @@ describe('validateNodeDef', () => {
       { ckpt_name: ['INT', { default: 0, display: 'color' }] },
       ['INT', { default: 0, display: 'color' }]
     ],
-    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]]
+    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]],
+    [{ ckpt_name: ['IMAGE'] }, ['IMAGE']]
   ])(
     'validateComfyNodeDef with various input spec formats',
     ([inputSpec, expected]) => {

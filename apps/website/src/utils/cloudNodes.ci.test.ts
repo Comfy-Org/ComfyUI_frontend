@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FetchOutcome } from './cloudNodes'
-import type { NodesSnapshot } from '../data/cloudNodes'
+import type { NodesSnapshot } from '@/data/cloudNodes'
 
 import {
   reportCloudNodesOutcome,
@@ -59,7 +59,6 @@ describe('reportCloudNodesOutcome', () => {
   })
 
   afterEach(() => {
-    writeSpy.mockRestore()
     rmSync(summaryDir, { recursive: true, force: true })
     if (originalSummary === undefined) delete process.env.GITHUB_STEP_SUMMARY
     else process.env.GITHUB_STEP_SUMMARY = originalSummary

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router-queue'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
-import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { loadWorkshopExampleFile } from '@/config/workshop-example-file-loader'
+import { runWorkshopRouter } from '@/config/workshop-router-queue'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import {
   createRouterRenderHelpers,
   prepareRouterRender as preparePublishedRouterRender,
@@ -15,11 +15,11 @@ import {
 const { prepareRouterRender, router_for_model, router_render } =
   createRouterRenderHelpers(getAuthoredRouterWorkshopModelDetail)
 
-vi.mock(import('../src/config/workshop-router-queue'), () => ({
+vi.mock(import('@/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
-vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
+vi.mock(import('@/config/workshop-example-file-loader'), () => ({
   loadWorkshopExampleFile: vi.fn()
 }))
 

@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import type { FrameSource } from '../config/workshop-model-restrictions'
-import type { FakeImageDecoder } from '../test/fakeImageDecoder'
-import { stubImageDecoder } from '../test/fakeImageDecoder'
+import type { FrameSource } from '@/config/workshop-model-restrictions'
+import type { FakeImageDecoder } from '@/test/fakeImageDecoder'
+import { stubImageDecoder } from '@/test/fakeImageDecoder'
 import { useFrameRatioMismatch } from './useFrameRatioMismatch'
 
 interface Frames {

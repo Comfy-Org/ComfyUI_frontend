@@ -16,22 +16,25 @@
           {{ copy.confirmPayment }}
         </h2>
       </div>
-      <CheckoutSubscribeSummary
-        :plan
-        :copy
-        :locale
-        :preview-data
-        :billing-cycle
-        :compact="usePaymentElement"
-      />
-      <CheckoutPromotionCode
-        v-if="embeddedCheckoutEnabled"
-        :applied-code="previewData?.promotion_code"
-        :disabled="interactionLocked"
-        :copy
-        @apply="emit('applyPromotionCode', $event)"
-        @invalidate="emit('invalidateQuote')"
-      />
+      <slot v-if="summaryReplaced" name="summary" />
+      <template v-else>
+        <CheckoutSubscribeSummary
+          :plan
+          :copy
+          :locale
+          :preview-data
+          :billing-cycle
+          :compact="usePaymentElement"
+        />
+        <CheckoutPromotionCode
+          v-if="embeddedCheckoutEnabled"
+          :applied-code="previewData?.promotion_code"
+          :disabled="interactionLocked"
+          :copy
+          @apply="emit('applyPromotionCode', $event)"
+          @invalidate="emit('invalidateQuote')"
+        />
+      </template>
       <CheckoutSavedMethods
         v-if="showSavedMethods && savedMethods"
         v-model:selected-method-id="selectedSavedMethodId"
@@ -59,7 +62,7 @@
         :authentication-state
         :authentication-error
         @add-credit-card="emit('addCreditCard')"
-        @confirm-payment="emit('confirmPayment', $event)"
+        @confirm-payment="(token, type) => emit('confirmPayment', token, type)"
         @submitting-change="stripeSubmissionPending = $event"
         @payment-phase="emit('paymentPhase', $event)"
       />
@@ -71,7 +74,9 @@
 /**
  * The confirm step of a new subscription: the plan and today's charge on one
  * side, and the way to pay on the other — the card form, the saved methods
- * that stand in for it, or a hosted continuation the host opens.
+ * that stand in for it, or a hosted continuation the host opens. A host
+ * following a payment it did not quote here replaces the plan and charge
+ * through the `summary` slot and `summaryReplaced`.
  */
 import { computed, ref } from 'vue'
 
@@ -114,7 +119,8 @@ const {
   savedMethods = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  summaryReplaced = false
 } = defineProps<{
   plan: CheckoutPlan
   copy: CheckoutCopy
@@ -138,11 +144,13 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The host summarizes a payment it did not quote here in the `summary` slot. */
+  summaryReplaced?: boolean
 }>()
 
 const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string]
+  confirmPayment: [confirmationToken: string, paymentMethodType: string]
   back: []
   changePaymentMethod: []
   applyPromotionCode: [code: string]
@@ -166,12 +174,12 @@ const layout = computed(() => {
   const split = captureMode.value
   return {
     root: cn(
-      'mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2',
+      'mx-auto flex h-full min-h-0 max-w-[400px] flex-col items-stretch justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2',
       // Edge-to-edge Stripe-checkout split on desktop: the summary is a
       // flush full-height sidebar on base-background, payment beside it on
       // the shell. Mobile keeps the stacked flow.
       split &&
-        'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0'
+        'xl:min-h-0 xl:w-full xl:max-w-none xl:flex-1 xl:flex-row xl:items-stretch xl:gap-0 xl:overflow-visible'
     ),
     summary: cn(
       split &&

@@ -5,14 +5,15 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import {
+  BLANK_WORKFLOW,
   agentTest,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -33,10 +34,11 @@ const test = mergeTests(agentTest, webSocketFixture)
  * and then the FRONTEND-observable half of the actual complaint: a widget
  * write the doc host rejects with an `opaque_widgets`-shaped failure
  * (`<node> is absent from the pinned catalog, so its widgets_values is
- * stored opaquely (schema §1.2) and is not name-addressable`) leaves the
- * canvas and the shared document holding different values -- the edited
- * widget keeps showing the human's typed value while the document keeps the
- * old one.
+ * stored opaquely (schema §1.2) and is not name-addressable`). The follower
+ * now puts the refused register back from the document
+ * (`AgentCrdtProjection.revertRejected`), so the widget no longer keeps
+ * showing a value the shared document never took. The rejection notifier
+ * also tells the human that the write was refused.
  *
  * PM-1716 made that divergence VISIBLE rather than silent: `rejectedOpNotice`
  * matches the host's `code` against the applier's rejection vocabulary and
@@ -259,6 +261,7 @@ async function driveThroughDuplicateInsert(
       await mockWorkflowPersistence(page, WORKFLOW_ID)
     }
   })
+  await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
   const socket = await getWebSocket()
   const outboundFrames: string[] = []
   socket.onMessage((message) => outboundFrames.push(String(message)))
@@ -458,14 +461,18 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a rejected widget edit is reported to the human, and leaves the canvas and the document holding different values', async ({
+    test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({
       page,
+      toast,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
+      // The refused register is put back from the document, so the widget
+      // the human is looking at and the document a subsequent run would read
+      // from agree again.
+      await expect(seedInput).toHaveValue(String(SEED_VALUE))
 
       const projected = host.projection()
       const sampler = projected.nodes.find(
@@ -479,7 +486,7 @@ test.describe(
       // and `toContainText` passes on any node in the collection, so either
       // alone would accept a message the user never sees. Filter to the text
       // and require it on screen.
-      const rejectionToast = new ToastHelper(page).toastErrors.filter({
+      const rejectionToast = toast.toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
       await expect(rejectionToast).toBeVisible({ timeout: 3_000 })

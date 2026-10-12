@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { registerRefreshOnReturn } from './refreshOnReturn'
 
 describe('registerRefreshOnReturn', () => {
   it('fires on window focus', () => {
     const refresh = vi.fn(async () => {})
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     window.dispatchEvent(new Event('focus'))
 
@@ -14,7 +14,7 @@ describe('registerRefreshOnReturn', () => {
 
   it('fires on a visible visibilitychange', () => {
     const refresh = vi.fn(async () => {})
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     document.dispatchEvent(new Event('visibilitychange'))
 
@@ -25,7 +25,7 @@ describe('registerRefreshOnReturn', () => {
     const refresh = vi.fn(async () => {})
     const visibilitySpy = vi.spyOn(document, 'visibilityState', 'get')
     visibilitySpy.mockReturnValue('hidden')
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     document.dispatchEvent(new Event('visibilitychange'))
     expect(refresh).not.toHaveBeenCalled()
@@ -56,7 +56,7 @@ describe('registerRefreshOnReturn', () => {
 
   it('refreshes again on a later return, so a return before the hosted tab finishes does not spend it', async () => {
     const { refresh, settle } = held()
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     come()
     await settle(0)
@@ -68,7 +68,7 @@ describe('registerRefreshOnReturn', () => {
 
   it('coalesces the focus and visibilitychange of one return into one refresh', async () => {
     const { refresh, settle } = held()
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     come()
     document.dispatchEvent(new Event('visibilitychange'))
@@ -80,7 +80,7 @@ describe('registerRefreshOnReturn', () => {
 
   it('runs one trailing refresh for a return that arrives while a refresh is in flight', async () => {
     const { refresh, settle } = held()
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     come()
     leave()

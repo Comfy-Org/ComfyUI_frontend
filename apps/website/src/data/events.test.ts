@@ -8,6 +8,8 @@ import {
   deriveUpcomingEvents,
   directoryEvents,
   eventJsonLdNode,
+  eventOgImage,
+  eventVideoThumbnail,
   eventStatus,
   pastEvents,
   toCalendarEvent,
@@ -64,10 +66,10 @@ describe('toCalendarEvent', () => {
     const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
 
     expect(toCalendarEvent(event, 'en').description).toBe(
-      'A livestream.\n\nhttps://comfy.org/events/test-event'
+      'A livestream.\n\nhttps://comfy.org/events/test-event/'
     )
     expect(toCalendarEvent(event, 'zh-CN').description).toBe(
-      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event'
+      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event/'
     )
   })
 
@@ -149,10 +151,10 @@ describe('event list derivation', () => {
     eventAt('older', { startDateTime: '2026-06-20' })
   ]
 
-  it('splits and orders upcoming events by start ascending', () => {
+  it('splits and orders upcoming events latest first by start', () => {
     expect(deriveUpcomingEvents(list, now).map((event) => event.id)).toEqual([
-      'sooner',
-      'later'
+      'later',
+      'sooner'
     ])
   })
 
@@ -211,8 +213,8 @@ describe('deriveFeaturedEvents', () => {
   it('links slides to the event page when the event has one', () => {
     const [past, upcoming] = deriveFeaturedEvents(list, now)
 
-    expect(past.href?.en).toBe('/events/first-slide')
-    expect(upcoming.href?.en).toBe('/events/second-slide')
+    expect(past.href?.en).toBe('/events/first-slide/')
+    expect(upcoming.href?.en).toBe('/events/second-slide/')
     expect(upcoming.autoplayMs).toBe(5000)
     expect(upcoming.showTitle).toBe(false)
   })
@@ -326,6 +328,26 @@ describe('site event data', () => {
     expect(matches.map((event) => event.id)).toEqual(['dev-platform-oct-1'])
   })
 
+  it('lists every exported event collection latest first', () => {
+    for (const list of [directoryEvents, upcomingEvents, pastEvents]) {
+      const starts = list.map((event) => Date.parse(event.startDateTime))
+      expect(starts).toEqual([...starts].sort((a, b) => b - a))
+    }
+  })
+
+  it('lists the Oct 2026 Build Nights as partner events, latest first', () => {
+    const ids = directoryEvents.map((event) => event.id)
+    const devPlatform = 'dev-platform-challenge-build-night'
+    const codex = 'codex-build-night-agents-everywhere'
+
+    expect(ids.indexOf(devPlatform)).toBeLessThan(ids.indexOf(codex))
+    for (const id of [devPlatform, codex]) {
+      expect(directoryEvents.find((event) => event.id === id)?.organizer).toBe(
+        'partner'
+      )
+    }
+  })
+
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
@@ -390,5 +412,48 @@ describe('site event data', () => {
         })
       }
     }
+  })
+})
+
+describe('eventOgImage', () => {
+  const alt = { en: 'Card', 'zh-CN': '卡片' }
+
+  it.for([
+    [
+      'an image',
+      { type: 'image', src: 'https://cdn/card.png', alt },
+      'https://cdn/card.png'
+    ],
+    [
+      'a video poster',
+      {
+        type: 'video',
+        src: 'https://cdn/clip.mp4',
+        alt,
+        poster: 'https://cdn/still.png'
+      },
+      'https://cdn/still.png'
+    ],
+    [
+      'nothing for a video without a poster',
+      { type: 'video', src: 'https://cdn/clip.mp4', alt },
+      undefined
+    ],
+    ['nothing without media', undefined, undefined]
+  ] as const)('returns %s', ([, media, expected]) => {
+    expect(eventOgImage({ ...baseEvent, media })).toBe(expected)
+  })
+})
+
+describe('eventVideoThumbnail', () => {
+  it('falls back to the default card for a video without a poster', () => {
+    const media = {
+      type: 'video',
+      src: 'https://cdn/clip.mp4',
+      alt: { en: 'Clip', 'zh-CN': '片段' }
+    } as const
+    expect(eventVideoThumbnail({ ...baseEvent, media })).toBe(
+      'https://media.comfy.org/website/comfy.webp'
+    )
   })
 })

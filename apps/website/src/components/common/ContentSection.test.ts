@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { t } from '@/i18n/translations'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import ContentSection from './ContentSection.vue'
 
 /** `isAtBottom()` compares scroll position against `scrollHeight`, which is
@@ -34,10 +34,10 @@ describe('ContentSection', () => {
     await nextTick()
 
     const securityBadge = screen.getByRole('button', {
-      name: t('privacy.security.label', 'en')
+      name: t('privacy.security.label', {}, { locale: 'en' })
     })
     const introBadge = screen.getByRole('button', {
-      name: t('privacy.intro.label', 'en')
+      name: t('privacy.intro.label', {}, { locale: 'en' })
     })
 
     expect(securityBadge.getAttribute('aria-pressed')).toBe('true')
@@ -50,7 +50,7 @@ describe('ContentSection', () => {
     render(ContentSection, { props: { prefix: 'privacy' } })
 
     const introBadge = screen.getByRole('button', {
-      name: t('privacy.intro.label', 'en')
+      name: t('privacy.intro.label', {}, { locale: 'en' })
     })
     expect(introBadge.getAttribute('aria-pressed')).toBe('true')
   })

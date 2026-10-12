@@ -1,5 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -11,8 +12,12 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type {
+  SubscriptionCheckoutSelection,
+  SubscriptionDialogOptions
+} from '@/composables/billing/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -27,17 +32,10 @@ import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pen
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
-export interface SubscriptionDialogOptions {
-  reason?: PaymentIntentSource
-  paymentIntentSource?: PaymentIntentSource
-  /**
-   * Forces the unified pricing dialog to open on a specific plan tab,
-   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
-   * always lands on the team tab even from a personal workspace).
-   */
-  planMode?: 'personal' | 'team'
-  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
-  initialCheckout?: SubscriptionCheckoutSelection
+function paymentIntentSourceOf(
+  options?: SubscriptionDialogOptions
+): PaymentIntentSource | undefined {
+  return options?.paymentIntentSource ?? options?.reason
 }
 
 function getInitialPlanMode(
@@ -75,12 +73,26 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function showInactiveMemberDialog(): boolean {
+  function trackPaywallShown(paymentIntentSource?: PaymentIntentSource) {
+    const { tier } = useBillingContext()
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'paywall_shown',
+      outcome: 'pending',
+      payment_intent_source: paymentIntentSource,
+      current_tier: toCurrentTier(tier.value)
+    })
+  }
+
+  function showInactiveMemberDialog(
+    paymentIntentSource?: PaymentIntentSource
+  ): boolean {
     if (!shouldUseWorkspaceBilling.value) return false
 
     const { permissions } = useWorkspaceUI()
     if (permissions.value.canManageSubscription) return false
 
+    trackPaywallShown(paymentIntentSource)
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: defineAsyncComponent(
@@ -99,11 +111,11 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
-    if (showInactiveMemberDialog()) return
+    const paymentIntentSource = paymentIntentSourceOf(options)
+    if (showInactiveMemberDialog(paymentIntentSource)) return
 
     trackModalOpened(options?.reason)
-
-    const paymentIntentSource = options?.paymentIntentSource ?? options?.reason
+    trackPaywallShown(paymentIntentSource)
 
     const legacyPricingDialogProps = {
       renderer: 'reka',
@@ -212,7 +224,9 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: SubscriptionDialogOptions) {
-    if (isCloud && showInactiveMemberDialog()) return
+    if (isCloud && showInactiveMemberDialog(paymentIntentSourceOf(options))) {
+      return
+    }
 
     showPricingTable(options)
   }
@@ -229,7 +243,7 @@ export const useSubscriptionDialog = () => {
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    dialogService
+    useWorkspaceDialogs()
       .showTeamWorkspacesDialog(() => {
         try {
           sessionStorage.setItem(RESUME_PRICING_KEY, '1')

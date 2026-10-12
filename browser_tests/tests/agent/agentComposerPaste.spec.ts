@@ -77,12 +77,11 @@ test(
     await canvas.click()
     await canvas.press('Control+c')
 
-    await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    await composer.click()
+    const composer = agentPanel.composer
+    await agentPanel.clickBelowFirstPromptLine()
 
     const pastedText = 'a plain text prompt, not a node'
     await page.evaluate(

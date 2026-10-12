@@ -127,6 +127,7 @@ describe('usePartnerNodesRunGate', () => {
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'billing',
         errorType: 'partner_run_gate_blocked',
         level: 'warning',
         tags: expect.objectContaining({
@@ -247,6 +248,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'billing',
         errorType: 'partner_run_gate_blocked',
         tags: expect.objectContaining({ trigger: 'auto-queue' })
       })
