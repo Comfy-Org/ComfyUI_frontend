@@ -387,25 +387,6 @@ export function docLinksIncident(doc: Y.Doc, nodeId: string): DocLink[] {
   return links
 }
 
-/**
- * Runs `fn` so that the first link it mints receives `id`. The live graph's
- * link counter is monotonic; seeding it one below the document id lets
- * `connect` mint the document's id through its normal path, and the counter
- * is restored to the higher of the two afterwards so later local mints never
- * collide with ids the document has already handed out.
- */
-function withLinkId<T>(graph: LGraph, id: LinkId, fn: () => T): T {
-  if (graph.links.has(id)) return fn()
-  const { state } = graph
-  const previous = state.lastLinkId
-  state.lastLinkId = toLinkId(id - 1)
-  try {
-    return fn()
-  } finally {
-    state.lastLinkId = toLinkId(Math.max(previous, state.lastLinkId))
-  }
-}
-
 function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
@@ -1147,16 +1128,24 @@ export class LiveGraphApplier {
     )
     const targetSlot = resolveTargetSlot(target, doc, link)
     if (originSlot < 0 || targetSlot < 0) {
-      if (graph.links.has(link.id)) graph.removeLink(link.id)
+      graph.removeLink(link.id)
       return 'unresolved'
     }
     if (isLinkPresent(graph, origin, originSlot, target, targetSlot))
       return 'present'
-    if (graph.links.has(link.id)) graph.removeLink(link.id)
+    graph.removeLink(link.id)
 
-    const created = withLinkId(graph, link.id, () =>
-      origin.connect(originSlot, target, targetSlot)
-    )
+    const created = origin.connect(originSlot, target, targetSlot, undefined, {
+      requestedId: link.id
+    })
+    if (created && created.id !== link.id) {
+      this.reportOnce(
+        `link-id:${link.id}`,
+        `Live graph reminted link ${link.id} as ${created.id}`,
+        'agent_graph_link_id_reminted',
+        { linkId: link.id, liveId: created.id }
+      )
+    }
     return created ? 'connected' : 'refused'
   }
 
