@@ -51,3 +51,20 @@ export function referenceSlots(
   ]
   return slots.filter((slot): slot is ReferenceKind => !!slot)
 }
+
+/** What a clip starts from, if anything: a source video before a first frame. */
+export interface StartingInput {
+  readonly kind: 'video' | 'firstFrame'
+  readonly required: boolean
+}
+
+export function startingInput(
+  model: CinematicModel | undefined
+): StartingInput | undefined {
+  if (model?.mode !== 'video') return undefined
+  if (model.video?.sourceVideo) return { kind: 'video', required: true }
+  if (!model.firstFrameSlug) return undefined
+  const required =
+    model.firstFrameSlug === model.slug && !!model.video?.firstFrameRequired
+  return { kind: 'firstFrame', required }
+}

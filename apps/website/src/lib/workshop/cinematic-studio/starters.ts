@@ -65,3 +65,7 @@ export const STARTER_SHOTS: readonly StarterShot[] = [
     }
   }
 ]
+
+export function findStarter(id: string | undefined): StarterShot | undefined {
+  return STARTER_SHOTS.find((shot) => shot.id === id)
+}
