@@ -16,6 +16,7 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
+  public readonly composerUploadStatus: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
@@ -53,6 +54,7 @@ export class AgentPanel {
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
+    this.composerUploadStatus = this.root.getByTestId('composer-upload-status')
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
