@@ -284,6 +284,30 @@ describe('useCameraAngle', () => {
     }
   )
 
+  it('does not treat a superseded subject load as a failure', async () => {
+    const node = makeNode(DEFAULT_WIDGETS)
+    node.imageSource = makeNode({})
+    const urls = vi
+      .spyOn(useNodeOutputStore(), 'getNodeImageUrls')
+      .mockReturnValue(['http://example/first.png'])
+    const camera = useCameraAngle(nodeRef(node))
+    let resolveFirst!: (applied: boolean) => void
+    camera.initialize(document.createElement('div'))
+    instances[0].setImage.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => (resolveFirst = resolve))
+    )
+    urls.mockReturnValue(['http://example/second.png'])
+    node.onConnectionsChange?.()
+    urls.mockReturnValue(['http://example/third.png'])
+    node.onConnectionsChange?.()
+    resolveFirst(false)
+    await Promise.resolve()
+
+    node.onConnectionsChange?.()
+
+    expect(instances[0].setImage).toHaveBeenCalledTimes(3)
+  })
+
   it('routes node hover into the viewport status flags', () => {
     const node = makeNode(DEFAULT_WIDGETS)
     const camera = useCameraAngle(nodeRef(node))

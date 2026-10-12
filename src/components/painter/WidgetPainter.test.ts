@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 const sizeHolder = vi.hoisted(() => ({ width: 0, height: 0 }))
@@ -31,6 +31,8 @@ function createDefaultPainterState() {
     cursorVisible: ref(true),
     displayBrushSize: ref(20),
     inputImageUrl: ref<string | null>(null),
+    inputImageRetryKey: ref(0),
+    onInputImageError: vi.fn(),
     isImageInputConnected: ref(false),
     handlePointerDown: vi.fn(),
     handlePointerMove: vi.fn(),
@@ -161,6 +163,27 @@ describe('WidgetPainter', () => {
       const container = screen.getByTestId('painter-canvas-container')
       expect(within(container).getByRole('img')).toBeInTheDocument()
     })
+  })
+
+  it('reports a failed input image and remounts it on a new retry key', async () => {
+    const inputImageRetryKey = ref(0)
+    const onInputImageError = vi.fn()
+    primePainterState({
+      isImageInputConnected: ref(true),
+      inputImageUrl: ref('/img.png'),
+      inputImageRetryKey,
+      onInputImageError
+    })
+    renderWidget()
+    const container = screen.getByTestId('painter-canvas-container')
+    const failed = within(container).getByRole('img')
+
+    await fireEvent.error(failed)
+    inputImageRetryKey.value++
+    await nextTick()
+
+    expect(onInputImageError).toHaveBeenCalledOnce()
+    expect(within(container).getByRole('img')).not.toBe(failed)
   })
 
   describe('Tool selection', () => {

@@ -473,6 +473,27 @@ describe('ImagePreview', () => {
   })
 
   describe('grid view', () => {
+    it('remounts a failed grid thumbnail when the same URLs arrive again', async () => {
+      const { rerender } = renderImagePreview()
+      const [thumbnail] = screen.getAllByRole('img')
+      await fireEvent.error(thumbnail)
+
+      await rerender({ imageUrls: [...defaultProps.imageUrls] })
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[0]).not.toBe(thumbnail)
+    })
+
+    it('keeps loaded grid thumbnails when the same URLs arrive again', async () => {
+      const { rerender } = renderImagePreview()
+      const [thumbnail] = screen.getAllByRole('img')
+
+      await rerender({ imageUrls: [...defaultProps.imageUrls] })
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[0]).toBe(thumbnail)
+    })
+
     it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
       renderImagePreview()
 

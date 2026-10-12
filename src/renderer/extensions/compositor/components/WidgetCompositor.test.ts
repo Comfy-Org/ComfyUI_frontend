@@ -91,29 +91,34 @@ describe('WidgetCompositor', () => {
     expect(open.hasAttribute('disabled')).toBe(false)
   })
 
-  it.for([
-    { failed: true, remounted: true },
-    { failed: false, remounted: false }
-  ])(
-    'remounts the preview on new outputs only after a failed load (failed: $failed)',
-    async ({ failed, remounted }) => {
-      const graph = app.canvas.graph
-      if (!graph) throw new Error('Expected the app mock to provide a graph')
-      vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
-      const outputs = shallowRef({})
-      const store = useNodeOutputStore()
-      vi.spyOn(store, 'getNodeImageUrls').mockReturnValue(['/view?a.png'])
-      vi.spyOn(store, 'getNodeOutputs').mockImplementation(() => outputs.value)
-      renderWidget()
-      const preview = screen.getByTestId('compositor-preview')
-      if (failed) await fireEvent.error(preview)
+  function renderWithOutputs() {
+    const graph = app.canvas.graph
+    if (!graph) throw new Error('Expected the app mock to provide a graph')
+    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
+    const outputs = shallowRef({})
+    const store = useNodeOutputStore()
+    vi.spyOn(store, 'getNodeImageUrls').mockReturnValue(['/view?a.png'])
+    vi.spyOn(store, 'getNodeOutputs').mockImplementation(() => outputs.value)
+    renderWidget()
+    return { outputs, preview: screen.getByTestId('compositor-preview') }
+  }
 
-      outputs.value = {}
-      await nextTick()
+  it('remounts a failed preview when the node has new outputs', async () => {
+    const { outputs, preview } = renderWithOutputs()
+    await fireEvent.error(preview)
 
-      expect(screen.getByTestId('compositor-preview') !== preview).toBe(
-        remounted
-      )
-    }
-  )
+    outputs.value = {}
+    await nextTick()
+
+    expect(screen.getByTestId('compositor-preview')).not.toBe(preview)
+  })
+
+  it('keeps a loaded preview when the node has new outputs', async () => {
+    const { outputs, preview } = renderWithOutputs()
+
+    outputs.value = {}
+    await nextTick()
+
+    expect(screen.getByTestId('compositor-preview')).toBe(preview)
+  })
 })

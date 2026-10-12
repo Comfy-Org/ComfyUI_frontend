@@ -156,8 +156,9 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
-const { failed: videoError } = useLoadRetry(() => props.imageUrls)
+const { failed: videoError, retryKey } = useLoadRetry(() => props.imageUrls)
 const showLoader = ref(false)
+watch(retryKey, () => (showLoader.value = true))
 
 const videoWrapperEl = ref<HTMLDivElement>()
 

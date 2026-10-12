@@ -829,10 +829,10 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const img = node.locator('img')
         await waitForImageNaturalSize(img)
 
-        let abortedExamplePng = false
+        let examplePngRequests = 0
         await comfyPage.page.route('**/api/view**', async (route) => {
           if (route.request().url().includes('example.png')) {
-            abortedExamplePng = true
+            examplePngRequests++
             await route.abort('failed')
             return
           }
@@ -842,14 +842,19 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           // /view URLs are stable now, so an already-loaded image is reused
           // in-page; a fresh document forces the fetch the route will fail.
           await comfyPage.workflow.reloadAndWaitForApp()
-          await expect.poll(() => abortedExamplePng).toBe(true)
-          abortedExamplePng = false
+          await expect(node.getByTestId('crop-empty-state')).toBeVisible()
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator('1')
+              .getByTestId('error-loading-image')
+          ).toBeVisible()
+          const beforeRun = examplePngRequests
           const runDone = comfyPage.runButton.click()
           await expect
-            .poll(() => abortedExamplePng, {
-              message: 'the rerun should request the image again'
+            .poll(() => examplePngRequests, {
+              message: 'the rerun should make the crop request the image again'
             })
-            .toBe(true)
+            .toBeGreaterThan(beforeRun)
           await expect(
             node.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'

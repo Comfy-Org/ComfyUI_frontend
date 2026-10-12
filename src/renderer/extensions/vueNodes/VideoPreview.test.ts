@@ -59,7 +59,8 @@ describe('VideoPreview', () => {
     const { container, rerender } = renderVideoPreview({ imageUrls: urls })
 
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    await fireEvent.error(container.querySelector('video')!)
+    const failed = container.querySelector('video')!
+    await fireEvent.error(failed)
     await nextTick()
     expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
 
@@ -67,6 +68,10 @@ describe('VideoPreview', () => {
     await nextTick()
 
     expect(screen.queryByTestId('error-loading-video')).not.toBeInTheDocument()
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('video')).not.toBe(failed)
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
   })
 
   describe('batch cycling with identical URLs', () => {

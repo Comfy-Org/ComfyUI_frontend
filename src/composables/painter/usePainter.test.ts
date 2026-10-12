@@ -331,26 +331,33 @@ describe('usePainter', () => {
   })
 
   describe('input image retry', () => {
-    it.for([
-      { failed: true, retryKey: 1 },
-      { failed: false, retryKey: 0 }
-    ])(
-      'remounts the input image on new input outputs only after a failed load (failed: $failed)',
-      async ({ failed, retryKey }) => {
-        const inputOutputs = shallowRef({})
-        mockGetInputNode.mockImplementation(fromAny(() => ({})))
-        vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockImplementation(
-          () => inputOutputs.value
-        )
-        const { painter } = mountPainter()
-        if (failed) painter.onInputImageError()
+    function mountWithInputOutputs() {
+      const inputOutputs = shallowRef({})
+      mockGetInputNode.mockImplementation(fromAny(() => ({})))
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockImplementation(
+        () => inputOutputs.value
+      )
+      return { inputOutputs, ...mountPainter() }
+    }
 
-        inputOutputs.value = {}
-        await nextTick()
+    it('remounts a failed input image when the input has new outputs', async () => {
+      const { inputOutputs, painter } = mountWithInputOutputs()
+      painter.onInputImageError()
 
-        expect(painter.inputImageRetryKey.value).toBe(retryKey)
-      }
-    )
+      inputOutputs.value = {}
+      await nextTick()
+
+      expect(painter.inputImageRetryKey.value).toBe(1)
+    })
+
+    it('keeps a loaded input image when the input has new outputs', async () => {
+      const { inputOutputs, painter } = mountWithInputOutputs()
+
+      inputOutputs.value = {}
+      await nextTick()
+
+      expect(painter.inputImageRetryKey.value).toBe(0)
+    })
   })
 
   describe('handleInputImageLoad', () => {

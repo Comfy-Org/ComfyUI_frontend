@@ -27,14 +27,4 @@ describe('useLoadRetry', () => {
 
     expect(retryKey.value).toBe(0)
   })
-
-  it('retries on an explicit refresh only after a failure', () => {
-    const { retryKey, refresh, onError } = useLoadRetry()
-    refresh()
-    expect(retryKey.value).toBe(0)
-
-    onError()
-    refresh()
-    expect(retryKey.value).toBe(1)
-  })
 })

@@ -139,9 +139,10 @@ export function useCameraAngle(
     const url = subjectImageUrl(raw as LGraphNode)
     if (url === lastImageUrl && !subjectLoad.failed.value) return
     lastImageUrl = url
-    subjectLoad.onLoad()
     void viewport.setImage(url).then((applied) => {
-      if (!applied) subjectLoad.onError()
+      if (url !== lastImageUrl) return
+      if (applied) subjectLoad.onLoad()
+      else subjectLoad.onError()
     })
   }
 

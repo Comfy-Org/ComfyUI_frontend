@@ -31,11 +31,13 @@
           class="pointer-events-none relative size-full"
         >
           <img
+            :key="gridRetryKey"
             :src="url"
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
             draggable="false"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
+            @error="onGridImageError"
           />
           <i
             v-if="isHdrImageUrl(imageUrls[index])"
@@ -294,6 +296,9 @@ const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const { failed: imageError, retryKey } = useLoadRetry(() => imageUrls)
+const { retryKey: gridRetryKey, onError: onGridImageError } = useLoadRetry(
+  () => imageUrls
+)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 
