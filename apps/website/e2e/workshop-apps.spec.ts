@@ -118,7 +118,7 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   ).toHaveCount(0)
 })
 
-const APP_MEDIA = 'https://media.comfy.org/website/workshop/apps'
+const APP_MEDIA = '/images/apps'
 
 for (const { reducedMotion, paused } of [
   { reducedMotion: 'no-preference', paused: false },
@@ -132,7 +132,8 @@ for (const { reducedMotion, paused } of [
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
     page.on('requestfinished', (request) => {
-      if (request.url().endsWith('/poster.jpg')) posters.push(request.url())
+      if (request.url().endsWith('/poster.jpg'))
+        posters.push(new URL(request.url()).pathname)
     })
     await page.goto('/hub/apps/')
 
@@ -142,11 +143,11 @@ for (const { reducedMotion, paused } of [
     await expect(artwork).toHaveCount(2)
     await expect(artwork.nth(0)).toHaveAttribute(
       'src',
-      `${APP_MEDIA}/cinematic-studio/thumbnail-480.mp4`
+      `${APP_MEDIA}/cinematic-studio/cover.mp4`
     )
     await expect(artwork.nth(1)).toHaveAttribute(
       'src',
-      `${APP_MEDIA}/reshoot/thumbnail-480.mp4`
+      `${APP_MEDIA}/reshoot/cover.mp4`
     )
     await expect
       .poll(() => posters.toSorted())
