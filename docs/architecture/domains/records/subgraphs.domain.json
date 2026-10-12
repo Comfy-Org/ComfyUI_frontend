@@ -285,10 +285,6 @@
       ]
     },
     {
-      "name": "Subgraph blueprints are addressed by the blueprint type prefix",
-      "checks": ["src/stores/subgraphStore.test.ts"]
-    },
-    {
       "name": "Subgraph ids validate and legacy group nodes migrate with separators and links intact",
       "checks": [
         "src/schemas/subgraphIdSchema.test.ts",

@@ -22,6 +22,10 @@
         "src/stores/subgraphStore.test.ts",
         "browser_tests/tests/dialogs/blueprintOverwriteDialog.spec.ts"
       ]
+    },
+    {
+      "name": "Subgraph blueprints are addressed by the blueprint type prefix",
+      "checks": ["src/stores/subgraphStore.test.ts"]
     }
   ],
   "adrs": [],
