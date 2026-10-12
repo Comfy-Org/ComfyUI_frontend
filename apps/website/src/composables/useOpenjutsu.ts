@@ -15,6 +15,7 @@ import {
   swapCanvas,
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
+import { runQuote } from '@/lib/workshop/openjutsu/price'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
@@ -224,7 +225,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   )
   const priceNote = computed(() => {
     if (quote.value)
-      return quoteNote(quote.value, locale, {
+      return quoteNote(runQuote(quote.value, partSeconds.value), locale, {
         size: size.value,
         seconds: partSeconds.value
       })
