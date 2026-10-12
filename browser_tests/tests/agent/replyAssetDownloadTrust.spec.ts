@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { AgentMessage } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   agentTest as test,
   bootAgentApp
@@ -40,9 +41,10 @@ test.describe(
       await page.route(`**/api/agent/threads/${threadId}/messages`, (route) =>
         route.fulfill(jsonRoute(messages))
       )
-      await page.addInitScript((id) => {
-        localStorage.setItem('Comfy.Agent.ThreadId', id)
-      }, threadId)
+      await page.addInitScript(({ key, id }) => localStorage.setItem(key, id), {
+        key: StorageKeys.agentThread('personal'),
+        id: threadId
+      })
       cookieByAsset = new Map<string, string | null>()
       downloads = []
       page.on('download', (download) =>
