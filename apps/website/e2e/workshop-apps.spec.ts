@@ -125,8 +125,8 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
     'aria-current',
     'page'
   )
-  const shelf = page.getByTestId('app-shelf')
-  const cards = shelf.getByRole('link')
+  const grid = page.getByTestId('app-grid')
+  const cards = grid.getByRole('link')
   await expect(cards).toHaveCount(6)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
@@ -171,9 +171,7 @@ for (const { reducedMotion, paused } of [
     })
     await page.goto('/hub/apps/')
 
-    const artwork = page
-      .getByTestId('app-shelf')
-      .getByTestId('model-card-media')
+    const artwork = page.getByTestId('app-grid').getByTestId('model-card-media')
     await expect(artwork).toHaveCount(2)
     await expect(artwork.nth(0)).toHaveAttribute(
       'src',
@@ -208,7 +206,7 @@ test('decodes a frame of each hub app card video while it plays', async ({
   })
   await page.goto('/hub/apps/')
 
-  const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
+  const artwork = page.getByTestId('app-grid').getByTestId('model-card-media')
   await expect(artwork).toHaveCount(2)
   await expect
     .poll(() =>
@@ -225,7 +223,7 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
 }) => {
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
-  const cards = page.getByTestId('app-shelf').getByRole('link')
+  const cards = page.getByTestId('app-grid').getByRole('link')
   await expect(cards).toHaveCount(5)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
@@ -1027,7 +1025,7 @@ test('sends an old catalogue link for the Apps tab to the hub apps page', async 
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/models/?type=apps&q=studio#top')
   await expect(page).toHaveURL('/hub/apps/?q=studio#top')
-  await expect(page.getByTestId('app-shelf')).toBeVisible()
+  await expect(page.getByTestId('app-grid')).toBeVisible()
 })
 
 test('keeps an old catalogue link for the Apps tab on the models catalogue while the apps flag is off', async ({
