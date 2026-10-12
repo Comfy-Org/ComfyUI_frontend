@@ -71,6 +71,15 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('drops a CSP block whose /assets/ frame is served by a noise host', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'img-src' directive",
+      'at load (https://connect.facebook.net/assets/pixel.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops a CSP violation whose blocked URI carries no host but whose frame is a known tracker', () => {
     // e.g. a `blob` script injected by an ad script the CSP correctly blocks.
     // The report's stack points at the offending third-party sourceFile.

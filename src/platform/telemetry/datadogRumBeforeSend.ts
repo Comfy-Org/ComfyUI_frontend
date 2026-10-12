@@ -1,6 +1,9 @@
 import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
-import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+import {
+  isRumErrorNoise,
+  namesRumNoiseHost
+} from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
@@ -65,9 +68,11 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
 
 /** Our own code tripping the CSP is a defect even when the blocked host is a tracker. */
 function isFirstPartyCspViolation(event: RumErrorEvent): boolean {
+  const { message, stack } = event.error
   return (
-    event.error.message.startsWith('csp_violation:') &&
-    classifyRumErrorOrigin(event.error.stack).origin === 'first_party'
+    message.startsWith('csp_violation:') &&
+    !namesRumNoiseHost(stack) &&
+    classifyRumErrorOrigin(stack).origin === 'first_party'
   )
 }
 

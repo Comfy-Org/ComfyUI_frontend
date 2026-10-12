@@ -73,7 +73,7 @@ function hostnamesIn(text: string | undefined): string[] {
   return hostnames
 }
 
-function namesNoiseHost(text: string | undefined): boolean {
+export function namesRumNoiseHost(text: string | undefined): boolean {
   return hostnamesIn(text).some(isNoiseHostname)
 }
 
@@ -84,7 +84,7 @@ function namesNoiseHost(text: string | undefined): boolean {
  * first-party CSP defects involving a third-party resource.
  */
 function isFetchFailureToNoiseHost(message: string): boolean {
-  return message.includes('Failed to fetch') && namesNoiseHost(message)
+  return message.includes('Failed to fetch') && namesRumNoiseHost(message)
 }
 
 const CSP_VIOLATION_PREFIX = 'csp_violation:'
@@ -113,7 +113,7 @@ function isNoiseCspViolation(message: string, stack?: string): boolean {
   // report, or a message embedding user- or URL-supplied text.
   if (!message.startsWith(CSP_VIOLATION_PREFIX)) return false
 
-  return namesNoiseHost(message) || namesNoiseHost(stack)
+  return namesRumNoiseHost(message) || namesRumNoiseHost(stack)
 }
 
 export function isThirdPartyErrorNoise(message?: string): boolean {
