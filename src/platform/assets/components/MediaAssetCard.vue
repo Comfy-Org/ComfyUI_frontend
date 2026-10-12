@@ -24,7 +24,7 @@
     <div
       class="relative aspect-square overflow-hidden p-0"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
       <div
@@ -260,7 +260,11 @@ const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
+const canInspect = computed(
+  () => isPreviewableMediaType(fileKind.value) || isHdr.value
+)
 
 // Get filename without extension
 const fileName = computed(() => {

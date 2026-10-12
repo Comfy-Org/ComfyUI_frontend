@@ -14,6 +14,7 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 
 const EXPORT_DIALOG_KEY = 'node-outputs-export'
@@ -37,6 +38,14 @@ export function useNodeOutputsExport() {
     return getDownloadableOutputs(node).length > 1
   }
 
+  /** The backend can't render EXR/HDR thumbnails; use their generated preview, if any. */
+  function thumbnailUrl(output: DownloadableOutput): string {
+    if (!isHdrImageFilename(output.filename)) {
+      return getGridThumbnailUrl(outputFileUrl(output))
+    }
+    return output.preview_id ? hdrPreviewAssetUrl(output.preview_id) : ''
+  }
+
   function closeExportDialog() {
     dialogStore.closeDialog({ key: EXPORT_DIALOG_KEY })
   }
@@ -52,7 +61,7 @@ export function useNodeOutputsExport() {
       props: {
         items: outputs.map((output) => ({
           name: output.filename,
-          thumbnailUrl: getGridThumbnailUrl(outputFileUrl(output))
+          thumbnailUrl: thumbnailUrl(output)
         })),
         onCancel: closeExportDialog,
         onExport: (selectedIndices: number[]) => {

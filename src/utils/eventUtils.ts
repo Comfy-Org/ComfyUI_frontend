@@ -1,5 +1,6 @@
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export interface DroppedAsset {
   name: string
@@ -55,9 +56,9 @@ export async function extractFilesFromDragEvent(
   if (!event.dataTransfer) return []
 
   // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
-  const files = Array.from(event.dataTransfer.files).filter(
-    (file) => file.type !== 'image/bmp'
-  )
+  const files = Array.from(event.dataTransfer.files)
+    .filter((file) => file.type !== 'image/bmp')
+    .map(withHdrImageType)
 
   if (files.length > 0) return files
 
@@ -66,6 +67,15 @@ export async function extractFilesFromDragEvent(
 
   const file = await fetchDroppedAsset(asset)
   return file ? [file] : []
+}
+
+/** Some platforms give .exr/.hdr files an empty type; type them by extension. */
+export function withHdrImageType(file: File): File {
+  if (file.type || !isHdrImageFilename(file.name)) return file
+  const type = file.name.toLowerCase().endsWith('.hdr')
+    ? 'image/vnd.radiance'
+    : 'image/x-exr'
+  return new File([file], file.name, { type, lastModified: file.lastModified })
 }
 
 export function hasImageType({ type }: File): boolean {

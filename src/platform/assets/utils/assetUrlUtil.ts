@@ -36,6 +36,25 @@ export function getAssetUrl(
 }
 
 /**
+ * `/view` URL of the asset's own file. An HDR asset's `preview_url` points at
+ * its generated preview, so the path comes from `loader_path` where the
+ * backend sends it.
+ */
+export function getAssetViewUrl(asset: AssetItem): string {
+  const root = (['input', 'output', 'temp'] as const).find((tag) =>
+    asset.tags.includes(tag)
+  )
+  if (!asset.loader_path || !root) return getAssetUrl(asset)
+  const slash = asset.loader_path.lastIndexOf('/')
+  const params = new URLSearchParams({
+    filename: asset.loader_path.slice(slash + 1),
+    type: root
+  })
+  if (slash > 0) params.set('subfolder', asset.loader_path.slice(0, slash))
+  return api.apiURL(`/view?${params}`)
+}
+
+/**
  * Get the subfolder an asset lives in, relative to its type root
  *
  * Reads `preview_url` first and falls back to `user_metadata`, mirroring how
