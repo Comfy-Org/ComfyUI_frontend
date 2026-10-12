@@ -56,8 +56,9 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 /**
- * Tells the human which of their edits the host refused. One follower owns one
- * notifier. Actual guarantees, since two of them are narrower than they look:
+ * Tells the human which of their edits the host refused, or the minter refused
+ * before sending. One follower owns one notifier. Actual guarantees, since two
+ * of them are narrower than they look:
  *
  * - A refused batch may still have applied a prefix (schema §4 aborts the
  *   remainder, not the batch), so this reports the REJECTED operations and not
@@ -125,6 +126,9 @@ export function createRejectedOpNotifier() {
       reportOnce(code, widgetWrite, result, failed)
       const partial = result.applied.length > 0 && failed !== undefined
       throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
+    },
+    notifyWidgetWriteRefused() {
+      throttledToast(i18n.global.t('agent.editRejected.widgetWrite'))()
     },
     cancel() {
       for (const throttled of throttledToasts.values()) throttled.cancel()

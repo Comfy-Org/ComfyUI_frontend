@@ -853,8 +853,8 @@ const {
   enqueueHumanOperations,
   docInputNames,
   docPromotedWidgets,
-  isDocCaughtUp,
-  docIdentity
+  mayWritePromotedHost,
+  notifyWidgetWriteRefused
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -915,15 +915,8 @@ const docOpMinter = attachDocOpMinter({
   boundRootGraphId,
   docInputNames,
   docPromotedWidgets,
-  isDocCaughtUp,
-  docIdentity,
-  onWidgetWriteRefused: () =>
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('agent.editRejected.widgetWrite'),
-      life: 10_000
-    })
+  mayWritePromotedHost,
+  onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
