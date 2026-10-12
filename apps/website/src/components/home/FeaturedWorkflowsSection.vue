@@ -1,13 +1,30 @@
 <script setup lang="ts">
 import { useElementVisibility } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+import { resolveTemplateLogos } from '@/lib/hub/model-logos'
 
 import { useAutoAdvance } from '@/composables/useAutoAdvance'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  items,
+  showAuthors = true,
+  strongScrim = false,
+  alignWithGrid = false,
+  label
+} = defineProps<{
+  locale?: Locale
+  items?: Slide[]
+  showAuthors?: boolean
+  strongScrim?: boolean
+  alignWithGrid?: boolean
+  label?: string
+}>()
 const { t } = translationsFor(locale)
 
 interface Slide {
@@ -15,16 +32,18 @@ interface Slide {
   href: string
   media: string
   mediaType: 'video' | 'image'
-  author: string
-  avatar: string
+  poster?: string
+  author?: string
+  avatar?: string
   tags: string[]
+  models?: string[]
 }
 
 const HUB = 'https://comfy-hub-assets.comfy.org/uploads'
 const WORKFLOWS = 'https://comfy.org/workflows'
 
 /** Mirror of the workflows page's FEATURED · STAFF PICK carousel. */
-const slides: Slide[] = [
+const defaultSlides: Slide[] = [
   {
     title: 'Product Advertisement Video',
     href: `${WORKFLOWS}/c98e5c457e1e-c98e5c457e1e/`,
@@ -81,13 +100,33 @@ const slides: Slide[] = [
   }
 ]
 
+const carouselLabel = computed(() => label ?? t('featuredWorkflows.label'))
+const sectionClasses = computed(() =>
+  cn('mx-auto w-full max-w-9xl p-6 md:py-10', !alignWithGrid && 'lg:px-12')
+)
+const scrimClasses = computed(() =>
+  strongScrim ? 'via-black/50 via-40% to-black/95' : 'to-black/70'
+)
+
+const slides = computed(() =>
+  (items ?? defaultSlides).map((slide) => ({
+    ...slide,
+    showAuthor: Boolean(showAuthors && slide.author),
+    modelLogos: resolveTemplateLogos({ models: slide.models })
+  }))
+)
+function preloadForSlide(index: number) {
+  return index === active.value ? 'auto' : 'none'
+}
+
 const active = ref(0)
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const onScreen = useElementVisibility(sectionRef)
 const hovering = ref(false)
 
 function go(step: number) {
-  active.value = (active.value + step + slides.length) % slides.length
+  active.value =
+    (active.value + step + slides.value.length) % slides.value.length
 }
 
 /** Self-advancing while on screen. Hovering holds the cycle and hands back on
@@ -131,13 +170,13 @@ watch([active, onScreen], ([current, visible], [previous]) => {
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-9xl p-6 md:py-10 lg:px-12">
+  <section :class="sectionClasses">
     <div
       ref="sectionRef"
       class="relative h-[clamp(300px,44vw,520px)] rounded-5xl border-[1.5px] border-white/15"
       role="region"
       aria-roledescription="carousel"
-      :aria-label="t('featuredWorkflows.label')"
+      :aria-label="carouselLabel"
       @pointerenter="hovering = true"
       @pointerleave="((hovering = false), resume())"
     >
@@ -157,8 +196,9 @@ watch([active, onScreen], ([current, visible], [previous]) => {
               v-if="slide.mediaType === 'video'"
               :ref="(el) => setVideoEl(i, el)"
               :src="slide.media"
+              :poster="slide.poster"
               class="size-full object-cover"
-              :preload="i === active ? 'auto' : 'none'"
+              :preload="preloadForSlide(i)"
               muted
               loop
               playsinline
@@ -173,7 +213,8 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             />
 
             <div
-              class="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent to-black/70"
+              class="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent"
+              :class="scrimClasses"
               aria-hidden="true"
             />
 
@@ -184,10 +225,23 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             />
 
             <div
+              v-if="slide.modelLogos.length"
+              class="absolute top-3 right-3 z-20 flex gap-2 rounded-xl bg-black/30 p-2 text-white backdrop-blur-sm"
+            >
+              <span
+                v-for="logo in slide.modelLogos"
+                :key="logo.src"
+                :title="logo.name"
+                class="size-6 bg-white mask-contain mask-center mask-no-repeat"
+                :style="{ maskImage: `url(${logo.src})` }"
+              />
+            </div>
+
+            <div
               class="absolute top-3 left-3 z-20 rounded-[12px] bg-black/10 px-3.5 py-1.5 backdrop-blur-xs"
             >
               <span class="text-xs font-extrabold tracking-wide text-white">
-                {{ t('featuredWorkflows.label') }}
+                {{ carouselLabel }}
               </span>
             </div>
 
@@ -200,7 +254,10 @@ watch([active, onScreen], ([current, visible], [previous]) => {
                 {{ slide.title }}
               </h2>
               <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-                <span class="flex min-w-0 items-center gap-2 text-white/95">
+                <span
+                  v-if="slide.showAuthor"
+                  class="flex min-w-0 items-center gap-2 text-white/95"
+                >
                   <img
                     :src="slide.avatar"
                     :alt="slide.author"
@@ -225,6 +282,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
       </div>
 
       <div
+        v-if="slides.length > 1"
         class="absolute right-6 bottom-6 z-30 flex gap-2 lg:right-8 lg:bottom-8"
       >
         <button

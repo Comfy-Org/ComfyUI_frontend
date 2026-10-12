@@ -12,7 +12,7 @@
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
-          <span class="text-muted">{{
+          <span class="text-muted-foreground">{{
             isSignIn
               ? t('auth.login.newUser')
               : t('auth.signup.alreadyHaveAccount')
@@ -55,7 +55,7 @@
 
       <div class="my-8 flex items-center gap-3">
         <div class="grow border-t border-interface-stroke" />
-        <span class="shrink-0 text-muted">{{
+        <span class="shrink-0 text-muted-foreground">{{
           t('auth.login.orContinueWith')
         }}</span>
         <div class="grow border-t border-interface-stroke" />
@@ -106,7 +106,7 @@
 
           <p
             v-if="showGoogleSsoInAppBrowserNotice"
-            class="my-0 text-xs text-muted"
+            class="my-0 text-xs text-muted-foreground"
             data-testid="google-sso-in-app-browser-notice"
           >
             {{ t('auth.login.googleSsoInAppBrowserNotice') }}
@@ -127,7 +127,7 @@
             />
             {{ t('auth.login.useApiKey') }}
           </Button>
-          <small class="text-center text-muted">
+          <small class="text-center text-muted-foreground">
             {{ t('auth.apiKey.helpText') }}
             <a
               :href="`${comfyPlatformBaseUrl}/login`"
@@ -151,7 +151,7 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p class="mt-8 text-xs text-muted">
+      <p class="mt-8 text-xs text-muted-foreground">
         {{ t('auth.login.termsText') }}
         <a
           href="https://comfy.org/terms-of-service/"

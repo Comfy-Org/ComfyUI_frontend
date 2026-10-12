@@ -3,20 +3,12 @@ import { computed, reactive } from 'vue'
 import EditKeybindingContent from '@/components/dialog/content/setting/keybinding/EditKeybindingContent.vue'
 import EditKeybindingFooter from '@/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue'
 import EditKeybindingHeader from '@/components/dialog/content/setting/keybinding/EditKeybindingHeader.vue'
+import { EDIT_KEYBINDING_DIALOG_KEY } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
+import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogService } from '@/services/dialogService'
-
-export const DIALOG_KEY = 'edit-keybinding'
-
-export interface EditKeybindingDialogState {
-  commandId: string
-  newCombo: KeyComboImpl | null
-  currentCombo: KeyComboImpl | null
-  mode: 'edit' | 'add'
-  existingBinding: KeybindingImpl | null
-}
 
 export function useEditKeybindingDialog() {
   const { showSmallLayoutDialog } = useDialogService()
@@ -48,7 +40,7 @@ export function useEditKeybindingDialog() {
     }
 
     showSmallLayoutDialog({
-      key: DIALOG_KEY,
+      key: EDIT_KEYBINDING_DIALOG_KEY,
       headerComponent: EditKeybindingHeader,
       footerComponent: EditKeybindingFooter,
       component: EditKeybindingContent,

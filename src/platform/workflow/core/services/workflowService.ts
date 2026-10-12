@@ -37,7 +37,10 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  provideWorkflowService,
+  useSubgraphNavigationStore
+} from '@/stores/subgraphNavigationStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -776,14 +779,9 @@ export const useWorkflowService = () => {
     shareId?: string,
     transition?: DocumentTransition
   ) => {
+    const graphState = useApp().rootGraphOrUndefined?.state
     await activateLoadedWorkflow(value, workflowData, shareId)
-    // Publish the root graph this load settled on — `activateLoadedWorkflow` may
-    // have adopted a minted id (`adoptRootGraphId`) — but only once a workflow
-    // is presented: a load that selected none leaves the binding retracted.
-    // Which document that is comes from the active pointer at read time, not
-    // from a uid captured here; see `documentLifecycleStore`.
-    // No transition means no load opened one, so there is nothing this publish
-    // could be ordered against: stay retracted rather than write unordered.
+    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     const activated = useWorkspaceStore().workflow.activeWorkflow
     if (activated && useApp().isGraphReady && transition !== undefined) {
       useDocumentLifecycleStore().activate(
@@ -801,6 +799,7 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
+    const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
@@ -851,6 +850,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -886,11 +886,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -1047,3 +1049,5 @@ export const useWorkflowService = () => {
     beforeLoadNewGraph
   }
 }
+
+provideWorkflowService(useWorkflowService)

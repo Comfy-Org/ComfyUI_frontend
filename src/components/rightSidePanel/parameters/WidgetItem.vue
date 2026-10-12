@@ -185,7 +185,7 @@ const displayLabel = customRef((track, trigger) => {
 
       <span
         v-if="(showNodeName || hasParents) && displayNodeName"
-        class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
+        class="mx-1 my-0 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
       </span>

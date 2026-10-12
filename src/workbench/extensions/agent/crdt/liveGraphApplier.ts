@@ -8,10 +8,16 @@ import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
+import {
+  applyRemoteDynamicGroupRowCount,
+  isDynamicGroupController,
+  reachesDynamicGroupRowCount,
+  reportRemoteDynamicGroupRowMismatch
+} from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -78,6 +84,7 @@ export interface LiveGraphApplierDeps {
 
 export interface ApplyResult {
   createdNodeIds: NodeId[]
+  failureCount: number
 }
 
 /**
@@ -543,6 +550,7 @@ function floorSizeToContent(node: LGraphNode): void {
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
+  private readonly failureCounts: number[] = []
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -556,44 +564,52 @@ export class LiveGraphApplier {
     mode: ApplyMode = 'merge'
   ): ApplyResult {
     const graph = this.deps.getGraph()
-    if (!graph) return { createdNodeIds: [] }
-    return this.write(graph, context, () => {
-      if (mode === 'replace') this.removeAbsent(graph, doc, context)
-      const created: NodeId[] = []
-      const touchedNodes = new Set<string>()
-      this.registerDefinitions(graph, doc)
+    if (!graph) return { createdNodeIds: [], failureCount: 0 }
+    this.failureCounts.push(0)
+    try {
+      return this.write(graph, context, () => {
+        if (mode === 'replace') this.removeAbsent(graph, doc, context)
+        const created: NodeId[] = []
+        const touchedNodes = new Set<string>()
+        this.registerDefinitions(graph, doc)
 
-      for (const [id, change] of changes.nodes) {
-        if (change === 'delete') {
-          this.try(context, () => this.deleteNode(graph, id))
-          continue
-        }
-        touchedNodes.add(id)
-        this.try(context, () => {
-          const result = this.upsertNode(graph, doc, id, mode)
-          if (result === 'created') created.push(toNodeId(id))
-          if (result === 'recreated') {
-            for (const link of docLinksIncident(doc, id)) {
-              this.connectLink(graph, doc, link)
-            }
+        for (const [id, change] of changes.nodes) {
+          if (change === 'delete') {
+            this.try(context, () => this.deleteNode(graph, id))
+            continue
           }
-        })
-      }
+          touchedNodes.add(id)
+          this.try(context, () => {
+            const result = this.upsertNode(graph, doc, id, mode)
+            if (result === 'created') created.push(toNodeId(id))
+            if (result === 'recreated') {
+              for (const link of docLinksIncident(doc, id)) {
+                this.connectLink(graph, doc, link)
+              }
+            }
+          })
+        }
 
-      for (const id of changes.resyncNodes) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncFields(graph, doc, id))
-      }
+        for (const id of changes.resyncNodes) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncFields(graph, doc, id))
+        }
 
-      for (const [id, names] of changes.widgets) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
-      }
+        for (const [id, names] of changes.widgets) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
+        }
 
-      this.applyLinks(graph, doc, [...changes.links], context)
-      if (mode === 'merge') this.placeBatch(graph, created)
-      return { createdNodeIds: created }
-    })
+        this.applyLinks(graph, doc, [...changes.links], context)
+        if (mode === 'merge') this.placeBatch(graph, created)
+        return {
+          createdNodeIds: created,
+          failureCount: this.currentFailureCount()
+        }
+      })
+    } finally {
+      this.failureCounts.pop()
+    }
   }
 
   private removeAbsent(
@@ -637,6 +653,7 @@ export class LiveGraphApplier {
     try {
       fn()
     } catch (error) {
+      this.incrementFailureCount()
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
@@ -652,6 +669,7 @@ export class LiveGraphApplier {
     errorType: string,
     context: Record<string, unknown>
   ): void {
+    this.incrementFailureCount()
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
@@ -660,6 +678,15 @@ export class LiveGraphApplier {
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
       context
     })
+  }
+
+  private currentFailureCount(): number {
+    return this.failureCounts.at(-1) ?? 0
+  }
+
+  private incrementFailureCount(): void {
+    const index = this.failureCounts.length - 1
+    if (index >= 0) this.failureCounts[index] += 1
   }
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
@@ -675,6 +702,7 @@ export class LiveGraphApplier {
         this.reported.delete(`definition:${definition.id}`)
         continue
       }
+      this.incrementFailureCount()
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
@@ -782,9 +810,15 @@ export class LiveGraphApplier {
     const source = docNode.serialised
     if (source.title !== undefined && node.title !== source.title)
       node.title = source.title
-    if (node.mode !== source.mode) node.mode = source.mode
-    const { ghost } = node.flags
-    node.flags = ghost === undefined ? source.flags : { ...source.flags, ghost }
+    if (node.mode !== source.mode && !node.changeMode(source.mode)) {
+      this.reportOnce(
+        `node-mode:${docNode.id}:${source.mode}`,
+        `Document node ${docNode.id} rejected mode ${source.mode}`,
+        'agent_graph_node_mode_rejected',
+        { nodeId: docNode.id, mode: source.mode }
+      )
+    }
+    applyFlags(node, source.flags)
     for (const [key, value] of Object.entries(source.properties ?? {})) {
       if (node.properties[key] !== value) node.setProperty(key, value)
     }
@@ -896,7 +930,9 @@ export class LiveGraphApplier {
         this.holdsLocalWrite(node, widget.name, value)
       )
         continue
-      this.setWidgetValue(node, widget, value)
+      if (isDynamicGroupController(widget))
+        this.applyDynamicGroupRowCount(node, widget, value)
+      else this.setWidgetValue(node, widget, value)
       resolved = true
     }
     return { resolved, unresolved }
@@ -1022,6 +1058,22 @@ export class LiveGraphApplier {
     return (
       this.deps.holdsLocalWrite?.(String(node.id), widget, docValue) ?? false
     )
+  }
+
+  private applyDynamicGroupRowCount(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
+    applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (reachesDynamicGroupRowCount(widget, value)) return
+    this.incrementFailureCount()
+    reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
+      ...AGENT_APPLY_TAGS,
+      outcome: 'degraded'
+    })
   }
 
   private setWidgetValue(
@@ -1281,7 +1333,28 @@ function writeWidgetValue(
   }
 }
 
+function applyFlags(node: LGraphNode, flags: INodeFlags): void {
+  if (node.collapsed !== !!flags.collapsed) node.collapse(true)
+  if (node.pinned !== !!flags.pinned) node.pin(!!flags.pinned)
+  for (const [key, value] of Object.entries({ ...node.flags, ...flags })) {
+    if (['ghost', 'collapsed', 'pinned'].includes(key)) continue
+    if (key in flags) {
+      Object.assign(node.flags, { [key]: value })
+    } else {
+      Reflect.deleteProperty(node.flags, key)
+    }
+  }
+}
+
 function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
+  const color = source.color ?? node.color
+  const bgcolor = source.bgcolor ?? node.bgcolor
+  if (node.color !== color || node.bgcolor !== bgcolor) {
+    const option = Object.values(LGraphCanvas.node_colors).find(
+      (option) => option.color === color && option.bgcolor === bgcolor
+    )
+    if (option) node.setColorOption(option)
+  }
   for (const key of SYNCED_APPEARANCE_FIELDS) {
     const value = source[key]
     if (value !== undefined && node[key] !== value) {

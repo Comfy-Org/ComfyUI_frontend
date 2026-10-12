@@ -29,13 +29,12 @@
           :min="sliderMin"
           :max="sliderMax"
           :step="sliderStep"
-          class="w-full"
           @update:model-value="onIntensityUpdate"
         />
       </div>
     </PopoverContent>
   </Popover>
-  <span v-else class="px-2 text-sm text-muted">{{
+  <span v-else class="px-2 text-sm text-muted-foreground">{{
     t('load3d.menuBar.originalMaterialOnly')
   }}</span>
 </template>

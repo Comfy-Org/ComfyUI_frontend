@@ -1,6 +1,6 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'

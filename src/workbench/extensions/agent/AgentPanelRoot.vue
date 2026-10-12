@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -17,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -39,8 +40,15 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  agentAttachRefVerdict,
+  agentAttachVerdict,
+  isValidAgentAttachment
+} from './utils/attachableFiles'
+import type { AgentAttachVerdict } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -79,13 +87,16 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS,
   useAttachment
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
@@ -106,6 +117,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -135,6 +147,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -158,6 +171,7 @@ const {
   tier: subscriptionTier,
   type: billingType,
   billingStatus,
+  canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
@@ -194,7 +208,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
-const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -284,6 +297,9 @@ watch(
  * nothing.
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const agentScopedHasFunds = computed(
+  () => subscription.value?.agentScopedHasFunds
+)
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
@@ -304,36 +320,68 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const unresolvedPaywallPending = computed(() =>
+  conversationEntries.value.some(
+    (entry) =>
+      entry.role === 'assistant' &&
+      entry.parts.some((part) => part.type === 'paywall')
+  )
+)
+
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  return !(
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  return !latestEntryHasPaywall.value
+})
 
 const agentPanelStore = useAgentPanelStore()
-const billingIdentity = computed(
-  () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
-)
+const billingIdentity = useBillingIdentity()
 
-/**
- * One impression per exhaustion episode, not per render: the surface is
- * standing, so it is visible for as long as the workspace is out of credits and
- * a per-render report would make impressions a function of session length.
- * Reset when funds return, so a later exhaustion reports again — mirroring how
- * `useBillingBanner` scopes its dismissal to one episode.
- */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
+
+const showCreditTransitionNotice = computed(
+  () =>
+    isCreditTransitionNoticeShown(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    canAccessSubscriptionFeatures.value &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value === true
+)
+
+function onDismissCreditTransitionNotice(): void {
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
+}
+
+function onCreditTransitionNoticeShown(): void {
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  if (
+    !agentPanelStore.claimCreditTransitionNoticeImpression(
+      billingIdentity.value
+    )
+  )
+    return
+  telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
+}
 
 function onStandingPaywallShown(): void {
   if (
@@ -841,7 +889,9 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  notifyWidgetWriteRefused
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -897,7 +947,9 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
@@ -1245,12 +1297,21 @@ function forgetApproval(askId: string): void {
 
 async function onAnswerAsk(
   askId: string,
-  selection: 'run' | 'cancel'
+  answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  if (await answerAsk(askId, selection))
-    trackApprovalResolved(askId, selection, decidedAt, shownAt)
+  const decision = runApprovalDecision(answer)
+  if ((await answerAsk(askId, answer)) && decision)
+    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+}
+
+function runApprovalDecision(
+  answer: AgentAnswerRequest
+): 'run' | 'cancel' | undefined {
+  if (answer.selected.length !== 1 || answer.other_text) return undefined
+  const [choice] = answer.selected
+  return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
 
 void refreshCloudWorkflowIds()
@@ -1301,11 +1362,31 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
+// DES-1221. Read while the panel is on screen, so the experiment's denominator
+// is the panel openers the hypothesis is about.
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
+
+/**
+ * `Try your first chat for free!` is a claim about the Agent's own granted
+ * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
+ * is the whole gate: an absent field, an unsettled read and a rail that reports
+ * no scoped balance all fail closed without a separate branch.
+ */
+const freeUseGrantActive = computed(
+  () => subscription.value?.agentScopedHasFunds === true
+)
+
+const freeUsePlacement = computed(() =>
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
+    ? 'control'
+    : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1623,8 +1704,10 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
+const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
+  validate: isValidAgentAttachment,
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
@@ -1645,14 +1728,10 @@ const attachment = useAttachment({
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () =>
-    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
-      'max_upload_size'
-    ) ?? MAX_ATTACHMENT_BYTES,
-  // A rejected file is the user's problem to fix, not an agent failure, so it
-  // must not raise the server-error overlay.
-  onError: (message) => toast.warning(message, { duration: 5000 }),
+  maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
+  onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
+  staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
@@ -1763,42 +1842,66 @@ function onPanelDragLeave(): void {
   if (assetDragDepth === 0) assetDragActive.value = false
 }
 
+function warnAttachment(message: string): void {
+  toast.warning(message, { duration: 5000 })
+}
+
+function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
+  const fromRef = asset.ref ? agentAttachRefVerdict(asset.ref) : 'unknown'
+  return fromRef === 'unknown' ? agentAttachVerdict(asset.name) : fromRef
+}
+
+function stageAcceptedAssetCard(
+  asset: DroppedAsset,
+  ref: string,
+  sourceKey: string
+): boolean {
+  if (composerStore.attachments.some((item) => item.ref === ref)) {
+    notifyDuplicateAttachments([asset.name])
+    return false
+  }
+  if (composerStore.attachments.length >= MAX_TURN_ATTACHMENTS) {
+    warnAttachment(
+      t('agent.attachmentCountExceeded', { count: MAX_TURN_ATTACHMENTS })
+    )
+    return false
+  }
+  const added = composerStore.addAttachment({
+    id: `asset:${crypto.randomUUID()}`,
+    name: asset.name,
+    ref,
+    sourceKey,
+    previewUrl: asset.previewUrl,
+    mediaUrl: asset.mediaUrl,
+    mediaKind: asset.kind
+  })
+  if (!added) notifyDuplicateAttachments([asset.name])
+  return added
+}
+
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
+    warnAttachment(t('agent.assetNotAttachable'))
     return false
   }
 
   const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
+  if (droppedAssetVerdict(asset) === 'rejected') {
+    attachment.addUnsupportedAsset(asset.name, sourceKey)
+    return false
+  }
   if (asset.ref && asset.kind !== 'other') {
-    if (composerStore.attachments.some((item) => item.ref === asset.ref)) {
-      notifyDuplicateAttachments([asset.name])
-      return false
-    }
-    const added = composerStore.addAttachment({
-      id: `asset:${crypto.randomUUID()}`,
-      name: asset.name,
-      ref: asset.ref,
-      sourceKey,
-      previewUrl: asset.previewUrl,
-      mediaUrl: asset.mediaUrl,
-      mediaKind: asset.kind
-    })
-    if (!added) notifyDuplicateAttachments([asset.name])
-    return added
+    return stageAcceptedAssetCard(asset, asset.ref, sourceKey)
   }
 
   const result = await attachment.addDeferredFile(
     asset.name,
-    async () => {
-      const file = await fetchDroppedAsset(asset)
-      return file && isAgentAttachable(file) ? file : undefined
-    },
+    (signal) => fetchDroppedAsset(asset, { signal, nameFromSource: true }),
     sourceKey
   )
-  if (result === 'unsupported')
-    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
+  if (result === 'fetch_failed')
+    warnAttachment(t('agent.assetFetchFailed', { name: asset.name }))
   return result === 'uploaded'
 }
 
@@ -1808,8 +1911,6 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
-  // A dropped asset card carries a URI, not a File, so the claim must happen
-  // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
@@ -1818,11 +1919,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     })
     return
   }
-  // Anything the composer cannot attach still belongs to the graph loader, which
-  // only runs while the drop is unclaimed, so claim the attachable files alone.
-  const files = Array.from(event.dataTransfer?.files ?? []).filter(
-    isAgentAttachable
-  )
+  const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return
   event.preventDefault()
   if (await attachment.addFiles(files))
@@ -1881,13 +1978,16 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
+      @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"
+      @remove-attachment="attachment.cancelUpload"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
@@ -1914,6 +2014,14 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     >
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+      <template #composerNotice>
+        <AgentCreditTransitionNotice
+          v-if="showCreditTransitionNotice"
+          data-testid="agent-credit-transition-notice"
+          @shown="onCreditTransitionNoticeShown"
+          @dismiss="onDismissCreditTransitionNotice"
+        />
       </template>
     </AgentPanel>
     <div

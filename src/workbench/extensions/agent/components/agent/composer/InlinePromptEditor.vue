@@ -25,7 +25,6 @@ import {
   composerReferenceKey,
   composerReferenceName
 } from '../../../types/composerPrompt'
-import { attachableClipboardFiles } from '../../../utils/attachableFiles'
 import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
 import {
   assetReferenceText,
@@ -503,7 +502,7 @@ onMounted(() => {
     handlePaste(editor, event, slice) {
       const clipboard = event.clipboardData
       if (!clipboard) return false
-      const files = attachableClipboardFiles(clipboard)
+      const files = Array.from(clipboard.files)
       const text = clipboard.getData('text/plain')
       const attachmentsOnly = clipboard.files.length > 0 && text === ''
       if (!attachmentsOnly) insertPastedContent(editor, clipboard, slice, text)

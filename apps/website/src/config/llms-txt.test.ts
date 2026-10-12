@@ -74,7 +74,10 @@ function isExcludedPage(page: string): boolean {
  */
 const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
 
-/** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
+/**
+ * Turn `src/pages/learning/[category]/[slug].astro` into a matcher for
+ * `/learning/x/y`; a `[...rest]` segment may be empty.
+ */
 function pageMatchers(root: string): {
   static: Set<string>
   dynamic: RegExp[]
@@ -95,12 +98,15 @@ function pageMatchers(root: string): {
     if (route.includes('[')) {
       const pattern = route
         .split('/')
+        .filter(Boolean)
         .map((segment) =>
-          segment.startsWith('[')
-            ? '[^/]+'
-            : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+          segment.startsWith('[...')
+            ? '(?:/.*)?'
+            : segment.startsWith('[')
+              ? '/[^/]+'
+              : `/${segment.replace(/[.*+?^${}()|\\]/g, '\\$&')}`
         )
-        .join('/')
+        .join('')
       dynamic.push(new RegExp(`^${pattern}$`))
     } else {
       staticPages.add(route)

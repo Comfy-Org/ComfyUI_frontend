@@ -16,7 +16,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.name') }}
           </h3>
-          <div class="text-muted">
+          <div class="text-muted-foreground">
             {{ userDisplayName || $t('userSettings.notSet') }}
           </div>
         </div>
@@ -25,7 +25,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ userEmail }}
           </span>
         </div>
@@ -34,7 +34,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="flex items-center gap-1 text-muted">
+          <div class="flex items-center gap-1 text-muted-foreground">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
@@ -63,7 +63,7 @@
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
             tag="p"
-            class="text-sm text-muted"
+            class="text-sm text-muted-foreground"
           >
             <template #email>
               <a href="mailto:support@comfy.org" class="underline"
