@@ -16,11 +16,12 @@ async function conditioningLinks(page: Page) {
     const app = window.app!
     const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
     if (!sampler) return null
-    const links = inputNames.map((name) => {
+    const drawn = inputNames.flatMap((name) => {
       const input = sampler.inputs.find((slot) => slot.name === name)
-      return input?.link != null ? app.graph.getLink(input.link) : undefined
+      const link = input?.link != null ? app.graph.getLink(input.link) : null
+      return link?.path ? [{ id: link.id, path: link.path }] : []
     })
-    if (!links.every((link) => link?.path)) return null
+    if (drawn.length !== inputNames.length) return null
 
     const right = sampler.pos[0] - 4
     const top = Math.min(...app.graph.nodes.map((node) => node.pos[1]))
@@ -42,23 +43,25 @@ async function conditioningLinks(page: Page) {
         if (probe.isPointInStroke(path, x, y)) ys.push(y)
       return ys
     }
-    const conditioningIds = new Set(links.map((link) => link!.id))
-    const others = [...app.graph.links.values()].filter(
-      (link) => !conditioningIds.has(link.id) && link.path
+    const conditioningIds = new Set(drawn.map((link) => link.id))
+    const otherPaths = [...app.graph.links.values()].flatMap((link) =>
+      !conditioningIds.has(link.id) && link.path ? [link.path] : []
     )
 
     for (let x = right - 2; x > left + 2; x -= 2) {
-      const perLink = links.map((link) => crossings(link!.path!, x))
+      const perLink = drawn.map((link) => crossings(link.path, x))
       if (perLink.some((ys) => ys.length === 0)) continue
       const targetYs = perLink.flat()
       const bandTop = Math.min(...targetYs) - 3
       const bandBottom = Math.max(...targetYs) + 3
-      const blocked = others.some((link) =>
-        crossings(link.path!, x).some((y) => y >= bandTop && y <= bandBottom)
+      const blocked = otherPaths.some((path) =>
+        [x - 2, x, x + 2].some((column) =>
+          crossings(path, column).some((y) => y >= bandTop && y <= bandBottom)
+        )
       )
       if (blocked) continue
       return {
-        ids: links.map((link) => String(link!.id)),
+        ids: drawn.map((link) => String(link.id)),
         from: app.canvasPosToClientPos([x - 2, bandTop]),
         to: app.canvasPosToClientPos([x + 2, bandBottom])
       }
