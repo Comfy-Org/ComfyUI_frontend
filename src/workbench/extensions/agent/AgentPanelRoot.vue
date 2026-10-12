@@ -1045,9 +1045,36 @@ watch(
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
+function isActiveTabNavigationCurrent(
+  activationThreadId: string | null
+): boolean {
+  const view = agentPanelStore.view
+  if (view.screen !== 'history') return true
+  switch (view.selection.status) {
+    case 'idle':
+      return activationThreadId === history.activeId
+    case 'loading':
+      return (
+        activationThreadId === history.activeId ||
+        activationThreadId === view.selection.id
+      )
+    case 'failed':
+      return (
+        activationThreadId !== view.selection.id &&
+        activationThreadId === history.activeId
+      )
+  }
+}
+
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
-  const result = activeTabChain.then(() => onAgentActiveTab(data, generation))
+  const ownerThreadId = threadId.value
+  function isCurrent(): boolean {
+    if (generation !== activeTabGeneration) return false
+    if (ownerThreadId !== null && threadId.value !== ownerThreadId) return false
+    return isActiveTabNavigationCurrent(ownerThreadId ?? threadId.value)
+  }
+  const result = activeTabChain.then(() => onAgentActiveTab(data, isCurrent))
   activeTabChain = result.then(() => undefined)
   return result
 }
@@ -1120,10 +1147,10 @@ function agentTabFilename(name: string | undefined): string | undefined {
 
 async function onAgentActiveTab(
   data: AgentActiveTabData,
-  generation: number
+  isCurrent: () => boolean
 ): Promise<boolean> {
   const previousWorkflowId = boundWorkflowId.value
-  const stale = () => generation !== activeTabGeneration
+  const stale = () => !isCurrent()
   if (stale()) return false
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
@@ -1154,7 +1181,9 @@ async function activateExistingAgentTab(
   previousWorkflowId: string | null,
   stale: () => boolean
 ): Promise<boolean> {
-  const opened = await workflowService.openWorkflow(bound)
+  const opened = await workflowService.openWorkflow(bound, {
+    isCurrent: () => !stale()
+  })
   if (stale()) return false
   if (!opened) {
     warnWorkflowUnavailable()
@@ -1191,7 +1220,9 @@ async function createAndActivateAgentTab(
   tabActivity.setCreating(false)
   let opened: boolean
   try {
-    opened = await workflowService.openWorkflow(tab)
+    opened = await workflowService.openWorkflow(tab, {
+      isCurrent: () => !stale()
+    })
   } catch (error) {
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
     throw error
@@ -1387,6 +1418,7 @@ async function onSelectHistory(
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
 
+  ++activeTabGeneration
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -1554,6 +1586,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+  ++activeTabGeneration
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()

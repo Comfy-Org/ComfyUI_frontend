@@ -139,7 +139,8 @@ export async function mockAgentTurnApi(
 
 export async function mockWorkflowPersistence(
   page: Page,
-  workflowId: string
+  workflowId: string,
+  initialWorkflows: WorkflowListResponse['data'] = []
 ): Promise<void> {
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -158,25 +159,28 @@ export async function mockWorkflowPersistence(
     return route.fulfill(jsonRoute(saved))
   })
   const fulfillWorkflowList = (route: Route) => {
+    const data: WorkflowListResponse['data'] = [
+      ...initialWorkflows,
+      ...(savedName === undefined
+        ? []
+        : [
+            {
+              id: workflowId,
+              name: savedName,
+              created_at: '2026-09-01T00:00:00Z',
+              updated_at: '2026-09-01T00:00:00Z',
+              created_by: 'test-user-e2e',
+              latest_version: 1
+            }
+          ])
+    ]
     const workflows: WorkflowListResponse = {
-      data:
-        savedName === undefined
-          ? []
-          : [
-              {
-                id: workflowId,
-                name: savedName,
-                created_at: '2026-09-01T00:00:00Z',
-                updated_at: '2026-09-01T00:00:00Z',
-                created_by: 'test-user-e2e',
-                latest_version: 1
-              }
-            ],
+      data,
       pagination: {
         has_more: false,
         limit: 100,
         offset: 0,
-        total: savedName === undefined ? 0 : 1
+        total: data.length
       }
     }
     return route.fulfill(jsonRoute(workflows))

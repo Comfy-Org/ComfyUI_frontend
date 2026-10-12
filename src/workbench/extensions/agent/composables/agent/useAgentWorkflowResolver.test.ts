@@ -456,6 +456,7 @@ describe('Cloud listing completeness', () => {
 
   it('reports nothing complete before the first listing', () => {
     const { resolver } = setup([])
+    expect(resolver.cloudListingContains('cloud-a')).toBe(false)
     expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
   })
 
@@ -471,6 +472,8 @@ describe('Cloud listing completeness', () => {
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
 
     expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
+    expect(resolver.cloudListingContains('cloud-a')).toBe(complete)
+    expect(resolver.cloudListingContains('cloud-b')).toBe(false)
     expect(resolver.cloudListingOmits('cloud-b')).toBe(complete)
   })
 
