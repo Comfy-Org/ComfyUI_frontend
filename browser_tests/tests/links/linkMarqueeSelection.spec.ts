@@ -16,41 +16,46 @@ async function conditioningLinks(page: Page) {
     const app = window.app!
     const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
     if (!sampler) return null
-    const links = inputNames.map((name) => {
+    const slots = inputNames.map((name) => {
       const index = sampler.inputs.findIndex((slot) => slot.name === name)
       const linkId = sampler.inputs[index]?.link
       const link = linkId != null ? app.graph.getLink(linkId) : null
-      if (!link?.path) return null
-      return {
-        id: link.id,
-        end: app.canvasPosToClientPos(sampler.getInputPos(index))
-      }
+      return link?.path
+        ? { id: link.id, pos: sampler.getInputPos(index) }
+        : null
     })
-    return links.every((link) => link !== null) ? links : null
+    if (!slots.every((slot) => slot !== null)) return null
+    const top = Math.min(...slots.map(({ pos }) => pos[1])) - 6
+    const bottom = Math.max(...slots.map(({ pos }) => pos[1])) + 6
+    const right = sampler.pos[0] - 4
+    const blockingEdges = app.graph.nodes
+      .filter((node) => node !== sampler)
+      .map((node) => node.boundingRect)
+      .filter(
+        ([x, y, width, height]) =>
+          y < bottom && y + height > top && x + width < right
+      )
+      .map(([x, , width]) => x + width)
+    const left = Math.max(right - 40, ...blockingEdges.map((x) => x + 4))
+    return {
+      ids: slots.map(({ id }) => String(id)),
+      from: app.canvasPosToClientPos([left, top]),
+      to: app.canvasPosToClientPos([right, bottom])
+    }
   }, CONDITIONING_INPUTS)
   const links = await handle.jsonValue()
   if (!links) throw new Error('Rendered conditioning links were not found')
-  return links.map((link) => ({ id: String(link.id), end: link.end }))
+  return links
 }
 
-async function marqueeBeforeInputs(comfyPage: ComfyPage, ends: Point[]) {
-  const x = Math.min(...ends.map(([endX]) => endX))
-  const ys = ends.map(([, y]) => y)
+async function marqueeBeforeInputs(
+  comfyPage: ComfyPage,
+  { from, to }: { from: Point; to: Point }
+) {
   await comfyPage.canvasOps.dragAndDrop(
-    { x: x - 60, y: Math.min(...ys) - 6 },
-    { x: x - 25, y: Math.max(...ys) + 6 }
+    { x: from[0], y: from[1] },
+    { x: to[0], y: to[1] }
   )
-}
-
-async function moveSamplerAway(comfyPage: ComfyPage) {
-  await comfyPage.page.evaluate(() => {
-    const app = window.app!
-    const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
-    if (!sampler) throw new Error('KSampler not found')
-    sampler.pos = [sampler.pos[0] + 400, sampler.pos[1]]
-    app.canvas.setDirty(true, true)
-  })
-  await comfyPage.nextFrame()
 }
 
 async function graphLinkIds(page: Page) {
@@ -69,18 +74,15 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    await moveSamplerAway(comfyPage)
   })
 
   test('hides, then deletes, the links under an empty marquee', async ({
     comfyPage
   }) => {
-    const links = await conditioningLinks(comfyPage.page)
-    const linkIds = links.map((link) => link.id)
-    const ends = links.map((link) => link.end)
+    const { ids: linkIds, ...marquee } = await conditioningLinks(comfyPage.page)
 
     await test.step('Hide both links from the toolbox', async () => {
-      await marqueeBeforeInputs(comfyPage, ends)
+      await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
         .getByTestId(TestIds.selectionToolbox.hideLinks)
         .click()
@@ -112,7 +114,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     const otherLinkIds = allLinkIds.filter((id) => !linkIds.includes(id))
 
     await test.step('Delete both links from the toolbox', async () => {
-      await marqueeBeforeInputs(comfyPage, ends)
+      await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
         .getByTestId(TestIds.selectionToolbox.deleteLinks)
         .click()
@@ -130,7 +132,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     })
 
     await test.step('Delete both links with the Delete key', async () => {
-      await marqueeBeforeInputs(comfyPage, ends)
+      await marqueeBeforeInputs(comfyPage, marquee)
       await expect(
         comfyPage.selectionToolbox.getByTestId(
           TestIds.selectionToolbox.deleteLinks
