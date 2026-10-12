@@ -2,7 +2,13 @@ import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
+import type { LocaleAlternate } from '@/lib/hreflang'
 import SiteFooter from './SiteFooter.vue'
+
+const agentAlternates: LocaleAlternate[] = [
+  { locale: 'en', path: '/agent/' },
+  { locale: 'zh-CN', path: '/zh-CN/agent/' }
+]
 
 describe('SiteFooter', () => {
   it.for([
@@ -112,7 +118,6 @@ describe('SiteFooter', () => {
       ['Comfy MCP', routes.mcp],
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
-      ['Launches', routes.launches],
       ['Supported Models', routes.models]
     ])
   })
@@ -127,22 +132,29 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Launches and Supported Models only in Features', () => {
+  it('keeps Supported Models out of every column but Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
       const nav = screen.getByRole('navigation', { name: column })
-      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
       expect(
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
-    const features = screen.getByRole('navigation', { name: 'Features' })
+  })
+
+  it('hands the page alternates and the reader locale to the switcher', () => {
+    render(SiteFooter, {
+      props: { locale: 'zh-CN', alternates: agentAlternates }
+    })
+
     expect(
-      within(features).getByRole('link', { name: 'Launches' })
-    ).toBeTruthy()
-    expect(
-      within(features).getByRole('link', { name: 'Supported Models' })
-    ).toBeTruthy()
+      within(screen.getByRole('navigation', { name: '语言' }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+    ).toEqual([
+      ['English', '/agent/'],
+      ['简体中文', '/zh-CN/agent/']
+    ])
   })
 })

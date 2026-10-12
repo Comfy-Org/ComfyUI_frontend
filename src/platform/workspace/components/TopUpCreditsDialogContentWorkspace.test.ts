@@ -3,6 +3,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -53,8 +54,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockToastAdd = vi.fn()
-
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -79,13 +78,6 @@ const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -617,12 +609,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail:
-            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description:
+          'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
+      })
     )
   })
 
@@ -725,12 +715,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('credit purchase is still open')
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description: expect.stringContaining('credit purchase is still open')
+      })
     )
   })
 
@@ -973,10 +960,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     )
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Purchase Failed',
-      detail: 'Failed to purchase credits: An unknown error occurred'
+    expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+      description: 'Failed to purchase credits: An unknown error occurred'
     })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
@@ -1233,7 +1218,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       useTelemetry()?.trackApiCreditTopupButtonPurchaseClicked
     ).not.toHaveBeenCalled()
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 

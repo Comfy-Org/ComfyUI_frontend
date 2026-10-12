@@ -19,9 +19,12 @@ const INPUT_WIDGETS: Readonly<Record<string, string>> = {
   LoadVideo: 'file',
   LoadAudio: 'audio'
 }
-const zWidgetValue: z.ZodType<TWidgetValue> = z.custom(isWidgetValue)
-const zValues = z.union([z.array(zWidgetValue), z.record(zWidgetValue)])
-const zNamedValues = z.record(zWidgetValue)
+const zWidgetValue = z.custom<TWidgetValue>(isWidgetValue)
+const zValues = z.union([
+  z.array(zWidgetValue),
+  z.record(z.string(), zWidgetValue)
+])
+const zNamedValues = z.record(z.string(), zWidgetValue)
 
 type PreparationResult = {
   workflow: ComfyWorkflowJSON

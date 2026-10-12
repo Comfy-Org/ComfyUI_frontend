@@ -1608,7 +1608,7 @@ describe('attachDocOpMinter', () => {
 
     expect(subgraph.nodes).toEqual([])
     expect(minted).toEqual([])
-    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('refuses to mint a command on a graph other than the bound root, reporting once per tick', async () => {

@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 
 import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
 import type * as ControllerModule from '@/auth/useSignInController'
 import type { SignInPort } from '@/auth/useSignInController'
@@ -86,7 +87,7 @@ function recordingFetch(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
+  const fetchImpl: typeof fetch = async (input, init = {}) => {
     const url = String(input)
     sent.push({
       method: init.method ?? 'GET',
@@ -107,7 +108,7 @@ function recordingFetch(
         ? MINTED
         : {}
     return new Response(JSON.stringify(body))
-  })
+  }
   return { sent, fetchImpl }
 }
 
@@ -151,7 +152,7 @@ async function mainRequests(): Promise<SentRequest[]> {
     { firebase_config: FIREBASE_CONFIG },
     {}
   )
-  vi.stubGlobal('fetch', fetchImpl)
+  vi.mocked(fetch).mockImplementation(fetchImpl)
   await signInThenCallBilling(async ({ session, client, signIn }) => {
     await signIn()
     await client
@@ -235,7 +236,7 @@ describe('billing-web with unified_web_session off', () => {
         { firebase_config: FIREBASE_CONFIG, ...probe },
         perUser
       )
-      vi.stubGlobal('fetch', fetchImpl)
+      vi.mocked(fetch).mockImplementation(fetchImpl)
 
       await signInThenCallBilling(async ({ auth, signIn }) => {
         await signIn(auth.billingWebSignInPort())
@@ -267,7 +268,7 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       { firebase_config: FIREBASE_CONFIG },
       {}
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     await signInThenCallBilling(async ({ auth, signIn }) => {
       await signIn(auth.billingWebSignInPort())
       const signedInCount = sent.length
@@ -318,7 +319,7 @@ describe('billing-web with unified_web_session off, as a funnel', () => {
       { firebase_config: FIREBASE_CONFIG },
       {}
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
 
     await signInThenCallBilling(async ({ auth, signIn, events }) => {
       await signIn(auth.billingWebSignInPort())
@@ -336,13 +337,12 @@ describe('billing-web with unified_web_session off, as a funnel', () => {
   })
 
   it('reports a refused mint as sign-in required and failed with the refusal’s code', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (input) =>
-        String(input).endsWith('/api/features')
-          ? new Response(JSON.stringify({ firebase_config: FIREBASE_CONFIG }))
-          : new Response('{}', { status: 403 })
-      )
+    respondToFetch(`${CLOUD}/api/features`, () =>
+      Response.json({ firebase_config: FIREBASE_CONFIG })
+    )
+    respondToFetch(
+      `${CLOUD}/api/auth/token`,
+      () => new Response('{}', { status: 403 })
     )
 
     await signInThenCallBilling(
@@ -388,10 +388,7 @@ async function renderApp() {
 describe('billing-web first render with unified_web_session undecided', () => {
   it('routes and shows main’s "sign-in unavailable" notice without waiting for the flag', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(() => new Promise<Response>(() => {}))
-    )
+    vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}))
     vi.resetModules()
 
     const router = await renderApp()
@@ -408,18 +405,15 @@ describe('billing-web first render with unified_web_session undecided', () => {
       {}
     )
     let answerFlag: (response: Response) => void = () => undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>((input, init) =>
-        init?.credentials === 'include'
-          ? new Promise<Response>((resolve, reject) => {
-              answerFlag = resolve
-              init.signal?.addEventListener('abort', () =>
-                reject(new DOMException('Aborted', 'AbortError'))
-              )
-            })
-          : fetchImpl(input, init)
-      )
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      init?.credentials === 'include'
+        ? new Promise<Response>((resolve, reject) => {
+            answerFlag = resolve
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError'))
+            )
+          })
+        : fetchImpl(input, init)
     )
     vi.resetModules()
 
@@ -445,7 +439,7 @@ describe('billing-web first render with unified_web_session undecided', () => {
       { firebase_config: FIREBASE_CONFIG, web_session_probe: false },
       {}
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     vi.resetModules()
 
     await renderApp()

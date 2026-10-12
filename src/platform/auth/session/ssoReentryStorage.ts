@@ -33,9 +33,13 @@ export function forgetSsoHint(): void {
   }
 }
 
+export function isSsoSession(user: WebSession['user']): boolean {
+  return SSO_SIGN_IN_PROVIDERS.has(user.signInProvider ?? '')
+}
+
 /** Keyed on the provider the server reports, so only an SSO session leaves a hint. */
 export function rememberSignedInSession(user: WebSession['user']): void {
-  if (!SSO_SIGN_IN_PROVIDERS.has(user.signInProvider ?? '')) {
+  if (!isSsoSession(user)) {
     forgetSsoHint()
     return
   }

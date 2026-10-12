@@ -16,7 +16,7 @@ import { workshopModelAvailability } from '@/config/workshop-model-availability'
 
 const kindSchema = z.enum(['image', 'video', 'audio'])
 const modalitySchema = z.enum([...kindSchema.options, '3d', 'text', 'other'])
-const dateSchema = z.string().datetime({ offset: true })
+const dateSchema = z.iso.datetime({ offset: true })
 const fieldsSchema = z
   .array(z.string().regex(/^[A-Za-z_][A-Za-z0-9_.[\]-]{0,79}$/))
   .max(100)
@@ -80,7 +80,7 @@ const liveSchema = z
   .object({
     status: z.enum(['passed', 'failed', 'blocked', 'cancelled', 'not-run']),
     at: dateSchema,
-    requestId: z.string().uuid().optional(),
+    requestId: z.uuid().optional(),
     source: sourceSchema.optional(),
     completion: z.literal('collected-after-timeout').optional(),
     failure: failureSchema.optional(),
