@@ -18,7 +18,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
@@ -38,7 +38,7 @@ import {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -117,7 +117,7 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortalDirect } = useAuthActions()
-  const { showSubscriptionRequiredDialog } = useDialogService()
+  const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -585,11 +585,14 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const openBillingPortal = async (target: BillingPortalTarget) => {
+  const openBillingPortal = async (
+    target: BillingPortalTarget,
+    options?: { cancelSubscription?: boolean }
+  ) => {
     const portal = createBillingPortalReporter(telemetry, target)
     let opened: boolean
     try {
-      opened = await accessBillingPortalDirect()
+      opened = await accessBillingPortalDirect(undefined, options)
     } catch (error) {
       portal.failed(error, 'legacy')
       throw error
@@ -599,8 +602,10 @@ function useSubscriptionInternal() {
     return opened
   }
 
-  const manageSubscription = async () => {
-    if (!(await openBillingPortal('manage_subscription'))) {
+  const manageSubscription = async (options?: {
+    cancelSubscription?: boolean
+  }) => {
+    if (!(await openBillingPortal('manage_subscription', options))) {
       throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
     startCancellationWatcher()
@@ -857,6 +862,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(
@@ -933,7 +945,7 @@ function useSubscriptionInternal() {
     const rail = useBillingReadRail()
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       return status
     } catch (error) {

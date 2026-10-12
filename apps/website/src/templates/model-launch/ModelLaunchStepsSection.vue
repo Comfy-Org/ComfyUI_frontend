@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchSteps } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
-import { translationsFor } from '../../i18n/translations'
-import { parseFaqAnswer } from '../../utils/faqAnswer'
+import BrandButton from '@/components/common/BrandButton.vue'
+import { translationsFor } from '@/i18n/translations'
+import { parseFaqAnswer } from '@/utils/faqAnswer'
 
 const { locale = 'en', steps } = defineProps<{
   steps: ModelLaunchSteps

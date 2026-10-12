@@ -6,6 +6,7 @@ import { afterAll, describe, it } from 'vitest'
 
 import {
   noRelativePackages,
+  noRelativeParentPaths,
   noRestrictedPaths,
   noUselessPathSegments
 } from './importPaths'
@@ -178,6 +179,80 @@ ruleTester.run('no-relative-packages', noRelativePackages, {
       filename: file('packages/shared/src/index.ts'),
       code: `import { util } from '../../../src/base/util'`,
       errors: [{ message: /Use `root\/src\/base\/util` instead/ }]
+    }
+  ]
+})
+
+ruleTester.run('no-relative-parent-paths', noRelativeParentPaths, {
+  valid: [
+    {
+      name: 'a path joined from a named root',
+      code: `import { join } from 'node:path'\njoin(websiteRoot, 'src/data')`
+    },
+    {
+      name: 'a same-directory URL',
+      code: `new URL('./fixture.json', import.meta.url)`
+    },
+    {
+      name: 'traversal text that is test data, not a path',
+      code: `parseRunId('../other')`
+    },
+    {
+      name: 'a parent segment after a computed prefix',
+      code: `import { join } from 'node:path'\njoin(root, \`\${name}/../x\`)`
+    },
+    {
+      name: 'methods that share a path builder name',
+      code: `['a', 'b'].join('../')\nvoid Promise.resolve('../value')`
+    },
+    {
+      name: 'a local function named resolve',
+      code: `function resolve(value: string) {}\nresolve('../value')`
+    },
+    {
+      name: 'a join imported from another module',
+      code: `import { join } from './strings'\njoin('../value')`
+    },
+    {
+      name: 'a shadowed URL class',
+      code: `class URL { constructor(value: string) {} }\nnew URL('../value')`
+    }
+  ],
+  invalid: [
+    {
+      name: 'a parent-relative URL',
+      code: `new URL('../src/data/x.json', import.meta.url)`,
+      errors: [{ message: /Parent-relative path "\.\.\/src\/data\/x\.json"/ }]
+    },
+    {
+      name: 'a parent-relative template URL',
+      code: 'new URL(`../routes/${name}`, import.meta.url)',
+      errors: [{ message: /Parent-relative path "\.\.\/routes\/"/ }]
+    },
+    {
+      name: 'a URL constructor imported from node:url',
+      code: `import { URL as NodeUrl } from 'node:url'\nnew NodeUrl('../x', base)`,
+      errors: [{ message: /Parent-relative path "\.\.\/x"/ }]
+    },
+    {
+      name: 'a bare parent segment passed to join',
+      code: `import { join } from 'node:path'\njoin(import.meta.dirname, '..', 'src')`,
+      errors: [{ message: /Parent-relative path "\.\."/ }]
+    },
+    {
+      name: 'an aliased path builder',
+      code: `import { join as pathJoin } from 'node:path'\npathJoin('../public')`,
+      errors: [{ message: /Parent-relative path "\.\.\/public"/ }]
+    },
+    {
+      name: 'a default-imported path module',
+      code: `import path from 'node:path'\npath.resolve(import.meta.dirname, '../public')`,
+      errors: [{ message: /Parent-relative path "\.\.\/public"/ }]
+    },
+    {
+      name: 'a namespace-imported path module',
+      code: `import * as path from 'path'\npath.join(dir, '../public')`,
+      errors: [{ message: /Parent-relative path "\.\.\/public"/ }]
     }
   ]
 })

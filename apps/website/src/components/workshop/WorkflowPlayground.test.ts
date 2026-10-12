@@ -11,28 +11,28 @@ import {
 } from 'vitest'
 import { computed, markRaw, readonly, ref, shallowRef } from 'vue'
 
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { useWorkflowRun } from '../../composables/useWorkflowRun'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-model-balance'), () => ({
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
-vi.mock(import('../../composables/useWorkflowRun'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/composables/useWorkflowRun'))
+vi.mock(import('@/scripts/posthog'))
 
 beforeEach(() => {
   vi.mocked(useWorkshopModelBalance).mockReturnValue(
@@ -214,15 +214,15 @@ describe('WorkflowPlayground API tab analytics', () => {
 })
 
 describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
+  // The ways out of the page live in the page header, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the page header', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+      props: { model, scope: 'anonymous' }
     })
 
     const panel = screen.getByRole('tabpanel', { name: 'Playground' })

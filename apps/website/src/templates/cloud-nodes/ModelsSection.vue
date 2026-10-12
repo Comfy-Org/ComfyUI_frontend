@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

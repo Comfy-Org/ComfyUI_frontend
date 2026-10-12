@@ -77,6 +77,7 @@ type CameraManagerStub = {
 type SceneManagerStub = {
   captureScene: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
+  hasSplats: ReturnType<typeof vi.fn>
 }
 
 function makeGizmoStub(): GizmoStub {
@@ -117,7 +118,8 @@ function makeInstance() {
   }
   const sceneManager: SceneManagerStub = {
     captureScene: vi.fn(),
-    dispose: vi.fn()
+    dispose: vi.fn(),
+    hasSplats: vi.fn(() => false)
   }
   const controlsManager = { updateCamera: vi.fn() }
   const viewHelperManager = { recreateViewHelper: vi.fn() }
@@ -382,11 +384,11 @@ describe('Load3d', () => {
           width: 800,
           height: 600,
           state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+          setViewport,
+          setScissor,
+          setScissorTest,
           renderer: {
             state: { reset: vi.fn() },
-            setViewport,
-            setScissor,
-            setScissorTest,
             setClearColor,
             clear,
             render
@@ -690,7 +692,8 @@ describe('Load3d', () => {
         view: {
           beginRender,
           blit,
-          renderer: { setScissorTest: vi.fn(), state: { reset: vi.fn() } }
+          setScissorTest: vi.fn(),
+          renderer: { state: { reset: vi.fn() } }
         }
       })
 
@@ -1394,7 +1397,6 @@ describe('Load3d', () => {
       exportGLBMock.mockRejectedValueOnce(new Error('boom'))
 
       setupForExport({ currentModel: model })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(ctx.load3d.exportModel('glb')).rejects.toThrow('boom')
 
@@ -1522,7 +1524,6 @@ describe('Load3d', () => {
     it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
         'Unsupported export format: xyz'
@@ -1554,7 +1555,6 @@ describe('Load3d', () => {
     it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       setupForExport({
         currentModel: new THREE.Object3D(),
         originalFileName: 'scene',
@@ -1589,11 +1589,11 @@ describe('Load3d', () => {
 
       const view = {
         canvas,
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
         renderer: {
           state: { reset: vi.fn() },
-          setViewport: vi.fn(),
-          setScissor: vi.fn(),
-          setScissorTest: vi.fn(),
           setClearColor: vi.fn(),
           clear: vi.fn(),
           render: vi.fn()
@@ -1623,6 +1623,7 @@ describe('Load3d', () => {
           init: vi.fn(),
           scene: new THREE.Scene(),
           renderBackground: vi.fn(),
+          hasSplats: vi.fn(() => false),
           handleResize: vi.fn(),
           dispose: vi.fn()
         },

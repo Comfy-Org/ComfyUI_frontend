@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks, localizeHref } from '../src/config/routes'
-import type { ComfyEvent } from '../src/data/events'
+import { externalLinks, localizeHref } from '@/config/routes'
+import type { ComfyEvent } from '@/data/events'
 import {
   directoryEvents,
   eventPath,
@@ -11,14 +11,14 @@ import {
   featuredEvents,
   pastEvents,
   upcomingEvents
-} from '../src/data/events'
-import type { Locale } from '../src/i18n/translations'
-import { t } from '../src/i18n/translations'
+} from '@/data/events'
+import type { Locale } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
 import {
   EVENT_CATEGORIES,
   PAST_EVENTS_PAGE_SIZE,
   pastCtaLabel
-} from '../src/utils/eventsDirectory'
+} from '@/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'

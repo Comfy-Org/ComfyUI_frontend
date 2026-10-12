@@ -1,12 +1,12 @@
 ---
 import WorkflowCanvas from './WorkflowCanvas.astro'
-import BrandButton from '../common/BrandButton.vue'
-import BreadcrumbBar from '../common/BreadcrumbBar.vue'
-import ProductCardsSection from '../common/ProductCardsSection.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import type { Locale } from '../../i18n/translations'
-import { externalLinks, getRoutes } from '../../config/routes'
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import BrandButton from '@/components/common/BrandButton.vue'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import { tAgent } from './agentTranslations'
 
 interface Props {
@@ -331,7 +331,7 @@ const briefs = [
         </p>
         <p class="mt-6">
           <a
-            href="https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft"
+            href="https://comfy.org/customers/hakoniwa-yui/"
             target="_blank"
             rel="noopener noreferrer"
             class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 hover:opacity-80"
@@ -579,7 +579,7 @@ const briefs = [
   import {
     captureAgentFaqExpanded,
     captureAgentUsecaseVideoPlayed
-  } from '../../scripts/posthog'
+  } from '@/scripts/posthog'
 
   document.addEventListener(
     'toggle',

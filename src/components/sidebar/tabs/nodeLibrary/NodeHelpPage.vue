@@ -2,7 +2,8 @@
   <div class="flex h-full flex-col overflow-auto">
     <div class="flex items-center border-b border-interface-stroke px-3 py-2">
       <Button
-        v-tooltip.bottom="$t('g.back')"
+        :tooltip="$t('g.back')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.back')"

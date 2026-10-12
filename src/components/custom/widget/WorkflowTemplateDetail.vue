@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
+import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
+import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateModelSetup
+} from '@/platform/workflow/templates/types/templateDetail'
 
 const {
   title,
@@ -12,7 +16,8 @@ const {
   groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetup
 } = defineProps<{
   title: string
   description: string
@@ -20,10 +25,13 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  modelSetup?: TemplateModelSetup
 }>()
 
 const emit = defineEmits<{
   'open-template': []
+  'download-models-and-open': []
+  'download-model': [rowId: string]
 }>()
 
 const { t } = useI18n()
@@ -31,6 +39,14 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
+const offerDownloadAndOpen = computed(() => modelSetup !== undefined)
+const downloadModelsAndOpenLabel = computed(() => {
+  const size =
+    modelSetup?.state === 'startable' ? modelSetup.remainingSize : undefined
+  return size
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', { size })
+    : t('templateWorkflows.detail.downloadModelsAndOpen')
+})
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -40,6 +56,7 @@ defineExpose({
 <template>
   <article
     ref="detailRoot"
+    data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
     class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
@@ -99,11 +116,7 @@ defineExpose({
         <h2 class="m-0 text-base font-semibold wrap-break-word">
           {{ title }}
         </h2>
-        <p
-          class="m-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground"
-        >
-          {{ description }}
-        </p>
+        <WorkflowTemplateDescription :description />
       </div>
 
       <div
@@ -111,69 +124,49 @@ defineExpose({
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
+        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2 @[48rem]/template-detail:px-6"
       >
-        <section
+        <WorkflowTemplateDetailGroup
           v-for="group in groups"
           :key="group.id"
-          :aria-labelledby="groupTitleId(group.id)"
-          class="border-t border-border-subtle/60 pb-2 first:border-t-0"
-        >
-          <div class="flex h-10 items-center gap-2 px-2">
-            <h3 :id="groupTitleId(group.id)" class="m-0 text-sm font-medium">
-              {{ group.label }}
-            </h3>
-            <Badge severity="secondary" variant="badge">
-              {{ group.rows.length }}
-            </Badge>
-            <span
-              v-if="group.total"
-              class="ml-auto text-sm text-muted-foreground"
-            >
-              {{ group.total }}
-            </span>
-          </div>
-
-          <ul class="m-0 list-none p-0">
-            <li
-              v-for="row in group.rows"
-              :key="row.id"
-              class="flex min-h-14 items-center gap-3 rounded-md p-2"
-            >
-              <span
-                class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
-              >
-                <i aria-hidden="true" class="icon-[lucide--box] size-4" />
-              </span>
-
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="truncate text-sm" :title="row.name">
-                  {{ row.name }}
-                </span>
-                <span
-                  class="truncate text-xs text-muted-foreground"
-                  :title="row.description"
-                >
-                  {{ row.description }}
-                </span>
-              </span>
-            </li>
-          </ul>
-        </section>
+          :group
+          :title-id="groupTitleId(group.id)"
+          @download-model="emit('download-model', $event)"
+        />
       </div>
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 items-center justify-end border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        @click="emit('open-template')"
-      >
-        {{ t('templateWorkflows.detail.openTemplate') }}
-      </Button>
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="offerDownloadAndOpen"
+          variant="outline"
+          size="lg"
+          :aria-disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openNow') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          :loading="openPending"
+          :disabled="modelSetup?.state === 'resolving'"
+          @click="
+            offerDownloadAndOpen
+              ? emit('download-models-and-open')
+              : emit('open-template')
+          "
+        >
+          {{
+            offerDownloadAndOpen
+              ? downloadModelsAndOpenLabel
+              : t('templateWorkflows.detail.openNow')
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>

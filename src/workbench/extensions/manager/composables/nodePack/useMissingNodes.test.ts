@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -25,10 +27,33 @@ vi.mock(
   })
 )
 
-const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
+// Backed by a `shallowRef`, like the real `ComfyApp`, so a test can install the
+// graph after the composable exists and have its watchers see it.
+const mockApp: { rootGraph?: Partial<LGraph> } = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  const graph = shallowRef<Partial<LGraph> | undefined>()
+  return {
+    get rootGraph() {
+      return graph.value
+    },
+    set rootGraph(value: Partial<LGraph> | undefined) {
+      graph.value = value
+    }
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: mockApp
+  app: {
+    get rootGraph() {
+      return mockApp.rootGraph
+    },
+    get rootGraphOrUndefined() {
+      return mockApp.rootGraph
+    },
+    get isGraphReady() {
+      return mockApp.rootGraph !== undefined
+    }
+  }
 }))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
@@ -382,6 +407,21 @@ describe('useMissingNodes', () => {
       expect(missingCoreNodes.value['1.2.0'][1].type).toBe('CoreNode2')
     })
 
+    it('reports no missing core nodes instead of traversing an unready graph', () => {
+      mockApp.rootGraph = undefined
+      mockCollectAllNodes.mockImplementation((graph) => {
+        // Stands in for the real traversal's unconditional `graph.nodes` read.
+        return [...(graph as unknown as Partial<LGraph>).nodes!]
+      })
+      useNodeDefStore().nodeDefsByName = {}
+
+      const { missingCoreNodes, hasMissingNodes } = useMissingNodes()
+
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
+      expect(hasMissingNodes.value).toBe(false)
+      expect(mockCollectAllNodes).not.toHaveBeenCalled()
+    })
+
     it('groups missing core nodes by version', () => {
       const node120 = createMockNode('Node120', 'comfy-core', '1.2.0')
       const node130 = createMockNode('Node130', 'comfy-core', '1.3.0')
@@ -413,6 +453,52 @@ describe('useMissingNodes', () => {
       expect(Object.keys(missingCoreNodes.value)).toHaveLength(1)
       expect(missingCoreNodes.value['1.2.0']).toHaveLength(1)
       expect(missingCoreNodes.value['1.2.0'][0].type).toBe('CoreNode')
+    })
+
+    it('recomputes once the graph is configured, not just once at graph-ready', () => {
+      const mockGraph = {
+        nodes: [],
+        subgraphs: new Map(),
+        events: new CustomEventTarget<LGraphEventMap>()
+      } as unknown as LGraph
+      mockApp.rootGraph = mockGraph
+      useNodeDefStore().nodeDefsByName = {}
+
+      mockCollectAllNodes.mockReturnValueOnce([])
+
+      const { missingCoreNodes } = useMissingNodes()
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
+
+      const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
+      mockCollectAllNodes.mockReturnValueOnce([coreNode])
+      mockGraph.events.dispatch('configured')
+
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(1)
+      expect(missingCoreNodes.value['1.2.0']).toHaveLength(1)
+    })
+
+    it('picks up nodes configured into a graph installed after the composable was created', async () => {
+      mockApp.rootGraph = undefined
+      useNodeDefStore().nodeDefsByName = {}
+      mockCollectAllNodes.mockImplementation((graph) => [...graph.nodes])
+
+      const { missingCoreNodes } = useMissingNodes()
+      expect(missingCoreNodes.value).toEqual({})
+
+      const graph = {
+        nodes: [],
+        subgraphs: new Map(),
+        events: new CustomEventTarget<LGraphEventMap>()
+      } as unknown as LGraph
+      mockApp.rootGraph = graph
+      await nextTick()
+      expect(missingCoreNodes.value).toEqual({})
+
+      const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
+      graph.nodes.push(coreNode)
+      graph.events.dispatch('configured')
+
+      expect(missingCoreNodes.value).toEqual({ '1.2.0': [coreNode] })
     })
 
     it('returns empty object when no core nodes are missing', () => {

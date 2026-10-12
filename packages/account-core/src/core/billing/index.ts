@@ -112,6 +112,7 @@ export type {
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationPlan,
   BillingOperationReceipt,
   BillingOperationKind,
   BillingOperationPhase,
@@ -167,6 +168,7 @@ export type {
 } from './operationLifecycle.js'
 export {
   createBillingOperationLifecycle,
+  failureCategoryFor,
   operationRoute
 } from './operationLifecycle.js'
 export {

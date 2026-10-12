@@ -2,10 +2,10 @@
 import type {
   WorkshopDetailModel,
   WorkshopFormValues
-} from '../../config/workshop-detail'
-import { defaultWorkshopValues } from '../../config/workshop-detail'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-detail'
+import { defaultWorkshopValues } from '@/config/workshop-detail'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopField from './WorkshopField.vue'
 
 const { model, locale = 'en' } = defineProps<{

@@ -111,7 +111,8 @@ describe('doc frame client', () => {
         data: {
           v: 1,
           workflow_id: 'wf-1',
-          state_vector_b64: encodeBase64(stateVector)
+          state_vector_b64: encodeBase64(stateVector),
+          supports_reseed: true
         }
       },
       {
@@ -314,5 +315,14 @@ describe('doc frame client', () => {
       type: 'doc_update',
       data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
+  })
+
+  it('rejects inherited object keys as frame types', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'constructor',
+        data: { v: 1, workflow_id: 'wf-1' }
+      })
+    ).toBeNull()
   })
 })

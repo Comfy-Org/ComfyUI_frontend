@@ -196,6 +196,14 @@ jobs:
             exit 1
           fi
 
+      - name: Save the live IndexNow manifest before deploying
+        id: indexnow-previous
+        continue-on-error: true
+        run: |
+          STATUS=$(curl -sS --max-time 30 -o "$RUNNER_TEMP/indexnow-previous.json" \
+            -w '%{http_code}' https://comfy.org/indexnow-manifest.json || true)
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
       - name: Deploy project artifacts to Vercel
         id: deploy
         run: |
@@ -204,3 +212,15 @@ jobs:
 
       - name: Add deployment URL to summary
         run: echo "**Production:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify IndexNow of changed pages
+        continue-on-error: true
+        timeout-minutes: 5
+        working-directory: apps/website
+        env:
+          PREVIOUS_STATUS: ${{ steps.indexnow-previous.outputs.status || '0' }}
+        run: |
+          pnpm indexnow:submit \
+            --current "$GITHUB_WORKSPACE/.vercel/output/static/indexnow-manifest.json" \
+            --previous "$RUNNER_TEMP/indexnow-previous.json" \
+            --previous-status "$PREVIOUS_STATUS"

@@ -6,15 +6,15 @@ import { computed, ref, watch } from 'vue'
 import type {
   WorkshopBrowseModel,
   WorkshopOutputFilter
-} from '../../config/workshop'
+} from '@/config/workshop'
 import {
   WORKSHOP_OUTPUTS,
   WORKSHOP_PAGE_SIZE,
   countWorkshopOutputs,
   filterWorkshopModels
-} from '../../config/workshop'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   models,

@@ -92,74 +92,53 @@
         </Button>
 
         <!-- Options Button -->
-        <Button
-          v-if="showOptionsButton"
-          variant="textonly"
-          size="unset"
-          :aria-label="$t('g.moreOptions')"
-          class="size-6 rounded-sm"
-          @click="toggleOptionsMenu"
-        >
-          <i
-            class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
-          />
-        </Button>
+        <Menu v-if="showOptionsButton" :items="menuItems">
+          <template #trigger>
+            <Button
+              variant="textonly"
+              size="unset"
+              :aria-label="$t('g.moreOptions')"
+              class="size-6 rounded-sm"
+            >
+              <i
+                class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
+              />
+            </Button>
+          </template>
+          <template #item="{ item, hasSubmenu }">
+            <div v-if="item.key === 'volume'" class="w-48">
+              <label class="mb-2 block text-xs text-base-foreground">{{
+                item.label
+              }}</label>
+              <Slider
+                :model-value="[volume * 10]"
+                :min="0"
+                :max="10"
+                :step="1"
+                class="w-full"
+                @update:model-value="handleVolumeChange"
+              />
+            </div>
+            <MenuItemContent v-else :item :has-submenu />
+          </template>
+        </Menu>
       </div>
-
-      <!-- Options Menu -->
-      <TieredMenu
-        ref="optionsMenu"
-        :model="menuItems"
-        popup
-        class="audio-player-menu"
-        :pt:root:class="
-          cn('border-component-node-border bg-component-node-widget-background')
-        "
-        :pt:submenu:class="cn('bg-component-node-widget-background')"
-      >
-        <template #item="{ item }">
-          <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label class="mb-2 block text-xs text-base-foreground">{{
-              item.label
-            }}</label>
-            <Slider
-              :model-value="[volume * 10]"
-              :min="0"
-              :max="10"
-              :step="1"
-              class="w-full"
-              @update:model-value="handleVolumeChange"
-            />
-          </div>
-          <div
-            v-else
-            class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
-            @click="item.onClick?.()"
-          >
-            <span class="text-base-foreground">{{ item.label }}</span>
-            <i
-              v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
-            />
-          </div>
-        </template>
-      </TieredMenu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import TieredMenu from 'primevue/tieredmenu'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { formatTime } from '@/utils/formatUtil'
 
@@ -173,7 +152,6 @@ const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
 
 // Refs
 const audioRef = useTemplateRef('audioRef')
-const optionsMenu = ref()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -210,11 +188,7 @@ const handleDownload = () => {
   try {
     downloadFile(modelValue.value)
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    toast.error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 
@@ -253,11 +227,6 @@ const handleEnded = () => {
   currentTime.value = 0
 }
 
-// Options menu
-const toggleOptionsMenu = (event: Event) => {
-  optionsMenu.value?.toggle(event)
-}
-
 const setPlaybackSpeed = (speed: number) => {
   playbackRate.value = speed
   if (audioRef.value) {
@@ -280,23 +249,26 @@ const handleVolumeChange = (value: number[] | undefined) => {
 const menuItems = computed(() => [
   {
     label: t('g.playbackSpeed'),
-    items: [
-      {
-        label: t('g.halfSpeed'),
-        onClick: () => setPlaybackSpeed(0.5),
-        selected: playbackRate.value === 0.5
-      },
-      {
-        label: t('g.1x'),
-        onClick: () => setPlaybackSpeed(1),
-        selected: playbackRate.value === 1
-      },
-      {
-        label: t('g.2x'),
-        onClick: () => setPlaybackSpeed(2),
-        selected: playbackRate.value === 2
-      }
-    ]
+    radioGroup: {
+      value: () => String(playbackRate.value),
+      options: [
+        {
+          value: '0.5',
+          label: t('g.halfSpeed'),
+          command: () => setPlaybackSpeed(0.5)
+        },
+        {
+          value: '1',
+          label: t('g.1x'),
+          command: () => setPlaybackSpeed(1)
+        },
+        {
+          value: '2',
+          label: t('g.2x'),
+          command: () => setPlaybackSpeed(2)
+        }
+      ]
+    }
   },
   {
     label: t('g.volume'),
@@ -314,10 +286,3 @@ whenever(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.audio-player-menu {
-  --p-tieredmenu-item-focus-background: rgb(255 255 255 / 0.1);
-  --p-tieredmenu-item-active-background: rgb(255 255 255 / 0.1);
-}
-</style>

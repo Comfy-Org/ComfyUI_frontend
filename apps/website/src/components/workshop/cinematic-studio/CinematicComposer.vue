@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -9,19 +9,19 @@ import type {
   AspectRatio,
   Direction,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   cameraGroups,
   directionOption
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
-import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
-import type { ShotBlock } from '../../../composables/useCinematicShot'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
-import type { Locale } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import { videoTags } from '@/lib/workshop/cinematic-studio/video'
+import type { ShotBlock } from '@/composables/useCinematicShot'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
+import type { Locale } from '@/i18n/translations'
 import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 import CinematicFormatSegments from './CinematicFormatSegments.vue'

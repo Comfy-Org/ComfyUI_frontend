@@ -65,6 +65,7 @@ export interface CheckoutCopy {
   readonly authenticationFailedDetail: string
   readonly pendingVerificationDetail: string
   readonly completeVerification: string
+  readonly cancelPaymentAndRetry: string
   readonly confirmPayment: string
   readonly startingToday: string
   readonly parkedCheckoutDetail: string

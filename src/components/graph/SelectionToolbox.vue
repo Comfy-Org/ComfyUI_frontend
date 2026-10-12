@@ -11,34 +11,36 @@
         class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <div class="flex h-8 flex-row gap-1">
-          <DeleteButton v-if="showDelete" />
-          <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
-          <InfoButton v-if="canOpenNodeInfo" />
+        <TooltipProvider :delay-duration="1000">
+          <div class="flex h-8 flex-row gap-1">
+            <DeleteButton v-if="showDelete" />
+            <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
+            <InfoButton v-if="canOpenNodeInfo" />
 
-          <ColorPickerButton v-if="showColorPicker" />
-          <ArrangeButton v-if="showArrange" />
-          <FrameNodes v-if="showFrameNodes" />
-          <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-          <ConfigureSubgraph v-if="showSubgraphButtons" />
-          <PublishSubgraphButton v-if="showSubgraphButtons" />
-          <MaskEditorButton v-if="showMaskEditor" />
-          <VerticalDivider
-            v-if="showAnyPrimaryActions && showAnyControlActions"
-          />
+            <ColorPickerButton v-if="showColorPicker" />
+            <ArrangeButton v-if="showArrange" />
+            <FrameNodes v-if="showFrameNodes" />
+            <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+            <ConfigureSubgraph v-if="showSubgraphButtons" />
+            <PublishSubgraphButton v-if="showSubgraphButtons" />
+            <MaskEditorButton v-if="showMaskEditor" />
+            <VerticalDivider
+              v-if="showAnyPrimaryActions && showAnyControlActions"
+            />
 
-          <BypassButton v-if="showBypass" />
-          <RefreshSelectionButton v-if="showRefresh" />
-          <Load3DViewerButton v-if="showLoad3DViewer" />
+            <BypassButton v-if="showBypass" />
+            <RefreshSelectionButton v-if="showRefresh" />
+            <Load3DViewerButton v-if="showLoad3DViewer" />
 
-          <ExtensionCommandButton
-            v-for="command in extensionToolboxCommands"
-            :key="command.id"
-            :command
-          />
-          <ExecuteButton v-if="showExecute" />
-          <NodeOptionsButton />
-        </div>
+            <ExtensionCommandButton
+              v-for="command in extensionToolboxCommands"
+              :key="command.id"
+              :command
+            />
+            <ExecuteButton v-if="showExecute" />
+            <NodeOptionsButton />
+          </div>
+        </TooltipProvider>
       </div>
     </Transition>
   </div>
@@ -60,6 +62,7 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

@@ -43,6 +43,7 @@ const CAPABILITIES = {
   can_change_seats: false,
   can_downgrade_to_personal: false,
   can_invite_members: false,
+  can_manage_members: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_subscribe_self_serve: false,
@@ -85,6 +86,69 @@ describe('createCapabilitiesReader', () => {
     })
     expect(result.value.rolloutDefaultsApplied.can_top_up).toBe(true)
   })
+
+  it.for([true, false])(
+    'preserves can_manage_members=%s from the server',
+    async (allowed) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody({
+            capabilities: { ...CAPABILITIES, can_manage_members: allowed }
+          })
+        )
+      ])
+      const result = await createCapabilitiesReader({
+        transport,
+        scopeSource
+      }).read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.capabilities.can_manage_members).toBe(allowed)
+    }
+  )
+
+  it('rejects capabilities missing member management permission', async () => {
+    const legacyCapabilities: Record<string, unknown> = { ...CAPABILITIES }
+    delete legacyCapabilities.can_manage_members
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk(capabilitiesBody({ capabilities: legacyCapabilities }))
+    ])
+    const result = await createCapabilitiesReader({
+      transport,
+      scopeSource
+    }).read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+  })
+
+  it.for([null, 'true', 1, {}])(
+    'rejects invalid member management permission %j',
+    async (invalid) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody({
+            capabilities: { ...CAPABILITIES, can_manage_members: invalid }
+          })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      expect(await reader.read()).toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
+    }
+  )
 
   it('asks the capabilities route with production\u2019s 10s budget', async () => {
     const { scopeSource } = fakeSession()
@@ -271,7 +335,11 @@ describe('createCapabilitiesReader', () => {
             // be offered — publishing it would hand the caller someone else's
             // rights.
             resolved_for: { user_id: 'uid-other', workspace_id: 'ws-1' },
-            capabilities: { ...CAPABILITIES, can_cancel: true }
+            capabilities: {
+              ...CAPABILITIES,
+              can_cancel: true,
+              can_manage_members: true
+            }
           })
         )
       ])

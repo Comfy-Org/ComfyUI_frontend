@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ChevronLeft } from '@lucide/vue'
 
-import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

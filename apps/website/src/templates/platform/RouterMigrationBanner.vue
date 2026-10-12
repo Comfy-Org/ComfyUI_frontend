@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Check, Copy } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 
-import { ROUTER_MIGRATION_PROMPT } from '../../config/router-migration-prompt'
-import type { Locale } from '../../i18n/translations'
-import BrandButton from '../../components/common/BrandButton.vue'
+import { ROUTER_MIGRATION_PROMPT } from '@/config/router-migration-prompt'
+import type { Locale } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

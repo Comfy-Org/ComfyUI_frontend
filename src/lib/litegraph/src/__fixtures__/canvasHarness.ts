@@ -14,6 +14,8 @@ export type Modifiers = Partial<
 
 export type PointerEventOptions = Modifiers & {
   button?: number
+  buttons?: number
+  pointerId?: number
   timeStamp?: number
 }
 
@@ -49,16 +51,22 @@ export function pointerEvent(
   type: PointerEventType,
   x: number,
   y: number,
-  { button = 0, timeStamp, ...modifiers }: PointerEventOptions = {}
+  {
+    button = 0,
+    buttons,
+    pointerId = 1,
+    timeStamp,
+    ...modifiers
+  }: PointerEventOptions = {}
 ): CanvasPointerEvent {
   const pressed = type === 'pointerdown' || type === 'pointermove'
   const event = new PointerEvent(type, {
     button,
-    buttons: pressed ? (button === 2 ? 2 : 1) : 0,
+    buttons: buttons ?? (pressed ? (button === 2 ? 2 : 1) : 0),
     clientX: x,
     clientY: y,
     isPrimary: true,
-    pointerId: 1,
+    pointerId,
     ...modifiers
   })
   if (timeStamp !== undefined) {
@@ -72,6 +80,11 @@ export function pointerEvent(
     safeOffsetX: x,
     safeOffsetY: y
   })
+}
+
+export function loseCapture(element: Element, pointerId = 1): void {
+  element.releasePointerCapture(pointerId)
+  element.dispatchEvent(new PointerEvent('lostpointercapture', { pointerId }))
 }
 
 export function keyEvent(

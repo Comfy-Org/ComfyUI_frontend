@@ -13,11 +13,11 @@ import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useVisualViewport } from '../../composables/useVisualViewport'
-import type { UseCase } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { filterLabel } from '../../lib/workshop/filter-label'
+import { useVisualViewport } from '@/composables/useVisualViewport'
+import type { UseCase } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { filterLabel } from '@/lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
 export interface FacetMenuOption<T extends string = UseCase> {

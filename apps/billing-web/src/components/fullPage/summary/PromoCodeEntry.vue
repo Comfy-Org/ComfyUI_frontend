@@ -61,7 +61,7 @@ const canRemove = computed(() => live && entry.kind !== 'removing')
           type="button"
           :disabled="!canRemove"
           :aria-label="t(`${P}.remove`, { code: chip.code })"
-          class="flex size-4 cursor-pointer items-center justify-center rounded-sm text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          class="flex size-4 cursor-pointer items-center justify-center rounded-sm text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:size-8"
           @click="emit('remove')"
         >
           <i class="icon-[lucide--x] size-3.5" aria-hidden="true" />
@@ -72,7 +72,7 @@ const canRemove = computed(() => live && entry.kind !== 'removing')
       <button
         type="button"
         :disabled="!live"
-        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary-background px-2 text-xs text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary-background px-2 text-xs text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
         @click="emit('open')"
       >
         {{ t(`${P}.add`) }}

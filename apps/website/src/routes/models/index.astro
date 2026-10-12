@@ -1,8 +1,10 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { workshopModels } from '../../config/workshop-browse-content'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { workshopModels } from '@/config/workshop-browse-content'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import { pageContext } from '@/utils/jsonLd'
+import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
 import { modelsByProvider } from './models-directory'
 
@@ -11,11 +13,29 @@ const directory = modelsByProvider(
   workshopModels,
   Astro.locals.t('workshop.filter.other')
 )
+const { siteUrl, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const jsonLd = modelsHubJsonLd({
+  models: directory.flatMap((group) => group.models),
+  url,
+  siteUrl
+})
 ---
 
-<BaseLayout {title} {description} preloadFonts={['Medium']}>
+<BaseLayout
+  {title}
+  {description}
+  preloadFonts={['Medium']}
+  pageType={jsonLd.pageType}
+  breadcrumbs={jsonLd.breadcrumbs}
+  mainEntityId={jsonLd.mainEntityId}
+  extraJsonLd={jsonLd.extraJsonLd}
+>
   <script>
-    import '../../scripts/hubNavigation'
+    import '@/scripts/hubNavigation'
   </script>
   <ModelsPage
     section="models"

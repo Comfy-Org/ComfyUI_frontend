@@ -1,15 +1,55 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  applyParentSizedCanvasStyle,
+  applyLogicalCanvasStyle,
   applyViewport,
   measureViewport,
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
 import {
   createMockCanvasRenderingContext2D,
-  createTestCanvasElement
+  createTestCanvasElement,
+  setIntrinsicCanvasLayout
 } from '@/utils/__tests__/canvasTestUtils'
+
+function createTransformTrackingCanvas(cssSize?: {
+  width: number
+  height: number
+}) {
+  const transform = { x: 1, y: 1 }
+  const setTransform: CanvasRenderingContext2D['setTransform'] = vi.fn(
+    (
+      a?: number | DOMMatrix2DInit,
+      _b?: number,
+      _c?: number,
+      d?: number
+    ): void => {
+      if (typeof a !== 'number' || typeof d !== 'number') return
+      transform.x = a
+      transform.y = d
+    }
+  )
+  const ctx = createMockCanvasRenderingContext2D({ setTransform })
+  const canvas = createTestCanvasElement({ ctx })
+  for (const dimension of ['width', 'height'] as const) {
+    let backingStore = canvas[dimension]
+    Object.defineProperty(canvas, dimension, {
+      configurable: true,
+      get: () => backingStore,
+      set: (value: number) => {
+        backingStore = value
+        transform.x = 1
+        transform.y = 1
+      }
+    })
+  }
+  if (cssSize) {
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, 0, cssSize.width, cssSize.height)
+    )
+  }
+  return { canvas, transform }
+}
 
 describe('measureViewport', () => {
   it('computes physical dimensions from CSS dimensions and DPR', () => {
@@ -84,27 +124,23 @@ describe('measureViewportFromElement', () => {
 
 describe('applyViewport', () => {
   it('sizes and scales both canvases to the physical dimensions', () => {
-    const fgContext = createMockCanvasRenderingContext2D()
-    const bgContext = createMockCanvasRenderingContext2D()
-    const fg = createTestCanvasElement({ ctx: fgContext })
-    const bg = createTestCanvasElement({ ctx: bgContext })
+    const foreground = createTransformTrackingCanvas()
+    const background = createTransformTrackingCanvas()
 
-    applyViewport(measureViewport(800, 600, 2), fg, bg)
+    applyViewport(
+      measureViewport(800, 600, 2),
+      foreground.canvas,
+      background.canvas
+    )
 
-    expect([fg.width, fg.height, bg.width, bg.height]).toEqual([
-      1600, 1200, 1600, 1200
-    ])
-    expect(fgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
-    expect(bgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
-  })
-
-  it('scales a shared foreground/background context only once', () => {
-    const ctx = createMockCanvasRenderingContext2D()
-    const canvas = createTestCanvasElement({ ctx })
-
-    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
-
-    expect(ctx.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
+    expect([
+      foreground.canvas.width,
+      foreground.canvas.height,
+      background.canvas.width,
+      background.canvas.height
+    ]).toEqual([1600, 1200, 1600, 1200])
+    expect(foreground.transform).toEqual({ x: 2, y: 2 })
+    expect(background.transform).toEqual({ x: 2, y: 2 })
   })
 
   it('hands the applied DPR and CSS dimensions to the consumer', () => {
@@ -119,6 +155,37 @@ describe('applyViewport', () => {
 
     expect(consumer.dpr).toBe(2)
     expect(consumer.ds.setViewportSize).toHaveBeenCalledWith(800, 600)
+  })
+
+  it('restores the DPR transform after a measurement probe resets the context', () => {
+    const cssSize = { width: 800.1, height: 600 }
+    const { canvas, transform } = createTransformTrackingCanvas(cssSize)
+    applyViewport(measureViewportFromElement(canvas, 2), canvas, canvas)
+    cssSize.width = 800.2
+
+    measureViewportFromElement(canvas, 2)
+
+    expect(transform).toEqual({ x: 2, y: 2 })
+  })
+
+  it('does not compound the DPR scale when a new DPR lands on an unchanged backing store', () => {
+    const { canvas, transform } = createTransformTrackingCanvas()
+
+    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
+
+    applyViewport(measureViewport(1600 / 3, 400, 3), canvas, canvas)
+
+    expect(transform).toEqual({ x: 3, y: 3 })
+  })
+
+  it('re-scales after a size change at an unchanged DPR', () => {
+    const { canvas, transform } = createTransformTrackingCanvas()
+
+    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
+
+    applyViewport(measureViewport(1000, 700, 2), canvas, canvas)
+
+    expect(transform).toEqual({ x: 2, y: 2 })
   })
 
   it('does not reset backing stores that already match', () => {
@@ -141,12 +208,12 @@ describe('applyViewport', () => {
   })
 })
 
-describe('applyParentSizedCanvasStyle', () => {
+describe('applyLogicalCanvasStyle', () => {
   it('follows the parent while the canvas style is its own', () => {
     const canvas = createTestCanvasElement()
 
-    applyParentSizedCanvasStyle(canvas, 800, 600)
-    applyParentSizedCanvasStyle(canvas, 1000, 700)
+    applyLogicalCanvasStyle(canvas, 800, 600)
+    applyLogicalCanvasStyle(canvas, 1000, 700)
 
     expect([canvas.style.width, canvas.style.height]).toEqual([
       '1000px',
@@ -159,8 +226,109 @@ describe('applyParentSizedCanvasStyle', () => {
     canvas.style.width = '75%'
     canvas.style.height = '50vh'
 
-    applyParentSizedCanvasStyle(canvas, 800, 600)
+    applyLogicalCanvasStyle(canvas, 800, 600)
 
     expect([canvas.style.width, canvas.style.height]).toEqual(['75%', '50vh'])
+  })
+
+  it('never pins a degenerate measurement', () => {
+    const canvas = createTestCanvasElement()
+
+    applyLogicalCanvasStyle(canvas, 0, 0)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
+  it('leaves a class-sized canvas to its stylesheet', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
+  it('pins an unstyled canvas whose intrinsic size already matches the request', () => {
+    const canvas = createTestCanvasElement()
+    setIntrinsicCanvasLayout(canvas)
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual([
+      '800px',
+      '600px'
+    ])
+  })
+
+  it('does not mistake a transformed intrinsic canvas for CSS sizing', () => {
+    const canvas = createTestCanvasElement()
+    Object.defineProperties(canvas, {
+      offsetWidth: { configurable: true, value: 800 },
+      offsetHeight: { configurable: true, value: 600 }
+    })
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() => {
+      const width = Number.parseFloat(canvas.style.width) || canvas.width
+      const height = Number.parseFloat(canvas.style.height) || canvas.height
+      return new DOMRect(0, 0, width * 2, height * 2)
+    })
+
+    applyLogicalCanvasStyle(canvas, 1600, 1200)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual([
+      '1600px',
+      '1200px'
+    ])
+  })
+
+  it('does not probe a canvas whose layout box differs from its backing store', () => {
+    const canvas = createTestCanvasElement({
+      width: 1600,
+      height: 1200,
+      cssSize: [800, 600]
+    })
+    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
+
+    const discardedBitmap = applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(discardedBitmap).toBe(false)
+    expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
+  it('reports a discarded bitmap when the ambiguous case had to be probed', () => {
+    const sizedByStylesheet = createTestCanvasElement({ cssSize: [800, 600] })
+    const sizedByAttributes = createTestCanvasElement()
+    setIntrinsicCanvasLayout(sizedByAttributes)
+
+    expect([
+      applyLogicalCanvasStyle(sizedByStylesheet, 800, 600),
+      applyLogicalCanvasStyle(sizedByAttributes, 800, 600)
+    ]).toEqual([true, true])
+  })
+
+  it('reuses an unchanged DPR-1 ownership result without probing again', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+    applyLogicalCanvasStyle(canvas, 800, 600)
+    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
+
+    const discardedBitmap = applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(discardedBitmap).toBe(false)
+  })
+
+  it('pins only the axis whose size still comes from the backing store', () => {
+    const canvas = createTestCanvasElement({ width: 1600, height: 600 })
+    canvas.style.width = '100%'
+    Object.defineProperties(canvas, {
+      offsetWidth: { configurable: true, value: 800 },
+      offsetHeight: { configurable: true, get: () => canvas.height }
+    })
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, 0, 800, canvas.height)
+    )
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual(['100%', '600px'])
   })
 })
