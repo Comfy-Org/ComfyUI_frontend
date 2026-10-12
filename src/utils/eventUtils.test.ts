@@ -1,9 +1,12 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 import {
+  extractFilesFromDragEvent,
   hasAudioType,
   hasImageType,
   hasVideoType,
-  isMediaFile
+  isMediaFile,
+  withHdrImageType
 } from './eventUtils'
 
 describe('hasImageType', () => {
@@ -52,5 +55,37 @@ describe('isMediaFile', () => {
   it('should return false for non-media types', () => {
     expect(isMediaFile({ type: 'text/plain' } as File)).toBe(false)
     expect(isMediaFile({ type: 'application/json' } as File)).toBe(false)
+  })
+})
+
+describe('withHdrImageType', () => {
+  it.for([
+    ['sky.exr', 'image/x-exr'],
+    ['SKY.HDR', 'image/vnd.radiance']
+  ])('types an untyped %s as %s', ([name, type]) => {
+    const typed = withHdrImageType(new File(['data'], name))
+
+    expect(typed.type).toBe(type)
+    expect(typed.name).toBe(name)
+  })
+
+  it('leaves typed and non-HDR files alone', () => {
+    const typed = new File(['data'], 'sky.exr', { type: 'image/x-exr' })
+    const other = new File(['data'], 'notes.txt')
+
+    expect(withHdrImageType(typed)).toBe(typed)
+    expect(withHdrImageType(other)).toBe(other)
+  })
+})
+
+describe('extractFilesFromDragEvent', () => {
+  it('returns an untyped .exr drop as an image', async () => {
+    const event = fromAny<DragEvent, unknown>({
+      dataTransfer: { files: [new File(['data'], 'sky.exr')] }
+    })
+
+    const [file] = await extractFilesFromDragEvent(event)
+
+    expect(hasImageType(file)).toBe(true)
   })
 })
