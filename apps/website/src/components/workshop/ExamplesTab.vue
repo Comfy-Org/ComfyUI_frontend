@@ -52,12 +52,11 @@ const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
 // A sample exists to be judged, and on a phone it was 144px wide: an 81px
-// preview of a generated image decides nothing. A lone sample takes the row,
-// and several take four fifths of it, so the next one peeks in at every width
-// the phone layout covers, up to the 18rem past which a card gains nothing.
-const phoneWidth = computed(() =>
-  examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
-)
+// preview of a generated image decides nothing. Several take four fifths of
+// the row so the next one peeks in, and a lone one takes the row it has, both
+// held to the 18rem past which a card gains nothing and a lone one would
+// otherwise swallow the screen.
+const phoneWidth = computed(() => (examples.length === 1 ? 'w-full' : 'w-4/5'))
 const desktopGridColumns = computed(() =>
   examples.length === 3
     ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'
@@ -113,7 +112,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       <li
         v-for="example in examples"
         :key="example.id"
-        :class="cn('shrink-0 snap-start sm:w-auto', phoneWidth)"
+        :class="cn('shrink-0 snap-start max-sm:max-w-72 sm:w-auto', phoneWidth)"
         data-testid="example-item"
       >
         <figure class="flex flex-col gap-2">
@@ -139,7 +138,7 @@ function actionFor(example: PlaygroundExample, active = false) {
                 cn(
                   'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                   example.id === activeId
-                    ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:ring-4'
+                    ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-warm-white'
                     : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
                 )
               "
