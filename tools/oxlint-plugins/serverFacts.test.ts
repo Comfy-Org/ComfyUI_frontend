@@ -226,14 +226,6 @@ const showBuy = canTopUp.value || canSubscribeSelfServe.value
       errors: [{ messageId: 'combined', data: { operator: '||' } }]
     },
     {
-      name: 'two member facts and-ed together',
-      code: `
-const { canInviteMembers, canManageMembers } = useMemberFacts()
-const enabled = canInviteMembers.value && canManageMembers.value
-`,
-      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
-    },
-    {
       name: 'a capability narrowed by a server-derived seat fact',
       code: `
 const { canInviteMembers } = useBillingCapabilities()

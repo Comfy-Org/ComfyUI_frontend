@@ -12,8 +12,7 @@ type AstNode = Expression['parent']
 type Ternary = VisitedNode<'ConditionalExpression'>
 
 const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
-  'useBillingCapabilities',
-  'useMemberFacts'
+  'useBillingCapabilities'
 ])
 const CAPABILITY_BINDING = /^can[A-Z]\w*$/
 const CAPABILITY_FIELD = /^can_[a-z_]+$/

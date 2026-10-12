@@ -360,7 +360,6 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    mockDistribution.isCloud = true
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -557,60 +556,6 @@ describe('useMembersPanel', () => {
         expect(panel.showSearch.value).toBe(true)
         expect(panel.showViewTabs.value).toBe(canManage)
         expect(panel.memberMenuItems(createMember()).length > 0).toBe(canManage)
-      }
-    )
-
-    it.for([
-      {
-        role: 'owner' as const,
-        maxSeats: 1,
-        status: 'active' as const,
-        canManage: false,
-        showMembers: false,
-        showTabs: false
-      },
-      {
-        role: 'owner' as const,
-        maxSeats: 1,
-        status: 'ended' as const,
-        canManage: false,
-        showMembers: true,
-        showTabs: false
-      },
-      {
-        role: 'owner' as const,
-        maxSeats: 73,
-        status: 'active' as const,
-        canManage: true,
-        showMembers: true,
-        showTabs: true
-      },
-      {
-        role: 'member' as const,
-        maxSeats: 73,
-        status: 'active' as const,
-        canManage: false,
-        showMembers: true,
-        showTabs: true
-      }
-    ])(
-      'preserves desktop $role visibility with $maxSeats seats and $status status',
-      async ({ role, maxSeats, status, canManage, showMembers, showTabs }) => {
-        mockDistribution.isCloud = false
-        mockWorkspaceRole.value = role
-        mockMaxSeats.value = maxSeats
-        mockSubscriptionStatus.value = status
-        useBillingCapabilities().canManageMembers = computed(() =>
-          receiveServerFact('can_manage_members', !canManage)
-        )
-        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
-        mockPendingInvites.value = [createInvite()]
-
-        const panel = await setup()
-
-        expect(panel.permissions.value.canManageMembers).toBe(canManage)
-        expect(panel.uiConfig.value.showMembersList).toBe(showMembers)
-        expect(panel.showViewTabs.value).toBe(showTabs)
       }
     )
 

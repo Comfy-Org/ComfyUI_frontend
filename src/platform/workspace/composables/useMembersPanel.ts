@@ -11,7 +11,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { isCloud } from '@/platform/distribution/types'
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import { useMemberFacts } from '@/platform/workspace/composables/useMemberFacts'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -132,7 +132,7 @@ export function useMembersPanel() {
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats, occupiedSeats } = useBillingContext()
-  const { canManageMembers, canInviteMembers } = useMemberFacts()
+  const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
