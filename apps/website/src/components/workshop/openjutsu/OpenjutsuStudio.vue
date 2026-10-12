@@ -136,6 +136,7 @@ onBeforeUnmount(() =>
         :clip-seconds="clipSeconds"
         :range
         :part-seconds="partSeconds"
+        :saved-size="savedSize"
         :character-url="characterUrl"
         :character-name="character?.name"
         :locale

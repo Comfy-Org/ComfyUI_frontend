@@ -6,7 +6,11 @@ import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cin
 import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
+import type {
+  SwapCanvas,
+  SwapSize,
+  SwapWindow
+} from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import OpenjutsuSeedField from './OpenjutsuSeedField.vue'
@@ -18,6 +22,7 @@ const {
   clipSeconds,
   range,
   partSeconds,
+  savedSize,
   characterUrl,
   characterName,
   locale = 'en'
@@ -27,6 +32,8 @@ const {
   clipSeconds?: number
   range?: SwapWindow
   partSeconds?: number
+  /** The frame the result is saved at, once the video's shape is known. */
+  savedSize?: SwapCanvas
   characterUrl?: string
   characterName?: string
   locale?: Locale
@@ -61,6 +68,7 @@ const partSummary = computed(() =>
     : t('openjutsu.trim.summary', {
         from: range.start.toFixed(1),
         to: (range.start + partSeconds).toFixed(1),
+        seconds: partSeconds.toFixed(1),
         total: clipSeconds.toFixed(1)
       })
 )
@@ -112,9 +120,16 @@ const partSummary = computed(() =>
           v-model="target"
           rows="4"
           :placeholder="t('openjutsu.target.placeholder')"
+          aria-describedby="openjutsu-target-hint"
           class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         />
       </div>
+      <p
+        id="openjutsu-target-hint"
+        class="px-1 text-xs/relaxed text-primary-warm-gray"
+      >
+        {{ t('openjutsu.target.hint') }}
+      </p>
     </section>
 
     <div class="grid grid-cols-2 gap-2">
@@ -127,7 +142,9 @@ const partSummary = computed(() =>
         :trigger-class="FORMAT_TRIGGER_CLASS"
       >
         <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-        <span class="flex-1 text-left">{{ size }}</span>
+        <span class="min-w-0 flex-1 truncate text-left">{{
+          t(`openjutsu.size.${size}`)
+        }}</span>
         <ChevronDown
           class="size-3.5 text-primary-warm-gray"
           aria-hidden="true"
@@ -140,5 +157,18 @@ const partSummary = computed(() =>
         :shuffle-label="t('openjutsu.seed.shuffle')"
       />
     </div>
+    <p
+      class="px-1 text-xs/relaxed text-primary-warm-gray"
+      data-testid="openjutsu-saved-size"
+    >
+      {{
+        savedSize
+          ? t('openjutsu.size.saved', {
+              width: savedSize.width,
+              height: savedSize.height
+            })
+          : t('openjutsu.size.shape')
+      }}
+    </p>
   </div>
 </template>

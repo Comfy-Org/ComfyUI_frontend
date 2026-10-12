@@ -5617,7 +5617,8 @@
     "target": {
       "heading": "Who to replace",
       "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt.",
-      "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
+      "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair.",
+      "hint": "Describe one person so they cannot be confused with anyone else in the shot."
     },
     "seed": {
       "shuffle": "Pick a random seed",
@@ -5625,7 +5626,7 @@
     },
     "trim": {
       "edit": "Trim",
-      "summary": "{from}–{to} s of {total} s"
+      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)"
     },
     "needs": {
       "video": "Add a video to start",
@@ -5667,7 +5668,9 @@
     "size": {
       "label": "Quality",
       "768p": "768p · sharper",
-      "480p": "480p · faster"
+      "480p": "480p · faster",
+      "saved": "Saves at {width}×{height}, the same shape as your video.",
+      "shape": "The result always keeps your video's shape."
     },
     "run": "Swap character",
     "tools": "Result views",

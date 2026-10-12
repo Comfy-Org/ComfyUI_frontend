@@ -20,7 +20,7 @@ describe('OpenjutsuPanel', () => {
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: 'Trim: 2.0–8.0 s of 20.0 s'
+        name: 'Trim: Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)'
       })
     )
 
@@ -53,6 +53,23 @@ describe('OpenjutsuPanel', () => {
       expect(emitted(slot)).toEqual([[file]])
     }
   )
+
+  it('says who to describe, and the size the result is saved at', async () => {
+    const { rerender } = render(OpenjutsuPanel, { props: models })
+
+    expect(screen.getByLabelText('Who to replace')).toHaveAccessibleDescription(
+      'Describe one person so they cannot be confused with anyone else in the shot.'
+    )
+    expect(
+      screen.getByText("The result always keeps your video's shape.")
+    ).toBeVisible()
+
+    await rerender({ savedSize: { width: 1344, height: 756 } })
+
+    expect(
+      screen.getByText('Saves at 1344×756, the same shape as your video.')
+    ).toBeVisible()
+  })
 
   it('keeps the chosen inputs without a way to empty them', () => {
     render(OpenjutsuPanel, {
