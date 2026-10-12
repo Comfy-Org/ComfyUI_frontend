@@ -275,10 +275,39 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return { kind: 'unchanged' }
     }
     if (deploymentId === pickedDeploymentId.value) return { kind: 'unchanged' }
-    const refusal = await pickAndReload(id, deploymentId)
-    return refusal === null
-      ? { kind: 'picked' }
-      : { kind: 'refused', message: refusal }
+    return pickLinkAndReload(id, deploymentId)
+  }
+
+  async function pickLinkAndReload(
+    workspaceId: string,
+    deploymentId: string
+  ): Promise<LinkPickOutcome> {
+    dispatch({ type: 'switchStarted', target: deploymentId })
+    const controller = new AbortController()
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const selection = workspaceApi
+      .pickDeployment(
+        workspaceId,
+        { deployment_id: deploymentId },
+        controller.signal
+      )
+      .then<LinkPickOutcome, LinkPickOutcome>(
+        () => ({ kind: 'picked' }),
+        (error: unknown) => ({ kind: 'refused', message: errorMessage(error) })
+      )
+    const outcome = await Promise.race([
+      selection,
+      new Promise<LinkPickOutcome>((resolve) => {
+        timeout = setTimeout(() => {
+          resolve({ kind: 'timedOut' })
+          controller.abort()
+        }, DEPLOYMENT_LISTING_BACKSTOP_MS)
+      })
+    ]).finally(() => clearTimeout(timeout))
+    if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
+    if (outcome.kind === 'picked') window.location.reload()
+    else dispatch({ type: 'switchFailed' })
+    return outcome
   }
 
   async function pickAndReload(

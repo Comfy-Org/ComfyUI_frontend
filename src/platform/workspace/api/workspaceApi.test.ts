@@ -378,6 +378,41 @@ describe('workspaceApi', () => {
       )
     })
 
+    it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        auth
+      )
+      const controller = new AbortController()
+      const selected = workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(selected).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
+    })
+
+    it('forwards deployment selection cancellation to the transport', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+      const controller = new AbortController()
+      await workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
     it('clearDeployment() sends DELETE /workspaces/:id/deployment, with follow=workspace only when asked', async () => {
       mockAxiosInstance.delete.mockResolvedValue({})
 

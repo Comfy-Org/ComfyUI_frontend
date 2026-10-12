@@ -62,7 +62,7 @@ function useDeploymentUrlLoader(): ReturnType<
           deploymentSwitcher: {
             linkRefused: 'Could not open the deployment this link names',
             linkTimedOut:
-              'Could not load deployments in time. Try opening the link again.',
+              'Could not open this deployment in time. Try opening the link again.',
             linkWorkspaceRefused:
               "Could not open the workspace this link names. You're still in {workspaceName}."
           }
@@ -263,7 +263,7 @@ describe('useDeploymentUrlLoader', () => {
     ).resolves.toBe(false)
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useToast().error).toHaveBeenCalledWith(
-      'Could not load deployments in time. Try opening the link again.',
+      'Could not open this deployment in time. Try opening the link again.',
       { duration: 8000 }
     )
   })

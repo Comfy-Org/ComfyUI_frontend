@@ -504,6 +504,35 @@ describe('useDeploymentPickStore', () => {
       expect(reload).not.toHaveBeenCalled()
     })
 
+    it('times out and cancels a stalled selection after a slow failed listing without reloading on late success', async () => {
+      vi.useFakeTimers()
+      const listed = deferred<WorkspaceDeploymentList>()
+      const selected = deferred<void>()
+      let selectionSignal: AbortSignal | undefined
+      mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
+      mockWorkspaceApi.pickDeployment.mockImplementation(
+        (_id: string, _payload: unknown, signal?: AbortSignal) => {
+          selectionSignal = signal
+          return selected.promise
+        }
+      )
+      const store = useDeploymentPickStore()
+      const settled = vi.fn()
+      const linked = store.pickFromLink('dep-1').then(settled)
+      await vi.advanceTimersByTimeAsync(30_000)
+      listed.reject(new Error('listing timed out'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(settled).toHaveBeenCalledWith({ kind: 'timedOut' })
+      expect(selectionSignal?.aborted).toBe(true)
+      expect(store.isSwitching).toBe(false)
+      selected.resolve()
+      await linked
+      await vi.advanceTimersByTimeAsync(0)
+      expect(reload).not.toHaveBeenCalled()
+    })
+
     it.for([12_000, DEPLOYMENT_LISTING_BACKSTOP_MS - 1])(
       'selects the linked deployment when the listing succeeds after %i ms',
       async (delay) => {
@@ -518,7 +547,8 @@ describe('useDeploymentPickStore', () => {
         await expect(linked).resolves.toEqual({ kind: 'picked' })
         expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledExactlyOnceWith(
           'ws-1',
-          { deployment_id: 'dep-1' }
+          { deployment_id: 'dep-1' },
+          expect.any(AbortSignal)
         )
         expect(reload).toHaveBeenCalledOnce()
       }
@@ -534,9 +564,13 @@ describe('useDeploymentPickStore', () => {
       })
 
       expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
-      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
-        deployment_id: 'dep-1'
-      })
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith(
+        'ws-1',
+        {
+          deployment_id: 'dep-1'
+        },
+        expect.any(AbortSignal)
+      )
       expect(reload).toHaveBeenCalledOnce()
     })
 
