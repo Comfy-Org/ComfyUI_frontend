@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
     return new Response('Not found', { status: 404 })
   const page = await prepareModelPage(
     params.slug,
-    'en',
+    locals.catalogLocale ?? 'en',
     catalog?.ok ? catalog : undefined
   )
   if (page.kind !== 'page') throw new Error('Expected a canonical Models route')

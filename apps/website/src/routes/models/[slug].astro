@@ -45,11 +45,11 @@ const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
 const current = catalog?.ok
   ? catalog.projection.items.find(
-      (item) => item.slug === Astro.url.pathname.replace(/\/$/, '')
+      (item) => item.slug === Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
     )
   : undefined
 if (catalog?.ok && !current) return new Response('Not found', { status: 404 })
-const id = current ? current.data.slug : Astro.props.id
+const id = current ? catalog?.ok ? catalog.models.find(item => item.href?.replace(/\/$/,'')===current.slug)?.slug : undefined : Astro.props.id
 if (typeof id !== 'string') return new Response('Not found', { status: 404 })
 const page = await prepareModelPage(id, 'en', catalog?.ok ? catalog : undefined)
 if (page.kind === 'redirect')

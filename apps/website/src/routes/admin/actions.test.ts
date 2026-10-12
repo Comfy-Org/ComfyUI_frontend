@@ -2,7 +2,7 @@
 // Request, which strips the Origin header before the handler can validate it.
 // @vitest-environment node
 import { createContext } from 'astro/middleware'
-import type { ContentCatalogReview } from '@comfyorg/ingest-types'
+import type { ContentCatalogReview } from '../../lib/cms/review-contract'
 import { describe, expect, it, vi } from 'vitest'
 import { POST } from './actions'
 import { CONTEXT_COOKIE, CSRF_COOKIE } from '@/lib/cms/admin'

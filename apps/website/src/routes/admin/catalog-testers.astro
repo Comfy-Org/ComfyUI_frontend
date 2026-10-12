@@ -1,0 +1,36 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { isLocalAccess } from './local-access'
+import { DEMO_COOKIE, createDemoInvitation, demoEnabled, listDemoInvitations, revokeDemoInvitation } from '@/lib/cms/catalog-demo'
+import { AUTHORING_CSRF_COOKIE, validAuthoringOrigin } from '@/lib/cms/authoring-session'
+import { editorFailure } from '@/lib/cms/editor-server'
+const session = Astro.locals.catalogAuthoring
+if (!demoEnabled() || !isLocalAccess(Astro) || Astro.cookies.has(DEMO_COOKIE) || !session?.can_apply || Astro.url.search) return editorFailure(404)
+let created: { code: string; expires: number } | undefined
+if (Astro.request.method === 'POST') {
+  if (!validAuthoringOrigin(Astro) || Number(Astro.request.headers.get('Content-Length')) > 4096) return editorFailure(403)
+  const body = await Astro.request.formData()
+  if (body.get('csrf') !== Astro.cookies.get(AUTHORING_CSRF_COOKIE)?.value) return editorFailure(403)
+  if (body.get('action') === 'revoke') await revokeDemoInvitation(String(body.get('id')))
+  else {
+    const role = body.get('role')
+    if (typeof body.get('name') !== 'string' || (role !== 'edit' && role !== 'publish')) return editorFailure(400)
+    created = await createDemoInvitation(String(body.get('name')), role)
+  }
+}
+const entries = await listDemoInvitations()
+---
+<BaseLayout title="Demo invitations" minimal noindex>
+  <section class="mx-auto max-w-3xl px-6 py-12">
+    <h1 class="mb-4 text-3xl">Demo invitations</h1>
+    <p class="mb-6 text-primary-comfy-canvas">One invitation per tester. Codes are one-time; sessions expire within one hour and stop immediately when revoked. These access only the local fixture catalog and share its labeled author identity. Never share a production credential.</p>
+    {created && <div class="mb-6 rounded-xl border border-primary-comfy-yellow p-5"><p>Copy this code privately. It is shown only now. Expires {new Date(created.expires).toISOString()}.</p><input readonly value={created.code} data-private data-dd-privacy="mask" aria-label="New invitation code" class="mt-3 w-full rounded-lg bg-site-bg-soft p-3 font-mono" /></div>}
+    <form method="post" data-astro-reload class="mb-8 grid gap-4 rounded-xl border border-white/10 p-5">
+      <input type="hidden" name="csrf" value={session.csrf} />
+      <label class="grid gap-2">Tester name<input name="name" required maxlength="100" class="rounded-lg bg-site-bg-soft p-3" /></label>
+      <label class="grid gap-2">Demo access<select name="role" class="rounded-lg bg-site-bg-soft p-3"><option value="edit">Edit and Preview</option><option value="publish">Edit, Preview and staging approval</option></select></label>
+      <button class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink">Create invitation</button>
+    </form>
+    <ul class="grid gap-4">{entries.map(item => <li class="rounded-xl border border-white/10 p-5"><p>{item.name} · {item.role} · {item.revoked ? 'Revoked' : item.expires <= Date.now() ? 'Expired' : item.redeemed ? 'Redeemed' : 'Unused'} · {new Date(item.expires).toISOString()}</p>{!item.revoked && <form method="post" data-astro-reload><input type="hidden" name="csrf" value={session.csrf}/><input type="hidden" name="action" value="revoke"/><input type="hidden" name="id" value={item.id}/><button class="mt-3 text-primary-comfy-yellow">Revoke</button></form>}</li>)}</ul>
+  </section>
+</BaseLayout>

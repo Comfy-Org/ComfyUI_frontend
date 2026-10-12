@@ -1,0 +1,23 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ContentEditor from '@/components/cms/editor/ContentEditor.vue'
+import { loadEditorData } from '@/lib/cms/editor-server'
+import { resolveLocale } from '@/config/locales'
+const id = Astro.params.uid
+const data = await loadEditorData(Astro.locals.catalogAuthoring, id, Astro.url.searchParams.get('type'))
+if (!data.ok) return data.response
+const t = Astro.locals.t
+---
+<BaseLayout title={t(id ? 'cmsEditor.editTitle' : 'cmsEditor.newTitle')} noindex>
+  <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+    <ContentEditor
+      initial={data.initial}
+      snapshot={data.snapshot}
+      type={data.type}
+      draft={data.draft}
+      csrf={data.csrf}
+      locale={resolveLocale(Astro.currentLocale)}
+      client:load
+    />
+  </main>
+</BaseLayout>

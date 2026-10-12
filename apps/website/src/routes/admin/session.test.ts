@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { createContext } from 'astro/middleware'
-import type { ContentCatalogReview } from '@comfyorg/ingest-types'
+import type { ContentCatalogReview } from '../../lib/cms/review-contract'
 import { expect, it, vi } from 'vitest'
 import { POST as signIn } from './session'
 import { POST as testerSignIn } from './tester-session'

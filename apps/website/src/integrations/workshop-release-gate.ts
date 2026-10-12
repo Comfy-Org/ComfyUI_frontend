@@ -119,11 +119,37 @@ function installCmsRoutes(
     ['/admin/session', 'session.ts'],
     ['/admin/local-access', 'local-access.astro'],
     ['/admin/local-session', 'local-access.ts'],
-    ['/admin/actions', 'actions.ts']
+    ['/admin/actions', 'actions.ts'],
+    ['/admin/content/new', 'content-editor.astro'],
+    ['/admin/content/[uid]/edit', 'content-editor.astro'],
+    ['/admin/content-api/[operation]', 'content-api.ts'],
+    ['/admin/content-session', 'content-session.ts'],
+    ['/admin/catalog', 'catalog.astro'],
+    ['/admin/catalog-sign-in', 'catalog-sign-in.astro'],
+    ['/admin/catalog-demo-session', 'catalog-demo-session.ts'],
+    ['/admin/catalog-testers', 'catalog-testers.astro'],
+    ['/admin/catalog-preview', 'catalog-preview.ts'],
+    ['/admin/catalog/final-review', 'catalog-final-review.astro'],
+    ['/admin/catalog-api/[operation]', 'catalog-api.ts']
   ]) {
     injectRoute({
       pattern,
       entrypoint: './src/routes/admin/' + file,
+      prerender: false
+    })
+  }
+  for (const [pattern, file] of [
+    ['/agents', 'agents.ts'],
+    ['/preview-media/[rev]/[uid]/[version]', 'media.ts'],
+    ['/catalog-media/[uid]/[version]', 'media.ts'],
+    ['/openapi.json', 'openapi.json.ts'],
+    ['/api/v1/catalog/agents', 'agents.ts'],
+    ['/api/v1/catalog/openapi.json', 'openapi.json.ts'],
+    ['/api/v1/catalog/docs', 'docs.ts']
+  ]) {
+    injectRoute({
+      pattern,
+      entrypoint: './src/routes/catalog/' + file,
       prerender: false
     })
   }
@@ -177,6 +203,17 @@ export function workshopReleaseGate(): AstroIntegration {
             ...route,
             ...cmsRendering(route)
           })
+        if (process.env.SITE_CATALOG_API_URL) {
+          for (const route of modelsBuildRoutes(isWorkshopInBuild()).filter(
+            (route) => route.pattern.startsWith('/hub/')
+          )) {
+            injectRoute({
+              ...route,
+              pattern: `/zh-CN${route.pattern}`,
+              prerender: false
+            })
+          }
+        }
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

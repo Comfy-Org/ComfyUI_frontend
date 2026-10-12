@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import { isLocalAccess } from './local-access'
 if (!isLocalAccess(Astro)) return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
+const catalogDemo = Boolean(process.env.SITE_CATALOG_LOCAL_AUTHORING_CREDENTIAL_FILE)
 ---
 
 <BaseLayout title={t('cmsAdmin.title')} minimal noindex>
@@ -17,7 +18,7 @@ const t = Astro.locals.t
       </p>
       <h1 class="mb-4 text-4xl">{t('cmsAdmin.title')}</h1>
       <p class="mb-8 leading-relaxed text-primary-comfy-canvas">
-        {t('cmsAdmin.localHelp')}
+        {t(catalogDemo ? 'cccLocalDemo.help' : 'cmsAdmin.localHelp')}
       </p>
       <form method="post" action="/admin/local-session" data-astro-reload>
         <button

@@ -2,6 +2,10 @@ import { createContext } from 'astro/middleware'
 import { describe, expect, it, vi } from 'vitest'
 import { onRequest } from './middleware'
 import {
+  AUTHORING_COOKIE,
+  AUTHORING_CSRF_COOKIE
+} from '@/lib/cms/authoring-session'
+import {
   CONTEXT_COOKIE,
   CSRF_COOKIE,
   SESSION_COOKIE,
@@ -10,6 +14,20 @@ import {
 } from '@/lib/cms/admin'
 
 vi.mock(import('@/lib/cms/admin'), { spy: true })
+
+const authoringContext = {
+  actor_uid: '00000000-0000-4000-8000-000000000004',
+  owner_uid: '00000000-0000-4000-8000-000000000001',
+  can_edit: true,
+  can_apply: false,
+  state: {
+    live_rev: 1,
+    draft_rev: 7,
+    previous_live_rev: null,
+    draft_generation: 2,
+    next_rev: 8
+  }
+}
 
 function contextFor(path: string, method = 'GET') {
   const context = createContext({
@@ -24,6 +42,70 @@ function contextFor(path: string, method = 'GET') {
   context.cookies.set(CSRF_COOKIE, 'test-csrf', { path: '/' })
   return context
 }
+
+describe('separate catalog editor authority', () => {
+  it.for([
+    '/admin/content/new',
+    '/admin/content-api/state',
+    '/admin/catalog',
+    '/admin/catalog/final-review',
+    '/admin/catalog-api/staging'
+  ])(
+    'authorizes %s without trusting or clearing legacy session state',
+    async (path) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+      vi.stubEnv('VERCEL_ENV', 'preview')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.json(authoringContext))
+      )
+      const context = contextFor(path)
+      context.cookies.set(AUTHORING_COOKIE, 'private-local-fixture')
+      context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+      const response = await onRequest(
+        context,
+        async () => new Response('Editor')
+      )
+      expect(response?.status).toBe(200)
+      expect(context.locals.catalogAuthoring?.can_edit).toBe(true)
+      expect(context.locals.site).toBeUndefined()
+      expect(context.cookies.get(SESSION_COOKIE)?.value).toBe(
+        'expired-test-session'
+      )
+      expect(response?.headers.get('Cache-Control')).toBe('private, no-store')
+      expect(verifySiteSession).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not turn an earlier successful editor request into an authority lease', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    const fetcher = vi.fn(async () => Response.json(authoringContext))
+    vi.stubGlobal('fetch', fetcher)
+    const context = contextFor('/admin/content/new')
+    context.cookies.set(AUTHORING_COOKIE, 'private-local-fixture')
+    context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+    const next = vi.fn(async () => new Response('Editor'))
+    expect((await onRequest(context, next))?.status).toBe(200)
+    fetcher.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    expect((await onRequest(context, next))?.status).toBe(403)
+    expect(next).toHaveBeenCalledOnce()
+  })
+
+  it('does not read authoring cookies on public discovery routes', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+    const fetcher = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    const context = contextFor('/api/v1/catalog/docs')
+    context.cookies.set(AUTHORING_COOKIE, 'expired-local-fixture')
+    context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+    const response = await onRequest(context, async () => new Response('Docs'))
+    expect(response?.status).toBe(200)
+    expect(context.locals.catalogAuthoring).toBeUndefined()
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(verifySiteSession).not.toHaveBeenCalled()
+  })
+})
 
 describe('expired staff sessions', () => {
   it.for([false, true])(
@@ -81,6 +163,42 @@ describe('expired staff sessions', () => {
     for (const name of [SESSION_COOKIE, CONTEXT_COOKIE, CSRF_COOKIE])
       expect(context.cookies.has(name)).toBe(false)
   })
+
+  it.for([
+    '/agents',
+    '/openapi.json',
+    '/api/v1/catalog/agents',
+    '/api/v1/catalog/openapi.json',
+    '/api/v1/catalog/docs',
+    '/api/v1/catalog/docs/?preview=DRAFT&now=2030-01-01'
+  ])('serves public documentation %s despite a stale session', async (path) => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const context = contextFor(path)
+    const next = vi.fn(() => Promise.resolve(new Response('Documentation')))
+    const response = await onRequest(context, next)
+    expect(response?.status).toBe(200)
+    expect(next).toHaveBeenCalledOnce()
+    expect(verifySiteSession).not.toHaveBeenCalled()
+    expect(context.locals.site).toBeUndefined()
+    expect(context.cookies.get(CONTEXT_COOKIE)?.value).toBe('test-preview')
+    expect(response?.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it.for([
+    ['/api/v1/catalog/docs', 'POST'],
+    ['/api/v1/catalog/state', 'GET'],
+    ['/api/v1/catalog/docs-not-public', 'GET']
+  ])(
+    'does not broaden documentation exemption to %s %s',
+    async ([path, method]) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+      vi.mocked(verifySiteSession).mockResolvedValue(undefined)
+      const next = vi.fn(() => Promise.resolve(new Response('Private')))
+      const response = await onRequest(contextFor(path, method), next)
+      expect(response?.status).toBe(403)
+      expect(next).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([
     {

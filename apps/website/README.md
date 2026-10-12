@@ -2,6 +2,23 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## CCC review discovery
+
+With `SITE_CATALOG_API_URL` configured in a non-production review environment,
+`/api/v1/catalog/agents`, `/api/v1/catalog/openapi.json` and
+`/api/v1/catalog/docs` proxy the deployed catalog's editing instructions,
+OpenAPI and self-contained read-only viewer unchanged. Temporary `/agents` and
+`/openapi.json` aliases use scoped upstream paths. The backend owns their contract version, environment and
+type schemas; this website does not generate a second authoring contract. No
+staff credentials or Preview cookies are forwarded to these public documentation
+requests. Unavailable/mismatched upstream documentation returns 503, not stale
+instructions. These routes do not grant edit access.
+
+The existing `/agent/` Comfy Agent product page remains unchanged. Dedicated
+database authoring, delegated credentials and full website lifecycle integration
+are still being accepted separately; documentation availability is not a claim
+that the entire CCC deliverable is ready.
+
 ## Linting
 
 From the repository root, `pnpm lint` checks website Astro, JavaScript,

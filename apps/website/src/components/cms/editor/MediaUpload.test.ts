@@ -1,0 +1,105 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { editorRequest } from '@/lib/cms/editor-client'
+import MediaUpload from './MediaUpload.vue'
+
+vi.mock(import('@/lib/cms/editor-client'))
+const uid = '00000000-0000-4000-8000-000000000001'
+const revision = '00000000-0000-4000-8000-000000000002'
+const later = '00000000-0000-4000-8000-000000000003'
+async function choose() {
+  await fireEvent.change(
+    screen.getByLabelText('Choose image or workflow JSON'),
+    {
+      target: {
+        files: [new File(['png'], 'a file.png', { type: 'image/png' })]
+      }
+    }
+  )
+}
+function setup() {
+  return render(MediaUpload, {
+    props: {
+      reference: { src: 'r2', id: uid, file_version_uid: revision },
+      entityUID: uid,
+      draft: 7,
+      csrf: 'a'.repeat(64),
+      mediaRole: 'hero'
+    }
+  })
+}
+describe('media editing', () => {
+  it('new uploads deliberately create a new logical UID instead of replacing the existing one', async () => {
+    const result = setup()
+    vi.mocked(editorRequest).mockResolvedValue({
+      ok: true,
+      status: 201,
+      data: { uid: later, revision_uid: revision }
+    })
+    await choose()
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Upload as new media' })
+    )
+    await waitFor(() => expect(result.emitted().update).toHaveLength(1))
+    const [operation, options] = vi.mocked(editorRequest).mock.calls[0]
+    expect(operation).toBe('upload')
+    expect(options?.body).toBeInstanceOf(FormData)
+    if (!(options?.body instanceof FormData))
+      throw new Error('Missing upload envelope')
+    expect(options.body.has('media_uid')).toBe(false)
+    expect(options.body.get('name')).toBe('a-file.png')
+    expect(result.emitted().update[0]).toEqual([
+      { src: 'r2', id: later, file_version_uid: revision, name: 'a-file.png' }
+    ])
+  })
+  it('replacement retries use exactly the same token, bytes and key after uncertain response', async () => {
+    setup()
+    vi.mocked(editorRequest)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        data: { type: 'media', revision_uid: later }
+      })
+      .mockResolvedValueOnce({ ok: false, status: 503, data: undefined })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        data: { uid, revision_uid: revision }
+      })
+    await choose()
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Replace this media UID' })
+    )
+    await waitFor(() => expect(screen.getByRole('alert')).toBeVisible())
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Replace this media UID' })
+    )
+    await waitFor(() => expect(editorRequest).toHaveBeenCalledTimes(3))
+    const calls = vi.mocked(editorRequest).mock.calls
+    expect(calls[0][0]).toBe('item')
+    expect(calls[1][0]).toBe('upload')
+    expect(calls[2][0]).toBe('upload')
+    expect(calls[1][1]).toEqual(calls[2][1])
+    const body = calls[1][1]?.body
+    if (!(body instanceof FormData))
+      throw new Error('Missing replacement envelope')
+    expect(body.get('expected_revision_uid')).toBe(later)
+    expect(body.get('media_uid')).toBe(uid)
+  })
+  it('rejects unsupported media locally without pretending the backend supports video', async () => {
+    setup()
+    await fireEvent.change(
+      screen.getByLabelText('Choose image or workflow JSON'),
+      {
+        target: {
+          files: [new File(['video'], 'sample.mp4', { type: 'video/mp4' })]
+        }
+      }
+    )
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Upload as new media' })
+    )
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(editorRequest).not.toHaveBeenCalled()
+  })
+})

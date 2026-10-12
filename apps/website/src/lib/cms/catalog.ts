@@ -4,12 +4,17 @@ import { z } from 'astro/zod'
 import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
 import type { SiteSession } from './admin'
+import type { AuthoringSession } from './authoring-session'
+import { catalogPresentation } from './catalog-presentation'
 import { normalizeProjection } from './catalog-contract'
 
 // Server-only configuration. Browser islands read same-origin JSON endpoints.
 export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
 
-export async function loadSiteCatalog(session?: SiteSession) {
+export async function loadSiteCatalog(
+  session?: SiteSession | AuthoringSession,
+  locale = 'en'
+) {
   const origin = process.env.SITE_CATALOG_API_URL
   if (!origin || process.env.VERCEL_ENV === 'production')
     return { ok: false, status: 503 } as const
@@ -40,15 +45,14 @@ export async function loadSiteCatalog(session?: SiteSession) {
   if (!projection.success) return { ok: false, status: 503 } as const
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return { ok: false, status: 503 } as const
-  const models = z
-    .array(modelSchema)
-    .safeParse(projection.data.items.map((item) => item.data))
+  const presented = normalized.items.map((item) =>
+    catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
+  )
+  const models = z.array(modelSchema).safeParse(presented)
   const details = z
     .array(detailSchema)
     .safeParse(
-      projection.data.items
-        .filter((item) => item.kind !== 'APP')
-        .map((item) => item.data)
+      presented.filter((_, index) => normalized.items[index].kind !== 'APP')
     )
   if (!models.success || !details.success)
     return { ok: false, status: 503 } as const

@@ -1,0 +1,12 @@
+---
+import { z } from 'astro/zod'
+interface Props { uid?: string; create?: boolean }
+const { uid, create = false } = Astro.props
+const staff = Astro.locals.catalogAuthoring
+const validUID = uid && z.uuid().safeParse(uid).success
+const href = create ? '/admin/content/new' : validUID ? `/admin/content/${uid}/edit` : undefined
+const t = Astro.locals.t
+---
+{staff?.can_edit && href && <div class="mx-auto flex max-w-10xl justify-end px-6 pt-4 lg:px-8">
+  <a href={href} data-astro-reload class="rounded-lg border border-primary-comfy-yellow/40 px-4 py-2 text-sm font-medium text-primary-comfy-yellow transition-colors hover:bg-primary-comfy-yellow/10 focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow">{t(create ? 'cmsEditor.new' : 'cmsEditor.edit')}</a>
+</div>}

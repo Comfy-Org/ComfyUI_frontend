@@ -1,7 +1,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import type { APIContext } from 'astro'
-import { zContentCatalogReview } from '@comfyorg/ingest-types/zod'
-import type { ContentCatalogReview } from '@comfyorg/ingest-types'
+import { zContentCatalogReview } from './review-contract'
+import type { ContentCatalogReview } from './review-contract'
 import { normalizeProjection } from './catalog-contract'
 
 export interface SiteSession {
@@ -58,10 +58,7 @@ export async function verifySiteSession(
     return undefined
   const draft = normalizeProjection(review.data.draft)
   const live = normalizeProjection(review.data.live)
-  const previousLive =
-    review.data.previous_live_id === undefined
-      ? undefined
-      : Number(review.data.previous_live_id)
+  const previousLive = review.data.previous_live_id
   if (
     !draft ||
     !live ||

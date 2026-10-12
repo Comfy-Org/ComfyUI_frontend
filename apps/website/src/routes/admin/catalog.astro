@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CatalogStaging from '@/components/cms/review/CatalogStaging.vue'
+import { resolveLocale } from '@/config/locales'
+import { editorFailure } from '@/lib/cms/editor-server'
+import { filterFromQuery } from '@/lib/cms/staging-review'
+import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
+const session = Astro.locals.catalogAuthoring
+if (!session || (!session.can_edit && !session.can_apply)) return editorFailure(404)
+const query = filterFromQuery(Astro.url.searchParams)
+const invalidQuery = query ? undefined : editorFailure(400)
+if (!query || invalidQuery) return invalidQuery
+const result = await readReviewResponse(await catalogReview(session, 'staging', query))
+if (!result.ok) return editorFailure(result.status)
+if (!('items' in result.snapshot)) return editorFailure(503)
+---
+<BaseLayout title={Astro.locals.t('cccStaging.title')} minimal noindex>
+  <CatalogStaging initial={result.snapshot} csrf={session.csrf} canApply={session.can_apply} canEdit={session.can_edit} locale={resolveLocale(Astro.currentLocale)} client:load />
+</BaseLayout>

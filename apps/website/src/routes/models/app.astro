@@ -34,7 +34,7 @@ const liveApps = catalog?.ok
 const model = catalog?.ok
   ? liveApps.find(
       (item) =>
-        item.href.replace(/\/$/, '') === Astro.url.pathname.replace(/\/$/, '')
+        item.href.replace(/\/$/, '') === Astro.url.pathname.replace(/^\/zh-CN/,'').replace(/\/$/, '')
     )
   : Astro.props.model
 if (!model) return new Response('Not found', { status: 404 })

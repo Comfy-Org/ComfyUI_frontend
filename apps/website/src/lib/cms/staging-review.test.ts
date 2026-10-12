@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest'
+import { filterFromQuery, filterQuery, stagingSnapshot, stagePayload, fieldDifferences, unfiltered } from './staging-review'
+
+import { fixtureReview } from './staging-fixture'
+describe('catalog staging view model', () => {
+  it.each(['unknown=x', 'search=a&search=b', 'author_uid=bad', 'statuses=INVALID', 'tags='])('rejects an unsupported query %s', (query) => {
+    expect(filterFromQuery(new URLSearchParams(query))).toBeUndefined()
+  })
+  it('roundtrips declared repeated filters without silently dropping them', () => {
+    const filter = { tags: ['demo', 'second'], statuses: ['NEW', 'APPROVED'], search: 'author' }
+    const parsed = filterFromQuery(new URLSearchParams('tags=demo&tags=second&statuses=NEW&statuses=APPROVED&search=author'))
+    expect(parsed).toEqual(filter)
+    expect(parsed && filterFromQuery(filterQuery(parsed))).toEqual(filter)
+    expect(unfiltered({ search: ' ' })).toBe(true)
+    expect(unfiltered({ statuses: ['NEW'] })).toBe(false)
+  })
+  it('binds the exact review, complete count and digest to the decision', () => {
+    const snapshot = fixtureReview()
+    expect(stagePayload(snapshot, 'DEFERRED', true)).toEqual({ review: { expected_live_rev: 1, expected_draft_rev: 7, expected_draft_generation: 5 }, filter: {}, expected_count: 1, expected_selection_digest: 'a'.repeat(64), confirm_all: true, status: 'DEFERRED' })
+  })
+  it('shows nested changes and array removals, preserving inert literal keys', () => {
+    const entry = fixtureReview().items[0]
+    if (!entry) throw new Error('Missing test row')
+    entry.content.document = JSON.parse('{"title":"After","examples":[{"title":"A"}],"labels":{"__proto__":"literal"}}')
+    expect(fieldDifferences(entry)).toEqual(expect.arrayContaining([
+      { path: '$.title', before: '"Before"', after: '"After"' },
+      { path: '$.examples[1]', before: '{"title":"B"}', after: undefined },
+      { path: '$.labels', before: undefined, after: '{"__proto__":"literal"}' }
+    ]))
+    expect(Object.hasOwn(Object.prototype, 'literal')).toBe(false)
+  })
+  it('fails closed for unsafe revision numbers or absent selection digest', () => {
+    const review = fixtureReview()
+    expect(stagingSnapshot({ ...review, state: { ...review.state, draft_generation: Number.MAX_SAFE_INTEGER + 1 } })).toBeUndefined()
+    expect(stagingSnapshot({ ...review, selection_digest: '' })).toBeUndefined()
+  })
+})

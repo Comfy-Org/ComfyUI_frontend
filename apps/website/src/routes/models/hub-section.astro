@@ -22,7 +22,7 @@ const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
   [HUB_WORKFLOWS_PATH]: 'workflows',
   [HUB_APPS_PATH]: 'apps'
 }
-const section = SECTIONS[Astro.routePattern]
+const section = SECTIONS[Astro.routePattern.replace(/^\/zh-CN/, '')]
 if (!section)
   throw new Error(`No hub section is built at ${Astro.routePattern}`)
 const copy = HUB_SECTION_COPY[section]

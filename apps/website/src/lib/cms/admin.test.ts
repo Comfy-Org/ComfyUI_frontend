@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ContentCatalogReview } from '@comfyorg/ingest-types'
+import type { ContentCatalogReview } from './review-contract'
 import { draftChanges, parsePreview, verifySiteSession } from './admin'
 
 const empty: ContentCatalogReview = {
