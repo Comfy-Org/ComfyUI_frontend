@@ -95,44 +95,44 @@ find src -name 'use*.ts' -not -name '*.test.ts'
 
 ### Subdirectories of `src/composables/`
 
-| Directory          | Covers                                                          |
-| ------------------ | --------------------------------------------------------------- |
-| `auth/`            | Current user, auth dialogs/actions, Turnstile                    |
-| `billing/`         | Billing surfaces shared across the app                           |
-| `bottomPanelTabs/` | Terminal, logs, shortcuts, and bottom-panel tab registration     |
-| `boundingBoxes/`   | Bounding-box editing                                             |
-| `canvas/`          | Canvas interaction helpers                                       |
-| `element/`         | DOM positioning, clipping, coordinate conversion, overflow       |
-| `functional/`      | Generic utilities (e.g. `useChainCallback`)                      |
-| `graph/`           | Graph-level helpers                                              |
-| `maskeditor/`      | Mask editor                                                      |
-| `media/`           | Media playback and handling                                      |
-| `node/`            | Node previews, drag/drop, uploads, badges, pricing               |
-| `painter/`         | Freehand painting widget                                         |
-| `palette/`         | Color palette                                                    |
-| `queue/`           | Queue UI helpers                                                 |
-| `sidebarTabs/`     | Sidebar tab definitions and registration                         |
-| `tree/`            | Tree view folder operations                                      |
-| `video/`           | Video handling                                                   |
+| Directory          | Covers                                                       |
+| ------------------ | ------------------------------------------------------------ |
+| `auth/`            | Current user, auth dialogs/actions, Turnstile                |
+| `billing/`         | Billing surfaces shared across the app                       |
+| `bottomPanelTabs/` | Terminal, logs, shortcuts, and bottom-panel tab registration |
+| `boundingBoxes/`   | Bounding-box editing                                         |
+| `canvas/`          | Canvas interaction helpers                                   |
+| `element/`         | DOM positioning, clipping, coordinate conversion, overflow   |
+| `functional/`      | Generic utilities (e.g. `useChainCallback`)                  |
+| `graph/`           | Graph-level helpers                                          |
+| `maskeditor/`      | Mask editor                                                  |
+| `media/`           | Media playback and handling                                  |
+| `node/`            | Node previews, drag/drop, uploads, badges, pricing           |
+| `painter/`         | Freehand painting widget                                     |
+| `palette/`         | Color palette                                                |
+| `queue/`           | Queue UI helpers                                             |
+| `sidebarTabs/`     | Sidebar tab definitions and registration                     |
+| `tree/`            | Tree view folder operations                                  |
+| `video/`           | Video handling                                               |
 
 ### Auth (`auth/`)
 
-| Composable        | Description                        |
-| ----------------- | ---------------------------------- |
-| `useCurrentUser`  | Access to the current user         |
-| `useAuthActions`  | Sign-in / sign-out operations      |
-| `useAuthDialogs`  | Auth dialog presentation           |
-| `useTurnstile`    | Cloudflare Turnstile challenge     |
+| Composable       | Description                    |
+| ---------------- | ------------------------------ |
+| `useCurrentUser` | Access to the current user     |
+| `useAuthActions` | Sign-in / sign-out operations  |
+| `useAuthDialogs` | Auth dialog presentation       |
+| `useTurnstile`   | Cloudflare Turnstile challenge |
 
 ### Bottom Panel Tabs (`bottomPanelTabs/`)
 
-| Composable               | Description                           |
-| ------------------------ | ------------------------------------- |
-| `useTerminal`            | Core terminal functionality           |
-| `useTerminalTabs`        | Multiple terminal tab management      |
-| `useLogsTerminal`        | Server logs terminal tab              |
-| `useShortcutsTab`        | Keyboard shortcuts tab                |
-| `useCommandSubcategories`| Groups commands for the shortcuts tab |
+| Composable                | Description                           |
+| ------------------------- | ------------------------------------- |
+| `useTerminal`             | Core terminal functionality           |
+| `useTerminalTabs`         | Multiple terminal tab management      |
+| `useLogsTerminal`         | Server logs terminal tab              |
+| `useShortcutsTab`         | Keyboard shortcuts tab                |
+| `useCommandSubcategories` | Groups commands for the shortcuts tab |
 
 ### Element (`element/`)
 
@@ -166,30 +166,30 @@ find src -name 'use*.ts' -not -name '*.test.ts'
 
 ### Sidebar Tabs (`sidebarTabs/`)
 
-| Composable                  | Description                 |
-| --------------------------- | --------------------------- |
-| `useAssetsSidebarTab`       | Assets sidebar tab          |
-| `useJobHistorySidebarTab`   | Job history sidebar tab     |
-| `useModelLibrarySidebarTab` | Model library sidebar tab   |
-| `useNodeLibrarySidebarTab`  | Node library sidebar tab    |
+| Composable                  | Description               |
+| --------------------------- | ------------------------- |
+| `useAssetsSidebarTab`       | Assets sidebar tab        |
+| `useJobHistorySidebarTab`   | Job history sidebar tab   |
+| `useModelLibrarySidebarTab` | Model library sidebar tab |
+| `useNodeLibrarySidebarTab`  | Node library sidebar tab  |
 
 ### Domain-owned composables
 
 These are **not** under `src/composables/`. Common ones:
 
-| Composable                 | Location                                                              |
-| -------------------------- | --------------------------------------------------------------------- |
-| `useSettingSearch`         | `src/platform/settings/composables/useSettingSearch.ts`               |
-| `useSettingUI`             | `src/platform/settings/composables/useSettingUI.ts`                   |
-| `useLitegraphSettings`     | `src/platform/settings/composables/useLitegraphSettings.ts`           |
-| `useWorkflowAutoSave`      | `src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts`|
+| Composable                 | Location                                                                    |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `useSettingSearch`         | `src/platform/settings/composables/useSettingSearch.ts`                     |
+| `useSettingUI`             | `src/platform/settings/composables/useSettingUI.ts`                         |
+| `useLitegraphSettings`     | `src/platform/settings/composables/useLitegraphSettings.ts`                 |
+| `useWorkflowAutoSave`      | `src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts`      |
 | `useWorkflowPersistenceV2` | `src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts` |
-| `useWorkflowValidation`    | `src/platform/workflow/validation/composables/useWorkflowValidation.ts`|
-| `useTemplateWorkflows`     | `src/platform/workflow/templates/composables/useTemplateWorkflows.ts` |
-| `useComboWidget`           | `src/renderer/extensions/vueNodes/widgets/composables/`               |
-| `useRemoteWidget`          | `src/renderer/extensions/vueNodes/widgets/composables/`               |
-| `useManagerQueue`          | `src/workbench/extensions/manager/composables/useManagerQueue.ts`     |
-| `useRegistrySearch`        | `src/workbench/extensions/manager/composables/useRegistrySearch.ts`   |
+| `useWorkflowValidation`    | `src/platform/workflow/validation/composables/useWorkflowValidation.ts`     |
+| `useTemplateWorkflows`     | `src/platform/workflow/templates/composables/useTemplateWorkflows.ts`       |
+| `useComboWidget`           | `src/renderer/extensions/vueNodes/widgets/composables/`                     |
+| `useRemoteWidget`          | `src/renderer/extensions/vueNodes/widgets/composables/`                     |
+| `useManagerQueue`          | `src/workbench/extensions/manager/composables/useManagerQueue.ts`           |
+| `useRegistrySearch`        | `src/workbench/extensions/manager/composables/useRegistrySearch.ts`         |
 
 Widget composables live with the Vue-nodes renderer under
 `src/renderer/extensions/vueNodes/widgets/composables/`; node-pack helpers live
@@ -199,24 +199,24 @@ under `src/workbench/extensions/manager/composables/nodePack/`.
 
 General-purpose composables in `src/composables/` itself — a selection:
 
-| Composable                  | Description                                  |
-| --------------------------- | -------------------------------------------- |
-| `useAppMode`                | Linear vs. graph app mode                    |
-| `useBrowserTabTitle`        | Browser tab title updates                    |
-| `useCachedRequest`          | Request caching                              |
-| `useCanvasDrop`             | Drop operations on canvas                    |
-| `useContextMenuTranslation` | Context menu translations                    |
-| `useCopy` / `usePaste`      | Copy and paste                               |
-| `useCopyToClipboard`        | Clipboard operations                         |
-| `useCoreCommands`           | Core command registration                    |
-| `useErrorHandling`          | Centralized error handling                   |
-| `useFeatureFlags`           | Reactive server feature flags                |
-| `useGlobalLitegraph`        | Access to the global LiteGraph instance      |
-| `usePragmaticDragAndDrop`   | Atlassian pragmatic drag-and-drop wrapper    |
-| `useProgressFavicon`        | Favicon progress indicator                   |
-| `useRefreshableSelection`   | Refreshable selections                       |
-| `useServerLogs`             | Server log streaming                         |
-| `useTreeExpansion`          | Tree node expansion state                    |
+| Composable                  | Description                               |
+| --------------------------- | ----------------------------------------- |
+| `useAppMode`                | Linear vs. graph app mode                 |
+| `useBrowserTabTitle`        | Browser tab title updates                 |
+| `useCachedRequest`          | Request caching                           |
+| `useCanvasDrop`             | Drop operations on canvas                 |
+| `useContextMenuTranslation` | Context menu translations                 |
+| `useCopy` / `usePaste`      | Copy and paste                            |
+| `useCopyToClipboard`        | Clipboard operations                      |
+| `useCoreCommands`           | Core command registration                 |
+| `useErrorHandling`          | Centralized error handling                |
+| `useFeatureFlags`           | Reactive server feature flags             |
+| `useGlobalLitegraph`        | Access to the global LiteGraph instance   |
+| `usePragmaticDragAndDrop`   | Atlassian pragmatic drag-and-drop wrapper |
+| `useProgressFavicon`        | Favicon progress indicator                |
+| `useRefreshableSelection`   | Refreshable selections                    |
+| `useServerLogs`             | Server log streaming                      |
+| `useTreeExpansion`          | Tree node expansion state                 |
 
 ## Usage Guidelines
 

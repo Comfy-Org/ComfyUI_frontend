@@ -65,39 +65,39 @@ an exhaustive census.
 
 ### Main Services (`src/services/`)
 
-| Service                      | Description                                               | Category   |
-| ---------------------------- | --------------------------------------------------------- | ---------- |
-| audioService.ts              | Audio recording and WAV encoding                          | Media      |
-| autoQueueService.ts          | Automatic queue execution                                 | Execution  |
-| colorPaletteService.ts       | Color palette management and customization                | UI         |
-| comfyRegistryService.ts      | Registration and discovery of ComfyUI extensions          | Registry   |
-| customerEventsService.ts     | Customer event tracking and audit logs                    | Analytics  |
-| dialogService.ts             | Dialog and modal management                               | UI         |
-| extensionDialogService.ts    | Dialog API exposed to extensions                          | Extensions |
-| extensionLoader.ts           | Loads extension JavaScript from the backend               | Extensions |
-| extensionService.ts          | Extension registration and lifecycle                      | Extensions |
-| hdrViewerService.ts          | HDR image viewing                                         | Media      |
-| jobOutputCache.ts            | Caches job output results                                 | Execution  |
-| litegraphService.ts          | Utilities for working with the LiteGraph library          | Graph      |
-| load3dService.ts             | 3D model loading and visualization                        | 3D         |
-| mediaCacheService.ts         | Media file caching with blob storage and cleanup          | Media      |
-| nodeHelpService.ts           | Node documentation and help                               | Nodes      |
-| nodeOrganizationService.ts   | Node organization and categorization                      | Nodes      |
-| nodeSearchService.ts         | Node search                                               | Search     |
-| subgraphPseudoWidgetCache.ts | Caches pseudo-widgets for subgraph boundaries             | Subgraph   |
-| subgraphService.ts           | Subgraph operations and navigation                        | Graph      |
-| uploadTempFile.ts            | Temporary file upload helper                              | Files      |
-| useNewUserService.ts         | New user initialization and onboarding                    | System     |
+| Service                      | Description                                      | Category   |
+| ---------------------------- | ------------------------------------------------ | ---------- |
+| audioService.ts              | Audio recording and WAV encoding                 | Media      |
+| autoQueueService.ts          | Automatic queue execution                        | Execution  |
+| colorPaletteService.ts       | Color palette management and customization       | UI         |
+| comfyRegistryService.ts      | Registration and discovery of ComfyUI extensions | Registry   |
+| customerEventsService.ts     | Customer event tracking and audit logs           | Analytics  |
+| dialogService.ts             | Dialog and modal management                      | UI         |
+| extensionDialogService.ts    | Dialog API exposed to extensions                 | Extensions |
+| extensionLoader.ts           | Loads extension JavaScript from the backend      | Extensions |
+| extensionService.ts          | Extension registration and lifecycle             | Extensions |
+| hdrViewerService.ts          | HDR image viewing                                | Media      |
+| jobOutputCache.ts            | Caches job output results                        | Execution  |
+| litegraphService.ts          | Utilities for working with the LiteGraph library | Graph      |
+| load3dService.ts             | 3D model loading and visualization               | 3D         |
+| mediaCacheService.ts         | Media file caching with blob storage and cleanup | Media      |
+| nodeHelpService.ts           | Node documentation and help                      | Nodes      |
+| nodeOrganizationService.ts   | Node organization and categorization             | Nodes      |
+| nodeSearchService.ts         | Node search                                      | Search     |
+| subgraphPseudoWidgetCache.ts | Caches pseudo-widgets for subgraph boundaries    | Subgraph   |
+| subgraphService.ts           | Subgraph operations and navigation               | Graph      |
+| uploadTempFile.ts            | Temporary file upload helper                     | Files      |
+| useNewUserService.ts         | New user initialization and onboarding           | System     |
 
 ### Domain-owned services
 
 These used to live in `src/services/` and have moved to their owning domain:
 
-| Service              | Location                                                        |
-| -------------------- | ---------------------------------------------------------------- |
-| workflowService      | `src/platform/workflow/core/services/workflowService.ts`        |
-| releaseService       | `src/platform/updates/common/releaseService.ts`                 |
-| comfyManagerService  | `src/workbench/extensions/manager/services/comfyManagerService.ts` |
+| Service             | Location                                                           |
+| ------------------- | ------------------------------------------------------------------ |
+| workflowService     | `src/platform/workflow/core/services/workflowService.ts`           |
+| releaseService      | `src/platform/updates/common/releaseService.ts`                    |
+| comfyManagerService | `src/workbench/extensions/manager/services/comfyManagerService.ts` |
 
 `newUserService` is now `useNewUserService` in
 `src/services/useNewUserService.ts`.
@@ -217,15 +217,15 @@ export function useNodeSearchService(initialData: ComfyNodeDefImpl[]) {
 
 ### Service Pattern Comparison
 
-| Aspect               | Class-Based Services                                                 | Composable-Style Services                  | Bootstrap Services            | Shared State Services              |
-| -------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------- | ---------------------------------- |
-| **Prevalence**       | Rare                                                                 | The default                                | Rare                          | Rare                               |
-| **Export Pattern**   | `export class ServiceName`                                           | `export const useServiceName = ...`        | `export function setupX()`    | `export const serviceFactory = ...`|
-| **Instantiation**    | `new ServiceName(data)`                                              | `useServiceName()`                         | Direct function call          | Direct function call               |
-| **Best For**         | Complex data structures, search algorithms, expensive initialization | Vue integration, API calls, reactive state | One-time app initialization   | Singleton-like shared state        |
-| **State Management** | Encapsulated private/public properties                               | External stores + reactive refs            | Event listeners, side effects | Module-level state                 |
-| **Vue Integration**  | Manual integration needed                                            | Native reactivity support                  | N/A                           | Varies                             |
-| **Examples**         | `NodeSearchService`                                                  | `useDialogService`, `useSubgraphService`   | `setupAutoQueueHandler`       | `useNewUserService`                |
+| Aspect               | Class-Based Services                                                 | Composable-Style Services                  | Bootstrap Services            | Shared State Services               |
+| -------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ----------------------------- | ----------------------------------- |
+| **Prevalence**       | Rare                                                                 | The default                                | Rare                          | Rare                                |
+| **Export Pattern**   | `export class ServiceName`                                           | `export const useServiceName = ...`        | `export function setupX()`    | `export const serviceFactory = ...` |
+| **Instantiation**    | `new ServiceName(data)`                                              | `useServiceName()`                         | Direct function call          | Direct function call                |
+| **Best For**         | Complex data structures, search algorithms, expensive initialization | Vue integration, API calls, reactive state | One-time app initialization   | Singleton-like shared state         |
+| **State Management** | Encapsulated private/public properties                               | External stores + reactive refs            | Event listeners, side effects | Module-level state                  |
+| **Vue Integration**  | Manual integration needed                                            | Native reactivity support                  | N/A                           | Varies                              |
+| **Examples**         | `NodeSearchService`                                                  | `useDialogService`, `useSubgraphService`   | `setupAutoQueueHandler`       | `useNewUserService`                 |
 
 `Load3dService` is a class too, but it is not exported — `useLoad3dService`
 hands out the singleton, so callers see the composable shape.
