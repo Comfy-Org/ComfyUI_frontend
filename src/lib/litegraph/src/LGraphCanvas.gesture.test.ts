@@ -30,6 +30,7 @@ import {
   LiteGraph,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
@@ -773,6 +774,62 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.release(shifted(G_RESIZE, [4, 3]))
 
       expect([...group.size]).toEqual([500, 300])
+    })
+  })
+
+  describe('slot click', () => {
+    function connectTwoOutputLinks() {
+      const c = addNode(graph, 'C', 300, 200)
+      a.addOutput('out', '*')
+      b.addInput('in', '*')
+      c.addInput('in', '*')
+      const links = [a.connect(0, b, 0), a.connect(0, c, 0)]
+      for (const node of [a, b, c]) {
+        node._setConcreteSlots()
+        node.arrange()
+        node.updateArea()
+      }
+      return links.map((link) => {
+        assert(link)
+        return link.id
+      })
+    }
+
+    it.for([
+      { slot: 'output', point: () => a.getOutputPos(0), expected: [0, 1] },
+      { slot: 'input', point: () => b.getInputPos(0), expected: [0] }
+    ])(
+      'clicking an $slot selects its links and clears the canvas selection',
+      ({ point, expected }) => {
+        const linkIds = connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point())
+
+        expect(getSelectedLinkIds(graph)).toEqual(
+          expected.map((index) => linkIds[index])
+        )
+        expect(selectedTitles(canvas)).toEqual([])
+      }
+    )
+
+    it('dragging from an output selects no links', () => {
+      connectTwoOutputLinks()
+
+      gesture.drag(a.getOutputPos(0), FAR)
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+    })
+
+    it('clicking a slot without links keeps the canvas selection', () => {
+      a.addOutput('out', '*')
+      a.updateArea()
+      canvas.selectItems([b])
+
+      gesture.click(a.getOutputPos(0))
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+      expect(selectedTitles(canvas)).toEqual(['B'])
     })
   })
 

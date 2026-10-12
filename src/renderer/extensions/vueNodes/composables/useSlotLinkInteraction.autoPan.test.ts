@@ -210,6 +210,10 @@ vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   slotFloatingLinks: () => []
 }))
 
+vi.mock(import('@/lib/litegraph/src/canvas/linkSelection'), () => ({
+  selectSlotLinks: vi.fn(() => true)
+}))
+
 vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   createRafBatch: (fn: () => void) => ({
     schedule: () => {},
@@ -218,6 +222,7 @@ vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   })
 }))
 
+import { selectSlotLinks } from '@/lib/litegraph/src/canvas/linkSelection'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
 function pointerEvent(
@@ -240,16 +245,16 @@ function pointerEvent(
   })
 }
 
-function startDrag() {
+function startDrag(type: 'input' | 'output' = 'output') {
   const { onPointerDown } = useSlotLinkInteraction({
     nodeId: toNodeId('node1'),
     index: 0,
-    type: 'output'
+    type
   })
   onPointerDown(pointerEvent(400, 300))
 }
 
-describe('useSlotLinkInteraction auto-pan', () => {
+describe('useSlotLinkInteraction', () => {
   beforeEach(() => {
     vi.mocked(useEventListener).mockImplementation((event, handler) => {
       if (typeof event === 'string' && typeof handler === 'function') {
@@ -268,11 +273,65 @@ describe('useSlotLinkInteraction auto-pan', () => {
     mockLinkConnector.state.snapLinksPos = null
   })
 
-  it('starts auto-pan when link drag begins', () => {
+  it.for([
+    { type: 'output', release: [400, 300], calls: 1 },
+    { type: 'input', release: [403, 302], calls: 1 },
+    { type: 'output', release: [440, 300], calls: 0 },
+    { type: 'input', release: [400, 340], calls: 0 }
+  ] as const)(
+    'a release at $release on an $type selects its links $calls time(s)',
+    ({ type, release, calls }) => {
+      vi.mocked(selectSlotLinks).mockClear()
+      startDrag(type)
+
+      capturedHandlers['pointerup'](pointerEvent(release[0], release[1]))
+
+      expect(selectSlotLinks).toHaveBeenCalledTimes(calls)
+    }
+  )
+
+  it('a drag that returns to its start is still a drag', () => {
+    vi.mocked(selectSlotLinks).mockClear()
     startDrag()
 
-    expect(capturedAutoPan.current).not.toBeNull()
-    expect(capturedAutoPan.current!.start).toHaveBeenCalled()
+    capturedHandlers['pointermove'](pointerEvent(460, 300))
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).not.toHaveBeenCalled()
+  })
+
+  it('a stationary click is still a click when auto-pan ticks', () => {
+    vi.mocked(selectSlotLinks).mockClear()
+    startDrag()
+
+    capturedOnPan.current!(10, 0)
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).toHaveBeenCalledOnce()
+  })
+
+  it('a click selects the links of the pressed slot at its position', () => {
+    vi.mocked(selectSlotLinks).mockClear()
+    startDrag('input')
+
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: toNodeId('node1') }),
+      'input',
+      0,
+      { x: 100, y: 200 }
+    )
+  })
+
+  it('starts auto-pan once the pointer passes the click drift', () => {
+    startDrag()
+    expect(capturedAutoPan.current!.start).not.toHaveBeenCalled()
+
+    capturedHandlers['pointermove'](pointerEvent(460, 300))
+
+    expect(capturedAutoPan.current!.start).toHaveBeenCalledOnce()
   })
 
   it('updates snapLinksPos and marks dirty when onPan fires', () => {

@@ -34,6 +34,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { LinkPresentation } from '@/types/linkPresentation'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -855,6 +856,7 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
+    useLinkSelectionStore().clear()
     useGraphMetadataStore().clear(
       getRuntimeRootGraph(this)?.id ?? graphId,
       graphId
