@@ -157,7 +157,6 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const clip = computed(() => uploadUrl.value ?? RESHOOT_EXAMPLE.clip)
   const clipName = computed(() => upload.value?.name ?? RESHOOT_EXAMPLE.name)
   const isExample = computed(() => upload.value === undefined)
-  const picked = ref(false)
 
   const aspect = ref<ReshootAspect>('source')
   const size = ref<ReshootSize>('480p')
@@ -216,7 +215,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return available - ((available - 5) % 17)
   })
   // Only a chosen clip can be turned away, and only for a length the browser
-  // could read, as on Change: an unreadable one (NaN) is left for the node to
+  // could read, as on upload: an unreadable one (NaN) is left for the node to
   // judge, and the bundled example is known to fit.
   const clipError = computed(() => {
     const s = clipSeconds.value
@@ -301,7 +300,6 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
-    if (!picked.value) return undefined
     if (unavailable.value) return t('reshoot.unavailable')
     if (scene.value.phase === 'failed') return scene.value.note
     if (gate.value === 'signedOut') return t('reshoot.signIn')
@@ -432,7 +430,6 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     analysis?.abort()
     const controller = new AbortController()
     analysis = controller
-    selected.value = 'aim'
     // A clip too long for the node is never read: the page says why instead.
     if (!transport || unavailable.value || !session.value || clipError.value) {
       scene.value = { phase: 'none' }
@@ -450,7 +447,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       keys.value = keys.value.filter((key) => key.frame <= last)
       frame.value = Math.min(frame.value, last)
       step.value = 2
-      if (!quoteSettled.value) void refreshQuote()
+      if (quoteFailed.value) void refreshQuote()
     } catch (error) {
       if (!signal.aborted)
         scene.value = { phase: 'failed', note: noteFor(error) }
@@ -463,14 +460,16 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     if (tooLong && depth.value === 'analyzing') void analyze()
   })
   watch([aspect, size], () => {
-    if (picked.value) void analyze()
+    selected.value = 'aim'
+    void analyze()
   })
   watch(
     upload,
     () => {
       keys.value = []
       scene.value = { phase: 'none' }
-      if (picked.value) void analyze()
+      selected.value = 'aim'
+      void analyze()
     },
     { flush: 'sync' }
   )
@@ -478,15 +477,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     () => [session.value?.uid, session.value?.workspace.id],
     () => {
       void refreshQuote()
-      if (picked.value && depth.value === 'none') void analyze()
+      if (depth.value === 'none') void analyze()
     },
     { immediate: true }
   )
 
-  function pick(file?: File) {
-    picked.value = true
-    if (upload.value === file) void analyze()
-    else upload.value = file
+  function showExample() {
+    upload.value = undefined
+    selected.value = EXAMPLE_TAKE.id
   }
 
   function updateTake(id: string, patch: Partial<ReshootTake>) {
@@ -679,7 +677,6 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     clip,
     clipName,
     isExample,
-    picked,
     aspect,
     size,
     depth,
@@ -707,7 +704,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     canGenerate,
     priceNote,
     session,
-    pick,
+    showExample,
     analyze,
     generate,
     cancel,

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
-import { computed, ref } from 'vue'
+import { LoaderCircle } from '@lucide/vue'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { DepthState } from '@/composables/useReshoot'
 import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type {
@@ -12,14 +12,17 @@ import type {
   ReshootCamera,
   ReshootSize
 } from '@/lib/workshop/cinematic-studio/reshoot'
-import { clipFits } from '@/lib/workshop/cinematic-studio/reshoot'
-import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import type { Locale } from '@/i18n/translations'
-import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
+import ReshootAdvanced from './ReshootAdvanced.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
 import ReshootMoveControls from './ReshootMoveControls.vue'
+import ReshootRunAction from './ReshootRunAction.vue'
+import ReshootClipRow from './ReshootClipRow.vue'
+import ReshootStep from './ReshootStep.vue'
+import type { ReshootStepId } from './steps'
+import { stepState } from './steps'
 
 const {
   clip,
@@ -31,6 +34,9 @@ const {
   frames,
   clipError,
   error,
+  notice,
+  step,
+  rendering = false,
   gate,
   canGenerate,
   priceNote,
@@ -49,6 +55,10 @@ const {
   clipError?: string
   /** The last failed depth read, said above its Try again button. */
   error?: string
+  /** Why the camera cannot be aimed yet, when no button can fix it. */
+  notice?: string
+  step: ReshootStepId
+  rendering?: boolean
   gate: StudioGate
   canGenerate: boolean
   priceNote?: string
@@ -62,23 +72,14 @@ const emit = defineEmits<{
   removeKey: [frame: number]
   analyze: []
   generate: []
+  cancel: []
+  example: []
 }>()
 
 const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
 const seed = defineModel<number | undefined>('seed')
-/** Empty is random; a number, whole and not negative, is a fixed seed. */
-const seedText = computed({
-  get: () => (seed.value === undefined ? '' : String(seed.value)),
-  // a number field's v-model already hands over a number, or '' when empty
-  set: (entry: string | number) => {
-    const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
-    seed.value = Number.isFinite(value)
-      ? Math.max(0, Math.floor(value))
-      : undefined
-  }
-})
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
@@ -94,178 +95,79 @@ const framesText = computed(() =>
         seconds: (frames / 24).toFixed(1)
       })
 )
-
-// A replacement is checked before it takes the current clip's place, as on
-// the first pick: one outside 5 to 15 seconds is turned away and the clip
-// already in use stays.
-const rejected = ref<string>()
-async function choose(event: Event) {
-  const input = event.target
-  if (!(input instanceof HTMLInputElement)) return
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  const seconds = await fileSecondsOf(file)
-  if (Number.isFinite(seconds) && !clipFits(seconds)) {
-    rejected.value = t('reshoot.clip.rejected', {
-      name: file.name,
-      seconds: seconds.toFixed(1)
-    })
-    return
-  }
-  rejected.value = undefined
-  upload.value = file
-}
+const clipStatus = computed(
+  () =>
+    clipError ??
+    (ready.value
+      ? `${t('reshoot.clip.ready')} · ${framesText.value}`
+      : analyzing.value
+        ? t('reshoot.aim.reading')
+        : framesText.value)
+)
+const waiting = computed(
+  () =>
+    notice ??
+    clipError ??
+    (analyzing.value ? undefined : t('reshoot.needsDepth'))
+)
 </script>
 
 <template>
   <aside
     :aria-label="t('reshoot.panel')"
-    class="flex min-w-0 flex-col rounded-2xl bg-primary-comfy-ink-light lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)]"
+    class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
   >
-    <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
-      <div
-        :aria-label="t('reshoot.section.video')"
-        role="group"
-        class="flex items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5"
-      >
-        <video
-          :src="clip"
-          muted
-          playsinline
-          preload="metadata"
-          class="aspect-video w-14 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
-        />
-        <span class="flex min-w-0 flex-1 flex-col">
-          <span class="truncate text-sm font-semibold text-primary-warm-white">
-            {{ isExample ? t('reshoot.pick.exampleTitle') : clipName }}
-          </span>
-          <span class="truncate text-[11px] text-primary-warm-gray">
-            {{
-              clipError ??
-              (ready
-                ? `${t('reshoot.clip.ready')} · ${framesText}`
-                : analyzing
-                  ? t('reshoot.aim.reading')
-                  : framesText)
-            }}
-          </span>
-        </span>
-        <label
-          class="flex h-7 shrink-0 cursor-pointer items-center rounded-full bg-transparency-white-t8 px-3 text-[11px] text-primary-comfy-canvas focus-within:ring-2 focus-within:ring-primary-comfy-yellow/50 hover:text-primary-warm-white"
+    <ReshootStep
+      :n="1"
+      :title="t('reshoot.step.clip')"
+      :state="stepState('clip', step)"
+    >
+      <template v-if="!isExample" #aside>
+        <button
+          type="button"
+          class="ml-auto h-8 shrink-0 rounded-lg px-2.5 text-[13px] text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+          @click="emit('example')"
         >
-          {{ t('reshoot.clip.change') }}
-          <input
-            type="file"
-            accept="video/*"
-            class="sr-only"
-            @change="choose"
-          />
-        </label>
-      </div>
-      <p
-        v-if="rejected"
-        role="alert"
-        data-testid="reshoot-clip-rejected"
-        class="-mt-2 px-1 text-[11px]/relaxed text-primary-warm-white"
-      >
-        {{ rejected }}
-      </p>
-      <ReshootAimRig
-        v-model:keep-aim="keepAim"
+          {{ t('reshoot.clip.useExample') }}
+        </button>
+      </template>
+      <ReshootClipRow
         :clip
-        :camera
-        :disabled="!ready"
+        :name="isExample ? t('reshoot.pick.exampleTitle') : clipName"
+        :status="clipStatus"
         :locale
-        @aim="emit('aim', $event)"
+        @pick="upload = $event"
       />
-      <div class="flex flex-col gap-2">
-        <ReshootDisclosure
-          :label="t('reshoot.section.move')"
-          :disabled="!ready"
-        >
+    </ReshootStep>
+    <ReshootStep
+      :n="2"
+      :title="t('reshoot.step.camera')"
+      :state="stepState('camera', step)"
+    >
+      <template v-if="ready">
+        <ReshootAimRig
+          v-model:keep-aim="keepAim"
+          :clip
+          :camera
+          :locale
+          @aim="emit('aim', $event)"
+        />
+        <ReshootDisclosure :label="t('reshoot.section.move')">
           <ReshootMoveControls
             v-model:frame="frame"
             :keys
-            :disabled="!ready"
             :locale
             @remove="emit('removeKey', $event)"
           />
         </ReshootDisclosure>
-        <ReshootDisclosure :label="t('reshoot.advanced.label')">
-          <div class="flex flex-col gap-3">
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-1.5">
-                <label
-                  for="reshoot-prompt"
-                  class="text-xs font-semibold text-primary-comfy-canvas"
-                >
-                  {{ t('reshoot.section.prompt') }}
-                  <span class="font-normal text-primary-warm-gray">
-                    · {{ t('reshoot.optional') }}
-                  </span>
-                </label>
-                <InfoTooltip
-                  :text="t('reshoot.promptHelp')"
-                  :label="t('reshoot.promptHelp')"
-                />
-              </div>
-              <textarea
-                id="reshoot-prompt"
-                v-model="prompt"
-                rows="2"
-                :placeholder="t('reshoot.prompt.placeholder')"
-                aria-describedby="reshoot-prompt-dialogue"
-                class="field-sizing-content max-h-40 min-h-16 resize-none rounded-xl bg-transparency-white-t4 px-3.5 py-2.5 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-              />
-              <p
-                id="reshoot-prompt-dialogue"
-                class="text-[11px]/relaxed text-primary-warm-gray"
-              >
-                {{ t('reshoot.prompt.dialogue') }}
-              </p>
-            </div>
-            <div class="flex items-center justify-between gap-3 text-xs">
-              <div class="flex items-center gap-1.5">
-                <label
-                  for="reshoot-seed"
-                  class="font-semibold text-primary-comfy-canvas"
-                >
-                  {{ t('reshoot.seed.label') }}
-                </label>
-                <InfoTooltip
-                  :text="t('reshoot.seed.help')"
-                  :label="t('reshoot.seed.help')"
-                />
-              </div>
-              <input
-                id="reshoot-seed"
-                v-model.lazy="seedText"
-                type="number"
-                min="0"
-                step="1"
-                :placeholder="t('reshoot.seed.random')"
-                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-              />
-            </div>
-          </div>
-        </ReshootDisclosure>
-      </div>
-      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
-    </div>
-
-    <footer
-      class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
-    >
-      <!-- The scene is read on its own when a clip is picked; a failed
-           read waits here to be tried again. -->
+      </template>
       <div
-        v-if="failed"
+        v-else-if="failed"
         role="alert"
         class="flex items-center gap-3 rounded-xl bg-transparency-white-t8 py-2 pr-2 pl-3"
       >
         <p
-          class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
+          class="min-w-0 flex-1 text-xs wrap-break-word text-primary-warm-white"
         >
           {{ t('reshoot.failed') }}: {{ error }}
         </p>
@@ -280,37 +182,38 @@ async function choose(event: Event) {
         </Button>
       </div>
       <p
-        v-else-if="ready || analyzing"
-        class="text-center text-[11px] text-primary-warm-gray"
-      >
-        {{ t(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait') }}
-      </p>
-      <p
-        v-if="priceNote"
-        class="text-center text-xs text-primary-comfy-canvas"
-        data-testid="reshoot-price"
-      >
-        {{ priceNote }}
-      </p>
-      <Button
-        v-if="gate === 'ready'"
-        size="lg"
-        class="rounded-full"
-        :disabled="!canGenerate"
-        data-testid="reshoot-action"
-        @click="emit('generate')"
-      >
-        {{ t('reshoot.generate.label') }}
-      </Button>
-      <CinematicGenerateAction
         v-else
-        :gate
-        :workspace-name
-        :rendering="false"
-        :can-generate="false"
-        wide
-        :locale
-      />
-    </footer>
+        role="status"
+        class="flex items-center gap-2.5 rounded-xl border border-transparency-white-t8 px-3 py-3 text-xs/relaxed text-primary-comfy-canvas"
+        data-testid="reshoot-camera-waiting"
+      >
+        <LoaderCircle
+          v-if="analyzing"
+          class="size-4 shrink-0 text-primary-comfy-yellow motion-safe:animate-spin"
+          aria-hidden="true"
+        />
+        {{ waiting ?? t('reshoot.generate.wait') }}
+      </p>
+    </ReshootStep>
+    <ReshootStep
+      :n="3"
+      :title="t('reshoot.step.reshoot')"
+      :state="stepState('reshoot', step)"
+    >
+      <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />
+      <ReshootAdvanced v-model:prompt="prompt" v-model:seed="seed" :locale />
+    </ReshootStep>
+
+    <ReshootRunAction
+      :gate
+      :ready
+      :rendering
+      :can-generate="canGenerate"
+      :price-note="priceNote"
+      :workspace-name="workspaceName"
+      :locale
+      @generate="emit('generate')"
+      @cancel="emit('cancel')"
+    />
   </aside>
 </template>
