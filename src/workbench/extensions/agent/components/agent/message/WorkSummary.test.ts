@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { ToolPart } from '../../../services/agent/agentMessageParts'
@@ -273,6 +273,80 @@ describe('WorkSummary', () => {
     expect(screen.queryByText('0.1s')).not.toBeInTheDocument()
     expect(screen.queryByText(/^Thought/)).not.toBeInTheDocument()
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+  })
+
+  it.for([1, 500])(
+    'repeatedly expands and closes a trace with %i paragraphs',
+    async (paragraphs) => {
+      render(WorkSummary, {
+        props: {
+          parts: [
+            {
+              type: 'thinking',
+              text: Array.from(
+                { length: paragraphs },
+                (_, index) =>
+                  `Reasoning paragraph ${index + 1}: inspect the graph.`
+              ).join('\n\n'),
+              state: 'done'
+            },
+            tool('c1', 'add_node', 'done', true)
+          ]
+        },
+        global: { plugins: [i18n] }
+      })
+      const trigger = screen.getByRole('button', { name: /^worked$/i })
+
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('list')).toBeInTheDocument()
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('list')).not.toBeInTheDocument()
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('list')).toBeInTheDocument()
+      await userEvent.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    }
+  )
+
+  it('closes a long trace even when the exit animation never completes', async () => {
+    const getComputedStyle = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element, pseudoElement) => {
+        const styles = getComputedStyle(element, pseudoElement)
+        if (!element.classList.contains('agent-work-summary')) return styles
+        return new Proxy(styles, {
+          get(target, property) {
+            if (property === 'animationName')
+              return element.getAttribute('data-state') === 'open'
+                ? 'agent-collapsible-down'
+                : 'agent-collapsible-up'
+            return Reflect.get(target, property, target)
+          }
+        })
+      }
+    )
+    render(WorkSummary, {
+      props: {
+        parts: [
+          {
+            type: 'thinking',
+            text: 'A long reasoning paragraph.\n\n'.repeat(500),
+            state: 'done'
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+    const trigger = screen.getByRole('button', { name: /^worked$/i })
+    await userEvent.click(trigger)
+    expect(screen.getByRole('list')).toBeInTheDocument()
+    await userEvent.click(trigger)
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 
   it('stays collapsed even when a call failed', () => {

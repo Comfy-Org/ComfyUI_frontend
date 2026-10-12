@@ -73,7 +73,7 @@ watch([() => skills.enabled, () => skills.scope], () => {
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-const shouldFollowLatest = ref(true)
+const followIntent = ref<'latest' | 'reading' | 'trace'>('latest')
 const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
@@ -93,26 +93,31 @@ function clearPendingProgrammaticScroll(): void {
   pendingProgrammaticScroll = undefined
 }
 
-useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
-useEventListener(scrollContainer, 'keydown', clearPendingProgrammaticScroll)
-useEventListener(scrollContainer, 'wheel', clearPendingProgrammaticScroll, {
+function resumeScrollIntent(): void {
+  clearPendingProgrammaticScroll()
+  if (followIntent.value === 'trace') followIntent.value = 'reading'
+}
+
+useEventListener(scrollContainer, 'pointerdown', resumeScrollIntent)
+useEventListener(scrollContainer, 'keydown', resumeScrollIntent)
+useEventListener(scrollContainer, 'wheel', resumeScrollIntent, {
   passive: true
 })
-useEventListener(
-  scrollContainer,
-  'touchstart',
-  clearPendingProgrammaticScroll,
-  {
-    passive: true
-  }
-)
+useEventListener(scrollContainer, 'touchstart', resumeScrollIntent, {
+  passive: true
+})
 
 onBeforeUnmount(clearPendingProgrammaticScroll)
+
+function stopFollowingLatest(): void {
+  clearPendingProgrammaticScroll()
+  followIntent.value = 'trace'
+}
 
 function scrollToLatest(): void {
   const element = scrollContainer.value
   if (!element) return
-  shouldFollowLatest.value = true
+  followIntent.value = 'latest'
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
@@ -146,9 +151,12 @@ useEventListener(scrollContainer, 'scroll', () => {
     clearPendingProgrammaticScroll()
     return
   }
-  shouldFollowLatest.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    followIntentTolerancePx
+  if (followIntent.value !== 'trace')
+    followIntent.value =
+      element.scrollHeight - element.scrollTop - element.clientHeight <=
+      followIntentTolerancePx
+        ? 'latest'
+        : 'reading'
   clearPendingProgrammaticScroll()
 })
 
@@ -158,7 +166,7 @@ function followLatestAfterResize(): void {
   atBottom.value =
     element.scrollHeight - element.scrollTop - element.clientHeight <=
     bottomGracePx
-  if (shouldFollowLatest.value) scrollToLatest()
+  if (followIntent.value === 'latest') scrollToLatest()
 }
 
 useResizeObserver(content, followLatestAfterResize)
@@ -180,7 +188,7 @@ watch(
   (current, previous) => {
     if (current == null || previous == null) return
     pendingConversationId = current
-    shouldFollowLatest.value = true
+    followIntent.value = 'latest'
   }
 )
 
@@ -189,7 +197,7 @@ watch(
   async () => {
     if (entries.length === 0) {
       pendingConversationId = undefined
-      shouldFollowLatest.value = true
+      followIntent.value = 'latest'
       return
     }
     if (
@@ -198,7 +206,7 @@ watch(
     )
       return
     pendingConversationId = undefined
-    shouldFollowLatest.value = true
+    followIntent.value = 'latest'
     await nextTick()
     scrollToLatest()
   }
@@ -207,9 +215,9 @@ watch(
 watch(
   latestContentSignal,
   async () => {
-    if (!shouldFollowLatest.value) return
+    if (followIntent.value !== 'latest') return
     await nextTick()
-    if (!shouldFollowLatest.value) return
+    if (followIntent.value !== 'latest') return
     scrollToLatest()
   },
   { flush: 'post', immediate: true }
@@ -252,6 +260,7 @@ watch(
               :message="entry"
               :answering-ask-ids
               :paywall-presentation
+              @work-summary-toggle="stopFollowingLatest"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -273,7 +282,7 @@ watch(
     </div>
 
     <Button
-      v-if="!shouldFollowLatest"
+      v-if="followIntent !== 'latest'"
       :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"

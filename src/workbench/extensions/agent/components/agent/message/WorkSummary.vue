@@ -12,11 +12,13 @@ import ActivityTrace from './ActivityTrace.vue'
 
 const { parts } = defineProps<{ parts: readonly ActivityPart[] }>()
 
+const emit = defineEmits<{ toggle: [] }>()
+
 const { t } = useI18n()
 </script>
 
 <template>
-  <CollapsibleRoot>
+  <CollapsibleRoot v-slot="{ open }" @update:open="emit('toggle')">
     <CollapsibleTrigger
       class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
     >
@@ -26,7 +28,7 @@ const { t } = useI18n()
       />
     </CollapsibleTrigger>
     <CollapsibleContent class="agent-work-summary overflow-hidden">
-      <ActivityTrace :parts />
+      <ActivityTrace v-if="open" :parts />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>
