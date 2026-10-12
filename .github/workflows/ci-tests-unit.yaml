@@ -95,10 +95,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-
       - name: Download shard reports
+        id: shard-reports
+        background: true
         uses: actions/download-artifact@v8
         with:
           pattern: unit-shard-*
@@ -106,10 +105,18 @@ jobs:
           merge-multiple: true
 
       - name: Download package coverage
+        id: package-coverage
+        background: true
         uses: actions/download-artifact@v8
         with:
           name: unit-package-coverage
           path: packages
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Wait for coverage downloads
+        wait: [shard-reports, package-coverage]
 
       - name: Merge reports and check coverage thresholds
         run: pnpm test:coverage --merge-reports=.vitest/blob

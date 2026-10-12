@@ -192,12 +192,17 @@ jobs:
           path: dist/
 
       - name: Start ComfyUI server
+        id: comfyui-server
+        background: true
         uses: ./.github/actions/start-comfyui-server
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'
+
+      - name: Wait for ComfyUI server readiness
+        wait: comfyui-server
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -257,12 +262,17 @@ jobs:
           path: dist/
 
       - name: Start ComfyUI server
+        id: comfyui-server
+        background: true
         uses: ./.github/actions/start-comfyui-server
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'
+
+      - name: Wait for ComfyUI server readiness
+        wait: comfyui-server
 
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
@@ -316,12 +326,17 @@ jobs:
           path: dist/
 
       - name: Start ComfyUI server
+        id: comfyui-server
+        background: true
         uses: ./.github/actions/start-comfyui-server
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'
+
+      - name: Wait for ComfyUI server readiness
+        wait: comfyui-server
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})

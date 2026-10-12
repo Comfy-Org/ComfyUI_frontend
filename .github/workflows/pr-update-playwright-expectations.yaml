@@ -156,12 +156,17 @@ jobs:
           path: dist/
 
       - name: Start ComfyUI server
+        id: comfyui-server
+        background: true
         uses: ./.github/actions/start-comfyui-server
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'
+
+      - name: Wait for ComfyUI server readiness
+        wait: comfyui-server
 
       # Snapshot rewrites fail the test command, so validate its JSON report.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})

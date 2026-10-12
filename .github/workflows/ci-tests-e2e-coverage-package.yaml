@@ -30,6 +30,8 @@ jobs:
             scripts/cicd/package-e2e-coverage.sh
 
       - name: Download all shard coverage data
+        id: shard-coverage
+        background: true
         uses: actions/download-artifact@v8
         with:
           pattern: e2e-coverage-shard-*
@@ -37,6 +39,9 @@ jobs:
 
       - name: Install lcov
         run: sudo apt-get install -y -qq lcov
+
+      - name: Wait for shard coverage
+        wait: shard-coverage
 
       - name: Package shard coverage
         id: coverage
