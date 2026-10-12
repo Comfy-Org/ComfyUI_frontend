@@ -10,10 +10,6 @@ const EXR_FILENAME = 'test_upload_image.exr'
 const PREVIEW_ID = '3f2c9a4e-8d1b-4c6f-9e7a-5b0d2c1f8a63'
 const PREVIEW_CONTENT_PATH = `/assets/${PREVIEW_ID}/content`
 
-/**
- * Stands in for a backend that stores a preview for an uploaded EXR: the
- * upload response carries the preview's id and the preview is a PNG.
- */
 async function serveStoredPreview(page: Page) {
   await page.route('**/upload/image', async (route) => {
     const response = await route.fetch()
