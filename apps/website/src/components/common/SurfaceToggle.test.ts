@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 import SurfaceToggle from './SurfaceToggle.vue'
 
@@ -18,33 +17,33 @@ const cases: {
     active: 'mcp',
     activeName: 'Comfy MCP',
     linkName: 'Comfy CLI',
-    href: '/cli'
+    href: '/cli/'
   },
   {
     locale: 'en',
     active: 'cli',
     activeName: 'Comfy CLI',
     linkName: 'Comfy MCP',
-    href: '/mcp'
+    href: '/mcp/'
   },
   {
     locale: 'zh-CN',
     active: 'mcp',
     activeName: 'Comfy MCP',
     linkName: 'Comfy CLI',
-    href: '/zh-CN/cli'
+    href: '/zh-CN/cli/'
   },
   {
     locale: 'zh-CN',
     active: 'cli',
     activeName: 'Comfy CLI',
     linkName: 'Comfy MCP',
-    href: '/zh-CN/mcp'
+    href: '/zh-CN/mcp/'
   }
 ]
 
 describe('SurfaceToggle', () => {
-  it.each(cases)(
+  it.for(cases)(
     'marks $active current and links the other surface for $locale',
     ({ locale, active, activeName, linkName, href }) => {
       render(SurfaceToggle, { props: { locale, active } })

@@ -41,6 +41,8 @@
             :stack-count="getStackCount(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
+            :draggable="true"
+            @dragstart="startAssetDrag($event, item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
@@ -77,6 +79,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -86,6 +89,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -136,6 +140,8 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
+  if (asset.preview_id && isHdrImageFilename(asset.name))
+    return hdrPreviewAssetUrl(asset.preview_id)
   if (mediaType === 'image' || mediaType === 'video') {
     return asset.preview_url || ''
   }

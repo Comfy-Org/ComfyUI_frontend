@@ -117,7 +117,7 @@
             :size="12"
             class="mr-1.5 shrink-0"
           />
-          <span class="text-foreground min-w-0 truncate">
+          <span class="min-w-0 truncate text-base-foreground">
             {{
               isInstalling
                 ? t('rightSidePanel.missingNodePacks.installing')
@@ -133,7 +133,7 @@
         class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="text-foreground min-w-0 truncate text-xs">
+        <span class="min-w-0 truncate text-xs text-base-foreground">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -149,7 +149,7 @@
             })
           "
         >
-          <span class="text-foreground min-w-0 truncate">
+          <span class="min-w-0 truncate text-base-foreground">
             {{ t('g.search') }}
           </span>
         </Button>
@@ -239,7 +239,7 @@ import { usePackInstall } from '@/workbench/extensions/manager/composables/nodeP
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, showInfoButton, highlighted } = defineProps<{
@@ -258,7 +258,7 @@ const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
-  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset focus-visible:outline-none'
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-border-default focus-visible:ring-inset focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()

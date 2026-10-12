@@ -205,7 +205,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         enable-empty-state
         :disabled="!appModeStore.selectedInputs.length"
         :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
-        :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
@@ -259,7 +258,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         enable-empty-state
         :disabled="!appModeStore.selectedOutputs.length"
         :tooltip="`${t('linearMode.builder.outputsDesc')}\n${t('linearMode.builder.outputsExample')}`"
-        :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
@@ -355,7 +353,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 "
                 @pointerdown.stop
               >
-                <i class="bg-text-foreground icon-[lucide--check] size-full" />
+                <i class="icon-[lucide--check] size-full bg-base-foreground" />
               </div>
               <div
                 v-else

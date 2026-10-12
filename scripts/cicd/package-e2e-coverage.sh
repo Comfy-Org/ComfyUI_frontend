@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SHARDS_DIR="${1:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
-COVERAGE_DIR="${2:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
-HTML_DIR="${3:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
+USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <shards-succeeded> <source-sha>'
+SHARDS_DIR="${1:?$USAGE}"
+COVERAGE_DIR="${2:?$USAGE}"
+HTML_DIR="${3:?$USAGE}"
+SHARDS_SUCCEEDED="${4:?$USAGE}"
+SOURCE_SHA="${5:?$USAGE}"
+
+if [[ "$SHARDS_SUCCEEDED" != true && "$SHARDS_SUCCEEDED" != false ]]; then
+  echo "::error::shards-succeeded must be 'true' or 'false', got '$SHARDS_SUCCEEDED'."
+  exit 1
+fi
+
+UNVERIFIED_REASON='E2E coverage is not verified as a whole merge: the shard matrix did not pass, so a shard may have stopped early or produced nothing.'
 
 append_summary() {
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
@@ -26,11 +36,30 @@ if [[ ${#COVERAGE_FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
+# A shard that produced no coverage fails its own upload, and one that died
+# partway still writes a tracefile, so neither absence nor thinness is visible
+# here. Both turn the matrix red, which is the signal this reads.
+COMPLETE="$SHARDS_SUCCEEDED"
+
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-  echo 'has-coverage=true' >> "$GITHUB_OUTPUT"
+  {
+    echo 'has-coverage=true'
+    echo "complete=$COMPLETE"
+  } >> "$GITHUB_OUTPUT"
 fi
 
 mkdir -p "$COVERAGE_DIR"
+
+# A lost shard drops hits from commonly-loaded code and can remove files only
+# it exercised, so an incomplete merge is not comparable with a whole one.
+printf '{"complete":%s,"sourceSha":"%s"}\n' \
+  "$COMPLETE" "$SOURCE_SHA" \
+  > "$COVERAGE_DIR/coverage-metadata.json"
+
+if [[ "$COMPLETE" != true ]]; then
+  echo "::warning::$UNVERIFIED_REASON It is excluded from trend reporting."
+fi
+
 ADD_ARGS=()
 for file in "${COVERAGE_FILES[@]}"; do
   ADD_ARGS+=(-a "$file")
@@ -43,6 +72,11 @@ MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' "$COVERAGE_DIR/coverage.lcov")
 append_summary '### Merged coverage'
 append_summary "- **$MERGED_SF** source files"
 append_summary "- **$MERGED_LH / $MERGED_LF** lines hit"
+if [[ "$COMPLETE" != true ]]; then
+  append_summary ''
+  append_summary "> [!WARNING]"
+  append_summary "> $UNVERIFIED_REASON It is excluded from trend reporting."
+fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'
 append_summary '|-------|-------|-----------|'
@@ -68,9 +102,14 @@ lcov --remove "$COVERAGE_DIR/coverage.lcov" \
   -o "$COVERAGE_DIR/coverage.lcov" \
   --ignore-errors unused
 
+HTML_TITLE='ComfyUI E2E Coverage'
+if [[ "$COMPLETE" != true ]]; then
+  HTML_TITLE="$HTML_TITLE — NOT VERIFIED AS A WHOLE MERGE"
+fi
+
 genhtml "$COVERAGE_DIR/coverage.lcov" \
   -o "$HTML_DIR" \
-  --title 'ComfyUI E2E Coverage' \
+  --title "$HTML_TITLE" \
   --no-function-coverage \
   --precision 1 \
   --ignore-errors source,unmapped \

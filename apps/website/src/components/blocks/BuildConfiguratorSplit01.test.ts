@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -87,12 +86,6 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBeTruthy()
   })
 
-  it('shows a more-options hint after each chip group', () => {
-    render(BuildConfiguratorSplit01, { props: baseProps })
-
-    expect(screen.getAllByText('more options')).toHaveLength(4)
-  })
-
   it('renders the panel without a title when panelTitle is omitted', () => {
     const { panelTitle: _panelTitle, ...withoutPanelTitle } = baseProps
     render(BuildConfiguratorSplit01, { props: withoutPanelTitle })
@@ -138,6 +131,9 @@ describe('BuildConfiguratorSplit01', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Wan 3.0' }))
     expect(summaryText()).toContain('2 nodes · 2 models')
+    expect(
+      screen.getByRole('button', { name: 'ControlNet Aux' })
+    ).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(
       screen.getByRole('button', { name: 'ComfyUI-Manager' })

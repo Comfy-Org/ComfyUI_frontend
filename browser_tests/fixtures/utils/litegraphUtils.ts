@@ -128,6 +128,9 @@ class NodeSlotReference {
       [this.type, this.node.id, this.index] as const
     )
   }
+  async expectLinkCount(expected: number, message?: string): Promise<void> {
+    await expect.poll(() => this.getLinkCount(), message).toBe(expected)
+  }
   async removeLinks() {
     await this.node.comfyPage.page.evaluate(
       ([type, id, index]) => {
@@ -184,21 +187,29 @@ class NodeWidgetReference {
    * @returns The position of the widget's center
    */
   async getPosition(): Promise<Position> {
-    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+    const position = await this.node.comfyPage.page.waitForFunction(
       ([id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
+        if (widget.last_y === undefined) {
+          window.app!.canvas.setDirty(true, true)
+          return null
+        }
 
         const [x, y, w, _h] = node.getBounding()
-        return window.app!.canvasPosToClientPos([
+        const pos = window.app!.canvasPosToClientPos([
           x + w / 2,
-          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y! + 1
+          y + window.LiteGraph!['NODE_TITLE_HEIGHT'] + widget.last_y + 1
         ])
+        return pos.every(Number.isFinite) ? pos : null
       },
       [this.node.id, this.index] as const
     )
+    const pos = await position.jsonValue()
+    await position.dispose()
+    if (!pos) throw new Error('Widget position is unavailable')
     return {
       x: pos[0],
       y: pos[1]

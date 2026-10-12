@@ -7,6 +7,7 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -20,13 +21,22 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
+export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
 }
+
+/**
+ * The 202 from the answer route. A backend that predates the committed-answer
+ * body sends only `status`, so `selected` is optional here.
+ */
+export const zAgentAnswerReceipt = zAgentAnswerAccepted.partial({
+  selected: true
+})
+export type AgentAnswerReceipt = z.infer<typeof zAgentAnswerReceipt>
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -94,8 +104,86 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+const SKILL_NAME_MAX = 256
+
+/**
+ * Display-only, so an over-long name is clamped. Rejecting it would drop
+ * the live frame or the whole persisted transcript.
+ */
+const zSkillName = z
+  .string()
+  .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
+  .nullish()
+
+/**
+ * One entry of a persisted assistant row's `content.tool_calls` (see
+ * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced from the
+ * generated `ToolCallSummary` schema (Comfy-Org/cloud#10360), but relaxed:
+ * the generated schema requires `tool_call_id`, narrows `status` to the
+ * closed `'success' | 'error'` wire vocabulary, and requires `duration_ms`
+ * to be an integer, which is only true for rows persisted after that
+ * backend change landed. Real historical rows can still carry a bare `id`
+ * with no `tool_call_id`, a `status` of `'ok'` (an older success alias —
+ * see `toolCallOk` in `agentTranscript.ts`), or a non-finite/negative
+ * `duration_ms`. `parseToolCallEntry` picks only the fields it actually
+ * reads from this, so an unrelated field (e.g. a strict
+ * `started_at`/`finished_at` datetime) never gates the entry.
+ */
+export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  id: z.string(),
+  // `.nullish()`, matching `zSkillName` above: a Go pointer field serialized
+  // without `omitempty` sends an explicit `null` rather than omitting the
+  // key, and `.optional()` alone rejects that, failing this entry's
+  // `safeParse` and dropping the whole tool-call row.
+  tool_call_id: z.string().nullish(),
+  status: z.string().nullish(),
+  // `z.custom`, not `z.number()`: Zod 4's `z.number()` also rejects
+  // `Infinity`/`-Infinity` (Zod 3 only rejected `NaN`), which would fail
+  // this entry's `safeParse` and drop the whole tool-call row over a bad
+  // `duration_ms` alone. `NaN` stays rejected here, matching the
+  // pre-existing Zod 3 behavior; `parseDurationMs` in `agentTranscript.ts`
+  // already does the real finite/non-negative check and omits the field
+  // for `Infinity`/`-Infinity` instead of failing the whole entry.
+  duration_ms: z
+    .custom<number>((val) => typeof val === 'number' && !Number.isNaN(val))
+    .nullish(),
+  skill: zSkillName
+})
+export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
+
+/**
+ * The message-parse boundary's `content.tool_calls` field is deliberately
+ * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
+ * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on
+ * the whole `AgentMessages` array, so a single non-conforming historical
+ * tool-call row must never fail the entire conversation-history load.
+ * `agentTranscript.ts`'s `parseToolCallEntry` runs its own `safeParse`
+ * per entry and degrades just that one row instead.
+ *
+ * The generated `AgentMessage.content` schema also keeps a
+ * `[key: string]: unknown` index signature on its TS type but no matching
+ * `.passthrough()` on its zod schema — the `.passthrough()` below re-widens
+ * it so a persisted row's other `content` fields (`text`, `attachments`,
+ * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
+ * keep parsing.
+ */
+const zAgentMessageContent = z
+  .object({
+    // `z.unknown()`, not `z.array(z.unknown())`: a Go nil slice persisted
+    // without `omitempty` sends `tool_calls: null`, and any other historical
+    // row could carry a non-array value here too. `zAgentMessages.parse()`
+    // throws on the whole history for a schema mismatch, so this field must
+    // accept anything; `agentTranscript.ts`'s `parseToolCalls` already
+    // guards with `Array.isArray` and degrades just that one row's tool
+    // calls instead.
+    tool_calls: z.unknown().optional()
+  })
+  .passthrough()
+
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
+    content: zAgentMessageContent.optional(),
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
@@ -118,12 +206,35 @@ export type CloudWorkflowEntry = z.infer<
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
-export const zUploadImageResult = z.object({
-  name: z.string(),
-  subfolder: z.string(),
-  type: z.string()
+/**
+ * The 403 body the agent service returns when it will not serve the turn's
+ * `workflow_id` to the caller's workspace, whether the row is gone or belongs
+ * elsewhere. The message is the only discriminator on the wire: a 403 refusing
+ * the thread or the message carries the same shape with a different subject.
+ */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
 })
-export type UploadImageResult = z.infer<typeof zUploadImageResult>
+
+/**
+ * The 409 body the agent service returns when the thread already has a turn in
+ * progress (`rejectTurnInProgress` in `services/agent/server/agent_handler.go`).
+ * `type` is the discriminator — a 409 from the cancel or answer endpoints
+ * carries no `type` at all — and the two ids name the turn that holds the
+ * thread, so the client can re-attach to it instead of reporting a dead end.
+ *
+ * Both ids are optional on the wire: the server resolves them best-effort and
+ * documents that a lookup failure "still yields the 409, just without the id".
+ * A conflict with no ids is still a conflict, so the discriminator alone has to
+ * be enough to recognise one.
+ */
+export const zTurnInProgressError = z
+  .object({
+    type: z.literal('TURN_IN_PROGRESS'),
+    active_message_id: z.string().optional(),
+    turn_id: z.string().optional()
+  })
+  .passthrough()
 
 const zAgentThinkingData = z
   .object({
@@ -138,6 +249,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
+    skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
@@ -148,6 +260,16 @@ const zAgentToolCallData = z
 const zAgentMessageDeltaData = z
   .object({
     delta: z.string(),
+    message_id: z.string(),
+    thread_id: z.string()
+  })
+  .passthrough()
+
+// The whole answer so far while the model is still writing it: each draft
+// replaces the last, and an empty text withdraws it.
+const zAgentMessageDraftData = z
+  .object({
+    text: z.string(),
     message_id: z.string(),
     thread_id: z.string()
   })
@@ -201,6 +323,11 @@ const zAgentMessageDeltaEvent = z.object({
   data: zAgentMessageDeltaData
 })
 
+const zAgentMessageDraftEvent = z.object({
+  type: z.literal('agent_message_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -233,6 +360,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
+  zAgentMessageDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
@@ -250,6 +378,6 @@ export function isAgentEvent(type: string): type is AgentWsEvent['type'] {
 
 export function parseAgentWsEvent(
   value: unknown
-): z.SafeParseReturnType<unknown, AgentWsEvent> {
+): z.ZodSafeParseResult<AgentWsEvent> {
   return zAgentWsEvent.safeParse(value)
 }

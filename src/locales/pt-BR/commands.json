@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Novo Fluxo de Trabalho em Branco"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Repetir integração"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Definir aliases de pesquisa do subgrafo"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Ativar AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Desempenho da Tela"

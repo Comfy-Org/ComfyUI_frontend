@@ -1,4 +1,3 @@
-import type * as VueUseModule from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -10,6 +9,8 @@ import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import userEvent from '@testing-library/user-event'
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -19,11 +20,6 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: vi.fn()
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUseModule>()),
-  useImage: () => ({ isLoading: false, error: null })
 }))
 
 const HASH = 'blake3:abc123def456'
@@ -60,11 +56,7 @@ function renderCard(asset: AssetDisplayItem) {
     global: {
       plugins: [i18n],
       stubs: {
-        AssetBadgeGroup: true,
-        IconGroup: true,
-        MoreButton: true,
-        StatusBadge: true,
-        Button: { template: '<button><slot /></button>' }
+        AssetBadgeGroup: true
       },
       directives: {
         tooltip: {}
@@ -85,6 +77,18 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it('closes the asset menu before opening the delete confirmation', async () => {
+    renderCard(createDisplayAsset({ is_immutable: false }))
+
+    await userEvent.click(screen.getAllByRole('button')[1])
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'g.delete' })
+    )
+
+    expect(showConfirmDialog).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('menuitem', { name: 'g.delete' })).toBeNull()
+  })
+
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

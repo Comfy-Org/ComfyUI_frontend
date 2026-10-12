@@ -98,6 +98,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -140,7 +141,7 @@ export const useAssetsStore = defineStore('assets', () => {
     },
     isLoading: inputLoading,
     items: rawInputAssets,
-    loadMore: async () => undefined,
+    loadMore: async () => false,
     loadNew: async () => undefined
   }
 
@@ -224,11 +225,14 @@ export const useAssetsStore = defineStore('assets', () => {
     const historyAssets = ref<AssetItem[]>([])
     const historyLoading = ref(false)
     const historyError = ref<unknown>(null)
+    let historyQueue = Promise.resolve()
+    let refreshPromise: Promise<void> | undefined
+    let loadMorePromise: Promise<boolean> | undefined
 
     /**
      * Initial load of history assets
      */
-    const updateHistory = async () => {
+    const doUpdateHistory = async () => {
       historyLoading.value = true
       historyError.value = null
       try {
@@ -246,19 +250,27 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
+    const updateHistory = () => {
+      if (!refreshPromise) {
+        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
+          refreshPromise = undefined
+        })
+        historyQueue = refreshPromise
+      }
+      return refreshPromise
+    }
+
     /**
      * Load more history items (infinite scroll)
      */
-    const loadMoreHistory = async () => {
-      // Guard: prevent concurrent loads and check if more items available
-      if (!hasMoreHistory.value || isLoadingMore.value) return
-
+    const doLoadMoreHistory = async () => {
       isLoadingMore.value = true
       historyError.value = null
 
       try {
         await fetchHistoryAssets(true)
         historyAssets.value = allHistoryItems.value
+        return true
       } catch (err) {
         console.error('Error loading more history:', err)
         historyError.value = err
@@ -266,9 +278,23 @@ export const useAssetsStore = defineStore('assets', () => {
         if (!historyAssets.value.length) {
           historyAssets.value = []
         }
+        return false
       } finally {
         isLoadingMore.value = false
       }
+    }
+
+    const loadMoreHistory = () => {
+      if (!loadMorePromise) {
+        const operation = historyQueue.then(() =>
+          hasMoreHistory.value ? doLoadMoreHistory() : false
+        )
+        loadMorePromise = operation.finally(() => {
+          loadMorePromise = undefined
+        })
+        historyQueue = operation.then(() => undefined)
+      }
+      return loadMorePromise
     }
 
     return {
@@ -307,6 +333,22 @@ export const useAssetsStore = defineStore('assets', () => {
     },
     { immediate: true }
   )
+
+  async function loadOutputAsset(assetId: string): Promise<boolean> {
+    const assets = outputAssets.value
+    const hasAsset = () =>
+      toValue(assets.items).some(({ id }) => id === assetId)
+
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
+    ) {
+      if (!(await assets.loadMore())) break
+    }
+    return hasAsset()
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -363,8 +405,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    *
    * Runs on every distribution; whether anything fetches through it is
-   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
-   * the authoritative off-cloud gate.
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
@@ -915,6 +957,7 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssets,
     outputAssets,
     invalidateAll,
+    loadOutputAsset,
 
     // Deletion tracking
     deletingAssetIds,

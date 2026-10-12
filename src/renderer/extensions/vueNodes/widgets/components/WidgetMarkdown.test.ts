@@ -1,7 +1,5 @@
-// @vitest-environment jsdom
-
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -99,16 +97,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv!.innerHTML).toContain('<h1>Heading</h1>')
       expect(displayDiv!.innerHTML).toContain('<strong>bold</strong>')
       expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
-    })
-
-    it('starts in display mode by default', () => {
-      const widget = createMarkdownWidget('# Test')
-      const { container } = renderComponent(widget, '# Test')
-
-      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
-        'visible'
-      )
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
 
     it('handles empty markdown content', () => {

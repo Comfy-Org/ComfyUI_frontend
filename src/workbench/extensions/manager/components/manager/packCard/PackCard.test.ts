@@ -1,9 +1,9 @@
-import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -62,7 +62,7 @@ describe('PackCard', () => {
       global: {
         plugins: [i18n],
         components: {
-          ProgressSpinner
+          Spinner
         },
         stubs: {
           PackBanner: true,
@@ -104,7 +104,7 @@ describe('PackCard', () => {
         isSelected: true
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
       expect(container.querySelector('.ring-3')).toBeInTheDocument()
     })
 
@@ -114,7 +114,7 @@ describe('PackCard', () => {
         isSelected: false
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
       expect(container.querySelector('.ring-3')).not.toBeInTheDocument()
     })
   })
@@ -123,9 +123,9 @@ describe('PackCard', () => {
     it('should render without errors', () => {
       const { container } = renderComponent({ nodePack: mockNodePack })
 
-      // eslint-disable-next-line testing-library/no-node-access -- structural root element check
+      // oxlint-disable-next-line testing-library/no-node-access -- structural root element check
       expect(container.firstElementChild).toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
       expect(container.querySelector('.rounded-lg')).toBeInTheDocument()
     })
   })
@@ -158,7 +158,7 @@ describe('PackCard', () => {
         nodePack: packWithoutDescription
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <p> has no implicit ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <p> has no implicit ARIA role
       expect(container.querySelector('p')).not.toBeInTheDocument()
     })
 
@@ -166,7 +166,7 @@ describe('PackCard', () => {
       const packWithoutAuthor = { ...mockNodePack, author: undefined }
       const { container } = renderComponent({ nodePack: packWithoutAuthor })
 
-      // eslint-disable-next-line testing-library/no-node-access -- structural root element check
+      // oxlint-disable-next-line testing-library/no-node-access -- structural root element check
       expect(container.firstElementChild).toBeInTheDocument()
     })
 
@@ -186,7 +186,7 @@ describe('PackCard', () => {
     it('should render PackBanner component', () => {
       const { container } = renderComponent({ nodePack: mockNodePack })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
       const banner = container.querySelector('pack-banner-stub')
       expect(banner).toBeInTheDocument()
     })
@@ -194,7 +194,7 @@ describe('PackCard', () => {
     it('should render PackVersionBadge component', () => {
       const { container } = renderComponent({ nodePack: mockNodePack })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
       const badge = container.querySelector('pack-version-badge-stub')
       expect(badge).toBeInTheDocument()
     })
@@ -202,7 +202,7 @@ describe('PackCard', () => {
     it('should render PackCardFooter component', () => {
       const { container } = renderComponent({ nodePack: mockNodePack })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
       const footer = container.querySelector('pack-card-footer-stub')
       expect(footer).toBeInTheDocument()
     })

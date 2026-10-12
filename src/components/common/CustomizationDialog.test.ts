@@ -8,18 +8,6 @@ import CustomizationDialog from './CustomizationDialog.vue'
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
-vi.mock<unknown>(
-  import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    default: {
-      name: 'SelectButton',
-      template: '<div />',
-      props: ['modelValue', 'options']
-    }
-  })
-)
-
 vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
@@ -32,12 +20,7 @@ vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
 vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
   default: { name: 'DialogContent', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
-  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogFooter.vue'), () => ({
-  default: { name: 'DialogFooter', template: '<div><slot /></div>' }
-}))
+
 vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
@@ -56,14 +39,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: {
-    name: 'Button',
-    template: `<button @click="$emit('click')"><slot /></button>`,
-    emits: ['click']
-  }
-}))
-
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 function renderDialog(extraProps: Record<string, unknown> = {}) {
@@ -77,13 +52,15 @@ function renderDialog(extraProps: Record<string, unknown> = {}) {
 
 describe('CustomizationDialog', () => {
   describe('confirmCustomization', () => {
-    it('emits confirm with default icon and color when no initial values provided', async () => {
+    it('emits the icon selected by the user', async () => {
       const user = userEvent.setup()
       const { onConfirm } = renderDialog()
 
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
       await user.click(screen.getByText('g.confirm'))
 
-      expect(onConfirm).toHaveBeenCalledWith(DEFAULT_ICON, DEFAULT_COLOR)
+      expect(onConfirm).toHaveBeenCalledWith('pi-folder', DEFAULT_COLOR)
     })
 
     it('emits confirm with matching initialIcon when provided', async () => {

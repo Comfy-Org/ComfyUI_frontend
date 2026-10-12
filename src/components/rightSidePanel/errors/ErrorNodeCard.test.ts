@@ -5,6 +5,8 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -16,7 +18,6 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
-const mockSerialize = vi.fn(() => ({ nodes: [] }))
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
@@ -27,34 +28,13 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: () => mockSerialize()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
-const mockTrackHelpResourceClicked = vi.fn()
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackUiButtonClicked: vi.fn(),
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
-  }))
-}))
-
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    staticUrls: {
-      githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-    }
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
@@ -125,10 +105,7 @@ describe('ErrorNodeCard.vue', () => {
       global: {
         plugins: [PrimeVue, i18n, getActivePinia()!],
         stubs: {
-          TransitionCollapse: { template: '<div><slot /></div>' },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
-          }
+          TransitionCollapse: { template: '<div><slot /></div>' }
         }
       }
     })
@@ -404,7 +381,7 @@ describe('ErrorNodeCard.vue', () => {
     expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ContactSupport'
     )
-    expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
         source: 'error_dialog'

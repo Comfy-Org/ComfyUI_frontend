@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -26,7 +25,7 @@ describe('PricingFreeBanner', () => {
     renderBanner()
 
     expect(
-      screen.getByText("Start free. Upgrade when you're ready.")
+      screen.getByText('Start Comfy Cloud for free. Upgrade when ready.')
     ).toBeTruthy()
     expect(screen.getByText(/no credit card required/)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'TRY FREE' })).toBeTruthy()
@@ -57,10 +56,12 @@ describe('PricingFreeBanner', () => {
   it('localizes every string when given the zh-CN locale', () => {
     renderBanner({ locale: 'zh-CN' })
 
-    expect(screen.getByText('免费开始，准备好了再升级。')).toBeTruthy()
+    expect(
+      screen.getByText('免费开始使用 Comfy Cloud，准备好了再升级。')
+    ).toBeTruthy()
     expect(screen.getByText(/在真实 GPU 上免费运行 5 次/)).toBeTruthy()
     expect(screen.getByRole('link', { name: '免费试用' })).toBeTruthy()
-    expect(screen.queryByText(/Start free/)).toBeNull()
+    expect(screen.queryByText(/Start Comfy Cloud for free/)).toBeNull()
     expect(screen.queryByText(/no credit card required/)).toBeNull()
     expect(screen.queryByRole('link', { name: 'TRY FREE' })).toBeNull()
   })

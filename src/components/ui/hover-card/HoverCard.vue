@@ -5,7 +5,6 @@ import { provide, ref, watch } from 'vue'
 
 import { hoverCardOpenKey } from './hoverCardContext'
 
-// eslint-disable-next-line vue/no-unused-properties -- forwarded to Reka via useForwardProps
 const props = defineProps<HoverCardRootProps>()
 const emits = defineEmits<HoverCardRootEmits>()
 

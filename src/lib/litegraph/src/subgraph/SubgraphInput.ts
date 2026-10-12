@@ -1,17 +1,16 @@
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { mintLinkId } from '../idAllocation'
+import { linkIdReservations, mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
+import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Point,
-  ReadOnlyRect
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -87,7 +86,10 @@ export class SubgraphInput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,
@@ -105,44 +107,41 @@ export class SubgraphInput extends SubgraphSlot {
     }
     subgraph._addLink(link)
 
-    if (existingLink) {
-      this.parent._disconnectNodeInput(node, slot, existingLink)
-      if (subgraph.getLink(link.id) !== link) {
-        subgraph.afterChange()
-        return
+    try {
+      if (existingLink) {
+        this.parent._disconnectNodeInput(node, slot, existingLink)
+        if (subgraph.getLink(link.id) !== link) return
       }
-    }
 
-    this.linkIds.push(link.id)
-    anchorRerouteChain(subgraph, link)
-    subgraph.incrementVersion()
+      this.linkIds.push(link.id)
+      anchorRerouteChain(subgraph, link)
+      subgraph.incrementVersion()
 
-    if (inputWidget) {
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
-      })
-    } else {
-      this.events.dispatch('input-connected', { input: slot })
-    }
-    if (subgraph.getLink(link.id) !== link) {
+      if (inputWidget) {
+        this._widget = inputWidget
+        this.events.dispatch('input-connected', {
+          input: slot,
+          widget: inputWidget,
+          node
+        })
+      } else {
+        this.events.dispatch('input-connected', { input: slot })
+      }
+      if (subgraph.getLink(link.id) !== link) return
+
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        inputIndex,
+        true,
+        link,
+        slot
+      )
+      if (subgraph.getLink(link.id) !== link) return
+
+      return link
+    } finally {
       subgraph.afterChange()
-      return
     }
-
-    node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
-    if (subgraph.getLink(link.id) !== link) {
-      subgraph.afterChange()
-      return
-    }
-
-    subgraph.afterChange()
-
-    return link
   }
 
   get labelPos(): Point {

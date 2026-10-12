@@ -57,7 +57,7 @@ export function attachCapabilityRevisionInterceptor(
     if (!isMutationResponse(response)) return
     const revision = readCapabilityRevision(response)
     if (revision !== null) {
-      for (const listener of [...listeners]) listener(revision)
+      for (const listener of Array.from(listeners)) listener(revision)
     }
   }
 

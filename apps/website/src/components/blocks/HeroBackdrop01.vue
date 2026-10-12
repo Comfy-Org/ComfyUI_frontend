@@ -4,8 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import ProductHeroBadge from '../common/ProductHeroBadge.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 
 type Backdrop =
   | { type: 'image'; src: string; alt?: string }
@@ -99,7 +99,7 @@ const scrimStyle = {
 
 <template>
   <section
-    :class="cn('max-w-9xl mx-auto px-4 pt-4 lg:px-6 lg:pt-6', className)"
+    :class="cn('mx-auto max-w-9xl px-4 pt-4 lg:px-6 lg:pt-6', className)"
   >
     <div class="relative overflow-hidden rounded-3xl">
       <slot name="backdrop">

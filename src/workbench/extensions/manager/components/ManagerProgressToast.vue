@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
-import TabMenu from 'primevue/tabmenu'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tabs from '@/components/ui/tabs/Tabs.vue'
+import TabsContent from '@/components/ui/tabs/TabsContent.vue'
+import TabsList from '@/components/ui/tabs/TabsList.vue'
+import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
@@ -16,44 +20,34 @@ const comfyManagerStore = useComfyManagerStore()
 const { isRestarting, isRestartCompleted, applyChanges } = useApplyChanges()
 
 const isExpanded = ref(false)
-const activeTabIndex = ref(0)
+const activeTab = ref('installation')
 
 const tabs = computed(() => [
-  { label: t('manager.installationQueue') },
   {
+    value: 'installation',
+    label: t('manager.installationQueue'),
+    logs: comfyManagerStore.succeededTasksLogs
+  },
+  {
+    value: 'failed',
     label: t('manager.failed', {
       count: comfyManagerStore.failedTasksIds.length
-    })
+    }),
+    logs: comfyManagerStore.failedTasksLogs
   }
 ])
-
-const focusedLogs = computed(() => {
-  if (activeTabIndex.value === 0) {
-    return comfyManagerStore.succeededTasksLogs
-  }
-  return comfyManagerStore.failedTasksLogs
-})
+const activeTabData = computed(
+  () => tabs.value.find((tab) => tab.value === activeTab.value) ?? tabs.value[0]
+)
 
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
 const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
 )
-
-const isTaskInProgress = (index: number) => {
-  const log = focusedLogs.value[index]
-  if (!log) return false
-
-  const taskQueue = comfyManagerStore.taskQueue
-  if (!taskQueue) return false
-
-  const allQueueTasks = [
-    ...(taskQueue.running_queue || []),
-    ...(taskQueue.pending_queue || [])
-  ]
-
-  return allQueueTasks.some((task) => task.ui_id === log.taskId)
-}
+const hasSuccessfulTasks = computed(
+  () => comfyManagerStore.succeededTasksIds.length > 0
+)
 
 const completedTasksCount = computed(() => {
   return (
@@ -85,14 +79,32 @@ const currentTaskName = computed(() => {
   return task?.taskName ?? t('manager.installingDependencies')
 })
 
+const announcement = computed(() => {
+  if (comfyManagerStore.queueError && isInProgress.value)
+    return t('manager.queueWaitingToContinue')
+  if (isRestarting.value || isRestartCompleted.value)
+    return currentTaskName.value
+  if (isInProgress.value) return t('manager.installingDependencies')
+  if (hasSuccessfulTasks.value) return t('manager.restartToApplyChanges')
+  if (comfyManagerStore.failedTasksIds.length) return t('g.failed')
+  return t('g.completed')
+})
+
 const sectionsContainerRef = ref<HTMLElement | null>(null)
 const { y: scrollY } = useScroll(sectionsContainerRef, {
   eventListenerOptions: { passive: true }
 })
 
-const lastPanelRef = ref<HTMLElement | null>(null)
+const latestLogContainerRef = ref<HTMLElement | null>(null)
 const isUserScrolling = ref(false)
-const lastPanelLogs = computed(() => focusedLogs.value?.at(-1)?.logs)
+const latestTaskLogLines = computed(
+  () =>
+    tabs.value.find((tab) => tab.value === activeTab.value)?.logs.at(-1)?.logs
+)
+
+function setLatestLogContainer(el: Element | ComponentPublicInstance | null) {
+  latestLogContainerRef.value = el instanceof HTMLElement ? el : null
+}
 
 function isAtBottom(el: HTMLElement | null) {
   if (!el) return false
@@ -100,9 +112,10 @@ function isAtBottom(el: HTMLElement | null) {
   return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
 }
 
-function scrollLastPanelToBottom() {
-  if (!lastPanelRef.value || isUserScrolling.value) return
-  lastPanelRef.value.scrollTop = lastPanelRef.value.scrollHeight
+function scrollLatestLogToBottom() {
+  if (!latestLogContainerRef.value || isUserScrolling.value) return
+  latestLogContainerRef.value.scrollTop =
+    latestLogContainerRef.value.scrollHeight
 }
 
 function scrollContentToBottom() {
@@ -114,18 +127,26 @@ function resetUserScrolling() {
 }
 
 function handleScroll(e: Event) {
-  const target = e.target as HTMLElement
-  if (target !== lastPanelRef.value) return
+  if (!(e.target instanceof HTMLElement)) return
+  const target = e.target
+  if (target !== latestLogContainerRef.value) return
   isUserScrolling.value = !isAtBottom(target)
 }
 
 function onLogsAdded() {
   if (isUserScrolling.value) return
-  scrollLastPanelToBottom()
+  scrollLatestLogToBottom()
 }
 
-whenever(lastPanelLogs, onLogsAdded, { flush: 'post', deep: true })
-whenever(() => isExpanded.value, scrollContentToBottom)
+whenever(latestTaskLogLines, onLogsAdded, { flush: 'post', deep: true })
+whenever(
+  () => isExpanded.value,
+  () => {
+    scrollContentToBottom()
+    scrollLatestLogToBottom()
+  },
+  { flush: 'post' }
+)
 whenever(() => !isExpanded.value, resetUserScrolling)
 
 function closeToast() {
@@ -152,81 +173,96 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div v-if="isExpanded" class="flex items-center px-4 py-2">
-        <TabMenu
-          v-model:active-index="activeTabIndex"
-          :model="tabs"
-          class="w-full border-none"
-          :pt="{
-            menu: { class: 'border-none' },
-            menuitem: { class: 'font-medium' },
-            action: { class: 'px-4 py-2' }
-          }"
-        />
-      </div>
-
-      <div
-        ref="sectionsContainerRef"
-        class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
-        :style="{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-        }"
+      <Tabs
+        v-if="isExpanded"
+        v-model="activeTab"
+        class="gap-0"
+        orientation="horizontal"
       >
-        <details
-          v-for="(log, index) in focusedLogs"
-          :key="log.taskId"
-          open
-          class="group/log shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
-        >
-          <summary
-            class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
-          >
-            <span class="flex flex-col text-sm/normal font-medium">
-              <span>{{ log.taskName }}</span>
-              <span class="text-muted">
-                {{
-                  isTaskInProgress(index)
-                    ? t('g.inProgress')
-                    : t('g.completedWithCheckmark')
-                }}
-              </span>
-            </span>
-            <i
-              aria-hidden="true"
-              class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
-            />
-          </summary>
+        <div class="flex items-center px-4 py-2">
+          <TabsList variant="flush" class="flex w-full">
+            <TabsTrigger
+              v-for="tab in tabs"
+              :key="tab.value"
+              :value="tab.value"
+              variant="flush"
+            >
+              {{ tab.label }}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent :value="activeTab" class="mt-0">
           <div
-            :ref="
-              index === focusedLogs.length - 1
-                ? (el) => (lastPanelRef = el as HTMLElement)
-                : undefined
-            "
-            :class="
-              cn(
-                'h-64 overflow-y-auto rounded-lg bg-black',
-                index === focusedLogs.length - 1 && 'grow'
-              )
-            "
-            @scroll="handleScroll"
+            ref="sectionsContainerRef"
+            role="region"
+            :aria-label="activeTabData.label"
+            class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
+            :style="{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+            }"
           >
-            <div class="h-full">
-              <div
-                v-for="(logLine, logIndex) in log.logs"
-                :key="logIndex"
-                class="text-muted"
+            <details
+              v-for="(log, index) in activeTabData.logs"
+              :key="log.taskId"
+              open
+              class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
+            >
+              <summary
+                class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
               >
-                <pre class="wrap-break-word whitespace-pre-wrap">{{
-                  logLine
-                }}</pre>
+                <span class="flex flex-col text-sm/normal font-medium">
+                  <span>{{ log.taskName }}</span>
+                  <span class="text-muted">
+                    {{
+                      comfyManagerStore.isTaskFailed(log.taskId)
+                        ? t('g.failed')
+                        : comfyManagerStore.isTaskInProgress(log.taskId)
+                          ? t('g.inProgress')
+                          : t('g.completedWithCheckmark')
+                    }}
+                  </span>
+                </span>
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+                />
+              </summary>
+              <div
+                :ref="
+                  index === activeTabData.logs.length - 1
+                    ? setLatestLogContainer
+                    : undefined
+                "
+                role="log"
+                :aria-label="log.taskName"
+                :class="
+                  cn(
+                    'h-64 overflow-y-auto rounded-lg bg-black',
+                    index === activeTabData.logs.length - 1 && 'grow'
+                  )
+                "
+                @scroll="handleScroll"
+              >
+                <div class="h-full">
+                  <div
+                    v-for="(logLine, logIndex) in log.logs"
+                    :key="logIndex"
+                    class="text-muted"
+                  >
+                    <pre class="wrap-break-word whitespace-pre-wrap">{{
+                      logLine
+                    }}</pre>
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
           </div>
-        </details>
-      </div>
+        </TabsContent>
+      </Tabs>
     </template>
 
     <template #footer="{ toggle }">
@@ -235,7 +271,10 @@ onBeforeUnmount(() => {
       >
         <div class="flex min-w-0 items-center text-base leading-none">
           <div class="flex items-center">
-            <template v-if="isInProgress">
+            <span v-if="comfyManagerStore.queueError && isInProgress">
+              {{ t('manager.queueWaitingToContinue') }}
+            </span>
+            <template v-else-if="isInProgress">
               <DotSpinner duration="1s" class="mr-2" />
               <span>{{ currentTaskName }}</span>
             </template>
@@ -243,20 +282,36 @@ onBeforeUnmount(() => {
               <span class="mr-2">🎉</span>
               <span>{{ currentTaskName }}</span>
             </template>
-            <template v-else>
+            <template v-else-if="hasSuccessfulTasks">
               <span class="mr-2">✅</span>
               <span>{{ t('manager.restartToApplyChanges') }}</span>
             </template>
+            <span
+              v-else-if="comfyManagerStore.failedTasksIds.length"
+              class="text-error"
+              >{{ t('g.failed') }}</span
+            >
+            <span v-else>{{ t('g.completed') }}</span>
           </div>
         </div>
         <div class="flex shrink-0 items-center gap-4">
-          <span v-if="isInProgress" class="text-sm text-muted-foreground">
+          <span
+            v-if="isInProgress && !comfyManagerStore.queueError"
+            class="text-sm text-muted-foreground"
+          >
             {{ completedTasksCount }} {{ t('g.progressCountOf') }}
             {{ totalTasksCount }}
           </span>
           <div class="flex items-center">
             <Button
-              v-if="!isInProgress && !isRestartCompleted"
+              v-if="comfyManagerStore.queueError && isInProgress"
+              variant="secondary"
+              @click="comfyManagerStore.startQueue"
+            >
+              {{ t('manager.retryQueueStart') }}
+            </Button>
+            <Button
+              v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
               class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
               @click="handleRestart"
@@ -264,7 +319,7 @@ onBeforeUnmount(() => {
               {{ t('manager.applyChanges') }}
             </Button>
             <Button
-              v-else-if="!isRestartCompleted"
+              v-if="!isRestartCompleted"
               variant="muted-textonly"
               size="sm"
               class="rounded-full font-bold"
@@ -282,6 +337,7 @@ onBeforeUnmount(() => {
               size="sm"
               class="rounded-full font-bold"
               :aria-label="t('g.close')"
+              :disabled="isInProgress"
               @click.stop="closeToast"
             >
               <i class="pi pi-times" />
@@ -290,5 +346,5 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>
