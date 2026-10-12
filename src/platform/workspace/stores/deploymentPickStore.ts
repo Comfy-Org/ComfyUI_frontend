@@ -21,6 +21,16 @@ import {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
+ * What picking a linked deployment did: `picked` (the page is reloading onto
+ * it), `unchanged` (this browser already runs on it), or `refused` with the
+ * server's reason.
+ */
+type LinkPickOutcome =
+  | { kind: 'picked' }
+  | { kind: 'unchanged' }
+  | { kind: 'refused'; message: string }
+
+/**
  * The deployment this browser runs on and the deployments it may pick
  * (FE-2434), plus the workspace's default deployment an owner sets for
  * members with no pick of their own (BE-17480). A deployment keeps its URL
@@ -239,12 +249,39 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
     if (deploymentId === pickedDeploymentId.value) return null
+    return pickAndReload(id, deploymentId)
+  }
+
+  /**
+   * Pick the deployment a link names (BE-20294), then reload like `pick`.
+   * It waits for the page's first listing, so a link to what this browser
+   * already runs on does nothing, but it does not need that listing to have
+   * answered: an account outside the rollout, or a deployment that is gone
+   * or not the workspace's, gets the server's refusal rather than nothing.
+   */
+  async function pickFromLink(deploymentId: string): Promise<LinkPickOutcome> {
+    await loadOnce()
+    const id = workspaceStore.workspaceId
+    if (!id || state.value.phase === 'switching') return { kind: 'unchanged' }
+    if (deploymentId === pickedDeploymentId.value) return { kind: 'unchanged' }
+    const refusal = await pickAndReload(id, deploymentId)
+    return refusal === null
+      ? { kind: 'picked' }
+      : { kind: 'refused', message: refusal }
+  }
+
+  async function pickAndReload(
+    workspaceId: string,
+    deploymentId: string | null
+  ): Promise<string | null> {
     dispatch({ type: 'switchStarted', target: deploymentId })
     try {
       if (deploymentId === null) {
-        await workspaceApi.clearDeployment(id)
+        await workspaceApi.clearDeployment(workspaceId)
       } else {
-        await workspaceApi.pickDeployment(id, { deployment_id: deploymentId })
+        await workspaceApi.pickDeployment(workspaceId, {
+          deployment_id: deploymentId
+        })
       }
     } catch (err) {
       dispatch({ type: 'switchFailed' })
@@ -334,6 +371,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     load,
     loadOnce,
     pick,
+    pickFromLink,
     followWorkspace,
     setDefault
   }
