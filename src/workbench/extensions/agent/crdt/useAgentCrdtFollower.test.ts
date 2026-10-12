@@ -143,10 +143,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   }
 }))
 
-vi.mock(import('./devPanelLog'), () => ({
-  recordDevEvent: vi.fn(),
-  sanitizeDevEventDetail: vi.fn((detail: unknown) => detail)
-}))
+vi.mock(import('./devPanelLog'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
@@ -158,6 +155,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
@@ -647,6 +645,49 @@ describe('useAgentCrdtFollower', () => {
     isTargetActive.value = true
     dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
     expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    unmount()
+  })
+
+  it('logs each dropped op result with its reason, subscribed target, and frame', async () => {
+    clearDevEvents()
+    const { workflowId, isTargetActive, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const staleFailure = {
+      workflowId: 'wf-2',
+      ok: false,
+      skipped: ['op-2'],
+      failed: { op_id: 'op-2', code: 'unknown_node' }
+    }
+
+    dispatchFrame('doc_ops_result', staleFailure)
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    isTargetActive.value = false
+    await nextTick()
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
+
+    expect(
+      devEvents.value
+        .filter((event) => event.kind === 'doc_ops_result_dropped')
+        .map((event) => event.detail)
+    ).toEqual([
+      {
+        reason: 'workflow_mismatch',
+        subscribedWorkflowId: 'wf-1',
+        frame: staleFailure
+      },
+      {
+        reason: 'workflow_mismatch',
+        subscribedWorkflowId: 'wf-2',
+        frame: { workflowId: 'wf-1', ok: true }
+      },
+      {
+        reason: 'inactive_target',
+        subscribedWorkflowId: 'wf-2',
+        frame: { workflowId: 'wf-2', ok: true }
+      }
+    ])
     unmount()
   })
 
