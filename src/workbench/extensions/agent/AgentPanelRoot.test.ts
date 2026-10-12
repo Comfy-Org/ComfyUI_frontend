@@ -7067,7 +7067,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it.for([
+  const unresolvedChatEntryPoints = [
     {
       entryPoint: 'history',
       openChat: async () => {
@@ -7090,56 +7090,61 @@ describe('AgentPanelRoot workflow binding', () => {
         return render(AgentPanelRoot, { global: { plugins: [i18n] } })
       }
     }
-  ])(
-    'opens a readable unresolved chat from $entryPoint and sends only after explicit retargeting',
-    async ({ openChat }) => {
-      paywallHasFunds.value = true
-      paywallAgentHasFunds.value = true
-      const current = makeTab('wf-42')
-      const bodies: unknown[] = []
-      vi.mocked(fetch).mockImplementation(
-        async (input: RequestInfo | URL, init?: RequestInit) => {
-          const url = String(input)
+  ]
 
-          if (url.includes('/messages') && init?.method === 'POST') {
-            bodies.push(JSON.parse(String(init.body)))
-            return json(202, { ...ack('wf-42'), thread_id: 'th-history' })
-          }
-          if (url.includes('/messages'))
-            return json(200, [
-              {
-                id: 'history-user',
-                thread_id: 'th-history',
-                seq: 1,
-                role: 'user',
-                status: 'complete',
-                turn_id: 'history-turn',
-                workflow_id: 'wf-unresolved',
-                content: { text: 'Historical prompt' }
-              }
-            ] satisfies AgentMessages)
-          if (url.includes('/agent/threads'))
-            return json(
-              200,
-              agentThreadList([
-                agentThread({
-                  id: 'th-history',
-                  title: 'Unresolved target chat',
-                  last_message_at: '2026-09-01T00:00:00Z'
-                })
-              ])
-            )
-          if (url.includes('/workflows'))
-            return json(200, {
-              data: [
-                { id: 'wf-unresolved', name: 'missing-saved-file' },
-                { id: 'wf-42', name: 'current' }
-              ],
-              pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-            })
-          return json(200, {})
+  function stubUnresolvedTargetChat(): unknown[] {
+    const bodies: unknown[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, { ...ack('wf-42'), thread_id: 'th-history' })
         }
-      )
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-unresolved',
+              content: { text: 'Historical prompt' }
+            }
+          ] satisfies AgentMessages)
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Unresolved target chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [
+              { id: 'wf-unresolved', name: 'missing-saved-file' },
+              { id: 'wf-42', name: 'current' }
+            ],
+            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+          })
+        return json(200, {})
+      }
+    )
+    return bodies
+  }
+
+  it.for(unresolvedChatEntryPoints)(
+    'opens a readable unresolved chat from $entryPoint and keeps it untargeted across a tab change, remount and history revisit',
+    async ({ openChat }) => {
+      const current = makeTab('wf-42')
+      stubUnresolvedTargetChat()
       const rendered = await openChat()
       await screen.findAllByText('Historical prompt')
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
@@ -7184,8 +7189,43 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentComposerStore().draft).toBe(
         'Do not edit the visible graph'
       )
+    }
+  )
+
+  it.for(unresolvedChatEntryPoints)(
+    'blocks send from an unresolved chat opened from $entryPoint after remount and history revisit until a workflow target is chosen, then sends to it',
+    async ({ openChat }) => {
+      paywallHasFunds.value = true
+      paywallAgentHasFunds.value = true
+      const current = makeTab('wf-42')
+      const bodies = stubUnresolvedTargetChat()
+      const rendered = await openChat()
+      await waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+      )
+      useAgentComposerStore().setText('Do not edit the visible graph')
+      await nextTick()
+      const other = addTab('workflows/other.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-other' })
+      })
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      rendered.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findAllByText('Historical prompt')
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Unresolved target chat' })
+      )
+      await screen.findAllByText('Historical prompt')
+
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await nextTick()
+
       expect(
         vi
           .mocked(fetch)
