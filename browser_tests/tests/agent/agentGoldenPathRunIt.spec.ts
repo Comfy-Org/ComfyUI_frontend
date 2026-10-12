@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { AgentAnswerAccepted } from '@comfyorg/ingest-types'
+import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import {
   agentExecutionStoryTest as test,
@@ -9,6 +10,7 @@ import {
   startStoryTurn
 } from '@e2e/fixtures/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   MESSAGE_ID,
   SOURCE_NODE_ID,
@@ -50,9 +52,12 @@ test.describe(
       // the socket (`agent_ask_resolved` is the canonical resolution).
       const answers: string[][] = []
       await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
-        const body = route.request().postDataJSON() as { selected: string[] }
+        const body = zAgentAnswerRequest.parse(route.request().postDataJSON())
         answers.push(body.selected)
-        const accepted: AgentAnswerAccepted = { status: 'answered' }
+        const accepted: AgentAnswerAccepted = {
+          status: 'answered',
+          selected: body.selected
+        }
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
@@ -85,7 +90,7 @@ test.describe(
         }
       })
       await expect(
-        harness.panel.getByText(enMessages.agent.runApproval.lead)
+        harness.panel.getByText(enMessages.agent.runApproval.leadBound)
       ).toBeVisible()
       await harness.panel
         .getByRole('button', {
@@ -124,11 +129,33 @@ test.describe(
         nodeId: String(SOURCE_NODE_ID),
         filename: OUTPUT_FILENAME
       })
+      await nextFrame(page)
       const nodeImage = harness.vueNodes
         .getNodeLocator(String(SOURCE_NODE_ID))
-        .locator(`img[src*="${OUTPUT_FILENAME}"]`)
+        .getByRole('img', { name: 'View image 1 of 1' })
+      await expect(nodeImage).toHaveAttribute(
+        'src',
+        new RegExp(OUTPUT_FILENAME)
+      )
       await expect(nodeImage).toBeVisible()
-      await expect(queuePanel.jobRow(JOB_ID)).toBeVisible()
+      await queuePanel.overlay
+        .getByRole('button', { name: 'Completed', exact: true })
+        .click()
+      const historyRow = queuePanel.jobRow(JOB_ID)
+      await expect(historyRow).toBeVisible()
+      const historyImage = historyRow.getByRole('img')
+      await expect(historyImage).toHaveAttribute(
+        'src',
+        /[?&]filename=agent-golden-path-out\.png/
+      )
+      await expect
+        .poll(() =>
+          historyImage.evaluate(
+            (image: HTMLImageElement) =>
+              image.complete && image.naturalWidth > 0
+          )
+        )
+        .toBe(true)
     })
   }
 )

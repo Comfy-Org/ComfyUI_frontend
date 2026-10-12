@@ -8,6 +8,8 @@ import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+const JOB_CANCEL_ROUTE_PATTERN =
+  /\/api\/(?:interrupt|jobs\/(?:[^/]+\/)?cancel)$/
 
 /**
  * Queue and execution surface for the black-box agent harness.
@@ -22,6 +24,7 @@ export class AgentExecutionHelper {
   > = {}
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
+  private readonly jobCancels: string[] = []
   private jobCounter = 0
 
   constructor(
@@ -33,6 +36,10 @@ export class AgentExecutionHelper {
 
   async install(): Promise<void> {
     await mockViewFiles(this.page, this.viewFiles)
+    await this.page.route(JOB_CANCEL_ROUTE_PATTERN, (route) => {
+      this.jobCancels.push(new URL(route.request().url()).pathname)
+      return route.fulfill({ status: 200, body: '' })
+    })
     await this.assets.mockOutputHistory([])
     await this.page.route(PROMPT_ROUTE_PATTERN, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -63,6 +70,11 @@ export class AgentExecutionHelper {
     return this.submitted
   }
 
+  /** Paths of job interrupt or cancel requests, in request order. */
+  jobCancelRequests(): readonly string[] {
+    return this.jobCancels
+  }
+
   lastSubmittedJobId(): string {
     if (this.jobCounter === 0) throw new Error('no prompt was submitted')
     return `agent-exec-job-${this.jobCounter}`
@@ -71,24 +83,16 @@ export class AgentExecutionHelper {
   /**
    * Registers a job the client never posted — the agent's own `run` tool
    * submits server-side, so the browser first learns of that job from the
-   * queue surface. Pass `workflowId` to attribute the job the way a real
-   * cloud row does: the queue poll registers that mapping, and it is what
-   * lets `executionStore` file the job's terminal states (notably an
-   * `execution_error`) against the workflow instead of suppressing them as
-   * unattributable.
+   * queue surface.
    */
-  async enqueueServerRun(
-    jobId: string,
-    { workflowId }: { workflowId?: string } = {}
-  ): Promise<void> {
+  async enqueueServerRun(jobId: string): Promise<void> {
     await this.upsertJob({
       id: jobId,
       status: 'pending',
       preview_output: null,
       outputs_count: null,
       execution_start_time: null,
-      execution_end_time: null,
-      ...(workflowId !== undefined && { workflow_id: workflowId })
+      execution_end_time: null
     })
   }
 
