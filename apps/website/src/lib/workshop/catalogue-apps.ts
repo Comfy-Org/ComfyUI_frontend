@@ -15,7 +15,12 @@ const copy = {
     'zh-CN': '像在片场一样执导镜头'
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  virtualTryOnName: { en: 'Virtual try-on', 'zh-CN': '虚拟试穿' },
+  virtualTryOnTask: {
+    en: 'Dress a person in a garment',
+    'zh-CN': '为人物换上一件衣服'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {

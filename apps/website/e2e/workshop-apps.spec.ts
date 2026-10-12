@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -15,6 +15,7 @@ async function mockFlags(
     workflows: boolean
     auth?: boolean
     reshoot?: boolean
+    virtualTryOn?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -27,6 +28,7 @@ async function mockFlags(
               'workshop-apps-enabled': flags.apps,
               'workshop-workflows-enabled': flags.workflows,
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
+              'workshop-virtual-try-on-app-enabled': flags.virtualTryOn ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -92,7 +94,7 @@ test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
 })
 
-test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
+test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   page,
   context
 }) => {
@@ -107,12 +109,16 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(2)
+  await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
+  await expect(cards.nth(2)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
+  )
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -128,7 +134,11 @@ for (const { reducedMotion, paused } of [
     page,
     context
   }) => {
-    await mockFlags(context, { apps: true, workflows: false })
+    await mockFlags(context, {
+      apps: true,
+      workflows: false,
+      virtualTryOn: false
+    })
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
     page.on('requestfinished', (request) => {
@@ -163,7 +173,11 @@ test('decodes a frame of each hub app card video while it plays', async ({
   page,
   context
 }) => {
-  await mockFlags(context, { apps: true, workflows: false })
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    virtualTryOn: false
+  })
   await page.goto('/hub/apps/')
 
   const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
@@ -184,10 +198,14 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(1)
-  await expect(cards.first()).toHaveAttribute(
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
+  )
+  await expect(cards.nth(1)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
   )
 
   await page.goto('/hub/apps/reshoot/')
@@ -202,6 +220,39 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
     0
   )
+})
+
+async function expectDownloadBesideGitHub(app: Locator) {
+  const download = await app
+    .getByRole('link', { name: 'Download' })
+    .boundingBox()
+  const github = await app.getByText('GitHub · Coming soon').boundingBox()
+  if (!download || !github) throw new Error('no header buttons')
+  expect(download.y).toBe(github.y)
+  expect(download.x - (github.x + github.width)).toBeLessThanOrEqual(8)
+}
+
+async function expectPanelWidth(panel: Locator) {
+  expect((await panel.boundingBox())?.width).toBe(280)
+}
+
+test('hides the site header in the editor apps only', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  const header = page.getByRole('navigation', { name: 'Main navigation' })
+  for (const path of ['/hub/apps/virtual-try-on/']) {
+    await page.goto(path)
+    await expect(page.getByTestId('apps-home')).toBeVisible()
+    await expect(header).toBeHidden()
+  }
+
+  await page.goto('/hub/apps/cinematic-studio/')
+  await expect(page.getByTestId('cinematic')).toBeVisible()
+  await expect(header).toBeVisible()
+  await page.goto('/hub/apps/')
+  await expect(header).toBeVisible()
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({
@@ -442,4 +493,151 @@ test('@mobile keeps the Cinematic Studio camera badges to one line and the camer
     heights.push((await sheet.boundingBox())?.height)
   }
   expect(new Set(heights).size).toBe(1)
+})
+
+test('closes Virtual try-on while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    virtualTryOn: false
+  })
+  await page.goto('/hub/apps/virtual-try-on/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('virtual-try-on')).toHaveCount(0)
+})
+
+test('tries a garment on the Virtual try-on example from the floating panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  await expect(
+    app.getByRole('img', { name: 'Garment: Breton tee' })
+  ).toBeVisible()
+
+  await panel.getByRole('radio', { name: 'Flannel shirt' }).click()
+  await panel.getByRole('radio', { name: 'Relaxed' }).click()
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  await expectPanelWidth(panel)
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Virtual try-on tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
+
+  await panel.getByTestId('try-on-run').click()
+  await expect(app.getByRole('status')).toContainText(/Queued|Trying it on/)
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute(
+    'href',
+    '/images/apps/virtual-try-on/result-flannel.jpg'
+  )
+  await expectDownloadBesideGitHub(app)
+  const slider = app.getByRole('slider', {
+    name: 'Drag to compare the original and the try-on'
+  })
+  const tools = app.getByRole('toolbar', { name: 'Virtual try-on tools' })
+  const compare = tools.getByRole('button', { name: 'Compare' })
+  await expect(slider).toBeHidden()
+  await compare.click()
+  await slider.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(slider).toHaveValue('49')
+  await compare.click()
+  await expect(slider).toBeHidden()
+  await tools.getByRole('button', { name: 'Edit' }).click()
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+
+  const chooser = page.waitForEvent('filechooser')
+  await panel.getByRole('button', { name: 'Upload a garment' }).click()
+  await (
+    await chooser
+  ).setFiles('public/images/apps/virtual-try-on/garment-knit.jpg')
+  await expect(
+    app.getByRole('img', { name: 'Garment: garment-knit.jpg' })
+  ).toBeVisible()
+  await panel.getByTestId('try-on-run').click()
+  await expect(download).toHaveAttribute('href', /^blob:/)
+})
+
+test('takes a Virtual try-on garment dropped on the picker or pasted, and names what is missing', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  const run = panel.getByTestId('try-on-run')
+
+  await app.getByRole('button', { name: 'Remove garment' }).click()
+  await expect(run).toBeDisabled()
+  await expect(run).toContainText('Upload a garment')
+
+  const garment = (name: string) =>
+    page.evaluateHandle(async (name) => {
+      const response = await fetch(
+        '/images/apps/virtual-try-on/garment-knit.jpg'
+      )
+      const data = new DataTransfer()
+      data.items.add(
+        new File([await response.blob()], name, { type: 'image/jpeg' })
+      )
+      return data
+    }, name)
+  await panel
+    .getByTestId('try-on-garment-drop')
+    .dispatchEvent('drop', { dataTransfer: await garment('dropped.jpg') })
+  await expect(
+    app.getByRole('img', { name: 'Garment: dropped.jpg' })
+  ).toBeVisible()
+  await expect(run).toContainText('Try it on')
+
+  const pasted = await garment('pasted.jpg')
+  await page.evaluate(
+    (clipboardData) =>
+      window.dispatchEvent(new ClipboardEvent('paste', { clipboardData })),
+    pasted
+  )
+  await expect(
+    app.getByRole('img', { name: 'Garment: pasted.jpg' })
+  ).toBeVisible()
+})
+
+test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const sheet = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+
+  await sheet.getByRole('button', { name: 'Breton tee · Regular fit' }).click()
+  await sheet.getByRole('radio', { name: 'Slim' }).click()
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await expect(
+    sheet.getByRole('button', { name: 'Breton tee · Slim fit' })
+  ).toBeVisible()
+
+  await sheet.getByTestId('try-on-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow).toBe(0)
 })
