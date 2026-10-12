@@ -1,11 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { processMouseWheel: vi.fn() } }
-}))
+vi.mock(import('@/scripts/app'))
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -52,7 +48,6 @@ function promote(
 
 describe('createPromotedMultilineWidget', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useWidgetValueStore().registerWidget(WIDGET_ID, {
       type: 'customtext',
       value: 'hello',

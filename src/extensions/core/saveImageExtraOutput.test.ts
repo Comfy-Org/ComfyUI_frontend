@@ -1,18 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
-
-const { app } = vi.hoisted(() => ({
-  app: {
-    registerExtension: vi.fn(),
-    graph: undefined as unknown as LGraph
-  }
-}))
-
-vi.mock('@/scripts/app', () => ({ app }))
+vi.mock(import('@/scripts/app'))
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']
@@ -24,18 +15,26 @@ interface FilenamePrefixWidget {
   serializeValue?: () => string
 }
 
-async function loadExtension(): Promise<ComfyExtension> {
+async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
   vi.resetModules()
-  app.registerExtension.mockClear()
+  const { app } = await import('@/scripts/app')
+  vi.mocked(app).graph = graph
+  const registerExtension = vi.mocked(app.registerExtension)
   await import('./saveImageExtraOutput')
-  return app.registerExtension.mock.calls[0][0] as ComfyExtension
+  return registerExtension.mock.calls[0][0]
 }
 
 async function createNodeWithFilenamePrefix(
   nodeName: string,
   prefix: string
 ): Promise<FilenamePrefixWidget> {
-  const ext = await loadExtension()
+  const graph = new LGraph()
+  const sampler = new LGraphNode('Sampler')
+  sampler.properties['Node name for S&R'] = 'Sampler'
+  sampler.addWidget('number', 'seed', 12345, () => undefined, {})
+  graph.add(sampler)
+
+  const ext = await loadExtension(graph)
 
   const nodeType = {
     prototype: {}
@@ -60,16 +59,7 @@ async function createNodeWithFilenamePrefix(
 }
 
 describe('Comfy.SaveImageExtraOutput', () => {
-  beforeEach(() => {
-    const graph = new LGraph()
-    graph.add({
-      properties: { 'Node name for S&R': 'Sampler' },
-      widgets: [{ name: 'seed', value: 12345 }]
-    } as unknown as LGraphNode)
-    app.graph = graph
-  })
-
-  it.each([
+  it.for([
     'SaveImage',
     'SaveImageAdvanced',
     'SaveSVGNode',
@@ -101,4 +91,12 @@ describe('Comfy.SaveImageExtraOutput', () => {
       expect(widget.serializeValue!()).toBe('ComfyUI_12345')
     }
   )
+
+  it('serializes the current widget value, not the value at node creation', async () => {
+    const widget = await createNodeWithFilenamePrefix('SaveImage', 'initial')
+
+    widget.value = 'edited_%Sampler.seed%'
+
+    expect(widget.serializeValue!()).toBe('edited_12345')
+  })
 })

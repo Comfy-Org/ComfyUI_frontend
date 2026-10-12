@@ -11,6 +11,30 @@ test.describe('Careers page @smoke', () => {
     await expect(page).toHaveTitle('Careers - Comfy')
   })
 
+  test('hero autoplays the recruiting video muted with player controls', async ({
+    page
+  }) => {
+    const video = page.locator('video')
+
+    await expect(video).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/careers/recruiting-v03.mp4'
+    )
+    await expect(video).toHaveAttribute('loop', '')
+    await expect(video).toHaveJSProperty('muted', true)
+    await expect
+      .poll(
+        async () =>
+          video.evaluate((element: HTMLVideoElement) => element.currentTime),
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(0)
+
+    await video.hover()
+    await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
+  })
+
   test('Roles section heading is visible', async ({ page }) => {
     await expect(
       page.getByRole('heading', { name: 'Roles', level: 2 })

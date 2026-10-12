@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,10 +7,12 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { createAssetWidget } from './createAssetWidget'
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
+vi.mock(import('@/platform/assets/composables/useAssetBrowserDialog'), () => {
   const show = vi.fn()
   const browse = vi.fn()
   return {
@@ -34,9 +34,10 @@ function checkpointAsset(name: string): AssetItem {
   return {
     id: `asset-${name}`,
     name,
-    hash: 'checkpoint-hash',
     mime_type: 'application/octet-stream',
-    tags: []
+    tags: [],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   }
 }
 
@@ -61,9 +62,7 @@ function assertAssetOptions(
 
 function firstShowOptions() {
   const showOptions = vi.mocked(useAssetBrowserDialog().show).mock.calls[0]?.[0]
-  if (!showOptions) {
-    throw new Error('Expected the asset browser dialog to open')
-  }
+
   return showOptions
 }
 
@@ -71,20 +70,9 @@ describe('createAssetWidget', () => {
   let captureCanvasState: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    vi.resetAllMocks()
-    captureCanvasState = vi.fn()
-    setActivePinia(
-      createTestingPinia({
-        stubActions: false,
-        initialState: {
-          workflow: {
-            activeWorkflow: {
-              changeTracker: { captureCanvasState }
-            }
-          }
-        }
-      })
-    )
+    const workflow = createMockLoadedWorkflow()
+    captureCanvasState = vi.mocked(workflow.changeTracker.captureCanvasState)
+    useWorkflowStore().activeWorkflow = workflow
   })
 
   it('preserves regular asset widget change handling for the owning widget', async () => {

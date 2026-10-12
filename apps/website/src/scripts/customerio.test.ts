@@ -1,25 +1,39 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
+
+// AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context].
+// The real signature resolves to a full AnalyticsBrowser, so the stub is
+// checked against the surface customerio.ts actually awaits.
+interface MockAnalytics {
+  identify: (...args: never[]) => Promise<unknown>
+  track: (...args: never[]) => Promise<unknown>
+}
+interface MockAnalyticsBrowser {
+  load: (...args: never[]) => Promise<readonly [MockAnalytics, unknown]>
+}
 
 const hoisted = vi.hoisted(() => ({
   sdkImported: vi.fn(),
-  mockIdentify: vi.fn().mockResolvedValue(undefined),
-  mockTrack: vi.fn().mockResolvedValue(undefined),
-  mockLoad: vi.fn()
+  mockIdentify: vi.fn(async () => undefined),
+  mockTrack: vi.fn(async () => undefined),
+  mockLoad: vi.fn(
+    (): Promise<readonly [MockAnalytics, unknown]> =>
+      Promise.resolve([
+        { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
+        {}
+      ])
+  )
 }))
 
-vi.mock('@customerio/cdp-analytics-browser', () => {
+vi.mock(import('@customerio/cdp-analytics-browser'), () => {
   hoisted.sdkImported()
-  // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context]
+  const analyticsBrowser = {
+    load: hoisted.mockLoad
+  } satisfies MockAnalyticsBrowser
   return {
-    AnalyticsBrowser: {
-      load: hoisted.mockLoad.mockReturnValue(
-        Promise.resolve([
-          { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
-          {}
-        ])
-      )
-    }
+    AnalyticsBrowser:
+      analyticsBrowser as unknown as typeof CustomerioSdk.AnalyticsBrowser
   }
 })
 
@@ -30,9 +44,7 @@ async function importModule(writeKey: string) {
 
 describe('customerio', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
-    vi.unstubAllEnvs()
   })
 
   it('is disabled and never loads the SDK when the write key is empty', async () => {
@@ -64,6 +76,20 @@ describe('customerio', () => {
     })
     expect(hoisted.mockIdentify.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.mockTrack.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('identifies by email then tracks the waitlist signup under the caller event', async () => {
+    const { joinWaitlist } = await importModule('test-key')
+
+    await joinWaitlist('someone@example.com', 'agent_beta_waitlist_joined')
+
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('someone@example.com', {
+      email: 'someone@example.com'
+    })
+    expect(hoisted.mockTrack).toHaveBeenCalledWith(
+      'agent_beta_waitlist_joined',
+      { page: window.location.pathname }
     )
   })
 

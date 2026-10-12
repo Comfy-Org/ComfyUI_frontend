@@ -1,11 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock<unknown>(import('@/scripts/widgets'), () => ({
   ComfyWidgets: {
     INT: vi.fn(),
     FLOAT: vi.fn(),
@@ -15,15 +13,11 @@ vi.mock('@/scripts/widgets', () => ({
   }
 }))
 
-vi.mock('@/schemas/nodeDefSchema', () => ({
+vi.mock<unknown>(import('@/schemas/nodeDefSchema'), () => ({
   getInputSpecType: (spec: unknown[]) => spec[0]
 }))
 
 describe('widgetStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('widgets getter', () => {
     it('includes custom widgets after registration', () => {
       const store = useWidgetStore()
@@ -41,11 +35,8 @@ describe('widgetStore', () => {
 
     it('does not throw when an extension returns null/undefined widgets', () => {
       const store = useWidgetStore()
-      // Regression: a misbehaving extension can resolve getCustomWidgets() to
-      // nullish, which must not break app init. The `!` casts deliberately
-      // violate the non-null parameter type to simulate that untrusted input.
-      expect(() => store.registerCustomWidgets(undefined!)).not.toThrow()
-      expect(() => store.registerCustomWidgets(null!)).not.toThrow()
+      expect(() => store.registerCustomWidgets(undefined)).not.toThrow()
+      expect(() => store.registerCustomWidgets(null)).not.toThrow()
     })
   })
 

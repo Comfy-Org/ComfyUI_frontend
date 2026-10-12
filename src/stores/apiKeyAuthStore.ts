@@ -1,10 +1,10 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -17,19 +17,20 @@ const STORAGE_KEY = 'comfy_api_key'
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
-  const initializeUserFromApiKey = async () => {
+  const initializeUserFromApiKey = async (watchedApiKey: string) => {
     const createCustomerResponse = await authStore
       .createCustomer()
       .catch((err) => {
         console.error(err)
         return
       })
+    if (apiKey.value !== watchedApiKey) return
     if (!createCustomerResponse) {
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))
@@ -37,15 +38,17 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     currentUser.value = createCustomerResponse
   }
 
+  // The stored key and its validated user form one session value: replacing
+  // the key ends the previous user's session immediately instead of exposing
+  // the old user while the new key validates.
   watch(
     apiKey,
-    () => {
-      if (apiKey.value) {
-        // IF API key is set, initialize user
-        void initializeUserFromApiKey()
-      } else {
-        // IF API key is cleared, clear user
-        currentUser.value = null
+    async (watchedApiKey) => {
+      currentUser.value = null
+      if (watchedApiKey) {
+        await nextTick()
+        if (apiKey.value !== watchedApiKey) return
+        void initializeUserFromApiKey(watchedApiKey)
       }
     },
     { immediate: true }
@@ -53,10 +56,8 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const reportError = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('auth.apiKey.storageFailed'),
-        detail: t('auth.apiKey.storageFailedDetail')
+      toast.error(t('auth.apiKey.storageFailed'), {
+        description: t('auth.apiKey.storageFailedDetail')
       })
     } else {
       toastErrorHandler(error)
@@ -65,22 +66,18 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     apiKey.value = newApiKey
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.apiKey.stored'),
-      detail: t('auth.apiKey.storedDetail'),
-      life: 5000
+    toast.success(t('auth.apiKey.stored'), {
+      description: t('auth.apiKey.storedDetail'),
+      duration: 5000
     })
     return true
   }, reportError)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
     apiKey.value = null
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.apiKey.cleared'),
-      detail: t('auth.apiKey.clearedDetail'),
-      life: 5000
+    toast.success(t('auth.apiKey.cleared'), {
+      description: t('auth.apiKey.clearedDetail'),
+      duration: 5000
     })
     return true
   }, reportError)

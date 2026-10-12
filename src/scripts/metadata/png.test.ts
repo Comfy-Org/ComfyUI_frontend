@@ -1,12 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   mockFileReaderAbort,
   mockFileReaderError
 } from './__fixtures__/helpers'
 import { getFromPngBuffer, getFromPngFile } from './png'
-
-afterEach(() => vi.restoreAllMocks())
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
@@ -145,7 +143,6 @@ describe('getFromPngBuffer', () => {
   })
 
   it('logs warning and skips iTXt chunk with unsupported compression method', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const buffer = createPngWithChunk('iTXt', 'workflow', 'data', {
       compressionFlag: 1,
       compressionMethod: 99
@@ -170,7 +167,7 @@ describe('getFromPngBuffer', () => {
 
     const reader = stream.readable.getReader()
     const chunks: Uint8Array[] = []
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       chunks.push(value)
@@ -205,7 +202,6 @@ describe('getFromPngFile', () => {
   })
 
   it('returns empty for an invalid PNG File', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new ArrayBuffer(8)], 'bad.png', {
       type: 'image/png'
     })

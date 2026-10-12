@@ -1,91 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
-
-vi.mock('@/components/ui/select/Select.vue', async () => {
-  const { provide } = await import('vue')
-  return {
-    default: {
-      name: 'Select',
-      props: ['modelValue'],
-      emits: ['update:modelValue'],
-      setup(
-        props: { modelValue: string },
-        { emit }: { emit: (event: string, value: string) => void }
-      ) {
-        provide('selectModelValue', (): string => props.modelValue)
-        provide('selectUpdate', (v: string): void =>
-          emit('update:modelValue', v)
-        )
-      },
-      template: '<div><slot /></div>'
-    }
-  }
-})
-
-vi.mock('@/components/ui/select/SelectContent.vue', async () => {
-  const { inject, ref, onMounted } = await import('vue')
-  return {
-    default: {
-      name: 'SelectContent',
-      setup() {
-        const selectModelValue = inject<() => string>('selectModelValue')
-        const selectUpdate = inject<(v: string) => void>('selectUpdate')
-        const el = ref<HTMLSelectElement | null>(null)
-        onMounted(() => {
-          if (el.value) el.value.value = selectModelValue?.() ?? ''
-        })
-        return {
-          el,
-          onChange: (e: Event) => {
-            selectUpdate?.((e.target as HTMLSelectElement).value)
-          }
-        }
-      },
-      template: '<select ref="el" @change="onChange"><slot /></select>'
-    }
-  }
-})
-
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
-  default: {
-    name: 'SelectItem',
-    props: ['value'],
-    template: '<option :value="value"><slot /></option>'
-  }
-}))
-
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
-  default: { name: 'SelectTrigger', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -126,12 +46,15 @@ function renderComponent(initial: { type?: CameraType; fov?: number } = {}) {
 }
 
 describe('ViewerCameraControls', () => {
-  it('exposes both camera types in the dropdown', () => {
-    renderComponent()
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    const options = Array.from(select.options).map((o) => o.value)
+  it('exposes both camera types in the dropdown', async () => {
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('combobox'))
+    const options = await screen.findAllByRole('option')
 
-    expect(options).toEqual(['perspective', 'orthographic'])
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Perspective',
+      'Orthographic'
+    ])
   })
 
   it('shows the FOV slider when the camera is perspective', () => {
@@ -155,12 +78,11 @@ describe('ViewerCameraControls', () => {
     expect(screen.getByLabelText('FOV')).toBeInTheDocument()
   })
 
-  it('updates fov via v-model when the slider changes', () => {
-    const { fov } = renderComponent({ type: 'perspective', fov: 60 })
-    const slider = screen.getByLabelText('FOV') as HTMLInputElement
-
-    slider.value = '90'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+  it('updates fov via v-model when the slider changes', async () => {
+    const { fov, user } = renderComponent({ type: 'perspective', fov: 89 })
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
 
     expect(fov.value).toBe(90)
   })
@@ -168,7 +90,10 @@ describe('ViewerCameraControls', () => {
   it('updates cameraType via v-model when the dropdown changes', async () => {
     const { user, cameraType } = renderComponent({ type: 'perspective' })
 
-    await user.selectOptions(screen.getByRole('combobox'), 'orthographic')
+    await user.click(screen.getByRole('combobox'))
+    await user.click(
+      await screen.findByRole('option', { name: 'Orthographic' })
+    )
 
     expect(cameraType.value).toBe('orthographic')
   })

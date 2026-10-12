@@ -4,8 +4,8 @@ import { useScroll } from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
-import { t } from '../../../i18n/translations'
-import type { Locale } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   locale = 'en',
@@ -16,6 +16,7 @@ const {
   gapClass?: string
   class?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 const trackRef = ref<HTMLElement>()
 const { x } = useScroll(trackRef)
@@ -38,13 +39,13 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
 <template>
   <section
-    :class="cn('max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24', className)"
+    :class="cn('mx-auto max-w-9xl px-6 py-16 lg:px-16 lg:py-24', className)"
   >
     <div
       ref="trackRef"
       :class="
         cn(
-          'flex snap-x snap-mandatory scrollbar-none overflow-x-auto',
+          'scrollbar-none flex snap-x snap-mandatory overflow-x-auto',
           gapClass
         )
       "
@@ -55,7 +56,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
     <div class="mt-10 flex items-center gap-4">
       <div class="h-1 flex-1 rounded-full bg-white/20" aria-hidden="true">
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: progressPercent }"
         />
       </div>
@@ -63,7 +64,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('carousel.previous', locale)"
+        :aria-label="t('carousel.previous')"
         @click="scroll(-1)"
       >
         <img
@@ -75,8 +76,8 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
-        :aria-label="t('carousel.next', locale)"
+        class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
+        :aria-label="t('carousel.next')"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

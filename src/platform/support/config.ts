@@ -26,7 +26,11 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 
 const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
 
-export type FeedbackSource = 'topbar' | 'action-bar' | 'help-center'
+export type FeedbackSource =
+  | 'topbar'
+  | 'action-bar'
+  | 'help-center'
+  | 'agent-panel'
 
 export const FEEDBACK_TYPEFORM_ID = 'q7azbWPi'
 

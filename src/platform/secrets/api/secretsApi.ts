@@ -3,8 +3,8 @@ import type {
   SecretProvidersResponse
 } from '@comfyorg/ingest-types'
 
-import { api } from '@/scripts/api'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { api } from '@/scripts/api'
 
 import type {
   SecretCreateRequest,
@@ -42,13 +42,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function listSecrets(): Promise<SecretMetadata[]> {
   const response = await api.fetchApi('/secrets')
   const data = await handleResponse<SecretListResponse>(response)
-  return data.data
+  return Array.isArray(data.data) ? data.data : []
 }
 
 export async function listSecretProviders(): Promise<SecretProviderInfo[]> {
   const response = await api.fetchApi('/secrets/providers')
   const data = await handleResponse<SecretProvidersResponse>(response)
-  return data.data ?? []
+  return Array.isArray(data.data) ? data.data : []
 }
 
 export async function createSecret(

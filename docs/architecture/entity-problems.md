@@ -1,6 +1,6 @@
 # Entity System Structural Problems
 
-This document catalogs the structural problems in the current litegraph entity system. It provides the concrete "why" behind the ECS migration proposed in [ADR 0008](../adr/0008-entity-component-system.md). For the as-is relationship map, see [Entity Interactions](entity-interactions.md).
+This document catalogs the structural problems in the current litegraph entity system. It provides the concrete "why" behind the ECS migration proposed in [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md). For the as-is relationship map, see [Entity Interactions](entity-interactions.md).
 
 All file references are relative to `src/lib/litegraph/src/`.
 
@@ -168,11 +168,23 @@ No central mechanism exists. It's easy to forget an increment (stale render) or 
 
 Domain objects call Pinia composables at the module level or in methods, creating implicit dependencies on the Vue runtime:
 
-- `LLink.ts:24` — `const layoutMutations = useLayoutMutations()` (module scope)
-- `Reroute.ts` — same pattern at module scope
+- `Reroute.ts:31` — `const layoutMutations = useLayoutMutations()` (module scope)
+- `LLink.ts:7` — imports the `layoutStore` singleton at module scope; `useLinkStore()` is called inside methods and helpers (needs an active Pinia, but not eagerly at import time)
+- `Reroute.ts` — `useRerouteStore()` called inside methods for derived membership
 - `BaseWidget.ts` — imports `useWidgetValueStore`
 
 These make the domain objects untestable without a Vue app context.
+
+### Reroute Membership Dual-Writes (solved)
+
+`Reroute.linkIds` / `floatingLinkIds` were hand-maintained `Set`s written from
+~10 scattered call sites (connect, disconnect, paste, configure, subgraph
+pack/unpack, ...), with `Reroute.validateLinks()` repairing the inevitable
+drift on load. Membership is now derived from the links' own `parentId`
+chains via `rerouteStore` — the accessors are read-only, the write sites and
+`validateLinks` are deleted, and orphaned reroutes are pruned by the derived
+`totalLinks === 0` instead of set-repair. See
+[reroute-chain-store.md](reroute-chain-store.md) (Decision 1).
 
 ### Change Notification Sprawl
 

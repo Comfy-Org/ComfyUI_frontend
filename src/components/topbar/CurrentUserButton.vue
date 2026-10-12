@@ -26,6 +26,7 @@
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
+          :subscription-tier="activeWorkspace?.subscriptionTier"
           :class="compact && 'size-full'"
         />
         <UserAvatar
@@ -40,16 +41,12 @@
 
     <Popover
       ref="popover"
-      :show-arrow="false"
-      :pt="{
-        root: {
-          class: 'rounded-lg w-80'
-        }
-      }"
+      align="end"
+      content-class="w-80 overflow-visible p-0"
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
-        v-if="isCloud"
+        v-if="showWorkspacePopover"
         ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
@@ -61,7 +58,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
@@ -94,14 +91,18 @@ const photoURL = computed<string | undefined>(
 const {
   workspaceName: teamWorkspaceName,
   initState,
-  isInPersonalWorkspace
+  isInPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && initState.value === 'ready' && !isInPersonalWorkspace.value
+  () => initState.value === 'ready' && !isInPersonalWorkspace.value
+)
+const showWorkspacePopover = computed(
+  () => isCloud || initState.value === 'ready'
 )
 
 const workspaceName = computed(() => {

@@ -72,6 +72,8 @@
     "node_modules/**",
     "dist/**",
     "**/dist/**",
+    "coverage/**",
+    "**/coverage/**",
     "playwright-report/**",
     "public/**",
     "src/lib/litegraph/**"

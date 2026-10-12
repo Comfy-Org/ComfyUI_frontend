@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -11,8 +11,6 @@ import {
 import { getFromFlacBuffer, getFromFlacFile } from './flac'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.flac')
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('FLAC metadata', () => {
   it('extracts workflow and prompt from Vorbis comments', () => {
@@ -29,7 +27,6 @@ describe('FLAC metadata', () => {
   })
 
   it('returns empty and logs for non-FLAC data', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const buf = new ArrayBuffer(16)
 
     const result = getFromFlacBuffer(buf)
@@ -69,7 +66,6 @@ describe('FLAC metadata', () => {
   })
 
   it('resolves empty when parsing throws on malformed data', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const malformed = new Uint8Array([0x66, 0x4c, 0x61, 0x43, 0xff, 0xff])
     const file = new File([malformed], 'malformed.flac')
 

@@ -21,18 +21,11 @@ function isPromptRequest(request: Request): boolean {
   )
 }
 
-async function waitForPromptRequest(page: Page, timeout: number) {
-  await page
-    .waitForRequest(isPromptRequest, { timeout })
-    .catch((error: unknown) => {
-      if (!(error instanceof errors.TimeoutError)) throw error
-    })
-}
-
 export class ComfyActionbar {
   public readonly root: Locator
   public readonly card: Locator
   public readonly queueButton: ComfyQueueButton
+  public readonly cancelButton: Locator
   public readonly propertiesButton: Locator
   public readonly dragHandle: Locator
   public readonly inlineProgress: Locator
@@ -42,6 +35,9 @@ export class ComfyActionbar {
     this.root = page.locator('.actionbar-container')
     this.card = page.getByTestId(TestIds.topbar.actionBarCard)
     this.queueButton = new ComfyQueueButton(this)
+    this.cancelButton = this.root.getByRole('button', {
+      name: 'Cancel current run'
+    })
     this.propertiesButton = this.root.getByLabel('Toggle properties panel')
     this.dragHandle = this.root.locator('.drag-handle')
     this.inlineProgress = page.getByTestId(TestIds.topbar.queueInlineProgress)
@@ -92,15 +88,23 @@ export class ComfyActionbar {
   }
 
   async isDocked() {
-    const className = await this.root
+    return this.root
       .locator('.actionbar')
-      .getAttribute('class')
-    return className?.includes('static') ?? false
+      .evaluate((element) => getComputedStyle(element).position === 'static')
   }
 
+  /** After the action completes, keeps observing until maxRequests or timeout. */
   async collectPromptRequestsDuring(
     action: () => Promise<void>,
-    timeout = 3000
+    {
+      minRequests,
+      maxRequests,
+      timeout
+    }: {
+      minRequests: number
+      maxRequests: number
+      timeout: number
+    }
   ): Promise<Request[]> {
     const requests: Request[] = []
     function onRequest(request: Request) {
@@ -110,12 +114,28 @@ export class ComfyActionbar {
     this.page.on('request', onRequest)
     try {
       await action()
-      if (requests.length === 0) {
-        await waitForPromptRequest(this.page, timeout)
+
+      const deadline = Date.now() + timeout
+      while (requests.length < maxRequests) {
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+
+        try {
+          await this.page.waitForRequest(isPromptRequest, {
+            timeout: remaining
+          })
+        } catch (error: unknown) {
+          if (!(error instanceof errors.TimeoutError)) throw error
+          break
+        }
       }
-      if (requests.length === 1) {
-        await waitForPromptRequest(this.page, timeout)
+
+      if (requests.length < minRequests) {
+        throw new errors.TimeoutError(
+          `Timed out after ${timeout}ms waiting for at least ${minRequests} prompt requests; received ${requests.length}`
+        )
       }
+
       return requests
     } finally {
       this.page.off('request', onRequest)
@@ -155,11 +175,11 @@ class ComfyQueueButtonOptions {
 
   constructor(public readonly page: Page) {
     this.menu = page.getByRole('menu')
-    this.modeItems = this.menu.getByRole('menuitem')
+    this.modeItems = this.menu.getByRole('menuitemradio')
   }
 
   public modeItem(name: string) {
-    return this.menu.getByRole('menuitem', { name, exact: true })
+    return this.menu.getByRole('menuitemradio', { name, exact: true })
   }
 
   public async selectMode(name: string) {

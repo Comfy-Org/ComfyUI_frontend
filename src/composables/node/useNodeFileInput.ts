@@ -1,10 +1,12 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 interface FileInputOptions {
   accept?: string
   allow_batch?: boolean
   fileFilter?: (file: File) => boolean
+  onReject?: (files: File[]) => void
   onSelect: (files: File[]) => void
 }
 
@@ -25,11 +27,13 @@ export function useNodeFileInput(node: LGraphNode, options: FileInputOptions) {
   fileInput.multiple = allow_batch
 
   fileInput.onchange = () => {
-    const files = fileInput?.files?.length
-      ? Array.from(fileInput.files).filter(fileFilter)
+    const selectedFiles = fileInput?.files?.length
+      ? Array.from(fileInput.files)
       : []
+    const [files, rejectedFiles] = partition(selectedFiles, fileFilter)
     // Reset value so re-selecting the same file triggers onchange
     if (fileInput) fileInput.value = ''
+    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
     if (files.length) onSelect(files)
   }
 

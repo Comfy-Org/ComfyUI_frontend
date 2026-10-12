@@ -1,14 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('flattenInputSpecs', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
     const nodeDef: ComfyNodeDefV1 = {
       name: 'SyncLipSyncNode',
@@ -59,7 +55,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [false],
       output_name: ['video'],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
@@ -73,11 +69,11 @@ describe('flattenInputSpecs', () => {
       'speaker_frame',
       'speaker_x'
     ])
-    expect(byName.speaker_frame?.advanced).toBe(true)
-    expect(byName.speaker_frame?.tooltip).toBe(
+    expect(byName.speaker_frame.advanced).toBe(true)
+    expect(byName.speaker_frame.tooltip).toBe(
       'Video frame used to locate the speaker.'
     )
-    expect(byName.speaker_x?.isOptional).toBe(true)
+    expect(byName.speaker_x.isOptional).toBe(true)
   })
 
   it('returns inputs unchanged when there is no dynamic combo', () => {
@@ -95,7 +91,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1)
+    })
 
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
@@ -147,7 +143,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
@@ -175,7 +171,7 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
 
@@ -201,17 +197,44 @@ describe('flattenInputSpecs', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1
+    }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-
-    // assert() throws in DEV (Vitest's default); it only skips in production.
-    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).toThrow(
-      /expected an options array on dynamic combo/
-    )
-
-    vi.stubEnv('DEV', false)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
+
     expect(result.map((spec) => spec.name)).toEqual(['model'])
+  })
+
+  it('keeps well-formed sibling options when one option is unparseable', () => {
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'PartiallyMalformedNode',
+      display_name: 'Partially Malformed Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with one good and one malformed combo option',
+      input: {
+        required: {
+          model: [
+            'COMFY_DYNAMICCOMBO_V3',
+            {
+              options: [
+                { key: 'good', inputs: { required: { image: ['IMAGE', {}] } } },
+                { key: 'bad' }
+              ]
+            }
+          ]
+        },
+        optional: {}
+      },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    }
+
+    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+    const result = flattenInputSpecs(nodeDefImpl.inputs)
+
+    expect(result.map((spec) => spec.name)).toEqual(['model', 'image'])
   })
 })

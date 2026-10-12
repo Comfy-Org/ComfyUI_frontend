@@ -3,17 +3,16 @@ import type { ComputedRef, Ref } from 'vue'
 import { defaultWindow, useEventListener, useTimeoutFn } from '@vueuse/core'
 
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
-
-import type { CloudSubscriptionStatusResponse } from './useSubscription'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 const MAX_CANCELLATION_ATTEMPTS = 4
 const CANCELLATION_BASE_DELAY_MS = 5000
 const CANCELLATION_BACKOFF_MULTIPLIER = 3 // 5s, 15s, 45s, 135s intervals
 
 type CancellationWatcherOptions = {
-  fetchStatus: () => Promise<CloudSubscriptionStatusResponse | null | void>
+  fetchStatus: () => Promise<BillingStatusResponse | null | void>
   canAccessSubscriptionFeatures: ComputedRef<boolean>
-  subscriptionStatus: Ref<CloudSubscriptionStatusResponse | null>
+  subscriptionStatus: Ref<BillingStatusResponse | null>
   telemetry: Pick<
     TelemetryDispatcher,
     'trackMonthlySubscriptionCancelled'

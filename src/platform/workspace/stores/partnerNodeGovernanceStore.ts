@@ -83,46 +83,56 @@ export const usePartnerNodeGovernanceStore = defineStore(
       status.value = 'loading'
       error.value = null
 
-      try {
-        const [nextProviders, nextPolicy] = await Promise.all([
-          getPartnerProviders(),
-          getPartnerNodePolicy()
-        ])
-        if (
-          version !== requestVersion ||
-          governedWorkspaceId.value !== workspaceId
-        ) {
-          return
-        }
-        providers.value = nextProviders
+      const [providersResult, policyResult] = await Promise.allSettled([
+        getPartnerProviders(),
+        getPartnerNodePolicy()
+      ])
+      if (
+        version !== requestVersion ||
+        governedWorkspaceId.value !== workspaceId
+      ) {
+        return
+      }
+
+      const loadError =
+        policyResult.status === 'rejected'
+          ? policyResult.reason
+          : providersResult.status === 'rejected'
+            ? providersResult.reason
+            : null
+      if (loadError === null) {
+        const nextPolicy =
+          policyResult.status === 'fulfilled' ? policyResult.value : null
+        providers.value =
+          providersResult.status === 'fulfilled' ? providersResult.value : []
         policy.value = nextPolicy
         status.value = nextPolicy ? 'configured' : 'unconfigured'
-      } catch (loadError) {
-        if (
-          version !== requestVersion ||
-          governedWorkspaceId.value !== workspaceId
-        ) {
-          return
-        }
-        providers.value = []
-        policy.value = null
-        error.value =
-          loadError instanceof Error
-            ? loadError
-            : new Error('Failed to load partner provider policy')
-        status.value =
-          loadError instanceof PartnerNodePolicyApiError &&
-          loadError.status === 403
-            ? 'ineligible'
-            : 'error'
+        return
       }
+
+      // An ineligible workspace may still be allowed to read the catalog —
+      // keep it so the panel can render the gated view.
+      const ineligible =
+        loadError instanceof PartnerNodePolicyApiError &&
+        loadError.status === 403
+      providers.value =
+        ineligible && providersResult.status === 'fulfilled'
+          ? providersResult.value
+          : []
+      policy.value = null
+      error.value =
+        loadError instanceof Error
+          ? loadError
+          : new Error('Failed to load partner provider policy')
+      status.value = ineligible ? 'ineligible' : 'error'
     }
 
     async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<void> {
       const workspaceId = governedWorkspaceId.value
       if (!workspaceId) return
       if (activeSaveIdsByWorkspace.value.has(workspaceId)) {
-        throw new Error('Provider policy save already in progress')
+        console.error('Provider policy save already in progress')
+        return
       }
 
       const version = ++requestVersion
@@ -190,6 +200,27 @@ export const usePartnerNodeGovernanceStore = defineStore(
       })
     }
 
+    async function setProvidersEnabled(
+      providerIds: string[],
+      enabled: boolean
+    ): Promise<void> {
+      const targetIds = new Set(providerIds)
+      if (!providers.value.some(({ id }) => targetIds.has(id))) return
+
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: providers.value.map(({ id }) =>
+          targetIds.has(id)
+            ? { providerId: id, enabled }
+            : (currentPolicy.providers.find(
+                ({ providerId }) => providerId === id
+              ) ?? { providerId: id, enabled: false })
+        )
+      })
+    }
+
     async function setAllProvidersEnabled(enabled: boolean): Promise<void> {
       const currentPolicy = policy.value ?? createInitialPolicy()
       await savePolicy({
@@ -206,10 +237,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       const currentPolicy = policy.value ?? createInitialPolicy()
       await savePolicy({
         ...currentPolicy,
-        enforcementEnabled: enabled,
-        providers: enabled
-          ? currentPolicy.providers
-          : providers.value.map(({ id }) => ({ providerId: id, enabled: true }))
+        enforcementEnabled: enabled
       })
     }
 
@@ -225,6 +253,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       isProviderEnabled,
       loadPolicy,
       setProviderEnabled,
+      setProvidersEnabled,
       setAllProvidersEnabled,
       setEnforcementEnabled
     }

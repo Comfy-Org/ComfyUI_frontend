@@ -9,7 +9,7 @@ import type {
   OnboardingTourSkipReason,
   OnboardingTourStepStage
 } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
@@ -91,6 +91,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     state.value.phase === 'idle' ? null : state.value.tour
   )
   const waitingForTarget = computed(() => state.value.phase === 'waiting')
+  const stepSettled = computed(() => state.value.phase === 'showing')
 
   const stepIdx = computed(() => shownIdx(state.value))
 
@@ -171,7 +172,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const current = state.value
     if (!isRunning(current)) return
     const nextStep = current.steps[idx]
-    if (!nextStep) return
 
     stepController?.abort()
     const controller = new AbortController()
@@ -231,10 +231,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       skipReason: 'target_timeout',
       reported: step
     })
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('onboardingCoachmarks.loadError')
+    useToast().error(t('g.error'), {
+      description: t('onboardingCoachmarks.loadError')
     })
   }
   const lostTarget = computed(() => {
@@ -347,7 +345,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   async function begin(entryPath: EntryPath): Promise<boolean> {
     const definition = tourDefinition(entryPath)
-    if (!definition) return false
+    if (!definition || !tourHolds(entryPath)) return false
     const run = nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
     // A new run has no ending yet; the one before it must not speak for it.
@@ -407,6 +405,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    stepSettled,
     startTour,
     replayTour,
     next,

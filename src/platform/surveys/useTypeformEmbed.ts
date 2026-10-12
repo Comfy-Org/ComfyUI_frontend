@@ -2,7 +2,7 @@ import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, ref, toValue } from 'vue'
 
-import { createScriptLoader } from '@/utils/loadExternalScript'
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
 const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
 const VALID_ID_PATTERN = /^[A-Za-z0-9]+$/
@@ -24,7 +24,7 @@ export function isTypeformIdValid(id: string | undefined | null): boolean {
 }
 
 const loadTypeformScript = createScriptLoader(TYPEFORM_SRC, () =>
-  typeof window.tf?.load === 'function' ? (window.tf as TypeformGlobal) : null
+  typeof window.tf?.load === 'function' ? window.tf : null
 )
 
 function ensureScriptLoaded(): Promise<TypeformGlobal> {
@@ -57,7 +57,9 @@ export function useTypeformEmbed(
       await ensureScriptLoaded()
       const tf = window.tf
       if (typeof tf?.load !== 'function') {
-        throw new Error('Typeform API unavailable after script load')
+        console.error('Typeform API unavailable after script load')
+        typeformError.value = true
+        return
       }
       tf.load()
     } catch (err) {

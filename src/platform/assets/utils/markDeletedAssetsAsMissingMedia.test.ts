@@ -1,28 +1,17 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type * as MissingMediaScanModule from '@/platform/missingMedia/missingMediaScan'
 import {
   createPromotedMediaRuntime,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
-
-const mockScanNodeMediaCandidates = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/missingMedia/missingMediaScan', () => ({
-  scanNodeMediaCandidates: mockScanNodeMediaCandidates
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ currentGraph: null })
-}))
+vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
+const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
 function makeGraph(nodes: unknown[]): LGraph {
   return { nodes } as unknown as LGraph
@@ -30,9 +19,7 @@ function makeGraph(nodes: unknown[]): LGraph {
 
 describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     seedMediaNodeDefs()
-    mockScanNodeMediaCandidates.mockReset()
     mockScanNodeMediaCandidates.mockReturnValue([])
   })
 
@@ -51,14 +38,16 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
-        name: 'sub/foo.png [output]'
+        name: 'sub/foo.png [output]',
+        isMissing: undefined
       },
       {
         nodeId: '1',
         nodeType: 'LoadImage',
         widgetName: 'mask',
         mediaType: 'image',
-        name: 'unrelated.png'
+        name: 'unrelated.png',
+        isMissing: undefined
       }
     ])
 
@@ -100,8 +89,7 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledTimes(1)
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledWith(
       expect.anything(),
-      inputNode,
-      true
+      inputNode
     )
   })
 
@@ -147,7 +135,8 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
-        name: 'nested.png [output]'
+        name: 'nested.png [output]',
+        isMissing: undefined
       }
     ])
 
@@ -178,10 +167,7 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
       sourceValue: 'stale-interior.png',
       sourceOptions: []
     })
-    const { scanNodeMediaCandidates } = await vi.importActual<
-      typeof MissingMediaScanModule
-    >('@/platform/missingMedia/missingMediaScan')
-    mockScanNodeMediaCandidates.mockImplementation(scanNodeMediaCandidates)
+    mockScanNodeMediaCandidates.mockRestore()
 
     markDeletedAssetsAsMissingMedia(rootGraph, new Set([deletedValue]))
 
@@ -190,6 +176,12 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeId: '50',
         nodeType: 'LoadImage',
         widgetName: 'outer_image',
+        promotedSources: [
+          {
+            executionId: '50:100',
+            widgetName: 'image'
+          }
+        ],
         mediaType: 'image',
         name: deletedValue,
         isMissing: true

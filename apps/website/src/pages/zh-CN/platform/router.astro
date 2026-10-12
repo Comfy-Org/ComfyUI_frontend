@@ -1,0 +1,48 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import FAQSection from '@/components/common/FAQSection.vue'
+import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
+import ModelsApiHero from '@/templates/platform/ModelsApiHero.vue'
+import ModelsApiGallery from '@/templates/platform/ModelsApiGallery.vue'
+import RouterCapabilitiesSection from '@/templates/platform/RouterCapabilitiesSection.vue'
+import RouterCodeSection from '@/templates/platform/RouterCodeSection.vue'
+import RouterVideoSection from '@/templates/platform/RouterVideoSection.vue'
+import RouterMigrationBanner from '@/templates/platform/RouterMigrationBanner.vue'
+import RouterProofStripSection from '@/templates/platform/RouterProofStripSection.vue'
+import RouterProviderCoverageSection from '@/templates/platform/RouterProviderCoverageSection.vue'
+import RouterRoadmapSection from '@/templates/platform/RouterRoadmapSection.vue'
+import { externalLinks } from '@/config/routes'
+import { routerFaq } from '@/templates/platform/routerCopy'
+---
+
+<BaseLayout
+  title={`${Astro.locals.t('platform.products.models.title')} · ${Astro.locals.t('platform.meta.title')}`}
+  description={Astro.locals.t('platform.products.models.description')}
+>
+  <ModelsApiHero locale="zh-CN" client:load />
+  <RouterVideoSection locale="zh-CN" client:idle />
+  <RouterCapabilitiesSection locale="zh-CN" />
+  <RouterMigrationBanner locale="zh-CN" client:visible />
+  <RouterProofStripSection locale="zh-CN" />
+  <ModelsApiGallery locale="zh-CN" client:visible />
+  <RouterCodeSection locale="zh-CN" client:visible />
+  <RouterProviderCoverageSection locale="zh-CN" />
+  <RouterRoadmapSection locale="zh-CN" client:visible />
+  <FAQSection
+    locale="zh-CN"
+    heading={Astro.locals.t('platform.router.faq.heading')}
+    items={routerFaq('zh-CN')}
+    client:load
+  />
+  <ClosingCtaSection
+    locale="zh-CN"
+    heading-after-badge={Astro.locals.t(
+      'platform.router.closing.headingAfterBadge'
+    )}
+    subtitle={Astro.locals.t('platform.router.closing.subtitle')}
+    primary-href={externalLinks.routerApiKeys}
+    client:visible
+  />
+  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+</BaseLayout>

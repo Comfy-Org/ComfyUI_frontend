@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
@@ -46,7 +49,7 @@ async function resolveMeshPreview() {
 }
 
 useIntersectionObserver(mediaContainerRef, ([entry]) => {
-  if (!entry?.isIntersecting) return
+  if (!entry.isIntersecting) return
   if (!isMesh.value || meshPreviewAttempted.value) return
   meshPreviewAttempted.value = true
   void resolveMeshPreview()
@@ -184,21 +187,25 @@ function handleVideoLoad(event: Event) {
         })
       "
     >
-      <span
-        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
-        :class="
-          cn(
-            'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
-            'transition-colors duration-150',
-            // selection
-            !!selected && 'text-base-foreground'
-          )
-        "
-      >
-        {{ label ?? name }}
-      </span>
+      <Tooltip :disabled="layout !== 'grid'">
+        <TooltipTrigger as-child>
+          <span
+            :class="
+              cn(
+                'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
+                'transition-colors duration-150',
+                // selection
+                !!selected && 'text-base-foreground'
+              )
+            "
+          >
+            {{ label ?? name }}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{{ label ?? name }}</TooltipContent>
+      </Tooltip>
       <!-- Meta Data -->
-      <span v-if="actualDimensions" class="text-secondary block text-xs">
+      <span v-if="actualDimensions" class="block text-xs text-muted-foreground">
         {{ actualDimensions }}
       </span>
     </div>

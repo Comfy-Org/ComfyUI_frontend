@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
@@ -12,7 +12,7 @@ import type {
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('@/composables/useDismissableOverlay', () => ({
+vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()
 }))
 
@@ -148,10 +148,7 @@ function renderControls(overrides: RenderProps = {}) {
     },
     global: {
       plugins: [i18n],
-      stubs: childStubs,
-      directives: {
-        tooltip: () => {}
-      }
+      stubs: childStubs
     }
   })
   return { ...result, user: userEvent.setup() }
@@ -162,10 +159,6 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DControls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('category menu', () => {
     it('renders SceneControls by default', () => {
       renderControls()

@@ -13,7 +13,12 @@ const { class: customClass = '', ...delegated } = defineProps<
 <template>
   <DialogTitle
     v-bind="delegated"
-    :class="cn('text-base font-semibold text-base-foreground', customClass)"
+    :class="
+      cn(
+        'min-w-0 text-base font-semibold wrap-break-word text-base-foreground',
+        customClass
+      )
+    "
   >
     <slot />
   </DialogTitle>

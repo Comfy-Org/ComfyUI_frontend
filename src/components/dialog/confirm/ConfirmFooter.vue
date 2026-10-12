@@ -1,11 +1,18 @@
 <template>
-  <section class="flex w-full flex-wrap justify-end gap-2 px-2 pb-2">
-    <Button :disabled variant="textonly" autofocus @click="$emit('cancel')">
+  <section class="flex w-full flex-wrap items-center justify-end gap-4 p-4">
+    <Button
+      :disabled
+      variant="muted-textonly"
+      size="lg"
+      autofocus
+      @click="$emit('cancel')"
+    >
       {{ cancelTextX }}
     </Button>
     <Button
       :disabled
       :variant="confirmVariant ?? 'textonly'"
+      size="lg"
       :class="confirmClass"
       @click="$emit('confirm')"
     >
@@ -19,7 +26,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
 const { t } = useI18n()
 

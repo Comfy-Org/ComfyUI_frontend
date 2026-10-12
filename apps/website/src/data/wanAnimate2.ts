@@ -1,9 +1,9 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 // Wan Animate 2 ships a single workflow template, so every CTA resolves to it.
 const WAN_ANIMATE_2_WORKFLOW =
@@ -41,8 +41,7 @@ export const wanAnimate2Page: ModelLaunchPage = {
       labelKey: 'wanAnimate2.hero.primaryCta',
       href: WAN_ANIMATE_2_WORKFLOW,
       target: '_blank'
-    },
-    footnoteKey: 'wanAnimate2.hero.footnote'
+    }
   },
   pricing: {
     defaultBillingCycle: 'monthly',

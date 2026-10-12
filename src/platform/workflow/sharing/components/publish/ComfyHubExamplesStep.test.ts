@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 
-vi.mock('@atlaskit/pragmatic-drag-and-drop/element/adapter', () => ({
+vi.mock(import('@atlaskit/pragmatic-drag-and-drop/element/adapter'), () => ({
   draggable: vi.fn(() => vi.fn()),
   dropTargetForElements: vi.fn(() => vi.fn()),
   monitorForElements: vi.fn(() => vi.fn())
@@ -32,10 +32,6 @@ function renderStep(
 }
 
 describe('ComfyHubExamplesStep', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('renders all example images', () => {
     renderStep(createImages(3))
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
@@ -48,7 +44,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[1], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
@@ -63,7 +59,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[1], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
@@ -78,7 +74,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[0], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()
@@ -91,7 +87,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[2], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()

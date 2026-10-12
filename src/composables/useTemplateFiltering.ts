@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import {
   createTemplateSearchIndex,
   searchTemplates
-} from '@/composables/templateSearchConfig'
+} from '@comfyorg/shared-frontend-utils/templateSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -25,6 +25,8 @@ type TemplateBrowseSort =
   | 'model-size-low-to-high'
 
 export type TemplateSortMode = TemplateBrowseSort | 'relevance'
+
+const SEARCH_DEFAULT_SORT: TemplateSortMode = 'popular'
 
 /** The title shown on the card, trimmed for stable sorting. */
 function displayTitle(template: TemplateInfo): string {
@@ -168,9 +170,9 @@ export function useTemplateFiltering<T extends TemplateInfo>(
   )
 
   const hasActiveQuery = computed(() => searchQuery.value.trim().length > 0)
-  const searchSort = ref<TemplateSortMode>('relevance')
+  const searchSort = ref<TemplateSortMode>(SEARCH_DEFAULT_SORT)
   watch(hasActiveQuery, (searching) => {
-    if (searching) searchSort.value = 'relevance'
+    if (searching) searchSort.value = SEARCH_DEFAULT_SORT
   })
   const activeSort = computed(() =>
     hasActiveQuery.value ? searchSort.value : sortBy.value
@@ -320,7 +322,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = 'default'
-    searchSort.value = 'relevance'
+    searchSort.value = SEARCH_DEFAULT_SORT
   }
 
   const removeModelFilter = (model: string) => {

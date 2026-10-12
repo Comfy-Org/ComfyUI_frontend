@@ -1,0 +1,28 @@
+@import 'tailwindcss/preflight' layer(base);
+@import '@comfyorg/design-system/css/style.css';
+
+@source './**/*.{ts,vue}';
+/* The shared checkout steps and the class recipes they render. */
+@source '../../../packages/account-ui/src/billing/**/*.vue';
+@source '../../../packages/design-system/src/*.variants.ts';
+
+/*
+ * The cloud app has no Tailwind preflight, so inside its checkout form
+ * controls and links keep the browser's defaults unless a utility sets them.
+ * In the base layer, so any utility still wins.
+ */
+@layer base {
+  [data-app-defaults] :is(input, [role='combobox']) {
+    font: revert;
+    padding: revert;
+  }
+
+  [data-app-defaults] input[type='checkbox'] {
+    margin: revert;
+  }
+
+  [data-app-defaults] input::placeholder,
+  [data-app-defaults] a {
+    color: revert;
+  }
+}

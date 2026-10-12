@@ -6,10 +6,10 @@ import { FuseFilter, FuseSearch } from '@/utils/fuseUtil'
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
-  public readonly inputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly outputTypeFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly nodeCategoryFilter: FuseFilter<ComfyNodeDefImpl, string>
-  public readonly nodeSourceFilter: FuseFilter<ComfyNodeDefImpl, string>
+  public readonly inputTypeFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly outputTypeFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly nodeCategoryFilter: FuseFilter<ComfyNodeDefImpl>
+  public readonly nodeSourceFilter: FuseFilter<ComfyNodeDefImpl>
 
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
@@ -30,7 +30,7 @@ export class NodeSearchService {
       shouldSort: true
     }
 
-    this.inputTypeFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
+    this.inputTypeFilter = new FuseFilter<ComfyNodeDefImpl>(data, {
       id: 'input',
       name: 'Input Type',
       invokeSequence: 'i',
@@ -38,16 +38,15 @@ export class NodeSearchService {
       fuseOptions
     })
 
-    this.outputTypeFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
+    this.outputTypeFilter = new FuseFilter<ComfyNodeDefImpl>(data, {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getItemOptions: (node) =>
-        node.outputs.flatMap((output) => output.type.split(',')),
+      getItemOptions: (node) => node.outputTypes,
       fuseOptions
     })
 
-    this.nodeCategoryFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
+    this.nodeCategoryFilter = new FuseFilter<ComfyNodeDefImpl>(data, {
       id: 'category',
       name: 'Category',
       invokeSequence: 'c',
@@ -55,7 +54,7 @@ export class NodeSearchService {
       fuseOptions
     })
 
-    this.nodeSourceFilter = new FuseFilter<ComfyNodeDefImpl, string>(data, {
+    this.nodeSourceFilter = new FuseFilter<ComfyNodeDefImpl>(data, {
       id: 'source',
       name: 'Source',
       invokeSequence: 's',
@@ -66,7 +65,7 @@ export class NodeSearchService {
 
   public searchNode(
     query: string,
-    filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = [],
+    filters: FuseFilterWithValue<ComfyNodeDefImpl>[] = [],
     options?: FuseSearchOptions,
     extraOptions: {
       matchWildcards?: boolean
@@ -99,7 +98,7 @@ export class NodeSearchService {
     return options?.limit ? results.slice(0, options.limit) : results
   }
 
-  get nodeFilters(): FuseFilter<ComfyNodeDefImpl, string>[] {
+  get nodeFilters(): FuseFilter<ComfyNodeDefImpl>[] {
     return [
       this.inputTypeFilter,
       this.outputTypeFilter,

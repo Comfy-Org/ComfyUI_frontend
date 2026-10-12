@@ -7,8 +7,9 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodePreviewCard from './NodePreviewCard.vue'
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
+
   () => ({
     default: { template: '<div data-testid="node-preview" />' }
   })
@@ -63,7 +64,7 @@ function buildNodeDef(): ComfyNodeDefImpl {
     output_is_list: [false],
     output_name: ['video'],
     output_node: false
-  } as ComfyNodeDefV1
+  }
 
   return new ComfyNodeDefImpl(nodeDef)
 }
@@ -99,7 +100,7 @@ describe('NodePreviewCard', () => {
       output_is_list: [],
       output_name: [],
       output_node: false
-    } as ComfyNodeDefV1)
+    })
 
     renderComponent(nodeDefImpl)
 

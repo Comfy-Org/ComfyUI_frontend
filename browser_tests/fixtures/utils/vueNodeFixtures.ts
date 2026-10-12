@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 
@@ -65,6 +66,18 @@ export class VueNodeFixture {
     await this.header.click()
   }
 
+  async waitForImageLoaded(filename: string): Promise<void> {
+    const image = this.imagePreview.getByTestId('main-image')
+    await expect
+      .poll(() =>
+        image.evaluate((img: HTMLImageElement) => ({
+          filename: new URL(img.src).searchParams.get('filename'),
+          loaded: img.complete && img.naturalWidth > 0
+        }))
+      )
+      .toEqual({ filename, loaded: true })
+  }
+
   async toggleCollapse(): Promise<void> {
     await this.collapseButton.click()
   }
@@ -93,7 +106,13 @@ export class VueNodeFixture {
       .or(this.root.locator('.lg-slot'))
     const filteredLocator =
       typeof nameOrLocator === 'string'
-        ? slotLocators.filter({ hasText: nameOrLocator })
+        ? slotLocators
+            .filter({ hasText: nameOrLocator })
+            .or(
+              this.root
+                .locator('.lg-slot')
+                .and(this.root.getByLabel(nameOrLocator, { exact: true }))
+            )
         : slotLocators.filter({ has: nameOrLocator })
     return filteredLocator.getByTestId('slot-dot').locator('..')
   }

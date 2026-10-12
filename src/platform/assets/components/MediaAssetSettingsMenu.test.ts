@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 
 import MediaAssetSettingsMenu from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
+import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetViewMode } from '@/platform/assets/components/mediaAssetViewOptions'
 
 const KEYS = {
@@ -27,7 +28,9 @@ interface MountOptions {
 }
 
 function mountWithModels(options: MountOptions = {}) {
-  const viewMode = ref<MediaAssetViewMode>(options.viewMode ?? 'list')
+  const viewMode = ref<MediaAssetViewMode>(
+    options.viewMode ?? MEDIA_ASSET_VIEW_MODE.list
+  )
   const sortBy = ref<SortBy>(options.sortBy ?? 'newest')
 
   const Host = defineComponent({
@@ -74,12 +77,17 @@ describe('MediaAssetSettingsMenu', () => {
     })
 
     it.for([
-      { label: KEYS.gridSmall, expected: 'grid-small' },
-      { label: KEYS.grid, expected: 'grid' }
+      {
+        label: KEYS.gridSmall,
+        expected: MEDIA_ASSET_VIEW_MODE.gridSmall
+      },
+      { label: KEYS.grid, expected: MEDIA_ASSET_VIEW_MODE.grid }
     ] as const)(
       'updates the v-model:viewMode to $expected when clicked',
       async ({ label, expected }) => {
-        const { viewMode, user } = mountWithModels({ viewMode: 'list' })
+        const { viewMode, user } = mountWithModels({
+          viewMode: MEDIA_ASSET_VIEW_MODE.list
+        })
         await user.click(getButton(label))
         expect(viewMode.value).toBe(expected)
       }

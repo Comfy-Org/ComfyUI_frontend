@@ -1,16 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createRafCoalescer } from '@/utils/rafBatch'
 
 describe('createRafCoalescer', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('applies the latest pushed value on the next frame', () => {
     const apply = vi.fn()
     const coalescer = createRafCoalescer<number>(apply)

@@ -1,116 +1,74 @@
 <template>
-  <!-- Password Field -->
-  <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
-    <div class="mb-2 flex items-center justify-between">
-      <label
-        class="text-base font-medium opacity-80"
-        for="comfy-org-sign-up-password"
-      >
+  <VeeField v-slot="{ componentField, errors, meta, value }" name="password">
+    <Field ref="passwordField" :data-invalid="!!errors.length">
+      <FieldLabel for="comfy-org-sign-up-password">
         {{ t('auth.signup.passwordLabel') }}
-      </label>
-    </div>
-    <Password
-      v-model="password"
-      input-id="comfy-org-sign-up-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      name="password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.signup.passwordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
-    <div class="flex flex-col gap-1">
-      <small v-if="$field.dirty || $field.invalid" class="text-sm">
-        {{ t('validation.password.requirements') }}:
-        <ul class="mt-1 space-y-1">
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.length
-            }"
-          >
-            {{ t('validation.password.minLength') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.uppercase
-            }"
-          >
-            {{ t('validation.password.uppercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.lowercase
-            }"
-          >
-            {{ t('validation.password.lowercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.number
-            }"
-          >
-            {{ t('validation.password.number') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.special
-            }"
-          >
-            {{ t('validation.password.special') }}
-          </li>
-        </ul>
-      </small>
-    </div>
-  </FormField>
+      </FieldLabel>
+      <PasswordInput
+        v-bind="componentField"
+        id="comfy-org-sign-up-password"
+        autocomplete="new-password"
+        :placeholder="t('auth.signup.passwordPlaceholder')"
+        :class="fieldClass"
+        :aria-invalid="!!errors.length"
+      />
+      <PasswordRules
+        v-if="meta.dirty && isPasswordFocused"
+        :password="value ?? ''"
+        :copy="passwordRulesCopy"
+        root-class="text-sm"
+        list-class="mt-1 space-y-1"
+        unmet-class="text-destructive-background"
+      />
+      <FieldError v-if="errors.length && !isPasswordFocused" :errors />
+    </Field>
+  </VeeField>
 
-  <!-- Confirm Password Field -->
-  <FormField v-slot="$field" name="confirmPassword" class="flex flex-col gap-2">
-    <label
-      class="mb-2 text-base font-medium opacity-80"
-      for="comfy-org-sign-up-confirm-password"
-    >
-      {{ t('auth.login.confirmPasswordLabel') }}
-    </label>
-    <Password
-      name="confirmPassword"
-      input-id="comfy-org-sign-up-confirm-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.login.confirmPasswordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
-    <small v-if="$field.error" class="text-red-500">{{
-      $field.error.message
-    }}</small>
-  </FormField>
+  <VeeField v-slot="{ componentField, errors }" name="confirmPassword">
+    <Field :data-invalid="!!errors.length">
+      <FieldLabel for="comfy-org-sign-up-confirm-password">
+        {{ t('auth.login.confirmPasswordLabel') }}
+      </FieldLabel>
+      <PasswordInput
+        v-bind="componentField"
+        id="comfy-org-sign-up-confirm-password"
+        autocomplete="new-password"
+        :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+        :class="fieldClass"
+        :aria-invalid="!!errors.length"
+      />
+      <FieldError v-if="errors.length" :errors />
+    </Field>
+  </VeeField>
 </template>
 
 <script setup lang="ts">
-import { FormField } from '@primevue/forms'
-import Password from 'primevue/password'
-import { computed, ref } from 'vue'
+import { useFocusWithin } from '@vueuse/core'
+import { Field as VeeField } from 'vee-validate'
+import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { fieldClass = 'h-10' } = defineProps<{
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import Field from '@/components/ui/field/Field.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+
+const { fieldClass } = defineProps<{
   fieldClass?: HTMLAttributes['class']
 }>()
 
 const { t } = useI18n()
-const password = ref('')
+const passwordField = useTemplateRef('passwordField')
+const { focused: isPasswordFocused } = useFocusWithin(passwordField)
 
-// TODO: Use dynamic form to better organize the password checks.
-// Ref: https://primevue.org/forms/#dynamic
-const passwordChecks = computed(() => ({
-  length: password.value.length >= 8 && password.value.length <= 32,
-  uppercase: /[A-Z]/.test(password.value),
-  lowercase: /[a-z]/.test(password.value),
-  number: /\d/.test(password.value),
-  special: /[^A-Za-z0-9]/.test(password.value)
+const passwordRulesCopy = computed(() => ({
+  requirements: t('validation.password.requirements'),
+  length: t('validation.password.minLength'),
+  uppercase: t('validation.password.uppercase'),
+  lowercase: t('validation.password.lowercase'),
+  number: t('validation.password.number'),
+  special: t('validation.password.special')
 }))
 </script>

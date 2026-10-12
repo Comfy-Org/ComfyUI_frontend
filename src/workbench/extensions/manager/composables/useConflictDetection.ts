@@ -64,7 +64,7 @@ function collectNodeVersions(
   versionDataMap: Map<string, components['schemas']['NodeVersion']>,
   failedNodeIds: Set<string>
 ): void {
-  response.node_versions?.forEach((result) => {
+  response.node_versions.forEach((result) => {
     if (result.status === 'success' && result.node_version) {
       versionDataMap.set(result.identifier.node_id, result.node_version)
     } else if (result.status === 'error') {
@@ -93,6 +93,24 @@ async function retryBulkNodeVersionsChunk(
     }
     return null
   }
+}
+
+async function resolveBulkNodeVersionsChunk(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  bulkResponse: PromiseSettledResult<BulkNodeVersionsResponse | null>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<BulkNodeVersionsResponse | null> {
+  if (bulkResponse.status === 'fulfilled' && bulkResponse.value) {
+    return bulkResponse.value
+  }
+  if (bulkResponse.status === 'rejected') {
+    console.warn(
+      '[ConflictDetection] Failed to fetch bulk version data:',
+      bulkResponse.reason
+    )
+  }
+  return retryBulkNodeVersionsChunk(registryService, nodeVersions, signal)
 }
 
 /**
@@ -129,25 +147,13 @@ async function fetchBulkNodeVersions(
       if (signal?.aborted) return result
 
       const nodeVersionsChunk = parallelChunks[index]
-      let response: BulkNodeVersionsResponse | null = null
-
-      if (bulkResponse.status === 'rejected') {
-        console.warn(
-          '[ConflictDetection] Failed to fetch bulk version data:',
-          bulkResponse.reason
-        )
-      } else {
-        response = bulkResponse.value
-      }
-
-      if (!response) {
-        response = await retryBulkNodeVersionsChunk(
-          registryService,
-          nodeVersionsChunk,
-          signal
-        )
-        if (signal?.aborted) return result
-      }
+      const response = await resolveBulkNodeVersionsChunk(
+        registryService,
+        bulkResponse,
+        nodeVersionsChunk,
+        signal
+      )
+      if (signal?.aborted) return result
 
       if (!response) {
         console.warn(
@@ -226,12 +232,12 @@ export function useConflictDetection() {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
         frontend_version: frontendVersion,
         os: systemStats?.system.os ?? '',
-        accelerator: systemStats?.devices?.[0]?.type ?? ''
+        accelerator: systemStats?.devices[0]?.type ?? ''
       }
 
       systemEnvironment.value = environment
       return environment
-    } catch (error) {
+    } catch {
       const fallbackEnvironment: SystemEnvironment = {
         comfyui_version: undefined,
         frontend_version: undefined,
@@ -262,11 +268,7 @@ export function useConflictDetection() {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
 
-      if (
-        !installedPacksReady.value ||
-        !installedPacks.value ||
-        installedPacks.value.length === 0
-      ) {
+      if (!installedPacksReady.value || installedPacks.value.length === 0) {
         console.warn(
           '[ConflictDetection] No installed packages available from useInstalledPacks'
         )
@@ -318,9 +320,7 @@ export function useConflictDetection() {
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
-            supported_os: normalizeOSList(
-              versionData.supported_os
-            ) as Node['supported_os'],
+            supported_os: normalizeOSList(versionData.supported_os),
             supported_accelerators: versionData.supported_accelerators,
 
             // Status information
@@ -411,10 +411,7 @@ export function useConflictDetection() {
 
       // Use installedPacksWithVersions to match what versions bulk API uses
       // This ensures both APIs check the same set of packages
-      if (
-        !installedPacksWithVersions.value ||
-        installedPacksWithVersions.value.length === 0
-      ) {
+      if (installedPacksWithVersions.value.length === 0) {
         console.warn(
           '[ConflictDetection] No installed packages available for import failure check'
         )
@@ -461,7 +458,7 @@ export function useConflictDetection() {
     importFailInfo: ImportFailureMap
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
-    if (!importFailInfo || typeof importFailInfo !== 'object') {
+    if (typeof importFailInfo !== 'object') {
       return results
     }
 
@@ -657,9 +654,7 @@ export function useConflictDetection() {
     } finally {
       isDetecting.value = false
       // Clear abort controller to prevent memory leaks
-      if (abortController.value) {
-        abortController.value = null
-      }
+      abortController.value = null
     }
   }
 

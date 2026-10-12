@@ -3,9 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Vue Node Selection', { tag: '@vue-nodes' }, () => {
   const modifiers = [

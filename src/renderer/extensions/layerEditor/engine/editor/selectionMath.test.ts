@@ -219,8 +219,8 @@ describe('floodSelectMask (GIMP scanline segment flood)', () => {
     )
     const m = floodSelectMask(src, { x: 0, y: 0 }, 0.1, false, true)!
     expect(m.data[0]).toBe(1)
-    expect(m.data[0 * 5 + 4]).toBe(1)
-    expect(m.data[0 * 5 + 2]).toBe(0)
+    expect(m.data[4]).toBe(1)
+    expect(m.data[2]).toBe(0)
   })
 
   it('non-contiguous mode matches the whole image by color', () => {

@@ -73,10 +73,12 @@ function cancelledSubscription(
     tier,
     duration,
     planSlug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    scheduledChange: null,
     renewalDate: null,
     endDate: CANCEL_DATE,
     isCancelled: true,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }
 }
 
@@ -85,10 +87,12 @@ const notCancelledSubscription: SubscriptionInfo = {
   tier: 'STANDARD',
   duration: 'MONTHLY',
   planSlug: 'standard-monthly',
+  scheduledChange: null,
   renewalDate: NEXT_MONTHLY_RENEWAL,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 function story(

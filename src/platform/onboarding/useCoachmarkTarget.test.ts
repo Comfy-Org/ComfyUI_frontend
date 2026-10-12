@@ -20,8 +20,6 @@ function step(coachId: CoachId): SpotlightStep {
 describe('useCoachmarkTarget', () => {
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
-    vi.restoreAllMocks()
   })
 
   function setup(coachId: CoachId) {
@@ -31,6 +29,25 @@ describe('useCoachmarkTarget', () => {
     const api = scope.run(() => useCoachmarkTarget(stepRef, cardRef))!
     return { scope, api }
   }
+
+  it('forgets its last position once the card unmounts', async () => {
+    registerCoachmark('outputs', laidOut())
+    const scope = effectScope()
+    const cardRef = ref<HTMLElement | null>(document.createElement('div'))
+    const api = scope.run(() =>
+      useCoachmarkTarget(ref(step('outputs')), cardRef)
+    )!
+    await vi.waitFor(() => expect(api.isPositioned.value).toBe(true))
+
+    cardRef.value = null
+    await nextTick()
+
+    expect(
+      api.isPositioned.value,
+      'a card that comes back would paint at the old coordinates before it is re-placed'
+    ).toBe(false)
+    scope.stop()
+  })
 
   it('skips a registered candidate that is not laid out', () => {
     registerCoachmark('outputs', hidden())

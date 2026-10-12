@@ -4,28 +4,31 @@
       v-model:start-frame="startFrame"
       v-model:end-frame="endFrame"
       v-model:crop-bounds="cropBounds"
-      v-model:trim-enabled="trimEnabled"
-      v-model:crop-enabled="cropEnabled"
       :features="features"
       :video-url="videoUrl"
-      :thumbnails="thumbnails"
+      :thumbnail="thumbnail"
       :total-frames="totalFrames"
       :duration="duration"
       :fps="fps"
       :file-size="fileSize"
       :width="width"
       :height="height"
+      :has-source="hasSource"
       :loading="loading"
+      :error="error"
+      @load-error="onError"
+      @retry="retry"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
 import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
 import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
+import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import { useVideoSourceUrl } from '@/composables/video/useVideoSourceUrl'
 import type {
   IWidgetVideoEditOptions,
@@ -56,25 +59,40 @@ const node = computed(() => {
   return owner || app.canvas.graph?.getNodeById(nodeId)
 })
 
-const { videoUrl } = useVideoSourceUrl(node)
+const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
 
 const {
-  thumbnails,
+  thumbnail,
   duration,
   totalFrames,
   width,
   height,
   fps,
   fileSize,
-  loading
+  loading: filmstripLoading,
+  error: filmstripError
 } = useVideoFilmstrip(videoUrl)
 
-const { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled } =
-  useVideoEditModel(modelValue, {
-    duration,
-    totalFrames,
-    fps,
-    width,
-    height
-  })
+watch(filmstripError, (error) => {
+  if (error === 'load-failed') onError()
+})
+
+const hasSource = computed(() => status.value !== 'idle')
+const loading = computed(
+  () =>
+    status.value !== 'failed' &&
+    (filmstripLoading.value || status.value === 'retrying')
+)
+const error = computed<FilmstripError | null>(() => {
+  if (filmstripError.value === 'canvas-unavailable') return 'canvas-unavailable'
+  return status.value === 'failed' ? 'load-failed' : null
+})
+
+const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
+  duration,
+  totalFrames,
+  fps,
+  width,
+  height
+})
 </script>

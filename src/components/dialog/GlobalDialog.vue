@@ -14,10 +14,15 @@
         />
         <DialogContent
           v-reka-z-index
+          v-bind="
+            item.dialogComponentProps.useAutomaticLabeling
+              ? {}
+              : { 'aria-labelledby': item.key }
+          "
           :size="item.dialogComponentProps.size ?? 'md'"
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
-          :aria-labelledby="item.key"
+          :data-dialog-key="item.key"
           @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
@@ -166,7 +171,7 @@ function onRekaOpenChange(key: string, open: boolean) {
 // Reka's default auto-focus when one is present.
 function onRekaOpenAutoFocus(event: Event, key: string) {
   const content = document.querySelector<HTMLElement>(
-    `[aria-labelledby="${CSS.escape(key)}"]`
+    `[data-dialog-key="${CSS.escape(key)}"]`
   )
   const autofocusEl = content?.querySelector<HTMLElement>('[autofocus]')
   if (autofocusEl) {
@@ -204,19 +209,6 @@ function toggleMaximize(item: DialogInstance) {
   .global-dialog .p-dialog-content {
     padding: var(--p-dialog-content-padding);
     padding-top: 0;
-  }
-}
-
-.manager-dialog {
-  height: 80vh;
-  max-width: 1724px;
-  max-height: 1026px;
-}
-
-@media (min-width: 3000px) {
-  .manager-dialog {
-    max-width: 2200px;
-    max-height: 1320px;
   }
 }
 </style>

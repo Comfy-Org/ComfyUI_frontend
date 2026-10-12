@@ -5,15 +5,10 @@ import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
 import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
-const fetchMock = vi.fn()
-vi.stubGlobal('fetch', fetchMock)
-
 describe('initHostTelemetry', () => {
   afterEach(() => {
-    vi.clearAllMocks()
     remoteConfig.value = {}
     setTelemetryRegistry(null)
-    localStorage.clear()
     delete window.__comfyDesktop2
   })
 
@@ -23,7 +18,7 @@ describe('initHostTelemetry', () => {
     initHostTelemetry()
 
     expect(useTelemetry()).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('leaves the registry untouched when enable_telemetry is off', () => {

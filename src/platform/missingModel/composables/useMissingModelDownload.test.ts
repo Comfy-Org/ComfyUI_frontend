@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -13,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   openGatedRepoPage: vi.fn<typeof MissingModelDownload.openGatedRepoPage>()
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: mocks.downloadModel,
   fetchModelMetadata: mocks.fetchModelMetadata,
   isTrustedHuggingFaceUrl: mocks.isTrustedHuggingFaceUrl,
@@ -28,8 +26,6 @@ const repoUrl = 'https://huggingface.co/org/model'
 
 describe('useMissingModelDownload', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     delete window.__comfyDesktop2
     mocks.isTrustedHuggingFaceUrl.mockImplementation((url) => url === repoUrl)
     mocks.fetchModelMetadata.mockResolvedValue({
@@ -38,30 +34,28 @@ describe('useMissingModelDownload', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('stores fetched file metadata', async () => {
+  it('exposes fetched file metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: 1024,
       gatedRepoUrl: null
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { fileSizeFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().fileSizes[downloadUrl]).toBe(1024)
+    expect(fileSizeFor(downloadUrl)).toBe(1024)
   })
 
-  it('stores fetched gated repository metadata', async () => {
+  it('exposes fetched gated repository metadata to components', async () => {
     mocks.fetchModelMetadata.mockResolvedValueOnce({
       fileSize: null,
       gatedRepoUrl: repoUrl
     })
 
-    await useMissingModelDownload().prefetchModelMetadata(downloadUrl)
+    const { gatedRepoUrlFor, prefetchModelMetadata } = useMissingModelDownload()
+    await prefetchModelMetadata(downloadUrl)
 
-    expect(useMissingModelStore().gatedRepoUrls[downloadUrl]).toBe(repoUrl)
+    expect(gatedRepoUrlFor(downloadUrl)).toBe(repoUrl)
   })
 
   it('skips metadata already classified by the store', async () => {
@@ -95,22 +89,14 @@ describe('useMissingModelDownload', () => {
   })
 
   it('opens a trusted access page through the Desktop bridge', async () => {
-    let receiver: unknown
-    let openedUrl: string | undefined
-    const bridge = {
-      isRemote: () => true,
-      async openModelAccessPage(this: unknown, url: string) {
-        receiver = this
-        openedUrl = url
-        return true
-      }
-    }
+    const openModelAccessPage = vi.fn(async (_url: string) => true)
+    const bridge = { isRemote: () => true, openModelAccessPage }
     window.__comfyDesktop2 = bridge
 
     await useMissingModelDownload().openModelAccessPage(repoUrl)
 
-    expect(receiver).toBe(bridge)
-    expect(openedUrl).toBe(repoUrl)
+    expect(openModelAccessPage.mock.contexts[0]).toBe(bridge)
+    expect(openModelAccessPage).toHaveBeenCalledWith(repoUrl)
     expect(mocks.openGatedRepoPage).not.toHaveBeenCalled()
   })
 
@@ -129,7 +115,6 @@ describe('useMissingModelDownload', () => {
 
   it('falls back when the Desktop bridge rejects the access page', async () => {
     const error = new Error('Desktop bridge unavailable')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     window.__comfyDesktop2 = {
       isRemote: () => false,
       openModelAccessPage: vi.fn().mockRejectedValue(error)
@@ -137,7 +122,7 @@ describe('useMissingModelDownload', () => {
 
     await useMissingModelDownload().openModelAccessPage(repoUrl)
 
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to open model access page in Desktop:',
       error
     )

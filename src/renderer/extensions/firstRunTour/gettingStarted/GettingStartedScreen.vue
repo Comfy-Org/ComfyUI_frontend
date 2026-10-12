@@ -1,11 +1,11 @@
 <template>
   <Teleport to="body">
-    <FocusScope as-child trapped loop>
+    <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-2000 flex overflow-y-auto bg-base-background focus:outline-none"
+        class="fixed inset-0 z-1600 flex overflow-y-auto bg-base-background focus:outline-none"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
         tabindex="-1"
         @keydown.escape.capture.prevent="dismissGettingStarted()"
@@ -131,13 +131,12 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
@@ -164,9 +163,12 @@ const tabs = [
 
 const { t } = useI18n()
 
-const { dismissGettingStarted } = useFirstRunEntry()
-const { beginTour } = useFirstRunTourController()
+const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
+const dialogStore = useDialogStore()
+
+/** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
+const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()
 
@@ -206,7 +208,9 @@ async function loadCatalog() {
 // Nothing else loads the catalog on this path, so load it (and take focus) on open.
 onMounted(() => {
   if (!templatesStore.isLoaded) void loadCatalog()
-  void nextTick(() => screenRef.value?.focus())
+  void nextTick(() => {
+    if (!dialogOpen.value) screenRef.value?.focus()
+  })
 })
 
 function tutorialThumbnail(
@@ -228,10 +232,10 @@ async function onSelectTemplate(id: string) {
   if (loadingTemplateId.value) return
   failedTemplateId.value = null
 
-  if (await loadWorkflowTemplate(id, 'default')) {
-    await dismissGettingStarted()
+  const result = await loadWorkflowTemplate(id, 'default')
+  if (result === 'loaded') {
     try {
-      await beginTour(id)
+      await dismissIntoFirstRunTour(id)
     } catch (error) {
       console.error('first-run tour failed to start', error)
     }
@@ -239,10 +243,5 @@ async function onSelectTemplate(id: string) {
   }
 
   failedTemplateId.value = id
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t('gettingStarted.templateFailed')
-  })
 }
 </script>

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -18,30 +18,6 @@ const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
-})
-
-const popoverHide = vi.fn()
-
-const ButtonStub = defineComponent({
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
-const PopoverStub = defineComponent({
-  inheritAttrs: false,
-  data() {
-    return { open: false }
-  },
-  methods: {
-    toggle() {
-      this.open = !this.open
-    },
-    hide() {
-      popoverHide()
-      this.open = false
-    }
-  },
-  template: '<div data-testid="popover-body" v-if="open"><slot /></div>'
 })
 
 // Synthetic fixtures: the component is prop-driven, so we deliberately
@@ -125,8 +101,7 @@ function renderMenu(props: MenuProps = {}) {
   const user = userEvent.setup()
   const utils = render(Harness, {
     global: {
-      plugins: [i18n],
-      stubs: { Button: ButtonStub, Popover: PopoverStub }
+      plugins: [i18n]
     }
   })
   return {
@@ -144,14 +119,10 @@ type TestUser = ReturnType<typeof userEvent.setup>
 
 async function openPopover(user: TestUser, triggerName: string) {
   await user.click(screen.getByRole('button', { name: triggerName }))
-  return screen.getByTestId('popover-body')
+  return screen.findByRole('dialog')
 }
 
 describe('FormDropdownMenuActions', () => {
-  beforeEach(() => {
-    popoverHide.mockClear()
-  })
-
   describe('Search', () => {
     it('binds search input to v-model on initial render', () => {
       renderMenu({ searchQuery: 'seed' })
@@ -188,7 +159,7 @@ describe('FormDropdownMenuActions', () => {
   describe('Sort popover', () => {
     it('is closed by default', () => {
       renderMenu()
-      expect(screen.queryByTestId('popover-body')).toBeNull()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('opens the options list after the sort trigger is clicked', async () => {
@@ -209,11 +180,11 @@ describe('FormDropdownMenuActions', () => {
       expect(sortSelected.value).toBe('sort-b')
     })
 
-    it('calls popover hide() after a sort option is selected', async () => {
+    it('closes the popover after a sort option is selected', async () => {
       const { user } = renderMenu({ sortSelected: 'sort-a' })
       const body = await openPopover(user, 'Sort by')
       await user.click(within(body).getByRole('button', { name: 'Sort B' }))
-      expect(popoverHide).toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 
@@ -243,14 +214,14 @@ describe('FormDropdownMenuActions', () => {
       expect(ownershipSelected.value).toBe('my-models')
     })
 
-    it('calls popover hide() after an ownership option is selected', async () => {
+    it('closes the popover after an ownership option is selected', async () => {
       const { user } = renderMenu({
         showOwnershipFilter: true,
         ownershipSelected: 'all'
       })
       const body = await openPopover(user, 'Ownership')
       await user.click(within(body).getByRole('button', { name: 'Mine' }))
-      expect(popoverHide).toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 
