@@ -310,7 +310,9 @@ export class LitegraphLinkAdapter {
     const linkSegment = extras.reroute ?? link
     if (linkSegment) {
       linkSegment.path = path
-      if (linkData.polyline) setLinkPolyline(linkSegment, linkData.polyline)
+      setLinkPolyline(linkSegment, () =>
+        this.pathRenderer.polylineOf(linkData, pathContext.style.mode)
+      )
 
       // Copy calculated center position back to litegraph object
       // This is needed for hit detection and menu interaction

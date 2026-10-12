@@ -1,32 +1,30 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
+import type { Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkId } from '@/types/linkId'
 
 import {
   deleteSelectedLinks,
   getSelectedLinksAnchor,
   getSelectedLinkIds,
   hideSelectedLinks,
-  selectLinksForMarquee
+  selectLinksInMarquee
 } from './linkSelection'
 
-const NO_MODIFIERS = { shiftKey: false, altKey: false, canvasX: 60 }
+const ACROSS_BOTH_LINKS: ReadOnlyRect = [40, 0, 20, 40]
 
 function createGraphWithLinks() {
   const graph = new LGraph()
-  const source = new LGraphNode('source')
-  source.addOutput('value', 'number')
-  graph.add(source)
-  const links = [0, 1].map((index) => {
-    const target = new LGraphNode(`target-${index}`)
-    target.addInput('value', 'number')
-    graph.add(target)
+  const source = createTestNode(graph, [], ['number'])
+  const links = [0, 1].map(() => {
+    const target = createTestNode(graph, ['number'])
     const link = source.connect(0, target, 0)
     if (!link) throw new Error('connect failed')
     return link
@@ -34,11 +32,24 @@ function createGraphWithLinks() {
   return { graph, links }
 }
 
-function drawHorizontalLink(link: LLink, y: number) {
-  setLinkPolyline(link, [
+function drawPolyline(segment: LinkSegment, points: Point[]) {
+  setLinkPolyline(segment, () => points)
+}
+
+function drawHorizontalLink(segment: LinkSegment, y: number) {
+  drawPolyline(segment, [
     { x: 0, y },
     { x: 100, y }
   ])
+}
+
+function selectLinks(
+  graph: LGraph,
+  renderedPaths: Iterable<LinkSegment>,
+  rect: ReadOnlyRect = ACROSS_BOTH_LINKS,
+  anchorX = 60
+) {
+  selectLinksInMarquee({ graph, renderedPaths }, rect, anchorX)
 }
 
 function createHost(graph: LGraph, events: string[] = []) {
@@ -51,35 +62,25 @@ function createHost(graph: LGraph, events: string[] = []) {
 }
 
 describe('link marquee selection', () => {
-  it.for([
-    {
-      name: 'selects the links under an empty marquee',
-      captured: 0,
-      modifiers: NO_MODIFIERS,
-      expected: [0, 1]
-    },
-    {
-      name: 'ignores links when the marquee captured items',
-      captured: 1,
-      modifiers: NO_MODIFIERS,
-      expected: []
-    },
-    {
-      name: 'ignores links on a shift marquee',
-      captured: 0,
-      modifiers: { ...NO_MODIFIERS, shiftKey: true },
-      expected: []
-    }
-  ])('$name', ({ captured, modifiers, expected }) => {
+  it('selects the links drawn under the marquee', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
 
-    selectLinksForMarquee(graph, links, captured, [40, 0, 20, 40], modifiers)
+    selectLinks(graph, links)
 
-    expect(getSelectedLinkIds(graph)).toEqual(
-      expected.map((index) => links[index].id)
-    )
+    expect(getSelectedLinkIds(graph)).toEqual(links.map((link) => link.id))
+  })
+
+  it('selects the link behind a reroute segment drawn under the marquee', () => {
+    const { graph, links } = createGraphWithLinks()
+    const reroute = graph.createReroute([50, 10], links[0])
+    if (!reroute) throw new Error('createReroute failed')
+    drawHorizontalLink(reroute, 10)
+
+    selectLinks(graph, [reroute])
+
+    expect(getSelectedLinkIds(graph)).toEqual([links[0].id])
   })
 
   it.for([
@@ -88,15 +89,12 @@ describe('link marquee selection', () => {
   ])('anchors the menu above $name', ({ canvasX, expected }) => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 40)
-    setLinkPolyline(links[1], [
+    drawPolyline(links[1], [
       { x: 0, y: 0 },
       { x: 100, y: 100 }
     ])
 
-    selectLinksForMarquee(graph, links, 0, [0, 0, 100, 50], {
-      ...NO_MODIFIERS,
-      canvasX
-    })
+    selectLinks(graph, links, [0, 0, 100, 50], canvasX)
 
     expect(getSelectedLinksAnchor(graph)).toEqual({ x: canvasX, y: expected })
   })
@@ -106,30 +104,33 @@ describe('link marquee selection', () => {
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
 
-    selectLinksForMarquee(graph, [links[1]], 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(graph, [links[1]])
 
     expect(getSelectedLinkIds(graph)).toEqual([links[1].id])
   })
 
-  it('drops a selected link once it is hidden or replaced', () => {
+  it.for([
+    {
+      name: 'hidden',
+      act: (graph: LGraph, linkId: LinkId) =>
+        useLinkPresentationStore().patch(graphScopeOf(graph), linkId, {
+          hidden: true
+        })
+    },
+    {
+      name: 'removed',
+      act: (graph: LGraph, linkId: LinkId) => graph.removeLink(linkId)
+    },
+    {
+      name: 'replaced by a reload',
+      act: (graph: LGraph) => graph.configure(graph.serialize())
+    }
+  ])('drops a selected link once it is $name', ({ act }) => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
-    drawHorizontalLink(links[1], 20)
-    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(graph, [links[0]])
 
-    useLinkPresentationStore().patch(graphScopeOf(graph), links[0].id, {
-      hidden: true
-    })
-    graph.removeLink(links[1].id)
-
-    expect(getSelectedLinkIds(graph)).toEqual([])
-  })
-
-  it('selects no links in select-only mode', () => {
-    const { graph, links } = createGraphWithLinks()
-    drawHorizontalLink(links[0], 10)
-
-    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS, true)
+    act(graph, links[0].id)
 
     expect(getSelectedLinkIds(graph)).toEqual([])
   })
@@ -142,7 +143,7 @@ describe('link marquee selection', () => {
       hidden: true
     })
 
-    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(graph, links)
 
     expect(getSelectedLinkIds(graph)).toEqual([links[0].id])
   })
@@ -151,7 +152,7 @@ describe('link marquee selection', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
-    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(graph, links)
     const events: string[] = []
 
     expect(hideSelectedLinks(createHost(graph, events))).toBe(true)
@@ -171,7 +172,7 @@ describe('link marquee selection', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
-    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(graph, links)
     const events: string[] = []
 
     expect(deleteSelectedLinks(createHost(graph, events))).toBe(true)
@@ -188,14 +189,12 @@ describe('link marquee selection', () => {
     const subgraph = createTestSubgraph({
       outputs: [{ name: 'value', type: 'number' }]
     })
-    const origin = new LGraphNode('origin')
-    origin.addOutput('value', 'number')
-    subgraph.add(origin)
+    const origin = createTestNode(subgraph, [], ['number'])
     const outputSlot = subgraph.outputNode.slots[0]
     const link = outputSlot.connect(origin.outputs[0], origin)
     if (!link) throw new Error('connect failed')
     drawHorizontalLink(link, 10)
-    selectLinksForMarquee(subgraph, [link], 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinks(subgraph, [link])
 
     deleteSelectedLinks(createHost(subgraph))
 

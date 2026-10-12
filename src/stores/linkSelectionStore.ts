@@ -10,7 +10,6 @@ interface LinkSelection {
   readonly anchorX: number
 }
 
-/** Links picked by a marquee that captured no other canvas items. */
 export const useLinkSelectionStore = defineStore('linkSelection', () => {
   const selection = shallowRef<LinkSelection | null>(null)
 

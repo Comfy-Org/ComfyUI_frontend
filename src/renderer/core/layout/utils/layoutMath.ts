@@ -49,12 +49,10 @@ function segmentTouchesBounds(a: Point, b: Point, bounds: Bounds): boolean {
   return true
 }
 
-/** Whether any part of the polyline lies inside or crosses the bounds. */
 export function polylineIntersectsBounds(
   points: readonly Point[],
   bounds: Bounds
 ): boolean {
-  if (points.length === 1) return pointInBounds(points[0], bounds)
   for (let i = 1; i < points.length; i++) {
     if (segmentTouchesBounds(points[i - 1], points[i], bounds)) return true
   }

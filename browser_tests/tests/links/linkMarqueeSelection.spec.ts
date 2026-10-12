@@ -39,21 +39,15 @@ async function marqueeAcross(comfyPage: ComfyPage, centers: Point[]) {
 }
 
 async function moveSamplerAway(comfyPage: ComfyPage) {
-  await comfyPage.page.evaluate(() => {
-    const app = window.app!
-    const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
-    if (!sampler) throw new Error('KSampler not found')
-    sampler.pos = [sampler.pos[0] + 400, sampler.pos[1]]
-    app.canvas.setDirty(true, true)
-  })
+  const [sampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+  await sampler.dragBy({ x: 400, y: 0 })
   await comfyPage.nextFrame()
 }
 
-async function linksStillInGraph(page: Page, linkIds: string[]) {
-  const present = await page.evaluate(() =>
+async function graphLinkIds(page: Page) {
+  return page.evaluate(() =>
     [...window.app!.graph.links.keys()].map((id) => String(id))
   )
-  return linkIds.filter((id) => present.includes(id))
 }
 
 test.describe('Marquee link selection', { tag: '@canvas' }, () => {
@@ -88,7 +82,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
             (await comfyPage.workflow.getExportedWorkflow()).extra
               ?.linkPresentation
         )
-        .toMatchObject(
+        .toEqual(
           Object.fromEntries(linkIds.map((id) => [id, { hidden: true }]))
         )
       await expect(comfyPage.selectionToolbox).toBeHidden()
@@ -105,6 +99,9 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
         .toEqual({})
     })
 
+    const allLinkIds = await graphLinkIds(comfyPage.page)
+    const otherLinkIds = allLinkIds.filter((id) => !linkIds.includes(id))
+
     await test.step('Delete both links from the toolbox', async () => {
       await marqueeAcross(comfyPage, centers)
       await comfyPage.selectionToolbox
@@ -112,35 +109,29 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
         .click()
 
       await expect
-        .poll(() => linksStillInGraph(comfyPage.page, linkIds))
-        .toEqual([])
+        .poll(() => graphLinkIds(comfyPage.page))
+        .toEqual(otherLinkIds)
     })
 
     await test.step('Restore both links with one undo', async () => {
       await comfyPage.keyboard.undo()
       await expect
-        .poll(() => linksStillInGraph(comfyPage.page, linkIds))
-        .toEqual(linkIds)
+        .poll(async () => (await graphLinkIds(comfyPage.page)).sort())
+        .toEqual([...allLinkIds].sort())
     })
-  })
 
-  test('deletes selected links with the Delete key', async ({ comfyPage }) => {
-    const links = await conditioningLinks(comfyPage.page)
-    const linkIds = links.map((link) => link.id)
+    await test.step('Delete both links with the Delete key', async () => {
+      await marqueeAcross(comfyPage, centers)
+      await expect(
+        comfyPage.selectionToolbox.getByTestId(
+          TestIds.selectionToolbox.deleteLinks
+        )
+      ).toBeVisible()
+      await comfyPage.keyboard.delete()
 
-    await marqueeAcross(
-      comfyPage,
-      links.map((link) => link.center)
-    )
-    await expect(
-      comfyPage.selectionToolbox.getByTestId(
-        TestIds.selectionToolbox.deleteLinks
-      )
-    ).toBeVisible()
-    await comfyPage.page.keyboard.press('Delete')
-
-    await expect
-      .poll(() => linksStillInGraph(comfyPage.page, linkIds))
-      .toEqual([])
+      await expect
+        .poll(() => graphLinkIds(comfyPage.page))
+        .toEqual(otherLinkIds)
+    })
   })
 })

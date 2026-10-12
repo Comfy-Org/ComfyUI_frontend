@@ -1,13 +1,25 @@
-import type { Point } from '@/renderer/core/canvas/pathRenderer'
+import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/renderer/core/layout/types'
 
-const polylines = new WeakMap<object, readonly Point[]>()
-
-/** Records the polyline last drawn for a link or reroute segment. */
-export function setLinkPolyline(segment: object, polyline: readonly Point[]) {
-  polylines.set(segment, polyline)
+interface LazyPolyline {
+  compute: () => readonly Point[]
+  points?: readonly Point[]
 }
 
-/** The polyline last drawn for a link or reroute segment, if any. */
-export function getLinkPolyline(segment: object): readonly Point[] | undefined {
-  return polylines.get(segment)
+const polylines = new WeakMap<LinkSegment, LazyPolyline>()
+
+export function setLinkPolyline(
+  segment: LinkSegment,
+  compute: () => readonly Point[]
+) {
+  polylines.set(segment, { compute })
+}
+
+export function getLinkPolyline(
+  segment: LinkSegment
+): readonly Point[] | undefined {
+  const polyline = polylines.get(segment)
+  if (!polyline) return undefined
+  polyline.points ??= polyline.compute()
+  return polyline.points
 }

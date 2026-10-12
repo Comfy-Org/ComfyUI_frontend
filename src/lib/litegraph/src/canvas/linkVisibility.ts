@@ -1,6 +1,5 @@
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '../types/contextMenu'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -12,7 +11,7 @@ import type { LLink } from '../LLink'
 import type { Reroute } from '../Reroute'
 import type { CanvasPointerEvent } from '../types/events'
 
-interface LinkMutationHost {
+export interface LinkMutationHost {
   emitBeforeChange(): void
   emitAfterChange(): void
   setDirty(fgcanvas: boolean, bgcanvas?: boolean): void
@@ -74,7 +73,6 @@ export function deleteLinks(
       } else {
         graph.removeLink(link.id)
       }
-      layoutStore.deleteLinkLayout(link.id)
     }
   })
 }

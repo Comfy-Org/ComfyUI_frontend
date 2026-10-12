@@ -55,6 +55,9 @@ function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
   return bounds
 }
 
+const SELECTION_BOUNDS_PADDING = 10
+const LINK_ANCHOR_GAP = 10
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -90,24 +93,29 @@ export function useSelectionToolboxPosition(
     return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
-  /**
-   * Update position based on selection
-   */
-  const itemsAnchor = (): Point | null => {
+  function itemsAnchor(items: Set<unknown>): Point | undefined {
     const bounds = computeUnionBounds(
-      [...getSelectableItems()].flatMap((item) =>
+      [...items].flatMap((item) =>
         item instanceof LGraphNode || item instanceof LGraphGroup
           ? [getSelectionBounds(item)]
           : []
       )
     )
-    return bounds ? { x: bounds.x + bounds.width / 2, y: bounds.y } : null
+    return bounds
+      ? {
+          x: bounds.x + bounds.width / 2,
+          y: bounds.y - SELECTION_BOUNDS_PADDING
+        }
+      : undefined
   }
 
-  const selectionAnchor = (): Point | null => {
-    if (getSelectableItems().size) return itemsAnchor()
-    const { graph } = lgCanvas
-    return graph ? getSelectedLinksAnchor(graph) : null
+  function selectionAnchor(): Point | undefined {
+    const items = getSelectableItems()
+    if (items.size) return itemsAnchor(items)
+    const linkAnchor = lgCanvas.graph && getSelectedLinksAnchor(lgCanvas.graph)
+    return linkAnchor
+      ? { x: linkAnchor.x, y: linkAnchor.y - LINK_ANCHOR_GAP }
+      : undefined
   }
 
   const updateSelectionBounds = () => {
@@ -119,7 +127,7 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    worldPosition.value = { x: anchor.x, y: anchor.y - 10 }
+    worldPosition.value = anchor
 
     updateTransform()
   }

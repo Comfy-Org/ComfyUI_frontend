@@ -14,15 +14,18 @@ import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
 import type { LinkSegment, ReadOnlyRect } from '../interfaces'
 import { deleteLinks, hideLinks } from './linkVisibility'
+import type { LinkMutationHost } from './linkVisibility'
 
-interface LinkSelectionHost {
+interface LinkSelectionHost extends LinkMutationHost {
   graph: LGraph | null
-  emitBeforeChange(): void
-  emitAfterChange(): void
-  setDirty(fgcanvas: boolean, bgcanvas?: boolean): void
 }
 
-function isDrawnInBounds(segment: object, bounds: Bounds): boolean {
+interface MarqueeHost {
+  graph: LGraph | null
+  renderedPaths: Iterable<LinkSegment>
+}
+
+function isDrawnInBounds(segment: LinkSegment, bounds: Bounds): boolean {
   const polyline = getLinkPolyline(segment)
   return !!polyline && polylineIntersectsBounds(polyline, bounds)
 }
@@ -63,7 +66,7 @@ export function getSelectedLinkIds(graph: LGraph): LinkId[] {
   return getSelectedLinks(graph).map((link) => link.id)
 }
 
-function segmentsOf(graph: LGraph, links: readonly LLink[]): object[] {
+function segmentsOf(graph: LGraph, links: readonly LLink[]): LinkSegment[] {
   const linkIds = new Set(links.map((link) => link.id))
   const reroutes = [...graph.reroutes.values()].filter((reroute) =>
     [...reroute.linkIds].some((linkId) => linkIds.has(linkId))
@@ -103,11 +106,10 @@ function topmostPointInside(
   return top
 }
 
-/** Canvas point on the topmost selected link at the marquee's release x. */
-export function getSelectedLinksAnchor(graph: LGraph): Point | null {
+export function getSelectedLinksAnchor(graph: LGraph): Point | undefined {
   const selection = useLinkSelectionStore().selection
   const links = getSelectedLinks(graph)
-  if (!selection || !links.length) return null
+  if (!selection || !links.length) return undefined
   const { anchorX: x, marquee } = selection
   const polylines = segmentsOf(graph, links).flatMap((segment) => {
     const polyline = getLinkPolyline(segment)
@@ -124,22 +126,12 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | null {
   return { x, y: marquee.y }
 }
 
-/** Selects links under a marquee that left no items selected; otherwise clears. */
-export function selectLinksForMarquee(
-  graph: LGraph | null,
-  renderedPaths: Iterable<LinkSegment>,
-  selectedItemCount: number,
+export function selectLinksInMarquee(
+  { graph, renderedPaths }: MarqueeHost,
   [x, y, width, height]: ReadOnlyRect,
-  pointer: { shiftKey: boolean; altKey: boolean; canvasX: number },
-  selectOnly = false
+  anchorX: number
 ): void {
-  if (
-    !graph ||
-    selectOnly ||
-    selectedItemCount ||
-    pointer.shiftKey ||
-    pointer.altKey
-  ) {
+  if (!graph) {
     clearLinkSelection()
     return
   }
@@ -150,10 +142,9 @@ export function selectLinksForMarquee(
       return link && isLinkVisible(graph, link) ? [link] : []
     }
   )
-  useLinkSelectionStore().select({ links, marquee, anchorX: pointer.canvasX })
+  useLinkSelectionStore().select({ links, marquee, anchorX })
 }
 
-/** Clears the link selection, redrawing the host when anything was selected. */
 export function clearLinkSelection(
   host?: Pick<LinkSelectionHost, 'setDirty'>
 ): boolean {
@@ -162,7 +153,6 @@ export function clearLinkSelection(
   return cleared
 }
 
-/** Hides every selected link as one undo step. */
 export function hideSelectedLinks(host: LinkSelectionHost): boolean {
   const { graph } = host
   if (!graph) return false
@@ -173,7 +163,6 @@ export function hideSelectedLinks(host: LinkSelectionHost): boolean {
   return true
 }
 
-/** Deletes every selected link as one undo step. */
 export function deleteSelectedLinks(host: LinkSelectionHost): boolean {
   const { graph } = host
   if (!graph) return false
