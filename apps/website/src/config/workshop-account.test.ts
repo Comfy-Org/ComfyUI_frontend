@@ -20,7 +20,7 @@ vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 function statusFetch(status: number) {
-  return vi.fn<typeof fetch>(async () => new Response('{}', { status }))
+  return async () => new Response('{}', { status })
 }
 
 beforeEach(() => {

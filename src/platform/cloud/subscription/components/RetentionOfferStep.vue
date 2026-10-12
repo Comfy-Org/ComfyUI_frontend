@@ -198,6 +198,7 @@ import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import { useCancellationPlan } from '@/platform/cloud/subscription/composables/useCancellationPlan'
 import { useRetentionOffer } from '@/platform/cloud/subscription/composables/useRetentionOffer'
@@ -210,7 +211,6 @@ import {
   fullPriceRenewal,
   outcomeOnClose
 } from '@/platform/cloud/subscription/utils/retentionOffer'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { formatCurrencyCents } from '@/utils/numberUtil'
 
 const {
@@ -335,10 +335,7 @@ function close() {
 
 async function acceptOffer() {
   if (!isScopeCurrent()) {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('subscription.cancelDialog.workspaceChanged')
-    })
+    useToast().warning(t('subscription.cancelDialog.workspaceChanged'))
     close()
     return
   }

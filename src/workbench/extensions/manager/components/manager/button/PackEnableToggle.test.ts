@@ -139,9 +139,9 @@ describe('PackEnableToggle', () => {
     vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
-    expect(
-      vi.mocked(useComfyManagerStore().isPackEnabled)
-    ).toHaveBeenCalledWith(mockNodePack.id)
+    expect(useComfyManagerStore().isPackEnabled).toHaveBeenCalledWith(
+      mockNodePack.id
+    )
   })
 
   it('sets toggle to on when pack is enabled', () => {
@@ -164,7 +164,7 @@ describe('PackEnableToggle', () => {
 
     await user.click(screen.getByRole('switch'))
 
-    expect(vi.mocked(useComfyManagerStore().enablePack)).toHaveBeenCalledWith(
+    expect(useComfyManagerStore().enablePack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -178,7 +178,7 @@ describe('PackEnableToggle', () => {
 
     await user.click(screen.getByRole('switch'))
 
-    expect(vi.mocked(useComfyManagerStore().disablePack)).toHaveBeenCalledWith(
+    expect(useComfyManagerStore().disablePack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -227,12 +227,16 @@ describe('PackEnableToggle', () => {
     expect(control).toHaveAttribute('aria-readonly', 'true')
 
     await user.tab()
+    await user.tab()
 
+    expect(control).toHaveFocus()
     expect(mockShowNodeConflictDialog).toHaveBeenCalledTimes(1)
   })
 
-  describe('conflict warning icon', () => {
-    it('should show warning icon when package has conflicts', () => {
+  describe('conflict warning button', () => {
+    const warningLabel = enMessages.manager.conflicts.warningTooltip
+
+    it('explains the conflict and opens the conflict dialog when clicked', async () => {
       mockGetConflictsForPackageByID.mockReturnValue({
         package_id: 'test-pack',
         package_name: 'Test Pack',
@@ -246,29 +250,25 @@ describe('PackEnableToggle', () => {
         ],
         is_compatible: false
       })
-
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
-      const { container } = renderComponent()
+      renderComponent()
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const warningIcon = container.querySelector(
-        '.icon-\\[lucide--triangle-alert\\]'
-      )
-      expect(warningIcon).not.toBeNull()
-      expect(warningIcon).toHaveClass('text-warning-background')
+      const warningButton = screen.getByRole('button', { name: warningLabel })
+      await user.hover(warningButton)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(warningLabel)
+      await user.click(warningButton)
+
+      expect(mockShowImportFailedDialog).toHaveBeenCalledOnce()
     })
 
-    it('should not show warning icon when package has no conflicts', () => {
+    it('is absent when the package has no conflicts', () => {
       mockGetConflictsForPackageByID.mockReturnValue(undefined)
-
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
-      const { container } = renderComponent()
+      renderComponent()
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const warningIcon = container.querySelector(
-        '.icon-\\[lucide--triangle-alert\\]'
-      )
-      expect(warningIcon).toBeNull()
+      expect(
+        screen.queryByRole('button', { name: warningLabel })
+      ).not.toBeInTheDocument()
     })
   })
 })

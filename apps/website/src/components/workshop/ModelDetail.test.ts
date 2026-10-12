@@ -1318,7 +1318,7 @@ describe('ModelDetail', () => {
       expect(button.matches(':disabled')).toBe(true)
       await user().click(button)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).not.toHaveBeenCalled()
       expect(screen.queryByRole('button', { name: 'Native JSON' })).toBeNull()
     }
   )
@@ -1346,7 +1346,7 @@ describe('ModelDetail', () => {
       token: 'fresh-workspace-jwt',
       body: { prompt: 'A red teapot', seed: 123456 }
     })
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
     )
@@ -1477,12 +1477,9 @@ describe('ModelDetail', () => {
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-      undefined,
-      {
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',

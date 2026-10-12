@@ -1,5 +1,4 @@
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -258,10 +257,6 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
 
 beforeEach(() => {
   vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(

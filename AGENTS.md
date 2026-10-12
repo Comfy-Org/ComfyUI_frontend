@@ -236,6 +236,12 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 ## Common Pitfalls
 
+- NEVER derive a server fact on the client: a gate renders one fact from the
+  API as received, without combining it with role, tier, plan state, seats or
+  `isCloud`. Local UI state (loading, in-flight, form validity) may only
+  disable the control, never grant it. A missing fact is a backend ticket plus
+  `pendingServerFact('BE-xxxx', expr)`, never another field. See
+  `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
 - NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test

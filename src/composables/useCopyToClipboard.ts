@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { t } from '@/i18n'
 
@@ -44,20 +44,16 @@ export function useCopyToClipboard() {
 
     if (success && !toastOnSuccess) return true
 
-    toast.add(
-      success
-        ? {
-            severity: 'success',
-            summary: t('g.success'),
-            detail: t('clipboard.successMessage'),
-            life: 3000
-          }
-        : {
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('clipboard.errorMessage')
-          }
-    )
+    if (success) {
+      toast.success(t('g.success'), {
+        description: t('clipboard.successMessage'),
+        duration: 3000
+      })
+    } else {
+      toast.error(t('g.error'), {
+        description: t('clipboard.errorMessage')
+      })
+    }
     return success
   }
 

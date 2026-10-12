@@ -21,6 +21,7 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
 } from './types'
@@ -102,6 +103,22 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
     expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches an SSO event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackSsoEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: 'flow-1' }
+    } as const
+    registry.trackSsoEvent(event)
+
+    expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -319,6 +336,9 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
+    const starterPromptExposureMetadata = {
+      '$feature/agent-starter-prompt-set': 'test'
+    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -419,6 +439,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptExposure',
+        expected: { ...starterPromptExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptExposure(
+            starterPromptExposureMetadata
+          )
       },
       {
         method: 'trackAgentConsentShown',

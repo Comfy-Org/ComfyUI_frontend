@@ -9,7 +9,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -52,6 +55,7 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -466,6 +470,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(event.name, event.properties)
   }
 
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -843,6 +851,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
   }
 
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {

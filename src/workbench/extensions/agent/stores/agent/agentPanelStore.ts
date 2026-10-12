@@ -78,6 +78,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -211,6 +213,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
+  }
+
   const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
@@ -220,8 +229,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
     hasEverOpened.value = true
     if (openedAt !== null) return
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -260,8 +268,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   ): void {
     if (isOpen.value) return
     isOpen.value = true
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -337,6 +344,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
     width,
     requestedWidth,
     isOverlay,
