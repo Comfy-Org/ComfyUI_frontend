@@ -8,6 +8,7 @@ import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as LoaderNodeUtil from '@/utils/loaderNodeUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
@@ -96,7 +97,10 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent(targetAsset: AssetItem = asset) {
+function mountComponent(
+  targetAsset: AssetItem = asset,
+  fileKind: MediaKind = 'image'
+) {
   const onHide = vi.fn()
   const { container, unmount } = render(
     defineComponent({
@@ -106,10 +110,10 @@ function mountComponent(targetAsset: AssetItem = asset) {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset: targetAsset, onHide }
+        return { menuRef, asset: targetAsset, fileKind, onHide }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" :file-kind="fileKind" @hide="onHide" />'
     }),
     {
       global: {
@@ -187,6 +191,20 @@ describe('MediaAssetContextMenu', () => {
 
     expect(
       findMenuItem(i18n.global.t('mediaAsset.actions.insertAsNodeInWorkflow'))
+    ).toBeDefined()
+
+    unmount()
+  })
+
+  it('offers Inspect for an HDR asset', async () => {
+    const { container, unmount } = mountComponent(
+      { ...asset, name: 'sky.exr' },
+      'other'
+    )
+    await showMenu(container)
+
+    expect(
+      findMenuItem(i18n.global.t('mediaAsset.actions.inspect'))
     ).toBeDefined()
 
     unmount()
