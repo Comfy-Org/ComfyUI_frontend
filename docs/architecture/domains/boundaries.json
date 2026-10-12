@@ -24,6 +24,29 @@
         ]
       },
       {
+        "name": "image-compositor/application",
+        "patterns": [
+          "src/renderer/extensions/compositor/components/types.ts",
+          "src/renderer/extensions/compositor/composables/**"
+        ]
+      },
+      {
+        "name": "image-compositor/presentation",
+        "patterns": [
+          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts"
+        ]
+      },
+      {
+        "name": "image-compositor/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+          "src/extensions/core/imageCompositor.ts",
+          "src/extensions/core/imageCompositor.test.ts",
+          "src/lib/litegraph/src/widgets/CompositorWidget.ts"
+        ]
+      },
+      {
         "name": "image-crop/application",
         "patterns": [
           "src/composables/useImageCrop.ts",
@@ -130,6 +153,27 @@
           "image-compare/application",
           "image-compare/presentation",
           "image-compare/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/application",
+        "allow": ["image-compositor/application", "unclassified"]
+      },
+      {
+        "from": "image-compositor/presentation",
+        "allow": [
+          "image-compositor/application",
+          "image-compositor/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/integration",
+        "allow": [
+          "image-compositor/application",
+          "image-compositor/presentation",
+          "image-compositor/integration",
           "unclassified"
         ]
       },

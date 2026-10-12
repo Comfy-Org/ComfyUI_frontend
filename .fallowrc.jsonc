@@ -148,6 +148,11 @@
     {
       "file": "apps/website/src/config/__mocks__/workshop-session-state.ts",
       "exports": ["*"]
+    },
+    // oxlint plugin loaded by serverFacts.oxlintrc.json jsPlugins, not imported.
+    {
+      "file": "tools/oxlint-plugins/serverFacts.ts",
+      "exports": ["default"]
     }
   ],
 
