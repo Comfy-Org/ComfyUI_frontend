@@ -7,7 +7,7 @@ export const LINK_HIDE_TRANSITION = {
   dashOnWidths: 2,
   dashOffWidths: 2,
   labelPopMs: 220,
-  labelPopFromScale: 0.4,
+  labelPopFromScale: 0.8,
   labelPopOvershoot: 1.70158
 } as const
 
