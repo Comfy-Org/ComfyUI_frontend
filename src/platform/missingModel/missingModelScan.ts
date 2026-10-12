@@ -1,16 +1,28 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  buildPromotedWidgetExecutionSources,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -24,12 +36,35 @@ import {
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
+}
+
+type DeferredVerification = (
+  signal?: AbortSignal
+) => Promise<boolean | undefined>
+
+const pendingVerifications = new WeakMap<
+  MissingModelCandidate,
+  DeferredVerification
+>()
+
+export function hasPendingVerification(
+  candidate: MissingModelCandidate
+): boolean {
+  return pendingVerifications.has(candidate)
+}
+
+function copyCandidate(
+  candidate: MissingModelCandidate,
+  overrides: Partial<MissingModelCandidate> = {}
+): MissingModelCandidate {
+  const copy = { ...candidate, ...overrides }
+  const verify = pendingVerifications.get(candidate)
+  if (verify) pendingVerifications.set(copy, verify)
+  return copy
 }
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
@@ -60,21 +95,16 @@ function enrichCandidateFromNodeProperties(
       (!candidate.directory || candidate.directory === m.directory)
   )
   if (!match) return candidate
-  return {
-    ...candidate,
+  return copyCandidate(candidate, {
     directory: candidate.directory ?? match.directory,
     url: candidate.url ?? match.url,
     hash: candidate.hash ?? match.hash,
     hashType: candidate.hashType ?? match.hash_type
-  }
+  })
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
-}
-
-function isInactiveMode(mode: number | undefined): boolean {
-  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
 interface ModelWidgetScanTarget {
@@ -83,6 +113,7 @@ interface ModelWidgetScanTarget {
   candidateWidgetName: string
   definitionWidgetName: string
   sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
   valueWidget: IBaseWidget
   definitionWidget: IBaseWidget
   embeddedModels?: ModelFile[]
@@ -117,21 +148,19 @@ export function isModelFileName(name: string): boolean {
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
  *
- * Non-asset-supported nodes: `isMissing` resolved immediately via widget options.
- * Asset-supported nodes: `isMissing` left `undefined` for async verification.
+ * `isMissing` resolves immediately from static combo options and stays
+ * `undefined` for asset-supported nodes and loading remote combos.
  */
 export function scanAllModelCandidates(
   rootGraph: LGraph,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    if (isInactiveMode(node.mode)) continue
+    if (isInactiveWorkflowNodeMode(node.mode)) continue
 
     candidates.push(
       ...scanNodeModelCandidates(
@@ -153,7 +182,9 @@ export function scanNodeModelCandidates(
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  const widgets = node.isSubgraphNode?.()
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  const widgets = isSubgraphNode
     ? promotedInputWidgets(node)
     : (node.widgets ?? [])
   if (!widgets.length) return []
@@ -180,11 +211,13 @@ export function scanNodeModelCandidates(
       candidate = scanComboWidget(target, isAssetSupported, getDirectory)
     }
 
-    if (candidate) {
-      candidates.push(
-        enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
-      )
+    if (!candidate) continue
+    if (target.promotedSources) {
+      candidate.promotedSources = target.promotedSources
     }
+    candidates.push(
+      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
+    )
   }
 
   return candidates
@@ -199,7 +232,9 @@ function getModelWidgetScanTarget(
   const input = getInputForWidget(node, widget)
   if (input && node.isInputConnected(node.inputs.indexOf(input))) return null
 
-  if (!node.isSubgraphNode?.()) {
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  if (!isSubgraphNode) {
     return {
       executionId,
       nodeType: node.type,
@@ -216,7 +251,18 @@ function getModelWidgetScanTarget(
   const source = resolvePromotedWidgetSource(rootGraph, node, widget)
   const sourceExecutionId = source?.sourceExecutionId
   if (!sourceExecutionId) return null
-  if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
+  const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+  const promotedSources = buildPromotedWidgetExecutionSources(
+    executionId,
+    consumers
+  )
+  if (
+    !promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  ) {
+    return null
+  }
 
   return {
     executionId,
@@ -224,6 +270,7 @@ function getModelWidgetScanTarget(
     candidateWidgetName: widget.name,
     definitionWidgetName: source.sourceWidgetName,
     sourceExecutionId,
+    promotedSources,
     valueWidget: widget,
     definitionWidget: source.sourceWidget,
     embeddedModels: getEmbeddedModels(source.sourceNode)
@@ -286,10 +333,7 @@ function scanComboWidget(
     target.nodeType,
     target.definitionWidgetName
   )
-  const options = resolveComboValues(target.definitionWidget)
-  const inOptions = options.includes(value)
-
-  return {
+  const candidate: MissingModelCandidate = {
     nodeId: target.executionId,
     ...(target.sourceExecutionId && {
       sourceExecutionId: target.sourceExecutionId
@@ -299,7 +343,44 @@ function scanComboWidget(
     isAssetSupported: nodeIsAssetSupported,
     name: value,
     directory: getDirectory?.(target.nodeType),
-    isMissing: nodeIsAssetSupported ? undefined : !inOptions
+    isMissing: undefined
+  }
+  if (nodeIsAssetSupported) return candidate
+
+  const isAbsentFromOptions = () =>
+    !resolveComboValues(target.definitionWidget).includes(value)
+  const inventory = getComboWidgetInventory(target.definitionWidget)
+  if (inventory && inventory.getStatus() !== 'ready') {
+    pendingVerifications.set(candidate, async (signal) => {
+      await untilSettledOrAborted(inventory.waitForSettled(signal), signal)
+      if (signal?.aborted || inventory.getStatus() !== 'ready') {
+        return undefined
+      }
+      if (target.valueWidget.value !== value) return undefined
+      return isAbsentFromOptions()
+    })
+    return candidate
+  }
+
+  candidate.isMissing = isAbsentFromOptions()
+  return candidate
+}
+
+async function untilSettledOrAborted(
+  settled: Promise<void>,
+  signal?: AbortSignal
+): Promise<void> {
+  if (!signal) return settled
+  if (signal.aborted) return
+  let onAbort = () => {}
+  const aborted = new Promise<void>((resolve) => {
+    onAbort = resolve
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+  try {
+    await Promise.race([settled, aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
   }
 }
 
@@ -310,7 +391,7 @@ export function enrichWithEmbeddedMetadata(
   const allNodes = flattenWorkflowNodes(graphData)
   const embeddedModels = collectEmbeddedModels(allNodes, graphData)
 
-  const enriched = candidates.map((c) => ({ ...c }))
+  const enriched = candidates.map((c) => copyCandidate(c))
   const candidatesByKey = new Map<string, MissingModelCandidate[]>()
   for (const c of enriched) {
     const dirKey = `${c.name}::${c.directory ?? ''}`
@@ -324,7 +405,7 @@ export function enrichWithEmbeddedMetadata(
     else candidatesByKey.set(nameKey, [c])
   }
 
-  const deduped: ModelFile[] = []
+  const deduped: DeclaredModelFile[] = []
   const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
     const dedupeKey = `${model.name}::${model.directory}`
@@ -354,8 +435,9 @@ export function enrichWithEmbeddedMetadata(
 function collectEmbeddedModels(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: MissingModelWorkflowData
-): ModelFile[] {
-  const result: ModelFile[] = []
+): DeclaredModelFile[] {
+  // Node entries only name a model; enrichment fills each field where present.
+  const result: DeclaredModelFile[] = []
   const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
 
   for (const node of allNodes) {
@@ -372,23 +454,6 @@ function collectEmbeddedModels(
   return result
 }
 
-function isNodeAndAncestorsActive(
-  node: ReturnType<typeof flattenWorkflowNodes>[number],
-  nodesById: ReadonlyMap<
-    string,
-    ReturnType<typeof flattenWorkflowNodes>[number]
-  >
-): boolean {
-  if (isInactiveMode(node.mode)) return false
-
-  for (const ancestorId of getParentExecutionIds(String(node.id))) {
-    const ancestor = nodesById.get(ancestorId)
-    if (isInactiveMode(ancestor?.mode)) return false
-  }
-
-  return true
-}
-
 interface AssetVerifier {
   updateModelsForNodeType: (nodeType: string) => Promise<void>
   getAssets: (nodeType: string) => AssetItem[] | undefined
@@ -399,6 +464,18 @@ export async function verifyAssetSupportedCandidates(
   signal?: AbortSignal,
   assetsStore?: AssetVerifier
 ): Promise<void> {
+  if (signal?.aborted) return
+
+  await Promise.all(
+    candidates.map(async (candidate) => {
+      const verify = pendingVerifications.get(candidate)
+      if (!verify) return
+      pendingVerifications.delete(candidate)
+      const isMissing = await verify(signal)
+      if (!signal?.aborted) candidate.isMissing = isMissing
+    })
+  )
+
   if (signal?.aborted) return
 
   const pendingCandidates = candidates.filter(

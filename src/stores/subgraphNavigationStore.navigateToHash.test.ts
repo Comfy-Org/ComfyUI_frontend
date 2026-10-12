@@ -1,12 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -17,11 +18,6 @@ const ids = vi.hoisted(() => ({
   deletedSubgraph: '22222222-2222-4222-8222-222222222222'
 }))
 
-const workflowStoreState = vi.hoisted(() => ({
-  openWorkflows: [] as unknown[],
-  activeSubgraph: undefined as unknown
-}))
-
 const routerMocks = vi.hoisted(() => ({
   push: vi.fn().mockResolvedValue(undefined),
   replace: vi.fn().mockResolvedValue(undefined),
@@ -29,24 +25,21 @@ const routerMocks = vi.hoisted(() => ({
 }))
 
 const routeHashRef = ref('')
-const currentGraphRef = shallowRef<LGraph | null>(null)
 
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueRouter>()
-  return {
-    ...actual,
-    useRouter: () => ({
-      ...routerMocks,
-      options: { history: routerMocks.history }
-    })
-  }
-})
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    ...routerMocks,
+    options: { history: routerMocks.history }
+  })
+}))
 
-vi.mock('@vueuse/router', () => ({
+vi.mock(import('@vueuse/router'), () => ({
   useRouteHash: () => routeHashRef
 }))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: null,
     graph: null,
@@ -64,48 +57,37 @@ vi.mock('@/scripts/app', () => {
     _nodes: [],
     nodes: [],
     subgraphs: new Map(),
-    getNodeById: vi.fn()
+    getNodeById: vi.fn(),
+    get rootGraph() {
+      return mockRoot
+    }
   }
 
   return {
     app: {
       graph: mockRoot,
       rootGraph: mockRoot,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockRoot,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas,
-    get currentGraph() {
-      return currentGraphRef.value
-    }
-  })
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
-const reportErrorMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: reportErrorMock
-}))
-
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ fitView: vi.fn() })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowServiceMocks
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreState
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowServiceMocks
+  })
+)
 
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({
@@ -118,7 +100,7 @@ function makeSubgraph(id: string): Subgraph {
 }
 
 function getRouteTargetHash(target: VueRouter.RouteLocationRaw): string {
-  return typeof target === 'string' ? target : String(target.hash ?? '')
+  return typeof target === 'string' ? target : (target.hash ?? '')
 }
 
 function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {
@@ -134,18 +116,16 @@ async function flushHashWatcher() {
 }
 
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
-  let pinia: ReturnType<typeof createTestingPinia>
-
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    useCanvasStore().canvas = app.canvas
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
     app.canvas.graph = app.rootGraph
-    currentGraphRef.value = app.rootGraph
-    workflowStoreState.openWorkflows = []
-    workflowStoreState.activeSubgraph = undefined
+    useCanvasStore().currentGraph = app.rootGraph
+    Object.assign(useWorkflowStore(), { openWorkflows: [] })
+    useWorkflowStore().activeSubgraph = undefined
     routeHashRef.value = ''
     routerMocks.history.state = {}
     routerMocks.push.mockReset().mockImplementation(async (target) => {
@@ -155,8 +135,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       applyRouteTarget(target)
     })
   })
-
-  afterEach(() => disposePinia(pinia))
 
   it('navigates to a valid, existing subgraph hash', async () => {
     const subgraph = makeSubgraph(ids.validSubgraph)
@@ -258,7 +236,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
 
   it('recovers canvas to root even if router.replace rejects', async () => {
     routerMocks.replace.mockRejectedValueOnce(new Error('navigation aborted'))
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
     useSubgraphNavigationStore()
 
@@ -266,7 +243,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     )
-    warnSpy.mockRestore()
   })
 
   it('publishes a newer workflow hash after an older redirect settles', async () => {
@@ -286,7 +262,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const newRootId = '33333333-3333-4333-8333-333333333333'
     app.rootGraph.id = newRootId
     app.canvas.graph = app.rootGraph
-    currentGraphRef.value = app.rootGraph
+    useCanvasStore().currentGraph = app.rootGraph
     await navigationStore.updateHash('workflow-load', workflowNavigationId)
 
     resolveReplace?.()
@@ -299,16 +275,17 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   })
 
   it('redirects when a workflow load resolves but the subgraph is still missing', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    workflowStoreState.openWorkflows = [
-      fromPartial<ComfyWorkflow>({
-        path: 'phantom-workflow.json',
-        activeState: {
-          id: ids.deletedSubgraph,
-          definitions: { subgraphs: [] }
-        }
-      })
-    ]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'phantom-workflow.json',
+          activeState: {
+            id: ids.deletedSubgraph,
+            definitions: { subgraphs: [] }
+          }
+        })
+      ]
+    })
     useSubgraphNavigationStore()
 
     routeHashRef.value = `#${ids.deletedSubgraph}`
@@ -317,27 +294,27 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(routerMocks.replace).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${app.rootGraph.id}` })
       )
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('subgraph not found after workflow load')
       )
     })
-    warnSpy.mockRestore()
   })
 
   it('redirects when openWorkflow rejects during recovery', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     workflowServiceMocks.openWorkflow.mockRejectedValueOnce(
       new Error('load failed')
     )
-    workflowStoreState.openWorkflows = [
-      fromPartial<ComfyWorkflow>({
-        path: 'broken-workflow.json',
-        activeState: {
-          id: ids.deletedSubgraph,
-          definitions: { subgraphs: [] }
-        }
-      })
-    ]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'broken-workflow.json',
+          activeState: {
+            id: ids.deletedSubgraph,
+            definitions: { subgraphs: [] }
+          }
+        })
+      ]
+    })
     useSubgraphNavigationStore()
 
     routeHashRef.value = `#${ids.deletedSubgraph}`
@@ -345,14 +322,16 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(routerMocks.replace).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${app.rootGraph.id}` })
       )
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('workflow load failed')
       )
-      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'workflow_navigation_failure'
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'workflow_navigation_failure',
+        level: 'warning',
+        context: { stage: 'recovery' }
       })
     })
-    warnSpy.mockRestore()
   })
 
   it('replays the latest route after a workflow-backed route load', async () => {
@@ -361,12 +340,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const secondGraph = makeSubgraph(secondId)
     let resolveOpen: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [
-      fromPartial<ComfyWorkflow>({
-        path: 'first-workflow.json',
-        activeState: { id: firstId, definitions: { subgraphs: [] } }
-      })
-    ]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'first-workflow.json',
+          activeState: { id: firstId, definitions: { subgraphs: [] } }
+        })
+      ]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
@@ -398,12 +379,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const secondGraph = makeSubgraph(secondId)
     let resolveOpen: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [
-      fromPartial<ComfyWorkflow>({
-        path: 'first-workflow.json',
-        activeState: { id: firstId, definitions: { subgraphs: [] } }
-      })
-    ]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'first-workflow.json',
+          activeState: { id: firstId, definitions: { subgraphs: [] } }
+        })
+      ]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
@@ -411,14 +394,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
             app.rootGraph.id = firstId
             app.rootGraph.subgraphs.set(secondId, secondGraph)
             app.canvas.graph = app.rootGraph
-            currentGraphRef.value = app.rootGraph
+            useCanvasStore().currentGraph = app.rootGraph
             resolve()
           }
         })
     )
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     routerMocks.push.mockImplementation(async (target) => {
       applyRouteTarget(target)
@@ -430,7 +413,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledOnce()
     )
     app.canvas.graph = secondGraph
-    currentGraphRef.value = secondGraph
+    useCanvasStore().currentGraph = secondGraph
     await nextTick()
     resolveOpen?.()
 
@@ -445,12 +428,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const outgoingSubgraph = makeSubgraph(ids.validSubgraph)
     let resolveOpen: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [
-      fromPartial<ComfyWorkflow>({
-        path: 'target-workflow.json',
-        activeState: { id: targetId, definitions: { subgraphs: [] } }
-      })
-    ]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'target-workflow.json',
+          activeState: { id: targetId, definitions: { subgraphs: [] } }
+        })
+      ]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
@@ -462,10 +447,10 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     )
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     app.canvas.graph = outgoingSubgraph
-    currentGraphRef.value = outgoingSubgraph
+    useCanvasStore().currentGraph = outgoingSubgraph
     const navigationStore = useSubgraphNavigationStore()
 
     routeHashRef.value = `#${targetId}`
@@ -489,14 +474,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     app.rootGraph.subgraphs.set(subgraph.id, subgraph)
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     routeHashRef.value = `#${subgraph.id}`
 
     const navigationStore = useSubgraphNavigationStore()
     await navigationStore.updateHash()
 
-    expect(workflowStoreState.activeSubgraph).toBe(subgraph)
+    expect(useWorkflowStore().activeSubgraph).toBe(subgraph)
   })
 
   it('uses the emitted graph during a synchronous graph-change event', async () => {
@@ -504,7 +489,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const navigationStore = useSubgraphNavigationStore()
     await navigationStore.updateHash()
 
-    currentGraphRef.value = subgraph
+    useCanvasStore().currentGraph = subgraph
     app.canvas.graph = subgraph
     await flushHashWatcher()
 
@@ -523,10 +508,10 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         definitions: { subgraphs: [{ id: targetSubgraph.id }] }
       }
     })
-    workflowStoreState.openWorkflows = [targetWorkflow]
+    Object.assign(useWorkflowStore(), { openWorkflows: [targetWorkflow] })
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     const navigationStore = useSubgraphNavigationStore()
     workflowServiceMocks.openWorkflow.mockImplementation(
@@ -568,11 +553,11 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         definitions: { subgraphs: [{ id: targetSubgraph.id }] }
       }
     })
-    workflowStoreState.openWorkflows = [originalWorkflow]
+    Object.assign(useWorkflowStore(), { openWorkflows: [originalWorkflow] })
     app.rootGraph.subgraphs.set(targetSubgraph.id, targetSubgraph)
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     routeHashRef.value = `#${originalRootId}`
     const navigationStore = useSubgraphNavigationStore()
@@ -616,11 +601,11 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const subgraph = makeSubgraph(ids.validSubgraph)
     app.rootGraph.subgraphs.set(subgraph.id, subgraph)
     app.canvas.graph = subgraph
-    currentGraphRef.value = subgraph
+    useCanvasStore().currentGraph = subgraph
     routeHashRef.value = `#${subgraph.id}`
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     const navigationStore = useSubgraphNavigationStore()
     await navigationStore.updateHash()
@@ -641,11 +626,11 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const subgraph = makeSubgraph(ids.validSubgraph)
     app.rootGraph.subgraphs.set(subgraph.id, subgraph)
     app.canvas.graph = subgraph
-    currentGraphRef.value = subgraph
+    useCanvasStore().currentGraph = subgraph
     routeHashRef.value = `#${subgraph.id}`
     vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
       app.canvas.graph = graph
-      currentGraphRef.value = graph
+      useCanvasStore().currentGraph = graph
     })
     const navigationStore = useSubgraphNavigationStore()
     await navigationStore.updateHash()
@@ -673,11 +658,11 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     let resolveFirstPush: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [routeWorkflow]
+    Object.assign(useWorkflowStore(), { openWorkflows: [routeWorkflow] })
     workflowServiceMocks.openWorkflow.mockImplementation(async () => {
       app.rootGraph.id = routeId
       app.canvas.graph = app.rootGraph
-      currentGraphRef.value = app.rootGraph
+      useCanvasStore().currentGraph = app.rootGraph
     })
     routerMocks.push
       .mockImplementationOnce((target) => {
@@ -693,14 +678,14 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await navigationStore.updateHash()
 
     app.canvas.graph = firstGraph
-    currentGraphRef.value = firstGraph
+    useCanvasStore().currentGraph = firstGraph
     await vi.waitFor(() =>
       expect(routerMocks.push).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${firstId}` })
       )
     )
     app.canvas.graph = secondGraph
-    currentGraphRef.value = secondGraph
+    useCanvasStore().currentGraph = secondGraph
     routeHashRef.value = `#${routeId}`
 
     await vi.waitFor(() =>
@@ -730,21 +715,23 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     const secondRoot = fromPartial<LGraph>({ id: secondId })
     let resolveFirstOpen: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [firstWorkflow, secondWorkflow]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [firstWorkflow, secondWorkflow]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation((workflow) => {
       if (workflow === firstWorkflow) {
         return new Promise<void>((resolve) => {
           resolveFirstOpen = () => {
             app.rootGraph.id = firstId
             app.canvas.graph = app.rootGraph
-            currentGraphRef.value = app.rootGraph
+            useCanvasStore().currentGraph = app.rootGraph
             resolve()
           }
         })
       }
       app.rootGraph.id = secondId
       app.canvas.graph = app.rootGraph
-      currentGraphRef.value = app.rootGraph
+      useCanvasStore().currentGraph = app.rootGraph
       return Promise.resolve()
     })
     routerMocks.push.mockImplementation(async (target) => {
@@ -760,7 +747,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       )
     )
     app.canvas.graph = secondRoot
-    currentGraphRef.value = secondRoot
+    useCanvasStore().currentGraph = secondRoot
     resolveFirstOpen?.()
 
     await vi.waitFor(() => {
@@ -786,7 +773,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     let rejectFirstOpen: ((error: Error) => void) | undefined
 
-    workflowStoreState.openWorkflows = [firstWorkflow, secondWorkflow]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [firstWorkflow, secondWorkflow]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation((workflow) => {
       if (workflow === firstWorkflow) {
         return new Promise<void>((_resolve, reject) => {
@@ -795,7 +784,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       }
       app.rootGraph.id = secondId
       app.canvas.graph = app.rootGraph
-      currentGraphRef.value = app.rootGraph
+      useCanvasStore().currentGraph = app.rootGraph
       return Promise.resolve()
     })
     useSubgraphNavigationStore()
@@ -834,7 +823,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     let resolveFirstOpen: (() => void) | undefined
 
-    workflowStoreState.openWorkflows = [firstWorkflow, secondWorkflow]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [firstWorkflow, secondWorkflow]
+    })
     workflowServiceMocks.openWorkflow.mockImplementation((workflow) => {
       if (workflow === firstWorkflow) {
         return new Promise<void>((resolve) => {
@@ -843,7 +834,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       }
       app.rootGraph.id = secondId
       app.canvas.graph = app.rootGraph
-      currentGraphRef.value = app.rootGraph
+      useCanvasStore().currentGraph = app.rootGraph
       return Promise.resolve()
     })
     useSubgraphNavigationStore()
@@ -879,7 +870,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     // Consume the initial-load swallow so the watcher publish is live.
     await store.updateHash('graph', undefined, app.rootGraph)
 
-    currentGraphRef.value = subgraph
+    useCanvasStore().currentGraph = subgraph
     await vi.waitFor(() => {
       expect(routerMocks.push).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${ids.validSubgraph}` })
@@ -922,7 +913,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   it('ignores endWorkflowNavigation for a superseded intent id', async () => {
     app.rootGraph.id = ids.root
     app.canvas.graph = app.rootGraph
-    currentGraphRef.value = app.rootGraph
+    useCanvasStore().currentGraph = app.rootGraph
     routeHashRef.value = ''
     const store = useSubgraphNavigationStore()
 
@@ -937,7 +928,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   })
 
   it('routeHash watcher does not re-enter navigateToHash during recovery redirect', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // Simulate the real router replace: trigger the routeHash watcher
     // exactly the way vue-router does when the URL is replaced.
     routerMocks.replace.mockImplementation((target) => {
@@ -960,6 +950,5 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await flushHashWatcher()
     expect(routerMocks.replace).toHaveBeenCalledTimes(1)
     expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-    warnSpy.mockRestore()
   })
 })

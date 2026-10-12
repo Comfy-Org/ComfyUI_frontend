@@ -25,6 +25,7 @@
       ref="containerRef"
       class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
       data-testid="minimap-container"
+      :aria-label="`${$t('minimap.label')}. ${$t('minimap.highlightedNodes', { count: decorationCount })}`"
       :style="containerStyles"
     >
       <Button
@@ -103,6 +104,7 @@ const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 const {
   initialized,
   visible,
+  decorationCount,
   containerStyles,
   viewportStyles,
   width,

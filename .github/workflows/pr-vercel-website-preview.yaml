@@ -49,6 +49,14 @@ jobs:
           echo "stable-url=$(cat temp/vercel-preview/stable-url.txt)" >> "$GITHUB_OUTPUT"
           echo "unique-url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
           echo "short-sha=${HEAD_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          # Absent on runs produced before the note existed, so tolerate a
+          # missing file rather than fail the whole comment over it.
+          NOTE_FILE=temp/vercel-preview/build-note.txt
+          if [[ -f "$NOTE_FILE" ]]; then
+            echo "build-note=$(cat "$NOTE_FILE")" >> "$GITHUB_OUTPUT"
+          else
+            echo "build-note=" >> "$GITHUB_OUTPUT"
+          fi
         env:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
@@ -64,6 +72,8 @@ jobs:
             ## 🔗 Website Preview
 
             **Website Preview:** ${{ steps.urls.outputs.stable-url }}
+
+            <sub>${{ steps.urls.outputs.build-note }}</sub>
 
             <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
 

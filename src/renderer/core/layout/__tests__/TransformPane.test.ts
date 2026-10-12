@@ -3,30 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
-const mockData = vi.hoisted(() => ({
-  mockTransformStyle: {
-    transform: 'scale(1) translate(0px, 0px)',
-    transformOrigin: '0 0'
-  },
-  mockCamera: { x: 0, y: 0, z: 1 }
-}))
-
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  const syncWithCanvas = vi.fn()
-  return {
-    useTransformState: () => ({
-      camera: computed(() => mockData.mockCamera),
-      transformStyle: computed(() => mockData.mockTransformStyle),
-      screenToCanvas: vi.fn(),
-      isNodeInViewport: vi.fn(),
-      syncWithCanvas
-    })
-  }
-})
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -43,22 +24,11 @@ function createMockLGraphCanvas() {
 
 describe('TransformPane', () => {
   describe('component mounting', () => {
-    it('should mount successfully with minimal props', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
-    })
-
     it('should apply transform style from composable', async () => {
-      mockData.mockTransformStyle = {
+      useTransformState().transformStyle = computed(() => ({
         transform: 'scale(2) translate(100px, 50px)',
         transformOrigin: '0 0'
-      }
+      }))
 
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
@@ -155,26 +125,11 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
 
-      /* eslint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
+      /* oxlint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
       await fireEvent.pointerDown(transformPane)
-      /* eslint-enable testing-library/prefer-user-event */
+      /* oxlint-enable testing-library/prefer-user-event */
 
       expect(transformPane).toBeInTheDocument()
-    })
-  })
-
-  describe('transform state integration', () => {
-    it('should provide transform utilities to child components', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.screenToCanvas).toBeDefined()
     })
   })
 

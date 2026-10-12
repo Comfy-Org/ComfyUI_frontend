@@ -130,7 +130,7 @@ function makePixelCtx(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
       writeRect(x + tx, y + ty, w, h, [0, 0, 0, 0])
     },
     fillRect: (x: number, y: number, w: number, h: number) => {
-      const c = parseHex(String(ctx.fillStyle))
+      const c = parseHex(ctx.fillStyle)
       writeRect(x + tx, y + ty, w, h, [c.r, c.g, c.b, 255])
     },
     drawImage: (src: unknown, ...rest: number[]) => {

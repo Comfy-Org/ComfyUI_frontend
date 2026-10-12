@@ -40,6 +40,7 @@
                 <WorkspaceProfilePic
                   class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
+                  :subscription-tier="workspace.subscriptionTier"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
@@ -75,13 +76,14 @@
       v-if="!isCloud"
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
-      <i
-        v-tooltip.left="{
-          value: $t('workspaceSwitcher.scopeTooltip'),
-          showDelay: 300
-        }"
-        class="pi pi-info-circle text-xs"
-      />
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <i class="pi pi-info-circle text-xs" />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{
+          $t('workspaceSwitcher.scopeTooltip')
+        }}</TooltipContent>
+      </Tooltip>
       <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
 
@@ -113,7 +115,11 @@
             {{ $t('workspaceSwitcher.createWorkspace') }}
           </span>
           <span v-else class="text-sm text-muted-foreground">
-            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+            {{
+              workspacesManagedByOrganization
+                ? $t('workspaceSwitcher.managedByOrganization')
+                : $t('workspaceSwitcher.maxWorkspacesReached')
+            }}
           </span>
         </div>
       </div>
@@ -126,6 +132,9 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
@@ -171,6 +180,7 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
+  workspacesManagedByOrganization,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)

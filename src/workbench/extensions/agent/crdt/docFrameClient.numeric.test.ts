@@ -8,7 +8,7 @@ const updateFrame = (seq: unknown) => ({
     v: 1,
     workflow_id: 'wf-1',
     seq,
-    update_b64: encodeBase64(new Uint8Array())
+    update_b64: encodeBase64(new Uint8Array([1]))
   }
 })
 
@@ -31,9 +31,17 @@ const sequencedFrame = (
     v: 1,
     workflow_id: 'wf-1',
     seq,
-    ...(type === 'doc_subscribed' && { ok: true })
+    ...(type === 'doc_subscribed' && { ok: true }),
+    ...(type === 'doc_reset' && { lineage_seq: seq })
   }
 })
+
+function unsequencedSubscribedFrame() {
+  return {
+    type: 'doc_subscribed',
+    data: { v: 1, workflow_id: 'wf-1', ok: true }
+  }
+}
 
 const docOpsResultFrame = (seq?: unknown) => ({
   type: 'doc_ops_result',
@@ -46,11 +54,6 @@ const docOpsResultFrame = (seq?: unknown) => ({
     ...(seq !== undefined && { seq })
   }
 })
-
-const sequencedFrameTypes: ReadonlyArray<'doc_subscribed' | 'doc_reset'> = [
-  'doc_subscribed',
-  'doc_reset'
-]
 
 describe('doc frame numeric domains', () => {
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN])(
@@ -67,25 +70,91 @@ describe('doc frame numeric domains', () => {
     }
   )
 
-  describe.for(sequencedFrameTypes)('%s seq', (type) => {
+  describe('doc_reset seq', () => {
     it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
       'rejects an invalid value: %s',
       (seq) => {
-        expect(parseServerDocFrame(sequencedFrame(type, seq))).toBeNull()
+        expect(parseServerDocFrame(sequencedFrame('doc_reset', seq))).toBeNull()
       }
     )
 
     it('accepts zero', () => {
-      expect(parseServerDocFrame(sequencedFrame(type, 0))?.data).toMatchObject({
-        seq: 0
-      })
+      expect(
+        parseServerDocFrame(sequencedFrame('doc_reset', 0))?.data
+      ).toMatchObject({ seq: 0 })
+    })
+  })
+
+  describe('doc_reset lineage_seq', () => {
+    it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+      'rejects an invalid value: %s',
+      (lineageSeq) => {
+        expect(
+          parseServerDocFrame({
+            type: 'doc_reset',
+            data: {
+              v: 1,
+              workflow_id: 'wf-1',
+              seq: 43,
+              lineage_seq: lineageSeq
+            }
+          })
+        ).toBeNull()
+      }
+    )
+
+    it('rejects a reset event with no lineage_seq at all, rather than falling back to seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43 }
+        })
+      ).toBeNull()
+    })
+
+    it('accepts zero, distinct from seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43, lineage_seq: 0 }
+        })?.data
+      ).toMatchObject({ seq: 43, lineageSeq: 0 })
     })
   })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
-    'rejects an invalid doc_ops_result seq: %s',
+    'omits an invalid doc_subscribed seq while preserving the ack: %s',
     (seq) => {
-      expect(parseServerDocFrame(docOpsResultFrame(seq))).toBeNull()
+      expect(
+        parseServerDocFrame(sequencedFrame('doc_subscribed', seq))
+      ).toEqual({
+        type: 'doc_subscribed',
+        data: { workflowId: 'wf-1', ok: true }
+      })
+    }
+  )
+
+  it('accepts doc_subscribed without seq', () => {
+    const frame = parseServerDocFrame(unsequencedSubscribedFrame())
+    expect(frame).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+    expect(frame?.data).not.toHaveProperty('seq')
+  })
+
+  it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+    'omits an invalid doc_ops_result seq while preserving the result: %s',
+    (seq) => {
+      expect(parseServerDocFrame(docOpsResultFrame(seq))).toEqual({
+        type: 'doc_ops_result',
+        data: {
+          workflowId: 'wf-1',
+          ok: true,
+          applied: [],
+          skipped: []
+        }
+      })
     }
   )
 

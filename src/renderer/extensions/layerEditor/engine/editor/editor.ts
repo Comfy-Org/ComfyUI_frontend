@@ -632,21 +632,20 @@ export function createEditor(opts: EditorOptions): Editor {
       return tool?.cursorFor(pt) ?? 'default'
     },
     addNode(node, index, parentId) {
-      const parent =
+      const found =
         parentId && parentId !== doc.root.id
-          ? (findNode(doc.root, parentId)?.node as GroupData | undefined)
+          ? findNode(doc.root, parentId)?.node
           : undefined
-      addNodeInternal(
-        node,
-        index,
-        parent && parent.kind === 'group' ? parent : undefined
-      )
+      const parent = found?.kind === 'group' ? found : undefined
+      addNodeInternal(node, index, parent)
     },
     moveNode(id, dir) {
       const loc = findNode(doc.root, id)
       if (!loc) return false
       const { parent, node, index } = loc
-      const sib = parent.children[index + dir]
+      const siblingIndex = index + dir
+      const sib =
+        siblingIndex < 0 ? undefined : parent.children.at(siblingIndex)
       let toParent: GroupData
       let toIndex: number
       if (sib && sib.kind === 'group') {

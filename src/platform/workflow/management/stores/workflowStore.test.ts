@@ -16,20 +16,21 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
-  createMockCanvas,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -40,16 +41,21 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {} // Start with empty canvas object
+    canvas: {}, // Start with empty canvas object
+    get canvasOrUndefined() {
+      return this.canvas
+    }
   }
 }))
 
 // Mock isSubgraph
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
+
+vi.mock(import('@/utils/syncUtil'), { spy: true })
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -369,7 +375,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'v2'
       }
 
@@ -400,7 +406,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       const draftGraph = JSON.parse(defaultGraphJSON)
       draftGraph.extra = {
-        ...(draftGraph.extra ?? {}),
+        ...draftGraph.extra,
         draftMarker: 'stale-v2'
       }
       const draftStore = saveV2Draft(workflow.path, {
@@ -610,47 +616,6 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
     })
-
-    it('renames only jobs from the matching workflow instance', async () => {
-      const duplicateId = 'duplicate-workflow-id'
-      const workflow = store.createTemporary('app-to-save.json', {
-        ...defaultGraph,
-        id: duplicateId
-      })
-      const otherWorkflow = store.createTemporary('other.json', {
-        ...defaultGraph,
-        id: duplicateId
-      })
-      const executionStore = useExecutionStore()
-
-      executionStore.ensureSessionWorkflowPath(
-        'job-1',
-        workflow.path,
-        workflow.instanceId
-      )
-      executionStore.ensureSessionWorkflowPath(
-        'job-other',
-        workflow.path,
-        otherWorkflow.instanceId
-      )
-
-      vi.spyOn(workflow, 'rename').mockImplementation(
-        async (renamedPath: string) => {
-          workflow.path = renamedPath
-          return workflow
-        }
-      )
-
-      const newPath = 'workflows/saved-app.app.json'
-      await store.renameWorkflow(workflow, newPath)
-
-      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-        newPath
-      )
-      expect(executionStore.jobIdToSessionWorkflowPath.get('job-other')).toBe(
-        'workflows/app-to-save.json'
-      )
-    })
   })
 
   describe('closeWorkflow', () => {
@@ -698,6 +663,104 @@ describe('useWorkflowStore', () => {
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
+
+    it('should remove a deleted workflow without closing other tabs', async () => {
+      const survivor = store.createTemporary('survivor.json')
+      const doomed = store.createTemporary('doomed.json')
+      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(doomed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        doomed.path
+      ])
+
+      await store.deleteWorkflow(doomed)
+
+      expect(store.isOpen(doomed)).toBe(false)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
+    })
+  })
+
+  describe('openWorkflows integrity', () => {
+    it('should retain a missing active workflow until it becomes inactive', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockImplementation(() =>
+        Promise.resolve(new Response(defaultGraphJSON, { status: 200 }))
+      )
+      const survivor = store.getWorkflowByPath('workflows/a.json')!
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(removed)
+
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(removed)
+      expect(store.getWorkflowByPath(removed.path)).toBe(removed)
+      expect(store.isOpen(removed)).toBe(true)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        removed.path
+      ])
+
+      await store.openWorkflow(survivor)
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(survivor)
+      expect(store.getWorkflowByPath(removed.path)).toBeNull()
+      expect(store.isOpen(removed)).toBe(false)
+      expect(store.openWorkflows).toEqual([survivor])
+    })
+
+    it('should not expose open paths whose lookup record was removed', async () => {
+      const workflow = store.createTemporary('orphan.json')
+      await store.openWorkflow(workflow)
+      vi.mocked(syncEntities).mockImplementationOnce(
+        async (_dir, entityByPath) => {
+          delete entityByPath[workflow.path]
+        }
+      )
+
+      await store.syncWorkflows()
+
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.openWorkflows).toEqual([])
+    })
+
+    it.for([
+      { openOrder: ['orphan', 'alpha', 'beta'] },
+      { openOrder: ['alpha', 'orphan', 'beta'] }
+    ])(
+      'should navigate and reorder tabs by their surviving index when opened as $openOrder',
+      async ({ openOrder }) => {
+        const workflows = Object.fromEntries(
+          openOrder.map((name) => [name, store.createTemporary(`${name}.json`)])
+        )
+        for (const name of openOrder) await store.openWorkflow(workflows[name])
+        await store.openWorkflow(workflows.alpha)
+        vi.mocked(syncEntities).mockImplementationOnce(
+          async (_dir, entityByPath) => {
+            delete entityByPath[workflows.orphan.path]
+          }
+        )
+
+        await store.syncWorkflows()
+
+        expect(store.openedWorkflowIndexShift(1)?.path).toBe(
+          workflows.beta.path
+        )
+        expect(store.openedWorkflowIndexShift(-1)?.path).toBe(
+          workflows.beta.path
+        )
+
+        store.reorderWorkflows(0, 1)
+
+        expect(store.openWorkflows.map((w) => w.path)).toEqual([
+          workflows.beta.path,
+          workflows.alpha.path
+        ])
+      }
+    )
   })
 
   describe('save', () => {
@@ -971,11 +1034,23 @@ describe('useWorkflowStore', () => {
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
-      it('should return simple node ID for root graph nodes', () => {
-        store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(toNodeId(123))
-        expect(result).toBe('123')
-      })
+      it.for([
+        { rawId: '', locatorId: '~root:' },
+        {
+          rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9',
+          locatorId:
+            '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
+        }
+      ])(
+        'should key root node id $rawId under $locatorId',
+        ({ rawId, locatorId }) => {
+          store.activeSubgraph = undefined
+          const result = store.nodeIdToNodeLocatorId(toNodeId(rawId))
+
+          expect(result).toBe(locatorId)
+          expect(store.nodeLocatorIdToNodeId(result)).toBe(rawId)
+        }
+      )
 
       it('should use provided subgraph instead of active one', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
@@ -1042,6 +1117,25 @@ describe('useWorkflowStore', () => {
         )
         expect(stringResult).toBe('node_1')
       })
+
+      it('should decode an encoded root-leaf locator to its node id', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeId(locatorId)).toBeNull()
+      })
     })
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
@@ -1074,6 +1168,62 @@ describe('useWorkflowStore', () => {
           )
         )
         expect(result).toBeNull()
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeExecutionId(locatorId)).toBeNull()
+      })
+
+      it('should mint a leaf execution id from an encoded root-leaf locator', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should append an encoded subgraph leaf to its execution path', () => {
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+        const locatorId = createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          'insert:abc123:root:node:5'
+        )
+
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+
+        expect(result).toBe('123:insert:abc123:root:node:5')
+      })
+
+      it('should preserve a colon-bearing subgraph host in the execution path', () => {
+        const subgraphUuid = '11111111-2222-4333-8444-555555555555'
+        const subgraph = fromPartial<Subgraph>({ id: subgraphUuid })
+        vi.mocked(comfyApp).rootGraph = fromPartial<LGraph>({
+          _nodes: [
+            createMockLGraphNode({
+              id: toNodeId('insert:op:root:node:3'),
+              isSubgraphNode: () => true,
+              subgraph
+            })
+          ]
+        })
+        vi.mocked(isSubgraph).mockImplementation(
+          (graph): graph is Subgraph => graph === subgraph
+        )
+
+        expect(
+          store.nodeLocatorIdToNodeExecutionId(
+            createNodeLocatorId(subgraphUuid, toNodeId(7))
+          )
+        ).toBe('insert:op:root:node:3:7')
       })
     })
   })

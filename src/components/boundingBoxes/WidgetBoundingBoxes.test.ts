@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,8 +14,12 @@ const { appState } = vi.hoisted(() => {
   return { appState }
 })
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => appState.node } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    canvas: { graph: { getNodeById: () => appState.node } },
+    nodeOutputs: {},
+    nodePreviewImages: {}
+  }
 }))
 
 const i18n = createI18n({

@@ -1,41 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-interface IMockStore {
-  canvasContainer: HTMLElement | null
-  maskCanvas: HTMLCanvasElement | null
-  rgbCanvas: HTMLCanvasElement | null
-  isPanning: boolean
-  brushVisible: boolean
-  displayZoomRatio: number
-  resetZoomTrigger: number
-  canvasHistory: { undo: ReturnType<typeof vi.fn> }
-  setCursorPoint: ReturnType<typeof vi.fn>
-  setPanOffset: ReturnType<typeof vi.fn>
-  setZoomRatio: ReturnType<typeof vi.fn>
-}
-
-const { mockStore } = vi.hoisted(() => {
-  const mockStore: IMockStore = {
-    canvasContainer: null,
-    maskCanvas: null,
-    rgbCanvas: null,
-    isPanning: false,
-    brushVisible: true,
-    displayZoomRatio: 1,
-    resetZoomTrigger: 0,
-    canvasHistory: { undo: vi.fn() },
-    setCursorPoint: vi.fn(),
-    setPanOffset: vi.fn(),
-    setZoomRatio: vi.fn()
-  }
-  return { mockStore }
-})
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
   return {
@@ -58,6 +26,7 @@ function createMockCanvas(width: number, height: number): HTMLCanvasElement {
   return {
     width,
     height,
+    getContext: vi.fn().mockImplementation(() => null),
     clientWidth: width,
     clientHeight: height,
     style: {} as CSSStyleDeclaration,
@@ -107,6 +76,8 @@ async function initComposable() {
 
 describe('usePanAndZoom', () => {
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
+    vi.spyOn(mockStore.canvasHistory, 'undo').mockImplementation(() => {})
     mockStore.canvasContainer = null
     mockStore.maskCanvas = null
     mockStore.rgbCanvas = null
@@ -195,11 +166,10 @@ describe('usePanAndZoom', () => {
 
     it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
 
-      expect(consoleSpy).toHaveBeenCalledWith('mouseDownPoint is null')
+      expect(console.error).toHaveBeenCalledWith('mouseDownPoint is null')
       expect(mockStore.setPanOffset).not.toHaveBeenCalled()
     })
   })
@@ -207,7 +177,7 @@ describe('usePanAndZoom', () => {
   describe('zoom', () => {
     it('zooms in with negative deltaY and updates store', async () => {
       const { pz } = await initComposable()
-      const initialZoom = vi.mocked(mockStore.setZoomRatio).mock.calls[0]?.[0]
+      const initialZoom = mockStore.zoomRatio
 
       await pz.zoom({
         clientX: 400,
@@ -216,7 +186,7 @@ describe('usePanAndZoom', () => {
       } as WheelEvent)
 
       const zoomValue = vi.mocked(mockStore.setZoomRatio).mock.calls[0][0]
-      expect(zoomValue).toBeGreaterThan(initialZoom ?? 0)
+      expect(zoomValue).toBeGreaterThan(initialZoom)
     })
 
     it('zooms out with positive deltaY producing smaller zoom', async () => {
@@ -252,7 +222,7 @@ describe('usePanAndZoom', () => {
         } as WheelEvent)
       }
 
-      const calls = mockStore.setZoomRatio.mock.calls
+      const calls = vi.mocked(mockStore.setZoomRatio).mock.calls
       expect(calls[calls.length - 1][0]).toBeGreaterThanOrEqual(0.2)
     })
 
@@ -267,7 +237,7 @@ describe('usePanAndZoom', () => {
         } as WheelEvent)
       }
 
-      const calls = mockStore.setZoomRatio.mock.calls
+      const calls = vi.mocked(mockStore.setZoomRatio).mock.calls
       expect(calls[calls.length - 1][0]).toBeLessThanOrEqual(10)
     })
 
@@ -316,18 +286,14 @@ describe('usePanAndZoom', () => {
 
   describe('invalidatePanZoom', () => {
     it('warns and returns early when image is missing', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
       try {
         const pz = usePanAndZoom()
         await pz.invalidatePanZoom()
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Missing required properties for pan/zoom'
         )
       } finally {
-        consoleWarnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })

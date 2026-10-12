@@ -59,4 +59,8 @@
   --color-sapphire-700: #172dd7;
   --color-brand-yellow: var(--color-electric-400);
   --color-brand-blue: var(--color-sapphire-700);
+
+  --color-ocean-300: #badde8;
+  --color-ocean-600: #2f687a;
+  --color-ocean-900: #253236;
 }

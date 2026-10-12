@@ -35,7 +35,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const hostNode = canvas.graph?.getNodeById(props.nodeId) ?? undefined
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
@@ -54,7 +54,7 @@ function bindWidget() {
     widgetInstance.callback = useChainCallback(
       widgetInstance.callback,
       function (this: IBaseWidget) {
-        this?.triggerDraw?.()
+        this.triggerDraw?.()
       }
     )
   widgetInstance.triggerDraw = draw
@@ -92,7 +92,6 @@ function draw() {
   }
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
-  // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.width = width
@@ -117,7 +116,7 @@ function handleDown(e: PointerEvent) {
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
   augmentToCanvasPointerEvent(e, node, canvas)
-  e.click_time = e.timeStamp - (pointer?.eDown?.timeStamp ?? 0)
+  e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
@@ -128,7 +127,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] w-full min-w-0"
+    class="relative -mx-3 w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas

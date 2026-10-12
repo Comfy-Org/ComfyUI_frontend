@@ -3,6 +3,7 @@
     <Popover>
       <template #button>
         <Button
+          :tooltip="$t('sideToolbar.mediaAssets.viewSettings')"
           variant="secondary"
           size="icon"
           :aria-label="$t('sideToolbar.mediaAssets.viewSettings')"

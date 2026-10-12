@@ -1,40 +1,51 @@
 <template>
-  <IconField class="w-full">
-    <InputText
-      v-bind="$attrs"
+  <InputGroup>
+    <InputGroupInput
       :model-value="internalValue"
-      class="w-full"
-      :invalid="validationState === ValidationState.INVALID"
+      v-bind="$attrs"
+      :disabled
+      :aria-invalid="validationState === ValidationState.INVALID"
       @update:model-value="handleInput"
       @blur="handleBlur"
     />
-    <InputIcon
-      :class="{
-        'pi pi-spin pi-spinner text-neutral-400':
-          validationState === ValidationState.LOADING,
-        'pi pi-check cursor-pointer text-green-500':
-          validationState === ValidationState.VALID,
-        'pi pi-times cursor-pointer text-red-500':
-          validationState === ValidationState.INVALID
-      }"
-      @click="validateUrl(props.modelValue)"
-    />
-  </IconField>
+    <InputGroupAddon
+      v-show="validationState !== ValidationState.IDLE"
+      align="inline-end"
+    >
+      <InputGroupButton
+        size="icon-sm"
+        :aria-label="$t('g.validate')"
+        :disabled="disabled || validationState === ValidationState.LOADING"
+        :data-validation-state="validationState"
+        @click="validateUrl(modelValue)"
+      >
+        <i :class="cn(validationIcon, 'size-4')" />
+      </InputGroupButton>
+    </InputGroupAddon>
+  </InputGroup>
 </template>
 
 <script setup lang="ts">
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import InputGroup from '@/components/ui/input-group/InputGroup.vue'
+import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
+import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
+import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
-const props = defineProps<{
+const {
+  modelValue,
+  validateUrlFn,
+  disabled = false
+} = defineProps<{
   modelValue: string
   validateUrlFn?: (url: string) => Promise<boolean>
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -43,16 +54,28 @@ const emit = defineEmits<{
 }>()
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
+const validationIcon = computed(() => {
+  switch (validationState.value) {
+    case ValidationState.LOADING:
+      return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
+    case ValidationState.VALID:
+      return 'icon-[lucide--check] text-success-background'
+    case ValidationState.INVALID:
+      return 'icon-[lucide--x] text-destructive-background'
+    default:
+      return undefined
+  }
+})
 
 const cleanInput = (value: string): string =>
   value ? value.replace(/\s+/g, '') : ''
 
 // Add internal value state
-const internalValue = ref(cleanInput(props.modelValue))
+const internalValue = ref(cleanInput(modelValue))
 
 // Watch for external modelValue changes
 watch(
-  () => props.modelValue,
+  () => modelValue,
   async (newValue: string) => {
     internalValue.value = cleanInput(newValue)
     await validateUrl(newValue)
@@ -65,13 +88,12 @@ watch(validationState, (newState) => {
 
 // Validate on mount
 onMounted(async () => {
-  await validateUrl(props.modelValue)
+  await validateUrl(modelValue)
 })
 
-const handleInput = (value: string | undefined) => {
-  // Update internal value without emitting
-  internalValue.value = cleanInput(value ?? '')
-  // Reset validation state when user types
+const handleInput = (value: string | number | undefined) => {
+  const cleaned = cleanInput(String(value ?? ''))
+  internalValue.value = cleaned
   validationState.value = ValidationState.IDLE
 }
 
@@ -113,7 +135,7 @@ const validateUrl = async (value: string) => {
 
   validationState.value = ValidationState.LOADING
   try {
-    const isValid = await (props.validateUrlFn ?? defaultValidateUrl)(url)
+    const isValid = await (validateUrlFn ?? defaultValidateUrl)(url)
     validationState.value = isValid
       ? ValidationState.VALID
       : ValidationState.INVALID

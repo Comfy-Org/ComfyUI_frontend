@@ -9,13 +9,12 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
@@ -73,7 +72,7 @@ export class FloatingRenderLink implements RenderLink {
           `Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
         )
 
-      const outputSlot = outputNode?.outputs.at(outputIndex)
+      const outputSlot = outputNode.outputs.at(outputIndex)
       if (!outputSlot)
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
@@ -88,7 +87,7 @@ export class FloatingRenderLink implements RenderLink {
       // RenderLink props
       this.node = outputNode
       this.fromSlot = outputSlot
-      this.fromPos = fromReroute?.pos ?? this.outputPos
+      this.fromPos = fromReroute.pos
       this.fromDirection = LinkDirection.LEFT
       this.dragDirection = LinkDirection.RIGHT
       this.fromSlotIndex = outputIndex
@@ -100,7 +99,7 @@ export class FloatingRenderLink implements RenderLink {
           `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
         )
 
-      const inputSlot = inputNode?.inputs.at(inputIndex)
+      const inputSlot = inputNode.inputs.at(inputIndex)
       if (!inputSlot)
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
@@ -193,8 +192,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteInput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
@@ -208,8 +206,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteOutput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>

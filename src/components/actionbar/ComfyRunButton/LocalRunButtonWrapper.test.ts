@@ -1,3 +1,4 @@
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,32 +13,33 @@ const gateState = vi.hoisted(() => ({
   partnerNodes: { value: [] as PartnerNode[] }
 }))
 
-const showApiNodesSignInDialog = vi.hoisted(() =>
-  vi.fn(() => Promise.resolve(false))
+vi.mock<unknown>(
+  import('@/composables/billing/usePartnerNodesRunGate'),
+  async () => {
+    const { ref } = await import('vue')
+    gateState.gate = ref<'sign-in' | 'none'>('none')
+    gateState.partnerNodes = ref<PartnerNode[]>([])
+    return {
+      usePartnerNodesRunGate: () => ({
+        gate: gateState.gate,
+        partnerNodes: gateState.partnerNodes
+      })
+    }
+  }
 )
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
-  const { ref } = await import('vue')
-  gateState.gate = ref<'sign-in' | 'none'>('none')
-  gateState.partnerNodes = ref<PartnerNode[]>([])
-  return {
-    usePartnerNodesRunGate: () => ({
-      gate: gateState.gate,
-      partnerNodes: gateState.partnerNodes
-    })
-  }
-})
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
-
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    template: '<button data-testid="queue-button" />'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  () => ({
+    default: {
+      name: 'ComfyQueueButton',
+      template: '<button data-testid="queue-button" />'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -119,7 +121,7 @@ describe('LocalRunButtonWrapper', () => {
       screen.getByRole('button', { name: 'Sign in to run' })
     )
 
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'Partner A',
       'Partner B'
     ])

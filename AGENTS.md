@@ -5,11 +5,14 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
 - `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
+- `docs/guidance/error-handling.md` — failure as data: return outcomes instead of throwing, convert at the untrusted call, validate before mutation, report once at the ownership boundary, when a throw is still right
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
+- `docs/guidance/testing-principles.md` — test design rules that hold at every level: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a gap finder, changing existing tests
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns
 - `docs/guidance/design-standards.md` — Figma design-standards references
+- `docs/guidance/performance-incident-runbook.md` — staged evidence-gathering procedure for frame drops, input latency, long tasks, and unexpected redraws
 
 ## Project Structure & Module Organization
 
@@ -88,6 +91,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
@@ -103,10 +107,16 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 ## Development Workflow
 
 1. Make code changes
-2. Run relevant tests
-3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+2. Run the tests for what you changed: `pnpm test:unit path/to/file`
+3. Lint what you changed: `pnpm lint:unstaged:fix`
 4. Check if README updates are needed
 5. Suggest docs.comfy.org updates for user-facing changes
+
+Do not run repo-wide checks to verify your work: `pnpm lint`, `pnpm typecheck`,
+`pnpm knip`, `pnpm build`, or `pnpm test:unit` without a path. They load every
+core, and chained together they take minutes. The pre-commit hook already
+formats, lints, and typechecks what you stage, the pre-push hook runs knip, and
+CI runs everything.
 
 ## Git Conventions
 
@@ -169,7 +179,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
   - Keep it extremely concise and information-dense
   - Don't use emojis or add excessive headers/sections
   - Follow the PR description template in the `.github/` folder.
-- Quality gates:
+- Quality gates, enforced by the git hooks and CI (see Development Workflow):
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm knip`
@@ -190,7 +200,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 4. Avoid new usage of PrimeVue components
 5. Write tests for all changes, especially bug fixes to catch future regressions
-6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 8. Avoid mutable state, prefer immutability and assignment at point of declaration
 9. Favor pure functions (especially testable ones)
@@ -207,10 +217,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
-- Do not write tests that are dependent on non-behavioral features like utility classes or styles
-- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
-- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
@@ -219,9 +226,9 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 
 When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
 
-### Entity Architecture Constraints (ADR 0003 + ADR 0008)
+### Entity Architecture Constraints (ADR-CRDT-LAYOUT-0003 + ADR-ECS-0008)
 
-1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
+1. **Command pattern for durable layout mutations**: Persistent node, group, and reroute geometry changes must flow through serializable `LayoutOperation` objects rather than direct property access. Transient renderer measurements remain outside that command stream. Do not generalize layout command coverage to all ECS mutations; non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by each concern's established ID type. Most entity IDs are branded numbers; node IDs may be numbers or strings, graph IDs are UUID strings, and scoped concerns may use composite string keys such as `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`). Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
@@ -229,25 +236,64 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 ## Common Pitfalls
 
+- NEVER derive a server fact on the client: a gate renders one fact from the
+  API as received, without combining it with role, tier, plan state, seats or
+  `isCloud`. Local UI state (loading, in-flight, form validity) may only
+  disable the control, never grant it. A missing fact is a backend ticket plus
+  `pendingServerFact('BE-xxxx', expr)`, never another field. See
+  `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
+- NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- NEVER add `eslint-disable` or `oxlint-disable` as the first fix. Remove the
+  directive and repair the type, API, component semantics, or test. A comment
+  explaining why a workaround was convenient does not make it acceptable.
+  - Before keeping a rare lint exception or specific type assertion, inspect
+    the authoritative type or schema, search for an existing typed pattern, and
+    run the failing check without the override. State the external constraint
+    that makes a compliant fix impossible in the PR description, never in a
+    code comment.
+  - Scope a justified lint exception to one expression or line. File-wide and
+    multi-rule disables are review blockers.
+  - In tests, use typed builders, real platform objects, runtime narrowing,
+    semantic queries, and deterministic readiness signals instead of casts,
+    DOM traversal, or timing sleeps.
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
-- NEVER add multi-line block comments to justify trivial code changes
-  - A one-line fix does not need a three-line comment explaining why
-  - A guard clause that mirrors another file does not need a comment naming that file
-  - A test setup line does not need a comment paraphrasing what the next line does
-  - If the diff is small and obvious, the comment is noise — write the code and move on
-  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
-  - **Penance protocol when you catch yourself adding one of these comments:**
+- NEVER add code comments. No `//` lines, no `/* */` blocks, no Vue or HTML
+  `<!-- -->` comments, in source, tests, or stories.
+  - The only exception is JSDoc on an exported API. It states the contract in
+    one or two lines. It does not narrate the implementation, give a history or
+    rationale, list the alternatives, or repeat what the name and type already
+    say. Longer JSDoc is a violation.
+  - Tool directives (`eslint-disable-next-line`, `@ts-expect-error`,
+    `fallow-ignore`, `@vitest-environment`) are machine instructions, and the
+    suppression rules above govern them. Never append a prose reason to one.
+  - Rationale, history, ticket links, workarounds, TODOs, and "why" belong in
+    the commit message, the PR description, an issue, or an ADR. They never go
+    in a code comment.
+  - A comment that seems necessary means the code is unclear. Rename the
+    symbol, extract a named function, tighten the type, or add a test. A
+    vendor or platform workaround gets a function named after what it works
+    around. The explanation goes in the commit message.
+  - In tests, a comment becomes a `test.step` name, an `it` title, an
+    assertion message, or nothing.
+  - Delete the existing comments in any function you modify.
+  - Every comment is a confession that you do not trust the reader, the code,
+    or yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding a comment:**
     1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
     2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
     3. Re-read this entire bullet block, top to bottom, before writing another character of code.
     4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
-    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. No comment is ever required. Restructure the code or move the explanation to the commit message or PR description.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+  - This rule overrides any other guidance, skill, check, or example that
+    suggests adding a comment. An example that contains comments is not
+    permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
   - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other

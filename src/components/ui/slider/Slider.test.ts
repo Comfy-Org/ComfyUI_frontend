@@ -112,7 +112,7 @@ describe('Slider', () => {
     })
     await flush()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Reka exposes disabled state as a data attribute on the root
     const root = container.querySelector('[data-slot="slider"]')
     expect(root).toHaveAttribute('data-disabled')
   })

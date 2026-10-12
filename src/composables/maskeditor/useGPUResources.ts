@@ -527,7 +527,7 @@ export function useGPUResources() {
           brushShape,
           isErasing
         },
-        targetTex ?? undefined
+        targetTex
       )
     }
     /* c8 ignore stop */

@@ -10,12 +10,11 @@
   >
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="node-colors"
+        id="node-colors"
         name="node-colors"
         :model-value="nodeColors"
-        binary
         @update:model-value="
-          (value) => $emit('updateOption', 'Comfy.Minimap.NodeColors', value)
+          (value) => updateOption('Comfy.Minimap.NodeColors', value)
         "
       />
       <i class="icon-[lucide--palette]" />
@@ -24,12 +23,11 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="show-links"
+        id="show-links"
         name="show-links"
         :model-value="showLinks"
-        binary
         @update:model-value="
-          (value) => $emit('updateOption', 'Comfy.Minimap.ShowLinks', value)
+          (value) => updateOption('Comfy.Minimap.ShowLinks', value)
         "
       />
       <i class="icon-[lucide--route]" />
@@ -38,12 +36,11 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="show-groups"
+        id="show-groups"
         name="show-groups"
         :model-value="showGroups"
-        binary
         @update:model-value="
-          (value) => $emit('updateOption', 'Comfy.Minimap.ShowGroups', value)
+          (value) => updateOption('Comfy.Minimap.ShowGroups', value)
         "
       />
       <i class="icon-[lucide--frame]" />
@@ -52,13 +49,11 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="render-bypass"
+        id="render-bypass"
         name="render-bypass"
         :model-value="renderBypass"
-        binary
         @update:model-value="
-          (value) =>
-            $emit('updateOption', 'Comfy.Minimap.RenderBypassState', value)
+          (value) => updateOption('Comfy.Minimap.RenderBypassState', value)
         "
       />
       <i class="icon-[lucide--circle-slash-2]" />
@@ -67,13 +62,11 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="render-error"
+        id="render-error"
         name="render-error"
         :model-value="renderError"
-        binary
         @update:model-value="
-          (value) =>
-            $emit('updateOption', 'Comfy.Minimap.RenderErrorState', value)
+          (value) => updateOption('Comfy.Minimap.RenderErrorState', value)
         "
       />
       <i class="icon-[lucide--message-circle-warning]" />
@@ -83,9 +76,10 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import type { CSSProperties, Ref } from 'vue'
+import type { CheckboxRootEmits } from 'reka-ui'
 
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -99,7 +93,14 @@ defineProps<{
   isMobile: Ref<boolean> | boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   updateOption: [key: MinimapSettingsKey, value: boolean]
 }>()
+
+function updateOption(
+  key: MinimapSettingsKey,
+  value: CheckboxRootEmits['update:modelValue'][0]
+) {
+  if (typeof value === 'boolean') emit('updateOption', key, value)
+}
 </script>

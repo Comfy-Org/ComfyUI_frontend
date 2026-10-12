@@ -7,10 +7,10 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import IconButton from '../ui/icon-button/IconButton.vue'
-import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { resolveRel } from '../../utils/cta'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { resolveRel } from '@/utils/cta'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'
@@ -199,7 +199,7 @@ useCarouselAutoplay({
             >
               <p
                 v-if="slide.eyebrow"
-                class="text-primary-comfy-yellow text-xs font-semibold tracking-wide uppercase"
+                class="text-xs font-semibold tracking-wide text-primary-comfy-yellow uppercase"
               >
                 {{ slide.eyebrow }}
               </p>
@@ -218,7 +218,7 @@ useCarouselAutoplay({
               :rel="resolveRel({ target: slide.newTab ? '_blank' : undefined })"
               :aria-label="slide.title ?? slide.media.alt"
               :tabindex="index === activeIndex ? undefined : -1"
-              class="focus-visible:ring-primary-comfy-yellow absolute inset-0 focus-visible:ring-2 focus-visible:outline-none"
+              class="absolute inset-0 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
             />
           </div>
         </div>

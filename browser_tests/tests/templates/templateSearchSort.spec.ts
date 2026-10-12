@@ -16,12 +16,13 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
  * discard the sort the user is looking at every time the category changed.
  */
 test.describe('Template search sort', () => {
-  test.beforeEach(async ({ comfyPage, templateApi }) => {
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedUseCases', [])
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
-    await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'newest')
+  test.use({
+    initialSettings: {
+      'Comfy.Templates.SortBy': 'newest'
+    }
+  })
 
+  test.beforeEach(async ({ comfyPage, templateApi }) => {
     templateApi.configure(
       withTemplates([
         makeTemplate({ name: 'wan-rare', title: 'Wan Rare', usage: 1 }),
