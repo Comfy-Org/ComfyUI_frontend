@@ -25,3 +25,13 @@ it('preserves custom node output alongside partial media references', () => {
 
   expect(zTaskOutput.parse(output)).toEqual(output)
 })
+
+it('keeps a string output version and drops a malformed one instead of failing', () => {
+  const parsed = zTaskOutput.parse({
+    '1': { images: [{ filename: 'a.png', type: 'output', version: 'v2' }] },
+    '2': { images: [{ filename: 'b.png', type: 'output', version: 7 }] }
+  })
+
+  expect(parsed['1'].images?.[0].version).toBe('v2')
+  expect(parsed['2'].images?.[0]).toEqual({ filename: 'b.png', type: 'output' })
+})
