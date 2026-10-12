@@ -23,8 +23,8 @@ application behavior.
   - File name must be fs-friendly scenario name
   - Test must be placed in a describe matching the top-level test plan item
   - Test title must match the scenario name
-  - Includes a comment with the step text before each step execution. Do not duplicate comments if step requires
-    multiple actions.
+  - Wraps each plan step in `test.step('<step text>', ...)`. A step that needs multiple actions is still one
+    `test.step`. Do not write comments.
   - Always use best practices from the log when generating tests.
 
    <example-generation>
@@ -49,13 +49,11 @@ application behavior.
   Following file is generated:
 
   ```ts file=add-valid-todo.spec.ts
-  // spec: specs/plan.md
-  // seed: tests/seed.spec.ts
-
   test.describe('Adding New Todos', () => {
     test('Add Valid Todo', async { page } => {
-      // 1. Click in the "What needs to be done?" input field
-      await page.click(...);
+      await test.step('Click in the "What needs to be done?" input field', async () => {
+        await page.click(...);
+      });
 
       ...
     });
@@ -89,16 +87,24 @@ test('my test', async ({ comfyPage }) => {
 
 ### Key APIs
 
-| Need             | Use                                                  | Notes                             |
-| ---------------- | ---------------------------------------------------- | --------------------------------- |
-| Canvas element   | `comfyPage.canvas`                                   | Pre-configured Locator            |
-| Wait for render  | `comfyPage.nextFrame()`                              | After canvas mutations            |
-| Load workflow    | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/` |
-| Get node by type | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]           |
-| Search box       | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick          |
-| Settings         | `comfyPage.settings.setSetting(key, value)`          | Clean up in afterEach             |
-| Keyboard         | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                |
-| Context menu     | `comfyPage.contextMenu`                              | Right-click interactions          |
+| Need              | Use                                                  | Notes                                             |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| Canvas element    | `comfyPage.canvas`                                   | Pre-configured Locator                            |
+| Wait for render   | `comfyPage.nextFrame()`                              | After canvas mutations                            |
+| Load workflow     | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/`                 |
+| Get node by type  | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]                           |
+| Search box        | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick                          |
+| Starting settings | `test.use({ initialSettings: { key: value } })`      | Fixture resets settings per test                  |
+| Runtime settings  | `comfyPage.settings.setSetting(key, value)`          | Only for changes under test; no settings teardown |
+| Keyboard          | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                                |
+| Context menu      | `comfyPage.contextMenu`                              | Right-click interactions                          |
+
+Follow [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
+Nested `test.use` replaces the parent's settings object. Include inherited
+overrides and install startup-dependent mocks before `comfyPage` boots.
+Always use `@vue-nodes` for Vue-node tests. Never manually set
+`Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()`; the fixture
+handles renderer selection and initial readiness.
 
 ### Mandatory Test Structure
 

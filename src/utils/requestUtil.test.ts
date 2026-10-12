@@ -4,8 +4,11 @@ import { encodeParams } from './requestUtil'
 
 describe('encodeParams', () => {
   it('omits undefined query parameters', () => {
-    expect(
-      encodeParams({ after: undefined, tags_any: ['temp', 'output'] })
-    ).toBe('tags_any=output,temp')
+    const tags = ['temp', 'output']
+
+    expect(encodeParams({ after: undefined, tags_any: tags })).toBe(
+      'tags_any=output,temp'
+    )
+    expect(tags).toEqual(['temp', 'output'])
   })
 })

@@ -7,7 +7,7 @@ import type { RerouteId } from '@/types/rerouteId'
 
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { slotFloatingLinks } from '../LLink'
 import type { LLink } from '../LLink'
 import { NodeSlotType } from '../types/globalEnums'
@@ -64,6 +64,20 @@ export function outputLinkIds(
     ...useLinkStore().getOutputSlotLinks(graphScopeOf(graph), nodeId, slot)
   ].map((topology) => topology.id)
   return ids.sort((a, b) => a - b)
+}
+
+export function nodeLinkIds(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: Pick<LGraphNode, 'id' | 'inputs' | 'outputs'>
+): LinkId[] {
+  const inputIds = node.inputs.flatMap((_, slot) => {
+    const id = inputLinkId(graph, node.id, slot)
+    return id === undefined ? [] : [id]
+  })
+  const outputIds = node.outputs.flatMap((_, slot) =>
+    outputLinkIds(graph, node.id, slot)
+  )
+  return [...inputIds, ...outputIds]
 }
 
 /**
@@ -199,7 +213,7 @@ export function replaceNodeInputs(
       return result
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)
-    for (const { link, slot } of removals.toReversed()) {
+    for (const { link, slot } of [...removals].reverse()) {
       finalizeInputLinkRemoval(
         node,
         previous.inputs[slot],

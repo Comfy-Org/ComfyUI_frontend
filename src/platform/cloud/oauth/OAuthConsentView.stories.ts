@@ -4,6 +4,7 @@ import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const baseChallenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'preview-csrf-token',
   client_display_name: 'Comfy Desktop',

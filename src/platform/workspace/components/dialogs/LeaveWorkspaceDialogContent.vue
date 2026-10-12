@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.leaveDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -38,13 +38,14 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -65,10 +66,8 @@ async function onLeave() {
     window.location.reload()
   } catch (error) {
     console.error('[LeaveWorkspaceDialog] Failed to leave workspace:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToLeaveWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspacePanel.toast.failedToLeaveWorkspace'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     loading.value = false

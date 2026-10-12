@@ -22,6 +22,13 @@ describe('getSafePreviousFullPath', () => {
     expect(getSafePreviousFullPath(query)).toBeNull()
   })
 
+  test('rejects a backslash-prefixed url the browser would treat as protocol-relative', () => {
+    const query: LocationQuery = {
+      previousFullPath: encodeURIComponent('/\\evil.com')
+    }
+    expect(getSafePreviousFullPath(query)).toBeNull()
+  })
+
   test('rejects absolute external urls', () => {
     const query: LocationQuery = {
       previousFullPath: encodeURIComponent('https://evil.com/path')

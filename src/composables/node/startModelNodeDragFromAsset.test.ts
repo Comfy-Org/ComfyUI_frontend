@@ -1,16 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const mockStartDrag = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -26,10 +23,6 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 describe('startModelNodeDragFromAsset', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
   it('starts a ghost drag for the resolved node carrying the widget value', () => {
     const nodeDef = fromPartial<ComfyNodeDefImpl>({
       name: 'CheckpointLoaderSimple'
@@ -42,8 +35,10 @@ describe('startModelNodeDragFromAsset', () => {
     const error = startModelNodeDragFromAsset(createAsset())
 
     expect(error).toBeUndefined()
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'sidebar_drag'
     })
   })
@@ -59,8 +54,10 @@ describe('startModelNodeDragFromAsset', () => {
 
     startModelNodeDragFromAsset(createAsset(), 'asset_browser')
 
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'asset_browser'
     })
   })
@@ -79,7 +76,7 @@ describe('startModelNodeDragFromAsset', () => {
       })
     )
 
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
       widgetValues: undefined,
       source: 'sidebar_drag'
     })
@@ -91,6 +88,6 @@ describe('startModelNodeDragFromAsset', () => {
     const error = startModelNodeDragFromAsset(createAsset())
 
     expect(error?.code).toBe('NO_PROVIDER')
-    expect(mockStartDrag).not.toHaveBeenCalled()
+    expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
   })
 })

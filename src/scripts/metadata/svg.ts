@@ -1,4 +1,4 @@
-import { type ComfyMetadata } from '@/types/metadataTypes'
+import type { ComfyMetadata } from '@/types/metadataTypes'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 export async function getSvgMetadata(file: File): Promise<ComfyMetadata> {

@@ -118,10 +118,6 @@ async function dragOnLocator(
 }
 
 test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
@@ -1220,7 +1216,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           await comfyPage.workflow.loadWorkflow(
             'widgets/image_crop_with_source'
           )
-          await comfyPage.vueNodes.waitForNodes()
           const node = comfyPage.vueNodes.getNodeLocator('2')
           const runDone = comfyPage.runButton.click()
           await expect(

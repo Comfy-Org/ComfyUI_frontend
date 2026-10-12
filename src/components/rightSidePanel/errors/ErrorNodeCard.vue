@@ -5,7 +5,7 @@
         <button
           v-if="hasRuntimeError && (card.nodeTitle || card.title)"
           type="button"
-          class="focus-visible:ring-ring m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+          class="m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
           @click="handleLocateNode"
         >
           {{ card.nodeTitle || card.title }}
@@ -63,7 +63,7 @@
             <button
               v-if="card.nodeId"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               @click="handleLocateNode"
             >
               {{ getInlineItemLabel(error) }}
@@ -134,7 +134,7 @@
 
               <div class="flex items-center justify-between gap-2">
                 <Button
-                  v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
+                  :tooltip="t('rightSidePanel.getHelpTooltip')"
                   variant="textonly"
                   size="sm"
                   class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
@@ -144,7 +144,7 @@
                   {{ t('g.getHelpAction') }}
                 </Button>
                 <Button
-                  v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
+                  :tooltip="t('rightSidePanel.findOnGithubTooltip')"
                   variant="textonly"
                   size="sm"
                   class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"

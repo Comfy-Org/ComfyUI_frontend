@@ -1,0 +1,9 @@
+{
+  "api_beeble_switchx_image_edit": "beeble--switchx-image-edit--edit-images",
+  "api_beeble_switchx_video_edit": "beeble--switchx-video-edit--edit-videos",
+  "api_happyhorse1_0_video_edit": "wan--happyhorse-video-edit--edit-videos",
+  "api_happyhorse1_1_i2v": "wan--happyhorse-image-to-video--animate-images",
+  "api_happyhorse1_1_r2v": "wan--happyhorse-reference-video--animate-images",
+  "api_happyhorse1_1_t2v": "wan--happyhorse-text-to-video--generate-videos",
+  "api_seedance2_5_r2v": "byteplus--seedance-2-5-reference--generate-videos"
+}

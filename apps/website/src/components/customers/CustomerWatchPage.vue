@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { getRoutes } from '../../config/routes'
-import type { CustomerVideoStory } from '../../data/customerVideos'
-import { formatDuration } from '../../data/customerVideos'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import SectionLabel from '../common/SectionLabel.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Button from '../ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
+import type { CustomerVideoStory } from '@/data/customerVideos'
+import { formatDuration } from '@/data/customerVideos'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   story,
@@ -20,6 +20,7 @@ const {
   transcript?: readonly string[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 const duration = formatDuration(story.durationSeconds)
@@ -66,7 +67,7 @@ const duration = formatDuration(story.durationSeconds)
   <!-- Body: mirrors CustomerArticle.astro's content column and typography
        (Section.astro / Paragraph.astro), with the caption transcript
        standing in for article body copy. -->
-  <section class="max-w-9xl mx-auto px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
+  <section class="mx-auto max-w-9xl px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="mx-auto max-w-3xl">
       <div
         v-if="transcript.length"
@@ -74,7 +75,7 @@ const duration = formatDuration(story.durationSeconds)
         class="mb-16 scroll-mt-24 lg:scroll-mt-36"
       >
         <h2 class="mb-6 text-2xl font-light text-primary-comfy-canvas">
-          {{ t('customers.watch.transcript', locale) }}
+          {{ t('customers.watch.transcript') }}
         </h2>
         <p
           v-for="(paragraph, index) in transcript"
@@ -93,10 +94,10 @@ const duration = formatDuration(story.durationSeconds)
           variant="default"
           size="lg"
         >
-          {{ t('customers.watch.readWrittenStory', locale) }}
+          {{ t('customers.watch.readWrittenStory') }}
         </Button>
         <Button as="a" :href="routes.customers" variant="outline" size="lg">
-          {{ t('customers.watch.browseAll', locale) }}
+          {{ t('customers.watch.browseAll') }}
         </Button>
       </div>
     </div>

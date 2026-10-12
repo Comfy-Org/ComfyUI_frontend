@@ -1,12 +1,23 @@
-import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useIntervalFn,
+  usePreferredReducedMotion,
+  useRafFn
+} from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  getMinimapDecorations,
+  minimapDecorationRevision
+} from '@/platform/canvas/minimapDecorationRegistry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
+import { MINIMAP_DECORATION_POP_MS } from '../minimapCanvasRenderer'
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
@@ -34,6 +45,7 @@ export function useMinimap({
 
   const visible = ref(true)
   const initialized = ref(false)
+  const motionPreference = usePreferredReducedMotion()
 
   const width = 250
   const height = 200
@@ -43,6 +55,22 @@ export function useMinimap({
     // If we're in a subgraph, use that; otherwise use the canvas graph
     const activeSubgraph = workflowStore.activeSubgraph
     return (activeSubgraph || canvas.value?.graph) as LGraph | null
+  })
+  const decorations = computed(() => {
+    const revision = minimapDecorationRevision.value
+    void revision
+    if (!graph.value) return []
+    const rows = getMinimapDecorations(graphScopeOf(graph.value))
+    const reducedMotion =
+      settingStore.get('Comfy.Appearance.DisableAnimations') ||
+      motionPreference.value === 'reduce'
+    return reducedMotion
+      ? rows.map((row) => ({
+          ...row,
+          enter: undefined,
+          enteredAt: undefined
+        }))
+      : rows
   })
 
   // Settings
@@ -104,7 +132,54 @@ export function useMinimap({
     graphManager.updateFlags,
     settings,
     width,
-    height
+    height,
+    decorations
+  )
+
+  const decorationFrames = useRafFn(
+    () => {
+      const now = performance.now()
+      if (
+        !canDraw.value ||
+        decorations.value.every(
+          ({ enteredAt }) =>
+            enteredAt === undefined ||
+            now - enteredAt >= MINIMAP_DECORATION_POP_MS
+        )
+      ) {
+        decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+    },
+    { immediate: false }
+  )
+
+  const shouldAnimateDecorations = computed(
+    () =>
+      initialized.value &&
+      canDraw.value &&
+      decorations.value.some(
+        ({ enteredAt }) =>
+          enteredAt !== undefined &&
+          performance.now() - enteredAt < MINIMAP_DECORATION_POP_MS
+      )
+  )
+
+  watch(
+    shouldAnimateDecorations,
+    (active) => {
+      if (!initialized.value || !canDraw.value) {
+        decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      if (active) decorationFrames.resume()
+      else decorationFrames.pause()
+    },
+    { immediate: true }
   )
 
   // Most edits reach the digest comparison through useMinimapGraph's event
@@ -174,6 +249,7 @@ export function useMinimap({
 
   const destroy = () => {
     pauseChangeDetection()
+    decorationFrames.pause()
     viewport.stopViewportSync()
     graphManager.destroy()
 
@@ -262,6 +338,7 @@ export function useMinimap({
   return {
     visible: computed(() => visible.value),
     initialized: computed(() => initialized.value),
+    decorationCount: computed(() => decorations.value.length),
 
     containerStyles,
     viewportStyles,

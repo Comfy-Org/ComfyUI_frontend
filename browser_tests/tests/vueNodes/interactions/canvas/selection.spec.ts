@@ -14,8 +14,6 @@ test.describe(
       initialSettings: {
         'Comfy.Canvas.SelectionToolbox': true,
         'Comfy.Canvas.NavigationMode': 'standard',
-        'Comfy.Pointer.ClickDrift': 6,
-        'LiteGraph.Group.SelectChildrenOnClick': false,
         'Comfy.Graph.LiveSelection': false
       }
     })
@@ -91,6 +89,21 @@ test.describe(
       await comfyPage.canvasOps.click({ x: 100, y: 100 })
 
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.selectionToolbox).toBeHidden()
+    })
+
+    test('selectItems with an empty array clears selection and hides the toolbox', async ({
+      comfyPage
+    }) => {
+      const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
+      await a.title.click()
+      await expect(a.root).toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.selectionToolbox).toBeVisible()
+
+      await comfyPage.page.evaluate(() => window.app!.canvas.selectItems([]))
+
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
@@ -175,11 +188,13 @@ test.describe(
     })
 
     test.describe('group child cascade', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'LiteGraph.Group.SelectChildrenOnClick',
-          true
-        )
+      test.use({
+        initialSettings: {
+          'Comfy.Canvas.SelectionToolbox': true,
+          'Comfy.Canvas.NavigationMode': 'standard',
+          'LiteGraph.Group.SelectChildrenOnClick': true,
+          'Comfy.Graph.LiveSelection': false
+        }
       })
 
       test('shift-toggling a group off also deselects its cascaded children', async ({
@@ -217,7 +232,7 @@ test.describe(
         await comfyPage.page.mouse.click(title.x, title.y, { button: 'right' })
         await comfyPage.nextFrame()
 
-        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await expect(
           comfyPage.contextMenu.menuItem('Fit Group To Nodes')
         ).toBeVisible()
@@ -231,9 +246,7 @@ test.describe(
           )
           .toEqual([1])
 
-        await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menubar')
-        ).toBeFocused()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeFocused()
         await comfyPage.page.keyboard.press('Escape')
         await comfyPage.contextMenu.waitForHidden()
       })

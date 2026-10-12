@@ -1,35 +1,31 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
+import { useMediaControls } from '@vueuse/core'
+import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
+import { api } from '@/scripts/api'
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    useMediaControls: () => ({
+vi.mock(import('@vueuse/core'), { spy: true })
+
+const originalAudioContext = globalThis.AudioContext
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((route) => `/api${route}`)
+  vi.mocked(useMediaControls).mockImplementation(() =>
+    fromAny({
       playing: ref(false),
       currentTime: ref(0),
       duration: ref(0)
     })
-  }
+  )
 })
-
-const mockFetchApi = vi.fn()
-const originalAudioContext = globalThis.AudioContext
 
 afterEach(() => {
   globalThis.AudioContext = originalAudioContext
-  mockFetchApi.mockReset()
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useWaveAudioPlayer', () => {
   it('initializes with default bar count', () => {
@@ -88,11 +84,11 @@ describe('useWaveAudioPlayer', () => {
       }
     )
 
-    mockFetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
-      headers: { get: () => 'audio/wav' }
-    })
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(new ArrayBuffer(8), {
+        headers: { 'Content-Type': 'audio/wav' }
+      })
+    )
 
     const src = ref('/api/view?filename=audio.wav&type=output')
     const { bars, loading } = useWaveAudioPlayer({ src, barCount: 10 })
@@ -101,7 +97,7 @@ describe('useWaveAudioPlayer', () => {
       expect(loading.value).toBe(false)
     })
 
-    expect(mockFetchApi).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/view?filename=audio.wav&type=output'
     )
     expect(mockDecodeAudioData).toHaveBeenCalled()
@@ -111,7 +107,7 @@ describe('useWaveAudioPlayer', () => {
   it('does not call decodeAudioSource when src is empty', () => {
     const src = ref('')
     useWaveAudioPlayer({ src })
-    expect(mockFetchApi).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
   function mockDecodedChannel(channel: Float32Array) {
@@ -123,10 +119,7 @@ describe('useWaveAudioPlayer', () => {
         close = vi.fn().mockResolvedValue(undefined)
       }
     )
-    mockFetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8))
-    })
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response(new ArrayBuffer(8)))
   }
 
   it('renders silence as the minimum-height floor', async () => {
@@ -166,11 +159,30 @@ describe('useWaveAudioPlayer', () => {
     expect(bars.value[9].height).toBe(100)
   })
 
+  it('re-decodes when the source is cleared and set again', async () => {
+    mockDecodedChannel(new Float32Array(80))
+
+    const src = ref<string | undefined>()
+    useWaveAudioPlayer({ src, barCount: 10 })
+
+    src.value = '/audio.wav'
+    await nextTick()
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+
+    src.value = undefined
+    await nextTick()
+
+    src.value = '/audio.wav'
+    await nextTick()
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+  })
+
   it('skips the waveform fetch entirely when waveform is disabled', () => {
     const src = ref('/audio.wav')
     const { loading } = useWaveAudioPlayer({ src, waveform: false })
 
-    expect(mockFetchApi).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
     expect(loading.value).toBe(false)
   })
 })

@@ -65,11 +65,8 @@
       <div
         class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2 pt-4"
       >
-        <AccessibleTooltip
-          :label="t('apiNodesSignInDialog.tooltip')"
-          side="bottom"
-        >
-          <template #trigger>
+        <Tooltip>
+          <TooltipTrigger as-child>
             <a
               :href="partnerNodesDocsUrl"
               target="_blank"
@@ -84,8 +81,11 @@
                 {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
               </span>
             </a>
-          </template>
-        </AccessibleTooltip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{{
+            t('apiNodesSignInDialog.tooltip')
+          }}</TooltipContent>
+        </Tooltip>
         <Button
           variant="inverted"
           size="unset"
@@ -103,7 +103,9 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

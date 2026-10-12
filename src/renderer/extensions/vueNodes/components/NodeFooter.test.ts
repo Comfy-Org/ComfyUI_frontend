@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { ComponentProps } from 'vue-component-type-helpers'
+
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 
@@ -25,6 +27,7 @@ const i18n = createI18n({
         error: 'Error'
       },
       rightSidePanel: {
+        errors: 'Issues',
         showAdvancedShort: 'Show Advanced',
         hideAdvancedShort: 'Hide Advanced',
         showAdvancedInputsButton: 'Show Advanced Inputs',
@@ -34,19 +37,11 @@ const i18n = createI18n({
   }
 })
 
-type Props = {
-  isSubgraph: boolean
-  hasAnyError: boolean
-  showErrorsTabEnabled: boolean
-  showAdvancedInputsButton?: boolean
-  showAdvancedState?: boolean
-  headerColor?: string
-  shape?: RenderShape
-}
+type Props = ComponentProps<typeof NodeFooter>
 
 const baseProps: Props = {
   isSubgraph: false,
-  hasAnyError: false,
+  errorSeverity: 'none',
   showErrorsTabEnabled: false
 }
 
@@ -74,7 +69,7 @@ describe('NodeFooter', () => {
     it('renders error + enter tabs for subgraph with error (Case 1)', () => {
       renderFooter({
         isSubgraph: true,
-        hasAnyError: true,
+        errorSeverity: 'error',
         showErrorsTabEnabled: true
       })
       expect(screen.getByText('Error')).toBeTruthy()
@@ -84,7 +79,7 @@ describe('NodeFooter', () => {
 
     it('renders error + advanced tabs for regular node with error (Case 1b)', () => {
       renderFooter({
-        hasAnyError: true,
+        errorSeverity: 'error',
         showErrorsTabEnabled: true,
         showAdvancedInputsButton: true
       })
@@ -94,7 +89,7 @@ describe('NodeFooter', () => {
 
     it('swaps advanced label based on showAdvancedState (Case 1b)', () => {
       renderFooter({
-        hasAnyError: true,
+        errorSeverity: 'error',
         showErrorsTabEnabled: true,
         showAdvancedState: true
       })
@@ -102,7 +97,7 @@ describe('NodeFooter', () => {
     })
 
     it('renders error-only footer when no subgraph/advanced (Case 2)', () => {
-      renderFooter({ hasAnyError: true, showErrorsTabEnabled: true })
+      renderFooter({ errorSeverity: 'error', showErrorsTabEnabled: true })
       expect(screen.getByText('Error')).toBeTruthy()
       expect(screen.queryByTestId('subgraph-enter-button')).toBeNull()
     })
@@ -124,6 +119,29 @@ describe('NodeFooter', () => {
     })
   })
 
+  it.for([
+    { name: 'regular', isSubgraph: false, showAdvancedInputsButton: false },
+    { name: 'subgraph', isSubgraph: true, showAdvancedInputsButton: false },
+    { name: 'advanced', isSubgraph: false, showAdvancedInputsButton: true }
+  ])('opens issues from the warning footer on a $name node', async (props) => {
+    const user = userEvent.setup()
+    const { emitted } = renderFooter({
+      ...props,
+      errorSeverity: 'missing',
+      showErrorsTabEnabled: true
+    })
+    const button = screen.getByRole('button', { name: 'Issues' })
+    expect(button).toHaveClass(
+      'bg-warning-background',
+      'text-warning-on-background'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Error' })
+    ).not.toBeInTheDocument()
+    await user.click(button)
+    expect(emitted()).toHaveProperty('openErrors')
+  })
+
   describe('emits', () => {
     let user: ReturnType<typeof userEvent.setup>
 
@@ -133,7 +151,7 @@ describe('NodeFooter', () => {
 
     it('emits openErrors when the error tab is clicked', async () => {
       const { emitted } = renderFooter({
-        hasAnyError: true,
+        errorSeverity: 'error',
         showErrorsTabEnabled: true
       })
       await user.click(screen.getByText('Error'))
@@ -201,7 +219,7 @@ describe('NodeFooter', () => {
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
       renderFooter({
         isSubgraph: true,
-        hasAnyError: true,
+        errorSeverity: 'error',
         showErrorsTabEnabled: true
       })
       const enterBtn = screen.getByTestId('subgraph-enter-button')

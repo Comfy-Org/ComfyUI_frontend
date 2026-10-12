@@ -1,37 +1,41 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import CloudPricingSection from '../components/pricing/CloudPricingSection.vue'
-import CustomerProofSection from '../components/pricing/CustomerProofSection.vue'
-import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue'
-import PricingFaq from '../components/pricing/PricingFaq.astro'
-import ResourceCostsSection from '../templates/platform/PricingSection.vue'
-import MinimaxLicensePricingSection from '../components/pricing/MinimaxLicensePricingSection.vue'
-import MinimaxLicenseHeroSection from '../components/common/MinimaxLicenseHeroSection.vue'
-import { pricingOffers } from '../config/pricing'
-import { t } from '../i18n/translations'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CloudPricingSection from '@/components/pricing/CloudPricingSection.vue'
+import WhatsIncludedSection from '@/components/pricing/WhatsIncludedSection.vue'
+import PricingFaq from '@/components/pricing/PricingFaq.astro'
+import ComfyApiPricingSection from '@/components/pricing/ComfyApiPricingSection.vue'
+import MinimaxLicensePricingSection from '@/components/pricing/MinimaxLicensePricingSection.vue'
+import MinimaxLicenseHeroSection from '@/components/common/MinimaxLicenseHeroSection.vue'
+import { pricingOffers } from '@/config/pricing'
 import {
+  DEFAULT_OG_IMAGE,
   absoluteUrl,
   jsonLdId,
   pageContext,
-  productNode,
-} from '../utils/jsonLd'
+  productNode
+} from '@/utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const productId = jsonLdId(url, 'product')
+const description =
+  'Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes.'
 ---
 
 <BaseLayout
   title="Pricing - Comfy Cloud"
-  description="Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes."
+  description={description}
   mainEntityId={productId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
-    { name: t('breadcrumb.pricing', locale) },
+    { name: Astro.locals.t('breadcrumb.pricing') }
   ]}
   extraJsonLd={[
     productNode({
@@ -39,18 +43,15 @@ const productId = jsonLdId(url, 'product')
       id: productId,
       name: 'Comfy Cloud',
       url,
-      offers: pricingOffers(locale),
-    }),
+      image: DEFAULT_OG_IMAGE,
+      description,
+      offers: pricingOffers(locale)
+    })
   ]}
 >
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
-  <CustomerProofSection locale={locale} />
-  <ResourceCostsSection
-    locale={locale}
-    heading={t('pricing.resourceCosts.heading', locale)}
-    note={t('pricing.resourceCosts.note', locale)}
-  />
+  <ComfyApiPricingSection locale={locale} show-learn-more-cta />
   <MinimaxLicenseHeroSection client:visible />
   <MinimaxLicensePricingSection locale={locale} />
   <PricingFaq locale={locale} />

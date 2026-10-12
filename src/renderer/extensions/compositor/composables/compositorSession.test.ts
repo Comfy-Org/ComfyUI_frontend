@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
@@ -41,12 +43,8 @@ vi.mock(
     getCompositorWidgetValue: () => ({})
   })
 )
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: (path: string) => `http://host/api${path}` }
-}))
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { getRandParam: () => '&rand=0.5' }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 function makeSession() {
   return {
@@ -63,6 +61,8 @@ const fallbackName = (i: number) => `Layer ${i + 1}`
 
 describe('loadCompositorSession', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => `http://host/api${path}`)
+    vi.mocked(app.getRandParam).mockReturnValue('&rand=0.5')
     getCompositorLayers.mockReturnValue([])
     getCompositorCanvas.mockReturnValue(undefined)
     resolveInitialLayerState.mockReturnValue(null)
