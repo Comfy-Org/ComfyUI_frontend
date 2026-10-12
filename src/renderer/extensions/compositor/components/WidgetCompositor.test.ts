@@ -1,11 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -89,36 +88,5 @@ describe('WidgetCompositor', () => {
 
     const open = screen.getByTestId('compositor-open-button')
     expect(open.hasAttribute('disabled')).toBe(false)
-  })
-
-  function renderWithOutputs() {
-    const graph = app.canvas.graph
-    if (!graph) throw new Error('Expected the app mock to provide a graph')
-    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
-    const outputs = shallowRef({})
-    const store = useNodeOutputStore()
-    vi.spyOn(store, 'getNodeImageUrls').mockReturnValue(['/view?a.png'])
-    vi.spyOn(store, 'getNodeOutputs').mockImplementation(() => outputs.value)
-    renderWidget()
-    return { outputs, preview: screen.getByTestId('compositor-preview') }
-  }
-
-  it('remounts a failed preview when the node has new outputs', async () => {
-    const { outputs, preview } = renderWithOutputs()
-    await fireEvent.error(preview)
-
-    outputs.value = {}
-    await nextTick()
-
-    expect(screen.getByTestId('compositor-preview')).not.toBe(preview)
-  })
-
-  it('keeps a loaded preview when the node has new outputs', async () => {
-    const { outputs, preview } = renderWithOutputs()
-
-    outputs.value = {}
-    await nextTick()
-
-    expect(screen.getByTestId('compositor-preview')).toBe(preview)
   })
 })

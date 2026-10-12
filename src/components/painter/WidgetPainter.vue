@@ -15,12 +15,10 @@
       >
         <img
           v-if="inputImageUrl"
-          :key="inputImageRetryKey"
           :src="inputImageUrl"
           class="absolute inset-0 size-full"
           draggable="false"
           @load="handleInputImageLoad"
-          @error="onInputImageError"
           @dragstart.prevent
         />
         <canvas
@@ -321,8 +319,6 @@ const {
   cursorVisible,
   displayBrushSize,
   inputImageUrl,
-  inputImageRetryKey,
-  onInputImageError,
   isImageInputConnected,
   handlePointerDown,
   handlePointerMove,

@@ -18,7 +18,6 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
 import { app } from '@/scripts/app'
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -641,12 +640,8 @@ export function useBoundingBoxes(
     requestDraw()
   })
 
-  const {
-    backgroundConnected,
-    backgroundUrl,
-    backgroundOutputs,
-    incomingBoxes
-  } = useBoundingBoxesSources(litegraphNode)
+  const { backgroundConnected, backgroundUrl, incomingBoxes } =
+    useBoundingBoxesSources(litegraphNode)
 
   watch(
     [litegraphNode, backgroundConnected],
@@ -679,11 +674,9 @@ export function useBoundingBoxes(
   }
 
   const backgroundLoading = ref(false)
-  const { retryKey: backgroundRetry, onError: onBackgroundError } =
-    useLoadRetry(backgroundOutputs)
   watch(
-    [backgroundUrl, backgroundRetry],
-    ([url], _, onCleanup) => {
+    backgroundUrl,
+    (url, _, onCleanup) => {
       backgroundLoading.value = !!url
       if (!url) {
         bgImage.value = null
@@ -704,9 +697,7 @@ export function useBoundingBoxes(
         requestDraw()
       }
       img.onerror = () => {
-        if (stale) return
-        backgroundLoading.value = false
-        onBackgroundError()
+        if (!stale) backgroundLoading.value = false
       }
       img.src = url
     },

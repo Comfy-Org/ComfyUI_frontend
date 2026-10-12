@@ -11,7 +11,6 @@ const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
 const incomingBoxes = shallowRef<BoundingBox[] | undefined>()
 const backgroundUrl = shallowRef<string | undefined>()
 const backgroundConnected = shallowRef(false)
-const backgroundOutputs = shallowRef<unknown>()
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -25,8 +24,7 @@ vi.mock(
     useBoundingBoxesSources: () => ({
       incomingBoxes: computed(() => incomingBoxes.value),
       backgroundUrl: computed(() => backgroundUrl.value),
-      backgroundConnected: computed(() => backgroundConnected.value),
-      backgroundOutputs: computed(() => backgroundOutputs.value)
+      backgroundConnected: computed(() => backgroundConnected.value)
     })
   })
 )
@@ -375,7 +373,6 @@ describe('useBoundingBoxes background image', () => {
     naturalWidth = 0
     naturalHeight = 0
     onload: (() => void) | null = null
-    onerror: (() => void) | null = null
     constructor() {
       FakeImage.created.push(this)
     }
@@ -409,52 +406,6 @@ describe('useBoundingBoxes background image', () => {
     backgroundConnected.value = false
     await flush()
     expect([hiddenOf('width'), hiddenOf('height')]).toEqual([false, false])
-  })
-
-  it('retries a failed background when new outputs arrive', async () => {
-    appState.node = makeNode()
-    backgroundUrl.value = '/view?filename=bg.png'
-    setup()
-    FakeImage.created[0].onerror?.()
-    await flush()
-
-    backgroundOutputs.value = { images: [] }
-    await flush()
-
-    expect(FakeImage.created.map((img) => img.src)).toEqual([
-      '/view?filename=bg.png',
-      '/view?filename=bg.png'
-    ])
-  })
-
-  it('ignores an error from a background that was replaced', async () => {
-    appState.node = makeNode()
-    backgroundUrl.value = '/view?filename=old.png'
-    setup()
-    const [old] = FakeImage.created
-    backgroundUrl.value = '/view?filename=new.png'
-    await flush()
-    FakeImage.created[1].load(512, 512)
-    old.onerror?.()
-    await flush()
-
-    backgroundOutputs.value = { images: [] }
-    await flush()
-
-    expect(FakeImage.created).toHaveLength(2)
-  })
-
-  it('does not refetch a loaded background when outputs change', async () => {
-    appState.node = makeNode()
-    backgroundUrl.value = '/view?filename=bg.png'
-    setup()
-    FakeImage.created[0].load(512, 512)
-    await flush()
-
-    backgroundOutputs.value = { images: [] }
-    await flush()
-
-    expect(FakeImage.created).toHaveLength(1)
   })
 
   it('sizes the canvas to the loaded background, snapped to the step', async () => {

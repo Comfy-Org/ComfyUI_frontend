@@ -8,7 +8,6 @@ import {
   getEffectiveBrushSize,
   getEffectiveHardness
 } from '@/composables/maskeditor/brushUtils'
-import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { StrokeProcessor } from '@/composables/maskeditor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
@@ -155,12 +154,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     node.properties.painterBrushOpacity = brushOpacity.value
     node.properties.painterBrushHardness = brushHardness.value
   }
-
-  const { retryKey: inputImageRetryKey, onError: onInputImageError } =
-    useLoadRetry(() => {
-      const inputNode = litegraphNode.value?.getInputNode(0)
-      return inputNode && nodeOutputStore.getNodeOutputs(inputNode)
-    })
 
   function updateInputImageUrl() {
     const node = litegraphNode.value
@@ -761,8 +754,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     displayBrushSize,
 
     inputImageUrl,
-    inputImageRetryKey,
-    onInputImageError,
     isImageInputConnected,
 
     handlePointerDown,

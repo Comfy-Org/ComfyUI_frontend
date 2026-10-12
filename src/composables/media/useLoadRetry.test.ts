@@ -18,9 +18,7 @@ describe('useLoadRetry', () => {
 
   it('leaves a loaded image alone when the trigger changes', async () => {
     const outputs = ref({})
-    const { retryKey, onError, onLoad } = useLoadRetry(() => outputs.value)
-    onError()
-    onLoad()
+    const { retryKey } = useLoadRetry(() => outputs.value)
 
     outputs.value = {}
     await nextTick()

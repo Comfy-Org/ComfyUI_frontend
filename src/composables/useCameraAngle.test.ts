@@ -28,7 +28,7 @@ const { ViewportMock, instances } = vi.hoisted(() => {
       applyState: vi.fn(),
       setViewMode: vi.fn(),
       setPreviewVisible: vi.fn(),
-      setImage: vi.fn(() => Promise.resolve(true)),
+      setImage: vi.fn(() => Promise.resolve()),
       remove: vi.fn(),
       viewport: {
         updateStatusMouseOnScene: vi.fn(),
@@ -258,54 +258,6 @@ describe('useCameraAngle', () => {
     node.onConnectionsChange?.()
 
     expect(instances[0].setImage).toHaveBeenLastCalledWith(null)
-  })
-
-  it.for([
-    { loaded: false, calls: 3 },
-    { loaded: true, calls: 2 }
-  ])(
-    'reloads an unchanged subject image only after a failed load (loaded: $loaded)',
-    async ({ loaded, calls }) => {
-      const node = makeNode(DEFAULT_WIDGETS)
-      node.imageSource = makeNode({})
-      const urls = vi
-        .spyOn(useNodeOutputStore(), 'getNodeImageUrls')
-        .mockReturnValue(['http://example/first.png'])
-      const camera = useCameraAngle(nodeRef(node))
-      camera.initialize(document.createElement('div'))
-      instances[0].setImage.mockResolvedValue(loaded)
-      urls.mockReturnValue(['http://example/second.png'])
-      node.onConnectionsChange?.()
-      await Promise.resolve()
-
-      node.onConnectionsChange?.()
-
-      expect(instances[0].setImage).toHaveBeenCalledTimes(calls)
-    }
-  )
-
-  it('does not treat a superseded subject load as a failure', async () => {
-    const node = makeNode(DEFAULT_WIDGETS)
-    node.imageSource = makeNode({})
-    const urls = vi
-      .spyOn(useNodeOutputStore(), 'getNodeImageUrls')
-      .mockReturnValue(['http://example/first.png'])
-    const camera = useCameraAngle(nodeRef(node))
-    let resolveFirst!: (applied: boolean) => void
-    camera.initialize(document.createElement('div'))
-    instances[0].setImage.mockImplementationOnce(
-      () => new Promise<boolean>((resolve) => (resolveFirst = resolve))
-    )
-    urls.mockReturnValue(['http://example/second.png'])
-    node.onConnectionsChange?.()
-    urls.mockReturnValue(['http://example/third.png'])
-    node.onConnectionsChange?.()
-    resolveFirst(false)
-    await Promise.resolve()
-
-    node.onConnectionsChange?.()
-
-    expect(instances[0].setImage).toHaveBeenCalledTimes(3)
   })
 
   it('routes node hover into the viewport status flags', () => {
