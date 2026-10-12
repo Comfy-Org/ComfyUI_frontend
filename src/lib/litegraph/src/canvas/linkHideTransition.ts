@@ -50,6 +50,7 @@ export const LINK_HIDE_TRANSITION: {
   elasticDecay: number
   elasticFrequency: number
   labelPopMs: number
+  labelPopDelayMs: number
   labelPopFromScale: number
   labelPopOvershoot: number
 } = {
@@ -59,11 +60,12 @@ export const LINK_HIDE_TRANSITION: {
   dashOnWidths: 1.5,
   dashOffWidths: 1.5,
   snapMs: 450,
-  snapEasing: 'easeOutElastic',
-  snapOvershoot: 1.70158,
-  elasticDecay: 10,
+  snapEasing: 'spring',
+  snapOvershoot: 0.6,
+  elasticDecay: 14,
   elasticFrequency: 10,
   labelPopMs: 150,
+  labelPopDelayMs: 0,
   labelPopFromScale: 0.9,
   labelPopOvershoot: 1.70158
 }
@@ -80,8 +82,13 @@ function lineMs(): number {
   return style === 'elastic' ? snapMs : holdMs + fadeMs
 }
 
+function labelStartMs(): number {
+  const { style, labelPopDelayMs } = LINK_HIDE_TRANSITION
+  return style === 'elastic' ? labelPopDelayMs : lineMs()
+}
+
 function totalMs(): number {
-  return lineMs() + LINK_HIDE_TRANSITION.labelPopMs
+  return Math.max(lineMs(), labelStartMs() + LINK_HIDE_TRANSITION.labelPopMs)
 }
 
 function easeOutBack(t: number): number {
@@ -159,16 +166,18 @@ export function linkHideFrame(
   return { style, alpha, retract: 0 }
 }
 
-/** Scale of a hidden link's labels as they pop in after the line fades; 1 when settled. */
+/** Scale of a hidden link's labels as they pop in: `undefined` before they appear, 1 once settled. */
 export function linkHideLabelScale(
   rootGraphId: RootGraphId,
   linkId: LinkId,
   now: number
-): number {
+): number | undefined {
   const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
   if (elapsed === undefined) return 1
+  const sinceLabelStart = elapsed - labelStartMs()
+  if (sinceLabelStart < 0) return
   const { labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
-  const progress = Math.max(0, (elapsed - lineMs()) / labelPopMs)
+  const progress = Math.min(1, sinceLabelStart / labelPopMs)
   return labelPopFromScale + (1 - labelPopFromScale) * easeOutBack(progress)
 }
 

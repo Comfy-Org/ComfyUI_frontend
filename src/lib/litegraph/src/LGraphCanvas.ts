@@ -6260,13 +6260,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const hidingLinkIds = new Set(hidingLinks.map(({ link }) => link.id))
     dropLinkBadgeHitAreas(this, hidingLinkIds)
     for (const [linkId, layout] of hiddenLinkLayouts) {
-      if (!hidingLinkIds.has(linkId))
-        drawHiddenLinkBadges(
-          ctx,
-          layout,
-          margin_area,
-          linkHideLabelScale(graphScope.rootGraphId, linkId, now)
-        )
+      const scale = linkHideLabelScale(graphScope.rootGraphId, linkId, now)
+      if (scale !== undefined)
+        drawHiddenLinkBadges(ctx, layout, margin_area, scale)
     }
 
     if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
@@ -6368,10 +6364,31 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     },
     now: number
   ): void {
-    if (hiding.frame.style === 'elastic') {
-      this._renderSnappingLink(ctx, hiding)
-      return
+    const { linkMarkerShape } = this
+    this.linkMarkerShape = LinkMarkerShape.None
+    try {
+      if (hiding.frame.style === 'elastic') {
+        this._renderSnappingLink(ctx, hiding)
+      } else {
+        this._renderDottedLink(ctx, hiding, now)
+      }
+    } finally {
+      this.linkMarkerShape = linkMarkerShape
     }
+  }
+
+  private _renderDottedLink(
+    ctx: CanvasRenderingContext2D,
+    hiding: {
+      link: LLink
+      frame: LinkHideFrame
+      startPos: Point
+      endPos: Point
+      startDirection?: LinkDirection
+      endDirection?: LinkDirection
+    },
+    now: number
+  ): void {
     const { link, frame, startPos, endPos, startDirection, endDirection } =
       hiding
     const hitTestedPaths = this.renderedPaths
