@@ -9,15 +9,18 @@ Proposed
 ## Context
 
 The in-app agent's CRDT follower integrates Yjs updates from one authoritative doc
-host. Every frame carries a sequence number, so transport loss can leave a gap.
+host. Every `doc_update` carries a sequence number, so transport loss can leave a
+gap.
 
 ### What the follower does today
 
-`layoutFollowerBridge.ts` detects a gap by comparing an incoming frame's `seq`
-against the last applied one, withholds the uncertain frame, and resubscribes with
-the state vector of the **existing** follower Y.Doc. It replaces that doc in
-exactly two places: an explicit `doc_reset` frame, and a subscribe that names a
-different `workflow_id`. A sequence gap never replaces it.
+`layoutFollowerBridge.ts` detects a gap by comparing a `doc_update`'s `seq` with
+the last applied one, or with the subscribe acknowledgement before the first
+update. It withholds the uncertain frame and resubscribes with the state vector of
+the **existing** follower Y.Doc. It replaces that doc only on a lineage break: an
+explicit `doc_reset`, including the reset it synthesizes after a re-minting or
+conflicting `doc_reseed_result`, or a subscribe that names a different
+`workflow_id`. A sequence gap never replaces it.
 
 That is the rule
 [ADR-GRAPH-DOCUMENT-0024](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md)
@@ -26,22 +29,24 @@ records, and this ADR does not change it.
 ### Why that rule is not sufficient on its own
 
 A gap does not reveal which frame was lost. The missing frame may itself have been
-a `doc_reset`. Yjs state vectors identify known structs, not application-level
-document lineage, and the frames carry no lineage identity of their own: the
-subscribe frame sends `workflow_id` and a base64 state vector and nothing else,
-and `workflow_id` is stable across a host remint. A host that re-minted its
-document during the gap therefore receives the previous lineage's state vector and
-can compute a delta against a document the follower has never seen. Applying that
-delta retains structs for which the replacement document holds no tombstones.
+a `doc_reset`. Yjs state vectors identify known structs, not document lineage, and
+`workflow_id` is stable across a host remint. If the follower applies the new
+lineage's catch-up to its old Y.Doc, the result keeps structs from the old lineage
+that the replacement document never deleted.
 
-Making a missed reset observable requires lineage identity on the wire that
-survives a remint: an immutable generation ID minted with the host's Y.Doc,
-carried on every `doc_update`, `doc_reset`, and `doc_subscribed` frame, stored by
-the follower beside its Y.Doc, and sent back with its subscription.
+The host already sends the identity needed to detect this. `lineage_seq` is the
+sequence number at which the host's current Y.Doc lineage began. It changes only
+when the host re-mints the document. The generated contract in
+`@comfyorg/ingest-types` requires it on `doc_update` and `doc_reset`. The host also
+returns it on a successful `doc_subscribed` and accepts the follower's
+`known_lineage_seq` on `doc_subscribe`. When the known value is absent or stale, the
+host ignores the follower's state vector and returns the whole current document.
 
-**No such field exists in the protocol today** — neither the frame parser nor the
-subscribe encoder in `docFrameClient.ts` reads or writes one. Adding it is what
-this ADR asks for.
+**The frontend does not use that identity yet.** `docFrameClient.ts` parses
+`lineage_seq` only on `doc_reset`, does not read it from `doc_update` or
+`doc_subscribed`, and does not send `known_lineage_seq`. The follower therefore
+cannot distinguish a missed reset from an ordinary gap. Using the existing field
+is what this ADR asks for.
 
 ## Decision
 
@@ -49,36 +54,38 @@ this ADR asks for.
 
 1. On a sequence gap or reconnect, the follower withholds the uncertain frame and
    resubscribes with its current state vector.
-2. The follower keeps its existing Y.Doc and applies the returned delta to it.
-3. An explicit `doc_reset`, or a subscribe naming a different `workflow_id`, is the
-   only path that replaces the follower doc. The reset MUST be dispatched to every
-   projector and consumer before replacement, and the next subscribe MUST start
-   from an empty state vector.
+2. The follower keeps its existing Y.Doc and applies the returned catch-up to it.
+3. A lineage break is the only path that replaces the follower doc: an explicit
+   `doc_reset`, including the reset synthesized after a re-minting or conflicting
+   `doc_reseed_result`, or a subscribe naming a different `workflow_id`. The reset
+   MUST be dispatched to every projector and consumer before replacement, and the
+   next subscribe MUST start from an empty state vector.
 
 Rules 1-3 restate ADR-GRAPH-DOCUMENT-0024's replacement rule. **This ADR supersedes
 no clause of it.**
 
-### Required protocol change (not implemented)
+### Required follower change (not implemented)
 
-4. Every `doc_update`, `doc_reset`, and `doc_subscribed` frame MUST carry the host
-   Y.Doc's immutable generation ID, and `doc_subscribe` MUST carry the generation
-   the follower holds.
-5. Once rule 4 ships, gap recovery gains a second replacement trigger: a response
-   whose generation differs from the follower's is a lineage break and takes the
-   same ordered reset-before-replacement path as rule 3. ADR-GRAPH-DOCUMENT-0024 is
-   amended at that point, not before.
-6. Until rule 4 ships, a gap is unresolvably ambiguous. Delta replay is the accepted
-   behaviour, and the residual risk that the lost frame was a `doc_reset` is
-   accepted knowingly rather than traded for a wipe on every gap.
+4. The follower MUST store the `lineage_seq` of the Y.Doc it holds, send it as
+   `known_lineage_seq` on `doc_subscribe`, and read `lineage_seq` from every
+   `doc_update`, `doc_reset`, and successful `doc_subscribed`.
+5. Once rule 4 ships, gap recovery gains a second replacement trigger: a newer
+   `lineage_seq` than the follower's is a lineage break and takes the same ordered
+   reset-before-replacement path as rule 3. A `doc_update` with an older
+   `lineage_seq` belongs to a replaced document and is discarded.
+   ADR-GRAPH-DOCUMENT-0024 is amended at that point, not before.
+6. Until rule 4 ships, the follower cannot resolve a gap's ambiguity. Replay is the
+   accepted behaviour, and the residual risk that the lost frame was a `doc_reset`
+   is accepted knowingly rather than traded for a wipe on every gap.
 
-Rule 5 MUST NOT be read as "an absent generation is a lineage break". No frame
-carries a generation today, so that reading would replace the follower doc on every
-gap — the opposite of rules 1-3 and of the shipped behaviour.
+Rule 5 compares lineage values. It does not make a frame without `lineage_seq` a
+lineage break; doing so would replace the follower doc on every gap from a host
+that predates the field.
 
 ### Defects
 
 - Replacing the follower doc after an ordinary sequence gap is a defect.
-- Once rule 4 ships, applying a delta from a different generation to the existing
+- Once rule 4 ships, applying an update from a different lineage to the existing
   doc is a defect.
 
 ### Deferred contracts
@@ -90,11 +97,11 @@ any record this ADR relies on.
 ## Consequences
 
 - Reviews of sync/reconnect code reject replacement after an ordinary sequence gap.
-  They cannot yet reject replay without a confirmed generation, because no
-  generation exists to confirm.
-- Adopting rule 4 is a wire-protocol change across host and follower: a new field on
-  three server frames and one client frame, plus follower storage of the generation
-  alongside its Y.Doc.
+  They cannot yet reject replay without a confirmed lineage, because the follower
+  does not check `lineage_seq`.
+- Adopting rule 4 is a follower change: the host already sends `lineage_seq` and
+  accepts `known_lineage_seq`. The follower must store the value with its Y.Doc and
+  compare it on updates and subscribe acknowledgements.
 - Projectors and other doc consumers must keep handling `doc_reset` as an explicit
   lifecycle event rather than discovering a swapped doc instance implicitly.
 - Until rule 4 ships, the ambiguous-gap risk is a known, accepted exposure rather
@@ -110,7 +117,7 @@ any record this ADR relies on.
 - **Treat `workflow_id` as the lineage key**: already the follower's behaviour for
   cross-workflow subscribes, but `workflow_id` is stable across a host remint, so it
   cannot detect a lineage break within one workflow. Insufficient, which is why rule
-  4 asks for a separate generation ID.
+  4 uses `lineage_seq`.
 
 ## References
 
@@ -120,6 +127,9 @@ any record this ADR relies on.
   — owns the follower-document replacement rule this ADR builds on.
 - [`docFrameClient.ts`](../../src/workbench/extensions/agent/crdt/docFrameClient.ts)
   — the frame parser and subscription encoder that rule 4 would extend.
+- [`types.gen.ts`](../../packages/ingest-types/src/types.gen.ts)
+  — the generated `DocUpdateData` and `DocResetData` contracts that require
+  `lineage_seq`.
 - [`layoutFollowerBridge.ts`](../../src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts)
   — owns gap detection, the resubscribe, and the ordered reset-before-replacement
   lifecycle.
