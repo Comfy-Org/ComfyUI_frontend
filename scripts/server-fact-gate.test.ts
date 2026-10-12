@@ -226,7 +226,7 @@ describe('server-fact gate on a real diff', () => {
     return runGate(dir, '--base', 'HEAD')
   }
 
-  const recombination = [
+  const recombinationLines = [
     'const { canInviteMembers } = useBillingCapabilities()',
     'export const canInvite =',
     '  canInviteMembers.value || isPlanEnded.value',
@@ -237,14 +237,14 @@ describe('server-fact gate on a real diff', () => {
   it.for([
     {
       name: 'passes a finding the merged branch brings in',
-      incoming: recombination,
+      incoming: recombinationLines,
       ours: clean,
       status: 0
     },
     {
       name: 'reports a finding this branch adds',
       incoming: clean,
-      ours: recombination,
+      ours: recombinationLines,
       status: 1
     }
   ])('$name when staging a merge', ({ incoming, ours, status }) => {
@@ -263,6 +263,26 @@ describe('server-fact gate on a real diff', () => {
     git('merge', '-q', '--no-commit', '--no-ff', 'incoming')
 
     expect(runGate(dir, '--staged').status).toBe(status)
+  })
+
+  it('reports a finding introduced by a staged conflict resolution', () => {
+    const { dir, git, write } = createRepo({
+      [gatedFile]: ['export const base = true', '']
+    })
+    git('checkout', '-q', '-b', 'incoming')
+    write(gatedFile, ['export const incoming = true', ''])
+    git('commit', '-q', '-am', 'incoming')
+    git('checkout', '-q', 'main')
+    write(gatedFile, clean)
+    git('commit', '-q', '-am', 'ours')
+    const merge = spawnSync('git', ['merge', '-q', '--no-ff', 'incoming'], {
+      cwd: dir
+    })
+    expect(merge.status).not.toBe(0)
+    write(gatedFile, recombinationLines)
+    git('add', gatedFile)
+
+    expect(runGate(dir, '--staged').status).toBe(1)
   })
 
   it('reports a recombination exposed by deleting only its pendingServerFact wrapper lines', () => {
