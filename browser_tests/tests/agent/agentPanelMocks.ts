@@ -13,6 +13,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -582,8 +583,8 @@ type AgentFixtures = {
   agentOnboardingCompleted: boolean
   agentRetryAfter: string | undefined
   crdtDebugEnabled: boolean
-  /** `'server'` loads real node definitions instead of the empty catalog. */
-  objectInfo: 'server' | undefined
+  /** `'server'` loads real node definitions; a record replaces the empty catalog. */
+  objectInfo: 'server' | Record<string, ComfyNodeDef> | undefined
   postedMessages: string[]
 }
 
