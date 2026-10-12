@@ -1006,10 +1006,6 @@ describe('layoutStore link layout updates', () => {
     layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
       path: stubPath(),
-      polyline: [
-        { x: 0, y: 0 },
-        { x: 5, y: 5 }
-      ],
       bounds: { x: 0, y: 0, width: 5, height: 5 },
       centerPos: { x: 1, y: 1 }
     })
@@ -1074,10 +1070,6 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
     layoutStore.resetForTests()
     layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
       path: new Path2D(),
-      polyline: [
-        { x: 0, y: 0 },
-        { x: 100, y: 100 }
-      ],
       bounds: { x: 0, y: 0, width: 100, height: 100 },
       centerPos: { x: 50, y: 50 }
     })
@@ -1129,52 +1121,5 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
         strokeHitOnlyAt(hitAt, hitAt)
       )
     ).toEqual({ linkId: toLinkId(1), rerouteId: null })
-  })
-})
-
-describe('layoutStore queryLinkIdsInBounds', () => {
-  beforeEach(() => {
-    layoutStore.resetForTests()
-    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
-      path: new Path2D(),
-      polyline: [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
-        { x: 100, y: 100 }
-      ],
-      bounds: { x: 0, y: 0, width: 100, height: 100 },
-      centerPos: { x: 100, y: 0 }
-    })
-    layoutStore.updateLinkSegmentLayout(toLinkId(2), null, {
-      path: new Path2D(),
-      polyline: [
-        { x: 0, y: 200 },
-        { x: 100, y: 200 }
-      ],
-      bounds: { x: 0, y: 200, width: 100, height: 0 },
-      centerPos: { x: 50, y: 200 }
-    })
-  })
-
-  it.for([
-    {
-      name: 'a rect crossing one link',
-      bounds: { x: 90, y: 40, width: 20, height: 20 },
-      expected: [1]
-    },
-    {
-      name: 'a rect inside the bounds but off the drawn path',
-      bounds: { x: 10, y: 50, width: 20, height: 20 },
-      expected: []
-    },
-    {
-      name: 'a rect spanning both links',
-      bounds: { x: 40, y: -10, width: 20, height: 250 },
-      expected: [1, 2]
-    }
-  ])('returns $expected for $name', ({ bounds, expected }) => {
-    expect(
-      [...layoutStore.queryLinkIdsInBounds(bounds)].sort((a, b) => a - b)
-    ).toEqual(expected.map(toLinkId))
   })
 })

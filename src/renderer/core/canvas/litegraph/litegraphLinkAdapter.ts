@@ -24,6 +24,7 @@ import type {
   Point as PointObj,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 
@@ -309,6 +310,7 @@ export class LitegraphLinkAdapter {
     const linkSegment = extras.reroute ?? link
     if (linkSegment) {
       linkSegment.path = path
+      if (linkData.polyline) setLinkPolyline(linkSegment, linkData.polyline)
 
       // Copy calculated center position back to litegraph object
       // This is needed for hit detection and menu interaction
@@ -353,10 +355,6 @@ export class LitegraphLinkAdapter {
         const rerouteId = extras.reroute ? extras.reroute.id : null
         layoutStore.updateLinkSegmentLayout(link.id, rerouteId, {
           path: path,
-          polyline: linkData.polyline ?? [
-            linkData.startPoint,
-            linkData.endPoint
-          ],
           bounds: bounds,
           centerPos: centerPos
         })

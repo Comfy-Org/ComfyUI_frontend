@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
-import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
+import { getSelectedLinkBounds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -95,10 +95,7 @@ export function useSelectionToolboxPosition(
   const selectedLinkBounds = (): ReadOnlyRect[] => {
     const { graph } = lgCanvas
     if (!graph) return []
-    return getSelectedLinkIds(graph).flatMap((linkId) => {
-      const bounds = layoutStore.getLinkLayout(linkId)?.bounds
-      return bounds ? [[bounds.x, bounds.y, bounds.width, bounds.height]] : []
-    })
+    return getSelectedLinkBounds(graph)
   }
 
   const selectionBounds = (): ReadOnlyRect[] => {

@@ -87,7 +87,6 @@ export interface LinkSegmentLayout {
   linkId: LinkId
   rerouteId: RerouteId | null // null for final segment to target
   path: Path2D
-  polyline: readonly Point[]
   bounds: Bounds
   centerPos: Point
 }

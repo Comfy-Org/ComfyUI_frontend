@@ -1,14 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
 import {
   deleteSelectedLinks,
+  getSelectedLinkBounds,
   getSelectedLinkIds,
   hideSelectedLinks,
   selectLinksForMarquee
@@ -33,15 +34,10 @@ function createGraphWithLinks() {
 }
 
 function drawHorizontalLink(link: LLink, y: number) {
-  layoutStore.updateLinkSegmentLayout(link.id, null, {
-    path: new Path2D(),
-    polyline: [
-      { x: 0, y },
-      { x: 100, y }
-    ],
-    bounds: { x: 0, y, width: 100, height: 0 },
-    centerPos: { x: 50, y }
-  })
+  setLinkPolyline(link, [
+    { x: 0, y },
+    { x: 100, y }
+  ])
 }
 
 function createHost(graph: LGraph, events: string[] = []) {
@@ -54,10 +50,6 @@ function createHost(graph: LGraph, events: string[] = []) {
 }
 
 describe('link marquee selection', () => {
-  beforeEach(() => {
-    layoutStore.resetForTests()
-  })
-
   it.for([
     {
       name: 'selects the links under an empty marquee',
@@ -87,6 +79,16 @@ describe('link marquee selection', () => {
     expect(getSelectedLinkIds(graph)).toEqual(
       expected.map((index) => links[index].id)
     )
+  })
+
+  it('reports the drawn bounds of the selected links', () => {
+    const { graph, links } = createGraphWithLinks()
+    drawHorizontalLink(links[0], 10)
+    drawHorizontalLink(links[1], 20)
+
+    selectLinksForMarquee(graph, 0, [40, 0, 20, 15], NO_MODIFIERS)
+
+    expect(getSelectedLinkBounds(graph)).toEqual([[0, 10, 100, 0]])
   })
 
   it('skips hidden links', () => {
