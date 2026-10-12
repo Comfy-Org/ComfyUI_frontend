@@ -22,6 +22,13 @@ import { breakpointsTailwind } from '@vueuse/core'
  */
 export const CORE_SETTINGS: SettingParams[] = [
   {
+    id: 'Comfy.Agent.CrdtDebug.Level',
+    name: 'CRDT diagnostic log level',
+    type: 'combo',
+    options: ['warn', 'info', 'debug', 'trace'],
+    defaultValue: 'info'
+  },
+  {
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',

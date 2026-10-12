@@ -163,6 +163,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { clearDevEvents, devEvents } from './devPanelLog'
 import {
   STALE_AFTER_MS,
@@ -256,6 +257,7 @@ function dispatchFrame(type: string, detail: unknown): void {
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     sessionStorage.clear()
     bridgeState.current = null
     clientState.transport = null
@@ -363,10 +365,7 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
     window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-    vi.resetModules()
-    const diagnostics = await import('./crdtDebugGate')
-    expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
-    expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
 
     useAgentPanelStore().enabled = false
     const { status, unmount } = mountFollower('wf-1')
@@ -380,10 +379,7 @@ describe('useAgentCrdtFollower', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
-    vi.resetModules()
-    const diagnostics = await import('./crdtDebugGate')
-    expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
-    expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
 
     const { status, unmount } = mountFollower('wf-1')
     expect(status().enabled).toBe(true)

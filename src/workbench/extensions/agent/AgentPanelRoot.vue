@@ -137,10 +137,7 @@ import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
-import {
-  isCrdtDebugEnabled,
-  resolveDebugPanelEnabled
-} from './crdt/crdtDebugGate'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -957,9 +954,9 @@ const restoreOpMinter = attachRestoreOpMinter({
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
-const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
-  agentPanelStore.enabled,
-  isCrdtDebugEnabled()
+const { flags } = useFeatureFlags()
+const isCrdtDevPanelEnabled = computed(
+  () => agentPanelStore.enabled && flags.agentCrdtDebugEnabled
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 

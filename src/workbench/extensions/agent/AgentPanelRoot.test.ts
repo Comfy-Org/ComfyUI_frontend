@@ -295,6 +295,7 @@ vi.mocked(attachDocOpMinter).mockImplementation(stubAttachDocOpMinter)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
@@ -622,6 +623,21 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('mounts diagnostics only while the remote debug flag is enabled', async () => {
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    expect(await screen.findByTestId('crdt-dev-panel-chip')).toBeInTheDocument()
+
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
+    await nextTick()
+    expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
   })
 
   const reportFreeUseNotice = vi.fn()

@@ -26,8 +26,9 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
-import type { CrdtLogLevel } from './crdtDebugGate'
-import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { CrdtLogLevel } from './crdtLog'
+import { CRDT_LOG_LEVELS } from './crdtLog'
 import type {
   CrdtDebugReportInput,
   ReportIdentifiers,
@@ -335,11 +336,11 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     })
 )
 
-const level = ref<CrdtLogLevel>(crdtLogLevel())
+const settingStore = useSettingStore()
+const level = computed(() => settingStore.get('Comfy.Agent.CrdtDebug.Level'))
 
-function onLevelChange(next: CrdtLogLevel) {
-  level.value = next
-  setCrdtLogLevel(next)
+async function onLevelChange(next: CrdtLogLevel) {
+  await settingStore.set('Comfy.Agent.CrdtDebug.Level', next)
 }
 
 // ── merge lab ─────────────────────────────────────────────────────────────

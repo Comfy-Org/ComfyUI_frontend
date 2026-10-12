@@ -18,6 +18,7 @@ export type Settings = {
   'Comfy.Canvas.BackgroundImage'?: string
   'Comfy.ConfirmClear': boolean
   'Comfy.DevMode': boolean
+  'Comfy.Agent.CrdtDebug.Level': 'warn' | 'info' | 'debug' | 'trace'
   'Comfy.Appearance.DisableAnimations': boolean
   'Comfy.UI.TabBarLayout': 'Default' | 'Legacy'
   'Comfy.Workflow.ShowMissingModelsWarning': boolean

@@ -10,11 +10,11 @@ import {
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 describe('devPanelLog', () => {
   beforeEach(() => {
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     reportError.mockClear()
   })
@@ -368,7 +368,7 @@ describe('devPanelLog', () => {
   })
 
   it('does not retain events while the debug instrument is disabled', () => {
-    setCrdtDebugEnabled(false)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
 
     recordDevEvent('doc_update', { seq: 1 })
 

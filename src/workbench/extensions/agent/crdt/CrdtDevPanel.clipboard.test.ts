@@ -17,7 +17,7 @@ vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
@@ -71,7 +71,7 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
     vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()
