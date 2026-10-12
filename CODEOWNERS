@@ -196,12 +196,6 @@
 /src/extensions/core/cloudRemoteConfig.ts         @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/cloudSessionCookie.ts        @Comfy-Org/comfy_frontend_devs
 
-/docs/architecture/domains/records/settings.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/keybindings.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/assets.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/workflow-persistence.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/workflow-sharing.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/workflow-deployment.domain.json @Comfy-Org/comfy_frontend_devs
 /src/scripts/ui/settings.ts                      @Comfy-Org/comfy_frontend_devs
 /src/scripts/ui/settings.test.ts                 @Comfy-Org/comfy_frontend_devs
 /src/components/dialog/content/setting/SettingItem.test.ts @Comfy-Org/comfy_frontend_devs
