@@ -162,7 +162,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
-import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { clearDevEvents, devEvents } from './devPanelLog'
 import {
