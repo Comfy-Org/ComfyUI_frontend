@@ -186,7 +186,9 @@
       },
       {
         "name": "bounding-boxes/presentation",
-        "patterns": ["src/components/boundingBoxes/**"]
+        "patterns": [
+          "src/components/boundingBoxes/**"
+        ]
       },
       {
         "name": "bounding-boxes/integration",
@@ -439,7 +441,9 @@
       },
       {
         "name": "image-crop/presentation",
-        "patterns": ["src/components/imagecrop/**"]
+        "patterns": [
+          "src/components/imagecrop/**"
+        ]
       },
       {
         "name": "image-crop/integration",
@@ -487,7 +491,9 @@
       },
       {
         "name": "mask-editor/domain",
-        "patterns": ["src/extensions/core/maskeditor/**"]
+        "patterns": [
+          "src/extensions/core/maskeditor/**"
+        ]
       },
       {
         "name": "mask-editor/application",
@@ -501,7 +507,9 @@
       },
       {
         "name": "mask-editor/presentation",
-        "patterns": ["src/components/maskeditor/**"]
+        "patterns": [
+          "src/components/maskeditor/**"
+        ]
       },
       {
         "name": "mask-editor/integration",
@@ -512,11 +520,15 @@
       },
       {
         "name": "minimap/domain",
-        "patterns": ["src/renderer/extensions/minimap/types.ts"]
+        "patterns": [
+          "src/renderer/extensions/minimap/types.ts"
+        ]
       },
       {
         "name": "minimap/application",
-        "patterns": ["src/renderer/extensions/minimap/composables/**"]
+        "patterns": [
+          "src/renderer/extensions/minimap/composables/**"
+        ]
       },
       {
         "name": "minimap/infrastructure",
@@ -543,11 +555,15 @@
       },
       {
         "name": "painter/application",
-        "patterns": ["src/composables/painter/**"]
+        "patterns": [
+          "src/composables/painter/**"
+        ]
       },
       {
         "name": "painter/presentation",
-        "patterns": ["src/components/painter/**"]
+        "patterns": [
+          "src/components/painter/**"
+        ]
       },
       {
         "name": "painter/integration",
@@ -615,7 +631,9 @@
       },
       {
         "name": "webcam-capture/integration",
-        "patterns": ["src/extensions/core/webcamCapture.ts"]
+        "patterns": [
+          "src/extensions/core/webcamCapture.ts"
+        ]
       },
       {
         "name": "workflow-deployment/domain",
@@ -626,11 +644,15 @@
       },
       {
         "name": "workflow-deployment/application",
-        "patterns": ["src/platform/workflow/deploy/composables/**"]
+        "patterns": [
+          "src/platform/workflow/deploy/composables/**"
+        ]
       },
       {
         "name": "workflow-deployment/presentation",
-        "patterns": ["src/platform/workflow/deploy/components/**"]
+        "patterns": [
+          "src/platform/workflow/deploy/components/**"
+        ]
       },
       {
         "name": "workflow-persistence/domain",
@@ -701,7 +723,9 @@
       },
       {
         "name": "workflow-sharing/infrastructure",
-        "patterns": ["src/platform/workflow/sharing/services/**"]
+        "patterns": [
+          "src/platform/workflow/sharing/services/**"
+        ]
       },
       {
         "name": "workflow-sharing/presentation",
@@ -730,21 +754,30 @@
       },
       {
         "name": "workflow-templates/infrastructure",
-        "patterns": ["src/platform/workflow/templates/repositories/**"]
+        "patterns": [
+          "src/platform/workflow/templates/repositories/**"
+        ]
       },
       {
         "name": "workflow-templates/presentation",
-        "patterns": ["src/components/templates/**"]
+        "patterns": [
+          "src/components/templates/**"
+        ]
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**"]
+        "patterns": [
+          "src/**"
+        ]
       }
     ],
     "rules": [
       {
         "from": "assets/domain",
-        "allow": ["assets/domain", "unclassified"]
+        "allow": [
+          "assets/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "assets/application",
@@ -786,15 +819,27 @@
       },
       {
         "from": "audio/application",
-        "allow": ["audio/application", "audio/infrastructure", "unclassified"]
+        "allow": [
+          "audio/application",
+          "audio/infrastructure",
+          "unclassified"
+        ]
       },
       {
         "from": "audio/infrastructure",
-        "allow": ["audio/application", "audio/infrastructure", "unclassified"]
+        "allow": [
+          "audio/application",
+          "audio/infrastructure",
+          "unclassified"
+        ]
       },
       {
         "from": "audio/presentation",
-        "allow": ["audio/application", "audio/presentation", "unclassified"]
+        "allow": [
+          "audio/application",
+          "audio/presentation",
+          "unclassified"
+        ]
       },
       {
         "from": "audio/integration",
@@ -808,7 +853,10 @@
       },
       {
         "from": "bounding-boxes/domain",
-        "allow": ["bounding-boxes/domain", "unclassified"]
+        "allow": [
+          "bounding-boxes/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "bounding-boxes/application",
@@ -839,7 +887,10 @@
       },
       {
         "from": "cloud/domain",
-        "allow": ["cloud/domain", "unclassified"]
+        "allow": [
+          "cloud/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application",
@@ -881,7 +932,10 @@
       },
       {
         "from": "extension-manager/domain",
-        "allow": ["extension-manager/domain", "unclassified"]
+        "allow": [
+          "extension-manager/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "extension-manager/application",
@@ -912,7 +966,10 @@
       },
       {
         "from": "glsl-preview/domain",
-        "allow": ["glsl-preview/domain", "unclassified"]
+        "allow": [
+          "glsl-preview/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "glsl-preview/application",
@@ -934,7 +991,10 @@
       },
       {
         "from": "image-compare/application",
-        "allow": ["image-compare/application", "unclassified"]
+        "allow": [
+          "image-compare/application",
+          "unclassified"
+        ]
       },
       {
         "from": "image-compare/presentation",
@@ -955,7 +1015,10 @@
       },
       {
         "from": "image-compositor/application",
-        "allow": ["image-compositor/application", "unclassified"]
+        "allow": [
+          "image-compositor/application",
+          "unclassified"
+        ]
       },
       {
         "from": "image-compositor/presentation",
@@ -976,7 +1039,10 @@
       },
       {
         "from": "image-crop/application",
-        "allow": ["image-crop/application", "unclassified"]
+        "allow": [
+          "image-crop/application",
+          "unclassified"
+        ]
       },
       {
         "from": "image-crop/presentation",
@@ -997,7 +1063,10 @@
       },
       {
         "from": "keybindings/domain",
-        "allow": ["keybindings/domain", "unclassified"]
+        "allow": [
+          "keybindings/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "keybindings/application",
@@ -1018,7 +1087,10 @@
       },
       {
         "from": "mask-editor/domain",
-        "allow": ["mask-editor/domain", "unclassified"]
+        "allow": [
+          "mask-editor/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "mask-editor/application",
@@ -1049,7 +1121,10 @@
       },
       {
         "from": "minimap/domain",
-        "allow": ["minimap/domain", "unclassified"]
+        "allow": [
+          "minimap/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "minimap/application",
@@ -1080,15 +1155,25 @@
       },
       {
         "from": "node-templates/integration",
-        "allow": ["node-templates/integration", "unclassified"]
+        "allow": [
+          "node-templates/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "painter/application",
-        "allow": ["painter/application", "unclassified"]
+        "allow": [
+          "painter/application",
+          "unclassified"
+        ]
       },
       {
         "from": "painter/presentation",
-        "allow": ["painter/application", "painter/presentation", "unclassified"]
+        "allow": [
+          "painter/application",
+          "painter/presentation",
+          "unclassified"
+        ]
       },
       {
         "from": "painter/integration",
@@ -1101,7 +1186,10 @@
       },
       {
         "from": "settings/domain",
-        "allow": ["settings/domain", "unclassified"]
+        "allow": [
+          "settings/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "settings/application",
@@ -1143,11 +1231,17 @@
       },
       {
         "from": "webcam-capture/integration",
-        "allow": ["webcam-capture/integration", "unclassified"]
+        "allow": [
+          "webcam-capture/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-deployment/domain",
-        "allow": ["workflow-deployment/domain", "unclassified"]
+        "allow": [
+          "workflow-deployment/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-deployment/application",
@@ -1168,7 +1262,10 @@
       },
       {
         "from": "workflow-persistence/domain",
-        "allow": ["workflow-persistence/domain", "unclassified"]
+        "allow": [
+          "workflow-persistence/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-persistence/application",
@@ -1200,7 +1297,10 @@
       },
       {
         "from": "workflow-sharing/domain",
-        "allow": ["workflow-sharing/domain", "unclassified"]
+        "allow": [
+          "workflow-sharing/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-sharing/application",
@@ -1231,7 +1331,10 @@
       },
       {
         "from": "workflow-templates/domain",
-        "allow": ["workflow-templates/domain", "unclassified"]
+        "allow": [
+          "workflow-templates/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-templates/application",
