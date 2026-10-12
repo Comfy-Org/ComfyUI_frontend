@@ -200,11 +200,11 @@ function dispatchToDatadog(
 ): boolean {
   try {
     const redactedCause = redactTelemetryValues({ cause: error.cause })?.cause
-    const datadogError = Object.assign(
-      new Error(error.message),
-      error,
-      { name: errorType, stack: error.stack, cause: redactedCause }
-    )
+    const datadogError = Object.assign(new Error(error.message), error, {
+      name: errorType,
+      stack: error.stack,
+      cause: redactedCause
+    })
     datadogRum.addError(datadogError, {
       ...context,
       ...tags,
