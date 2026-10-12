@@ -828,6 +828,21 @@ function startAgentCrdtFollower(
     if (justActivated) applyCollected(persisted)
   }
 
+  type TargetSnapshot = [string | null | undefined, boolean | undefined]
+  const isActivationEdge = (
+    active: boolean,
+    previous: TargetSnapshot | undefined
+  ): boolean => active && previous?.[1] === false
+  const acknowledgesFollowedDoc = (
+    next: string | null,
+    active: boolean,
+    justActivated: boolean
+  ): boolean =>
+    active &&
+    !justActivated &&
+    next !== null &&
+    next === subscribedWorkflowId.value
+
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
     rebindProjection(next)
@@ -837,14 +852,12 @@ function startAgentCrdtFollower(
 
   watch(
     [workflowId, isTargetActive],
-    (
-      [next, active],
-      previous: [string | null | undefined, boolean | undefined] | undefined
-    ) => {
+    ([next, active], previous: TargetSnapshot | undefined) => {
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there): a plain mount or retarget has no
       // collected changes to apply, the graph watcher covers readiness.
-      const justActivated = active && previous?.[1] === false
+      const justActivated = isActivationEdge(active, previous)
+      if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
       pendingLiveNodeIds.clear()
