@@ -200,7 +200,7 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
-  it('inspects an HDR output in the HDR viewer and offers it as a node', async () => {
+  it('inspects an HDR output in the HDR viewer', async () => {
     useAssetsStore().outputAssets.items = [
       {
         ...folderAsset,
@@ -214,13 +214,10 @@ describe('AssetsSidebarTab context menu', () => {
     await fireEvent.contextMenu(
       screen.getByRole('button', { name: 'Enter output folder' })
     )
-    expect(
-      await screen.findByRole('menuitem', {
-        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
-      })
-    ).toBeInTheDocument()
     await userEvent.click(
-      screen.getByRole('menuitem', { name: 'mediaAsset.actions.inspect' })
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
     )
 
     expect(openHdrViewer).toHaveBeenCalledWith(

@@ -24,7 +24,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       ? await getOutputsForTask(targetTask)
       : null
 
-    // Request was superseded by a newer one
     if (targetOutputs === null && targetTask) return
 
     const previewOutput = targetTask?.previewOutput
@@ -33,11 +32,11 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       return
     }
 
-    // Use target's outputs if available, otherwise fall back to all previews
-    const outputs = targetOutputs?.length
-      ? targetOutputs
-      : tasks.map((t) => t.previewOutput).filter((o) => !!o)
-    const items = outputs.filter((o) => !isHdrImageFilename(o.filename))
+    const items = (
+      targetOutputs?.length
+        ? targetOutputs
+        : tasks.map((t) => t.previewOutput).filter((o) => !!o)
+    ).filter((o) => !isHdrImageFilename(o.filename))
     if (!items.length) return
 
     galleryItems.value = items

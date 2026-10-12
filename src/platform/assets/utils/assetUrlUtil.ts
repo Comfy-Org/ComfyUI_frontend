@@ -4,6 +4,7 @@
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
@@ -37,9 +38,7 @@ export function getAssetUrl(
 
 /** `/view` URL of the asset's own file, not its preview. */
 export function getAssetViewUrl(asset: AssetItem): string {
-  const root = (['input', 'output', 'temp'] as const).find((tag) =>
-    asset.tags.includes(tag)
-  )
+  const root = asset.tags.find(isResultItemType)
   if (!asset.loader_path || !root) return getAssetUrl(asset)
   const slash = asset.loader_path.lastIndexOf('/')
   const params = new URLSearchParams({

@@ -255,12 +255,12 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
 const previewKind = computed((): PreviewKind => {
-  if (asset?.preview_url && isHdrImageFilename(asset.name)) return 'image'
+  if (asset?.preview_url && isHdr.value) return 'image'
   return getMediaTypeFromFilename(asset?.name || '')
 })
-
-const isHdr = computed(() => isHdrImageFilename(asset?.name))
 
 const canInspect = computed(
   () => isPreviewableMediaType(fileKind.value) || isHdr.value

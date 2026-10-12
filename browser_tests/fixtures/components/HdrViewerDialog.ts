@@ -1,23 +1,20 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-/** The HDR viewer dialog showing one file. */
-export class HdrViewerDialog {
-  public readonly root: Locator
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
-  constructor(
-    public readonly page: Page,
-    filename: string
-  ) {
-    this.root = page.getByRole('dialog').filter({ hasText: filename })
+export class HdrViewerDialog extends BaseDialog {
+  readonly resolution: Locator
+  readonly loadError: Locator
+
+  constructor(page: Page, filename: string) {
+    super(page, page.getByRole('dialog').filter({ hasText: filename }))
+    this.resolution = this.root.getByText('Resolution', { exact: true })
+    this.loadError = this.root.getByRole('alert')
   }
 
-  /** Waits for the file to decode: statistics only render after that. */
-  async expectLoaded() {
-    await expect(
-      this.root.getByText('Resolution', { exact: true })
-    ).toBeVisible()
-    await expect(this.root.getByRole('alert')).toBeHidden()
-    await expect(this.page.getByRole('dialog')).toHaveCount(1)
+  async expectDecoded() {
+    await expect(this.resolution).toBeVisible()
+    await expect(this.loadError).toBeHidden()
   }
 }

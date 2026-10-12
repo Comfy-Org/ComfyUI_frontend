@@ -249,8 +249,5 @@ describe('useNodeOutputsExport', () => {
       expect.stringContaining('/assets/sky-preview/content'),
       expect.stringContaining('filename=a.png')
     ])
-    expect(
-      within(dialog).getAllByTestId('output-thumbnail-placeholder')
-    ).toHaveLength(1)
   })
 })

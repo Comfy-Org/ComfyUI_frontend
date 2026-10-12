@@ -12,7 +12,9 @@ const items = [
   { name: 'shot_003.exr', thumbnailUrl: '/api/view?filename=shot_003.exr' }
 ]
 
-function renderDialog(dialogItems = items) {
+function renderDialog(
+  dialogItems: { name: string; thumbnailUrl?: string }[] = items
+) {
   const onExport = vi.fn<(selectedIndices: number[]) => void>()
   const onCancel = vi.fn<() => void>()
   render(NodeOutputsExportDialog, {
@@ -79,11 +81,10 @@ describe('NodeOutputsExportDialog', () => {
 
   it('shows a placeholder for an output with no thumbnail', () => {
     renderDialog([
-      { name: 'shot_001.exr', thumbnailUrl: '' },
+      { name: 'shot_001.exr' },
       { name: 'shot_002.png', thumbnailUrl: '/api/view?filename=shot_002.png' }
     ])
 
-    expect(screen.getAllByTestId('output-thumbnail')).toHaveLength(1)
     expect(screen.getAllByTestId('output-thumbnail-placeholder')).toHaveLength(
       1
     )

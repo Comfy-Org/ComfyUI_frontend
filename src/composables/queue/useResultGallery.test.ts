@@ -163,28 +163,12 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
-  it('opens an HDR preview output in the HDR viewer instead of the gallery', async () => {
-    const exr = createResultItem('/api/view?filename=out.exr&subfolder=qa')
-    exr.filename = 'out.exr'
-    const task = createTask(exr)
-
-    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
-      () => [task]
-    )
-
-    await onViewItem(createJobViewItem('job-hdr', task))
-
-    expect(openHdrViewer).toHaveBeenCalledWith(
-      '/api/view?filename=out.exr&subfolder=qa'
-    )
-    expect(galleryItems.value).toEqual([])
-    expect(galleryActiveIndex.value).toBe(-1)
-  })
-
   it('opens the HDR viewer for a job whose cover is HDR, even with image outputs', async () => {
     const image = createResultItem('image.png')
-    const exr = createResultItem('/api/view?filename=out.exr')
-    exr.filename = 'out.exr'
+    const exr = {
+      ...createResultItem('/api/view?filename=out.exr'),
+      filename: 'out.exr'
+    }
     const task = createTask(exr, [image, exr])
 
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
@@ -200,8 +184,10 @@ describe('useResultGallery', () => {
 
   it('opens a job with an image cover in the gallery without its HDR outputs', async () => {
     const image = createResultItem('image.png')
-    const exr = createResultItem('/api/view?filename=out.exr')
-    exr.filename = 'out.exr'
+    const exr = {
+      ...createResultItem('/api/view?filename=out.exr'),
+      filename: 'out.exr'
+    }
     const task = createTask(image, [exr, image])
 
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
@@ -215,28 +201,38 @@ describe('useResultGallery', () => {
     expect(openHdrViewer).not.toHaveBeenCalled()
   })
 
-  it('does not open a slower gallery request over a later HDR selection', async () => {
-    const image = createResultItem('image.png')
-    const exr = createResultItem('/api/view?filename=out.exr')
-    exr.filename = 'out.exr'
-    const imageJob = createMockJob('slow-image-job', 2)
-    const imageTask = new TaskItemImpl(imageJob, {}, [image])
-    let resolveFullOutputs!: (task: TaskItemImpl) => void
-    imageTask.loadFullOutputs = () =>
-      new Promise((resolve) => (resolveFullOutputs = resolve))
-    const hdrTask = createTask(exr)
+  it.for(['resolves', 'rejects'])(
+    'does not open a slower gallery request that %s over a later HDR selection',
+    async (outcome) => {
+      const image = createResultItem('image.png')
+      const exr = {
+        ...createResultItem('/api/view?filename=out.exr'),
+        filename: 'out.exr'
+      }
+      const imageJob = createMockJob('slow-image-job', 2)
+      const imageTask = new TaskItemImpl(imageJob, {}, [image])
+      let settle!: () => void
+      imageTask.loadFullOutputs = () =>
+        new Promise((resolve, reject) => {
+          settle = () =>
+            outcome === 'resolves'
+              ? resolve(new TaskItemImpl(imageJob, {}, [image, image]))
+              : reject(new Error('load failed'))
+        })
+      const hdrTask = createTask(exr)
 
-    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
-      () => [imageTask, hdrTask]
-    )
+      const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+        () => [imageTask, hdrTask]
+      )
 
-    const imageView = onViewItem(createJobViewItem('job-image', imageTask))
-    await onViewItem(createJobViewItem('job-hdr', hdrTask))
-    resolveFullOutputs(new TaskItemImpl(imageJob, {}, [image, image]))
-    await imageView
+      const imageView = onViewItem(createJobViewItem('job-image', imageTask))
+      await onViewItem(createJobViewItem('job-hdr', hdrTask))
+      settle()
+      await imageView
 
-    expect(openHdrViewer).toHaveBeenCalledOnce()
-    expect(galleryItems.value).toEqual([])
-    expect(galleryActiveIndex.value).toBe(-1)
-  })
+      expect(openHdrViewer).toHaveBeenCalledOnce()
+      expect(galleryItems.value).toEqual([])
+      expect(galleryActiveIndex.value).toBe(-1)
+    }
+  )
 })

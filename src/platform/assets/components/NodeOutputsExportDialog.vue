@@ -67,7 +67,7 @@ import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 
 interface ExportItem {
   name: string
-  thumbnailUrl: string
+  thumbnailUrl?: string
 }
 
 const { items, onExport, onCancel } = defineProps<{

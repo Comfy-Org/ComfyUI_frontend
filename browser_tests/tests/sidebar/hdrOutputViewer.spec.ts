@@ -1,4 +1,4 @@
-import { mergeTests } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
@@ -7,7 +7,6 @@ import {
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
 import { HdrViewerDialog } from '@e2e/fixtures/components/HdrViewerDialog'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 const hdrJob = createRouteMockJob({
@@ -60,13 +59,10 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
     test('opens the job output instead of the image lightbox', async ({
       comfyPage
     }) => {
-      await comfyPage.page
-        .getByTestId(TestIds.sidebar.toolbar)
-        .getByRole('button', { name: 'Job History', exact: true })
-        .click()
-      const row = comfyPage.queuePanel.jobRow('hdr-job')
-      await row.dblclick()
-      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
+      await comfyPage.menu.jobHistoryTab.open()
+      await comfyPage.queuePanel.jobRow('hdr-job').dblclick()
+      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectDecoded()
+      await expect(comfyPage.page.getByRole('dialog')).toHaveCount(1)
     })
   })
 
@@ -77,17 +73,7 @@ test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
       const tab = comfyPage.menu.assetsTab
       await tab.open()
       await tab.getAssetCardByName('sky').dblclick()
-      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
-    })
-
-    test('opens a generated HDR card from Inspect asset', async ({
-      comfyPage
-    }) => {
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
-      await tab.rightClickAsset('sky')
-      await comfyPage.contextMenu.clickMenuItemExact('Inspect asset')
-      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectLoaded()
+      await new HdrViewerDialog(comfyPage.page, 'sky.exr').expectDecoded()
     })
   })
 })

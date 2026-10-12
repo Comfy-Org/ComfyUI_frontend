@@ -84,7 +84,7 @@ describe('getAssetViewUrl', () => {
   it("builds the asset's own file URL from loader_path, not its preview URL", () => {
     const asset = createAsset({
       name: 'sky.exr',
-      tags: ['output'],
+      tags: ['hdr', 'output'],
       loader_path: 'renders/sky.exr',
       preview_url: '/api/assets/sky-preview/content'
     })
@@ -106,22 +106,14 @@ describe('getAssetViewUrl', () => {
     )
   })
 
-  it('falls back to getAssetUrl without a root tag', () => {
+  it.for([
+    { guard: 'a root tag', tags: [], loader_path: 'renders/sky.exr' },
+    { guard: 'a loader_path', tags: ['output'], loader_path: undefined }
+  ])('falls back to getAssetUrl without $guard', ({ tags, loader_path }) => {
     const asset = createAsset({
       name: 'sky.exr',
-      tags: [],
-      loader_path: 'renders/sky.exr',
-      preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
-    })
-
-    expect(getAssetViewUrl(asset)).toBe(
-      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
-    )
-  })
-
-  it('falls back to getAssetUrl without a loader_path', () => {
-    const asset = createAsset({
-      name: 'sky.exr',
+      tags,
+      loader_path,
       preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
     })
 

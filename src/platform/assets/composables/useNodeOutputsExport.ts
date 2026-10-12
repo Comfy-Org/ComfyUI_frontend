@@ -38,11 +38,11 @@ export function useNodeOutputsExport() {
     return getDownloadableOutputs(node).length > 1
   }
 
-  function thumbnailUrl(output: DownloadableOutput): string {
+  function thumbnailUrl(output: DownloadableOutput): string | undefined {
     if (!isHdrImageFilename(output.filename)) {
       return getGridThumbnailUrl(outputFileUrl(output))
     }
-    return output.preview_id ? hdrPreviewAssetUrl(output.preview_id) : ''
+    return output.preview_id ? hdrPreviewAssetUrl(output.preview_id) : undefined
   }
 
   function closeExportDialog() {

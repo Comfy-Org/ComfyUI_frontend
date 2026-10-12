@@ -55,7 +55,6 @@ export async function extractFilesFromDragEvent(
 ): Promise<File[]> {
   if (!event.dataTransfer) return []
 
-  // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
   const files = Array.from(event.dataTransfer.files)
     .filter((file) => file.type !== 'image/bmp')
     .map(withHdrImageType)
@@ -69,7 +68,6 @@ export async function extractFilesFromDragEvent(
   return file ? [file] : []
 }
 
-/** Some platforms give .exr/.hdr files an empty type; type them by extension. */
 export function withHdrImageType(file: File): File {
   if (file.type || !isHdrImageFilename(file.name)) return file
   const type = file.name.toLowerCase().endsWith('.hdr')
