@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
 import { useEventListener, useMediaControls } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchListItem } from './types'
@@ -15,7 +15,15 @@ const { locale = 'en', item } = defineProps<{
 const { t } = translationsFor(locale)
 
 const audioEl = useTemplateRef<HTMLAudioElement>('audioEl')
-const { playing, duration } = useMediaControls(audioEl)
+const { playing } = useMediaControls(audioEl)
+
+const clipSeconds = shallowRef(0)
+function readClipSeconds() {
+  const seconds = audioEl.value?.duration ?? 0
+  clipSeconds.value = Number.isFinite(seconds) ? seconds : 0
+}
+onMounted(readClipSeconds)
+useEventListener(audioEl, 'durationchange', readClipSeconds)
 
 useEventListener(audioEl, 'play', () => {
   for (const el of document.querySelectorAll('audio')) {
@@ -26,8 +34,8 @@ useEventListener(audioEl, 'play', () => {
 const title = computed(() => item.title[locale] || item.title.en)
 
 const durationLabel = computed(() => {
-  if (!duration.value) return ''
-  const secs = Math.floor(duration.value)
+  if (!clipSeconds.value) return ''
+  const secs = Math.floor(clipSeconds.value)
   const m = String(Math.floor(secs / 60)).padStart(2, '0')
   const s = String(secs % 60).padStart(2, '0')
   return `${m}:${s}`
