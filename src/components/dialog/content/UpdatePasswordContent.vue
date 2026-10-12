@@ -13,7 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
@@ -21,6 +20,7 @@ import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vu
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authActions = useAuthActions()
 const loading = ref(false)

@@ -1,6 +1,7 @@
 import { computed, ref, toRaw, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   createSceneHoverHandlers,
   useViewportNodeWiring
@@ -24,7 +25,6 @@ import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const EDITOR_WIDGET_NAME = 'editor_state'
 
@@ -71,9 +71,7 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
         surface: 'graph'
       })
       cleanup()
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeLightInfoViewer')
-      )
+      useToast().warning(t('toastMessages.failedToInitializeLightInfoViewer'))
     }
   }
 

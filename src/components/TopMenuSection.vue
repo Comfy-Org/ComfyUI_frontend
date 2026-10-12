@@ -73,7 +73,8 @@
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
-                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                :tooltip="t('menu.manageExtensions')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('menu.manageExtensions')"
@@ -87,7 +88,8 @@
               </Button>
               <Button
                 v-if="isCloud"
-                v-tooltip.bottom="shareTooltipConfig"
+                :tooltip="t('actionbar.shareTooltip')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
@@ -98,7 +100,8 @@
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
-                  v-tooltip.bottom="rightSidePanelTooltipConfig"
+                  :tooltip="t('rightSidePanel.togglePanel')"
+                  tooltip-side="bottom"
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
@@ -182,7 +185,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -275,12 +277,6 @@ const inlineProgressSummaryTarget = computed(() => {
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
 )
-const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.manageExtensions'))
-)
-const shareTooltipConfig = computed(() =>
-  buildTooltipConfig(t('actionbar.shareTooltip'))
-)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -302,9 +298,6 @@ const showErrorIndicatorOnPanelButton = computed(
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
-const rightSidePanelTooltipConfig = computed(() =>
-  buildTooltipConfig(t('rightSidePanel.togglePanel'))
-)
 
 function openRightSidePanel() {
   useTelemetry()?.trackUiButtonClicked({

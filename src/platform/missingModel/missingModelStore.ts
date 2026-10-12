@@ -4,9 +4,9 @@ import { computed, ref } from 'vue'
 import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -80,7 +80,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   )
 
   const activeMissingModelGraphIds = computed<Set<string>>(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return new Set()
     return getActiveGraphNodeIds(
       rootGraph,
@@ -282,7 +282,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({
+      await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })
@@ -290,10 +290,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       if (isAbortError(error)) return
 
       console.error('Failed to refresh missing models:', error)
-      useToastStore().add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('rightSidePanel.missingModels.refreshFailed')
+      useToast().error(t('g.error'), {
+        description: t('rightSidePanel.missingModels.refreshFailed')
       })
     } finally {
       isRefreshingMissingModels.value = false

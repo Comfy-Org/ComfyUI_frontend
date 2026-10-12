@@ -229,7 +229,7 @@ describe('WidgetActions', () => {
       source: 'right_side_panel'
     })
     expect(
-      vi.mocked(useFavoritedWidgetsStore().toggleFavorite)
+      useFavoritedWidgetsStore().toggleFavorite
     ).toHaveBeenCalledExactlyOnceWith(node, 'test_widget')
   })
 
@@ -304,8 +304,9 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('menuitem', { name: /Favorite/ }))
 
-    expect(
-      vi.mocked(useFavoritedWidgetsStore().toggleFavorite)
-    ).toHaveBeenCalledWith(node, 'test_widget')
+    expect(useFavoritedWidgetsStore().toggleFavorite).toHaveBeenCalledWith(
+      node,
+      'test_widget'
+    )
   })
 })
