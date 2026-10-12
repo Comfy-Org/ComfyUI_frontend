@@ -171,6 +171,23 @@ describe('useBoundingBoxesSources', () => {
       expect(backgroundUrl.value).toBe(saved)
     })
 
+    it('signals new background outputs only for its own source', () => {
+      const { target, image } = buildGraph()
+      image.connect(0, target, 0)
+      const { backgroundOutputs } = useBoundingBoxesSources(
+        computed(() => target)
+      )
+      const before = backgroundOutputs.value
+
+      useNodeOutputStore().nodeOutputs['unrelated'] = { images: [] }
+      expect(backgroundOutputs.value).toBe(before)
+
+      useNodeOutputStore().nodeOutputs[String(image.id)] = {
+        images: [{ filename: 'bg.png', type: 'input' }]
+      }
+      expect(backgroundOutputs.value).not.toBe(before)
+    })
+
     it('keeps the same URL when an unrelated link changes', () => {
       const { graph, target, image, boxes } = buildGraph()
       image.connect(0, target, 0)

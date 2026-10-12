@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -10,6 +10,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -327,6 +328,29 @@ describe('usePainter', () => {
 
       expect(painter.isImageInputConnected.value).toBe(true)
     })
+  })
+
+  describe('input image retry', () => {
+    it.for([
+      { failed: true, retryKey: 1 },
+      { failed: false, retryKey: 0 }
+    ])(
+      'remounts the input image on new input outputs only after a failed load (failed: $failed)',
+      async ({ failed, retryKey }) => {
+        const inputOutputs = shallowRef({})
+        mockGetInputNode.mockImplementation(fromAny(() => ({})))
+        vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockImplementation(
+          () => inputOutputs.value
+        )
+        const { painter } = mountPainter()
+        if (failed) painter.onInputImageError()
+
+        inputOutputs.value = {}
+        await nextTick()
+
+        expect(painter.inputImageRetryKey.value).toBe(retryKey)
+      }
+    )
   })
 
   describe('handleInputImageLoad', () => {

@@ -131,6 +131,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -155,7 +156,7 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
-const videoError = ref(false)
+const { failed: videoError } = useLoadRetry(() => props.imageUrls)
 const showLoader = ref(false)
 
 const videoWrapperEl = ref<HTMLDivElement>()
@@ -174,7 +175,7 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => url !== oldUrls[i])
 
-    if (!urlsChanged && !videoError.value) return
+    if (!urlsChanged) return
 
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {

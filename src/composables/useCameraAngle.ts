@@ -31,6 +31,7 @@ import type { NodeWithWidgets } from '@/extensions/core/cameraAngle/widgetBridge
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const IMAGE_INPUT_NAME = 'image'
@@ -130,13 +131,18 @@ export function useCameraAngle(
     return nodeOutputStore.getNodeImageUrls(inputNode)?.[0] ?? null
   }
 
+  const subjectLoad = useLoadRetry()
+
   function syncSubjectImage(): void {
     const raw = rawNode()
     if (!raw || !viewport) return
     const url = subjectImageUrl(raw as LGraphNode)
-    if (url === lastImageUrl) return
+    if (url === lastImageUrl && !subjectLoad.failed.value) return
     lastImageUrl = url
-    void viewport.setImage(url)
+    subjectLoad.onLoad()
+    void viewport.setImage(url).then((applied) => {
+      if (!applied) subjectLoad.onError()
+    })
   }
 
   watch(() => nodeOutputStore.nodeOutputs, syncSubjectImage, { deep: true })

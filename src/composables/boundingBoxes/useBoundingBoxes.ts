@@ -18,8 +18,8 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { app } from '@/scripts/app'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
@@ -641,8 +641,12 @@ export function useBoundingBoxes(
     requestDraw()
   })
 
-  const { backgroundConnected, backgroundUrl, incomingBoxes } =
-    useBoundingBoxesSources(litegraphNode)
+  const {
+    backgroundConnected,
+    backgroundUrl,
+    backgroundOutputs,
+    incomingBoxes
+  } = useBoundingBoxesSources(litegraphNode)
 
   watch(
     [litegraphNode, backgroundConnected],
@@ -675,19 +679,11 @@ export function useBoundingBoxes(
   }
 
   const backgroundLoading = ref(false)
-  const backgroundRetry = ref(0)
-  let backgroundFailed = false
-  watch(
-    () => useNodeOutputStore().nodeOutputs,
-    () => {
-      if (backgroundFailed) backgroundRetry.value++
-    },
-    { deep: true }
-  )
+  const { retryKey: backgroundRetry, onError: onBackgroundError } =
+    useLoadRetry(backgroundOutputs)
   watch(
     [backgroundUrl, backgroundRetry],
     ([url], _, onCleanup) => {
-      backgroundFailed = false
       backgroundLoading.value = !!url
       if (!url) {
         bgImage.value = null
@@ -710,7 +706,7 @@ export function useBoundingBoxes(
       img.onerror = () => {
         if (stale) return
         backgroundLoading.value = false
-        backgroundFailed = true
+        onBackgroundError()
       }
       img.src = url
     },

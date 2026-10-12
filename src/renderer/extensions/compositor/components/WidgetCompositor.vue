@@ -7,11 +7,13 @@
     >
       <img
         v-if="previewUrl"
+        :key="previewRetryKey"
         :src="previewUrl"
         class="max-h-full max-w-full object-contain"
         draggable="false"
         data-testid="compositor-preview"
         @load="onPreviewLoad"
+        @error="onPreviewError"
         @dragstart.prevent
       />
       <span
@@ -65,6 +67,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import Button from '@/components/ui/button/Button.vue'
 import { useCompositorEditor } from '@/renderer/extensions/compositor/composables/useCompositorEditor'
 import {
@@ -108,6 +111,11 @@ watch(() => nodeOutputStore.nodeOutputs, updateOutputUrl, {
   immediate: true
 })
 watch(() => nodeOutputStore.nodePreviewImages, updateOutputUrl, { deep: true })
+
+const { retryKey: previewRetryKey, onError: onPreviewError } = useLoadRetry(
+  () =>
+    litegraphNode.value && nodeOutputStore.getNodeOutputs(litegraphNode.value)
+)
 
 const previewUrl = computed(() => {
   const node = litegraphNode.value

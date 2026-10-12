@@ -28,7 +28,7 @@ const { ViewportMock, instances } = vi.hoisted(() => {
       applyState: vi.fn(),
       setViewMode: vi.fn(),
       setPreviewVisible: vi.fn(),
-      setImage: vi.fn(() => Promise.resolve()),
+      setImage: vi.fn(() => Promise.resolve(true)),
       remove: vi.fn(),
       viewport: {
         updateStatusMouseOnScene: vi.fn(),
@@ -259,6 +259,30 @@ describe('useCameraAngle', () => {
 
     expect(instances[0].setImage).toHaveBeenLastCalledWith(null)
   })
+
+  it.for([
+    { loaded: false, calls: 3 },
+    { loaded: true, calls: 2 }
+  ])(
+    'reloads an unchanged subject image only after a failed load (loaded: $loaded)',
+    async ({ loaded, calls }) => {
+      const node = makeNode(DEFAULT_WIDGETS)
+      node.imageSource = makeNode({})
+      const urls = vi
+        .spyOn(useNodeOutputStore(), 'getNodeImageUrls')
+        .mockReturnValue(['http://example/first.png'])
+      const camera = useCameraAngle(nodeRef(node))
+      camera.initialize(document.createElement('div'))
+      instances[0].setImage.mockResolvedValue(loaded)
+      urls.mockReturnValue(['http://example/second.png'])
+      node.onConnectionsChange?.()
+      await Promise.resolve()
+
+      node.onConnectionsChange?.()
+
+      expect(instances[0].setImage).toHaveBeenCalledTimes(calls)
+    }
+  )
 
   it('routes node hover into the viewport status flags', () => {
     const node = makeNode(DEFAULT_WIDGETS)

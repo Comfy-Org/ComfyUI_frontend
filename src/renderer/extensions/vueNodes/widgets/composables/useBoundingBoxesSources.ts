@@ -18,6 +18,7 @@ export function useBoundingBoxesSources(
 ): {
   backgroundConnected: ComputedRef<boolean>
   backgroundUrl: ComputedRef<string | undefined>
+  backgroundOutputs: ComputedRef<unknown>
   incomingBoxes: ComputedRef<BoundingBoxInput[] | undefined>
 } {
   const nodeOutputStore = useNodeOutputStore()
@@ -83,5 +84,16 @@ export function useBoundingBoxesSources(
       : undefined
   })
 
-  return { backgroundConnected, backgroundUrl, incomingBoxes }
+  const backgroundOutputs = computed(() => [
+    backgroundSource.value &&
+      nodeOutputStore.getNodeOutputs(backgroundSource.value),
+    savedBackground.value
+  ])
+
+  return {
+    backgroundConnected,
+    backgroundUrl,
+    backgroundOutputs,
+    incomingBoxes
+  }
 }

@@ -169,9 +169,10 @@ export class CameraAngleViewport {
     return this.previewVisible
   }
 
-  async setImage(url: string | null): Promise<void> {
+  async setImage(url: string | null): Promise<boolean> {
     const applied = await this.subject.setImage(url)
     if (applied && !this.removed) this.viewport.forceRender()
+    return applied
   }
 
   remove(): void {

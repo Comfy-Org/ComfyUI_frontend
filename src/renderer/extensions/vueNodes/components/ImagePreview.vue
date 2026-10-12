@@ -246,6 +246,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -292,7 +293,7 @@ const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
+const { failed: imageError, retryKey } = useLoadRetry(() => imageUrls)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 
@@ -304,6 +305,7 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   // Make sure it doesnt run on component mount
   { immediate: false }
 )
+watch(retryKey, () => startDelayedLoader())
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const isHdrPlaceholder = (url: string | undefined) =>
@@ -341,12 +343,7 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => url !== oldUrls[i])
 
-    if (!urlsChanged) {
-      if (!imageError.value) return
-      imageError.value = false
-      startDelayedLoader()
-      return
-    }
+    if (!urlsChanged) return
 
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {

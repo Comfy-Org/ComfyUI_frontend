@@ -6,18 +6,16 @@ import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
 const incomingBoxes = shallowRef<BoundingBox[] | undefined>()
 const backgroundUrl = shallowRef<string | undefined>()
 const backgroundConnected = shallowRef(false)
+const backgroundOutputs = shallowRef<unknown>()
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: { graph: { getNodeById: () => appState.node } },
-    nodeOutputs: {},
-    nodePreviewImages: {}
+    canvas: { graph: { getNodeById: () => appState.node } }
   }
 }))
 
@@ -27,7 +25,8 @@ vi.mock(
     useBoundingBoxesSources: () => ({
       incomingBoxes: computed(() => incomingBoxes.value),
       backgroundUrl: computed(() => backgroundUrl.value),
-      backgroundConnected: computed(() => backgroundConnected.value)
+      backgroundConnected: computed(() => backgroundConnected.value),
+      backgroundOutputs: computed(() => backgroundOutputs.value)
     })
   })
 )
@@ -419,7 +418,7 @@ describe('useBoundingBoxes background image', () => {
     FakeImage.created[0].onerror?.()
     await flush()
 
-    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    backgroundOutputs.value = { images: [] }
     await flush()
 
     expect(FakeImage.created.map((img) => img.src)).toEqual([
@@ -439,7 +438,7 @@ describe('useBoundingBoxes background image', () => {
     old.onerror?.()
     await flush()
 
-    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    backgroundOutputs.value = { images: [] }
     await flush()
 
     expect(FakeImage.created).toHaveLength(2)
@@ -452,7 +451,7 @@ describe('useBoundingBoxes background image', () => {
     FakeImage.created[0].load(512, 512)
     await flush()
 
-    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    backgroundOutputs.value = { images: [] }
     await flush()
 
     expect(FakeImage.created).toHaveLength(1)
