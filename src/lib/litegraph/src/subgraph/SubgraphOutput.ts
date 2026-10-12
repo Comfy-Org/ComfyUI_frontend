@@ -73,15 +73,15 @@ export class SubgraphOutput extends SubgraphSlot {
     const targetSlot = this.parent.slots.indexOf(this)
     if (targetSlot === -1) return
     const existingLink = this.findExistingLink(targetSlot)
-    const mirrorNeedsRepair = this.mirrorNeedsRepair(existingLink)
-    const changeStarted = existingLink != null || mirrorNeedsRepair
+    const repairMirror = this.mirrorNeedsRepair(existingLink)
+    const changeStarted = existingLink != null || repairMirror
     if (changeStarted) {
       subgraph.beforeChange()
     }
 
     // Serialized slots may retain duplicate, dangling, or unrelated ids.
     // Repair the mirror only after the hook approves and inside the change.
-    if (mirrorNeedsRepair) {
+    if (repairMirror) {
       this.linkIds.splice(0, this.linkIds.length)
       if (existingLink) this.linkIds.push(existingLink.id)
     }

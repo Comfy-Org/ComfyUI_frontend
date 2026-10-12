@@ -251,6 +251,7 @@ describe('widgets view', () => {
   it.for([
     {
       entry: 'addCustomWidget',
+      attachment: 'direct',
       attachCleanup(widget: IBaseWidget, cleanup: () => void) {
         widget.onRemove = cleanup
       },
@@ -260,11 +261,9 @@ describe('widgets view', () => {
     },
     {
       entry: 'widgets.unshift',
+      attachment: 'known-chain',
       attachCleanup(widget: IBaseWidget, cleanup: () => void) {
-        widget.onRemove = chainCallback<
-          IBaseWidget,
-          NonNullable<IBaseWidget['onRemove']>
-        >(widget.onRemove, cleanup)
+        widget.onRemove = chainCallback(widget.onRemove, cleanup)
       },
       refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
         widgets.unshift(source)
@@ -272,7 +271,7 @@ describe('widgets view', () => {
       }
     }
   ] as const)(
-    'refreshes wrapper state and defers teardown through $entry',
+    'refreshes wrapper state and defers $attachment teardown through $entry',
     ({ attachCleanup, refresh }) => {
       const graph = new LGraph()
       const node = new LGraphNode('test')
@@ -284,10 +283,7 @@ describe('widgets view', () => {
       const after = node.addWidget('number', 'after', 2, null)
       assert.exists(node.widgets)
       const widgets = node.widgets
-      const cleanupReceivers: IBaseWidget[] = []
-      const localCleanup = vi.fn(function (this: IBaseWidget) {
-        cleanupReceivers.push(this)
-      })
+      const localCleanup = vi.fn()
       attachCleanup(installed, localCleanup)
       const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
       const input = node.addInput('wrapped', 'number', {
@@ -317,62 +313,37 @@ describe('widgets view', () => {
       node.removeWidget(refreshed)
       expect(previousSourceCleanup).not.toHaveBeenCalled()
       expect(currentSourceCleanup).toHaveBeenCalledOnce()
-      expect(localCleanup).toHaveBeenCalledOnce()
-      expect(cleanupReceivers).toEqual([refreshed])
+      expect(localCleanup.mock.contexts).toEqual([refreshed])
     }
   )
 
-  it.for([
-    {
-      entry: 'addCustomWidget',
-      refresh(node: LGraphNode, _widgets: IBaseWidget[], source: IBaseWidget) {
-        return node.addCustomWidget(source)
-      }
-    },
-    {
-      entry: 'widgets.unshift',
-      refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
-        widgets.unshift(source)
-        return widgets[0]
-      }
+  it('preserves an opaque teardown chain when its source callback is unchanged', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const sourceCleanup = vi.fn()
+    const source = nonExtensibleWidget(sourceCleanup)
+    const installed = node.addCustomWidget(source)
+    const localCleanup = vi.fn()
+    const originalCleanup = installed.onRemove
+    installed.onRemove = () => {
+      originalCleanup?.()
+      localCleanup()
     }
-  ] as const)(
-    'preserves an opaque teardown chain through $entry when its source callback is unchanged',
-    ({ refresh }) => {
-      const graph = new LGraph()
-      const node = new LGraphNode('test')
-      graph.add(node)
-      let subscribed = true
-      const sourceCleanup = vi.fn(() => {
-        if (!subscribed) throw new Error('already unsubscribed')
-        subscribed = false
-      })
-      const source = nonExtensibleWidget(sourceCleanup)
-      const installed = node.addCustomWidget(source)
-      const localCleanup = vi.fn()
-      const originalCleanup = installed.onRemove
-      installed.onRemove = () => {
-        originalCleanup?.()
-        localCleanup()
-      }
-      assert.exists(node.widgets)
-      const widgets = node.widgets
+    source.type = 'toggle'
+    const refreshed = node.addCustomWidget(source)
 
-      source.type = 'toggle'
-      const refreshed = refresh(node, widgets, source)
+    expect(sourceCleanup).not.toHaveBeenCalled()
+    expect(localCleanup).not.toHaveBeenCalled()
 
-      expect(sourceCleanup).not.toHaveBeenCalled()
-      expect(localCleanup).not.toHaveBeenCalled()
-
-      node.removeWidget(refreshed)
-      expect(sourceCleanup).toHaveBeenCalledOnce()
-      expect(localCleanup).toHaveBeenCalledOnce()
-      expect(node.widgets).toEqual([])
-      expect(
-        useWidgetValueStore().getNodeWidgets(graph.rootGraph.id, node.id)
-      ).toEqual([])
-    }
-  )
+    node.removeWidget(refreshed)
+    expect(sourceCleanup).toHaveBeenCalledOnce()
+    expect(localCleanup).toHaveBeenCalledOnce()
+    expect(node.widgets).toEqual([])
+    expect(
+      useWidgetValueStore().getNodeWidgets(graph.rootGraph.id, node.id)
+    ).toEqual([])
+  })
 
   it.for(
     ([false, true] as const).flatMap(

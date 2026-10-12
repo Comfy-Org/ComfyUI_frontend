@@ -1,34 +1,21 @@
-export type ChainedCallback<O, T> =
-  NonNullable<T> extends (this: O, ...args: infer P) => unknown
-    ? (this: O, ...args: P) => void
-    : never
-
 interface CallbackChain {
   originalCallback: Callable | undefined
   callbacks: readonly Callable[]
 }
 
-export type Callable = (...args: never[]) => unknown
-type CallbackSignature<T extends Callable> = T extends (
-  this: infer O,
-  ...args: infer P
-) => infer R
-  ? (this: O, ...args: P) => R
-  : never
+type Callable = (...args: never[]) => unknown
+type CleanupCallback = () => void
 
 const callbackChains = new WeakMap<Callable, CallbackChain>()
 
-function chainCallbacks(
-  originalCallback: Callable | undefined,
-  callbacks: readonly Callable[]
-): Callable {
-  const chained = function (this: unknown, ...args: never[]) {
-    let result: unknown
-    if (originalCallback) {
-      result = Reflect.apply(originalCallback, this, args)
-    }
+export function chainCallback<O, Args extends unknown[], Result = void>(
+  originalCallback: ((this: O, ...args: Args) => Result) | undefined,
+  ...callbacks: ((this: O, ...args: Args) => void)[]
+) {
+  function chained(this: O, ...args: Args) {
+    const result = originalCallback?.apply(this, args)
     for (const callback of callbacks) {
-      Reflect.apply(callback, this, args)
+      callback.apply(this, args)
     }
     return result
   }
@@ -37,47 +24,23 @@ function chainCallbacks(
   return chained
 }
 
-export function chainCallback<O, T extends Callable>(
-  originalCallback: T | undefined,
-  ...callbacks: ChainedCallback<O, T>[]
-) {
-  type Args = NonNullable<T> extends (...args: infer P) => unknown ? P : never
-  type Ret = NonNullable<T> extends (...args: unknown[]) => infer R ? R : never
-
-  return chainCallbacks(originalCallback, callbacks) as (
-    this: O,
-    ...args: Args
-  ) => Ret
-}
-
-export function rebaseChainCallback<T extends Callable>(
-  currentCallback: T | undefined,
-  previousOriginal: T | undefined,
-  nextOriginal: T | undefined
-): CallbackSignature<T> | undefined
 export function rebaseChainCallback(
-  currentCallback: Callable | undefined,
-  previousOriginal: Callable | undefined,
-  nextOriginal: Callable | undefined
-): Callable | undefined {
+  currentCallback: CleanupCallback | undefined,
+  previousOriginal: CleanupCallback | undefined,
+  nextOriginal: CleanupCallback | undefined
+): CleanupCallback | undefined {
   if (previousOriginal === nextOriginal) return currentCallback
   if (!currentCallback) return nextOriginal
 
   const appendedCallbacks: Callable[] = []
-  let original: Callable | undefined = currentCallback
-  while (original !== previousOriginal) {
-    if (!original) break
-    const chain = callbackChains.get(original)
+  let link: Callable | undefined = currentCallback
+  while (link !== previousOriginal) {
+    const chain: CallbackChain | undefined = link && callbackChains.get(link)
     if (!chain) {
-      return chainCallbacks(nextOriginal, [currentCallback])
+      return chainCallback(nextOriginal, currentCallback)
     }
     appendedCallbacks.unshift(...chain.callbacks)
-    original = chain.originalCallback
+    link = chain.originalCallback
   }
-
-  if (original === previousOriginal) {
-    return chainCallbacks(nextOriginal, appendedCallbacks)
-  }
-
-  return chainCallbacks(nextOriginal, [currentCallback])
+  return chainCallback(nextOriginal, ...appendedCallbacks)
 }

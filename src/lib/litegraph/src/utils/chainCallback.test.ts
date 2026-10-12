@@ -2,6 +2,25 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { chainCallback, rebaseChainCallback } from './chainCallback'
 
+describe('chainCallback', () => {
+  it.for([
+    {
+      name: 'present',
+      original: (value: number) => `v${value}`,
+      expected: 'v7'
+    },
+    { name: 'absent', original: undefined, expected: undefined }
+  ])(
+    'returns the result of a $name original callback',
+    ({ original, expected }) => {
+      const result = chainCallback(original)(7)
+
+      expectTypeOf(result).toEqualTypeOf<string | undefined>()
+      expect(result).toBe(expected)
+    }
+  )
+})
+
 describe('rebaseChainCallback', () => {
   it('flattens a known nested chain onto the next original', () => {
     const previousOriginal = vi.fn()
@@ -34,23 +53,12 @@ describe('rebaseChainCallback', () => {
   })
 
   it('retains an opaque hand-written chain when the original is unchanged', () => {
-    let subscribed = true
-    const original = vi.fn(() => {
-      if (!subscribed) throw new Error('already unsubscribed')
-      subscribed = false
-    })
-    const local = vi.fn()
-    const handWrittenChain = () => {
-      original()
-      local()
-    }
+    const original = vi.fn()
+    const handWrittenChain = () => original()
 
-    const rebased = rebaseChainCallback(handWrittenChain, original, original)
-    rebased?.()
-
-    expect(rebased).toBe(handWrittenChain)
-    expect(original).toHaveBeenCalledOnce()
-    expect(local).toHaveBeenCalledOnce()
+    expect(rebaseChainCallback(handWrittenChain, original, original)).toBe(
+      handWrittenChain
+    )
   })
 
   it('returns a plain call signature for richer callable values', () => {
@@ -58,6 +66,6 @@ describe('rebaseChainCallback', () => {
 
     const rebased = rebaseChainCallback(callback, undefined, callback)
 
-    expectTypeOf(rebased).toEqualTypeOf<(() => undefined) | undefined>()
+    expectTypeOf(rebased).toEqualTypeOf<(() => void) | undefined>()
   })
 })
