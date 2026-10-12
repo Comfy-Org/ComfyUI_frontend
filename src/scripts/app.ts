@@ -2766,12 +2766,9 @@ export class ComfyApp implements IComfyApp {
 
     useDomWidgetStore().clear()
 
-    // Subgraph does not properly implement `clear` and the parent class's
-    // (`LGraph`) `clear` breaks the subgraph structure.
     if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
-      // Clear Workflow rotates the active document's root graph id in place.
       useDocumentLifecycleStore().rebindActiveRootGraph(
         toRootGraphId(this.rootGraph.id)
       )

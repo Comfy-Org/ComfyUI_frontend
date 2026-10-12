@@ -267,9 +267,6 @@ export function createMockLoadedWorkflow(
 ): LoadedComfyWorkflow {
   return fromPartial<LoadedComfyWorkflow>({
     changeTracker: createMockChangeTracker(),
-    // `ComfyWorkflow` mints this in its field initializer, so every real
-    // workflow has one. Anything keyed by session identity (the document
-    // lifecycle binding) collapses two mocks into one document without it.
     instanceId: generateUUID(),
     ...overrides
   })

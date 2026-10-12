@@ -14,18 +14,10 @@ import {
 
 interface TestDocument {
   readonly uid: DocumentUid
-  /** Move the active pointer to this document, as a tab activation does. */
   present(): void
 }
 
 describe('useDocumentLifecycleStore', () => {
-  /**
-   * A document that exists but is not yet on the canvas, so a test can name its
-   * uid before presenting it. The store reads only `instanceId` off the active
-   * pointer, so the workflow needs no loaded content — hence the single
-   * assertion rather than a change tracker (`docs/guidance/typescript.md`
-   * forbids a double assertion to make invalid test data compile).
-   */
   function openDocument(path: string): TestDocument {
     const workflow = new ComfyWorkflow({ path, modified: 0, size: 0 })
     return {
@@ -36,11 +28,6 @@ describe('useDocumentLifecycleStore', () => {
     }
   }
 
-  /**
-   * Publish the root graph a completed load for the presented document would.
-   * `activate` requires a live token, so open a transition naming the document
-   * already on the pointer — a same-document load, which keeps the binding.
-   */
   function publish(rootGraphId: RootGraphId): void {
     const store = useDocumentLifecycleStore()
     const active = useWorkflowStore().activeWorkflow
@@ -66,8 +53,6 @@ describe('useDocumentLifecycleStore', () => {
     publish(toRootGraphId('graph-a'))
 
     const transition = store.beginTransition(b.uid)
-    // `activateLoadedWorkflow` moves the pointer before `afterLoadNewGraph`
-    // publishes, which is the order this mirrors.
     b.present()
     store.activate(toRootGraphId('graph-b'), transition)
 
@@ -80,12 +65,6 @@ describe('useDocumentLifecycleStore', () => {
     a.present()
     publish(toRootGraphId('graph-a'))
 
-    // A pointer move with no graph load. In the app the pointer moves only
-    // inside `activateLoadedWorkflow`; the e2e helper `openPersistedWorkflow`
-    // moves it directly. Identity follows the pointer, so B now reads the stored
-    // id. A uid snapshotted at load completion would still name A and silence
-    // the follower
-    // (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`).
     b.present()
 
     expect(store.activeRootGraphId(b.uid)).toBe(toRootGraphId('graph-a'))
@@ -98,8 +77,6 @@ describe('useDocumentLifecycleStore', () => {
     publish(toRootGraphId('graph-a'))
 
     const transition = store.beginTransition(a.uid)
-    // The retract is skipped, so nothing else proves the reload was observed:
-    // `configure` adopts a fresh root graph id for the same document.
     expect(store.isActive(a.uid)).toBe(true)
     store.activate(toRootGraphId('graph-a-reloaded'), transition)
 
@@ -133,10 +110,6 @@ describe('useDocumentLifecycleStore', () => {
 
   it('reports nothing active for a workflow carrying no session uid', () => {
     const store = useDocumentLifecycleStore()
-    // Published with nothing on the pointer, so the presented uid reads
-    // `undefined` as well: without the explicit guard, `presentedUid() === uid`
-    // matches two absent sides and hands out the live root graph, failing open
-    // into the agent's cross-graph guard.
     publish(toRootGraphId('graph-a'))
 
     expect(store.isActive(undefined)).toBe(false)
@@ -174,11 +147,6 @@ describe('useDocumentLifecycleStore', () => {
     a.present()
     publish(toRootGraphId('graph-a'))
 
-    // An undo of A reloads A, so it keeps the binding; a switch to B starts
-    // before the undo finishes and publishes first. The undo then resumes and
-    // runs `clean()` + `configure()` on the shared graph, so B's published id
-    // no longer names what is on the canvas — and the undo cannot publish its
-    // own, because it is no longer the latest load. Neither id is true.
     const undoOfA = store.beginTransition(a.uid)
     const switchToB = store.beginTransition(b.uid)
     b.present()
@@ -199,8 +167,6 @@ describe('useDocumentLifecycleStore', () => {
     b.present()
     store.activate(toRootGraphId('graph-b'), switchToB)
 
-    // Same reasoning as the publish case: the failing load cleared the shared
-    // graph, so B's published id is no longer known to name the canvas.
     store.invalidate()
 
     expect(store.isActive(b.uid)).toBe(false)

@@ -267,12 +267,6 @@ function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
   return workflow as LoadedComfyWorkflow
 }
 
-/**
- * Seed the binding a completed load for the presented document would publish.
- * `activate` requires the token of a live transition, so open one for the
- * document already on the pointer — which keeps the binding rather than
- * retracting it, exactly as a same-document load does.
- */
 function publishActiveBinding(rootGraphId: RootGraphId): void {
   const lifecycle = useDocumentLifecycleStore()
   const active = useWorkflowStore().activeWorkflow
@@ -563,12 +557,6 @@ describe('ComfyApp', () => {
       )
     })
 
-    /**
-     * Samples the lifecycle store at `hook`, which `loadGraphData` invokes
-     * while the outgoing graph is already off the canvas and the incoming one
-     * is not yet published. A consumer reading the store there is the only way
-     * to tell a retained binding from a retracted-and-republished one.
-     */
     function sampleLifecycleAt(
       hook: string,
       read: () => unknown
@@ -641,8 +629,6 @@ describe('ComfyApp', () => {
 
       await app.loadGraphData(createWorkflowGraphData(), true, false, workflow)
 
-      // Never dropped: a sidecar keyed on this binding must not see the undo as
-      // the document leaving and coming back.
       expect(midLoad.value).toBe(true)
       expect(lifecycle.activeRootGraphId(uid)).toBe(toRootGraphId(graph.id))
     })
@@ -668,8 +654,6 @@ describe('ComfyApp', () => {
         lifecycle.isActive(uid)
       )
 
-      // `activateLoadedWorkflow` creates a fresh temporary document for this,
-      // so the outgoing binding has to go before the graph is cleared.
       await app.loadGraphData(
         {
           ...createWorkflowGraphData(),
@@ -712,10 +696,6 @@ describe('ComfyApp', () => {
         lifecycle.isActive(uid)
       )
 
-      // The string branch of the identity resolution, which callers that name
-      // an open tab by path take. `'reloaded'` has to be expanded back to
-      // `workflows/reloaded.json` before the id check can see that this is the
-      // document already on the canvas.
       await app.loadGraphData(
         { ...createWorkflowGraphData(), id: documentId },
         true,
@@ -723,9 +703,6 @@ describe('ComfyApp', () => {
         'reloaded'
       )
 
-      // Retracting here would be a false retract/publish pair for a document
-      // that never left the canvas, which stops the agent's follower and
-      // minters mid-reload.
       expect(midLoad.value).toBe(true)
       expect(lifecycle.isActive(uid)).toBe(true)
     })
@@ -779,8 +756,6 @@ describe('ComfyApp', () => {
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('survivor-root'))
-      // A `beforeConfigureGraph` extension hook throwing: inside the try, but
-      // before `configure`, and with `clean: false` nothing cleared the graph.
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (name: string) => {
           if (name === 'beforeConfigureGraph')
@@ -795,8 +770,6 @@ describe('ComfyApp', () => {
         workflow
       )
 
-      // The previous workflow is still on screen and still the bound document,
-      // so retracting here would silence the agent for a visible workflow.
       expect(result).toBe(false)
       expect(lifecycle.activeRootGraphId(uid)).toBe(
         toRootGraphId('survivor-root')
@@ -813,16 +786,12 @@ describe('ComfyApp', () => {
           size: 0
         })
       )
-      // Clear Workflow acts on the presented document, which is what the
-      // lifecycle store resolves the binding's identity against.
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const idBeforeClear = graph.id
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId(idBeforeClear))
 
-      // What `Comfy.ClearWorkflow` and the legacy Clear button do: no graph
-      // load, but `LGraph.clear()` mints a fresh root graph id.
       app.clean()
 
       expect(graph.id).not.toBe(idBeforeClear)
@@ -4010,8 +3979,6 @@ describe('ComfyApp', () => {
 
       await app.loadApiJson({}, 'api-import')
 
-      // The previous document has left the canvas, so the agent must stop
-      // treating it as bound and must not inherit its binding for the import.
       expect(lifecycle.isActive(previousUid)).toBe(false)
       const imported = useWorkflowStore().activeWorkflow
       expect(imported).not.toBe(previous)

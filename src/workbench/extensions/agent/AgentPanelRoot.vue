@@ -929,9 +929,6 @@ const {
   },
   canvasForWorkflow
 )
-// The root graph id the store holds for the bound document, or null when the
-// binding names another document. `useDocumentLifecycleStore` resolves that
-// against the active pointer, so a tab activated without a graph load moves it.
 function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null

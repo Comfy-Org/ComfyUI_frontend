@@ -1111,15 +1111,7 @@ export class AgentConversationHarness {
     }
   }
 
-  /**
-   * The user's own Clear Workflow command. It empties the canvas through
-   * `app.clean()` with no graph load, and `LGraph.clear()` mints a fresh root
-   * graph id while the document the Agent is bound to is unchanged — the one
-   * path that rotates the live root graph id outside a load.
-   *
-   * Returns the root graph id before and after, so a caller can assert the
-   * rotation actually happened rather than assuming it.
-   */
+  /** Runs Clear Workflow and returns the root graph id before and after. */
   async clearWorkflowFromCommand(): Promise<{ before: string; after: string }> {
     const before = await this.rootGraphId()
     await this.comfyPage.nodeOps.clearGraph()
@@ -1127,7 +1119,6 @@ export class AgentConversationHarness {
     return { before, after: await this.rootGraphId() }
   }
 
-  /** The id of the root graph currently on the canvas. */
   async rootGraphId(): Promise<string> {
     return await this.page.evaluate(() => {
       if (!window.app?.rootGraph) throw new Error('root graph is unavailable')
