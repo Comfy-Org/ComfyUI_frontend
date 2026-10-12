@@ -74,7 +74,7 @@ describe('link marquee selection', () => {
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
 
-    selectLinksForMarquee(graph, captured, [40, 0, 20, 40], modifiers)
+    selectLinksForMarquee(graph, links, captured, [40, 0, 20, 40], modifiers)
 
     expect(getSelectedLinkIds(graph)).toEqual(
       expected.map((index) => links[index].id)
@@ -92,12 +92,22 @@ describe('link marquee selection', () => {
       { x: 100, y: 100 }
     ])
 
-    selectLinksForMarquee(graph, 0, [0, 0, 100, 50], {
+    selectLinksForMarquee(graph, links, 0, [0, 0, 100, 50], {
       ...NO_MODIFIERS,
       canvasX
     })
 
     expect(getSelectedLinksAnchor(graph)).toEqual({ x: canvasX, y: expected })
+  })
+
+  it('ignores links that were not drawn in the last frame', () => {
+    const { graph, links } = createGraphWithLinks()
+    drawHorizontalLink(links[0], 10)
+    drawHorizontalLink(links[1], 20)
+
+    selectLinksForMarquee(graph, [links[1]], 0, [40, 0, 20, 40], NO_MODIFIERS)
+
+    expect(getSelectedLinkIds(graph)).toEqual([links[1].id])
   })
 
   it('skips hidden links', () => {
@@ -108,7 +118,7 @@ describe('link marquee selection', () => {
       hidden: true
     })
 
-    selectLinksForMarquee(graph, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
 
     expect(getSelectedLinkIds(graph)).toEqual([links[0].id])
   })
@@ -117,7 +127,7 @@ describe('link marquee selection', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
-    selectLinksForMarquee(graph, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
     const events: string[] = []
 
     expect(hideSelectedLinks(createHost(graph, events))).toBe(true)
@@ -137,7 +147,7 @@ describe('link marquee selection', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
     drawHorizontalLink(links[1], 20)
-    selectLinksForMarquee(graph, 0, [40, 0, 20, 40], NO_MODIFIERS)
+    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
     const events: string[] = []
 
     expect(deleteSelectedLinks(createHost(graph, events))).toBe(true)

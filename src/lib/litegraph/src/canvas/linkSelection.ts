@@ -7,7 +7,9 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
 import type { LGraph } from '../LGraph'
-import type { ReadOnlyRect } from '../interfaces'
+import { LLink } from '../LLink'
+import { Reroute } from '../Reroute'
+import type { LinkSegment, ReadOnlyRect } from '../interfaces'
 import { deleteLinks, hideLinks } from './linkVisibility'
 
 interface LinkSelectionHost {
@@ -22,14 +24,18 @@ function isDrawnInBounds(segment: object, bounds: Bounds): boolean {
   return !!polyline && polylineIntersectsBounds(polyline, bounds)
 }
 
-function linkIdsDrawnInBounds(graph: LGraph, bounds: Bounds): Set<LinkId> {
+function linkIdsDrawnInBounds(
+  renderedPaths: Iterable<LinkSegment>,
+  bounds: Bounds
+): Set<LinkId> {
   const linkIds = new Set<LinkId>()
-  for (const link of graph.links.values()) {
-    if (isDrawnInBounds(link, bounds)) linkIds.add(link.id)
-  }
-  for (const reroute of graph.reroutes.values()) {
-    if (!isDrawnInBounds(reroute, bounds)) continue
-    for (const linkId of reroute.linkIds) linkIds.add(linkId)
+  for (const segment of renderedPaths) {
+    if (!isDrawnInBounds(segment, bounds)) continue
+    if (segment instanceof Reroute) {
+      for (const linkId of segment.linkIds) linkIds.add(linkId)
+    } else if (segment instanceof LLink) {
+      linkIds.add(segment.id)
+    }
   }
   return linkIds
 }
@@ -74,15 +80,15 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | null {
   return { x, y: Math.min(...points.map((point) => point.y)) }
 }
 
-/** Selects the visible links drawn inside or across the bounds. */
-export function selectLinksInBounds(
+function selectLinksInBounds(
   graph: LGraph,
+  renderedPaths: Iterable<LinkSegment>,
   bounds: Bounds,
   anchorX: number
 ): void {
   const scope = graphScopeOf(graph)
   const presentation = useLinkPresentationStore()
-  const linkIds = [...linkIdsDrawnInBounds(graph, bounds)].filter(
+  const linkIds = [...linkIdsDrawnInBounds(renderedPaths, bounds)].filter(
     (linkId) =>
       graph.getLink(linkId) &&
       presentation.getPresentation(scope, linkId)?.hidden !== true
@@ -93,12 +99,18 @@ export function selectLinksInBounds(
 /** Selects links under a marquee that captured nothing else; otherwise clears. */
 export function selectLinksForMarquee(
   graph: LGraph | null,
+  renderedPaths: Iterable<LinkSegment>,
   capturedItemCount: number,
   [x, y, width, height]: ReadOnlyRect,
   pointer: { shiftKey: boolean; altKey: boolean; canvasX: number }
 ): void {
   if (graph && !capturedItemCount && !pointer.shiftKey && !pointer.altKey)
-    selectLinksInBounds(graph, { x, y, width, height }, pointer.canvasX)
+    selectLinksInBounds(
+      graph,
+      renderedPaths,
+      { x, y, width, height },
+      pointer.canvasX
+    )
   else clearLinkSelection()
 }
 

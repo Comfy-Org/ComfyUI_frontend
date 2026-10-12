@@ -4598,6 +4598,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._normalizeDragRect(normalizedRect)
     selectLinksForMarquee(
       this.graph,
+      this.renderedPaths,
       this._getItemsInRect(normalizedRect).size,
       normalizedRect,
       e
@@ -4622,7 +4623,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const itemsInRect = this._getItemsInRect(normalizedRect)
     const { selectedItems } = this
-    selectLinksForMarquee(this.graph, itemsInRect.size, normalizedRect, e)
+    selectLinksForMarquee(
+      this.graph,
+      this.renderedPaths,
+      itemsInRect.size,
+      normalizedRect,
+      e
+    )
     this.setDirty(true, true)
 
     if (e.shiftKey) {
