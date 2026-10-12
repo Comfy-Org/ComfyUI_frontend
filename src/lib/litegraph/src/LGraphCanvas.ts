@@ -2146,6 +2146,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
 
     releaseCanvasSelection(this)
+    clearLinkSelection(this)
     newGraph.attachCanvas(this)
     this.selectionViewCache = {
       graph: newGraph,
@@ -6049,7 +6050,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     this.renderedPaths.clear()
     clearLinkBadgeHitAreas(this)
-    if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
+    if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) {
+      clearLinkSelection()
+      return
+    }
 
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()

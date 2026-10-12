@@ -26,6 +26,9 @@ import {
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -687,6 +690,19 @@ describe('LGraphCanvas selection', () => {
 
       expect(useSelectionStore().selectedKeys(scope)).toEqual([])
       expect(a.selected).toBeFalsy()
+    })
+
+    it('setGraph() clears the link selection of the graph being left', () => {
+      const linkSelection = useLinkSelectionStore()
+      linkSelection.select({
+        links: [fromPartial<LLink>({ id: toLinkId(1) })],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 10
+      })
+
+      canvas.setGraph(new LGraph())
+
+      expect(linkSelection.selection).toBeNull()
     })
 
     it('deselectAll() reports only when something was selected', () => {
