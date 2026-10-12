@@ -16,34 +16,54 @@ async function conditioningLinks(page: Page) {
     const app = window.app!
     const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
     if (!sampler) return null
-    const slots = inputNames.map((name) => {
-      const index = sampler.inputs.findIndex((slot) => slot.name === name)
-      const linkId = sampler.inputs[index]?.link
-      const link = linkId != null ? app.graph.getLink(linkId) : null
-      return link?.path
-        ? { id: link.id, pos: sampler.getInputPos(index) }
-        : null
+    const links = inputNames.map((name) => {
+      const input = sampler.inputs.find((slot) => slot.name === name)
+      return input?.link != null ? app.graph.getLink(input.link) : undefined
     })
-    if (!slots.every((slot) => slot !== null)) return null
-    const top = Math.min(...slots.map(({ pos }) => pos[1])) - 6
-    const bottom = Math.max(...slots.map(({ pos }) => pos[1])) + 6
+    if (!links.every((link) => link?.path)) return null
+
     const right = sampler.pos[0] - 4
+    const top = Math.min(...app.graph.nodes.map((node) => node.pos[1]))
+    const bottom = Math.max(
+      ...app.graph.nodes.map((node) => node.pos[1] + node.size[1])
+    )
     const blockingEdges = app.graph.nodes
       .filter((node) => node !== sampler)
       .map((node) => node.boundingRect)
-      .filter(
-        ([x, y, width, height]) =>
-          y < bottom && y + height > top && x + width < right
-      )
+      .filter(([x, , width]) => x + width < right)
       .map(([x, , width]) => x + width)
-    const left = Math.max(right - 40, ...blockingEdges.map((x) => x + 4))
-    if (left >= right)
-      throw new Error('No empty canvas between the KSampler and its neighbour')
-    return {
-      ids: slots.map(({ id }) => String(id)),
-      from: app.canvasPosToClientPos([left, top]),
-      to: app.canvasPosToClientPos([right, bottom])
+    const left = Math.max(right - 200, ...blockingEdges)
+
+    const probe = new OffscreenCanvas(1, 1).getContext('2d')!
+    probe.lineWidth = 2
+    const crossings = (path: Path2D, x: number) => {
+      const ys: number[] = []
+      for (let y = top; y <= bottom; y++)
+        if (probe.isPointInStroke(path, x, y)) ys.push(y)
+      return ys
     }
+    const conditioningIds = new Set(links.map((link) => link!.id))
+    const others = [...app.graph.links.values()].filter(
+      (link) => !conditioningIds.has(link.id) && link.path
+    )
+
+    for (let x = right - 2; x > left + 2; x -= 2) {
+      const perLink = links.map((link) => crossings(link!.path!, x))
+      if (perLink.some((ys) => ys.length === 0)) continue
+      const targetYs = perLink.flat()
+      const bandTop = Math.min(...targetYs) - 3
+      const bandBottom = Math.max(...targetYs) + 3
+      const blocked = others.some((link) =>
+        crossings(link.path!, x).some((y) => y >= bandTop && y <= bandBottom)
+      )
+      if (blocked) continue
+      return {
+        ids: links.map((link) => String(link!.id)),
+        from: app.canvasPosToClientPos([x - 2, bandTop]),
+        to: app.canvasPosToClientPos([x + 2, bandBottom])
+      }
+    }
+    throw new Error('No x isolates the conditioning links')
   }, CONDITIONING_INPUTS)
   const links = await handle.jsonValue()
   if (!links) throw new Error('Rendered conditioning links were not found')
