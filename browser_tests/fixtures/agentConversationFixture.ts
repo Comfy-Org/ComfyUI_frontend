@@ -42,7 +42,10 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import {
+  agentHumanAddBlueprint,
+  agentNestedSubgraphDefinition
+} from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
@@ -848,6 +851,12 @@ export class AgentConversationHarness {
         return String(node.id)
       },
       [agentHumanAddBlueprint(promoteText), position] as const
+    )
+  }
+
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
     )
   }
 
