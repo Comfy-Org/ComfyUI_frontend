@@ -888,6 +888,36 @@ describe('useFeatureFlags', () => {
       )
     })
 
+    it.for([
+      { served: true, override: undefined, reported: true },
+      { served: undefined, override: undefined, reported: false },
+      { served: false, override: true, reported: true }
+    ])(
+      'reports unified_web_session as $reported when the server serves $served and the session override is $override',
+      ({ served, override, reported }) => {
+        vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+          flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION
+            ? override
+            : undefined
+        )
+        vi.mocked(distributionTypes).isCloud = true
+        remoteConfigState.value = 'authenticated'
+        authenticatedRemoteConfigState.value = 'authenticated'
+        remoteConfig.value = { unified_web_session: served }
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (_path, defaultValue) => defaultValue
+        )
+
+        const stop = startFeatureFlagTelemetry()
+        onTestFinished(stop)
+
+        expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
+          ServerFeatureFlag.UNIFIED_WEB_SESSION,
+          reported
+        )
+      }
+    )
+
     it('does not report when getters are only read', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
