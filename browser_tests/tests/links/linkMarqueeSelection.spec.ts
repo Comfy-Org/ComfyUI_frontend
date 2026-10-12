@@ -57,7 +57,12 @@ async function linksStillInGraph(page: Page, linkIds: string[]) {
 }
 
 test.describe('Marquee link selection', { tag: '@canvas' }, () => {
-  test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+  test.use({
+    initialSettings: {
+      'Comfy.Canvas.SelectionToolbox': true,
+      'Comfy.Canvas.NavigationMode': 'standard'
+    }
+  })
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('default')
