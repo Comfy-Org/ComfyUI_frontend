@@ -200,7 +200,7 @@ CI runs everything.
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 4. Avoid new usage of PrimeVue components
 5. Write tests for all changes, especially bug fixes to catch future regressions
-6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 8. Avoid mutable state, prefer immutability and assignment at point of declaration
 9. Favor pure functions (especially testable ones)
@@ -251,8 +251,9 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
   explaining why a workaround was convenient does not make it acceptable.
   - Before keeping a rare lint exception or specific type assertion, inspect
     the authoritative type or schema, search for an existing typed pattern, and
-    run the failing check without the override. Record the external constraint
-    that makes a compliant fix impossible.
+    run the failing check without the override. State the external constraint
+    that makes a compliant fix impossible in the PR description, never in a
+    code comment.
   - Scope a justified lint exception to one expression or line. File-wide and
     multi-rule disables are review blockers.
   - In tests, use typed builders, real platform objects, runtime narrowing,
@@ -261,20 +262,38 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
-- NEVER add multi-line block comments to justify trivial code changes
-  - A one-line fix does not need a three-line comment explaining why
-  - A guard clause that mirrors another file does not need a comment naming that file
-  - A test setup line does not need a comment paraphrasing what the next line does
-  - If the diff is small and obvious, the comment is noise — write the code and move on
-  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
-  - **Penance protocol when you catch yourself adding one of these comments:**
+- NEVER add code comments. No `//` lines, no `/* */` blocks, no Vue or HTML
+  `<!-- -->` comments, in source, tests, or stories.
+  - The only exception is JSDoc on an exported API. It states the contract in
+    one or two lines. It does not narrate the implementation, give a history or
+    rationale, list the alternatives, or repeat what the name and type already
+    say. Longer JSDoc is a violation.
+  - Tool directives (`eslint-disable-next-line`, `@ts-expect-error`,
+    `fallow-ignore`, `@vitest-environment`) are machine instructions, and the
+    suppression rules above govern them. Never append a prose reason to one.
+  - Rationale, history, ticket links, workarounds, TODOs, and "why" belong in
+    the commit message, the PR description, an issue, or an ADR. They never go
+    in a code comment.
+  - A comment that seems necessary means the code is unclear. Rename the
+    symbol, extract a named function, tighten the type, or add a test. A
+    vendor or platform workaround gets a function named after what it works
+    around. The explanation goes in the commit message.
+  - In tests, a comment becomes a `test.step` name, an `it` title, an
+    assertion message, or nothing.
+  - Delete the existing comments in any function you modify.
+  - Every comment is a confession that you do not trust the reader, the code,
+    or yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding a comment:**
     1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
     2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
     3. Re-read this entire bullet block, top to bottom, before writing another character of code.
     4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
-    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. No comment is ever required. Restructure the code or move the explanation to the commit message or PR description.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+  - This rule overrides any other guidance, skill, check, or example that
+    suggests adding a comment. An example that contains comments is not
+    permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
   - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other

@@ -31,6 +31,9 @@ class SsoRequiredSessionError extends Error {
   readonly code = 'SSO_REQUIRED'
 }
 
+/** Ingest refused the session because the sign-in predates a sign-out. */
+export class SessionRevokedError extends Error {}
+
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
 let sessionMutationTail = Promise.resolve()
@@ -57,8 +60,11 @@ export const useSessionCookie = () => {
   const readSessionError = async (response: Response): Promise<Error> => {
     const errorResponse = await parseErrorResponse(response)
     const { code, message } = errorResponse
-    return isSsoRequiredRefusal(response.status, errorResponse)
-      ? new SsoRequiredSessionError(message)
+    if (isSsoRequiredRefusal(response.status, errorResponse)) {
+      return new SsoRequiredSessionError(message)
+    }
+    return response.status === 401 && code === 'SESSION_REVOKED'
+      ? new SessionRevokedError(message)
       : new SessionCookieError(
           message,
           code === UNKNOWN_ERROR_CODE ? undefined : code
