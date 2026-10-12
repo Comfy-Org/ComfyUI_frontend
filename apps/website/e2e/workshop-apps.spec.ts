@@ -245,7 +245,9 @@ async function expectDownloadBesideGitHub(app: Locator) {
   const download = await app
     .getByRole('link', { name: 'Download' })
     .boundingBox()
-  const github = await app.getByText('GitHub · Coming soon').boundingBox()
+  const github = await app
+    .getByRole('link', { name: 'View on GitHub' })
+    .boundingBox()
   if (!download || !github) throw new Error('no header buttons')
   expect(download.y).toBe(github.y)
   expect(download.x - (github.x + github.width)).toBeLessThanOrEqual(8)
