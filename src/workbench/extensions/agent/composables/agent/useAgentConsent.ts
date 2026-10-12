@@ -10,13 +10,13 @@ import type {
   AgentConsentTrigger
 } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -43,9 +43,9 @@ export interface ConsentOfferHooks {
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
-  const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
@@ -188,7 +188,7 @@ export function useAgentConsent() {
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
-          docsUrl: DOCS_URL,
+          docsUrl: AGENT_DOCS_URL,
           accepting: false,
           error: '',
           onVnodeMounted: () => {
@@ -242,16 +242,14 @@ export function useAgentConsent() {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
     try {
-      if (!(await dialogService.showSignInDialog())) return null
+      if (!(await showSignInDialog())) return null
     } catch (error) {
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_consent_sign_in_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.signInError')
+      toast.error(t('g.error'), {
+        description: t('agent.consent.signInError')
       })
       return null
     }
@@ -279,10 +277,8 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_setting_write_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.saveError')
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
       })
       return null
     }
@@ -316,10 +312,8 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_setting_load_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.loadError')
+      toast.error(t('g.error'), {
+        description: t('agent.consent.loadError')
       })
       return null
     }

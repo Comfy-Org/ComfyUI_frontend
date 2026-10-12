@@ -298,7 +298,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
           name: blueprintName
         })
-        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await expect(comfyPage.toast.visibleToasts).toHaveCount(1, {
+          timeout: 5000
+        })
         await comfyPage.toast.closeToasts(1)
 
         const { searchBoxV2 } = comfyPage

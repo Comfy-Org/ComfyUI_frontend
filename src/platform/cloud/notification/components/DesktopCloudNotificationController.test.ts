@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -30,6 +30,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(
+  import('@/platform/cloud/notification/composables/useCloudNotificationDialog')
+)
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => electron
@@ -68,7 +71,9 @@ describe('DesktopCloudNotificationController', () => {
     await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
 
-    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+    expect(
+      useCloudNotificationDialog().showCloudNotification
+    ).not.toHaveBeenCalled()
 
     unmount()
   })
@@ -87,14 +92,16 @@ describe('DesktopCloudNotificationController', () => {
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(settingStore.set).not.toHaveBeenCalled()
-    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+    expect(
+      useCloudNotificationDialog().showCloudNotification
+    ).not.toHaveBeenCalled()
   })
 
   it('marks the notification as shown before awaiting dialog close', async () => {
     const dialogOpen = createDeferred()
-    vi.mocked(useDialogService().showCloudNotification).mockImplementation(
-      () => dialogOpen.promise
-    )
+    vi.mocked(
+      useCloudNotificationDialog().showCloudNotification
+    ).mockImplementation(() => dialogOpen.promise)
 
     const { unmount } = render(DesktopCloudNotificationController)
 
@@ -108,7 +115,7 @@ describe('DesktopCloudNotificationController', () => {
     expect(
       vi.mocked(settingStore.set).mock.invocationCallOrder[0]
     ).toBeLessThan(
-      vi.mocked(useDialogService().showCloudNotification).mock
+      vi.mocked(useCloudNotificationDialog().showCloudNotification).mock
         .invocationCallOrder[0]
     )
 
@@ -142,7 +149,9 @@ describe('DesktopCloudNotificationController', () => {
     expect(
       settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']
     ).toBe(false)
-    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+    expect(
+      useCloudNotificationDialog().showCloudNotification
+    ).not.toHaveBeenCalled()
   })
 
   it('aborts without reporting a stored settings error', async () => {
@@ -155,7 +164,9 @@ describe('DesktopCloudNotificationController', () => {
 
     expect(errorReporter).not.toHaveBeenCalled()
     expect(settingStore.set).not.toHaveBeenCalled()
-    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+    expect(
+      useCloudNotificationDialog().showCloudNotification
+    ).not.toHaveBeenCalled()
 
     unmount()
   })
@@ -195,14 +206,18 @@ describe('DesktopCloudNotificationController', () => {
       'Comfy.Desktop.CloudNotificationShown',
       false
     )
-    expect(useDialogService().showCloudNotification).not.toHaveBeenCalled()
+    expect(
+      useCloudNotificationDialog().showCloudNotification
+    ).not.toHaveBeenCalled()
 
     unmount()
   })
 
   it('reports a notification failure and resets its shown state', async () => {
     const error = new Error('show failed')
-    vi.mocked(useDialogService().showCloudNotification).mockRejectedValue(error)
+    vi.mocked(
+      useCloudNotificationDialog().showCloudNotification
+    ).mockRejectedValue(error)
 
     const { unmount } = render(DesktopCloudNotificationController)
     await vi.advanceTimersByTimeAsync(2000)
@@ -240,9 +255,9 @@ describe('DesktopCloudNotificationController', () => {
       const initialError = new Error('initial failure')
       const resetError = new Error('reset failed')
       if (failure === 'display') {
-        vi.mocked(useDialogService().showCloudNotification).mockRejectedValue(
-          initialError
-        )
+        vi.mocked(
+          useCloudNotificationDialog().showCloudNotification
+        ).mockRejectedValue(initialError)
       }
       vi.mocked(settingStore.set).mockImplementation(async (key, value) => {
         if (!value) throw resetError

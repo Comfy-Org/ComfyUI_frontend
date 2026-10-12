@@ -75,8 +75,6 @@
     "feedbackCaption": "피드백 공유",
     "focusNode": "캔버스에 표시",
     "focusNodeLabel": "캔버스에 {node} 표시",
-    "freeUseNotice": "베타 기간 동안 프롬프트 및 워크플로 실행은 무료입니다.",
-    "freeUseNoticeLabel": "무료 사용 안내",
     "friend": "안녕하세요",
     "gotIt": "알겠습니다",
     "greeting": "안녕하세요, {name}님,",
