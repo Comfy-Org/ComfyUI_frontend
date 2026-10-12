@@ -4057,13 +4057,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     /** The mouseup event occurred near the mousedown event. */
     /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
+    const { eDown } = pointer
+    const pressedBadge =
+      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
     const isClick = pointer.up(e)
     if (isClick) {
-      if (
-        e.button === 0 &&
-        !queryLinkBadgeHitAtPoint(this, e.canvasX, e.canvasY) &&
-        collapseLinkBadgeStacks(this)
-      ) {
+      if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
         this.dirty_bgcanvas = true
       }
       pointer.isDown = false

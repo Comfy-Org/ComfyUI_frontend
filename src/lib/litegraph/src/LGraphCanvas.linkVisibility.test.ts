@@ -587,6 +587,30 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeDefined()
     })
 
+    it('expands a stack when the click drifts off the pill before release', () => {
+      const { canvas, links, relayout } = createStackFixture()
+      const init = { isPrimary: true, pointerId: 1, button: 0 }
+      canvas.processMouseDown(
+        new PointerEvent('pointerdown', {
+          ...init,
+          buttons: 1,
+          clientX: 420,
+          clientY: 310
+        })
+      )
+      canvas.processMouseUp(
+        new PointerEvent('pointerup', {
+          ...init,
+          buttons: 0,
+          clientX: 420,
+          clientY: 315
+        })
+      )
+      relayout()
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
     it('collapses an expanded stack when empty canvas is clicked', () => {
       const { canvas, relayout } = createStackFixture()
 

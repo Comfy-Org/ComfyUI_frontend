@@ -55,6 +55,7 @@ interface BadgeEndpoint {
   color: string
   width: number
   layers: number
+  memberOfStack?: string
   hitArea: BadgeHitArea
   tip: Point
 }
@@ -216,6 +217,7 @@ interface EndpointSpec {
   color: string
   linkIds: readonly LinkId[]
   stackKey?: string
+  memberOfStack?: string
   layers?: number
 }
 
@@ -224,6 +226,7 @@ function createBadgeEndpoint(
   spec: EndpointSpec
 ): BadgeEndpoint {
   const { link, side, rank, socket, text, color, linkIds, stackKey } = spec
+  const { memberOfStack } = spec
   const layers = spec.layers ?? 0
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
@@ -241,6 +244,7 @@ function createBadgeEndpoint(
     color,
     width,
     layers,
+    memberOfStack,
     hitArea: {
       linkIds,
       stackKey,
@@ -327,7 +331,9 @@ export function layoutHiddenLinkBadges(
     const stackKey = stackKeyOf(link, side)
     if (!isUnlabelled(hidden) || !stacks.has(stackKey)) return addEndpoint(spec)
     const head = stackHead(spec, stackKey)
-    return expanded?.has(stackKey) ? addEndpoint(spec) : head
+    return expanded?.has(stackKey)
+      ? addEndpoint({ ...spec, memberOfStack: stackKey })
+      : head
   }
 
   for (const hidden of hiddenLinks) {
@@ -436,7 +442,8 @@ export function drawHiddenLinkBadges(
     const bounds = getConnectorBounds(endpoint.socket, endpoint.hitArea)
     if (!overlapBounding(bounds, visibleArea)) continue
     drawBadgeEndpoint(ctx, endpoint)
-    if (endpoint.hitArea.stackKey) drawnStackKeys.add(endpoint.hitArea.stackKey)
+    const stackKey = endpoint.hitArea.stackKey ?? endpoint.memberOfStack
+    if (stackKey) drawnStackKeys.add(stackKey)
   }
   drawnStackKeysByHost.set(host, drawnStackKeys)
 }
