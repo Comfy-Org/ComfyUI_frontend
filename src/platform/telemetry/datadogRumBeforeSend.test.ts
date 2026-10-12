@@ -55,15 +55,20 @@ describe('rumBeforeSend', () => {
   })
 
   it('drops the CSP block of a third-party tracking pixel by host', () => {
-    // Give it a FIRST-PARTY stack on purpose: the blocked URI is what makes
-    // this noise, so the case must fail if the host rule stops firing rather
-    // than pass by accident on a missing stack.
     const event = createErrorEvent(
-      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'form-action' directive",
-      'at submit (https://cloud.comfy.org/assets/app.js:1:2)'
+      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'form-action' directive"
     )
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps a CSP block of a noise host that first-party code triggered', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.googletagmanager.com/gtm.js' blocked by 'script-src-elem' directive",
+      'at loadGtm (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
   it('drops a CSP violation whose blocked URI carries no host but whose frame is a known tracker', () => {

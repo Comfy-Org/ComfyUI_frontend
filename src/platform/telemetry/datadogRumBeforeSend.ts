@@ -63,9 +63,18 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   )
 }
 
+/** Our own code tripping the CSP is a defect even when the blocked host is a tracker. */
+function isFirstPartyCspViolation(event: RumErrorEvent): boolean {
+  return (
+    event.error.message.startsWith('csp_violation:') &&
+    classifyRumErrorOrigin(event.error.stack).origin === 'first_party'
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
+  if (isFirstPartyCspViolation(event)) return true
   return !isRumErrorNoise(event.error)
 }
 
