@@ -55,20 +55,6 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
     : 'agent.editRejected.generic'
 }
 
-/**
- * Tells the human which of their edits the host refused. One follower owns one
- * notifier. Actual guarantees, since two of them are narrower than they look:
- *
- * - A refused batch may still have applied a prefix (schema §4 aborts the
- *   remainder, not the batch), so this reports the REJECTED operations and not
- *   that nothing reached the document.
- * - Toasts are throttled per RENDERED MESSAGE, not per code, so two rejections
- *   that render the same copy — every generic one does — collapse to one toast
- *   for `NOTICE_LIFE_MS`. Only a differently-worded rejection speaks inside
- *   that window.
- * - Telemetry records each distinct CODE once for this notifier's lifetime,
- *   even when its toast was collapsed. It does not count rejection events.
- */
 export function createRejectedOpNotifier() {
   const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
   const reportedCodes = new Set<string>()
@@ -116,13 +102,13 @@ export function createRejectedOpNotifier() {
       if (result.ok) return
       const { failed } = result
       const widgetWrite = isRejectedWidgetWrite(ops, failed)
-      // A batch-level refusal (`overloaded`, `catalog_mismatch`, …) carries no
-      // `failure` at all; without this every one collapses to 'unspecified' and
-      // the first suppresses the telemetry report for every later kind.
       const code = failed?.code ?? result.code ?? 'unspecified'
       reportOnce(code, widgetWrite, result, failed)
       const partial = result.applied.length > 0 && failed !== undefined
       throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
+    },
+    notifyWidgetWriteRefused() {
+      throttledToast(i18n.global.t('agent.editRejected.widgetWrite'))()
     },
     cancel() {
       for (const throttled of throttledToasts.values()) throttled.cancel()

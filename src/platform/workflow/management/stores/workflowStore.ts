@@ -19,7 +19,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
@@ -213,7 +213,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
-    comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
+    useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
     // Track activation in history (move to end if already present)
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
@@ -573,7 +573,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const canvas = comfyApp.canvasOrUndefined
+    const canvas = useApp().canvasOrUndefined
     if (!canvas) return
     const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
@@ -621,7 +621,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (nodeId === undefined) return
 
     const subgraphs = getSubgraphsFromInstanceIds(
-      comfyApp.rootGraph,
+      useApp().rootGraph,
       executionPath.slice(0, -1)
     )
     if (subgraphs?.at(-1) === subgraph) return nodeId
@@ -709,7 +709,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    const path = findSubgraphPath(comfyApp.rootGraph, subgraphUuid)
+    const path = findSubgraphPath(useApp().rootGraph, subgraphUuid)
     if (!path) return null
 
     // If we have a target subgraph, check if the path goes through it
@@ -717,7 +717,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       targetSubgraph &&
       !path.some((_, idx) => {
         const subgraphs = getSubgraphsFromInstanceIds(
-          comfyApp.rootGraph,
+          useApp().rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
         return subgraphs?.at(-1) === targetSubgraph
