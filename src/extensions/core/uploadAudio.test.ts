@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -312,6 +313,38 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(api.apiURL).toHaveBeenCalledWith(
       '/view?filename=out.wav&subfolder=&type=output&version=v2'
+    )
+  })
+
+  it('puts the output version in the audio URL when outputs are re-synced', () => {
+    const extension = registeredExtensions.find(
+      ({ name }) => name === 'Comfy.AudioWidget'
+    )
+    const audioUIWidget = {
+      name: 'audioUI',
+      element: document.createElement('audio')
+    }
+    vi.mocked(getNodeByLocatorId).mockReturnValue(
+      fromAny<LGraphNode, unknown>({ widgets: [audioUIWidget] })
+    )
+
+    extension!.onNodeOutputsUpdated!(
+      fromAny({
+        '1': {
+          audio: [
+            {
+              filename: 'out.wav',
+              subfolder: '',
+              type: 'output',
+              version: 'v3'
+            }
+          ]
+        }
+      })
+    )
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=out.wav&subfolder=&type=output&version=v3'
     )
   })
 })

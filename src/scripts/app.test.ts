@@ -332,6 +332,10 @@ describe('ComfyApp', () => {
     )
   })
 
+  it.skipIf(isCloud)('keeps the deprecated cache-buster for extensions', () => {
+    expect(app.getRandParam()).toMatch(/^&rand=0\.\d+/)
+  })
+
   describe('loadGraphData', () => {
     function prepareResourceReload() {
       app.canvasElRef.value = document.createElement('canvas')

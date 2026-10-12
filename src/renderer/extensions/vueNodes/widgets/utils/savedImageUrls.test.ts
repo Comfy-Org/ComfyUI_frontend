@@ -11,6 +11,7 @@ vi.mock(import('@/scripts/app'))
 describe('savedImageUrls', () => {
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+    vi.mocked(app.getRandParam).mockReturnValue('&rand=0.5')
   })
 
   it('builds a /view URL for every saved image, keeping subfolder and type', () => {
