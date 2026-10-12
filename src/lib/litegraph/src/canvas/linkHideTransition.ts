@@ -3,11 +3,11 @@ import type { LinkId } from '@/types/linkId'
 
 export const LINK_HIDE_TRANSITION = {
   holdMs: 200,
-  fadeMs: 150,
-  dashOnWidths: 2,
-  dashOffWidths: 2,
+  fadeMs: 200,
+  dashOnWidths: 1.5,
+  dashOffWidths: 1.5,
   labelPopMs: 150,
-  labelPopFromScale: 0.8,
+  labelPopFromScale: 0.9,
   labelPopOvershoot: 1.70158
 } as const
 

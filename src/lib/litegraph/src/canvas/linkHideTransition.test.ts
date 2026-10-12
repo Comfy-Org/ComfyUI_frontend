@@ -93,6 +93,6 @@ describe('linkHideTransition', () => {
   })
 
   it('scales the dash pattern with the line width', () => {
-    expect(linkHideDashPattern(3)).toEqual([6, 6])
+    expect(linkHideDashPattern(4)).toEqual([6, 6])
   })
 })
