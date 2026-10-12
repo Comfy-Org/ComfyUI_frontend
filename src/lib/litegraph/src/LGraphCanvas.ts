@@ -54,6 +54,7 @@ import {
   cancelLinkHideTransition,
   hasLinkHideTransitions,
   linkHideDashPattern,
+  linkHideLabelScale,
   linkHideTransitionAlpha
 } from './canvas/linkHideTransition'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
@@ -6251,7 +6252,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     for (const [linkId, layout] of hiddenLinkLayouts) {
       if (!hidingLinkIds.has(linkId))
-        drawHiddenLinkBadges(ctx, layout, margin_area)
+        drawHiddenLinkBadges(
+          ctx,
+          layout,
+          margin_area,
+          linkHideLabelScale(graphScope.rootGraphId, linkId, now)
+        )
     }
 
     if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {

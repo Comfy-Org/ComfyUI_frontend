@@ -5,8 +5,22 @@ export const LINK_HIDE_TRANSITION = {
   holdMs: 350,
   fadeMs: 250,
   dashOnWidths: 2,
-  dashOffWidths: 2
+  dashOffWidths: 2,
+  labelPopMs: 220,
+  labelPopFromScale: 0.4,
+  labelPopOvershoot: 1.70158
 } as const
+
+function totalMs(): number {
+  const { holdMs, fadeMs, labelPopMs } = LINK_HIDE_TRANSITION
+  return holdMs + fadeMs + labelPopMs
+}
+
+function easeOutBack(t: number): number {
+  const c1 = LINK_HIDE_TRANSITION.labelPopOvershoot
+  const c3 = c1 + 1
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
 
 const startedAtByRoot = new Map<RootGraphId, Map<LinkId, number>>()
 
@@ -39,8 +53,7 @@ export function cancelLinkHideTransition(
   return true
 }
 
-/** Opacity of a link mid-transition, or `undefined` once it has finished or never started. */
-export function linkHideTransitionAlpha(
+function elapsedSinceHide(
   rootGraphId: RootGraphId,
   linkId: LinkId,
   now: number
@@ -48,12 +61,33 @@ export function linkHideTransitionAlpha(
   const startedAt = startedAtByRoot.get(rootGraphId)?.get(linkId)
   if (startedAt === undefined) return
   const elapsed = now - startedAt
+  if (elapsed < totalMs()) return elapsed
+  cancelLinkHideTransition(rootGraphId, linkId)
+}
+
+/** Opacity of a link mid-transition, or `undefined` once its line has finished or never started. */
+export function linkHideTransitionAlpha(
+  rootGraphId: RootGraphId,
+  linkId: LinkId,
+  now: number
+): number | undefined {
+  const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
   const { holdMs, fadeMs } = LINK_HIDE_TRANSITION
-  if (elapsed >= holdMs + fadeMs) {
-    cancelLinkHideTransition(rootGraphId, linkId)
-    return
-  }
+  if (elapsed === undefined || elapsed >= holdMs + fadeMs) return
   return elapsed <= holdMs ? 1 : 1 - (elapsed - holdMs) / fadeMs
+}
+
+/** Scale of a hidden link's labels as they pop in after the line fades; 1 when settled. */
+export function linkHideLabelScale(
+  rootGraphId: RootGraphId,
+  linkId: LinkId,
+  now: number
+): number {
+  const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
+  if (elapsed === undefined) return 1
+  const { holdMs, fadeMs, labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
+  const progress = Math.max(0, (elapsed - holdMs - fadeMs) / labelPopMs)
+  return labelPopFromScale + (1 - labelPopFromScale) * easeOutBack(progress)
 }
 
 export function hasLinkHideTransitions(
@@ -62,9 +96,8 @@ export function hasLinkHideTransitions(
 ): boolean {
   const startedAt = startedAtByRoot.get(rootGraphId)
   if (!startedAt) return false
-  const { holdMs, fadeMs } = LINK_HIDE_TRANSITION
   for (const [linkId, start] of startedAt) {
-    if (now - start >= holdMs + fadeMs) startedAt.delete(linkId)
+    if (now - start >= totalMs()) startedAt.delete(linkId)
   }
   if (startedAt.size > 0) return true
   startedAtByRoot.delete(rootGraphId)

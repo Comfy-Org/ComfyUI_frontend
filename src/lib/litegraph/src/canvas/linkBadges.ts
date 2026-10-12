@@ -222,7 +222,33 @@ function drawConnector(
   ctx.restore()
 }
 
+function scaledAround(
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point,
+  scale: number,
+  draw: () => void
+): void {
+  if (scale === 1) return draw()
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(scale, scale)
+  ctx.translate(-x, -y)
+  draw()
+  ctx.restore()
+}
+
 function drawBadgeLayout(
+  ctx: CanvasRenderingContext2D,
+  layout: LinkBadgeLayout,
+  scale: number
+): void {
+  scaledAround(ctx, layout.outputSocket, scale, () =>
+    drawOutputEnd(ctx, layout)
+  )
+  scaledAround(ctx, layout.inputSocket, scale, () => drawInputEnd(ctx, layout))
+}
+
+function drawOutputEnd(
   ctx: CanvasRenderingContext2D,
   layout: LinkBadgeLayout
 ): void {
@@ -237,6 +263,12 @@ function drawBadgeLayout(
     layout.outputBadgeX,
     layout.outputBadgeY - BADGE_HEIGHT / 2
   )
+}
+
+function drawInputEnd(
+  ctx: CanvasRenderingContext2D,
+  layout: LinkBadgeLayout
+): void {
   drawConnector(
     ctx,
     layout.inputSocket,
@@ -256,7 +288,8 @@ function drawBadgeLayout(
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   layout: LinkBadgeLayout,
-  visibleArea: ReadOnlyRect
+  visibleArea: ReadOnlyRect,
+  scale = 1
 ): void {
   const endpointHitAreas = getBadgeHitAreas(layout)
   if (
@@ -269,6 +302,6 @@ export function drawHiddenLinkBadges(
       visibleArea
     )
   ) {
-    drawBadgeLayout(ctx, layout)
+    drawBadgeLayout(ctx, layout, scale)
   }
 }

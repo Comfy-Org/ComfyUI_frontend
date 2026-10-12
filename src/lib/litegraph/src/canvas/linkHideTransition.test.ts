@@ -8,6 +8,7 @@ import {
   cancelLinkHideTransition,
   hasLinkHideTransitions,
   linkHideDashPattern,
+  linkHideLabelScale,
   linkHideTransitionAlpha,
   startLinkHideTransitions
 } from './linkHideTransition'
@@ -15,8 +16,9 @@ import {
 const ROOT = toRootGraphId('root')
 const LINK_A = toLinkId(1)
 const LINK_B = toLinkId(2)
-const { holdMs, fadeMs } = LINK_HIDE_TRANSITION
-const END = holdMs + fadeMs
+const { holdMs, fadeMs, labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
+const LINE_END = holdMs + fadeMs
+const END = LINE_END + labelPopMs
 
 function stubReducedMotion(reduce: boolean) {
   vi.stubGlobal(
@@ -41,9 +43,21 @@ describe('linkHideTransition', () => {
 
     expect(linkHideTransitionAlpha(ROOT, LINK_A, holdMs)).toBe(1)
     expect(linkHideTransitionAlpha(ROOT, LINK_A, holdMs + fadeMs / 2)).toBe(0.5)
+    expect(linkHideTransitionAlpha(ROOT, LINK_A, LINE_END)).toBeUndefined()
     expect(hasLinkHideTransitions(ROOT, END - 1)).toBe(true)
-    expect(linkHideTransitionAlpha(ROOT, LINK_A, END)).toBeUndefined()
     expect(hasLinkHideTransitions(ROOT, END)).toBe(false)
+  })
+
+  it('pops the labels in once the line has faded', () => {
+    startLinkHideTransitions(ROOT, [LINK_A], 0)
+
+    expect(linkHideLabelScale(ROOT, LINK_A, LINE_END)).toBeCloseTo(
+      labelPopFromScale
+    )
+    expect(
+      linkHideLabelScale(ROOT, LINK_A, LINE_END + labelPopMs / 2)
+    ).toBeGreaterThan(1)
+    expect(linkHideLabelScale(ROOT, LINK_A, END)).toBe(1)
   })
 
   it('animates a batch together', () => {
