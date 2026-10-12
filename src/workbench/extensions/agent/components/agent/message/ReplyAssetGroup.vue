@@ -10,6 +10,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import type { ModelThumbnailResult } from '@/components/load3d/modelThumbnail'
 import { generateModelThumbnail } from '@/components/load3d/modelThumbnail'
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -80,12 +81,7 @@ const galleryItems = computed(() =>
 )
 const galleryIndex = ref(-1)
 
-/**
- * `controller` must be `markRaw`: a `ref` deep-proxies nested objects, so an
- * unwrapped `state.controller === controller` comparison would compare a
- * proxy against the raw controller and always be false, silently disowning
- * every pending strand.
- */
+// Preserve controller identity inside Vue's deeply reactive state record.
 type ThumbnailState =
   | {
       phase: 'loading'
@@ -99,13 +95,26 @@ type ThumbnailState =
       attempts: number
       busyAttempts: number
     }
-  | { phase: 'refreshing'; controller: AbortController }
-  | { phase: 'refreshPending'; timeout: ReturnType<typeof setTimeout> }
   | { phase: 'paused'; attempts: number; busyAttempts: number }
   | { phase: 'ready'; src: string }
   | { phase: 'gaveUp' }
 
-/** Retries after the initial render attempt. */
+type ThumbnailLoadOptions = {
+  attempts?: number
+  busyAttempts?: number
+  checkServerPreview?: boolean
+  generateOnPreviewMiss?: boolean
+}
+
+type ActiveThumbnailLoad = {
+  url: string
+  filename: string
+  controller: AbortController
+  attempts: number
+  busyAttempts: number
+  generateOnPreviewMiss: boolean
+}
+
 const MAX_THUMBNAIL_RETRIES = 2
 const THUMBNAIL_RETRY_DELAY_MS = 2000
 const MAX_THUMBNAIL_BUSY_RETRIES = 9
@@ -115,14 +124,10 @@ const thumbnailState = ref<Record<string, ThumbnailState>>({})
 const assetNames = ref<Record<string, string>>({})
 let mounted = true
 
-/** Stop whatever `state` has in flight: an abortable render or a pending retry. */
 function cancelThumbnailState(state: ThumbnailState | undefined): void {
-  if (state?.phase === 'loading' || state?.phase === 'refreshing') {
+  if (state?.phase === 'loading') {
     state.controller.abort()
-  } else if (
-    state?.phase === 'retryPending' ||
-    state?.phase === 'refreshPending'
-  ) {
+  } else if (state?.phase === 'retryPending') {
     clearTimeout(state.timeout)
   }
 }
@@ -150,13 +155,15 @@ function owns(url: string, controller: AbortController): boolean {
   return state?.phase === 'loading' && state.controller === controller
 }
 
-/** Look up a server-rendered preview, falling back to an offscreen render. */
 function loadModelThumbnail(
   url: string,
   filename: string,
-  attempts = 0,
-  busyAttempts = 0,
-  checkServerPreview = true
+  {
+    attempts = 0,
+    busyAttempts = 0,
+    checkServerPreview = true,
+    generateOnPreviewMiss = true
+  }: ThumbnailLoadOptions = {}
 ): void {
   const controller = markRaw(new AbortController())
   thumbnailState.value[url] = {
@@ -170,48 +177,97 @@ function loadModelThumbnail(
     ? findServerPreviewUrl(filename)
     : Promise.resolve(null)
   void previewLookup
-    .then(async (preview) => {
-      if (!mounted || !owns(url, controller)) return
-      if (preview) {
-        thumbnailState.value[url] = { phase: 'ready', src: preview }
-        return
-      }
-      if (!canRenderOffscreen(url)) {
-        thumbnailState.value[url] = { phase: 'gaveUp' }
-        return
-      }
-      const result = await generateModelThumbnail(
-        url,
-        filename,
-        controller.signal
-      )
-      if (!mounted || !owns(url, controller)) return
-      if (result.status === 'rendered') {
-        thumbnailState.value[url] = { phase: 'ready', src: result.dataUrl }
-      } else if (result.status === 'failed' || result.status === 'busy') {
-        scheduleThumbnailRetry(
+    .then((preview) =>
+      handlePreviewLookup(
+        {
           url,
           filename,
+          controller,
           attempts,
           busyAttempts,
-          result.status
-        )
-      } else {
-        thumbnailState.value[url] = { phase: 'gaveUp' }
-      }
-    })
+          generateOnPreviewMiss
+        },
+        preview
+      )
+    )
     .catch(() => {
       if (!mounted || !owns(url, controller)) return
       scheduleThumbnailRetry(url, filename, attempts, busyAttempts)
     })
 }
 
-/**
- * A `failed` render may be a transient renderer failure rather than a
- * genuinely unrenderable model, so it gets a bounded retry instead of
- * pinning the box icon for the message's lifetime. Deadline expiry is
- * terminal.
- */
+async function handlePreviewLookup(
+  load: ActiveThumbnailLoad,
+  preview: string | null
+): Promise<void> {
+  const { url, filename, controller, attempts, busyAttempts } = load
+  if (!mounted || !owns(url, controller)) return
+  if (preview) {
+    thumbnailState.value[url] = { phase: 'ready', src: preview }
+    return
+  }
+  if (!load.generateOnPreviewMiss) {
+    scheduleThumbnailLoad(url, filename, {
+      attempts,
+      busyAttempts,
+      delay: THUMBNAIL_RETRY_DELAY_MS
+    })
+    return
+  }
+  if (!canRenderOffscreen(url)) {
+    thumbnailState.value[url] = { phase: 'gaveUp' }
+    return
+  }
+  const result = await generateModelThumbnail(url, filename, controller.signal)
+  if (!mounted || !owns(url, controller)) return
+  publishThumbnailResult(load, result)
+}
+
+function publishThumbnailResult(
+  load: ActiveThumbnailLoad,
+  result: ModelThumbnailResult
+): void {
+  const { url, filename, attempts, busyAttempts } = load
+  if (result.status === 'rendered') {
+    thumbnailState.value[url] = { phase: 'ready', src: result.dataUrl }
+  } else if (result.status === 'failed' || result.status === 'busy') {
+    scheduleThumbnailRetry(url, filename, attempts, busyAttempts, result.status)
+  } else {
+    thumbnailState.value[url] = { phase: 'gaveUp' }
+  }
+}
+
+function scheduleThumbnailLoad(
+  url: string,
+  filename: string,
+  {
+    attempts,
+    busyAttempts,
+    delay,
+    checkServerPreview = true
+  }: {
+    attempts: number
+    busyAttempts: number
+    delay: number
+    checkServerPreview?: boolean
+  }
+): void {
+  const timeout = setTimeout(() => {
+    if (!mounted) return
+    loadModelThumbnail(url, filename, {
+      attempts,
+      busyAttempts,
+      checkServerPreview
+    })
+  }, delay)
+  thumbnailState.value[url] = {
+    phase: 'retryPending',
+    timeout: markRaw(timeout),
+    attempts,
+    busyAttempts
+  }
+}
+
 function scheduleThumbnailRetry(
   url: string,
   filename: string,
@@ -235,25 +291,14 @@ function scheduleThumbnailRetry(
           MAX_THUMBNAIL_BUSY_DELAY_MS
         )
       : THUMBNAIL_RETRY_DELAY_MS
-  const timeout = setTimeout(() => {
-    if (!mounted) return
-    loadModelThumbnail(
-      url,
-      filename,
-      nextAttempts,
-      nextBusyAttempts,
-      status !== 'busy'
-    )
-  }, delay)
-  thumbnailState.value[url] = {
-    phase: 'retryPending',
-    timeout: markRaw(timeout),
+  scheduleThumbnailLoad(url, filename, {
     attempts: nextAttempts,
-    busyAttempts: nextBusyAttempts
-  }
+    busyAttempts: nextBusyAttempts,
+    delay,
+    checkServerPreview: status !== 'busy'
+  })
 }
 
-/** Frees the shared render queue when a 3D asset leaves `visibleVisual`. */
 function hideThumbnail(url: string): void {
   const state = thumbnailState.value[url]
   if (state?.phase === 'ready' || state?.phase === 'gaveUp') return
@@ -265,15 +310,14 @@ function hideThumbnail(url: string): void {
   }
 }
 
-/**
- * Starts a fresh load for a (re)visible 3D asset unless one is already in
- * flight, ready, or has spent its retry budget.
- */
 function showThumbnail(url: string, filename: string): void {
   const state = thumbnailState.value[url]
   if (!state) loadModelThumbnail(url, filename)
   else if (state.phase === 'paused') {
-    loadModelThumbnail(url, filename, state.attempts, state.busyAttempts)
+    loadModelThumbnail(url, filename, {
+      attempts: state.attempts,
+      busyAttempts: state.busyAttempts
+    })
   }
 }
 
@@ -313,56 +357,13 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
-function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
+function refreshModelThumbnail(asset: ReplyAsset): void {
   const state = thumbnailState.value[asset.url]
   if (!mounted || !isAssetPreviewSupported() || state?.phase === 'ready') return
   cancelThumbnailState(state)
-  const controller = markRaw(new AbortController())
-  thumbnailState.value[asset.url] = { phase: 'refreshing', controller }
-  void findServerPreviewUrl(asset.filename)
-    .then((preview) => {
-      const current = thumbnailState.value[asset.url]
-      if (
-        !mounted ||
-        controller.signal.aborted ||
-        current?.phase !== 'refreshing' ||
-        current.controller !== controller
-      )
-        return
-      if (preview) {
-        thumbnailState.value[asset.url] = { phase: 'ready', src: preview }
-      } else if (retry) {
-        const timeout = setTimeout(() => {
-          if (thumbnailState.value[asset.url]?.phase !== 'refreshPending') {
-            return
-          }
-          refreshModelThumbnail(asset, false)
-        }, 2000)
-        thumbnailState.value[asset.url] = {
-          phase: 'refreshPending',
-          timeout: markRaw(timeout)
-        }
-      } else {
-        thumbnailState.value[asset.url] = {
-          phase: 'paused',
-          attempts: 0,
-          busyAttempts: 0
-        }
-      }
-    })
-    .catch(() => {
-      const current = thumbnailState.value[asset.url]
-      if (
-        current?.phase === 'refreshing' &&
-        current.controller === controller
-      ) {
-        thumbnailState.value[asset.url] = {
-          phase: 'paused',
-          attempts: 0,
-          busyAttempts: 0
-        }
-      }
-    })
+  loadModelThumbnail(asset.url, asset.filename, {
+    generateOnPreviewMiss: false
+  })
 }
 
 function modelThumbnailSrc(url: string): string {
