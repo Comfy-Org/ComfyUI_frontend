@@ -17,24 +17,28 @@ async function conditioningLinks(page: Page) {
     const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
     if (!sampler) return null
     const links = inputNames.map((name) => {
-      const input = sampler.inputs.find((slot) => slot.name === name)
-      const link = input?.link != null ? app.graph.getLink(input.link) : null
+      const index = sampler.inputs.findIndex((slot) => slot.name === name)
+      const linkId = sampler.inputs[index]?.link
+      const link = linkId != null ? app.graph.getLink(linkId) : null
       if (!link?.path) return null
-      return { id: link.id, center: app.canvasPosToClientPos(link._pos) }
+      return {
+        id: link.id,
+        end: app.canvasPosToClientPos(sampler.getInputPos(index))
+      }
     })
     return links.every((link) => link !== null) ? links : null
   }, CONDITIONING_INPUTS)
   const links = await handle.jsonValue()
   if (!links) throw new Error('Rendered conditioning links were not found')
-  return links.map((link) => ({ id: String(link.id), center: link.center }))
+  return links.map((link) => ({ id: String(link.id), end: link.end }))
 }
 
-async function marqueeAcross(comfyPage: ComfyPage, centers: Point[]) {
-  const midX = centers.reduce((sum, [x]) => sum + x, 0) / centers.length
-  const ys = centers.map(([, y]) => y)
+async function marqueeBeforeInputs(comfyPage: ComfyPage, ends: Point[]) {
+  const x = Math.min(...ends.map(([endX]) => endX))
+  const ys = ends.map(([, y]) => y)
   await comfyPage.canvasOps.dragAndDrop(
-    { x: midX - 20, y: Math.min(...ys) - 40 },
-    { x: midX + 20, y: Math.max(...ys) + 40 }
+    { x: x - 60, y: Math.min(...ys) - 6 },
+    { x: x - 25, y: Math.max(...ys) + 6 }
   )
 }
 
@@ -73,10 +77,10 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
   }) => {
     const links = await conditioningLinks(comfyPage.page)
     const linkIds = links.map((link) => link.id)
-    const centers = links.map((link) => link.center)
+    const ends = links.map((link) => link.end)
 
     await test.step('Hide both links from the toolbox', async () => {
-      await marqueeAcross(comfyPage, centers)
+      await marqueeBeforeInputs(comfyPage, ends)
       await comfyPage.selectionToolbox
         .getByTestId(TestIds.selectionToolbox.hideLinks)
         .click()
@@ -108,7 +112,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     const otherLinkIds = allLinkIds.filter((id) => !linkIds.includes(id))
 
     await test.step('Delete both links from the toolbox', async () => {
-      await marqueeAcross(comfyPage, centers)
+      await marqueeBeforeInputs(comfyPage, ends)
       await comfyPage.selectionToolbox
         .getByTestId(TestIds.selectionToolbox.deleteLinks)
         .click()
@@ -126,7 +130,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     })
 
     await test.step('Delete both links with the Delete key', async () => {
-      await marqueeAcross(comfyPage, centers)
+      await marqueeBeforeInputs(comfyPage, ends)
       await expect(
         comfyPage.selectionToolbox.getByTestId(
           TestIds.selectionToolbox.deleteLinks
