@@ -3143,7 +3143,6 @@
           "src/platform/workflow/core/utils/pendingWarnings.test.ts",
           "src/platform/workflow/core/utils/pendingWarnings.ts",
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
-          "src/platform/workflow/management/stores/comfyWorkflow.test.ts",
           "src/platform/workflow/management/stores/comfyWorkflow.ts",
           "src/platform/workflow/management/stores/workflowStore.test.ts",
           "src/platform/workflow/management/stores/workflowStore.ts"

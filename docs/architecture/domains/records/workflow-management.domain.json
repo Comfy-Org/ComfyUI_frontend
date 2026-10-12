@@ -68,10 +68,6 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/workflow/management/stores/comfyWorkflow.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/management/stores/comfyWorkflow.ts",
       "role": "application"
     },
@@ -99,8 +95,7 @@
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",
       "checks": [
-        "src/platform/workflow/management/stores/workflowStore.test.ts",
-        "src/platform/workflow/management/stores/comfyWorkflow.test.ts"
+        "src/platform/workflow/management/stores/workflowStore.test.ts"
       ]
     },
     {
