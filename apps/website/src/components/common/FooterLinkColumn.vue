@@ -14,7 +14,7 @@ const { title, links } = defineProps<{
 <template>
   <nav :aria-label="title" class="flex flex-col gap-4">
     <h3
-      class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
+      class="text-sm font-bold tracking-wider text-primary-comfy-canvas/70 uppercase"
     >
       {{ title }}
     </h3>

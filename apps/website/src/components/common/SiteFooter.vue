@@ -239,7 +239,7 @@ const columnGroups: FooterColumn[][] = [
         </p>
 
         <div
-          class="flex flex-col items-start gap-4 text-primary-warm-gray lg:shrink-0 lg:items-end"
+          class="flex flex-col items-start gap-4 text-primary-comfy-canvas/70 lg:shrink-0 lg:items-end"
         >
           <LanguageSwitcher :locale :alternates />
           <div class="flex flex-wrap gap-6 text-sm">
