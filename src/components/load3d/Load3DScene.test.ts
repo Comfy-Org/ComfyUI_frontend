@@ -30,18 +30,6 @@ vi.mock(import('@/composables/useLoad3dDrag'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/common/LoadingOverlay.vue'), () => ({
-  default: {
-    name: 'LoadingOverlayStub',
-    props: ['loading', 'loadingMessage'],
-    template: `
-      <div data-testid="loading-overlay">
-        <span v-if="loading">{{ loadingMessage }}</span>
-      </div>
-    `
-  }
-}))
-
 type RenderOpts = {
   loading?: boolean
   loadingMessage?: string
@@ -77,9 +65,9 @@ describe('Load3DScene', () => {
     dragState.capturedOptions = null
   })
 
-  it('renders the loading overlay child', () => {
+  it('hides the loading overlay when not loading', () => {
     renderComponent()
-    expect(screen.getByTestId('loading-overlay')).toBeInTheDocument()
+    expect(screen.queryByTestId('loading-overlay')).not.toBeInTheDocument()
   })
 
   it('forwards loading + loadingMessage props to the overlay', () => {

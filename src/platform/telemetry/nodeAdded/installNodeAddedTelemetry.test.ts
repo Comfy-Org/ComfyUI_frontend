@@ -4,15 +4,12 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { useTelemetry } from '..'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
-const trackNodeAdded = vi.fn()
-
-vi.mock<unknown>(import('..'), () => ({
-  useTelemetry: () => ({ trackNodeAdded })
-}))
+vi.mock(import('..'))
 
 function fakeGraph(): LGraph {
   return {
@@ -44,7 +41,7 @@ describe('installNodeAddedTelemetry', () => {
       addNode(graph, 'KSampler')
     })
 
-    expect(trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
       node_type: 'KSampler',
       source: 'sidebar_drag'
     })
@@ -56,7 +53,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'CheckpointLoader')
 
-    expect(trackNodeAdded).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledWith({
       node_type: 'CheckpointLoader',
       source: 'unknown'
     })
@@ -69,7 +66,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'VAEDecode')
 
-    expect(trackNodeAdded).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackNodeAdded).not.toHaveBeenCalled()
   })
 
   it('leaves the onNodeAdded callback slot untouched', () => {
@@ -81,6 +78,6 @@ describe('installNodeAddedTelemetry', () => {
 
     expect(graph.onNodeAdded).toBe(previous)
     addNode(graph, 'LoadImage')
-    expect(trackNodeAdded).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledOnce()
   })
 })

@@ -1,9 +1,9 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 // Reference-to-video is the workflow people reach for first (Zhixiong), so every
 // "run Seedance" CTA opens that one on Cloud. The free-draft CTA in the steps

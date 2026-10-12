@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { operations } from '@/types/comfyRegistryTypes'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -64,6 +65,7 @@ async function openSignupEmailForm(page: Page) {
 test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => {
   test('shows the same neutral copy for a nonexistent account as a wrong password', async ({
     page,
+    toast,
     cloudAuth
   }) => {
     await cloudAuth.mockLiveEmailSignInFailure({
@@ -78,12 +80,12 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText('Invalid login credentials'),
+      toast.withText('Invalid login credentials'),
       'the same copy as a wrong password keeps sign-in from revealing whether an email has an account'
     ).toBeVisible()
   })
 
-  test('reports a disabled account', async ({ page, cloudAuth }) => {
+  test('reports a disabled account', async ({ page, toast, cloudAuth }) => {
     await cloudAuth.mockLiveEmailSignInFailure({
       code: 400,
       message: 'USER_DISABLED'
@@ -98,12 +100,13 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText('This account has been disabled. Please contact support.')
+      toast.withText('This account has been disabled. Please contact support.')
     ).toBeVisible()
   })
 
   test('reports rate limiting after repeated failed attempts', async ({
     page,
+    toast,
     cloudAuth
   }) => {
     await cloudAuth.mockLiveEmailSignInFailure({
@@ -118,7 +121,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         'Too many login attempts. Please wait a moment and try again.'
       )
     ).toBeVisible()
@@ -126,6 +129,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
 
   test('reports a duplicate email on sign-up instead of creating a second account', async ({
     page,
+    toast,
     cloudAuth
   }) => {
     await cloudAuth.mockLiveEmailSignUpFailure({
@@ -142,15 +146,14 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
 
     await expect(
-      page.getByText(
-        'An account with this email already exists. Try signing in instead.'
-      )
+      toast.withText(enMessages.auth.errors['auth/email-already-in-use'])
     ).toBeVisible()
     await expect(page).toHaveURL(/\/cloud\/signup/)
   })
 
   test('reports a dropped connection without claiming invalid credentials', async ({
     page,
+    toast,
     cloudAuth
   }) => {
     await cloudAuth.mockLiveEmailSignInTransportFailure()
@@ -164,7 +167,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         'Network error. Please check your connection and try again.'
       )
     ).toBeVisible()

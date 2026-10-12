@@ -1,6 +1,7 @@
 import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
@@ -18,8 +19,8 @@ import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -205,7 +206,7 @@ const createInputMappingWidget = (
 
   async function loadAll() {
     while (toValue(assetsStore.inputAssets.hasMore)) {
-      await assetsStore.inputAssets.loadMore()
+      if (!(await assetsStore.inputAssets.loadMore())) break
       node.setDirtyCanvas(true, false)
     }
   }
@@ -288,6 +289,10 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
+    registerComboWidgetInventory(widget, {
+      getStatus: remoteWidget.getInventoryStatus,
+      waitForSettled: remoteWidget.waitForInventory
+    })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 

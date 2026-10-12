@@ -1,11 +1,11 @@
 ---
 name: layer-audit
-description: 'Detect violations of the layered architecture import rules (base -> platform -> workbench -> renderer). Runs ESLint with the import-x/no-restricted-paths rule and generates a grouped report.'
+description: 'Detect violations of the layered architecture import rules (base -> platform -> workbench -> renderer). Runs oxlint with the comfy/no-restricted-paths rule and generates a grouped report.'
 ---
 
 # Layer Architecture Audit
 
-Finds imports that violate the layered architecture boundary rules enforced by `import-x/no-restricted-paths` in `eslint.config.ts`.
+Finds imports that violate the layered architecture boundary rules enforced by `comfy/no-restricted-paths` (`tools/oxlint-plugins/importPaths.ts`) in `.oxlintrc.json`.
 
 ## Layer Hierarchy (bottom to top)
 
@@ -24,15 +24,16 @@ Each layer may only import from layers below it.
 ## How to Run
 
 ```bash
-# Run ESLint filtering for just the layer boundary rule violations
-pnpm lint 2>&1 | grep 'import-x/no-restricted-paths' -B1 | head -200
+# Run oxlint filtering for just the layer boundary rule violations
+pnpm oxlint:main 2>&1 | grep 'comfy(no-restricted-paths)' | head -200
 ```
 
 To get a full structured report, run:
 
 ```bash
 # Collect all violations from base/, platform/, workbench/ layers
-pnpm eslint src/base/ src/platform/ src/workbench/ --no-error-on-unmatched-pattern --rule '{"import-x/no-restricted-paths": "warn"}' --format compact 2>&1 | grep 'no-restricted-paths' | sort
+pnpm exec oxlint src/base/ src/platform/ src/workbench/ --format=json 2>/dev/null \
+  | jq -r '.diagnostics[] | select(.code == "comfy(no-restricted-paths)") | "\(.filename):\(.labels[0].span.line) \(.message)"' | sort
 ```
 
 ## How to Read Results

@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
 import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
-import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 function createMockChip(
   data: string[] = ['IMAGE', 'LATENT', 'MODEL']

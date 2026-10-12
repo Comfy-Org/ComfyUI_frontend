@@ -29,7 +29,6 @@ const DROPPED_TAGS = new Set([
   'FORM',
   'NAV',
   'FOOTER',
-  'HEADER',
   'DIALOG',
   'SOURCE',
   'TRACK'
@@ -46,6 +45,7 @@ const BLOCK_TAGS = new Set([
   'DT',
   'FIGCAPTION',
   'FIGURE',
+  'HEADER',
   'MAIN',
   'P',
   'SECTION',
@@ -60,10 +60,6 @@ const ELEMENT_NODE = 1
 interface Context {
   base: string
   seenImages: Set<string>
-}
-
-interface HtmlToTwinOptions {
-  canonical?: string
 }
 
 function collapse(text: string): string {
@@ -86,10 +82,20 @@ function tag(element: Element): string {
   return element.tagName.toUpperCase()
 }
 
+/** HTML-AAM: a header outside main, article, aside and section is the site banner. */
+function isBanner(element: Element): boolean {
+  return (
+    tag(element) === 'HEADER' &&
+    element.closest('main, article, aside, section') === null
+  )
+}
+
 function isDropped(element: Element): boolean {
   return (
     DROPPED_TAGS.has(tag(element)) ||
-    element.getAttribute('aria-hidden') === 'true'
+    isBanner(element) ||
+    element.getAttribute('aria-hidden') === 'true' ||
+    element.hasAttribute('data-twin-omit')
   )
 }
 
@@ -277,11 +283,7 @@ function meta(document: Document, name: string): string {
 }
 
 /** Extract the page's main content as markdown, with absolute links. */
-export function htmlToTwin(
-  html: string,
-  fallbackCanonical: string,
-  options: HtmlToTwinOptions = {}
-): TwinPage {
+export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
   const window = new Window({
     settings: {
       disableJavaScriptEvaluation: true,
@@ -292,7 +294,6 @@ export function htmlToTwin(
   try {
     const document = new window.DOMParser().parseFromString(html, 'text/html')
     const canonical =
-      options.canonical ??
       document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
       fallbackCanonical
     const ctx: Context = { base: canonical, seenImages: new Set() }

@@ -47,51 +47,50 @@ test.describe(
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
-      const menu = comfyPage.page.locator('.p-contextmenu')
+      const menu = comfyPage.page.getByRole('menu')
       await expect(menu).toBeVisible()
-
-      // Wait for constrainMenuHeight (runs via requestAnimationFrame in onMenuShow)
-      await comfyPage.nextFrame()
 
       return menu
     }
 
-    test('last menu item "Remove" is reachable via scroll', async ({
+    test('last menu item "Delete" is reachable via scroll', async ({
       comfyPage
     }) => {
       const menu = await openMoreOptions(comfyPage)
-      const rootList = menu.locator(':scope > ul')
 
       await expect
-        .poll(
-          () => rootList.evaluate((el) => el.scrollHeight > el.clientHeight),
-          {
-            message:
-              'Menu should overflow vertically so this test exercises the viewport clamp'
-          }
-        )
+        .poll(() => menu.evaluate((el) => el.scrollHeight > el.clientHeight), {
+          message:
+            'Menu should overflow vertically so this test exercises the viewport clamp'
+        })
         .toBe(true)
 
-      // "Remove" is the last item in the More Options menu.
+      // "Delete" is the last item in the More Options menu.
       // It must become reachable by scrolling the bounded menu list.
-      const removeItem = menu.getByText('Remove', { exact: true })
-      const didScroll = await rootList.evaluate((el) => {
+      const deleteItem = menu.getByRole('menuitem', {
+        name: 'Delete',
+        exact: true
+      })
+      const didScroll = await menu.evaluate((el) => {
         const previousScrollTop = el.scrollTop
         el.scrollTo({ top: el.scrollHeight })
         return el.scrollTop > previousScrollTop
       })
       expect(didScroll).toBe(true)
-      await expect(removeItem).toBeVisible()
+      await expect(deleteItem).toBeVisible()
     })
 
-    test('last menu item "Remove" is clickable and removes the node', async ({
+    test('last menu item "Delete" is clickable and removes the node', async ({
       comfyPage
     }) => {
       const menu = await openMoreOptions(comfyPage)
 
-      const removeItem = menu.getByText('Remove', { exact: true })
-      await removeItem.scrollIntoViewIfNeeded()
-      await removeItem.click()
+      const deleteItem = menu.getByRole('menuitem', {
+        name: 'Delete',
+        exact: true
+      })
+      await deleteItem.scrollIntoViewIfNeeded()
+      await deleteItem.click()
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph

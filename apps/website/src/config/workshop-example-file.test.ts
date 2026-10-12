@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { workshopExampleFile } from './workshop-example-file'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import type { FormValues } from './workshop-playground'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { workshopExampleValues } from './workshop-example-values'
@@ -50,85 +51,107 @@ describe('example source images', () => {
       }
     }
   )
-  it.for([
-    'wan--reference-to-video-3.0--animate-images',
-    'wan--reference-video-2.7--animate-images'
-  ])(
-    'preserves both authored reference assets in order for %s',
-    async (slug) => {
-      const page = getRouterWorkshopModelDetail(slug)
-      if (!page?.execution) throw new Error('Missing Wan page')
-      const values = defaultValues(schemaForModel(page), page.defaults)
-      expect(values.image_url).toMatch(/^https:\/\//)
-      expect(values.image_url_2).toMatch(/^https:\/\//)
-      expect(values.image_url).not.toBe(values.image_url_2)
-      const sources = [values.image_url, values.image_url_2]
-      const uploaded: string[] = []
-      const downloads: string[] = []
-      let grants = 0
-      const transport = vi.fn<typeof fetch>(async (url, init) => {
-        if (init?.method === 'POST') {
-          grants += 1
-          return Response.json({
-            upload_url: `https://storage.example/upload-${grants}`,
-            download_url: `https://storage.example/reference-${grants}.png`
-          })
-        }
-        if (init?.method === 'PUT') {
-          if (!(init.body instanceof File)) throw new Error('Missing upload')
-          uploaded.push(await init.body.text())
-          return new Response(null)
-        }
-        downloads.push(String(url))
-        return new Response(String(url), {
-          headers: { 'Content-Type': 'image/png' }
+  async function prepareReferenceAssets(slug: string, companionUrl: string) {
+    const page = getRouterWorkshopModelDetail(slug)
+    if (!page?.execution) throw new Error('Missing Wan page')
+    const initialValues = defaultValues(schemaForModel(page), page.defaults)
+    const values: FormValues = { ...initialValues, image_url_2: companionUrl }
+    const uploaded: string[] = []
+    let grants = 0
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (init?.method === 'POST') {
+        grants += 1
+        return Response.json({
+          upload_url: `https://storage.example/upload-${grants}`,
+          download_url: `https://storage.example/reference-${grants}.png`
         })
-      })
-      vi.stubGlobal('fetch', transport)
-      const uploader = createWorkshopUrlUploader()
-      const body = await prepareWorkshopRouterInput(
-        page.execution,
-        values,
-        new AbortController().signal,
-        undefined,
-        (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
-      )
-      const rehosted = slug === 'wan--reference-to-video-3.0--animate-images'
-      expect(body).toMatchObject({
-        input: {
-          media: sources.map((source, index) => ({
-            type: 'reference_image',
-            url: rehosted
-              ? `https://storage.example/reference-${index + 1}.png`
-              : source
-          }))
-        }
-      })
-      expect(downloads).toEqual(rehosted ? sources : [])
-      expect(uploaded).toEqual(rehosted ? sources : [])
-      expect(transport).toHaveBeenCalledTimes(rehosted ? 6 : 0)
-      let uploadIndex = 0
-      for (const [url, init] of transport.mock.calls) {
-        if (init?.method === 'POST')
-          expect(String(url)).toMatch(/\/customers\/storage$/)
-        else if (init?.method === 'PUT') {
-          expect(String(url)).toBe(
-            `https://storage.example/upload-${++uploadIndex}`
-          )
-          expect(init.body).toMatchObject({ type: 'image/png' })
-        } else {
-          expect(init?.credentials).toBe('omit')
-          expect(sources).toContain(String(url))
-        }
       }
-    }
-  )
+      if (init?.method === 'PUT') {
+        if (!(init.body instanceof File)) throw new Error('Missing upload')
+        uploaded.push(await init.body.text())
+        return new Response(null)
+      }
+      return new Response(String(url), {
+        headers: { 'Content-Type': 'image/png' }
+      })
+    })
+    const uploader = createWorkshopUrlUploader()
+    const body = await prepareWorkshopRouterInput(
+      page.execution,
+      values,
+      new AbortController().signal,
+      undefined,
+      (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
+    )
+    return { body, primaryUrl: values.image_url, uploaded }
+  }
+
+  it('re-hosts the pinned template companion after the primary reference', async () => {
+    const companionUrl =
+      'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/reference.png'
+    const { body, primaryUrl, uploaded } = await prepareReferenceAssets(
+      'wan--reference-to-video-3.0--animate-images',
+      companionUrl
+    )
+
+    expect(primaryUrl).toMatch(/^https:\/\//)
+    expect(body).toMatchObject({
+      input: {
+        media: [
+          { type: 'reference_image', url: primaryUrl },
+          {
+            type: 'reference_image',
+            url: 'https://storage.example/reference-1.png'
+          }
+        ]
+      }
+    })
+    expect(uploaded).toEqual([companionUrl])
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledWith(
+      companionUrl,
+      expect.objectContaining({ credentials: 'omit' })
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/customers\/storage$/),
+      expect.objectContaining({ method: 'POST', credentials: 'omit' })
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      'https://storage.example/upload-1',
+      expect.objectContaining({
+        method: 'PUT',
+        credentials: 'omit',
+        body: expect.objectContaining({ type: 'image/png' })
+      })
+    )
+  })
+
+  it('passes both reference URLs through in order when neither is a template asset', async () => {
+    const companionUrl =
+      'https://example.com/wan--reference-video-2.7--animate-images.png'
+    const { body, primaryUrl, uploaded } = await prepareReferenceAssets(
+      'wan--reference-video-2.7--animate-images',
+      companionUrl
+    )
+
+    expect(primaryUrl).toMatch(/^https:\/\//)
+    expect(body).toMatchObject({
+      input: {
+        media: [
+          { type: 'reference_image', url: primaryUrl },
+          { type: 'reference_image', url: companionUrl }
+        ]
+      }
+    })
+    expect(uploaded).toEqual([])
+    expect(fetch).not.toHaveBeenCalled()
+  })
   it('preserves all reference images in a native multi-image request, not filenames or URLs as Base64', async () => {
     const page = getRouterWorkshopModelDetail(
       'bfl--flux-2-max--generate-images'
     )
     if (!page?.execution) throw new Error('Missing BFL page')
-    const fetchImage = vi.spyOn(globalThis, 'fetch').mockImplementation(
+    vi.mocked(fetch).mockImplementation(
       async (url) =>
         new Response(String(url), {
           headers: { 'Content-Type': 'image/png' }
@@ -145,9 +168,11 @@ describe('example source images', () => {
     expect([body.input_image, body.input_image_2, body.input_image_3]).toEqual(
       sources.map((source) => btoa(source))
     )
-    expect(fetchImage).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(3)
     expect(
-      fetchImage.mock.calls.every(([, init]) => init?.credentials === 'omit')
+      vi
+        .mocked(fetch)
+        .mock.calls.every(([, init]) => init?.credentials === 'omit')
     ).toBe(true)
   })
 
@@ -174,15 +199,13 @@ describe('example source images', () => {
       'vertexai--veo-3-first-last-frame--animate-images'
     )
     if (!page?.execution) throw new Error('Missing Veo page')
-    const fetchImage = vi
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(
-        async (url) =>
-          new Response(
-            String(url).includes('1.1.png') ? 'first frame' : 'last frame',
-            { headers: { 'Content-Type': 'image/png' } }
-          )
-      )
+    vi.mocked(fetch).mockImplementation(
+      async (url) =>
+        new Response(
+          String(url).includes('1.1.png') ? 'first frame' : 'last frame',
+          { headers: { 'Content-Type': 'image/png' } }
+        )
+    )
     const values = defaultValues(schemaForModel(page), page.defaults)
     expect(values.first_frame).toMatchObject({
       sourceUrl: expect.stringContaining('1.1.png')
@@ -211,15 +234,17 @@ describe('example source images', () => {
       ]
     })
     await prepare()
-    expect(fetchImage).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(
-      fetchImage.mock.calls.every(([, init]) => init?.credentials === 'omit')
+      vi
+        .mocked(fetch)
+        .mock.calls.every(([, init]) => init?.credentials === 'omit')
     ).toBe(true)
   })
 
   it('loads an extensionless media URL using its response content type', async () => {
     const source = 'https://example.com/media?id=123'
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       new Response('image bytes', {
         headers: { 'Content-Type': 'image/png' }
       })
@@ -279,7 +304,7 @@ describe('example source images', () => {
   ])(
     'rejects invalid or oversized media before encoding: $reason',
     async ({ response, error, source = 'https://example.com/source.png' }) => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => response())
+      vi.mocked(fetch).mockImplementation(async () => response())
       const value = workshopExampleFile(source)
       if (!value) throw new Error('Missing example')
       await expect(
@@ -289,7 +314,6 @@ describe('example source images', () => {
   )
 
   it('does not fetch invalid schemes, credentialed URLs, or after cancellation', async () => {
-    const fetchImage = vi.spyOn(globalThis, 'fetch')
     for (const url of [
       'file:///source.png',
       'javascript:alert(1)',
@@ -303,6 +327,6 @@ describe('example source images', () => {
     await expect(
       loadWorkshopExampleFile(value, controller.signal)
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(fetchImage).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
@@ -30,7 +32,7 @@ test.describe('Sign In dialog — auth error codes', () => {
 
     await expect(dialog.root).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Invalid login credentials'),
+      comfyPage.toast.withText('Invalid login credentials'),
       'the same copy as a wrong password keeps sign-in from revealing whether an email has an account'
     ).toBeVisible()
   })
@@ -50,7 +52,7 @@ test.describe('Sign In dialog — auth error codes', () => {
     await dialog.signInButton.click()
 
     await expect(
-      comfyPage.page.getByText(
+      comfyPage.toast.withText(
         'This account has been disabled. Please contact support.'
       )
     ).toBeVisible()
@@ -73,7 +75,7 @@ test.describe('Sign In dialog — auth error codes', () => {
     await dialog.signInButton.click()
 
     await expect(
-      comfyPage.page.getByText(
+      comfyPage.toast.withText(
         'Too many login attempts. Please wait a moment and try again.'
       )
     ).toBeVisible()
@@ -97,8 +99,8 @@ test.describe('Sign In dialog — auth error codes', () => {
     await dialog.signUpButton.click()
 
     await expect(
-      comfyPage.page.getByText(
-        'An account with this email already exists. Try signing in instead.'
+      comfyPage.toast.withText(
+        enMessages.auth.errors['auth/email-already-in-use']
       )
     ).toBeVisible()
     await expect(dialog.root).toBeVisible()
@@ -118,7 +120,7 @@ test.describe('Sign In dialog — auth error codes', () => {
     await dialog.signInButton.click()
 
     await expect(
-      comfyPage.page.getByText(
+      comfyPage.toast.withText(
         'Network error. Please check your connection and try again.'
       )
     ).toBeVisible()

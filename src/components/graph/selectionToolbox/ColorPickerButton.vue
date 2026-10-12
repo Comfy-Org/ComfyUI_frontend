@@ -1,10 +1,7 @@
 <template>
   <div class="relative">
     <Button
-      v-tooltip.top="{
-        value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 1000
-      }"
+      :tooltip="localizedCurrentColorName ?? t('color.noColor')"
       data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
@@ -23,37 +20,47 @@
       v-if="showColorPicker"
       class="absolute -top-10 left-1/2 -translate-x-1/2"
     >
-      <SelectButton
-        :model-value="selectedColorOption"
-        :options="colorOptions"
-        option-label="name"
-        data-key="value"
-        @update:model-value="applyColor"
+      <ToggleGroup
+        :model-value="selectedColorOption?.name"
+        type="single"
+        @update:model-value="applyColorName"
       >
-        <template #option="{ option }">
-          <i
-            v-tooltip.top="option.localizedName"
-            class="pi pi-circle-fill"
-            :style="{
-              color: isLightTheme ? option.value.light : option.value.dark
-            }"
-            :data-testid="option.name"
-          />
-        </template>
-      </SelectButton>
+        <TextTooltip
+          v-for="option in colorOptions"
+          :key="option.name"
+          :text="option.localizedName"
+        >
+          <ToggleGroupItem
+            :value="option.name"
+            :aria-label="option.localizedName"
+            class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
+          >
+            <i
+              class="pi pi-circle-fill"
+              :style="{
+                color: isLightTheme ? option.value.light : option.value.dark
+              }"
+              :data-testid="option.name"
+            />
+          </ToggleGroupItem>
+        </TextTooltip>
+      </ToggleGroup>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import SelectButton from 'primevue/selectbutton'
+import { useEventListener } from '@vueuse/core'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 import type {
   ColorOption as CanvasColorOption,
+  LiteGraphCanvasEvent,
   Positionable
 } from '@/lib/litegraph/src/litegraph'
 import {
@@ -109,6 +116,13 @@ const colorOptions: ColorOption[] = [
 ]
 
 const selectedColorOption = ref<ColorOption | null>(null)
+const applyColorName = (value: unknown) => {
+  if (typeof value === 'string') {
+    applyColor(colorOptions.find((option) => option.name === value) ?? null)
+  } else {
+    applyColor(null)
+  }
+}
 const applyColor = (colorOption: ColorOption | null) => {
   const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
   const canvasColorOption =
@@ -123,6 +137,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   }
 
   canvasStore.canvas?.setDirty(true, true)
+  selectedColorOption.value = colorOption
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
   workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
@@ -153,6 +168,15 @@ const updateColorSelectionFromNode = (
   selectedColorOption.value = null
   currentColorOption.value = getItemsColorOption(newSelectedItems)
 }
+useEventListener(
+  document,
+  'litegraph:canvas',
+  (event: LiteGraphCanvasEvent) => {
+    if (event.detail.subType === 'after-change') {
+      updateColorSelectionFromNode(canvasStore.selectedItems)
+    }
+  }
+)
 watch(
   () => canvasStore.selectedItems,
   (newSelectedItems) => {
@@ -161,9 +185,3 @@ watch(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-:deep(.p-togglebutton) {
-  padding: calc(var(--spacing) * 2) var(--spacing);
-}
-</style>

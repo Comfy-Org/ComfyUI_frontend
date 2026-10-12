@@ -58,7 +58,7 @@ In doing a code review, you should make sure that:
 - Tests are well-designed.
 - The developer used clear names for everything.
 - Comments are clear and useful, and mostly explain why instead of what.
-- Code is appropriately documented (generally in g3doc).
+- Code is appropriately documented (in `docs/`, or an ADR under `docs/adr/` for an architectural decision).
 - The code conforms to our style guides.
 
 ### [Complexity](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity)

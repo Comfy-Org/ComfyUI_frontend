@@ -1,7 +1,10 @@
 import type { ComputedRef, Ref } from 'vue'
 
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -9,6 +12,7 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  RenewalInvoice,
   ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
@@ -18,7 +22,48 @@ import type {
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
-export type BillingType = 'legacy' | 'workspace'
+/** `unknown` until the active workspace has loaded; no billing call may be made yet. */
+export type BillingType = 'legacy' | 'workspace' | 'unknown'
+
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      isChange?: boolean
+    }
+
+export interface SubscriptionDialogOptions {
+  reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
+}
+
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+export type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
+
+export interface DowngradeToPersonalResult {
+  preview: PreviewSubscribeResponse
+  response: SettledSubscribeResponse
+}
 
 export interface SubscriptionInfo {
   isActive: boolean
@@ -32,8 +77,17 @@ export interface SubscriptionInfo {
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
+  /** Agent funds across shared credits and the Agent-scoped balance. */
+  agentHasFunds: boolean
 }
 
+/**
+ * Balance amounts from `GET /customers/balance` and `GET /api/billing/balance`.
+ * Despite the `Micros` suffixes every field is in CENTS: the backend reports
+ * Metronome's USD-cents credit balance verbatim, so format with
+ * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)
+ * rather than dividing by 1,000,000.
+ */
 export interface BalanceInfo {
   amountMicros: number
   currency: string
@@ -55,7 +109,7 @@ export interface BillingActions {
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
-  cancelSubscription: () => Promise<void>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
@@ -117,11 +171,20 @@ export interface BillingState {
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
+  /** Open renewal invoice to pay; owners while payment_failed or paused. */
+  renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
-export interface BillingContext extends BillingState, BillingActions {
+/** The rail a cancel actually ran on, fixed when the call was dispatched. */
+export type CancelRail = Exclude<BillingType, 'unknown'>
+
+export interface BillingContext
+  extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
   type: ComputedRef<BillingType>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
+  /** Reads the checkout rail's status; true once its pending operation is adopted. */
+  readCheckoutOperation: () => Promise<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.

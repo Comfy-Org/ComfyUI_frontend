@@ -34,7 +34,7 @@
     </div>
 
     <PricingTable
-      :reason
+      :reason="paymentIntentSource"
       class="flex-1"
       @choose-team-workspace="handleChooseTeam"
     />
@@ -163,9 +163,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
-const { onClose, reason, onChooseTeam } = defineProps<{
+const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   onChooseTeam?: () => void
 }>()
 

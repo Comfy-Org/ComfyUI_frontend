@@ -2,7 +2,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -16,9 +15,7 @@ vi.mock(import('@/extensions/core/textPreviewWidgets'), () => ({
   updateTextPreviewWidgets
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: {} })
-}))
+vi.mock(import('@/scripts/app'))
 
 const capturedExtensions: ComfyExtension[] = []
 

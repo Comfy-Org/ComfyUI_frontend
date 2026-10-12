@@ -1,6 +1,6 @@
 /**
  * The billing view layer: composables and an unstyled component over the
- * framework-free core in `@comfyorg/account/billing`. A host builds the core
+ * framework-free core in `@comfyorg/account-core/billing`. A host builds the core
  * once, provides it, renders what these expose, and disposes it when the
  * session scope ends; routing, windows, dialogs, the payment provider's SDK,
  * and styling all stay with the host.
@@ -16,6 +16,15 @@ export type { BillingOperationSelector } from './useBillingOperation'
 export { useBillingOperation } from './useBillingOperation'
 export type { Credits, CreditsOptions } from './useCredits'
 export { useCredits } from './useCredits'
+export type { Plans, PlansOptions } from './usePlans'
+export { usePlans } from './usePlans'
+export type { PaymentMethods, PaymentMethodsOptions } from './usePaymentMethods'
+export { usePaymentMethods } from './usePaymentMethods'
+export type {
+  SubscriptionQuote,
+  SubscriptionQuoteOptions
+} from './usePreviewSubscribe'
+export { usePreviewSubscribe } from './usePreviewSubscribe'
 export type {
   OpenUrlMode,
   PaymentAttempt,

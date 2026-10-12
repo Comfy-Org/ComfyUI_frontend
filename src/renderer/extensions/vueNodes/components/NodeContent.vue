@@ -23,7 +23,8 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2 flex-auto"
+        class="flex-auto"
+        :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
       />
     </slot>
   </div>
@@ -39,6 +40,7 @@ import { st } from '@/i18n'
 import VideoPreview from '../VideoPreview.vue'
 import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
+import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState

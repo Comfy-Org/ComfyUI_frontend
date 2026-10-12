@@ -53,7 +53,7 @@ export class PointCloudModelAdapter implements ModelAdapter {
     ctx.setOriginalModel(plyGeometry)
     plyGeometry.computeVertexNormals()
 
-    const hasVertexColors = plyGeometry.attributes.color !== undefined
+    const hasVertexColors = plyGeometry.hasAttribute('color')
     const hasFaces = (plyGeometry.index?.count ?? 0) > 0
 
     const object =
@@ -137,7 +137,7 @@ export function buildPointCloudForMaterialMode(
   originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
 ): THREE.Group {
   const geometry = originalGeometry.clone()
-  const hasVertexColors = geometry.attributes.color !== undefined
+  const hasVertexColors = geometry.hasAttribute('color')
 
   const ctx: ModelLoadContext = {
     setOriginalModel: () => {},

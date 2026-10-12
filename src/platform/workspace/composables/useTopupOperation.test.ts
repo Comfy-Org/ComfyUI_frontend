@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import {
@@ -11,6 +12,9 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
+vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
@@ -32,23 +36,11 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-const mockContextTopup = vi.hoisted(() =>
-  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | undefined>>()
-)
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ topup: mockContextTopup })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -58,6 +50,9 @@ vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
 let harness: ReturnType<typeof fakeBillingSdk>
 
 beforeEach(() => {
+  stubAccountIdentityPort()
+  const billingContext = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true
@@ -124,7 +119,7 @@ describe('useTopupOperation', () => {
       status: 'completed',
       amount_cents: 1000
     }
-    mockContextTopup.mockResolvedValue(response)
+    vi.mocked(useBillingContext().topup).mockResolvedValue(response)
 
     await expect(useTopupOperation().topup(1000)).resolves.toBe(response)
 
@@ -150,8 +145,34 @@ describe('useTopupOperation', () => {
     expect(harness.sdk.topup.createTopupCheckout).toHaveBeenCalledWith({
       amountCents: 1000
     })
-    expect(mockContextTopup).not.toHaveBeenCalled()
+    expect(useBillingContext().topup).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { rail: 'legacy', flagOn: false, registers: true },
+    { rail: 'SDK', flagOn: true, registers: false }
+  ])(
+    'registers exactly one poller per pending top-up on the $rail rail',
+    ({ flagOn, registers }) => {
+      flagState.billingSdkTopupEnabled = flagOn
+      const store = useBillingOperationStore()
+
+      // Not awaited: the legacy registration settles only when the operation
+      // does, which is the reason the dialog holds it as a promise.
+      void useTopupOperation()
+        .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
+        .catch(() => {})
+
+      expect(store.startOperation).toHaveBeenCalledTimes(registers ? 1 : 0)
+      if (registers) {
+        expect(store.startOperation).toHaveBeenCalledWith(
+          'op-pending',
+          'topup',
+          { attemptStartedAt: 1000, autoHandleRequiresAction: true }
+        )
+      }
+    }
+  )
 
   it('surfaces an SDK refusal as a workspace error', async () => {
     flagState.billingSdkTopupEnabled = true

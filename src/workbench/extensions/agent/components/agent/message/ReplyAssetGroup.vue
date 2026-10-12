@@ -2,6 +2,8 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -120,14 +122,11 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.filename,
+      title: assetNames.value[asset.url] || asset.label || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true,
+        ...LOAD3D_VIEWER_DIALOG_PROPS,
         onClose: () => refreshModelThumbnail(asset)
       }
     })
@@ -148,7 +147,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -168,6 +167,7 @@ function stopPreview(event: Event): void {
           v-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
+          data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
@@ -203,13 +203,27 @@ function stopPreview(event: Event): void {
         >
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
+        </span>
       </button>
     </div>
 
-    <button
+    <Button
       v-if="collapsible"
       type="button"
-      class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
+      variant="outline"
+      size="sm"
+      class="self-center rounded-full border-component-node-border"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -218,19 +232,21 @@ function stopPreview(event: Event): void {
           cn('icon-[lucide--chevron-down] size-3', expanded && 'rotate-180')
         "
       />
-    </button>
+    </Button>
 
     <div v-if="audio.length" class="flex flex-col gap-1">
       <ReplyAudioCard
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.filename"
+        :title="assetNames[asset.url] || asset.label || asset.filename"
       />
-      <button
+      <Button
         v-if="audioCollapsible"
         type="button"
-        class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
+        variant="outline"
+        size="sm"
+        class="self-center rounded-full border-component-node-border"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -242,7 +258,7 @@ function stopPreview(event: Event): void {
             )
           "
         />
-      </button>
+      </Button>
     </div>
 
     <MediaLightbox

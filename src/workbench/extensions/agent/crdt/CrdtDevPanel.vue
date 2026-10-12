@@ -22,6 +22,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
@@ -37,11 +39,17 @@ import {
   collectCrdtDebugReport
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import {
+  DEV_EVENT_KINDS,
+  clearDevEvents,
+  devEvents,
+  stringifyDevEvents
+} from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 /**
@@ -159,24 +167,6 @@ const STATUS_ROWS = [
 ] as const
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
-
-const EVENT_KINDS: readonly DevEventKind[] = [
-  'ws_out',
-  'doc_subscribed',
-  'doc_update',
-  'doc_ops_result',
-  'human_ops_settled',
-  'doc_reset',
-  'doc_nodes_changed',
-  'schema_error',
-  'reconnected',
-  'subscribe_retry',
-  'stale_probe',
-  'rebind',
-  'doc_gap',
-  'doc_stale',
-  'frame_send_failed'
-]
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-success-background border-success-background',
@@ -475,16 +465,40 @@ async function copyReport() {
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
+      agentMessages: useAgentConversationStore().messages,
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
+      mediaUiDiagnostics: collectCurrentMediaUiDiagnostics(),
       sources: reportSources.value,
       ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
     await copyCollectedReport(report)
   } catch (error) {
-    reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_report_copy_failed'
+    })
     reportCopyState.value = { status: 'failed', report: null }
+  }
+}
+
+function collectCurrentMediaUiDiagnostics() {
+  try {
+    const nodeOutputStore = useNodeOutputStore()
+    return collectMediaUiDiagnostics({
+      nodes: collectAllNodes(app.rootGraph),
+      getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
+      getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
+      root: document
+    })
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_crdt_media_ui_diagnostics_failed',
+      level: 'warning'
+    })
+    return undefined
   }
 }
 
@@ -836,7 +850,7 @@ function fmtTime(at: number): string {
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
-              <option v-for="kind in EVENT_KINDS" :key="kind" :value="kind">
+              <option v-for="kind in DEV_EVENT_KINDS" :key="kind" :value="kind">
                 {{ kind }}
               </option>
             </select>
@@ -1118,7 +1132,7 @@ function fmtTime(at: number): string {
           </button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
-          <p role="alert" class="text-danger m-0">
+          <p role="alert" class="m-0 text-destructive-background">
             {{
               reportCopyState.report === null
                 ? t('agent.diagnosticReport.collectionFailed')

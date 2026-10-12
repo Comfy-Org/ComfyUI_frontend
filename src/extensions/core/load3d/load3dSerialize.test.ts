@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive, toRaw, watch } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
@@ -83,5 +84,54 @@ describe('snapshotLoad3dState', () => {
       makeLoad3d({ modelInfo: null })
     )
     expect(result.model_3d_info).toEqual([])
+  })
+
+  describe('with reactive node.properties (node data store proxy)', () => {
+    it('records the camera state without notifying Camera Config watchers', async () => {
+      const props = reactive<Record<string, unknown>>({
+        'Camera Config': { cameraType: 'perspective', fov: 75, state: null }
+      })
+      const node = { properties: props } as unknown as LGraphNode
+      let triggers = 0
+      watch(
+        () => props['Camera Config'],
+        () => {
+          triggers++
+        },
+        { deep: true }
+      )
+
+      const result = snapshotLoad3dState(node, makeLoad3d())
+      await nextTick()
+
+      expect(triggers).toBe(0)
+      expect(result.camera_info).toBe(baseCameraState)
+      expect(
+        (toRaw(props)['Camera Config'] as Record<string, unknown>).state
+      ).toBe(baseCameraState)
+    })
+
+    it('creates Camera Config without notifying watchers when it is absent', async () => {
+      const props = reactive<Record<string, unknown>>({})
+      const node = { properties: props } as unknown as LGraphNode
+      let triggers = 0
+      watch(
+        () => props['Camera Config'],
+        () => {
+          triggers++
+        },
+        { deep: true }
+      )
+
+      snapshotLoad3dState(node, makeLoad3d({ fov: 42 }))
+      await nextTick()
+
+      expect(triggers).toBe(0)
+      expect(toRaw(props)['Camera Config']).toMatchObject({
+        cameraType: 'perspective',
+        fov: 42,
+        state: baseCameraState
+      })
+    })
   })
 })

@@ -104,12 +104,19 @@ When making API calls in `src/`:
 
 ```typescript
 // ✅ Correct - use api helpers
-const response = await api.get(api.apiURL('/prompt'))
+// fetchApi() takes a route and applies apiURL() internally
+const response = await api.fetchApi('/prompt', { method: 'POST' })
+
+// For non-/api assets, build the URL with fileURL()
 const template = await fetch(api.fileURL('/templates/default.json'))
 
 // ❌ Wrong - direct URL construction
 const response = await fetch('/api/prompt')
 ```
+
+`apiURL(route)` prefixes `/api` (unless the route already starts with `/api`);
+`fileURL(route)` does not. Use `apiURL()` directly only when you need the string
+rather than the request.
 
 ## Security
 

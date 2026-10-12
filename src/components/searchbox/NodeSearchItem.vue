@@ -11,11 +11,11 @@
           <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
         </span>
         <span>&nbsp;</span>
-        <Tag v-if="showIdName" severity="secondary">
+        <Badge v-if="showIdName" severity="secondary">
           <span>
             <HighlightedText :text="nodeDef.name" :query="currentQuery" />
           </span>
-        </Tag>
+        </Badge>
       </div>
       <div
         v-if="showCategory"
@@ -25,38 +25,34 @@
       </div>
     </div>
     <div class="option-badges">
-      <Tag
-        v-if="nodeDef.deprecated"
-        :value="$t('g.deprecated')"
-        severity="danger"
-      />
-      <Tag
-        v-if="nodeDef.experimental"
-        :value="$t('g.experimental')"
-        severity="primary"
-      />
-      <Tag v-if="nodeDef.dev_only" :value="$t('g.devOnly')" severity="info" />
-      <Tag
-        v-if="showNodeFrequency && nodeFrequency > 0"
-        :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
-        severity="secondary"
-      />
-      <Chip
+      <Badge v-if="nodeDef.deprecated" severity="danger">
+        {{ $t('g.deprecated') }}
+      </Badge>
+      <Badge v-if="nodeDef.experimental" severity="primary">
+        {{ $t('g.experimental') }}
+      </Badge>
+      <Badge v-if="nodeDef.dev_only" severity="info">
+        {{ $t('g.devOnly') }}
+      </Badge>
+      <Badge v-if="showNodeFrequency && nodeFrequency > 0" severity="secondary">
+        {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
+      </Badge>
+      <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        variant="chip"
         class="text-sm font-light"
       >
         {{ nodeDef.nodeSource.displayText }}
-      </Chip>
+      </Badge>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import HighlightedText from '@/components/searchbox/HighlightedText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

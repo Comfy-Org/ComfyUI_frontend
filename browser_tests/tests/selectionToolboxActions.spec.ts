@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import {
   comfyExpect as expect,
@@ -314,8 +314,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/api/prompt', async (route) => {
       const promptResponse: PromptResponse = {
         prompt_id: '1',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await route.fulfill({
         status: 200,

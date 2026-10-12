@@ -38,6 +38,14 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops browser-extension messaging noise', () => {
+    const event = createErrorEvent(
+      'Error: Invalid call to runtime.sendMessage(). Tab not found.'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops fetch failures to the RUM intake itself (adblocker noise)', () => {
     const event = createErrorEvent(
       'Failed to fetch https://browser-intake-us5-datadoghq.com/api/v2/rum'

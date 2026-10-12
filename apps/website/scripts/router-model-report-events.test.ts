@@ -11,6 +11,101 @@ const source = { revision: '1234567', dirty: true, runId: 'campaign-1' }
 const at = '2026-09-11T00:00:00.000Z'
 
 describe('public Router result events', () => {
+  it.for([
+    ['concurrency', 'concurrency-limit', 'blocked'],
+    ['rateLimit', 'rate-limit', 'blocked'],
+    ['noCredits', 'no-credits', 'blocked'],
+    ['unavailable', 'unavailable', 'blocked'],
+    ['validation', 'invalid-input', 'failed'],
+    ['provider', 'provider-error', 'failed'],
+    ['policy', 'policy', 'failed'],
+    ['timeout', 'timeout', 'failed'],
+    ['verification', 'invalid-artifact', 'failed'],
+    ['unrecognized', 'unknown', 'failed'],
+    ['constructor', 'unknown', 'failed'],
+    ['__proto__', 'unknown', 'failed'],
+    [undefined, 'unknown', 'failed']
+  ])('classifies reason %s as %s', ([reason, failure, status]) => {
+    expect(
+      routerReportUpdate(model, 'prod', source, {
+        at,
+        phase: 'generation',
+        status: 'failed',
+        reason
+      })?.live
+    ).toMatchObject({ status, failure })
+  })
+
+  it.for([
+    {
+      reason: 'upload',
+      response: { status: 429, errorType: 'concurrency_limit_exceeded' },
+      failure: 'upload'
+    },
+    {
+      reason: 'provider',
+      response: { status: 429 },
+      failure: 'rate-limit'
+    },
+    {
+      reason: 'provider',
+      response: { status: 401 },
+      failure: 'authentication'
+    },
+    {
+      reason: 'noCredits',
+      response: { status: 402, errorType: 'invalid_input' },
+      failure: 'no-credits'
+    },
+    {
+      reason: 'unavailable',
+      response: { status: 403, errorType: 'provider_error' },
+      failure: 'unavailable'
+    },
+    {
+      reason: 'provider',
+      response: { status: 400, errorType: 'invalid_input' },
+      failure: 'invalid-input'
+    },
+    {
+      reason: 'validation',
+      response: { status: 500, errorType: 'provider_error' },
+      failure: 'invalid-input'
+    },
+    {
+      reason: 'unknown',
+      response: { status: 502, errorType: 'provider_error' },
+      failure: 'provider-error'
+    }
+  ])(
+    'preserves $failure precedence for $reason and $response',
+    ({ reason, response, failure }) => {
+      expect(
+        routerReportUpdate(model, 'prod', source, {
+          at,
+          phase: 'generation',
+          status: 'failed',
+          reason,
+          response
+        })?.live
+      ).toHaveProperty('failure', failure)
+    }
+  )
+
+  it.for(['upload', 'network', 'response', 'client', 'conflict'] as const)(
+    'keeps %s separate from a provider failure',
+    (reason) => {
+      expect(
+        routerReportUpdate(model, 'prod', source, {
+          at,
+          phase: 'generation',
+          status: 'failed',
+          reason
+        })?.live
+      ).toMatchObject({ status: 'failed', failure: reason })
+    }
+  )
+
   it('reports caller cancellation without a provider failure', () => {
     expect(
       routerReportUpdate(model, 'prod', source, {

@@ -1,8 +1,10 @@
-import type { ComfyApp } from '@/scripts/app'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   AssetItem,
   AssetResponse
@@ -14,7 +16,6 @@ import {
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -22,16 +23,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -43,10 +35,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -97,19 +86,13 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 beforeEach(() => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
-    () => registeredNodeTypes
-  )
-  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
-    (nodeType: string) => nodeTypeCategories[nodeType]
+  useNodeDefStore().nodeDefsByName = Object.fromEntries(
+    [
+      'CheckpointLoaderSimple',
+      'LoraLoader',
+      'LoadLoraModel',
+      'LoadLoraTextEncoder'
+    ].map((name) => [name, fromPartial({ name })])
   )
   vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
     mockInvalidateInputAssets
@@ -149,6 +132,41 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
         'ckpt_name'
       )
     ).toBe(true)
+  })
+
+  it.for([
+    ['LoadLoraModel', 'loras.0.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.19.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.0.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.1.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.19.lora_name']
+  ])('uses the asset picker for %s / %s on cloud', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(true)
+  })
+
+  it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
+    'keeps the combo widget for %s outside cloud',
+    (nodeType) => {
+      mockDistributionState.isCloud = false
+      expect(
+        assetService.shouldUseWidgetAssetPicker(nodeType, 'loras.1.lora_name')
+      ).toBe(false)
+    }
+  )
+
+  it.for([
+    ['LoadLoraModel', 'loras.1.strength'],
+    ['LoadLoraModel', 'loras.-1.lora_name'],
+    ['LoadLoraModel', 'loras.01.lora_name'],
+    ['LoadLoraModel', 'prefix.loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name.suffix'],
+    ['LoraLoader', 'loras.1.lora_name'],
+    ['UnknownNode', 'loras.1.lora_name']
+  ])('does not treat %s / %s as an asset input', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(false)
   })
 
   it('returns false when nodeType is undefined', () => {
@@ -220,7 +238,6 @@ describe(assetService.getAssetMetadata, () => {
 
 describe(assetService.uploadAssetFromUrl, () => {
   it('rejects when the upload response is invalid', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await expect(
@@ -230,11 +247,9 @@ describe(assetService.uploadAssetFromUrl, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    consoleSpy.mockRestore()
   })
 
   it('rejects when upload response lacks created_new', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
     )
@@ -246,7 +261,6 @@ describe(assetService.uploadAssetFromUrl, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    consoleSpy.mockRestore()
   })
 
   it('returns validated upload responses with created_new', async () => {
@@ -279,10 +293,7 @@ describe(assetService.uploadAssetFromBase64, () => {
   })
 
   it('rejects when the upload response is invalid', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await expect(
@@ -292,15 +303,11 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
-    consoleSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 
   it('rejects upload responses with a non-boolean created_new', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({
         ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
@@ -315,8 +322,7 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
-    consoleSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 })
 
@@ -398,7 +404,7 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -447,7 +453,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -467,7 +473,7 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -481,7 +487,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -498,7 +504,6 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('drops uncategorized model assets with a warning', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -517,14 +522,12 @@ describe(assetService.getAssetModels, () => {
     const loras = await assetService.getAssetModels('loras')
 
     expect(loras).toEqual([{ name: 'ok.safetensors', pathIndex: 0 }])
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('orphan.safetensors')
     )
-    warn.mockRestore()
   })
 
   it('maps loader_path and drops unloadable assets without one', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -550,14 +553,12 @@ describe(assetService.getAssetModels, () => {
     const models = await assetService.getAssetModels('checkpoints')
 
     expect(models).toEqual([{ name: 'sdxl/model.safetensors', pathIndex: 0 }])
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('orphan.safetensors')
     )
-    warn.mockRestore()
   })
 
   it('drops assets whose loader path is traversal-shaped', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -595,12 +596,11 @@ describe(assetService.getAssetModels, () => {
       { name: 'fine.safetensors', pathIndex: 0 },
       { name: 'flux..v2.safetensors', pathIndex: 0 }
     ])
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('unsafe'))
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('unsafe'))
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -617,7 +617,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -737,6 +737,111 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves a legacy hierarchical category from its top-level bucket', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'chatglm3',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        }),
+        validAsset({
+          id: 'llm-vae',
+          name: 'llm-vae.safetensors',
+          tags: ['models', 'LLM/vae']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([
+      { name: 'chatglm3-checkpoint.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it('excludes sibling categories from a hierarchical legacy lookup', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'base',
+          name: 'base.safetensors',
+          tags: ['models', 'chatterbox/chatterbox']
+        }),
+        validAsset({
+          id: 'turbo',
+          name: 'turbo.safetensors',
+          tags: ['models', 'chatterbox/chatterbox_turbo']
+        }),
+        validAsset({
+          id: 'nested',
+          name: 'nested.safetensors',
+          tags: ['models', 'chatterbox/chatterbox/gguf']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('chatterbox/chatterbox')
+
+    expect(models).toEqual([
+      { name: 'base.safetensors', pathIndex: 0 },
+      { name: 'nested.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it.for([
+    {
+      name: 'resolves a covered asset by its bare tag on legacy backends',
+      modelTypeMode: false,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'resolves an uncovered asset on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'keeps covered assets exact on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: []
+    }
+  ])(
+    '$name for a hierarchical query',
+    async ({ modelTypeMode, tags, expected }) => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = modelTypeMode
+      fetchApiMock.mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({ id: 'chatglm3', name: 'chatglm3.safetensors', tags })
+        ])
+      )
+
+      const models = await assetService.getAssetModels('LLM/checkpoints')
+
+      expect(models).toEqual(expected)
+    }
+  )
+
+  it('does not use legacy parent folders for model-type categories', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'checkpoint',
+          name: 'checkpoint.safetensors',
+          tags: ['models', 'model_type:LLM']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([])
   })
 })
 
@@ -931,7 +1036,6 @@ describe(assetService.getAllAssetsByTag, () => {
   })
 
   it('caps a runaway cursor walk at the batch backstop', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     let page = 0
     fetchApiMock.mockImplementation(() =>
       Promise.resolve(
@@ -948,8 +1052,9 @@ describe(assetService.getAllAssetsByTag, () => {
 
     expect(fetchApiMock).toHaveBeenCalledTimes(1000)
     expect(assets).toHaveLength(1000)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('backstop'))
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('backstop')
+    )
   })
 
   it('stops walking when next_cursor is absent even if has_more is true', async () => {
@@ -1165,7 +1270,4 @@ describe(assetService.getAssetsForNodeType, () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

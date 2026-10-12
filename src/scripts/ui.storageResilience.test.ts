@@ -37,7 +37,7 @@ function installThrowingLocalStorage() {
     setItem() {
       throw new Error('Access to storage is not allowed from this context.')
     }
-  } as unknown)
+  })
 }
 
 describe('menu position restore is resilient to unusable localStorage', () => {
@@ -57,7 +57,7 @@ describe('menu position restore is resilient to unusable localStorage', () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => '{not valid json'),
       setItem: vi.fn()
-    } as unknown)
+    })
 
     expect(() => app.ui.restoreMenuPosition()).not.toThrow()
   })
@@ -71,7 +71,7 @@ describe('menu position restore is resilient to unusable localStorage', () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => JSON.stringify({ x: 12, y: 34 })),
       setItem
-    } as unknown)
+    })
     // `positionElement()` bails out while the menu is hidden, and setup() hides
     // it by default.
     const { menuContainer } = app.ui

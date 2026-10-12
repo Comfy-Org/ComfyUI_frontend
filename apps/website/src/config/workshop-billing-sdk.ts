@@ -1,5 +1,5 @@
 /**
- * The Workshop's one composition of `@comfyorg/account/billing`, mirroring
+ * The Workshop's one composition of `@comfyorg/account-core/billing`, mirroring
  * the cloud app's `createBillingSdk`: the session-backed transport, the
  * readers over it, the operation lifecycle, and the top-up command. Every
  * constructor call lives here, so a change to their options is a one-file
@@ -7,15 +7,19 @@
  * dialog never constructs it — and nothing reaches sessionStorage on a
  * server render.
  */
-import type { BillingSession, TopupCommand } from '@comfyorg/account/billing'
+import type {
+  BillingSession,
+  TopupCommand
+} from '@comfyorg/account-core/billing'
 import {
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
   createCreditsReader,
   createSessionBillingTransport,
-  createTopupCommand
-} from '@comfyorg/account/billing'
+  createTopupCommand,
+  sessionBillingScopeSource
+} from '@comfyorg/account-core/billing'
 
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
@@ -34,13 +38,14 @@ function createWorkshopTopupCommand(session: BillingSession): TopupCommand {
     resolveUrl: (route) => `${WORKSHOP_CLOUD_BASE_URL}/api${route}`,
     workspaceId: () => mintWorkspaceId(session)
   })
-  const credits = createCreditsReader({ transport, session })
-  const capabilities = createCapabilitiesReader({ transport, session })
+  const scopeSource = sessionBillingScopeSource(session)
+  const credits = createCreditsReader({ transport, scopeSource })
+  const capabilities = createCapabilitiesReader({ transport, scopeSource })
   // No `onTelemetry`: the site has no billing-operation funnel to feed.
   const lifecycle = createBillingOperationLifecycle({
     transport,
-    session,
-    statusReader: createBillingStatusReader({ transport, session }),
+    scopeSource,
+    statusReader: createBillingStatusReader({ transport, scopeSource }),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () => false
   })

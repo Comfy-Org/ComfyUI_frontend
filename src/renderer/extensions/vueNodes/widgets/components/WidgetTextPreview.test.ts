@@ -7,7 +7,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -15,6 +18,7 @@ import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetTextPreview from './WidgetTextPreview.vue'
 
@@ -35,9 +39,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  resolveNode: () => ({})
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 interface SavedFile {
   filename: string
@@ -97,6 +99,7 @@ function renderPreview(
 }
 
 beforeEach(() => {
+  vi.mocked(resolveNode).mockReturnValue(fromPartial({}))
   vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockReturnValue(LOCATOR)
 })
 
