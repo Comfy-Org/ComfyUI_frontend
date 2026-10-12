@@ -24,6 +24,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       ? await getOutputsForTask(targetTask)
       : null
 
+    // Request was superseded by a newer one
     if (targetOutputs === null && targetTask) return
 
     const previewOutput = targetTask?.previewOutput
@@ -32,6 +33,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       return
     }
 
+    // Use target's outputs if available, otherwise fall back to all previews
     const items = (
       targetOutputs?.length
         ? targetOutputs

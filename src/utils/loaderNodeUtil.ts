@@ -10,6 +10,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 /**
  * Detect loader node type from filename extension
+ * Uses shared formatUtil for consistent file type detection across the codebase
  *
  * @param filename The filename to check
  * @returns Object with nodeType and widgetName, or nulls if unsupported

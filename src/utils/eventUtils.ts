@@ -55,6 +55,7 @@ export async function extractFilesFromDragEvent(
 ): Promise<File[]> {
   if (!event.dataTransfer) return []
 
+  // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
   const files = Array.from(event.dataTransfer.files)
     .filter((file) => file.type !== 'image/bmp')
     .map(withHdrImageType)
