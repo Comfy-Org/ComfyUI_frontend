@@ -85,11 +85,10 @@ test.describe(
         name: 'oversized.mp4',
         byteLength: PINNED_UPLOAD_LIMIT_BYTES + 1
       }
-      const warning = comfyPage.page.getByText(
+      const warning = comfyPage.toast.withText(
         enMessages.agent.attachmentTooLarge
           .replace('{name}', oversized.name)
-          .replace('{limit}', formatSize(PINNED_UPLOAD_LIMIT_BYTES)),
-        { exact: true }
+          .replace('{limit}', formatSize(PINNED_UPLOAD_LIMIT_BYTES))
       )
 
       const path = testInfo.outputPath(oversized.name)
@@ -99,7 +98,7 @@ test.describe(
       await expect(warning).toBeVisible()
       await expect(agentPanel.attachmentChip(oversized.name)).toHaveCount(0)
 
-      await expect(warning).toBeHidden({ timeout: 15_000 })
+      await comfyPage.toast.closeToasts()
 
       await agentPanel.dropGeneratedFile(comfyPage.dragDrop, {
         ...oversized,

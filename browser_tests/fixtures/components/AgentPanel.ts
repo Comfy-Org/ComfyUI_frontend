@@ -47,9 +47,11 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
+  private readonly toasts: ToastHelper
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
+    this.toasts = new ToastHelper(page)
     this.activityRows = this.root
       .getByTestId(TestIds.agent.activityTrace)
       .getByRole('listitem')
@@ -220,9 +222,8 @@ export class AgentPanel {
     route: () => Promise<void>
   ): Promise<AgentAttachmentOutcome> {
     await route()
-    const toasts = new ToastHelper(this.page)
     const toastReading = (messages: string[]): Locator =>
-      toasts.withText(new RegExp(messages.map(escapeRegExp).join('|')))
+      this.toasts.withText(new RegExp(messages.map(escapeRegExp).join('|')))
     const attachmentRefusals = [
       enMessages.agent.attachmentTooLarge
         .replace('{name}', fileName)
@@ -249,13 +250,16 @@ export class AgentPanel {
   }
 
   async removeAllAttachments(): Promise<void> {
-    const remove = this.composerAssetSection.getByRole('button', {
-      name: enMessages.agent.remove,
-      exact: true
-    })
-    while ((await remove.count()) > 0) await remove.first().click()
-    await expect(this.attachmentChips).toHaveCount(0)
-    await new ToastHelper(this.page).closeToasts()
+    const removeName = new RegExp(
+      `^${escapeRegExp(enMessages.agent.removeAsset.replace('{name}', ''))}`
+    )
+    for (let count = await this.attachmentChips.count(); count > 0; count--) {
+      const chip = this.attachmentChips.first()
+      await chip.hover()
+      await chip.getByRole('button', { name: removeName }).click()
+      await expect(this.attachmentChips).toHaveCount(count - 1)
+    }
+    await this.toasts.closeToasts()
   }
 
   async open(timeout?: number): Promise<Locator> {
