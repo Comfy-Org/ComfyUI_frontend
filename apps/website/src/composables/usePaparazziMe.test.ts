@@ -121,7 +121,7 @@ describe('usePaparazziMe', () => {
     await settle(paparazzi.snap())
 
     expect(paparazzi.search.value.kind).toBe('found')
-    expect(vi.mocked(renderPaparazziImage)).toHaveBeenLastCalledWith(
+    expect(renderPaparazziImage).toHaveBeenLastCalledWith(
       SCENE_PLACES[0],
       PAPARAZZI_EXAMPLE.url,
       PAPARAZZI_EXAMPLE.crop,
@@ -141,7 +141,7 @@ describe('usePaparazziMe', () => {
 
     await settle(paparazzi.snap())
 
-    expect(vi.mocked(renderPaparazziImage)).toHaveBeenLastCalledWith(
+    expect(renderPaparazziImage).toHaveBeenLastCalledWith(
       { url: 'blob:party.jpg', you: 0.3 },
       'blob:me.jpg',
       expect.anything(),
