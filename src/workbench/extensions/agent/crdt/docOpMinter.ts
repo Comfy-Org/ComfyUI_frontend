@@ -203,25 +203,6 @@ function isValueWidgetWrite(
   return isValueWidget(widget, stored)
 }
 
-/**
- * The positional payload a write to a PROMOTED widget needs (schema Amendment
- * A15). A subgraph instance's `type` is a definition UUID, so the pinned
- * catalog never describes it and the document stores its promoted values as
- * one opaque positional array (schema §1.2) that no name can address: a named
- * `set_widget` against such a node is rejected outright (`opaque_widgets`),
- * which bounced edits to a promoted widget while the agent held the document
- * (PM-1995). A host nested inside another definition still takes the interior
- * route below and is still refused.
- *
- * `value_index` is the widget's position among the node's widget-backed
- * inputs — the order `SubgraphNode.serialize` builds `widgets_values` in and
- * the order `applyHostWidgets` reads it back in. The write is refused when
- * the widget is not promoted, when the document has not caught up and this
- * tab did not add the host, or when the document would misplace it. The
- * document is never the index itself: its `inputs` mirror can widget-mark
- * fewer slots than `widgets_values` has entries, so an index taken from it
- * lands on another widget's value.
- */
 function promotedHostWrite(
   node: LGraphNode,
   event: IntentOf<'set_widget'>,
@@ -275,9 +256,10 @@ function promotedHostWrite(
  * cannot abort unrelated operations in the same batch.
  */
 function documentAcceptsLiveIndex(
-  doc: DocPromotedWidgets,
+  doc: DocPromotedWidgets | null,
   liveNames: readonly string[]
 ): boolean {
+  if (doc === null) return true
   const namesMatch =
     doc.promotedNames != null &&
     doc.promotedNames.length === liveNames.length &&
@@ -379,9 +361,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
-  // Budgeted for the minter's whole life, not per flush: this one sits on the
-  // keystroke-paced widget path, where a per-flush budget reports every
-  // character typed into a refused host.
   const reportedRefusals = new Set<string>()
   let flushScheduled = false
   let detached = false

@@ -99,25 +99,13 @@ export class LayoutFollowerBridge extends EventTarget {
    * again — see {@link onDocUpdate}.
    */
   private schemaError: FollowerSchemaError | null = null
-  /** Highest doc seq applied to the current follower document. */
   private lastSeq: number | null = null
-  /** First and highest doc seqs applied since the current subscribe was sent. */
   private attemptFirstSeq: number | null = null
   private attemptLastSeq: number | null = null
-  /** Highest contiguous server seq proven to exist in the follower document. */
   private integratedSeq: number | null = null
-  /**
-   * The host's seq at the moment it acknowledged the current subscribe
-   * (`doc_subscribed.seq`, `0` when absent); `null` until that ack lands. It is
-   * NOT an applied baseline — the catch-up carrying that very seq may still be
-   * in flight, or may never come when the follower was already current — so it
-   * never gates a frame as stale. It raises the gap baseline to at least the
-   * ack, identifies the catch-up, and is the seq {@link integratedSeq} must
-   * reach before {@link isSubscribeBaselineIntegrated} opens.
-   */
   private ackSeq: number | null = null
   /**
-   * Armed by an ack with seq > 0, disarmed by the first applied frame whose seq equals
+   * Armed by the ack, disarmed by the first applied frame whose seq equals
    * {@link ackSeq}. The relay joins the fanout BEFORE it acks, so a live frame
    * N+1 can reach the follower ahead of `doc_subscribed(seq=N)` and the
    * catch-up `doc_update(seq=N)`. The catch-up is the only frame carrying what
@@ -151,12 +139,7 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.sentWorkflowId
   }
 
-  /**
-   * The host seq this follower is known to be at: the higher of the last
-   * applied update and the current subscribe's ack. An already-current
-   * follower receives an ack and no catch-up, so without the ack the outbound
-   * op `baseVersion` would lag the host until the next live frame.
-   */
+  /** The higher of the last applied doc seq and the current subscribe's ack. */
   get lastSequence(): number {
     return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
   }
@@ -212,18 +195,10 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
-  /**
-   * Drive intent at the transport. Idempotent and safe to call at any time —
-   * the composition root calls it whenever the socket may have become usable
-   * (first open, reconnect, any `status` frame), which is what makes a subscribe
-   * attempted against a closed socket recoverable.
-   */
+  /** Drive intent at the transport. Idempotent and safe to call at any time. */
   reconcile(): void {
     const desired = this.desiredWorkflowId
     if (this.sentWorkflowId !== null && this.sentWorkflowId !== desired) {
-      // Best effort. If the frame cannot leave, the socket is down and the
-      // server has already dropped this subscription with it, so the local
-      // record is cleared either way.
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
@@ -326,25 +301,9 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
-    // A stale/duplicate frame cannot advance the replica. Ignoring it also
-    // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    // The one exception is the subscribe's own catch-up (seq == ackSeq) when
-    // a live frame overtook the ack: see {@link catchUpPending}.
-    // Deliberately compares against lastSeq, never ackSeq: on a fresh doc the
-    // catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and leave the
-    // follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (this.rejectStaleUpdate(update, isCatchUp)) return
 
-    // Seq is only a gap detector. A jump withholds the uncertain frame and
-    // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
-    //
-    // Before the ack only this attempt's own applied frames arm the detector,
-    // so the first frame after a send is checked when the ack lands instead
-    // (see {@link rejectPreAckGap}). Once the ack (seq N) lands it is armed
-    // from max(N, this attempt's last applied seq): the catch-up (seq N) and
-    // the next live frame are both contiguous with it.
     if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
@@ -352,23 +311,9 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.attemptLastSeq === null || update.seq > this.attemptLastSeq)
       this.attemptLastSeq = update.seq
 
-    // Merge every same-lineage, in-order frame — even one arriving after a
-    // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
-    // last-writer-wins, so a later frame CAN restore a readable
-    // `meta.schema_version` that an earlier one broke (e.g. a repair); never
-    // merging while latched would make that repair permanently unreachable.
     this.follower.applyRemoteUpdate(update.update)
     this.recordIntegratedSequence(update.seq, isCatchUp)
 
-    // KA-11 read-time gate, re-checked on every merge rather than only the
-    // first: the frame must merge before its schema can be checked, but
-    // nothing downstream may READ a doc whose declared schema this build was
-    // not written against. Failing closed here, before the frame is
-    // re-dispatched, is what keeps a v2 doc from being half-projected onto
-    // the canvas by a v1 reader. Re-checking every time — instead of
-    // latching forever on the first failure — lets a later same-lineage
-    // frame that restores a readable version un-latch the gate and resume
-    // projecting.
     if (!this.isReadableUpdate(update)) return
 
     const classifiedUpdate: ClassifiedDocUpdate = {
@@ -403,12 +348,6 @@ export class LayoutFollowerBridge extends EventTarget {
     return true
   }
 
-  /**
-   * The first frame applied after a send is not gap-checked, because nothing
-   * arms the detector before the ack. A first frame past ack + 1 means the
-   * relay dropped the frames in between, and the catch-up at the ack will not
-   * carry them.
-   */
   private rejectPreAckGap(workflowId: string): void {
     if (
       this.ackSeq === null ||
@@ -458,10 +397,6 @@ export class LayoutFollowerBridge extends EventTarget {
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
-  /**
-   * Replace the doc after an explicit lineage reset so the next subscribe
-   * carries an empty state vector and pulls the new folded state.
-   */
   private dropDocForNewLineage(): void {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
@@ -474,22 +409,6 @@ export class LayoutFollowerBridge extends EventTarget {
     this.catchUpPending = false
   }
 
-  /**
-   * `ok: true` confirms the subscription but does not mean its catch-up update
-   * has already been integrated. The host sends `doc_subscribed(seq=N)` and
-   * THEN `doc_update(seq=N)` — and sends no catch-up at all when the follower
-   * was already current — so recording N as the applied baseline drops the
-   * snapshot as stale and leaves a fresh follower empty (the KA-11
-   * `schema_version=undefined` symptom). The ack seq is kept apart in
-   * {@link ackSeq}: it arms the gap detector and backs {@link lastSequence},
-   * but only an applied update ever moves {@link lastSeq}. The ack therefore
-   * never rewinds a baseline established by an update that arrived first.
-   *
-   * `ok: false` means the server refused: clearing REALITY re-opens
-   * the intent/reality disagreement so the next `reconcile()` (any status
-   * frame) retries, instead of the bridge holding a subscription that does not
-   * exist server-side and going silently deaf.
-   */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
@@ -517,12 +436,6 @@ export class LayoutFollowerBridge extends EventTarget {
     if (subscribed.ok) this.rejectPreAckGap(subscribed.workflowId)
   }
 
-  /**
-   * A catch-up is the full document at its seq, and every frame applied in
-   * this attempt is contiguous with it (the detector checked the rest), so it
-   * vouches for everything applied so far. A live frame vouches only for
-   * itself, and only when it directly follows what is already integrated.
-   */
   private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
     if (isCatchUp) {
       this.catchUpPending = false

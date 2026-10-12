@@ -391,9 +391,6 @@ function startAgentCrdtFollower(
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
-  // Nodes this tab enqueued an `add_node` for, per follower document. The
-  // sender's FIFO orders the add ahead of any later write to that node; a
-  // replaced document owes it nothing.
   const sentAddsByDoc = new WeakMap<typeof bridge.follower.doc, Set<string>>()
   const sentAddsToCurrentDoc = (): Set<string> => {
     const doc = bridge.follower.doc
