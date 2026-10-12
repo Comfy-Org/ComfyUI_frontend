@@ -842,8 +842,14 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           // /view URLs are stable now, so an already-loaded image is reused
           // in-page; a fresh document forces the fetch the route will fail.
           await comfyPage.workflow.reloadAndWaitForApp()
-          const runDone = comfyPage.runButton.click()
           await expect.poll(() => abortedExamplePng).toBe(true)
+          abortedExamplePng = false
+          const runDone = comfyPage.runButton.click()
+          await expect
+            .poll(() => abortedExamplePng, {
+              message: 'the rerun should request the image again'
+            })
+            .toBe(true)
           await expect(
             node.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'
