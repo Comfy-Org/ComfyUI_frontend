@@ -22,7 +22,6 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
 } from '../../schemas/agentApiSchema'
@@ -38,6 +37,7 @@ import {
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  AgentThreadListing,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -65,7 +65,9 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn(
+      async (): Promise<AgentThreadListing> => ({ threads: [], complete: true })
+    ),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -6265,25 +6267,29 @@ describe('thread resume (B17)', () => {
 
   it('listThreads returns the REST client thread list', async () => {
     const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          created_at: '2026-07-07T00:00:00Z',
-          id: 'th-9',
-          last_message_at: '2026-07-07T00:00:00Z',
-          message_count: 2,
-          preview: 'build a duck',
-          status: 'active',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z',
-          workflow_id: 'wf-9'
-        }
-      ]
+      async (): Promise<AgentThreadListing> => ({
+        complete: true,
+        threads: [
+          {
+            created_at: '2026-07-07T00:00:00Z',
+            id: 'th-9',
+            last_message_at: '2026-07-07T00:00:00Z',
+            message_count: 2,
+            preview: 'build a duck',
+            status: 'active',
+            title: 'build a duck',
+            updated_at: '2026-07-07T00:00:00Z',
+            workflow_id: 'wf-9'
+          }
+        ]
+      })
     )
     const session = useAgentSession({
       rest: fakeRest({ listThreads }),
       events: fakeEvents().source
     })
-    const threads = await session.listThreads()
+    const { threads, complete } = await session.listThreads()
+    expect(complete).toBe(true)
     expect(threads).toHaveLength(1)
     expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
   })

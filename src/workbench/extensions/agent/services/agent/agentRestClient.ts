@@ -178,6 +178,12 @@ export interface CloudWorkflowListing {
   complete: boolean
 }
 
+/** The user's threads and whether pagination reached its last page. */
+export interface AgentThreadListing {
+  threads: AgentThreadSummary[]
+  complete: boolean
+}
+
 export type OpenTabsSnapshot = Pick<
   AgentPostMessageRequest,
   'open_tabs' | 'current_tab'
@@ -638,15 +644,15 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listThreads(): Promise<AgentThreadSummary[]> {
-    const { items } = await listAllPages(
+  async function listThreads(): Promise<AgentThreadListing> {
+    const { items, complete } = await listAllPages(
       'list_threads',
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads,
       'thread list'
     )
-    return items
+    return { threads: items, complete }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {

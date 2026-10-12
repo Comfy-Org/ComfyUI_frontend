@@ -362,13 +362,14 @@ describe('listThreads pagination', () => {
     respond(threadPage(['th-1', 'th-2'], true, 'next page'))
     respond(threadPage(['th-3'], false))
 
-    const threads = await makeClient().listThreads()
+    const { threads, complete } = await makeClient().listThreads()
 
     expect(requestedRoutes()).toEqual([
       '/agent/threads?limit=100',
       '/agent/threads?limit=100&after=next%20page'
     ])
     expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
+    expect(complete).toBe(true)
     expect(console.warn).not.toHaveBeenCalled()
   })
 
@@ -384,14 +385,15 @@ describe('listThreads pagination', () => {
       listed: ['th-1', 'th-2']
     }
   ])(
-    'keeps the threads read so far when the server $name',
+    'reports an incomplete list when the server $name',
     async ({ pages, listed }) => {
       pages.forEach(respond)
 
-      const threads = await makeClient().listThreads()
+      const { threads, complete } = await makeClient().listThreads()
 
       expect(api.fetchApi).toHaveBeenCalledTimes(pages.length)
       expect(threads.map(({ id }) => id)).toEqual(listed)
+      expect(complete).toBe(false)
       expect(console.warn).toHaveBeenCalledExactlyOnceWith(
         `[agent] thread list truncated at ${listed.length} entries`
       )

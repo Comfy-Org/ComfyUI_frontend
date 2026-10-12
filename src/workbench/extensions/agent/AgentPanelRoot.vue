@@ -1399,24 +1399,35 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   }
 }
 
+function reportThreadListLoadFailure(error: unknown): void {
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed'
+  })
+  surfaceAgentError(
+    'agent_api_failed',
+    error instanceof Error ? error.message : String(error)
+  )
+  trackAgentError(
+    'thread_list_load_failed',
+    'pre_acceptance',
+    'error_overlay',
+    {
+      retryable: isRetryableRequestFailure(error, false)
+    }
+  )
+}
+
 async function refreshHistory(): Promise<void> {
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    const { threads, complete } = await listThreads()
+    if (complete) history.replaceAll(threads.map(toChatSession))
+    else
+      reportThreadListLoadFailure(
+        'Agent thread list ended before its last page'
+      )
   } catch (error) {
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
-    })
-    surfaceAgentError(
-      'agent_api_failed',
-      error instanceof Error ? error.message : String(error)
-    )
-    trackAgentError(
-      'thread_list_load_failed',
-      'pre_acceptance',
-      'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
-    )
+    reportThreadListLoadFailure(error)
   }
 }
 
