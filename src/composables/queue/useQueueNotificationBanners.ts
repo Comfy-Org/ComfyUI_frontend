@@ -1,6 +1,5 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
-import { assetPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { api } from '@/scripts/api'
 import type {
   PromptQueuedEventPayload,
@@ -262,10 +261,7 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        const preview_url = assetPreviewUrl(preview?.preview_id)
-        if (preview_url) {
-          imagePreviews.push(preview_url)
-        } else if (preview && isImageResult(preview)) {
+        if (preview && isImageResult(preview)) {
           imagePreviews.push(resultItemUrlWithTimestamp(preview))
         }
       } else if (state === 'failed') {

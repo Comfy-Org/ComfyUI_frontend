@@ -35,7 +35,7 @@ export function getHdrPreviewUrl(url: string | undefined): string | undefined {
   return previewId ? hdrPreviewAssetUrl(previewId) : undefined
 }
 
-function hdrPreviewAssetUrl(previewId: string): string {
+export function hdrPreviewAssetUrl(previewId: string): string {
   return api.apiURL(`/assets/${previewId}/content?disposition=inline`)
 }
 

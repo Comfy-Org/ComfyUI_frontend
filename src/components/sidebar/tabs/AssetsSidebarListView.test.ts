@@ -132,21 +132,6 @@ describe('AssetsSidebarListView', () => {
     expect(assetListItem.getAttribute('data-is-video-preview')).toBe('false')
   })
 
-  it('previews an exr asset from its preview_id', () => {
-    const exrAsset = {
-      ...buildAsset('exr-asset', 'render.exr'),
-      preview_id: 'exr-preview',
-      user_metadata: {}
-    } satisfies AssetItem
-
-    renderListView([buildOutputItem(exrAsset)])
-
-    expect(screen.getByTestId('assets-list-item')).toHaveAttribute(
-      'data-preview-url',
-      expect.stringContaining('/assets/exr-preview/content')
-    )
-  })
-
   it('emits preview-asset when item preview is clicked', async () => {
     const imageAsset = {
       ...buildAsset('image-asset', 'image.png'),

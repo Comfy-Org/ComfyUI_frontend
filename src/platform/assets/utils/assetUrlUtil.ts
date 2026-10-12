@@ -90,8 +90,3 @@ export function getAssetFileUrl(
   }
   return asset.preview_url || getAssetUrl(asset)
 }
-
-export function assetPreviewUrl(preview_id?: string): string | undefined {
-  if (!preview_id) return
-  return api.apiURL(`/assets/${preview_id}/content?disposition=inline`)
-}
