@@ -2,6 +2,7 @@ import { until, useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { isCloud } from '@/platform/distribution/types'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -35,10 +36,9 @@ const AUTH_WAIT_RETRY_DELAY_MS = 3_000
  * token or a broken auth response can never hang bootstrap forever.
  *
  * Only isInitialized is awaited — onAuthStateChanged fires with null for
- * signed-out users, which sets isInitialized but not isAuthenticated.
- * Awaiting isAuthenticated here would make every signed-out page load wait
- * 35s and fire a false Sentry timeout. The router guard handles the
- * login redirect for unauthenticated users separately.
+ * signed-out users, so a signed-out load resolves this wait immediately
+ * instead of burning the timeout and firing a false Sentry report. Waiting
+ * for an actual user is a separate, unbounded wait in the caller.
  *
  * Retries once after a short delay; if auth is still unresolved, reports it
  * to every observability sink and lets bootstrap continue rather than leaving
@@ -65,7 +65,10 @@ async function waitForCloudAuth(): Promise<void> {
     try {
       await waitForResolution()
     } catch (retryError) {
-      reportError(retryError, { errorType: 'bootstrap_auth_wait_timeout' })
+      reportError(retryError, {
+        surface: 'platform',
+        errorType: 'bootstrap_auth_wait_timeout'
+      })
     }
   }
 }
@@ -103,8 +106,17 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   }
 
   async function startStoreBootstrap() {
+    void loadI18n()
+
     if (isCloud) {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
+      await bootCloudIdentity()
+
+      // Signed-out cloud pages (/cloud/login) must issue no authenticated
+      // request, so bootstrap parks here until the user signs in rather than
+      // loading stores that can only answer 401.
+      const { isAuthenticated } = storeToRefs(useAuthStore())
+      await until(isAuthenticated).toBe(true)
     }
 
     const userStore = useUserStore()
@@ -117,9 +129,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       until(needsLogin).toBe(false)
     )
 
-    void loadI18n()
     const storeLoads = loadAuthenticatedStores()
-
     void Promise.allSettled(storeLoads).then(() => {
       bootstrapTracer.milestone('stores-ready')
     })

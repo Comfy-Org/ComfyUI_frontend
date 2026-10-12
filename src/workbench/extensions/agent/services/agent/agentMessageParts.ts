@@ -12,6 +12,7 @@ export interface ToolPart {
   type: 'tool'
   callId: string
   name: string
+  skill?: string
   state: PartState
   ok?: boolean
   durationMs?: number
@@ -54,6 +55,7 @@ export interface RunApprovalPart {
 
 export interface PaywallPart {
   type: 'paywall'
+  message?: string
 }
 
 export type ActivityPart = ThinkingPart | ToolPart

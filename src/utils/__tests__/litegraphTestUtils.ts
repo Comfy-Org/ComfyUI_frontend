@@ -1,13 +1,12 @@
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
-  CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
   LGraphGroup,
@@ -15,7 +14,6 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 import {
-  LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
   LLink
@@ -47,33 +45,6 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     type: 'TestNode',
     ...overrides,
     properties: overrides.properties ?? {}
-  }
-}
-
-interface StubPathMethods {
-  moveTo: Path2D['moveTo']
-  lineTo: Path2D['lineTo']
-  bezierCurveTo: Path2D['bezierCurveTo']
-  quadraticCurveTo: Path2D['quadraticCurveTo']
-}
-
-export class StubPath2D implements StubPathMethods {
-  calls: Array<{ method: string; args: unknown[] }> = []
-
-  moveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'moveTo', args })
-  }
-
-  lineTo(...args: unknown[]): void {
-    this.calls.push({ method: 'lineTo', args })
-  }
-
-  bezierCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'bezierCurveTo', args })
-  }
-
-  quadraticCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'quadraticCurveTo', args })
   }
 }
 
@@ -143,21 +114,6 @@ export function createMockSubgraphNode(
 }
 
 /**
- * Creates a mock LGraphCanvas with minimal required properties for testing
- */
-export function createMockCanvas(
-  overrides: Partial<LGraphCanvas> | Record<string, unknown> = {}
-): LGraphCanvas {
-  return {
-    setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
-    ...(overrides as Partial<LGraphCanvas>)
-  } as LGraphCanvas
-}
-
-/**
  * Creates a mock LGraph with trigger function
  */
 export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
@@ -174,63 +130,6 @@ export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
     ...overrides
   })
   return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
-}
-
-/**
- * Creates a mock CanvasPointerEvent
- */
-export function createMockCanvasPointerEvent(
-  canvasX: number,
-  canvasY: number,
-  overrides: Partial<CanvasPointerEvent> = {}
-): CanvasPointerEvent {
-  return {
-    canvasX,
-    canvasY,
-    ...overrides
-  } as CanvasPointerEvent
-}
-
-/**
- * Creates a mock CanvasRenderingContext2D
- */
-export function createMockCanvasRenderingContext2D(
-  overrides: Partial<CanvasRenderingContext2D> = {}
-): CanvasRenderingContext2D {
-  const partial: Partial<CanvasRenderingContext2D> = {
-    save: vi.fn(),
-    restore: vi.fn(),
-    translate: vi.fn(),
-    scale: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn(() => ({ width: 10 }) as TextMetrics),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    closePath: vi.fn(),
-    arc: vi.fn(),
-    rect: vi.fn(),
-    clip: vi.fn(),
-    clearRect: vi.fn(),
-    setTransform: vi.fn(),
-    roundRect: vi.fn(),
-    getTransform: vi.fn(
-      () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
-    ),
-    font: '',
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left',
-    textBaseline: 'alphabetic',
-    ...overrides
-  }
-  return partial as CanvasRenderingContext2D
 }
 
 /**
@@ -345,6 +244,8 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    beforeChange: vi.fn(),
+    afterChange: vi.fn(),
     captureCanvasState: vi.fn(),
     checkState: vi.fn(),
     deactivate: vi.fn(),
@@ -367,54 +268,6 @@ export function createMockLoadedWorkflow(
     changeTracker: createMockChangeTracker(),
     ...overrides
   })
-}
-
-/**
- * Creates a mock MinimapCanvas for minimap testing
- */
-export function createMockMinimapCanvas(
-  overrides: Partial<HTMLCanvasElement> = {}
-): HTMLCanvasElement {
-  const mockGetContext = vi.fn()
-  mockGetContext.mockImplementation((contextId: string) =>
-    contextId === '2d' ? createMockCanvas2DContext() : null
-  )
-
-  const partial: Partial<HTMLCanvasElement> = {
-    width: 200,
-    height: 200,
-    clientWidth: 200,
-    clientHeight: 200,
-    getContext: mockGetContext as HTMLCanvasElement['getContext'],
-    ...overrides
-  }
-  return partial as HTMLCanvasElement
-}
-
-/**
- * Creates a mock CanvasRenderingContext2D for canvas testing
- */
-export function createMockCanvas2DContext(
-  overrides: Partial<CanvasRenderingContext2D> = {}
-): CanvasRenderingContext2D {
-  const partial: Partial<CanvasRenderingContext2D> = {
-    clearRect: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    save: vi.fn(),
-    restore: vi.fn(),
-    ...overrides
-  }
-  return partial as CanvasRenderingContext2D
 }
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
@@ -478,21 +331,4 @@ export function createTestLink(
     throw new Error('Failed to add test link')
   }
   return link
-}
-
-export function createTestCanvas(
-  graph: LGraph,
-  ctx: CanvasRenderingContext2D
-): LGraphCanvas {
-  const element = document.createElement('canvas')
-  element.width = 800
-  element.height = 600
-  element.getContext = vi.fn().mockReturnValue(ctx)
-  element.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    width: 800,
-    height: 600
-  })
-  return new LGraphCanvas(element, graph, { skip_render: true })
 }

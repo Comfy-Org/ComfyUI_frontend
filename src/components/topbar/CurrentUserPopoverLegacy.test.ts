@@ -1,13 +1,14 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
@@ -16,29 +17,19 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-const mockShowSettingsDialog = vi.fn()
-
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: mockShowSettingsDialog,
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 const originalWindowOpen = window.open
 beforeEach(() => {
-  const billing = useBillingContext()
-  Object.assign(billing, {
-    canAccessSubscriptionFeatures: computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    ),
-    tier: computed(() => mockTier.value),
-    subscription: computed(() => mockSubscription.value),
-    balance: computed(() => mockBalance.value),
-    isLoading: mockIsLoading,
-    isTeamPlan: computed(() => mockIsTeamPlan.value)
-  })
+  const billing = vi.mocked(useBillingContext())
+  billing.canAccessSubscriptionFeatures = computed(
+    () => mockCanAccessSubscriptionFeatures.value
+  )
+  billing.tier = computed(() => mockTier.value)
+  billing.subscription = computed(() => mockSubscription.value)
+  billing.balance = computed(() => mockBalance.value)
+  billing.isLoading = mockIsLoading
+  billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -50,7 +41,7 @@ afterAll(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -65,6 +56,7 @@ function makeSubscription(
     endDate: null,
     isCancelled: false,
     hasFunds: true,
+    agentHasFunds: true,
     ...overrides
   }
 }
@@ -79,15 +71,6 @@ const mockIsTeamPlan = ref(false)
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
-  default: {
-    name: 'UserAvatarMock',
-    render() {
-      return h('div', 'Avatar')
-    }
-  }
-}))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
@@ -210,15 +193,15 @@ describe('CurrentUserPopoverLegacy', () => {
   })
 
   describe('credits help icon (FE-617)', () => {
-    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
-      renderComponent()
+    it('shows unified-credits help on hover', async () => {
+      const { user } = renderComponent()
 
-      const helpButton = screen.getByTestId('credits-info-button')
-      expect(helpButton).toBeInTheDocument()
-      expect(helpButton.tagName).toBe('BUTTON')
-      expect(helpButton).toHaveAttribute(
-        'aria-label',
-        enMessages.credits.unified.tooltip
+      const helpButton = screen.getByRole('button', {
+        name: /We've unified payments across Comfy/
+      })
+      await user.hover(helpButton)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })
   })
@@ -230,7 +213,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('user-settings-menu-item'))
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('user')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -266,7 +249,9 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -278,7 +263,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(menuItem)
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -460,6 +445,16 @@ describe('CurrentUserPopoverLegacy', () => {
       await user.click(trigger)
       await user.click(screen.getByText('Test User'))
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+    })
+
+    it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      screen.getByTestId('workspace-switcher-trigger').focus()
+      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('tooltip')).toBeNull()
     })
 
     it('keeps credits visible but hides top-up for workspace members', () => {

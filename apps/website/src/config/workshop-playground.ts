@@ -1,4 +1,5 @@
-import { t } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { t, translationsFor } from '@/i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
 import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
@@ -112,6 +113,15 @@ export type FieldErrorCode =
   | 'outOfRange'
   | 'badOption'
   | 'uploadFailed'
+  | 'fileUnreadable'
+  | 'incompatible'
+  | 'imageAspectRatioOutOfRange'
+  | 'imageLayerDecompositionUnsupported'
+  | 'imageUnreadable'
+  | 'videoTooLong'
+  | 'videoWidthOutOfRange'
+  | 'videoHdrUnsupported'
+  | 'videoUnreadable'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
@@ -397,6 +407,14 @@ export function validateForm(
   values: FormValues
 ): FieldErrors {
   const errors: Record<string, FieldErrorCode> = {}
+  const presentValues = Object.fromEntries(
+    Object.entries(values).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== '' &&
+        (!Array.isArray(value) || value.length > 0)
+    )
+  )
   for (const source of schema) {
     const value = values[source.name]
     const field =
@@ -468,9 +486,19 @@ export function validateForm(
       if (!result) errors[field.name] = 'rejected'
     }
   }
+  for (const field of schema) {
+    const constraint = field.presentation?.formConstraint
+    if (constraint && !validateWorkshopInput(presentValues, constraint.schema))
+      errors[field.name] ??= constraint.error
+  }
   const inlineFiles = schema.flatMap((field) => {
     const value = values[field.name]
-    if (field.kind !== 'file' || typeof value !== 'object') return []
+    if (
+      field.kind !== 'file' ||
+      field.presentation?.urlUpload ||
+      typeof value !== 'object'
+    )
+      return []
     return (Array.isArray(value) ? value : [value]).map((file) => ({
       name: field.name,
       file: file.file ?? file
@@ -545,6 +573,7 @@ export interface PlaygroundExample {
   /** The few settings worth reading back: size, then length. */
   readonly specs: readonly string[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
   readonly outputUrl: string
   readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly sampleOnly?: boolean
@@ -602,10 +631,26 @@ export function examplesForModel(
       outputUrl: example.thumbnailUrl,
       ...(example.sampleOnly ? { sampleOnly: true } : {}),
       ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
+      ...(example.prompt?.trim() ? { prompt: example.prompt } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
       ...(example.fields ? { fields: example.fields } : {})
     }
   })
+}
+
+export function exampleAlt(
+  modelName: string,
+  title: string,
+  locale: Locale = 'en'
+): string {
+  const { t } = translationsFor(locale)
+  const sample = /^Sample (\d+)$/.exec(title)
+  return sample
+    ? t('workshop.examples.sampleAlt', {
+        name: modelName,
+        n: sample[1]
+      })
+    : `${modelName}: ${title}`
 }
 
 export function exampleValues(
@@ -617,4 +662,13 @@ export function exampleValues(
 
 export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)
+}
+
+export function isAudioUrl(url: string): boolean {
+  return /\.(mp3|wav|ogg|m4a|flac)(?:[?#]|$)/i.test(url)
+}
+
+/** A video address that makes Safari paint a frame before playback. */
+export function videoPosterUrl(url: string): string {
+  return url.includes('#') ? url : `${url}#t=0.1`
 }

@@ -134,11 +134,9 @@ export const useQueueNotificationBanners = () => {
       }
     }
 
-    pendingNotifications.value = pendingNotifications.value.toSpliced(
-      queuePositionFor(notification),
-      0,
-      notification
-    )
+    const pending = [...pendingNotifications.value]
+    pending.splice(queuePositionFor(notification), 0, notification)
+    pendingNotifications.value = pending
     showNextNotification()
   }
 

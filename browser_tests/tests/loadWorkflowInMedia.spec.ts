@@ -1,11 +1,18 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.beforeEach(async ({ page }) => {
+  await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+    setComboInputOptions(objectInfo, 'LoadImage', 'image', ['example.png'])
+  })
   await page.route(
     'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
     (route) =>
@@ -159,7 +166,7 @@ test.describe(
               els
                 .filter((el) => el.getAttribute('data-node-id') !== id)
                 .map((el) => Number((el as HTMLElement).style.zIndex)),
-            addedNodeId!
+            addedNodeId
           )
 
           expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))

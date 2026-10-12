@@ -1,7 +1,8 @@
+import { fetchRequests } from '@comfyorg/test-utils/fetch'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
-import { runWorkshopRouter } from './workshop-router'
+import { runSynchronousWorkshopRouter } from './workshop-router'
 
 function options() {
   const contract = workshopContract('bfl/flux-2-pro')
@@ -29,7 +30,7 @@ function result() {
 describe('Router delivery failures', () => {
   it('does not resubmit a known HTTP failure even if its error body is interrupted', async () => {
     const cause = new TypeError('Connection lost')
-    const calls = vi.fn<typeof fetch>().mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(
         new ReadableStream({
           start(controller) {
@@ -39,24 +40,24 @@ describe('Router delivery failures', () => {
         { status: 402, headers: { 'X-Comfy-Request-Id': 'rejected-request' } }
       )
     )
-    vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'noCredits',
-      requestId: 'rejected-request',
-      response: { status: 402, body: '' },
-      cause
-    })
-    expect(calls).toHaveBeenCalledOnce()
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'noCredits',
+        requestId: 'rejected-request',
+        response: { status: 402, body: '' },
+        cause
+      }
+    )
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for(['request', 'response'] as const)(
     'recovers an interrupted %s using the identical request and key',
     async (stage) => {
-      const calls = vi.fn<typeof fetch>()
       if (stage === 'request')
-        calls.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'))
       else
-        calls.mockResolvedValueOnce(
+        vi.mocked(fetch).mockResolvedValueOnce(
           new Response(
             new ReadableStream({
               start(controller) {
@@ -71,35 +72,37 @@ describe('Router delivery failures', () => {
             }
           )
         )
-      calls.mockResolvedValueOnce(result())
-      vi.stubGlobal('fetch', calls)
-      const rendered = await runWorkshopRouter(options())
+      vi.mocked(fetch).mockResolvedValueOnce(result())
+      const rendered = await runSynchronousWorkshopRouter(options())
       expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
       expect(rendered.requestId).toBe('replay-request')
-      expect(calls).toHaveBeenCalledTimes(2)
-      for (const [, init] of calls.mock.calls) {
-        expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
-          'original-logical-run'
-        )
-        expect(init?.body).toBe('{"prompt":"Private prompt"}')
+      expect(fetch).toHaveBeenCalledTimes(2)
+      const replay = {
+        idempotencyKey: 'original-logical-run',
+        body: '{"prompt":"Private prompt"}'
       }
+      expect(
+        fetchRequests().map(({ headers, body }) => ({
+          idempotencyKey: headers.get('Idempotency-Key'),
+          body
+        }))
+      ).toEqual([replay, replay])
     }
   )
 
   it('bounds network recovery without falling back to a new generation key', async () => {
-    const calls = vi
-      .fn<typeof fetch>()
-      .mockRejectedValue(new TypeError('Failed to fetch'))
-    vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'network',
-      stage: 'request'
-    })
-    expect(calls).toHaveBeenCalledTimes(2)
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'network',
+        stage: 'request'
+      }
+    )
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('retains HTTP 200 and the request ID when a result cannot be parsed', async () => {
-    const calls = vi.fn<typeof fetch>().mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response('{', {
         headers: {
           'Content-Type': 'application/json',
@@ -107,14 +110,15 @@ describe('Router delivery failures', () => {
         }
       })
     )
-    vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'response',
-      stage: 'response',
-      requestId: 'completed-request',
-      response: { status: 200 }
-    })
-    expect(calls).toHaveBeenCalledOnce()
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'response',
+        stage: 'response',
+        requestId: 'completed-request',
+        response: { status: 200 }
+      }
+    )
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -129,7 +133,7 @@ describe('Router delivery failures', () => {
   ])(
     'distinguishes $bucket / $status without automatically retrying',
     async ({ status, bucket, reason }) => {
-      const calls = vi.fn<typeof fetch>().mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValueOnce(
         new Response(null, {
           status,
           headers: {
@@ -138,14 +142,15 @@ describe('Router delivery failures', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', calls)
-      await expect(runWorkshopRouter(options())).rejects.toMatchObject({
+      await expect(
+        runSynchronousWorkshopRouter(options())
+      ).rejects.toMatchObject({
         reason,
         stage: 'request',
         requestId: 'rejected-request',
         response: { status, errorType: bucket }
       })
-      expect(calls).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
     }
   )
 })

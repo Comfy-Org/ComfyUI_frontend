@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
@@ -121,14 +122,11 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.filename,
+      title: assetNames.value[asset.url] || asset.label || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true,
+        ...LOAD3D_VIEWER_DIALOG_PROPS,
         onClose: () => refreshModelThumbnail(asset)
       }
     })
@@ -149,7 +147,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -169,6 +167,7 @@ function stopPreview(event: Event): void {
           v-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
+          data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
@@ -204,6 +203,18 @@ function stopPreview(event: Event): void {
         >
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
+        </span>
       </button>
     </div>
 
@@ -228,7 +239,7 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.filename"
+        :title="assetNames[asset.url] || asset.label || asset.filename"
       />
       <Button
         v-if="audioCollapsible"

@@ -8,6 +8,7 @@
 import { toRaw } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import { adoptClonedModel } from '@/extensions/core/load3d/quadWireframe/adoptClonedModel'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -227,18 +228,26 @@ class Load3dService {
       // Remove existing model from target scene before adding new one
       const existingModel = target.getModelManager().currentModel
       if (existingModel) {
+        target.getModelManager().clearQuadWireframe()
         target.getSceneManager().scene.remove(existingModel)
       }
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL) {
-          await target.loadModel(originalURL)
+        if (originalURL && !(await target.loadModel(originalURL))) {
+          return
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
         const SkeletonUtils = await loadSkeletonUtils()
         const modelClone = SkeletonUtils.clone(sourceModel)
+        adoptClonedModel(
+          modelClone,
+          sourceModel,
+          source.getModelManager().originalMaterials,
+          target.getModelManager().originalMaterials
+        )
+        target.getModelManager().materialMode = 'original'
 
         target.getModelManager().currentModel = modelClone
         target.getSceneManager().scene.add(modelClone)
@@ -248,9 +257,6 @@ class Load3dService {
         if (sourceOriginalModel) {
           target.getModelManager().originalModel = sourceOriginalModel
         }
-
-        target.getModelManager().materialMode =
-          source.getModelManager().materialMode
 
         target.getModelManager().currentUpDirection =
           source.getModelManager().currentUpDirection

@@ -4,8 +4,7 @@ import { describe, expect, it } from 'vitest'
 import CaseStudySpotlightSection from './CaseStudySpotlightSection.vue'
 
 const stubs = {
-  VideoPlayer: { template: '<div data-testid="video-player" />' },
-  GlassCard: { template: '<div><slot /></div>' }
+  VideoPlayer: { template: '<div data-testid="video-player" />' }
 }
 
 describe('CaseStudySpotlightSection', () => {

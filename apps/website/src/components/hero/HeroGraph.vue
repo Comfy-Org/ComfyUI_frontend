@@ -3,10 +3,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { reactive, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
-import BrandButton from '../common/BrandButton.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import BrandButton from '@/components/common/BrandButton.vue'
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
 import GraphLinks from './GraphLinks.vue'
@@ -18,6 +18,7 @@ import { useHeroPipeline } from './useHeroPipeline'
 import { useIdleAutoplay } from './useIdleAutoplay'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const canvasEl = ref<HTMLElement>()
 
@@ -133,9 +134,9 @@ function wrapperStyle(key: ElementKey) {
         <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
           variant="outline"
-          class="pointer-events-auto uppercase"
+          class="pointer-events-auto font-bold uppercase"
         >
-          {{ t('hero.getStartedFree', locale) }}
+          {{ t('hero.getStartedFree') }}
         </BrandButton>
       </div>
 

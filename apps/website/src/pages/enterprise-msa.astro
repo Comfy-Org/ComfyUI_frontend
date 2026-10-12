@@ -3,28 +3,27 @@
 // Legal-reviewed copy must not be served under a localized route until legal
 // explicitly approves a translation; rendering an unreviewed translation as
 // the active MSA exposes us to liability from the translation diverging from
-// the approved English source. See the matching comment in
-// src/i18n/translations.ts for the i18n block, and the entry in
+// the approved English source. See README.md's English-only copy section
+// for the catalog policy, and the entry in
 // LOCALE_INVARIANT_ROUTE_KEYS in src/config/routes.ts.
-import BaseLayout from '../layouts/BaseLayout.astro'
-import HeroSection from '../components/legal/HeroSection.vue'
-import LegalContentSection from '../components/legal/LegalContentSection.vue'
-import { t } from '../i18n/translations'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/legal/HeroSection.vue'
+import LegalContentSection from '@/components/legal/LegalContentSection.vue'
 ---
 
 <BaseLayout
-  title={t('enterprise-msa.page.title')}
-  description={t('enterprise-msa.page.description')}
+  title={Astro.locals.t('enterprise-msa.page.title')}
+  description={Astro.locals.t('enterprise-msa.page.description')}
 >
-  <HeroSection title={t('enterprise-msa.page.heading')} />
+  <HeroSection title={Astro.locals.t('enterprise-msa.page.heading')} />
   <p class="mt-2 text-center text-sm text-primary-warm-gray">
-    {t('enterprise-msa.page.effectiveDateLabel')}:
-    {t('enterprise-msa.effective-date')}
+    {Astro.locals.t('enterprise-msa.page.effectiveDateLabel')}:
+    {Astro.locals.t('enterprise-msa.effective-date')}
   </p>
   <p
     class="mx-auto mt-8 max-w-3xl px-4 text-center text-sm/relaxed text-primary-comfy-canvas lg:px-0"
   >
-    {t('enterprise-msa.page.parties')}
+    {Astro.locals.t('enterprise-msa.page.parties')}
   </p>
   <LegalContentSection
     prefix="enterprise-msa"

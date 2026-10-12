@@ -73,8 +73,13 @@
           >
             {{ t('g.save') }}
           </Button>
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger as-child>
+          <Menu
+            :items="saveAsMenuItems"
+            align="end"
+            :side-offset="4"
+            class="min-w-36"
+          >
+            <template #trigger>
               <Button
                 size="lg"
                 :aria-label="t('builderToolbar.saveAs')"
@@ -87,25 +92,8 @@
                   aria-hidden="true"
                 />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                align="end"
-                :side-offset="4"
-                class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
-              >
-                <DropdownMenuItem as-child @select="saveAs()">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    class="w-full justify-start font-normal"
-                  >
-                    {{ t('builderToolbar.saveAs') }}
-                  </Button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+            </template>
+          </Menu>
         </ButtonGroup>
         <Button
           v-else
@@ -126,17 +114,12 @@
 import { computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -164,6 +147,9 @@ const {
   hasOutputs
 })
 const { save, saveAs } = useBuilderSave()
+const saveAsMenuItems = computed<MenuItem[]>(() => [
+  { label: t('builderToolbar.saveAs'), command: saveAs }
+])
 
 const isSaved = computed(
   () => workflowStore.activeWorkflow?.isTemporary === false

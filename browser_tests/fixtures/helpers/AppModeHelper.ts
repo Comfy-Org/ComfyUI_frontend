@@ -70,6 +70,7 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
   /** The main content area where outputs are displayed*/
   public readonly centerPanel: Locator
+  public readonly rightPanelResizeHandle: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.mobile = new MobileAppHelper(comfyPage)
@@ -144,10 +145,26 @@ export class AppModeHelper {
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
     this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
+    this.rightPanelResizeHandle = this.page
+      .getByRole('separator')
+      .and(this.page.locator('[aria-controls="linearCenterPanel"]'))
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  async resizeRightPanelBy(deltaX: number): Promise<void> {
+    const box = await this.rightPanelResizeHandle.boundingBox()
+    if (!box)
+      throw new Error('App mode right panel resize handle has no layout')
+
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await this.page.mouse.move(x, y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(x + deltaX, y, { steps: 10 })
+    await this.page.mouse.up()
   }
 
   async enableLinearMode() {

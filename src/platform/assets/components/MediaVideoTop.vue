@@ -7,6 +7,7 @@
     <video
       v-if="status !== 'failed'"
       ref="videoElement"
+      data-testid="media-asset-video"
       :src="src"
       :controls="shouldShowControls"
       preload="metadata"

@@ -7,6 +7,7 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
 import {
@@ -71,8 +72,9 @@ function readCapabilitiesResponse(
 ): Promise<BillingCapabilitiesResponse | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
-  return readOnRail(() =>
-    rail.readCapabilities({ signal, forceRefresh: revalidating })
+  return readOnRail(
+    () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
+    'getBillingCapabilities'
   )
 }
 
@@ -88,7 +90,7 @@ function useBillingCapabilitiesInternal() {
   let invalidatedRequestId = 0
 
   const capabilities = computed(() => {
-    const userId = authStore.currentUser?.uid
+    const userId = authStore.userId
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
     if (
@@ -104,11 +106,12 @@ function useBillingCapabilitiesInternal() {
 
     return state.response.capabilities
   })
+  const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const readUnavailableForCurrentScope = computed(() => {
     const state = readState.value
     return (
       state.status === 'unavailable' &&
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -124,29 +127,30 @@ function useBillingCapabilitiesInternal() {
     )
   })
   const canSubscribeSelfServe = computed(
-    () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
+    () => capabilities.value?.can_subscribe_self_serve ?? false
   )
-  const canCancel = computed(
-    () => isCloud && (capabilities.value?.can_cancel ?? false)
-  )
+  const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
   const canReactivate = computed(
-    () => isCloud && (capabilities.value?.can_reactivate ?? false)
+    () => capabilities.value?.can_reactivate ?? false
   )
   const canChangeSeats = computed(
-    () => isCloud && (capabilities.value?.can_change_seats ?? false)
+    () => capabilities.value?.can_change_seats ?? false
+  )
+  const canManageMembers = computed(
+    () => capabilities.value?.can_manage_members ?? false
   )
   const canInviteMembers = computed(
-    () => isCloud && (capabilities.value?.can_invite_members ?? false)
+    () => capabilities.value?.can_invite_members ?? false
   )
   const canDowngradeToPersonal = computed(
-    () => isCloud && (capabilities.value?.can_downgrade_to_personal ?? false)
+    () => capabilities.value?.can_downgrade_to_personal ?? false
   )
   const isReady = computed(() => {
     if (!isCloud) return true
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
     return (
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -156,10 +160,19 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
-      state.authUid === authStore.currentUser?.uid &&
+      state.authUid === authStore.userId &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
+
+  function trackCapabilityRead(succeeded: boolean): void {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'capability_read',
+      ...(succeeded
+        ? { stage: 'succeeded', outcome: 'success' }
+        : { stage: 'failed', outcome: 'failure' })
+    })
+  }
 
   function clearRefreshTimer(): void {
     if (refreshTimer === null) return
@@ -261,7 +274,7 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
-    const userId = authStore.currentUser?.uid
+    const userId = authStore.userId
     const workspaceId = workspaceStore.activeWorkspaceId
     if (!userId || !workspaceId) {
       resetRead()
@@ -314,7 +327,7 @@ function useBillingCapabilitiesInternal() {
         )
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.currentUser?.uid ||
+          userId !== authStore.userId ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -336,6 +349,7 @@ function useBillingCapabilitiesInternal() {
 
         const resolvedForScope =
           response.resolved_for.workspace_id === workspaceId
+        trackCapabilityRead(resolvedForScope)
         if (resolvedForScope) {
           readFailures = 0
           readState.value = {
@@ -355,7 +369,7 @@ function useBillingCapabilitiesInternal() {
       } catch (error) {
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.currentUser?.uid ||
+          userId !== authStore.userId ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -369,6 +383,7 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
+        if (!denied) trackCapabilityRead(false)
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
         // replaces the snapshot even mid-revalidation.
@@ -389,6 +404,7 @@ function useBillingCapabilitiesInternal() {
         // would emit one warning a minute for as long as the tab is open.
         if (!denied && !firstFailure) return
         reportError(error, {
+          surface: 'workspace',
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
           tags: {
@@ -428,7 +444,7 @@ function useBillingCapabilitiesInternal() {
       await fetchCapabilities(signal)
     } while (
       !signal?.aborted &&
-      !!authStore.currentUser?.uid &&
+      !!authStore.userId &&
       !!workspaceStore.activeWorkspaceId &&
       !isReady.value
     )
@@ -440,7 +456,7 @@ function useBillingCapabilitiesInternal() {
 
   watch(
     [
-      () => authStore.currentUser?.uid,
+      () => authStore.userId,
       () => workspaceStore.activeWorkspaceId,
       () => workspaceStore.activeWorkspace?.role
     ],
@@ -458,8 +474,10 @@ function useBillingCapabilitiesInternal() {
     canReactivate,
     canChangeSeats,
     canInviteMembers,
+    canManageMembers,
     canDowngradeToPersonal,
     isReady,
+    hasResolvedCapabilities,
     snapshotAuthoritative,
     initialize,
     refresh
