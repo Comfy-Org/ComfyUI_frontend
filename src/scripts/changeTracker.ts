@@ -244,11 +244,6 @@ function getExecutionGraphState(value: unknown): unknown {
 
 const reportedInactiveCalls = new Set<string>()
 
-/**
- * Stack frames of the caller, without the header line some engines prepend
- * (V8) and without this reporter's own frames. Returns undefined when the
- * engine exposes no stack.
- */
 function getCallerStack(): string | undefined {
   const frames = new Error().stack
     ?.split('\n')
@@ -269,7 +264,6 @@ function reportInactiveTrackerCall(
   const key = `${method}:${tracker.workflow.path}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  // Workflow paths are user-chosen names, so only their relationship is sent.
   const activeWorkflow = useWorkflowStore().activeWorkflow
   const hasActiveWorkflow = activeWorkflow != null
   const sameWorkflow = activeWorkflow === tracker.workflow
