@@ -446,14 +446,17 @@ describe('LGraphCanvas selection', () => {
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
     })
 
-    it('deleteSelected() empties the selection', () => {
-      canvas.select(a)
-      canvas.select(b)
+    it('deleteSelected() empties the selection and reports one change', () => {
+      const group = addGroup(graph, 'G', [400, 200, 100, 100])
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      canvas.selectItems([a, b, group, reroute])
+      vi.mocked(onSelectionChange).mockClear()
 
       canvas.deleteSelected()
 
       expect(canvas.selectedItems.size).toBe(0)
       expect(graph.nodes).toHaveLength(0)
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
 
     it('selectItems() preserves incremental hook state and reports one outer change', () => {
