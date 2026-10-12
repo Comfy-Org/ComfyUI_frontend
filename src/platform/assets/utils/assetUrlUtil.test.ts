@@ -114,7 +114,9 @@ describe('getAssetViewUrl', () => {
       preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
     })
 
-    expect(getAssetViewUrl(asset)).toBe(getAssetUrl(asset))
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
   })
 
   it('falls back to getAssetUrl without a loader_path', () => {
@@ -123,7 +125,9 @@ describe('getAssetViewUrl', () => {
       preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
     })
 
-    expect(getAssetViewUrl(asset)).toBe(getAssetUrl(asset))
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
   })
 })
 

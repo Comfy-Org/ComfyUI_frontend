@@ -39,10 +39,13 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
       })
       await page.route('**/api/view**', async (route) => {
         const url = new URL(route.request().url())
-        const wrongFolder =
+        const wrongLocation =
           url.searchParams.get('filename') === 'sky.exr' &&
-          url.searchParams.get('subfolder') !== 'renders'
-        await (wrongFolder ? route.fulfill({ status: 404 }) : route.fallback())
+          (url.searchParams.get('type') !== 'output' ||
+            url.searchParams.get('subfolder') !== 'renders')
+        await (wrongLocation
+          ? route.fulfill({ status: 404 })
+          : route.fallback())
       })
       await use()
     },
