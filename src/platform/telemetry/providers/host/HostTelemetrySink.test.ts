@@ -181,6 +181,17 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards Agent credit transition notice interactions', () => {
+    new HostTelemetrySink().trackAgentCreditTransitionNotice({
+      action: 'shown'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+      { action: 'shown' }
+    )
+  })
+
   it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',

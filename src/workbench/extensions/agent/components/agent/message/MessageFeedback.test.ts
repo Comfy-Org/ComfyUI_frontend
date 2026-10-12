@@ -41,6 +41,7 @@ describe('MessageFeedback', () => {
       }
     )
     vi.mocked(api.fetchApi).mockReset()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -137,16 +138,25 @@ describe('MessageFeedback', () => {
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
     URL.revokeObjectURL = revokeObjectURL
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/mesh.glb', filename: 'mesh.glb', kind: '3D' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=mesh.glb`,
+        filename: 'mesh.glb',
+        kind: '3D'
+      }
     ])
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
     await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
-    expect(api.fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(api.fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
@@ -161,9 +171,18 @@ describe('MessageFeedback', () => {
     const revokeObjectURL = vi
       .spyOn(URL, 'revokeObjectURL')
       .mockImplementation(() => {})
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/b.png', filename: 'b.png', kind: 'image' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=b.png`,
+        filename: 'b.png',
+        kind: 'image'
+      }
     ])
     const download = screen.getByRole('button', { name: 'Download assets' })
 

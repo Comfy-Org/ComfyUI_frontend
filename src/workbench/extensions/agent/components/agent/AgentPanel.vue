@@ -13,8 +13,8 @@ import type {
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -495,8 +495,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"

@@ -139,9 +139,13 @@ describe('getMainNavigation', () => {
           {
             label: 'Cinematic Studio',
             href: '/hub/apps/cinematic-studio/',
-            newTab: true
+            newTab: undefined
           },
-          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+          {
+            label: 'Re-shoot',
+            href: '/hub/apps/reshoot/',
+            newTab: undefined
+          }
         ],
         allLink: { label: 'All apps', href: '/hub/apps/' }
       }

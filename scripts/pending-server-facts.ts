@@ -91,5 +91,7 @@ if (closed.length || unknown.length) {
 }
 
 process.stdout.write(
-  `All ${tickets.length} pendingServerFact ticket(s) are still open.\n`
+  tickets.length
+    ? `All ${tickets.length} pendingServerFact ticket(s) are still open.\n`
+    : 'Linear app credentials verified. No pendingServerFact call sites.\n'
 )

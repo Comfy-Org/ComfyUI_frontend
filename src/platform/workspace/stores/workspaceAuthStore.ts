@@ -94,7 +94,9 @@ function sessionErrorMessageKey(
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   if (
     err.code === 'SSO_REQUIRED' &&
-    presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+    presentSsoRequired('session_refused', {
+      email: useAuthStore().userEmail ?? undefined
+    })
   ) {
     return
   }
@@ -686,7 +688,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     // A reload would take down the SSO-required screen this refusal opens.
     if (
       refusalCode === 'SSO_REQUIRED' &&
-      presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+      presentSsoRequired('session_refused', {
+        email: useAuthStore().userEmail ?? undefined
+      })
     ) {
       clearWorkspaceContext()
       cancelWorkflowTransition?.()

@@ -63,7 +63,7 @@ describe('loadArchitectureConfiguration', () => {
     {
       name: 'an unknown record field',
       overrides: { owners: ['@images-team'] },
-      error: "Unrecognized key(s) in object: 'owners'"
+      error: 'Unrecognized key: "owners"'
     },
     {
       name: 'a glob other than a trailing /**',

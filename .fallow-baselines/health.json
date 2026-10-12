@@ -3178,6 +3178,17 @@
         "count": 4
       }
     },
+    "src/scripts/clipspace.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/scripts/domWidget.ts": {
       "crap_high": {
         "count": 1

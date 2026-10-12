@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 export const inlineReferenceChipClass = cn(
   tagVariants({ interactive: true, removable: true }),
-  'group/inline-reference h-4 p-0 align-middle'
+  'group/inline-reference h-4 p-0 align-middle whitespace-nowrap'
 )
 export const inlineReferenceRemoveAnchorClass =
   'relative inline-block h-4 w-0 align-middle'
