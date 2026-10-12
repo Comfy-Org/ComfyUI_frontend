@@ -19,6 +19,14 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 - he (עברית)
 - it (Italiano)
 
+The selectable set is `localeDefinitions` in [localeConfig.ts](./localeConfig.ts).
+
+> `src/locales/de/` also exists: German is in the translation pipeline's
+> `outputLocales` (`scripts/i18n/config.ts`), so its four files are generated and
+> kept current, but `de` is not registered in `localeDefinitions` and so does not
+> appear in the language picker. Adding it to `localeDefinitions` is all that is
+> needed to expose it.
+
 ## How to Add a New Language
 
 Want to add a new language to ComfyUI? See our detailed [Contributing Guide](./CONTRIBUTING.md) with step-by-step instructions and confirmed working process.

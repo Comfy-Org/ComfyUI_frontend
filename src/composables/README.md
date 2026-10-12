@@ -9,17 +9,13 @@ This directory contains Vue composables for the ComfyUI frontend application. Co
   - [Overview](#overview)
   - [Composable Architecture](#composable-architecture)
   - [Composable Categories](#composable-categories)
-    - [Auth](#auth)
-    - [Bottom Panel Tabs](#bottom-panel-tabs)
-    - [Element](#element)
-    - [Functional](#functional)
-    - [Manager](#manager)
-      - [Node Pack](#node-pack)
-    - [Node](#node)
-    - [Settings](#settings)
-    - [Sidebar Tabs](#sidebar-tabs)
-    - [Tree](#tree)
-    - [Widgets](#widgets)
+    - [Subdirectories of `src/composables/`](#subdirectories-of-srccomposables)
+    - [Auth](#auth-auth)
+    - [Bottom Panel Tabs](#bottom-panel-tabs-bottompaneltabs)
+    - [Element](#element-element)
+    - [Node](#node-node)
+    - [Sidebar Tabs](#sidebar-tabs-sidebartabs)
+    - [Domain-owned composables](#domain-owned-composables)
     - [Root-level Composables](#root-level-composables)
   - [Usage Guidelines](#usage-guidelines)
   - [VueUse Library](#vueuse-library)
@@ -85,170 +81,142 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2026-01-30:
+Like stores, composables live with the domain that owns them. `src/composables/`
+holds the shared ones; domain-specific composables sit under `src/platform/**`,
+`src/renderer/**`, and `src/workbench/extensions/**`. **The directory tree is the
+source of truth** — this file describes the layout rather than enumerating every
+file, because an exhaustive list goes stale on the next move.
 
-### Auth
+To find every composable:
 
-Composables for authentication and user management:
+```bash
+find src -name 'use*.ts' -not -name '*.test.ts'
+```
 
-| Composable               | Description                                     |
-| ------------------------ | ----------------------------------------------- |
-| `useCurrentUser`         | Provides access to the current user information |
-| `useFirebaseAuthActions` | Handles Firebase authentication operations      |
+### Subdirectories of `src/composables/`
 
-### Bottom Panel Tabs
+| Directory          | Covers                                                          |
+| ------------------ | --------------------------------------------------------------- |
+| `auth/`            | Current user, auth dialogs/actions, Turnstile                    |
+| `billing/`         | Billing surfaces shared across the app                           |
+| `bottomPanelTabs/` | Terminal, logs, shortcuts, and bottom-panel tab registration     |
+| `boundingBoxes/`   | Bounding-box editing                                             |
+| `canvas/`          | Canvas interaction helpers                                       |
+| `element/`         | DOM positioning, clipping, coordinate conversion, overflow       |
+| `functional/`      | Generic utilities (e.g. `useChainCallback`)                      |
+| `graph/`           | Graph-level helpers                                              |
+| `maskeditor/`      | Mask editor                                                      |
+| `media/`           | Media playback and handling                                      |
+| `node/`            | Node previews, drag/drop, uploads, badges, pricing               |
+| `painter/`         | Freehand painting widget                                         |
+| `palette/`         | Color palette                                                    |
+| `queue/`           | Queue UI helpers                                                 |
+| `sidebarTabs/`     | Sidebar tab definitions and registration                         |
+| `tree/`            | Tree view folder operations                                      |
+| `video/`           | Video handling                                                   |
 
-Composables for terminal and bottom panel functionality:
+### Auth (`auth/`)
 
-| Composable          | Description                              |
-| ------------------- | ---------------------------------------- |
-| `useTerminal`       | Core terminal functionality              |
-| `useTerminalBuffer` | Manages terminal output buffer           |
-| `useTerminalTabs`   | Handles multiple terminal tab management |
+| Composable        | Description                        |
+| ----------------- | ---------------------------------- |
+| `useCurrentUser`  | Access to the current user         |
+| `useAuthActions`  | Sign-in / sign-out operations      |
+| `useAuthDialogs`  | Auth dialog presentation           |
+| `useTurnstile`    | Cloudflare Turnstile challenge     |
 
-### Element
+### Bottom Panel Tabs (`bottomPanelTabs/`)
 
-Composables for DOM and element interactions:
+| Composable               | Description                           |
+| ------------------------ | ------------------------------------- |
+| `useTerminal`            | Core terminal functionality           |
+| `useTerminalTabs`        | Multiple terminal tab management      |
+| `useLogsTerminal`        | Server logs terminal tab              |
+| `useShortcutsTab`        | Keyboard shortcuts tab                |
+| `useCommandSubcategories`| Groups commands for the shortcuts tab |
+
+### Element (`element/`)
 
 | Composable                    | Description                                 |
 | ----------------------------- | ------------------------------------------- |
-| `useAbsolutePosition`         | Handles element positioning                 |
+| `useAbsolutePosition`         | Element positioning                         |
 | `useCanvasPositionConversion` | Converts between canvas and DOM coordinates |
-| `useDomClipping`              | Manages clipping of DOM elements            |
-| `useResponsiveCollapse`       | Manages responsive collapsing of elements   |
+| `useDomClipping`              | Clipping of DOM elements                    |
+| `useOverflowObserver`         | Observes element overflow                   |
 
-### Functional
+### Node (`node/`)
 
-Utility composables for common patterns:
+| Composable                  | Description                        |
+| --------------------------- | ---------------------------------- |
+| `useNodeAnimatedImage`      | Animated images in nodes           |
+| `useNodeBadge`              | Node badge display and interaction |
+| `useNodeCanvasImagePreview` | Canvas-based image preview         |
+| `useNodeDragAndDrop`        | Drag and drop for nodes            |
+| `useNodeDragToCanvas`       | Dragging a node onto the canvas    |
+| `useNodeFileInput`          | File input widgets in nodes        |
+| `useNodeImage`              | Node image preview                 |
+| `useNodeImageUpload`        | Image upload for nodes             |
+| `useNodePaste`              | Paste operations for nodes         |
+| `useNodePreviewAndDrag`     | Combined preview + drag behaviour  |
+| `useNodePricing`            | Pricing display for API nodes      |
+| `useNodeProgressText`       | Progress text in nodes             |
+| `usePartnerNodesInGraph`    | Detects partner nodes in the graph |
+| `useProgressTextPreviews`   | Progress-text preview widgets      |
+| `usePromotedPreviews`       | Promoted subgraph previews         |
+| `useWatchWidget`            | Watches widget value changes       |
 
-| Composable         | Description                        |
-| ------------------ | ---------------------------------- |
-| `useChainCallback` | Chains multiple callbacks together |
+### Sidebar Tabs (`sidebarTabs/`)
 
-### Manager
+| Composable                  | Description                 |
+| --------------------------- | --------------------------- |
+| `useAssetsSidebarTab`       | Assets sidebar tab          |
+| `useJobHistorySidebarTab`   | Job history sidebar tab     |
+| `useModelLibrarySidebarTab` | Model library sidebar tab   |
+| `useNodeLibrarySidebarTab`  | Node library sidebar tab    |
 
-Composables for ComfyUI Manager integration (located in
-`@/workbench/extensions/manager/composables`):
+### Domain-owned composables
 
-| Composable                   | Description                                 |
-| ---------------------------- | ------------------------------------------- |
-| `useManagerStatePersistence` | Persists manager UI state                   |
-| `useManagerState`            | Determines availability of manager UI modes |
-| `useManagerQueue`            | Handles manager task queue state            |
-| `useConflictAcknowledgment`  | Tracks conflict dismissal state             |
-| `useConflictDetection`       | Orchestrates conflict detection workflow    |
-| `useImportFailedDetection`   | Handles import-failed conflict dialogs      |
-| `useRegistrySearch`          | Manages registry search UI state            |
+These are **not** under `src/composables/`. Common ones:
 
-#### Node Pack
+| Composable                 | Location                                                              |
+| -------------------------- | --------------------------------------------------------------------- |
+| `useSettingSearch`         | `src/platform/settings/composables/useSettingSearch.ts`               |
+| `useSettingUI`             | `src/platform/settings/composables/useSettingUI.ts`                   |
+| `useLitegraphSettings`     | `src/platform/settings/composables/useLitegraphSettings.ts`           |
+| `useWorkflowAutoSave`      | `src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts`|
+| `useWorkflowPersistenceV2` | `src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts` |
+| `useWorkflowValidation`    | `src/platform/workflow/validation/composables/useWorkflowValidation.ts`|
+| `useTemplateWorkflows`     | `src/platform/workflow/templates/composables/useTemplateWorkflows.ts` |
+| `useComboWidget`           | `src/renderer/extensions/vueNodes/widgets/composables/`               |
+| `useRemoteWidget`          | `src/renderer/extensions/vueNodes/widgets/composables/`               |
+| `useManagerQueue`          | `src/workbench/extensions/manager/composables/useManagerQueue.ts`     |
+| `useRegistrySearch`        | `src/workbench/extensions/manager/composables/useRegistrySearch.ts`   |
 
-Node package helpers live under
-`@/workbench/extensions/manager/composables/nodePack`:
-
-| Composable                | Description                               |
-| ------------------------- | ----------------------------------------- |
-| `useInstalledPacks`       | Manages installed node packages           |
-| `useMissingNodes`         | Detects and handles missing nodes         |
-| `useNodePacks`            | Core node package functionality           |
-| `usePackUpdateStatus`     | Tracks package update availability        |
-| `usePacksSelection`       | Provides selection helpers for pack lists |
-| `usePacksStatus`          | Aggregates status across multiple packs   |
-| `useUpdateAvailableNodes` | Detects available updates for nodes       |
-| `useWorkflowPacks`        | Manages packages used in workflows        |
-
-### Node
-
-Composables for node-specific functionality:
-
-| Composable                  | Description                                |
-| --------------------------- | ------------------------------------------ |
-| `useNodeAnimatedImage`      | Handles animated images in nodes           |
-| `useNodeBadge`              | Handles node badge display and interaction |
-| `useNodeCanvasImagePreview` | Canvas-based image preview for nodes       |
-| `useNodeDragAndDrop`        | Handles drag and drop for nodes            |
-| `useNodeFileInput`          | Manages file input widgets in nodes        |
-| `useNodeImage`              | Manages node image preview                 |
-| `useNodeImageUpload`        | Handles image upload for nodes             |
-| `useNodePaste`              | Manages paste operations for nodes         |
-| `useNodePricing`            | Handles pricing display for nodes          |
-| `useNodeProgressText`       | Displays progress text in nodes            |
-| `useWatchWidget`            | Watches widget value changes               |
-
-### Settings
-
-Composables for settings management:
-
-| Composable         | Description                                |
-| ------------------ | ------------------------------------------ |
-| `useSettingSearch` | Provides search functionality for settings |
-| `useSettingUI`     | Manages settings UI interactions           |
-
-### Sidebar Tabs
-
-Composables for sidebar functionality:
-
-| Composable                  | Description                           |
-| --------------------------- | ------------------------------------- |
-| `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
-| `useNodeLibrarySidebarTab`  | Manages the node library sidebar tab  |
-| `useWorkflowsSidebarTab`    | Manages the workflows sidebar tab     |
-
-### Tree
-
-Composables for tree structure operations:
-
-| Composable                | Description                             |
-| ------------------------- | --------------------------------------- |
-| `useTreeFolderOperations` | Handles folder operations in tree views |
-
-### Widgets
-
-Composables for widget functionality:
-
-| Composable              | Description                             |
-| ----------------------- | --------------------------------------- |
-| `useBooleanWidget`      | Manages boolean widget interactions     |
-| `useComboWidget`        | Manages combo box widget interactions   |
-| `useFloatWidget`        | Manages float input widget interactions |
-| `useImagePreviewWidget` | Manages image preview widget            |
-| `useImageUploadWidget`  | Handles image upload widget             |
-| `useIntWidget`          | Manages integer input widget            |
-| `useMarkdownWidget`     | Handles markdown display widget         |
-| `useProgressTextWidget` | Manages progress text widget            |
-| `useRemoteWidget`       | Handles remote widget connections       |
-| `useStringWidget`       | Manages string input widget             |
+Widget composables live with the Vue-nodes renderer under
+`src/renderer/extensions/vueNodes/widgets/composables/`; node-pack helpers live
+under `src/workbench/extensions/manager/composables/nodePack/`.
 
 ### Root-level Composables
 
-General-purpose composables:
+General-purpose composables in `src/composables/` itself — a selection:
 
-| Composable                  | Description                                               |
-| --------------------------- | --------------------------------------------------------- |
-| `useBrowserTabTitle`        | Manages browser tab title updates                         |
-| `useCachedRequest`          | Provides request caching functionality                    |
-| `useCanvasDrop`             | Handles drop operations on canvas                         |
-| `useCivitaiModel`           | Integrates with Civitai model API                         |
-| `useContextMenuTranslation` | Handles context menu translations                         |
-| `useCopy`                   | Provides copy functionality                               |
-| `useCopyToClipboard`        | Manages clipboard operations                              |
-| `useCoreCommands`           | Provides core command functionality                       |
-| `useDownload`               | Handles file download operations                          |
-| `useErrorHandling`          | Centralized error handling                                |
-| `useGlobalLitegraph`        | Access to global LiteGraph instance                       |
-| `useLitegraphSettings`      | Manages LiteGraph configuration                           |
-| `useManagerQueue`           | Handles manager queue operations                          |
-| `usePaste`                  | Provides paste functionality                              |
-| `usePragmaticDragAndDrop`   | Integrates Atlassian's drag-and-drop library              |
-| `useProgressFavicon`        | Updates favicon with progress indicator                   |
-| `useRefreshableSelection`   | Manages refreshable selections                            |
-| `useRegistrySearch`         | Searches the ComfyUI registry                             |
-| `useServerLogs`             | Manages server log display                                |
-| `useTemplateWorkflows`      | Manages template workflow loading, selection, and display |
-| `useTreeExpansion`          | Handles tree node expansion state                         |
-
-| `useWorkflowAutoSave` | Handles automatic workflow saving |
-| `useWorkflowPersistenceV2` | Manages workflow persistence |
-| `useWorkflowValidation` | Validates workflow integrity |
+| Composable                  | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `useAppMode`                | Linear vs. graph app mode                    |
+| `useBrowserTabTitle`        | Browser tab title updates                    |
+| `useCachedRequest`          | Request caching                              |
+| `useCanvasDrop`             | Drop operations on canvas                    |
+| `useContextMenuTranslation` | Context menu translations                    |
+| `useCopy` / `usePaste`      | Copy and paste                               |
+| `useCopyToClipboard`        | Clipboard operations                         |
+| `useCoreCommands`           | Core command registration                    |
+| `useErrorHandling`          | Centralized error handling                   |
+| `useFeatureFlags`           | Reactive server feature flags                |
+| `useGlobalLitegraph`        | Access to the global LiteGraph instance      |
+| `usePragmaticDragAndDrop`   | Atlassian pragmatic drag-and-drop wrapper    |
+| `useProgressFavicon`        | Favicon progress indicator                   |
+| `useRefreshableSelection`   | Refreshable selections                       |
+| `useServerLogs`             | Server log streaming                         |
+| `useTreeExpansion`          | Tree node expansion state                    |
 
 ## Usage Guidelines
 

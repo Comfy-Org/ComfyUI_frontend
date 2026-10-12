@@ -2,7 +2,7 @@
 
 This document is intended to provide a brief introduction to new Litegraph APIs.
 
-<detail open>
+<details open>
 
 <summary>
 
@@ -12,7 +12,7 @@ This document is intended to provide a brief introduction to new Litegraph APIs.
 
 CanvasPointer replaces much of the original pointer handling code. It provides a standard click, double-click, and drag UX for users.
 
-<detail open>
+<details open>
 
 <summary>
 
@@ -61,9 +61,9 @@ CanvasPointer.maxClickDrift = 6
 CanvasPointer.doubleClickTime = 300
 ```
 
-</detail>
+</details>
 
-<detail open>
+<details open>
 
 <summary>
 
@@ -151,7 +151,7 @@ widget.onPointerDown = function (pointer, node, canvas) {
 }
 ```
 
-</detail>
+</details>
 
 ### TypeScript & JSDoc
 
@@ -190,7 +190,7 @@ canvas.state.shouldSetCursor = false
 if (canvas.state.hoveringOver & CanvasItem.Node) element.style.cursor = 'pointer'
 ```
 
-</detail>
+</details>
 
 # Removed public interfaces
 

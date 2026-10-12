@@ -50,7 +50,7 @@ pnpm build-storybook
 
 ### Creating Stories
 
-Conventions live in `docs/guidance/storybook.md`: a story is a named scenario, and enum or boolean props are controls. Stories are located alongside components in `src/` directories with the pattern `*.stories.ts`:
+Conventions live in `docs/guidance/storybook.md`: a story is a named scenario, and enum or boolean props are controls. Stories are located alongside components under `src/` and `apps/website/src/` with the pattern `*.stories.ts`:
 
 ```typescript
 // MyComponent.stories.ts
@@ -177,9 +177,11 @@ export const WithLongText: Story = {
 
 ## Configuration Files
 
-- **`main.ts`**: Core Storybook configuration and Vite integration
+- **`main.ts`**: Core Storybook configuration and Vite integration. The story
+  globs cover both `src/**` and `apps/website/src/**`; the only addons are
+  `@storybook/addon-docs` and `@storybook/addon-mcp` (Controls and Actions are
+  part of Storybook core from v9 on, so they need no addon)
 - **`preview.ts`**: Global decorators, parameters, and Vue app setup
-- **`manager.ts`**: Storybook UI customization (if needed)
 - **`preview-head.html`**: Injects custom HTML into the `<head>` of every Storybook iframe (used for global styles, fonts, or fixes for iframe-specific issues)
 
 ## Chromatic Visual Testing
