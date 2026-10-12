@@ -397,6 +397,7 @@ class Load3d extends Viewport3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
+    this.hasLoadedModel = false
 
     const outcome = await this.loaderManager.loadModel(
       url,
@@ -405,7 +406,6 @@ class Load3d extends Viewport3d {
     )
 
     if (outcome !== 'loaded') {
-      this.hasLoadedModel = false
       return outcome
     }
 

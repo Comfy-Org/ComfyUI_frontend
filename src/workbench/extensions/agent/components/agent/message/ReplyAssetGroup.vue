@@ -73,8 +73,39 @@ const galleryIndex = ref(-1)
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
 const thumbnailAbortController = new AbortController()
+const thumbnailRetryTimers = new Set<ReturnType<typeof setTimeout>>()
+const THUMBNAIL_RETRY_DELAY_MS = 2000
 
-onBeforeUnmount(() => thumbnailAbortController.abort())
+onBeforeUnmount(() => {
+  thumbnailAbortController.abort()
+  for (const timer of thumbnailRetryTimers) clearTimeout(timer)
+  thumbnailRetryTimers.clear()
+})
+
+async function generateOffscreenModelThumbnail(
+  url: string,
+  filename: string
+): Promise<void> {
+  const { generateModelThumbnail } =
+    await import('@/components/load3d/modelThumbnail')
+  const generated = await generateModelThumbnail(
+    url,
+    filename,
+    thumbnailAbortController.signal
+  )
+  if (generated.status === 'rendered') {
+    modelThumbnails.value[url] = generated.dataUrl
+    return
+  }
+  if (generated.status !== 'busy' || thumbnailAbortController.signal.aborted) {
+    return
+  }
+  const timer = setTimeout(() => {
+    thumbnailRetryTimers.delete(timer)
+    void generateOffscreenModelThumbnail(url, filename).catch(() => {})
+  }, THUMBNAIL_RETRY_DELAY_MS)
+  thumbnailRetryTimers.add(timer)
+}
 
 watch(
   () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
@@ -94,16 +125,7 @@ watch(
             ) {
               return
             }
-            const { generateModelThumbnail } =
-              await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(
-              url,
-              filename,
-              thumbnailAbortController.signal
-            )
-            if (generated.status === 'rendered') {
-              modelThumbnails.value[url] = generated.dataUrl
-            }
+            await generateOffscreenModelThumbnail(url, filename)
           })
           .catch(() => {})
       }

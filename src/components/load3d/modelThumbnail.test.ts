@@ -198,6 +198,24 @@ describe('generateModelThumbnail', () => {
     )
   })
 
+  it('reports non-stringifiable loader rejections as sanitized errors', async () => {
+    const instance = mockInstance({
+      loadModel: vi.fn().mockRejectedValue(Object.create(null))
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await expect(
+      generateModelThumbnail('/broken.glb', 'broken.glb')
+    ).resolves.toEqual({ status: 'failed' })
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '[Redacted]' }),
+      {
+        errorType: 'agent_model_thumbnail_generation_failure',
+        surface: 'agent'
+      }
+    )
+  })
+
   it('reports a non-loaded model outcome as a failure', async () => {
     const instance = mockInstance({
       loadModel: vi.fn().mockResolvedValue('empty')
@@ -329,6 +347,28 @@ describe('generateModelThumbnail', () => {
       dataUrl: 'data:image/png;base64,thumb'
     })
     expect(releaseSharedRenderer).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps unsettled background work charged after its grace period', async () => {
+    const pendingLoad = deferred<'cancelled'>()
+    const stalled = mockInstance({
+      loadModel: vi.fn<Load3d['loadModel']>(() => pendingLoad.promise)
+    })
+    createLoad3d.mockReturnValueOnce(stalled).mockReturnValue(mockInstance())
+
+    const timedOut = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+    await vi.advanceTimersByTimeAsync(30_000)
+    await expect(timedOut).resolves.toEqual({ status: 'timedOut' })
+
+    const accepted = Array.from({ length: 31 }, (_, index) =>
+      generateModelThumbnail(`/next-${index}.glb`, `next-${index}.glb`)
+    )
+    await expect(
+      generateModelThumbnail('/busy.glb', 'busy.glb')
+    ).resolves.toEqual({ status: 'busy' })
+
+    pendingLoad.resolve('cancelled')
+    await Promise.all(accepted)
   })
 
   it('times out a stuck load, disposes it, and advances the queue', async () => {

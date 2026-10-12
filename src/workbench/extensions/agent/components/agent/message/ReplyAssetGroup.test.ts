@@ -257,6 +257,36 @@ describe('ReplyAssetGroup', () => {
     )
   })
 
+  it('retries offscreen generation when the renderer queue is busy', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail
+      .mockResolvedValueOnce({ status: 'busy' })
+      .mockResolvedValueOnce({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,retried'
+      })
+    renderGroup([model])
+
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    await vi.advanceTimersToNextTimerAsync()
+
+    const thumbnail = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+    expect(thumbnail).toHaveAttribute('src', 'data:image/png;base64,retried')
+  })
+
+  it('cancels a pending busy retry on teardown', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'busy' })
+    const wrapper = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    wrapper.unmount()
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(generateModelThumbnail).toHaveBeenCalledOnce()
+  })
+
   it('generates thumbnails only for model URLs that name a filename query', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     const pathStyleModel: ReplyAsset = {

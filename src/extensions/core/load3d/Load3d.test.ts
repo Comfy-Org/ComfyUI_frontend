@@ -1190,6 +1190,22 @@ describe('Load3d', () => {
       expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
       expect(mocks.getCameraState).not.toHaveBeenCalled()
     })
+
+    it('uses default framing after a rejected reload', async () => {
+      const mocks = setupLoadInternal()
+      await ctx.load3d.loadModel('a.glb')
+      mocks.loaderLoadModel.mockRejectedValueOnce(new Error('load failed'))
+      await expect(ctx.load3d.loadModel('broken.glb')).rejects.toThrow(
+        'load failed'
+      )
+      ctx.cameraManager.reset.mockClear()
+      mocks.getCameraState.mockClear()
+
+      await ctx.load3d.loadModel('replacement.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+    })
   })
 
   describe('captureScene', () => {

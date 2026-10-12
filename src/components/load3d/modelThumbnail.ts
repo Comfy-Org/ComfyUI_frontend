@@ -15,6 +15,7 @@ const MAX_QUEUED_RENDERS = 32
 const RENDER_CANCELLED = new Error('Model thumbnail render cancelled')
 const RENDER_FAILED = new Error('Model thumbnail load did not complete')
 let queuedRenderCount = 0
+let abandonedOperationCount = 0
 let rendererKeepAlive: SharedRendererHandle | null = null
 
 /**
@@ -35,8 +36,9 @@ export type ModelThumbnailResult =
  *
  * A render that outlives its deadline, or whose `callerSignal` aborts, is
  * given up on: its viewer is torn down and the queue moves on. Underlying
- * parse work may continue briefly, so its admission slot and renderer lease
- * remain held until that work settles or a bounded grace period expires.
+ * parse work may continue briefly, so its renderer lease remains held until
+ * that work settles or a bounded grace period expires. An unsettled operation
+ * continues to occupy admission capacity after the grace period.
  */
 export function generateModelThumbnail(
   modelUrl: string,
@@ -46,7 +48,7 @@ export function generateModelThumbnail(
   if (callerSignal?.aborted) {
     return Promise.resolve({ status: 'cancelled' })
   }
-  if (queuedRenderCount >= MAX_QUEUED_RENDERS) {
+  if (queuedRenderCount + abandonedOperationCount >= MAX_QUEUED_RENDERS) {
     return Promise.resolve({ status: 'busy' })
   }
 
@@ -60,7 +62,16 @@ export function generateModelThumbnail(
   )
   queue = run.catch(() => null)
   void started.then(async (task) => {
-    if ('completed' in task) await task.completed
+    if ('completed' in task) {
+      const completion = await task.completed
+      if (completion === 'graceExpired') {
+        abandonedOperationCount++
+        function releaseAdmission(): void {
+          abandonedOperationCount--
+        }
+        void task.operation.then(releaseAdmission, releaseAdmission)
+      }
+    }
     queuedRenderCount--
     if (queuedRenderCount === 0) {
       rendererKeepAlive?.release()
@@ -72,8 +83,11 @@ export function generateModelThumbnail(
 
 type ThumbnailTask = {
   result: Promise<ModelThumbnailResult>
-  completed: Promise<void>
+  operation: Promise<string>
+  completed: Promise<BackgroundCompletion>
 }
+
+type BackgroundCompletion = 'settled' | 'graceExpired'
 
 function renderThumbnailWithTimeout(
   modelUrl: string,
@@ -83,6 +97,7 @@ function renderThumbnailWithTimeout(
   const task = renderThumbnailJob(modelUrl, assetName, callerSignal)
   return {
     completed: task.completed,
+    operation: task.operation,
     result: task.result.then(
       (dataUrl): ModelThumbnailResult => ({ status: 'rendered', dataUrl }),
       (error: unknown): ModelThumbnailResult => {
@@ -102,7 +117,11 @@ function renderThumbnailJob(
   modelUrl: string,
   assetName: string,
   callerSignal?: AbortSignal
-): { result: Promise<string>; completed: Promise<void> } {
+): {
+  result: Promise<string>
+  operation: Promise<string>
+  completed: Promise<BackgroundCompletion>
+} {
   const deadline = new AbortController()
   const operation = (async () => {
     const { acquireSharedRenderer } =
@@ -124,7 +143,7 @@ function renderThumbnailJob(
     function settleResolved(dataUrl: string): void {
       if (finish()) resolve(dataUrl)
     }
-    function settleRejected(error: Error): void {
+    function settleRejected(error: unknown): void {
       if (finish()) reject(error)
     }
     function onCallerAbort(): void {
@@ -136,12 +155,11 @@ function renderThumbnailJob(
     const timer = setTimeout(onTimeout, MODEL_LOAD_TIMEOUT_MS)
     callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
 
-    void operation.then(settleResolved, (error: unknown) =>
-      settleRejected(error instanceof Error ? error : new Error(String(error)))
-    )
+    void operation.then(settleResolved, settleRejected)
   })
   return {
     result,
+    operation,
     completed: boundedCompletion(operation, result)
   }
 }
@@ -149,21 +167,27 @@ function renderThumbnailJob(
 function boundedCompletion(
   operation: Promise<string>,
   result: Promise<string>
-): Promise<void> {
+): Promise<BackgroundCompletion> {
   return new Promise((resolve) => {
     let timer: ReturnType<typeof setTimeout> | undefined
     let completed = false
-    function finish(): void {
+    function finish(completion: BackgroundCompletion): void {
       if (completed) return
       completed = true
       if (timer) clearTimeout(timer)
-      resolve()
+      resolve(completion)
     }
     function startGracePeriod(): void {
       if (completed || timer) return
-      timer = setTimeout(finish, BACKGROUND_SETTLE_GRACE_MS)
+      timer = setTimeout(
+        () => finish('graceExpired'),
+        BACKGROUND_SETTLE_GRACE_MS
+      )
     }
-    void operation.then(finish, finish)
+    void operation.then(
+      () => finish('settled'),
+      () => finish('settled')
+    )
     void result.then(startGracePeriod, startGracePeriod)
   })
 }
