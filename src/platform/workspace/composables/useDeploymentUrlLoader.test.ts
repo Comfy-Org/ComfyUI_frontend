@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises'
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, defineComponent } from 'vue'
@@ -60,6 +61,8 @@ function useDeploymentUrlLoader(): ReturnType<
         en: {
           deploymentSwitcher: {
             linkRefused: 'Could not open the deployment this link names',
+            linkTimedOut:
+              'Could not load deployments in time. Try opening the link again.',
             linkWorkspaceRefused:
               "Could not open the workspace this link names. You're still in {workspaceName}."
           }
@@ -146,6 +149,38 @@ describe('useDeploymentUrlLoader', () => {
     expect(useToast().error).not.toHaveBeenCalled()
   })
 
+  it('waits for URL cleanup to complete before starting the pick', async () => {
+    mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-1' }
+    let finishCleanup!: () => void
+    const cleanup = new Promise<undefined>((resolve) => {
+      finishCleanup = () => resolve(undefined)
+    })
+    mockRouterReplace.mockReturnValue(cleanup)
+    const loading = useDeploymentUrlLoader().loadDeploymentFromUrl()
+    await setImmediate()
+    expect(useDeploymentPickStore().pickFromLink).not.toHaveBeenCalled()
+    finishCleanup()
+    await expect(loading).resolves.toBe(true)
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith('dep-1')
+  })
+
+  it('stays in the workspace when the retry marker cannot be saved', async () => {
+    mockRouteQuery.value = { workspace: 'ws-2', deployment: 'dep-1' }
+    const save = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage full', 'QuotaExceededError')
+    })
+    try {
+      await expect(
+        useDeploymentUrlLoader().loadDeploymentFromUrl()
+      ).resolves.toBe(false)
+      expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
+      expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+      expect(useToast().error).toHaveBeenCalledWith(STAYED, { duration: 8000 })
+    } finally {
+      save.mockRestore()
+    }
+  })
+
   it('switches to another workspace keeping the link, and picks on the boot after the reload', async () => {
     mockRouteQuery.value = { workspace: 'ws-2', deployment: 'dep-1' }
 
@@ -215,6 +250,21 @@ describe('useDeploymentUrlLoader', () => {
         description: "deployment dep-gone is not one of this workspace's",
         duration: 8000
       }
+    )
+  })
+
+  it('lets startup continue with a retry message after the listing times out', async () => {
+    mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-1' }
+    vi.mocked(useDeploymentPickStore().pickFromLink).mockResolvedValue({
+      kind: 'timedOut'
+    })
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(false)
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Could not load deployments in time. Try opening the link again.',
+      { duration: 8000 }
     )
   })
 

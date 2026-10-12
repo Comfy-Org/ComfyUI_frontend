@@ -460,6 +460,46 @@ describe('useDeploymentPickStore', () => {
   })
 
   describe('a pick from a link', () => {
+    it('keeps a link pick exclusive when a late listing arrives after a failed boot listing', async () => {
+      const listed = deferred<WorkspaceDeploymentList>()
+      const put = deferred<void>()
+      const started = deferred<void>()
+      mockWorkspaceApi.listDeployments
+        .mockRejectedValueOnce(new Error('listing failed'))
+        .mockReturnValueOnce(listed.promise)
+      mockWorkspaceApi.pickDeployment.mockImplementation(() => {
+        started.resolve()
+        return put.promise
+      })
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      const refresh = store.load()
+      const linked = store.pickFromLink('dep-1')
+      await started.promise
+      listed.resolve(listing)
+      await refresh
+      const competing = store.pick('dep-other')
+      put.resolve()
+      await Promise.all([linked, competing])
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledTimes(1)
+      expect(reload).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops waiting for a stalled listing and never picks when it eventually answers', async () => {
+      vi.useFakeTimers()
+      const listed = deferred<WorkspaceDeploymentList>()
+      mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
+      const store = useDeploymentPickStore()
+      const settled = vi.fn()
+      const linked = store.pickFromLink('dep-1').then(settled)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(settled).toHaveBeenCalledWith({ kind: 'timedOut' })
+      listed.resolve(listing)
+      await linked
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
     it('waits for the first listing, then picks and reloads', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)

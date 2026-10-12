@@ -59,13 +59,13 @@ function takeSwitchTarget(): string | null {
   }
 }
 
-function setSwitchTarget(workspaceId: string | null): void {
+function setSwitchTarget(workspaceId: string | null): boolean {
   try {
     if (workspaceId === null) sessionStorage.removeItem(SWITCH_KEY)
     else sessionStorage.setItem(SWITCH_KEY, workspaceId)
+    return true
   } catch {
-    // Without sessionStorage a failed switch shows its toast on the next boot
-    // instead of being retried; the switch itself still works.
+    return false
   }
 }
 
@@ -140,8 +140,7 @@ export function useDeploymentUrlLoader() {
     switchedTo: string | null
   ): Promise<boolean> {
     // A switch this link already made did not land: never reload again.
-    if (switchedTo !== workspaceId) {
-      setSwitchTarget(workspaceId)
+    if (switchedTo !== workspaceId && setSwitchTarget(workspaceId)) {
       if (await switchWorkspace(workspaceId)) return true
       setSwitchTarget(null)
     }
@@ -160,6 +159,9 @@ export function useDeploymentUrlLoader() {
   ): Promise<boolean> {
     await stripParams(query, ['workspace', 'deployment'])
     const outcome = await pickStore.pickFromLink(deploymentId)
+    if (outcome.kind === 'timedOut') {
+      toast.error(t('deploymentSwitcher.linkTimedOut'), { duration: 8000 })
+    }
     if (outcome.kind === 'refused') {
       toast.error(t('deploymentSwitcher.linkRefused'), {
         description: outcome.message,

@@ -78,7 +78,7 @@ describe('reduceDeploymentPick', () => {
     })
   })
 
-  it('switches only from ready, and a failed switch returns to ready', () => {
+  it('restores the listing after a failed switch', () => {
     expect(
       reduceDeploymentPick(ready, { type: 'switchStarted', target: null })
     ).toEqual(switching)
@@ -88,11 +88,38 @@ describe('reduceDeploymentPick', () => {
     expect(reduceDeploymentPick(ready, { type: 'switchFailed' })).toBe(ready)
   })
 
-  it.for(nothingShown)('does not start a switch from $phase', (state) => {
-    expect(
-      reduceDeploymentPick(state, { type: 'switchStarted', target: 'dep-1' })
-    ).toBe(state)
-  })
+  it.for(nothingShown)(
+    'tracks a link switch without a listing from $phase',
+    (state) => {
+      const pending = reduceDeploymentPick(state, {
+        type: 'switchStarted',
+        target: 'dep-1'
+      })
+      expect(pending.phase).toBe('switching')
+      expect(reduceDeploymentPick(pending, { type: 'loadFailed' })).toBe(
+        pending
+      )
+      expect(reduceDeploymentPick(pending, { type: 'switchFailed' })).toEqual(
+        state
+      )
+      expect(reduceDeploymentPick(pending, loaded)).toEqual({
+        ...ready,
+        phase: 'switching',
+        target: 'dep-1'
+      })
+      const refused = reduceDeploymentPick(pending, { type: 'loadRefused' })
+      expect(refused.phase).toBe('switching')
+      expect(
+        reduceDeploymentPick(refused, {
+          type: 'defaultChanged',
+          defaultDeploymentId: 'dep-1'
+        })
+      ).toEqual({ phase: 'hidden' })
+      expect(reduceDeploymentPick(refused, { type: 'switchFailed' })).toEqual({
+        phase: 'hidden'
+      })
+    }
+  )
 
   it.for([ready, switching])(
     'forgets the listing from $phase when the workspace changes',
@@ -139,7 +166,11 @@ describe('reduceDeploymentPick', () => {
       { ...switching, target: 'dep-1' },
       { type: 'loadRefused' }
     )
-    expect(refused).toEqual({ phase: 'hiddenSwitching', target: 'dep-1' })
+    expect(refused).toEqual({
+      phase: 'switching',
+      target: 'dep-1',
+      previousPhase: 'hidden'
+    })
     expect(reduceDeploymentPick(refused, { type: 'loadFailed' })).toBe(refused)
     expect(
       reduceDeploymentPick(refused, { type: 'switchStarted', target: null })
