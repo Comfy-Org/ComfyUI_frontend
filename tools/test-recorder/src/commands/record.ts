@@ -157,6 +157,14 @@ function answered<T>(value: T | symbol): T {
 
 type CommandResult = ReturnType<typeof runCommand>
 
+type PrDetails = {
+  branch: string
+  head: string
+  title: string
+}
+
+type PrDetailsLookup = { details: PrDetails } | { reason: string }
+
 function commandFailure(
   result: CommandResult,
   label: string
@@ -216,13 +224,28 @@ function checkoutIsDirty(projectRoot: string): boolean {
   )
 }
 
-export async function preparePrCheckout(
-  pr: string,
-  projectRoot: string,
-  options: PrCheckoutOptions = {}
-): Promise<PrCheckoutOutcome> {
-  const allowExplicitFallback = options.allowExplicitFallback ?? false
-  const details = runCommand(
+function parsePrDetailOutput(output: string): PrDetailsLookup {
+  if (!output) return { reason: 'gh pr view returned no head revision data' }
+  const [branch, head, title] = output.split('\t')
+  if (!branch || !head || !title) {
+    return { reason: 'gh pr view returned incomplete head revision data' }
+  }
+  return { details: { branch, head, title } }
+}
+
+function parsePrDetails(result: CommandResult): PrDetailsLookup {
+  if (result.error || result.status !== 0) {
+    return {
+      reason:
+        result.error?.message ??
+        `gh pr view exited with status ${result.status}`
+    }
+  }
+  return parsePrDetailOutput(result.stdout?.toString().trim() ?? '')
+}
+
+function lookupPrDetails(pr: string, projectRoot: string): PrDetailsLookup {
+  const result = runCommand(
     'gh',
     [
       'pr',
@@ -235,123 +258,194 @@ export async function preparePrCheckout(
     ],
     { cwd: projectRoot, stdio: 'pipe' }
   )
+  return parsePrDetails(result)
+}
 
-  const fallback = async (
-    reason: string,
-    requestedBranch = '',
-    requestedHead = ''
-  ): Promise<PrCheckoutOutcome> => {
-    if (!allowExplicitFallback) {
-      throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
-    }
-    const continueWithoutPr = await confirm({
-      message: `PR #${pr} could not be verified. Continue on the current checkout without it?`
-    })
-    if (isCancel(continueWithoutPr) || !continueWithoutPr) {
-      throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
-    }
-
-    const effectiveRevision = checkoutRevision(projectRoot)
-    warn(`Continuing without verified PR #${pr}: ${reason}`)
-    return {
-      requestedBranch,
-      requestedHead,
-      effectiveBranch: effectiveRevision.branch,
-      effectiveHead: effectiveRevision.head,
-      mode: 'explicit-fallback'
-    }
+async function continueWithoutVerifiedPr(
+  pr: string,
+  projectRoot: string,
+  reason: string,
+  allowExplicitFallback: boolean,
+  requestedBranch = '',
+  requestedHead = ''
+): Promise<PrCheckoutOutcome> {
+  if (!allowExplicitFallback) {
+    throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
+  }
+  const continueWithoutPr = await confirm({
+    message: `PR #${pr} could not be verified. Continue on the current checkout without it?`
+  })
+  if (isCancel(continueWithoutPr) || !continueWithoutPr) {
+    throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
   }
 
-  if (details.error || details.status !== 0) {
-    return fallback(
-      details.error?.message ??
-        `gh pr view exited with status ${details.status}`
-    )
+  const effectiveRevision = checkoutRevision(projectRoot)
+  warn(`Continuing without verified PR #${pr}: ${reason}`)
+  return {
+    requestedBranch,
+    requestedHead,
+    effectiveBranch: effectiveRevision.branch,
+    effectiveHead: effectiveRevision.head,
+    mode: 'explicit-fallback'
   }
+}
 
-  const detailsOutput = details.stdout?.toString().trim() ?? ''
-  if (!detailsOutput) {
-    return fallback('gh pr view returned no head revision data')
+function checkoutAction(
+  current: { branch: string; head: string },
+  requested: PrDetails,
+  dirty: boolean
+): ReturnType<typeof decidePrCheckout> {
+  if (current.branch !== requested.branch) {
+    return decidePrCheckout(current.branch, requested.branch, dirty)
   }
-  const [prBranch, prHead, title] = detailsOutput.split('\t')
-  if (!prBranch || !prHead || !title) {
-    return fallback('gh pr view returned incomplete head revision data')
-  }
-  const currentRevision = checkoutRevision(projectRoot)
-  const currentBranch = currentRevision.branch
-  const currentHead = currentRevision.head
-  const dirty = checkoutIsDirty(projectRoot)
-  if (currentBranch === prBranch && currentHead === prHead) {
-    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
-    return {
-      requestedBranch: prBranch,
-      requestedHead: prHead,
-      effectiveBranch: currentBranch,
-      effectiveHead: currentHead,
-      mode: 'verified'
-    }
-  }
+  if (current.head === requested.head) return 'already-on-branch'
+  return dirty ? 'refuse-dirty' : 'offer-switch'
+}
 
-  const action =
-    currentBranch === prBranch && currentHead !== prHead
-      ? dirty
-        ? 'refuse-dirty'
-        : 'offer-switch'
-      : decidePrCheckout(currentBranch, prBranch, dirty)
-  if (action === 'refuse-dirty') {
-    return fallback(
-      `checkout "${currentBranch}" has unsaved changes; refusing to switch to "${prBranch}"`,
-      prBranch,
-      prHead
-    )
-  }
+type PrSwitchResult = { outcome: PrCheckoutOutcome } | { reason: string }
 
-  info([
-    `This test plan targets PR #${pr} — '${title}'.`,
-    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
-  ])
+async function confirmPrSwitch(pr: string): Promise<boolean> {
   const shouldSwitch = await confirm({
     message: `Switch to the code for PR #${pr}?`
   })
-  if (isCancel(shouldSwitch) || !shouldSwitch) {
-    return fallback(
-      `switch to PR branch "${prBranch}" was not confirmed`,
-      prBranch,
-      prHead
-    )
-  }
+  return !isCancel(shouldSwitch) && shouldSwitch
+}
+
+function checkoutPr(pr: string, projectRoot: string): string | undefined {
   const checkout = runCommand('gh', ['pr', 'checkout', pr], {
     cwd: projectRoot,
     stdio: 'pipe'
   })
   if (checkout.error || checkout.status !== 0) {
-    return fallback(
+    return (
       checkout.error?.message ??
-        `gh pr checkout exited with status ${checkout.status}`,
-      prBranch,
-      prHead
+      `gh pr checkout exited with status ${checkout.status}`
+    )
+  }
+  return undefined
+}
+
+function verifyPrRevision(
+  projectRoot: string,
+  details: PrDetails
+): { revision: { branch: string; head: string } } | { reason: string } {
+  const revision = checkoutRevision(projectRoot)
+  if (revision.branch !== details.branch || revision.head !== details.head) {
+    return {
+      reason:
+        `effective checkout ${revision.branch || '(detached)'}@${revision.head || '(unknown)'} ` +
+        `does not match ${details.branch}@${details.head}`
+    }
+  }
+  return { revision }
+}
+
+async function switchToPrCheckout(
+  pr: string,
+  projectRoot: string,
+  currentBranch: string,
+  details: PrDetails
+): Promise<PrSwitchResult> {
+  info([
+    `This test plan targets PR #${pr} — '${details.title}'.`,
+    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
+  ])
+  if (!(await confirmPrSwitch(pr))) {
+    return {
+      reason: `switch to PR branch "${details.branch}" was not confirmed`
+    }
+  }
+
+  const checkoutFailure = checkoutPr(pr, projectRoot)
+  if (checkoutFailure) return { reason: checkoutFailure }
+
+  const verification = verifyPrRevision(projectRoot, details)
+  if ('reason' in verification) {
+    return { reason: verification.reason }
+  }
+
+  pass(`Switched to the code for PR #${pr}`, details.branch)
+  return {
+    outcome: {
+      requestedBranch: details.branch,
+      requestedHead: details.head,
+      effectiveBranch: verification.revision.branch,
+      effectiveHead: verification.revision.head,
+      mode: 'verified'
+    }
+  }
+}
+
+async function verifyOrSwitchPrCheckout(
+  pr: string,
+  projectRoot: string,
+  details: PrDetails,
+  allowExplicitFallback: boolean
+): Promise<PrCheckoutOutcome> {
+  const current = checkoutRevision(projectRoot)
+  if (current.branch === details.branch && current.head === details.head) {
+    pass(`Your checkout already has the code for PR #${pr}`, details.branch)
+    return {
+      requestedBranch: details.branch,
+      requestedHead: details.head,
+      effectiveBranch: current.branch,
+      effectiveHead: current.head,
+      mode: 'verified'
+    }
+  }
+
+  const action = checkoutAction(current, details, checkoutIsDirty(projectRoot))
+  if (action === 'refuse-dirty') {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      `checkout "${current.branch}" has unsaved changes; refusing to switch to "${details.branch}"`,
+      allowExplicitFallback,
+      details.branch,
+      details.head
     )
   }
 
-  const effectiveRevision = checkoutRevision(projectRoot)
-  const effectiveBranch = effectiveRevision.branch
-  const effectiveHead = effectiveRevision.head
-  if (effectiveBranch !== prBranch || effectiveHead !== prHead) {
-    return fallback(
-      `effective checkout ${effectiveBranch || '(detached)'}@${effectiveHead || '(unknown)'} ` +
-        `does not match ${prBranch}@${prHead}`,
-      prBranch,
-      prHead
+  const result = await switchToPrCheckout(
+    pr,
+    projectRoot,
+    current.branch,
+    details
+  )
+  if ('reason' in result) {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      result.reason,
+      allowExplicitFallback,
+      details.branch,
+      details.head
     )
   }
-  pass(`Switched to the code for PR #${pr}`, prBranch)
-  return {
-    requestedBranch: prBranch,
-    requestedHead: prHead,
-    effectiveBranch,
-    effectiveHead,
-    mode: 'verified'
+  return result.outcome
+}
+
+export async function preparePrCheckout(
+  pr: string,
+  projectRoot: string,
+  options: PrCheckoutOptions = {}
+): Promise<PrCheckoutOutcome> {
+  const allowExplicitFallback = options.allowExplicitFallback ?? false
+  const lookup = lookupPrDetails(pr, projectRoot)
+  if ('reason' in lookup) {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      lookup.reason,
+      allowExplicitFallback
+    )
   }
+  return verifyOrSwitchPrCheckout(
+    pr,
+    projectRoot,
+    lookup.details,
+    allowExplicitFallback
+  )
 }
 
 export async function runRecord(
@@ -410,7 +504,7 @@ export async function runRecord(
           : 'could not locate the project root'
       const failure = `Could not find the checkout for PR #${prefill.pr}: ${message}`
       fail(failure)
-      throw new Error(failure)
+      throw new Error(failure, { cause: error })
     }
     await preparePrCheckout(prefill.pr, root, {
       allowExplicitFallback: Boolean(process.stdin.isTTY)
