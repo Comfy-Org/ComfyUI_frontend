@@ -883,7 +883,9 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  notifyWidgetWriteRefused
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -939,7 +941,9 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,

@@ -388,7 +388,10 @@ export function useAgentCrdtFollower(
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
     docPromotedWidgets: (nodeId: NodeId) =>
-      follower.value?.docPromotedWidgets(nodeId) ?? null
+      follower.value?.docPromotedWidgets(nodeId) ?? null,
+    mayWritePromotedHost: (nodeId: NodeId) =>
+      follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    notifyWidgetWriteRefused: () => follower.value?.notifyWidgetWriteRefused()
   }
 }
 
@@ -432,6 +435,13 @@ function startAgentCrdtFollower(
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
+  const sentAddsByDoc = new WeakMap<typeof bridge.follower.doc, Set<string>>()
+  const sentAddsToCurrentDoc = (): Set<string> => {
+    const doc = bridge.follower.doc
+    const sentAdds = sentAddsByDoc.get(doc) ?? new Set<string>()
+    sentAddsByDoc.set(doc, sentAdds)
+    return sentAdds
+  }
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
 
@@ -1048,12 +1058,21 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) => {
+      const sentAdds = sentAddsToCurrentDoc()
+      for (const operation of operations)
+        if (operation.op === 'add_node') sentAdds.add(String(operation.node_id))
       projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
     docPromotedWidgets: (nodeId: NodeId) =>
-      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
+    mayWritePromotedHost: (nodeId: NodeId) =>
+      bridge.isSubscribeBaselineIntegrated ||
+      (sentAddsToCurrentDoc().has(String(nodeId)) &&
+        readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    notifyWidgetWriteRefused: () =>
+      rejectedOpNotifier.notifyWidgetWriteRefused()
   }
 }
