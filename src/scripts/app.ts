@@ -401,6 +401,7 @@ export class ComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
+  private readonly pendingGraphLoads = new Set<number>()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1344,6 +1345,13 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    this.pendingGraphLoads.add(loadId)
+    ChangeTracker.isLoadingGraph = true
+    const releaseGraphLoad = () => {
+      this.pendingGraphLoads.delete(loadId)
+      if (this.pendingGraphLoads.size === 0)
+        ChangeTracker.isLoadingGraph = false
+    }
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1496,7 +1504,11 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
-      await this.reportGraphLoadFailure(error)
+      try {
+        await this.reportGraphLoadFailure(error)
+      } finally {
+        releaseGraphLoad()
+      }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1538,7 +1550,6 @@ export class ComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
@@ -1613,6 +1624,16 @@ export class ComfyApp {
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
+      const configuredGraphState = this.rootGraph.state
+      const configuredLoadId = this.committedGraphLoadSequence
+      const isCurrentGraphLoad = () =>
+        configuredGraphState === this.rootGraph.state &&
+        configuredLoadId === this.committedGraphLoadSequence
+      const cancelReplacedLoad = () =>
+        useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1677,6 +1698,10 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
 
       const effectiveShareId =
         shareId ??
@@ -1692,12 +1717,29 @@ export class ComfyApp {
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
-        workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
-      )
+      try {
+        await useWorkflowService().afterLoadNewGraph(
+          workflow,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+          effectiveShareId
+        )
+      } catch (error) {
+        if (isCurrentGraphLoad()) throw error
+      }
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
+      for (const pendingLoadId of this.pendingGraphLoads) {
+        if (pendingLoadId <= loadId)
+          this.pendingGraphLoads.delete(pendingLoadId)
+      }
+      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1765,7 +1807,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      releaseGraphLoad()
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
