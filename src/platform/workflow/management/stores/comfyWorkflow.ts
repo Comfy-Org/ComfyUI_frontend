@@ -86,6 +86,7 @@ export interface WorkflowRuntime {
   removeDraft(path: string): void
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
+  promptSave(workflow: ComfyWorkflow): Promise<string | null>
 }
 
 let registeredRuntime: WorkflowRuntime | null = null
@@ -268,6 +269,10 @@ export class ComfyWorkflow extends UserFile {
     const result = await super.saveAs(path)
     workflowRuntime().removeDraft(path)
     return result
+  }
+
+  async promptSave(): Promise<string | null> {
+    return workflowRuntime().promptSave(this)
   }
 }
 

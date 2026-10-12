@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
+import { t } from '@/i18n'
 import type {
   LGraph,
   LGraphNode,
@@ -23,6 +24,8 @@ import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useDialogService } from '@/services/dialogService'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createLeafNodeExecutionId,
@@ -48,7 +51,22 @@ registerWorkflowRuntime({
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
   isDraftPersistenceEnabled: () =>
-    useSettingStore().get('Comfy.Workflow.Persist')
+    useSettingStore().get('Comfy.Workflow.Persist'),
+  async promptSave(workflow) {
+    try {
+      return await useDialogService().prompt({
+        title: t(workflow.saveNamePrompt.title),
+        message: t(workflow.saveNamePrompt.message),
+        defaultValue: workflow.filename
+      })
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'error_loading_dialog_service_prompt_save'
+      })
+      return null
+    }
+  }
 })
 
 export const useWorkflowStore = defineStore('workflow', () => {

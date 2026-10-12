@@ -2767,14 +2767,31 @@ describe('useWorkflowService', () => {
 
       expect(result).toBe(true)
       expect(useDialogService().prompt).toHaveBeenCalledWith({
-        title: t(workflow.saveNamePrompt.title),
-        message: t(workflow.saveNamePrompt.message),
+        title: t('workflowService.saveWorkflow'),
+        message: t('workflowService.enterFilenamePrompt'),
         defaultValue: 'temp'
       })
       expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
         workflow,
         'workflows/named.json'
       )
+    })
+
+    it('uses the filename chosen by an extension promptSave override', async () => {
+      const workflow = createTemporaryWorkflow()
+      Object.assign(workflow, {
+        promptSave: async () => 'extension-folder/picked'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+
+      const result = await service.saveWorkflowAs(workflow)
+
+      expect(result).toBe(true)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/extension-folder/picked.json'
+      )
+      expect(useDialogService().prompt).not.toHaveBeenCalled()
     })
 
     it('appends .app.json extension when initialMode is app', async () => {

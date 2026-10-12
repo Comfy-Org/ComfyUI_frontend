@@ -267,13 +267,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { filename?: string; isApp?: boolean } = {}
   ): Promise<boolean> => {
-    const newFilename =
-      options.filename ??
-      (await dialogService.prompt({
-        title: t(workflow.saveNamePrompt.title),
-        message: t(workflow.saveNamePrompt.message),
-        defaultValue: workflow.filename
-      }))
+    const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
     const isApp = options.isApp ?? workflow.initialMode === 'app'

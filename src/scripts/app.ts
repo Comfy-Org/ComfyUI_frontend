@@ -614,7 +614,7 @@ export class ComfyApp implements IComfyApp {
 
   static onClipspaceEditorSave() {
     if (clipspace.returnNode) {
-      pasteFromClipspace(clipspace.returnNode)
+      ComfyApp.pasteFromClipspace(clipspace.returnNode)
     }
   }
 
