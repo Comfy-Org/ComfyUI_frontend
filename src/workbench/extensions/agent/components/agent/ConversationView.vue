@@ -73,6 +73,10 @@ watch([() => skills.enabled, () => skills.scope], () => {
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
+// 'latest' keeps new content in view; 'reading' means the user scrolled away.
+// 'trace' pauses following after a Worked toggle. Collapsing a trace clamps the
+// scroll position, so scroll events keep the pause; user input, Latest or
+// another conversation ends it.
 const followIntent = ref<'latest' | 'reading' | 'trace'>('latest')
 const atBottom = ref(true)
 const bottomGracePx = 16
