@@ -1,23 +1,24 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter'
+import type {
+  FullResult,
+  Reporter,
+  TestCase,
+  TestResult
+} from '@playwright/test/reporter'
 
 const OUTPUT_DIR = 'snapshot-updates'
-const SNAPSHOT_ATTACHMENT = /^(.*)-(expected|actual)(\.[^.]+)?$/
+const ACTUAL_SUFFIX = /-actual(\.[^.]+)?$/
 
 function snapshotPairs(attachments: TestResult['attachments']) {
-  const pairs = new Map<string, { expected?: string; actual?: string }>()
-  for (const { name, path: file } of attachments) {
-    const match = name.match(SNAPSHOT_ATTACHMENT)
-    if (!match || !file) continue
-    const [, prefix, kind, ext = ''] = match
-    pairs.set(prefix + ext, { ...pairs.get(prefix + ext), [kind]: file })
-  }
-  return [...pairs.values()].filter(
-    (pair): pair is { expected: string; actual: string } =>
-      !!pair.expected && !!pair.actual
-  )
+  const paths = new Map(attachments.map(({ name, path }) => [name, path]))
+  return attachments.flatMap(({ name, path: actual }) => {
+    const expected =
+      ACTUAL_SUFFIX.test(name) &&
+      paths.get(name.replace(ACTUAL_SUFFIX, '-expected$1'))
+    return actual && expected ? [{ expected, actual }] : []
+  })
 }
 
 function collectUpdates(lastResults: Map<TestCase, TestResult>) {
@@ -31,6 +32,19 @@ function collectUpdates(lastResults: Map<TestCase, TestResult>) {
   return updates
 }
 
+function writeUpdates(updates: Map<string, string>) {
+  for (const [snapshotPath, actual] of updates) {
+    const destination = path.join(OUTPUT_DIR, snapshotPath)
+    fs.mkdirSync(path.dirname(destination), { recursive: true })
+    fs.copyFileSync(actual, destination)
+  }
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true })
+  fs.writeFileSync(
+    path.join(OUTPUT_DIR, 'manifest.json'),
+    JSON.stringify([...updates.keys()], null, 2)
+  )
+}
+
 export default class SnapshotUpdatesReporter implements Reporter {
   private readonly lastResults = new Map<TestCase, TestResult>()
 
@@ -38,18 +52,10 @@ export default class SnapshotUpdatesReporter implements Reporter {
     this.lastResults.set(test, result)
   }
 
-  onEnd() {
-    const updates = collectUpdates(this.lastResults)
-    for (const [snapshotPath, actual] of updates) {
-      const destination = path.join(OUTPUT_DIR, snapshotPath)
-      fs.mkdirSync(path.dirname(destination), { recursive: true })
-      fs.copyFileSync(actual, destination)
-    }
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true })
-    fs.writeFileSync(
-      path.join(OUTPUT_DIR, 'manifest.json'),
-      JSON.stringify([...updates.keys()], null, 2)
-    )
+  onEnd(result: FullResult) {
+    const finished = result.status === 'passed' || result.status === 'failed'
+    if (finished && this.lastResults.size > 0)
+      writeUpdates(collectUpdates(this.lastResults))
   }
 
   printsToStdio() {
