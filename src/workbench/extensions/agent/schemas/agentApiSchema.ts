@@ -125,10 +125,10 @@ const zSkillName = z
  * to be an integer, which is only true for rows persisted after that
  * backend change landed. Real historical rows can still carry a bare `id`
  * with no `tool_call_id`, a `status` of `'ok'` (an older success alias —
- * see `toolCallOk` in `agentTranscript.ts`), or a non-integer `duration_ms`.
- * `parseToolCallEntry` picks only the fields it actually reads from this,
- * so an unrelated field (e.g. a strict `started_at`/`finished_at` datetime)
- * never gates the entry.
+ * see `toolCallOk` in `agentTranscript.ts`), or a non-finite/negative
+ * `duration_ms`. `parseToolCallEntry` picks only the fields it actually
+ * reads from this, so an unrelated field (e.g. a strict
+ * `started_at`/`finished_at` datetime) never gates the entry.
  */
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
   id: z.string(),
@@ -138,7 +138,16 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   // `safeParse` and dropping the whole tool-call row.
   tool_call_id: z.string().nullish(),
   status: z.string().nullish(),
-  duration_ms: z.number().nullish(),
+  // `z.custom`, not `z.number()`: Zod 4's `z.number()` also rejects
+  // `Infinity`/`-Infinity` (Zod 3 only rejected `NaN`), which would fail
+  // this entry's `safeParse` and drop the whole tool-call row over a bad
+  // `duration_ms` alone. `NaN` stays rejected here, matching the
+  // pre-existing Zod 3 behavior; `parseDurationMs` in `agentTranscript.ts`
+  // already does the real finite/non-negative check and omits the field
+  // for `Infinity`/`-Infinity` instead of failing the whole entry.
+  duration_ms: z
+    .custom<number>((val) => typeof val === 'number' && !Number.isNaN(val))
+    .nullish(),
   skill: zSkillName
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
