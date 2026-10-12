@@ -2,41 +2,8 @@ import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
 import { externalLinks } from '@/config/routes'
 
-const narrationPrompt = `[warm, unhurried] Every image starts as noise. [short pause] The sampler decides how to walk from there.
-[soft tone] That walk is yours to design. [sighing] And once the graph is built, [excited] the queue runs on its own.`
-
-const dialoguePrompt = `@Voice1 [nervous] You're sure no one followed you?
-@Voice2 [calm] Positive. [short pause] I took the long way round.
-@Voice1 [relieved] Good. [whispering] Then let's get this done before the lights come back on.
-@Voice2 [chuckling] Ha, ha. After you.`
-
-const howToDirectAnswerEn = `Put the direction in square brackets, right in the script. A tag applies from where it sits until the next tag or the end of the sentence.
-
-• Emotion: [happy], [sad], [angry], [excited], [calm], [sarcastic]
-• Tone: [whispering], [shouting], [soft tone], [emphasis] before the word to stress
-• Sounds: [laughing], [sighing], [gasping], [clear throat]
-• Pacing: [break], [long-break], [short pause], [long pause]
-Free-form descriptions work too, such as [tired, end of a long shift] or [professional broadcast tone]. Keep to one primary emotion per sentence and three tags or fewer, and write the tags in the script's own language.`
-
-const howToDirectAnswerZh = `把表演指令写在方括号里，直接放进台词。一个标签从它所在的位置开始生效，直到下一个标签或句子结束。
-
-• 情绪：[happy]、[sad]、[angry]、[excited]、[calm]、[sarcastic]
-• 语气：[whispering]、[shouting]、[soft tone]，以及放在重读词之前的 [emphasis]
-• 声音：[laughing]、[sighing]、[gasping]、[clear throat]
-• 节奏：[break]、[long-break]、[short pause]、[long pause]
-也可以用自由描述，例如 [tired, end of a long shift] 或 [professional broadcast tone]。每句话保持一个主要情绪、不超过三个标签，标签可以用台词本身的语言书写。`
-
-const TUTORIAL_HREF =
+const DOCS_HREF =
   'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio'
-
-const PROMPT_GUIDE_HREF =
-  'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/prompt-guide'
-
-const CLOUD_RUN_HREF =
-  'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
-
-const CLOUD_VOICE_CLONE_HREF =
-  'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts'
 
 export const fishAudioPage: ModelLaunchPage = {
   metaTitleKey: 'fishAudio.meta.title',
@@ -51,32 +18,33 @@ export const fishAudioPage: ModelLaunchPage = {
     descriptionKey: 'fishAudio.hero.description',
     primaryCta: {
       labelKey: 'fishAudio.hero.primaryCta',
-      href: CLOUD_RUN_HREF,
+      href: externalLinks.cloud,
       target: '_blank'
     },
     secondaryCta: {
       labelKey: 'fishAudio.hero.secondaryCta',
-      href: TUTORIAL_HREF,
+      href: DOCS_HREF,
       target: '_blank'
     },
     badgeKeys: [
-      'fishAudio.hero.tagPartnerNode',
-      'fishAudio.hero.tagTextToSpeech',
-      'fishAudio.hero.tagVoiceCloning'
+      'fishAudio.hero.badge1',
+      'fishAudio.hero.badge2',
+      'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['audioGallery', 'steps', 'pricing', 'faq'],
+  sectionOrder: ['audioGallery', 'steps', 'gallery', 'pricing', 'faq'],
   audioGallery: {
     cards: [
       {
         id: 'sample-01',
         description: {
-          en: 'Narration with inline direction',
-          'zh-CN': '带内嵌表演指令的旁白'
+          en: 'Two-character scene script',
+          'zh-CN': '双角色场景剧本'
         },
         prompt: {
-          en: narrationPrompt,
-          'zh-CN': narrationPrompt
+          en: 'NOOR (half awake, pleased): You made coffee. At four in the morning.\nDEV (quiet, not wanting to wake the house): The render finished. I wanted you to hear it first.\nNOOR (teasing him): And?\nDEV (a slow breath, then a grin in the voice): Come listen.',
+          'zh-CN':
+            'NOOR (half awake, pleased): You made coffee. At four in the morning.\nDEV (quiet, not wanting to wake the house): The render finished. I wanted you to hear it first.\nNOOR (teasing him): And?\nDEV (a slow breath, then a grin in the voice): Come listen.'
         },
         audioSources: [
           {
@@ -89,12 +57,13 @@ export const fishAudioPage: ModelLaunchPage = {
       {
         id: 'sample-02',
         description: {
-          en: 'Two-speaker dialogue',
-          'zh-CN': '双人对话'
+          en: 'Three-character scene script',
+          'zh-CN': '三角色场景剧本'
         },
         prompt: {
-          en: dialoguePrompt,
-          'zh-CN': dialoguePrompt
+          en: 'MAYA (brisk, checking a list): Doors in ten. Where is the second mic?\nJONAH (calling from across the room, cheerful): On the stool. Where you left it.\nMAYA (a beat, then sheepish): Right.\nLENA (low, steadying): Breathe. They came to hear you, not the mic.\nMAYA (a slow exhale, then a small laugh): Okay. Doors in ten.',
+          'zh-CN':
+            'MAYA (brisk, checking a list): Doors in ten. Where is the second mic?\nJONAH (calling from across the room, cheerful): On the stool. Where you left it.\nMAYA (a beat, then sheepish): Right.\nLENA (low, steadying): Breathe. They came to hear you, not the mic.\nMAYA (a slow exhale, then a small laugh): Okay. Doors in ten.'
         },
         audioSources: [
           {
@@ -103,6 +72,127 @@ export const fishAudioPage: ModelLaunchPage = {
           }
         ],
         posterSrc: '/images/models/fish-audio-voice-clone-placeholder.webp'
+      }
+    ]
+  },
+  steps: {
+    headingKey: 'fishAudio.steps.heading',
+    stepLabelKey: 'fishAudio.steps.step',
+    primaryCta: {
+      labelKey: 'fishAudio.steps.primaryCta',
+      href: externalLinks.cloud,
+      target: '_blank'
+    },
+    secondaryCta: {
+      labelKey: 'fishAudio.steps.secondaryCta',
+      href: DOCS_HREF,
+      target: '_blank'
+    },
+    items: [
+      {
+        id: 'open-comfy-cloud',
+        title: { en: 'Open Comfy Cloud', 'zh-CN': '打开 Comfy Cloud' },
+        description: {
+          en: 'Sign in or create a free account',
+          'zh-CN': '登录或免费创建账号'
+        }
+      },
+      {
+        id: 'find-the-node',
+        title: { en: 'Find Drama 3', 'zh-CN': '找到 Drama 3' },
+        description: {
+          en: 'Search the node library for Fish Audio under partner nodes',
+          'zh-CN': '在节点库的合作伙伴节点下搜索 Fish Audio'
+        }
+      },
+      {
+        id: 'write-the-scene',
+        title: { en: 'Direct the scene', 'zh-CN': '执导场景' },
+        description: {
+          en: 'Add your voices, write the dialogue, and run it',
+          'zh-CN': '添加声音，写下对白，运行即可'
+        }
+      }
+    ]
+  },
+  gallery: {
+    headingKey: 'fishAudio.nodes.heading',
+    ctaVariant: 'accent',
+    cards: [
+      {
+        id: 'text-to-speech',
+        name: {
+          en: 'Fish Audio Text to Speech',
+          'zh-CN': 'Fish Audio Text to Speech'
+        },
+        tier: 'premium',
+        note: { en: 'Text to Speech', 'zh-CN': 'Text to Speech' },
+        description: {
+          en: 'Write the script, mark the delivery with emotion cues in the text, and run up to five voices in one pass on S2.1 Pro. Models: S2.1 Pro and S1.',
+          'zh-CN':
+            '写下台词，在文本中用情绪提示标出表演方式，并在 S2.1 Pro 上一次运行最多五个声音。可选模型：S2.1 Pro 与 S1。'
+        },
+        media: {
+          kind: 'image',
+          src: '/images/models/fish-audio-placeholder.webp'
+        },
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
+      },
+      {
+        id: 'instant-voice-clone',
+        name: {
+          en: 'Fish Audio Instant Voice Clone',
+          'zh-CN': 'Fish Audio Instant Voice Clone'
+        },
+        tier: 'free',
+        note: { en: 'Instant Voice Clone', 'zh-CN': 'Instant Voice Clone' },
+        description: {
+          en: 'Make a private voice from 1 to 20 recordings, ideally 10 to 30 seconds each, and send it straight into Text to Speech with no training wait.',
+          'zh-CN':
+            '用 1 到 20 段录音生成一个私有声音，每段以 10 到 30 秒为佳，然后直接接入 Text to Speech，无需等待训练。'
+        },
+        media: {
+          kind: 'image',
+          src: '/images/models/fish-audio-voice-clone-placeholder.webp'
+        },
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts'
+      },
+      {
+        id: 'speech-to-text',
+        name: {
+          en: 'Fish Audio Speech to Text',
+          'zh-CN': 'Fish Audio Speech to Text'
+        },
+        tier: 'premium',
+        note: { en: 'Speech to Text', 'zh-CN': 'Speech to Text' },
+        description: {
+          en: 'Transcribe audio in 80+ languages with automatic language detection and get back the text, a language code, and optional per-word timestamps as JSON.',
+          'zh-CN':
+            '转写 80 多种语言的音频并自动检测语言，以 JSON 返回文本、语言代码和可选的逐词时间戳。'
+        },
+        media: {
+          kind: 'image',
+          src: '/images/models/fish-audio-speech-to-text-placeholder.webp'
+        },
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text'
+      },
+      {
+        id: 'voice-selector',
+        name: {
+          en: 'Fish Audio Voice Selector',
+          'zh-CN': 'Fish Audio Voice Selector'
+        },
+        tier: 'free',
+        note: { en: 'Voice Selector', 'zh-CN': 'Voice Selector' },
+        description: {
+          en: 'Pick a curated voice from the Fish Audio library for your script.',
+          'zh-CN': '从 Fish Audio 声音库中为你的台词挑选精选声音。'
+        },
+        media: {
+          kind: 'image',
+          src: '/images/models/fish-audio-placeholder.webp'
+        },
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
       }
     ]
   },
@@ -122,136 +212,99 @@ export const fishAudioPage: ModelLaunchPage = {
     headingKey: 'fishAudio.faq.heading',
     items: [
       {
-        id: 'what-is-fish-audio',
+        id: 'what-is-drama-3',
         question: {
-          en: 'What is Fish Audio S2.1 Pro?',
-          'zh-CN': 'Fish Audio S2.1 Pro 是什么？'
+          en: 'What is Fish Audio Drama 3?',
+          'zh-CN': 'Fish Audio Drama 3 是什么？'
         },
         answer: {
-          en: 'A text to speech model that takes direction. Write the script, mark the delivery with inline tags, and it returns expressive speech in 80+ languages. The same family of nodes clones a voice from a few short clips and transcribes audio back to text.',
+          en: "Fish Audio's newest model, and the one it calls its most emotive and controllable yet. You write a multi-character scene and set the direction, and Drama 3 performs it as a single conversation. It runs as a partner node in Comfy Cloud from release day.",
           'zh-CN':
-            '一款听得懂指令的文本转语音模型。写下台词，用内嵌标签标出表演方式，它就能返回 80 多种语言的富有表现力的语音。同一组节点还能用几段短录音克隆声音，并把音频转写回文字。'
+            'Fish Audio 的最新模型，也是 Fish Audio 称为迄今最富情感、最可控的一款。你写下多角色场景并给出表演指示，Drama 3 会把它作为一段对话完整演绎。它从发布当天起即作为合作伙伴节点在 Comfy Cloud 中运行。'
         }
       },
       {
-        id: 'how-to-use',
+        id: 'how-to-try',
         question: {
-          en: 'How do I use Fish Audio in ComfyUI?',
-          'zh-CN': '如何在 ComfyUI 中使用 Fish Audio？'
+          en: 'How do I try Drama 3 in Comfy Cloud?',
+          'zh-CN': '如何在 Comfy Cloud 中试用 Drama 3？'
         },
         answer: {
-          en: 'The quickest route is Comfy Cloud: open the Fish Audio text to speech template, type your script, and run. Locally, the Fish Audio nodes ship with ComfyUI under partner, audio, Fish Audio: Text to Speech, Speech to Text, Voice Selector, and Instant Voice Clone. Sign in to your ComfyUI account and they bill per use. The voice clone and speech to text templates need ComfyUI 0.34.0 or newer.',
+          en: 'Open [Comfy Cloud](https://cloud.comfy.org/) and search the node library for Fish Audio under partner nodes. Add your voices, write the dialogue, and run it.',
           'zh-CN':
-            '最快的方式是 Comfy Cloud：打开 Fish Audio 文本转语音模板，输入台词，运行即可。在本地，Fish Audio 节点随 ComfyUI 一同提供，位于 partner、audio、Fish Audio 下：Text to Speech、Speech to Text、Voice Selector 和 Instant Voice Clone。登录 ComfyUI 账号后按使用量计费。声音克隆和语音转文字模板需要 ComfyUI 0.34.0 或更新版本。'
+            '打开 [Comfy Cloud](https://cloud.comfy.org/)，在节点库的合作伙伴节点下搜索 Fish Audio。添加声音，写下对白，运行即可。'
         }
       },
       {
-        id: 'how-to-direct',
+        id: 'launch-offer',
         question: {
-          en: 'How do I direct the voice?',
-          'zh-CN': '如何指导声音的表演？'
+          en: 'What is the launch offer?',
+          'zh-CN': '首发优惠是什么？'
         },
         answer: {
-          en: howToDirectAnswerEn,
-          'zh-CN': howToDirectAnswerZh
-        }
-      },
-      {
-        id: 'voice-cloning',
-        question: {
-          en: 'Can I clone a voice?',
-          'zh-CN': '我可以克隆声音吗？'
-        },
-        answer: {
-          en: 'Yes. Record two or three clips of 15 to 20 seconds each, under 270 seconds in total, and connect them to the Instant Voice Clone node. The cloned voice feeds straight into text to speech with no training wait. One speaker, a quiet room, and steady tone give the best result. Clone only voices you have permission to use.',
+          en: 'Drama 3 is 50% off for your first 30 days in Comfy Cloud. Open [Comfy Cloud](https://cloud.comfy.org/) to start.',
           'zh-CN':
-            '可以。录制两到三段各 15 到 20 秒的音频，总时长不超过 270 秒，连接到 Instant Voice Clone 节点即可。克隆出的声音直接接入文本转语音，无需等待训练。单人、安静的环境和稳定的语气效果最好。请只克隆你有权使用的声音。'
+            'Drama 3 在 Comfy Cloud 中前 30 天半价。打开 [Comfy Cloud](https://cloud.comfy.org/) 即可开始。'
         }
       },
       {
-        id: 'multi-speaker',
+        id: 'scene-in-a-workflow',
         question: {
-          en: 'Can I write a scene with more than one voice?',
-          'zh-CN': '我可以写多个声音的对话场景吗？'
+          en: 'How does a scene fit into a workflow?',
+          'zh-CN': '场景如何融入工作流？'
         },
         answer: {
-          en: 'Yes. Connect up to five voices to the Text to Speech node and mark each line with @Voice1, @Voice2, and so on. Every connected voice has to appear in the script at least once. The whole scene renders in one generation.',
+          en: 'Drama 3 is a partner node, so it runs inside a Comfy workflow like any other. Build the scene and its audio in one graph. Change a line, run again, and everything downstream picks up the new take.',
           'zh-CN':
-            '可以。最多把五个声音连接到 Text to Speech 节点，并用 @Voice1、@Voice2 等标记每一句台词。每个接入的声音都必须在台词中至少出现一次。整个场景在一次生成中完成。'
-        }
-      },
-      {
-        id: 'speech-to-text',
-        question: {
-          en: 'Does it transcribe audio too?',
-          'zh-CN': '它也能把音频转成文字吗？'
-        },
-        answer: {
-          en: 'Yes. The Speech to Text node detects the language automatically across 80+ languages and returns the text, the language code, and optional word-level timestamps as JSON, ready for subtitles or for turning a recording into a prompt.',
-          'zh-CN':
-            '可以。Speech to Text 节点能在 80 多种语言中自动识别语言，返回文字、语言代码，以及可选的逐词时间戳 JSON，可直接用于字幕，或把录音变成提示词。'
-        }
-      },
-      {
-        id: 'pricing',
-        question: {
-          en: 'How is Fish Audio priced?',
-          'zh-CN': 'Fish Audio 如何计费？'
-        },
-        answer: {
-          en: `Per use, through your ComfyUI account. Text to speech is metered by the length of the script, speech to text by the minute, and voice cloning is free. Current rates are listed in the [Fish Audio docs](${TUTORIAL_HREF}).`,
-          'zh-CN': `通过你的 ComfyUI 账号按使用量计费。文本转语音按台词长度计量，语音转文字按分钟计量，声音克隆免费。当前费率见 [Fish Audio 文档](${TUTORIAL_HREF})。`
+            'Drama 3 是合作伙伴节点，因此和其他节点一样在 Comfy 工作流中运行。在同一个工作流中构建场景和它的音频。改一句台词，再运行一次，下游的每个环节都会用上新的演绎。'
         }
       },
       {
         id: 'open-weights',
         question: {
-          en: 'Is Fish Audio S2.1 Pro open weights?',
-          'zh-CN': 'Fish Audio S2.1 Pro 是开源权重吗？'
+          en: 'Is Drama 3 open weights?',
+          'zh-CN': 'Drama 3 是开源权重吗？'
         },
         answer: {
-          en: `No. S2.1 Pro runs through the Fish Audio API as a partner node, so there is nothing to download and no GPU to provision. The legacy S1 model is also available from the same node. See the [prompt guide](${PROMPT_GUIDE_HREF}) for the tag differences between the two.`,
-          'zh-CN': `不是。S2.1 Pro 作为合作伙伴节点通过 Fish Audio API 运行，无需下载模型，也无需配置 GPU。旧版 S1 模型也可在同一节点中选用。两者的标签差异见[提示词指南](${PROMPT_GUIDE_HREF})。`
-        }
-      }
-    ]
-  },
-  steps: {
-    headingKey: 'fishAudio.steps.heading',
-    stepLabelKey: 'fishAudio.steps.step',
-    primaryCta: {
-      labelKey: 'fishAudio.steps.primaryCta',
-      href: CLOUD_RUN_HREF,
-      target: '_blank'
-    },
-    secondaryCta: {
-      labelKey: 'fishAudio.steps.secondaryCta',
-      href: CLOUD_VOICE_CLONE_HREF,
-      target: '_blank'
-    },
-    items: [
-      {
-        id: 'write-the-script',
-        title: { en: 'Write the script', 'zh-CN': '写下台词' },
-        description: {
-          en: 'Your words, with [tags] where the delivery turns',
-          'zh-CN': '你的文字，在表演转折处加上 [标签]'
+          en: "No. Drama 3 is a partner node that runs through Fish Audio's API in Comfy Cloud, so there is nothing to download and no GPU to provision.",
+          'zh-CN':
+            '不是。Drama 3 作为合作伙伴节点，通过 Fish Audio API 在 Comfy Cloud 中运行，无需下载任何内容，也无需配置 GPU。'
         }
       },
       {
-        id: 'pick-a-voice',
-        title: { en: 'Pick or clone a voice', 'zh-CN': '选择或克隆声音' },
-        description: {
-          en: 'A curated voice, or two short clips of your own',
-          'zh-CN': '精选声音，或你自己的两段短录音'
+        id: 'other-fish-audio-nodes',
+        question: {
+          en: 'What do the other Fish Audio nodes do?',
+          'zh-CN': '其他 Fish Audio 节点有什么用？'
+        },
+        answer: {
+          en: 'Text to Speech runs S2.1 Pro and S1 with emotion cues in the text. Speech to Text transcribes audio with automatic language detection, and Instant Voice Clone makes a private voice from 1 to 20 recordings. Voice Selector is where you pick a voice from the Fish Audio library, and all four are in the [Fish Audio docs](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio).',
+          'zh-CN':
+            'Text to Speech 运行 S2.1 Pro 和 S1，支持在文本中加入情绪提示。Speech to Text 自动检测语言并转写音频，Instant Voice Clone 用 1 到 20 段录音生成私有声音。Voice Selector 用于从 Fish Audio 声音库中挑选声音。这四个节点都收录在 [Fish Audio 文档](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio)中。'
         }
       },
       {
-        id: 'generate-the-speech',
-        title: { en: 'Generate the speech', 'zh-CN': '生成语音' },
-        description: {
-          en: 'One audio output, ready to route into video',
-          'zh-CN': '一段音频输出，可直接接入视频'
+        id: 'clone-a-voice',
+        question: {
+          en: 'Can I clone a voice with the Fish Audio nodes?',
+          'zh-CN': '我可以用 Fish Audio 节点克隆声音吗？'
+        },
+        answer: {
+          en: 'Yes, with the Fish Audio Instant Voice Clone node: connect 1 to 20 recordings, under 270 seconds in total and ideally 10 to 30 seconds each, and the cloned voice feeds straight into the Fish Audio Text to Speech node with no training wait. Voice cloning is free. Clone only voices you have permission to use.',
+          'zh-CN':
+            '可以，使用 Fish Audio Instant Voice Clone 节点：连接 1 到 20 段录音，总时长不超过 270 秒，每段以 10 到 30 秒为佳，克隆出的声音会直接接入 Fish Audio Text to Speech 节点，无需等待训练。声音克隆免费。请只克隆你有权使用的声音。'
+        }
+      },
+      {
+        id: 'other-nodes-pricing',
+        question: {
+          en: 'How are Text to Speech and Speech to Text priced?',
+          'zh-CN': 'Text to Speech 和 Speech to Text 如何计费？'
+        },
+        answer: {
+          en: 'Per use, through your ComfyUI account. Text to speech is metered by text length and speech to text by the minute. Current rates are in the [Fish Audio docs](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio).',
+          'zh-CN':
+            '通过你的 ComfyUI 账号按使用量计费。文本转语音按文本长度计量，语音转文字按分钟计量。当前费率见 [Fish Audio 文档](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio)。'
         }
       }
     ]
