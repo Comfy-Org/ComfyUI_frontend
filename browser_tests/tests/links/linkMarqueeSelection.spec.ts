@@ -39,8 +39,13 @@ async function marqueeAcross(comfyPage: ComfyPage, centers: Point[]) {
 }
 
 async function moveSamplerAway(comfyPage: ComfyPage) {
-  const [sampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-  await sampler.dragBy({ x: 400, y: 0 })
+  await comfyPage.page.evaluate(() => {
+    const app = window.app!
+    const sampler = app.graph.nodes.find((node) => node.type === 'KSampler')
+    if (!sampler) throw new Error('KSampler not found')
+    sampler.pos = [sampler.pos[0] + 400, sampler.pos[1]]
+    app.canvas.setDirty(true, true)
+  })
   await comfyPage.nextFrame()
 }
 
