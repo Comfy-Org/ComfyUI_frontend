@@ -2,11 +2,11 @@ import type { RootGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
 export const LINK_HIDE_TRANSITION = {
-  holdMs: 350,
-  fadeMs: 250,
+  holdMs: 200,
+  fadeMs: 150,
   dashOnWidths: 2,
   dashOffWidths: 2,
-  labelPopMs: 220,
+  labelPopMs: 150,
   labelPopFromScale: 0.8,
   labelPopOvershoot: 1.70158
 } as const
