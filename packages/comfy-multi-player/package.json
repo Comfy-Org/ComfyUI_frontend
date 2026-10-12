@@ -1,0 +1,69 @@
+{
+  "name": "@comfyorg/comfy-multi-player",
+  "version": "0.3.10",
+  "license": "GPL-3.0-only",
+  "description": "Shared workflow-document package: CRDT op applier + JSON projection used identically by the browser and the server doc host.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "fixtures/cmp-events"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/comfy-multi-player"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "pnpm run build && tsc -p tsconfig.test.json && tsc -p test/types/tsconfig.json",
+    "prepack": "pnpm run build",
+    "test": "vitest run",
+    "test:exhaustive": "vitest run test/permutation/full-op-pool.permutation.test.ts --tags-filter=exhaustive",
+    "test:mutation": "stryker run",
+    "check:mutation-report": "node scripts/check-mutation-report.mjs",
+    "check:purity": "node scripts/check-purity.mjs",
+    "check:pins": "node scripts/check-pins.mjs",
+    "check:profile-claims": "node scripts/check-profile-claims.mjs",
+    "check:coderabbit": "node scripts/gen-coderabbit-config.mjs",
+    "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write",
+    "check:imports": "node scripts/check-import-graph.mjs",
+    "check:stateless": "node scripts/check-stateless.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "test:clock-matrix": "pnpm run build && vitest run test/clock-matrix/clock-matrix.test.ts --reporter=verbose",
+    "verify:corpus": "node scripts/verify-corpus.mjs",
+    "bench": "vitest bench --run bench/apply-project.bench.ts --reporter=default --reporter=./bench/frame-share-reporter.ts"
+  },
+  "dependencies": {
+    "yjs": "catalog:"
+  },
+  "devDependencies": {
+    "@stryker-mutator/api": "^10.0.0",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@types/node": "catalog:",
+    "@typescript-eslint/parser": "^8.68.0",
+    "ajv6": "npm:ajv@6.15.0",
+    "dependency-cruiser": "catalog:",
+    "eslint": "^10.11.0",
+    "eslint-plugin-sonarjs": "^4.2.1",
+    "fast-check": "^4.9.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "yaml": "^2.9.1"
+  }
+}

@@ -22,7 +22,13 @@
         "**/.storybook/{main,preview}.ts",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
-        "scripts/**/*.{js,ts}"
+        "scripts/**/*.{js,ts}",
+        // comfy-multi-player CLIs run by `node` outside package.json scripts:
+        // the publish workflow, examples/dochost-poc/run.sh, and manual
+        // benches; plus the custom reporter passed to `vitest bench`.
+        "packages/comfy-multi-player/bench/frame-share-reporter.ts",
+        "packages/comfy-multi-player/examples/dochost-poc/dochost-driver.mjs",
+        "packages/comfy-multi-player/scripts/{bench-growth,bench-read,release-retry}.mjs"
       ],
       "entryPointRole": "support"
     },
@@ -32,6 +38,8 @@
       "entryPoints": [
         "apps/website/src/**/__mocks__/**/*.ts",
         "browser_tests/global{Setup,Teardown}.ts",
+        // Compiled by its own tsc project in test/type-negatives.test.ts.
+        "packages/comfy-multi-player/test/types/*.negative.ts",
         "playwright.session.config.ts",
         "src/**/__mocks__/**/*.ts"
       ],

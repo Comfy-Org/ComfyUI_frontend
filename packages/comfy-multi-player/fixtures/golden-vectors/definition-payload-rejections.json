@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "comment": "N1-N8 negative conformance vectors: only define_subgraph may carry definition payloads or address a subgraph_id. Every rejected op leaves the projected workflow and encoded document unchanged.",
+  "provenance": "Manually authored package-local conformance fixtures; not generator output.",
+  "execution_mode": "each_op_independently",
+  "base_workflow": {
+    "nodes": [{ "id": 1, "type": "CLIPTextEncode", "widgets_values": [""] }],
+    "links": [],
+    "last_node_id": 1,
+    "last_link_id": 0
+  },
+  "cases": [
+    {
+      "id": "N1",
+      "name": "add-node-with-subgraph-definition",
+      "ops": [{ "op": "add_node", "op_id": "123e4567e89b42d3a456426614174001", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 1, "class_type": "CLIPTextEncode", "pos": [0, 0], "node": { "id": 1, "type": "CLIPTextEncode" }, "subgraph_definition": { "id": "12345678-1234-4123-8123-123456789abc", "nodes": [], "links": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N2",
+      "name": "add-node-with-definitions",
+      "ops": [{ "op": "add_node", "op_id": "123e4567e89b42d3a456426614174002", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 2, "class_type": "CLIPTextEncode", "pos": [0, 0], "node": { "id": 2, "type": "CLIPTextEncode" }, "definitions": { "subgraphs": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N3",
+      "name": "set-node-field-with-subgraph-definition",
+      "ops": [{ "op": "set_node_field", "op_id": "123e4567e89b42d3a456426614174003", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 3, "field": "title", "value": "renamed", "subgraph_definition": { "id": "12345678-1234-4123-8123-123456789abc", "nodes": [], "links": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N4",
+      "name": "set-widget-with-definitions",
+      "ops": [{ "op": "set_widget", "op_id": "123e4567e89b42d3a456426614174004", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 4, "widget": "text", "value": "hello", "definitions": { "subgraphs": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N5",
+      "name": "connect-or-disconnect-with-definition-payload",
+      "ops": [
+        { "op": "connect", "op_id": "123e4567e89b42d3a456426614174005", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "link_id": 5, "from_node": 1, "from_slot": 0, "to_node": 2, "to_slot": 0, "link_type": "MODEL", "subgraph_definition": { "id": "12345678-1234-4123-8123-123456789abc", "nodes": [], "links": [] } },
+        { "op": "disconnect", "op_id": "123e4567e89b42d3a456426614174006", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "link_id": 5, "to_node": 2, "to_slot": 0, "definitions": { "subgraphs": [] } }
+      ],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N6",
+      "name": "layout-move-with-subgraph-definition",
+      "ops": [{ "op": "add_node", "op_id": "123e4567e89b42d3a456426614174007", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 6, "class_type": "CLIPTextEncode", "pos": [10, 20], "node": { "id": 6, "type": "CLIPTextEncode" }, "layout": { "pos": [10, 20] }, "subgraph_definition": { "id": "12345678-1234-4123-8123-123456789abc", "nodes": [], "links": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N7",
+      "name": "delete-node-with-subgraph-definition",
+      "ops": [{ "op": "delete_node", "op_id": "123e4567e89b42d3a456426614174008", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 7, "removed_links": [], "subgraph_definition": { "id": "12345678-1234-4123-8123-123456789abc", "nodes": [], "links": [] } }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    },
+    {
+      "id": "N8",
+      "name": "subgraph-id-as-node-target",
+      "ops": [{ "op": "set_widget", "op_id": "123e4567e89b42d3a456426614174009", "actor": "agent:conformance", "base_version": 0, "stamp": [0, "agent:conformance"], "node_id": 1, "subgraph_id": "12345678-1234-4123-8123-123456789abc", "widget": "text", "value": "hello" }],
+      "expected_reason": "malformed_op",
+      "expected_projection": "base_workflow"
+    }
+  ]
+}
