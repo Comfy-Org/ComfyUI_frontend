@@ -1595,40 +1595,140 @@ describe('ChangeTracker', () => {
       expect(tracker._restoringState).toBe(false)
     })
 
-    it('keeps Undo history order when another Undo is requested during a pending restore', async () => {
-      vi.useFakeTimers()
-      onTestFinished(() => {
-        vi.useRealTimers()
-      })
-      const earlier = createState(1)
-      const previous = createState(2)
-      const current = createState(3)
-      const tracker = createTracker(current)
-      tracker.undoQueue.push(earlier, previous)
-      let releasePending!: (value: boolean | undefined) => void
-      const pending = new Promise<boolean | undefined>((resolve) => {
-        releasePending = resolve
-      })
-      vi.mocked(app.loadGraphData).mockReturnValueOnce(pending)
+    it.for([
+      { direction: 'undo', reverse: 'redo', start: 3, end: 1 },
+      { direction: 'redo', reverse: 'undo', start: 1, end: 3 }
+    ] as const)(
+      'applies both overlapping $direction requests',
+      async ({ direction, reverse, start, end }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const current = createState(start)
+        const intermediate = createState(2)
+        const final = createState(end)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(final, intermediate)
+        const loadGraphData = vi
+          .mocked(app.loadGraphData)
+          .getMockImplementation()
+        assert.exists(loadGraphData)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async (...args) => {
+          await new Promise<void>((resolve) => setTimeout(resolve, 5))
+          return loadGraphData(...args)
+        })
 
-      const firstUndo = tracker.undo()
-      let secondUndoFinished = false
-      const secondUndo = tracker.undo().then(() => {
-        secondUndoFinished = true
-      })
-      try {
-        await vi.advanceTimersByTimeAsync(0)
-        expect(secondUndoFinished).toBe(false)
-      } finally {
-        releasePending(undefined)
-        await Promise.all([firstUndo, secondUndo])
+        const requests = Promise.all([
+          tracker[direction](),
+          tracker[direction]()
+        ])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(final)
+        expect(history[direction]).toEqual([])
+        expect(history[reverse]).toEqual([current, intermediate])
+        expect(tracker._restoringState).toBe(false)
       }
+    )
 
-      expect(tracker.activeState).toEqual(current)
-      expect(tracker.undoQueue).toEqual([earlier, previous])
-      expect(tracker.redoQueue).toEqual([])
-      expect(tracker._restoringState).toBe(false)
-    })
+    it.for([
+      { first: 'undo', second: 'redo' },
+      { first: 'redo', second: 'undo' }
+    ] as const)(
+      'applies overlapping $first then $second requests in order',
+      async ({ first, second }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const current = createState(3)
+        const previous = createState(2)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[first].push(previous)
+        const loadGraphData = vi
+          .mocked(app.loadGraphData)
+          .getMockImplementation()
+        assert.exists(loadGraphData)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(async (...args) => {
+          await new Promise<void>((resolve) => setTimeout(resolve, 5))
+          return loadGraphData(...args)
+        })
+
+        const requests = Promise.all([tracker[first](), tracker[second]()])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(current)
+        expect(history[first]).toEqual([previous])
+        expect(history[second]).toEqual([])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it.for([false, undefined])(
+      'processes a queued Undo after the pending restore returns %s',
+      async (result) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const earlier = createState(1)
+        const previous = createState(2)
+        const current = createState(3)
+        const tracker = createTracker(current)
+        tracker.undoQueue.push(earlier, previous)
+        vi.mocked(app.loadGraphData).mockImplementationOnce(
+          () => new Promise((resolve) => setTimeout(() => resolve(result), 5))
+        )
+
+        const requests = Promise.all([tracker.undo(), tracker.undo()])
+        await vi.advanceTimersByTimeAsync(0)
+        expect(tracker.activeState).toEqual(current)
+        expect(tracker.undoQueue).toEqual([earlier])
+        expect(tracker.redoQueue).toEqual([])
+        await vi.advanceTimersByTimeAsync(5)
+        await requests
+
+        expect(tracker.activeState).toEqual(previous)
+        expect(tracker.undoQueue).toEqual([earlier])
+        expect(tracker.redoQueue).toEqual([current])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
+
+    it.for([
+      { direction: 'undo', reverse: 'redo' },
+      { direction: 'redo', reverse: 'undo' }
+    ] as const)(
+      'processes a queued $direction after the pending restore rejects',
+      async ({ direction, reverse }) => {
+        const current = createState(3)
+        const previous = createState(2)
+        const tracker = createTracker(current)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(previous)
+        const error = new Error('Workflow load rejected')
+        vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+
+        const results = await Promise.allSettled([
+          tracker[direction](),
+          tracker[direction]()
+        ])
+
+        expect(results).toEqual([
+          { status: 'rejected', reason: error },
+          { status: 'fulfilled', value: undefined }
+        ])
+        expect(tracker.activeState).toEqual(previous)
+        expect(history[direction]).toEqual([])
+        expect(history[reverse]).toEqual([current])
+        expect(tracker._restoringState).toBe(false)
+      }
+    )
 
     it('serializes distinct workflow requests after a pending Undo', async () => {
       vi.useFakeTimers()

@@ -310,11 +310,7 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
-  private pendingRestoration?: {
-    promise: Promise<void>
-    source: ComfyWorkflowJSON[]
-    target: ComfyWorkflowJSON[]
-  }
+  private restoreChain?: Promise<void>
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -515,21 +511,8 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    while (this.pendingRestoration) {
-      const pending = this.pendingRestoration
-      await pending.promise
-      if (pending.source === source && pending.target === target) return
-    }
-    if (this._restoringState || source.length === 0) return
-    let resolveRestoration!: () => void
-    let rejectRestoration!: (reason: unknown) => void
-    const restoration = new Promise<void>((resolve, reject) => {
-      resolveRestoration = resolve
-      rejectRestoration = reject
-    })
-    const pending = { promise: restoration, source, target }
-    this.pendingRestoration = pending
-    void (async () => {
+    const restore = async () => {
+      if (this._restoringState || source.length === 0) return
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState
@@ -565,13 +548,12 @@ export class ChangeTracker {
           if (restored) this.updateModified(previousState)
         }
       }
-    })().then(resolveRestoration, rejectRestoration)
-    try {
-      await restoration
-    } finally {
-      if (this.pendingRestoration === pending)
-        this.pendingRestoration = undefined
     }
+    this.restoreChain = (this.restoreChain ?? Promise.resolve()).then(
+      restore,
+      restore
+    )
+    return this.restoreChain
   }
 
   async undo() {
