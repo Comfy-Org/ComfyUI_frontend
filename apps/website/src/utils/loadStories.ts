@@ -1,6 +1,6 @@
 import { getCollection } from 'astro:content'
 
-import type { Locale } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { CustomerStoryEntry } from './customers'
 import { sortStories } from './customers'
 

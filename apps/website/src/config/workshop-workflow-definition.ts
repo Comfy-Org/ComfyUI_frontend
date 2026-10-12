@@ -15,11 +15,11 @@ export const workshopTemplateSchema = z.object({
   models: z.array(z.string().min(1)),
   previewUrl: z
     .string()
-    .regex(/^\/workflows\/prepared\/[a-z0-9-]+\.svg$/)
+    .regex(/^\/workflow-graphs\/[a-z0-9-]+\.svg$/)
     .optional(),
   downloadUrl: z
     .string()
-    .regex(/^\/workflows\/prepared\/[a-z0-9-]+\.json$/)
+    .regex(/^\/workflow-graphs\/[a-z0-9-]+\.json$/)
     .optional()
 })
 

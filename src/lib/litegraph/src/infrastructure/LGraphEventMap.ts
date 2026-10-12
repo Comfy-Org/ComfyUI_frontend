@@ -66,7 +66,6 @@ export interface LGraphEventMap {
    */
   'node:before-removed': {
     node: LGraphNode
-    successor?: LGraphNode
   }
 
   /**

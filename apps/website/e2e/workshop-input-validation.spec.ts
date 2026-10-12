@@ -1,21 +1,24 @@
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
-import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import { websiteRoot } from '@website/paths'
+import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
+import { hubModelHref } from '@/config/hub-models'
 
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(
     readFileSync(
-      new URL('../src/data/workshop-model-availability.json', import.meta.url),
+      join(websiteRoot, 'src/data/workshop-model-availability.json'),
       'utf8'
     )
   )
 )
 
 async function openModel(page: Page, slug: string): Promise<boolean> {
-  const response = await page.goto(`/models/${slug}/`)
+  const response = await page.goto(hubModelHref(slug))
   if (availability[slug]?.disabled) {
     expect(response?.status()).toBe(404)
     return false

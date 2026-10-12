@@ -1,7 +1,11 @@
-// @ts-expect-error Polyfill
-Symbol.dispose ??= Symbol('Symbol.dispose')
-// @ts-expect-error Polyfill
-Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
+const disposeSymbol = Symbol('Symbol.dispose')
+const asyncDisposeSymbol = Symbol('Symbol.asyncDispose')
+if (!('dispose' in Symbol))
+  Object.defineProperty(Symbol, 'dispose', { value: disposeSymbol })
+if (!('asyncDispose' in Symbol))
+  Object.defineProperty(Symbol, 'asyncDispose', {
+    value: asyncDisposeSymbol
+  })
 
 // API *************************************************
 // like rect but rounded corners
@@ -83,13 +87,15 @@ export function loadPolyfills() {
     typeof window != 'undefined' &&
     !Reflect.has(window, 'requestAnimationFrame')
   ) {
+    const legacyWindow = window as typeof window & {
+      webkitRequestAnimationFrame?: typeof requestAnimationFrame
+      mozRequestAnimationFrame?: typeof requestAnimationFrame
+    }
     window.requestAnimationFrame =
-      // @ts-expect-error Legacy code
-      window.webkitRequestAnimationFrame ||
-      // @ts-expect-error Legacy code
-      window.mozRequestAnimationFrame ||
+      legacyWindow.webkitRequestAnimationFrame ||
+      legacyWindow.mozRequestAnimationFrame ||
       function (callback) {
-        window.setTimeout(callback, 1000 / 60)
+        return window.setTimeout(callback, 1000 / 60)
       }
   }
 }

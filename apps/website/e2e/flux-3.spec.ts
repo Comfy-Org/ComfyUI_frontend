@@ -1,18 +1,18 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { flux3Page } from '../src/data/flux3'
-import { t } from '../src/i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { flux3Page } from '@/data/flux3'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/flux-3'
-const HERO_TITLE = t('flux3.hero.title', 'en')
-const HERO_CTA = t('flux3.hero.primaryCta', 'en')
-const RUN_OPTIONS_HEADING = t('flux3.runOptions.heading', 'en')
-const CTA_HEADING = t('flux3.cta.heading', 'en')
+const HERO_TITLE = t('flux3.hero.title', {}, { locale: 'en' })
+const HERO_CTA = t('flux3.hero.primaryCta', {}, { locale: 'en' })
+const RUN_OPTIONS_HEADING = t('flux3.runOptions.heading', {}, { locale: 'en' })
+const CTA_HEADING = t('flux3.cta.heading', {}, { locale: 'en' })
 const FAQ_COUNT = flux3Page.faq?.items.length ?? 0
 const CARD_COUNT = flux3Page.gallery?.cards.length ?? 0
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 
 test.describe('Flux 3 page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -40,14 +40,16 @@ test.describe('Flux 3 page @smoke', () => {
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: 'Breadcrumb' })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('link', {
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
   test('footer links back to this page', async ({ page }) => {
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.flux3', 'en') })
+      .getByRole('link', { name: t('footer.flux3', {}, { locale: 'en' }) })
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').flux3)
   })
 
@@ -60,14 +62,17 @@ test.describe('Flux 3 page @smoke', () => {
     await expect(runOptions).toBeVisible()
 
     await expect(
-      page.getByRole('heading', { level: 2, name: t('pricing.title', 'en') })
+      page.getByRole('heading', {
+        level: 2,
+        name: t('pricing.title', {}, { locale: 'en' })
+      })
     ).toBeVisible()
   })
 
   test('renders one gallery card per configured clip', async ({ page }) => {
     const heading = page.getByRole('heading', {
       level: 2,
-      name: t('flux3.models.heading', 'en')
+      name: t('flux3.models.heading', {}, { locale: 'en' })
     })
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
@@ -88,13 +93,13 @@ test.describe('Flux 3 page @smoke', () => {
     })
 
     const primary = ctaSection.getByRole('link', {
-      name: t('flux3.cta.primaryCta', 'en')
+      name: t('flux3.cta.primaryCta', {}, { locale: 'en' })
     })
     await primary.scrollIntoViewIfNeeded()
     await expect(primary).toHaveAttribute('href', externalLinks.cloud)
 
     const secondary = ctaSection.getByRole('link', {
-      name: t('flux3.cta.secondaryCta', 'en')
+      name: t('flux3.cta.secondaryCta', {}, { locale: 'en' })
     })
     await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
   })

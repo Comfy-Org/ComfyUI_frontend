@@ -44,6 +44,8 @@ export function useGroupContextMenu() {
     if (!groupIsOnlySelection && !this.selectOnly) {
       this.deselectAll()
       this.select(group, { selectGroupChildren: false })
+      this.onSelectionChange?.(this.selected_nodes)
+      this.setDirty(true)
     }
     showNodeOptions(event)
   }

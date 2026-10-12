@@ -1,8 +1,11 @@
-import { defineStore } from 'pinia'
+// @vitest-environment node
+import { defineStore, setActivePinia } from 'pinia'
 import { expect, it, vi } from 'vitest'
 import { onScopeDispose, ref, watch } from 'vue'
 
-it('disposes the global Pinia after the test', ({ onTestFinished }) => {
+it('disposes its Pinia even when the active instance is cleared', ({
+  onTestFinished
+}) => {
   const value = ref(0)
   const changed = vi.fn()
   const disposed = vi.fn()
@@ -22,4 +25,6 @@ it('disposes the global Pinia after the test', ({ onTestFinished }) => {
     expect(changed).toHaveBeenCalledOnce()
     expect(disposed).toHaveBeenCalledOnce()
   })
+
+  setActivePinia(undefined)
 })

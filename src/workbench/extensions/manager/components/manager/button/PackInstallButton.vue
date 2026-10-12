@@ -25,7 +25,7 @@ import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'

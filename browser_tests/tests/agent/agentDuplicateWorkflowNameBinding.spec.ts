@@ -8,17 +8,19 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-const BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
-const THREAD_KEY = 'Comfy.Agent.ThreadId'
+const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
+const THREAD_KEY = StorageKeys.agentThread('personal')
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const TARGET_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'
@@ -155,13 +157,8 @@ test(
       route.fulfill(jsonRoute(history))
     )
 
-    await page.evaluate(async (path) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const portrait = store.getWorkflowByPath(path)
-      if (!portrait) throw new Error('Portrait workflow was not indexed')
-      await store.openWorkflow(portrait)
-    }, PORTRAIT_PATH)
+    const topbar = new Topbar(page)
+    await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
     expect(
       await page.evaluate(
         ([key, workflowId]) => {
@@ -173,17 +170,20 @@ test(
         [BINDING_KEY, TARGET_ID] as const
       )
     ).toBe(PORTRAIT_PATH)
+    await page.evaluate(async (path) => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      await store.syncWorkflows()
+      const portrait = store.getWorkflowByPath(path)
+      if (!portrait) throw new Error('Portrait workflow was not indexed')
+      await store.openWorkflow(portrait)
+    }, PORTRAIT_PATH)
+    await expect(topbar.getActiveTab()).toContainText('Portrait')
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    const panel = await new AgentPanel(page).open()
     await expect(panel.getByTestId('user-message-bubble')).toHaveText([
       'Earlier request'
     ])
 
-    const topbar = new Topbar(page)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
     await expect(
       panel.getByText(enMessages.agent.selectWorkflowForAgent)

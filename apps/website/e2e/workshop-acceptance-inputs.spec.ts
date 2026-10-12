@@ -1,12 +1,15 @@
+import { join } from 'node:path'
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import { modelCases } from '../acceptance/cases'
-import { useAdvancedInputs, useOwnInputs } from '../acceptance/fixtures'
+import { repoRoot } from '@website/paths'
+import { modelCases } from '@website/acceptance/cases'
+import { useAdvancedInputs, useOwnInputs } from '@website/acceptance/fixtures'
 import { signIn } from './fixtures/buyCredits'
 import { test } from './fixtures/modelsAccount'
+import { hubModelHref } from '@/config/hub-models'
 
 test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
   await context.route(
@@ -15,15 +18,15 @@ test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
   )
   await mkdir(testInfo.outputDir, { recursive: true })
   await copyFile(
-    '../../browser_tests/assets/test_upload_image.png',
+    join(repoRoot, 'browser_tests/assets/test_upload_image.png'),
     testInfo.outputPath('reference.png')
   )
   await copyFile(
-    '../../browser_tests/assets/test_upload_image.png',
+    join(repoRoot, 'browser_tests/assets/test_upload_image.png'),
     testInfo.outputPath('last-frame.png')
   )
   await copyFile(
-    '../../browser_tests/assets/plain_video.mp4',
+    join(repoRoot, 'browser_tests/assets/plain_video.mp4'),
     testInfo.outputPath('reference.mp4')
   )
   await context.route('**/customers/storage', (route) => {
@@ -58,7 +61,7 @@ for (const model of modelCases) {
   test(`${model.slug}: acceptance inputs reach the generation request`, async ({
     page
   }, testInfo) => {
-    await page.goto(`/models/${model.slug}/`)
+    await page.goto(hubModelHref(model.slug))
     await useOwnInputs(page, model, testInfo.outputDir)
     await useAdvancedInputs(page, model)
     const submitted = page.waitForRequest(

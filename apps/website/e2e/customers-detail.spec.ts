@@ -72,10 +72,13 @@ test.describe('Customer story detail navigation', () => {
     await page.goto('/customers/series-entertainment')
     const nextLink = page.getByRole('link', { name: /view article/i })
     await expect(nextLink).toBeVisible()
-    await expect(nextLink).toHaveAttribute('href', /^\/customers\/[a-z0-9-]+$/)
+    await expect(nextLink).toHaveAttribute(
+      'href',
+      /^\/customers\/[a-z0-9-]+\/$/
+    )
     await expect(nextLink).not.toHaveAttribute(
       'href',
-      '/customers/series-entertainment'
+      '/customers/series-entertainment/'
     )
   })
 })
