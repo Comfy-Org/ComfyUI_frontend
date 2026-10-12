@@ -58,6 +58,7 @@ import Toaster from '@/components/ui/toast/Toaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
 import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
@@ -120,6 +121,7 @@ import ManagerProgressToast from '@/workbench/extensions/manager/components/Mana
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useProgressTextPreviews()
 useBrowserTabTitle()
 
 const settingStore = useSettingStore()

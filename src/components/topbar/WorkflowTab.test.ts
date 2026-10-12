@@ -101,12 +101,14 @@ function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
   activeWorkflowPath,
-  otherOpenWorkflows = []
+  otherOpenWorkflows = [],
+  compact = false
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
   otherOpenWorkflows?: Workflow[]
+  compact?: boolean
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -124,7 +126,12 @@ function renderTab({
       () => () =>
         h(TabsRoot, { modelValue: resolvedActiveWorkflowPath }, () =>
           h(TabsList, () =>
-            h(WorkflowTab, { workflowOption, isFirst: false, isLast: false })
+            h(WorkflowTab, {
+              workflowOption,
+              isFirst: false,
+              isLast: false,
+              compact
+            })
           )
         )
     ),
@@ -277,6 +284,14 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('reveals Close on a compact inactive tab without a status indicator', () => {
+    renderTab({ compact: true })
+
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'group-hover/tab:visible'
+    )
+  })
+
   it('keeps the close button hidden while an active status indicator shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
@@ -303,8 +318,37 @@ describe('WorkflowTab - close button', () => {
   })
 })
 
+describe('WorkflowTab - compact', () => {
+  it('keeps the mode icon on the active compact tab', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ initialMode: 'app' }),
+      activeWorkflowKey: 'test-key',
+      compact: true
+    })
+
+    expect(screen.getByTestId('workflow-mode-icon')).toBeVisible()
+  })
+})
+
 describe('WorkflowTab - Agent target', () => {
   const targetLabel = 'Agent target for this chat'
+
+  it('keeps the target, status, and filename visible in a compact mode tab', async () => {
+    const workflowOption = makeWorkflowOption({ initialMode: 'app' })
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+    renderTab({ workflowOption, compact: true })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.setWorkflowTarget(workflowOption.workflow)
+    await nextTick()
+
+    expect(screen.queryByTestId('workflow-mode-icon')).toBeNull()
+    expect(screen.getByText('test.json')).toBeVisible()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
+  })
 
   it('follows the selected target independently of the visible tab and panel visibility', async () => {
     const workflowOption = makeWorkflowOption()
