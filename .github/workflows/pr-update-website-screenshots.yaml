@@ -217,29 +217,6 @@ jobs:
           message: '[automated] Update website screenshot expectations'
           run-id: ${{ needs.harvest.outputs.run-id }}
 
-      - name: Remove label
-        if: always() && github.event_name == 'pull_request'
-        # Label cleanup is best-effort; the restricted pull_request token may
-        # lack permission to remove labels and must not fail the run.
-        continue-on-error: true
-        uses: actions/github-script@v9
-        env:
-          PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
-        with:
-          script: |
-            try {
-              await github.rest.issues.removeLabel({
-                ...context.repo,
-                issue_number: Number(process.env.PR_NUMBER),
-                name: 'Update Website Screenshots'
-              })
-            } catch (e) {
-              if (e.status !== 404) {
-                throw e
-              }
-              core.info('Label "Update Website Screenshots" was already removed')
-            }
-
   post-result-comment:
     needs: [setup, harvest, update-screenshots, commit]
     if: always() && !cancelled() && needs.setup.result == 'success'
@@ -301,3 +278,26 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: ${{ steps.content.outputs.section-content }}
+
+      - name: Remove label
+        if: always() && github.event_name == 'pull_request'
+        # Label cleanup is best-effort; the restricted pull_request token may
+        # lack permission to remove labels and must not fail the run.
+        continue-on-error: true
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
+        with:
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                ...context.repo,
+                issue_number: Number(process.env.PR_NUMBER),
+                name: 'Update Website Screenshots'
+              })
+            } catch (e) {
+              if (e.status !== 404) {
+                throw e
+              }
+              core.info('Label "Update Website Screenshots" was already removed')
+            }
