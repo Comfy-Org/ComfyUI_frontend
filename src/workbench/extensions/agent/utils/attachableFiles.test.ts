@@ -27,7 +27,8 @@ describe('isAgentAttachable', () => {
     'sound.wav',
     'mesh.glb',
     'notes.md',
-    'prompt.txt'
+    'prompt.txt',
+    'PROMPT.TXT'
   ])('accepts %s regardless of MIME type', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
@@ -37,11 +38,12 @@ describe('isAgentAttachable', () => {
     expect(isAgentAttachable(fileNamed('music.flac'))).toBe(true)
   })
 
-  it('rejects unsupported formats', () => {
-    expect(isAgentAttachable(fileNamed('archive.zip'))).toBe(false)
-    expect(isAgentAttachable(fileNamed('binary.exe'))).toBe(false)
-    expect(isAgentAttachable(fileNamed('noextension'))).toBe(false)
-  })
+  it.for(['archive.zip', 'binary.exe', 'noextension', 'txt', '.txt'])(
+    'rejects unsupported file %s',
+    (name) => {
+      expect(isAgentAttachable(fileNamed(name))).toBe(false)
+    }
+  )
 
   it('names every approved extension in the picker accept list', () => {
     const accepted = AGENT_ATTACH_ACCEPT.split(',')

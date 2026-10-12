@@ -1,5 +1,8 @@
 import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getFilenameDetails,
+  getMediaTypeFromFilename
+} from '@/utils/formatUtil'
 
 const AGENT_ATTACH_MEDIA_KINDS = [
   'image',
@@ -35,19 +38,10 @@ export const AGENT_ATTACH_ACCEPT = [
   'application/json'
 ].join(',')
 
-/**
- * Judged by file NAME, not MIME type: dragged glb/md/txt files carry an empty
- * or generic MIME, and the reply pipeline classifies by extension already.
- *
- * .json is intentionally excluded even though it is in AGENT_ATTACH_ACCEPT:
- * this only gates the OS file-picker's visible filter, letting a user select
- * a .json through the picker. A raw drag-and-drop of a .json file must still
- * fall through to the graph loader, which treats it as a workflow to open.
- */
 export function isAgentAttachable(file: File): boolean {
   if (MEDIA_ATTACHABLE_KINDS.has(getMediaTypeFromFilename(file.name)))
     return true
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const extension = getFilenameDetails(file.name).suffix?.toLowerCase() ?? ''
   return ATTACHABLE_EXTENSIONS.has(extension)
 }
 
