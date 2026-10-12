@@ -211,8 +211,6 @@ export const useAuthActions = () => {
       )
     }
 
-    // Mark the pending top-up directly, not via telemetry, so the balance
-    // refresh on return still fires when telemetry consent is off.
     const pendingTopup = usePendingTopup()
     pendingTopup.startPendingTopup()
     if (!window.open(response.checkout_url, '_blank')) {
@@ -221,7 +219,8 @@ export const useAuthActions = () => {
         t('subscription.preview.paymentPopupBlocked')
       )
     }
-    watchForTopupBalanceUpdate()
+    const billing = useBillingContext()
+    watchForTopupBalanceUpdate(() => billing.fetchStatus())
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(

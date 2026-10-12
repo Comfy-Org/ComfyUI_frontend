@@ -6,6 +6,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import type {
   BillingStatus,
+  BillingStatusResponse,
   BillingSubscriptionStatus,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
@@ -29,6 +30,15 @@ type RuntimeLegacyBalance = Omit<
 > & {
   amount_micros?: number
   effective_balance_micros?: number
+}
+
+function fundsFromStatus(status: BillingStatusResponse | null) {
+  const hasFunds = status?.has_funds ?? false
+  return {
+    hasFunds,
+    agentHasFunds: status?.scoped_effective_has_funds?.agent ?? hasFunds,
+    agentScopedHasFunds: status?.scoped_has_funds?.agent
+  }
 }
 
 /**
@@ -115,10 +125,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       renewalDate: status?.renewal_date ?? null,
       endDate: status?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: status?.has_funds ?? false,
-      agentHasFunds:
-        status?.scoped_effective_has_funds?.agent ?? status?.has_funds ?? false,
-      agentScopedHasFunds: status?.scoped_has_funds?.agent
+      ...fundsFromStatus(status)
     }
   })
 
@@ -169,9 +176,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await Promise.all([fetchStatus(), fetchBalance()])
-      // Re-fetch balance if free tier credits were just lazily granted
       if (isFreeTier.value && balance.value?.amountMicros === 0) {
-        await fetchBalance()
+        await Promise.all([fetchBalance(), fetchStatus()])
       }
       isInitialized.value = true
     } catch (err) {

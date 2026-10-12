@@ -17,6 +17,9 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
+const statusWith = (partial: Partial<BillingStatusResponse>) =>
+  ({ is_active: true, ...partial }) as BillingStatusResponse
+
 const refusal = () =>
   new AuthStoreError('refused', 409, 'WORKSPACE_BILLING_REQUIRED')
 
@@ -27,9 +30,6 @@ describe('useLegacyBilling', () => {
       currency: 'usd',
       hosted_invoice_url: 'https://invoice.stripe.com/i/test'
     }
-
-    const statusWith = (partial: Partial<BillingStatusResponse>) =>
-      ({ is_active: true, ...partial }) as BillingStatusResponse
 
     // The shared mock always grants access; derive it from the status as the
     // real composable does.
@@ -102,6 +102,18 @@ describe('useLegacyBilling', () => {
         agentScopedHasFunds: undefined
       },
       {
+        name: 'a spent agent balance while shared credits remain',
+        status: {
+          has_funds: true,
+          scoped_has_funds: { agent: false },
+          scoped_effective_has_funds: { agent: true }
+        },
+        amountMicros: 500,
+        hasFunds: true,
+        agentHasFunds: true,
+        agentScopedHasFunds: false
+      },
+      {
         name: 'agent funds from its own scoped balance',
         status: {
           has_funds: false,
@@ -126,17 +138,50 @@ describe('useLegacyBilling', () => {
           amount_micros: amountMicros,
           currency: 'usd'
         }
-        useSubscription().subscriptionStatus.value = {
-          is_active: true,
+        useSubscription().subscriptionStatus.value = statusWith({
           has_funds: false,
           ...status
-        } as BillingStatusResponse
+        })
 
         expect(useLegacyBilling().subscription.value).toMatchObject({
           hasFunds,
           agentHasFunds,
           agentScopedHasFunds
         })
+      }
+    )
+  })
+
+  describe('initialize', () => {
+    it.for([
+      {
+        name: 'a free tier with a zero total',
+        isFree: true,
+        total: 0,
+        reads: 2
+      },
+      { name: 'a free tier with credits', isFree: true, total: 500, reads: 1 },
+      {
+        name: 'a paid tier with a zero total',
+        isFree: false,
+        total: 0,
+        reads: 1
+      }
+    ])(
+      'reads the status $reads time(s) for $name',
+      async ({ isFree, total, reads }) => {
+        Object.assign(useSubscription(), {
+          subscriptionTier: computed(() => (isFree ? 'FREE' : 'CREATOR'))
+        })
+        const store = useAuthStore()
+        vi.mocked(store.fetchBalance).mockImplementation(async () => {
+          store.balance = { amount_micros: total, currency: 'usd' }
+          return store.balance
+        })
+
+        await useLegacyBilling().initialize()
+
+        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(reads)
       }
     )
   })
