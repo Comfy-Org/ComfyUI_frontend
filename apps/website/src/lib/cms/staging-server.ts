@@ -5,7 +5,7 @@ import { filterQuery, stagingSnapshot, finalSnapshot } from './staging-review'
 
 export async function catalogReview(
   session: AuthoringSession,
-  operation: 'staging' | 'final-review' | 'discard-changes',
+  operation: 'staging' | 'final-review' | 'discard-changes' | 'publish',
   filter: ReviewFilter = {},
   init: RequestInit = {}
 ) {

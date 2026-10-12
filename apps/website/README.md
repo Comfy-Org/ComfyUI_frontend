@@ -6,8 +6,10 @@ The local CCC review console has two phases: decide every pending change
 `Next` stays disabled while the authoritative, unfiltered unresolved count is
 nonzero. Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
-`Add Content` is beside the selection actions. Publication remains unavailable
-until its outstanding backend/media acceptance gates are complete.
+`Add Content` is beside the selection actions. A temporary local Publish control
+is available only when the backend explicitly enables it in Final review. It
+advances LIVE, rebuilds its projection and opens a new DRAFT; it does not enable
+production publishing or certify the remaining media/evidence acceptance gates.
 
 `scripts/check-catalog-review-ui.ts` checks the real local/ngrok console on
 desktop/mobile using an explicitly supplied fixture credential file. It creates

@@ -9,7 +9,9 @@ import {
 import {
   filterFromQuery,
   stageBody,
-  discardBody
+  discardBody,
+  publishBody,
+  publicationState
 } from '@/lib/cms/staging-review'
 import { z } from 'astro/zod'
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
@@ -42,10 +44,12 @@ export const POST: APIRoute = async (context) => {
   if (
     operation !== 'staging' &&
     operation !== 'exit' &&
-    operation !== 'discard-changes'
+    operation !== 'discard-changes' &&
+    operation !== 'publish'
   )
     return editorFailure(404)
   if (operation === 'staging' && !session.can_apply) return editorFailure(404)
+  if (operation === 'publish' && !session.can_apply) return editorFailure(404)
   if (operation === 'discard-changes' && !session.can_edit)
     return editorFailure(404)
   if (context.url.search) return editorFailure(400)
@@ -69,7 +73,11 @@ export const POST: APIRoute = async (context) => {
     return editorFailure(400)
   }
   const parsed = (
-    operation === 'discard-changes' ? discardBody : stageBody
+    operation === 'publish'
+      ? publishBody
+      : operation === 'discard-changes'
+        ? discardBody
+        : stageBody
   ).safeParse(raw)
   if (!parsed.success) return editorFailure(400)
   const upstream = await catalogReview(
@@ -82,6 +90,21 @@ export const POST: APIRoute = async (context) => {
       body: JSON.stringify(parsed.data)
     }
   )
+  if (operation === 'publish') {
+    if (!upstream.ok) return editorFailure(upstream.status)
+    const bytes = await boundedBody(upstream, 64 << 10)
+    if (!bytes) return editorFailure(503)
+    try {
+      const state = publicationState(
+        JSON.parse(new TextDecoder().decode(bytes))
+      )
+      return state
+        ? Response.json(state, { headers: editorHeaders })
+        : editorFailure(503)
+    } catch {
+      return editorFailure(503)
+    }
+  }
   if (operation === 'discard-changes' && upstream.status === 422) {
     const bytes = await boundedBody(upstream, 64 << 10)
     if (!bytes) return editorFailure(503)

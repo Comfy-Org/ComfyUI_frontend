@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import CatalogChangeRow from '@/components/cms/review/CatalogChangeRow.vue'
+import CatalogPublish from '@/components/cms/review/CatalogPublish.vue'
 import { resolveLocale } from '@/config/locales'
 import { editorFailure } from '@/lib/cms/editor-server'
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
@@ -30,7 +31,6 @@ const locale = resolveLocale(Astro.currentLocale)
       <h2 class="mt-6 text-lg">{t('cccStaging.deferred')}</h2>
       <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.deferred.map((item) => <CatalogChangeRow item={item} locale={locale} client:load />)}</ul>
     </>}
-    <button type="button" disabled class="mt-6 rounded-lg bg-admin-fg px-4 py-2 text-sm text-admin-card opacity-40">{t('cccStaging.publish')}</button>
-    <p class="mt-3 text-sm text-admin-muted">{t('cccStaging.publishUnavailable')}</p>
+    {final ? <CatalogPublish review={final} csrf={session.csrf} locale={locale} client:load /> : <button type="button" disabled class="mt-6 rounded-lg bg-admin-fg px-4 py-2 text-sm text-admin-card opacity-40">{t('cccStaging.publish')}</button>}
   </section>
 </BaseLayout>

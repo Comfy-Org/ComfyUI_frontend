@@ -64,8 +64,36 @@ const finalReview = z.object({
   state,
   changes: z.array(item).max(5000),
   deferred: z.array(item).max(5000),
-  selection_digest: digest
+  selection_digest: digest,
+  publish_enabled: z.boolean().optional().default(false)
 })
+export type FinalReview = z.infer<typeof finalReview>
+export const publishBody = z
+  .object({
+    review: z
+      .object({
+        expected_live_rev: integer.positive(),
+        expected_draft_rev: integer.positive(),
+        expected_draft_generation: integer
+      })
+      .strict(),
+    expected_selection_digest: digest
+  })
+  .strict()
+export function publicationPayload(snapshot: FinalReview) {
+  return {
+    review: {
+      expected_live_rev: snapshot.state.live_rev,
+      expected_draft_rev: snapshot.state.draft_rev,
+      expected_draft_generation: snapshot.state.draft_generation
+    },
+    expected_selection_digest: snapshot.selection_digest
+  }
+}
+export function publicationState(raw: unknown) {
+  const parsed = state.safeParse(raw)
+  return parsed.success ? parsed.data : undefined
+}
 export type StagingReview = z.infer<typeof review>
 export type ReviewItem = z.infer<typeof item>
 export function stagingSnapshot(raw: unknown) {
@@ -153,7 +181,12 @@ export const stageBody = z
     expected_selection_digest: digest,
     confirm_all: z.boolean(),
     status: z.enum(decisions),
-    selected_uids: z.array(z.uuid()).min(1).max(5000).refine((values) => new Set(values).size === values.length).optional()
+    selected_uids: z
+      .array(z.uuid())
+      .min(1)
+      .max(5000)
+      .refine((values) => new Set(values).size === values.length)
+      .optional()
   })
   .strict()
 

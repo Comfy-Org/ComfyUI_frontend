@@ -5748,6 +5748,8 @@
     }
   },
   "cccStaging": {
+    "localPublish": "Temporary local test: publish the reviewed changes, rebuild LIVE, and open a new DRAFT. Deferred work is preserved. This is not production publishing.",
+    "reloadFinal": "Reload Final review",
     "title": "Draft changes",
     "description": "Staging → Final review → Publish. Review exact saved content before it becomes Live.",
     "revision": "DRAFT · Revision {revision}",

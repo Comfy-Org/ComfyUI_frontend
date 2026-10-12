@@ -132,7 +132,7 @@ export function isAuthoringRoute(path: string) {
     /^\/admin\/content\/(?:new|[0-9a-f-]{36}\/edit)\/?$/.test(path) ||
     /^\/admin\/content-api\/(?:state|item|save|upload)\/?$/.test(path) ||
     /^\/admin\/catalog(?:\/final-review)?\/?$/.test(path) ||
-    /^\/admin\/catalog-api\/(?:staging|final-review|exit|discard-changes)\/?$/.test(
+    /^\/admin\/catalog-api\/(?:staging|final-review|exit|discard-changes|publish)\/?$/.test(
       path
     )
   )

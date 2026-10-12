@@ -126,12 +126,14 @@ try {
   const review = await guest.get('/admin/catalog-api/staging')
   expect(review.status()).toBe(200)
   const snapshot = snapshotSchema.parse(await review.json())
-  expect(snapshot.unresolved_count).toBeGreaterThan(0)
-  await expect(
-    page.getByRole('button', { name: 'Next →', exact: true })
-  ).toBeDisabled()
   const unresolved = `You still have ${snapshot.unresolved_count} entries not approved or deferred.`
-  await expect(page.getByText(unresolved, { exact: true })).toBeVisible()
+  if (snapshot.unresolved_count > 0) {
+    await expect(page.getByRole('button', { name: 'Next →', exact: true })).toBeDisabled()
+    await expect(page.getByText(unresolved, { exact: true })).toBeVisible()
+  } else {
+    await expect(page.getByRole('link', { name: 'Next →', exact: true })).toBeVisible()
+  }
+  if (snapshot.items.length) {
   const trash = page.getByRole('button', { name: /^Delete change for / })
   expect(await trash.count()).toBe(snapshot.items.length)
   await trash.first().click()
@@ -176,6 +178,7 @@ try {
     .getByRole('button', { name: 'Cancel', exact: true })
     .click()
   await all.uncheck()
+  }
   if (screenshots)
     await page.screenshot({
       path: join(screenshots, 'admin-restored-desktop.png'),
@@ -195,7 +198,21 @@ try {
     })
   const final = await guest.get('/admin/catalog/final-review')
   expect(final.status()).toBe(200)
-  expect(await final.text()).toContain(unresolved)
+  if (snapshot.unresolved_count > 0) expect(await final.text()).toContain(unresolved)
+  else {
+    const authority = await guest.get('/admin/catalog-api/final-review')
+    await page.goto(remote.origin + '/admin/catalog/final-review', { waitUntil: 'networkidle' })
+    const button = page.getByRole('button', { name: 'Publish', exact: true })
+    if (authority.status() === 200) {
+      const ready = z.object({ publish_enabled: z.boolean() }).parse(await authority.json())
+      if (ready.publish_enabled) await expect(button).toBeEnabled()
+      else await expect(button).toBeDisabled()
+    } else {
+      expect(authority.status()).toBe(422)
+      await expect(button).toBeDisabled()
+    }
+    if (screenshots) await page.screenshot({ path: join(screenshots, 'local-publish-final-review.png'), fullPage: true })
+  }
   for (const path of [
     '/hub/models/?preview=DRAFT',
     '/api/v1/catalog/docs',

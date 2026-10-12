@@ -60,6 +60,51 @@ function backend(status = 200, body: unknown = fixtureReview()) {
   return fetcher
 }
 describe('catalog staging same-origin facade', () => {
+  it('requires publisher authority and CSRF for temporary publication', async () => {
+    const r = fixtureReview()
+    const payload = {
+      review: {
+        expected_live_rev: r.state.live_rev,
+        expected_draft_rev: r.state.draft_rev,
+        expected_draft_generation: r.state.draft_generation
+      },
+      expected_selection_digest: r.selection_digest
+    }
+    const state = {
+      ...r.state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9,
+      previous_live_rev: 1,
+      draft_generation: 0
+    }
+    const fetcher = backend(200, state)
+    expect(
+      (await POST(context('publish', { apply: false, body: payload }))).status
+    ).toBe(404)
+    expect(
+      (
+        await POST(
+          context('publish', { origin: 'https://evil.example', body: payload })
+        )
+      ).status
+    ).toBe(403)
+    expect(
+      (
+        await POST(
+          context('publish', { body: { ...payload, publish_enabled: true } })
+        )
+      ).status
+    ).toBe(400)
+    expect(fetcher).not.toHaveBeenCalled()
+    const response = await POST(context('publish', { body: payload }))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(state)
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/draft/publish'
+    )
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
   it('requires edit, not apply, for explicit discard and preserves dependency errors', async () => {
     const initial = fixtureReview()
     const payload = discardPayload(
