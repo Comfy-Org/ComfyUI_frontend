@@ -53,6 +53,7 @@ type TargetTracking =
 
 export type AgentPanelView =
   | { screen: 'chat' }
+  | { screen: 'opening'; id: string; previousThreadId: string | null }
   | {
       screen: 'history'
       previousThreadId: string | null
@@ -74,6 +75,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const selectingChat = computed(
+    () =>
+      view.value.screen === 'opening' ||
+      (view.value.screen === 'history' &&
+        view.value.selection.status === 'loading')
+  )
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
@@ -115,6 +122,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function interruptHistorySelection(): void {
+    if (view.value.screen === 'opening') {
+      view.value = {
+        screen: 'history',
+        previousThreadId: view.value.previousThreadId,
+        selection: { status: 'failed', id: view.value.id }
+      }
+      return
+    }
     if (
       view.value.screen === 'history' &&
       view.value.selection.status === 'loading'
@@ -380,6 +395,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     hasEverOpened,
     gateSettled,
     view,
+    selectingChat,
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,

@@ -13,6 +13,8 @@ export interface ChatSession {
   title: string
   updatedAt: number
   titleSource: 'server' | 'fallback'
+  /** The workflow the conversation is currently on, per the server's thread pointer. */
+  workflowId?: string
 }
 
 export interface HistoryGroups {
@@ -82,6 +84,12 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     groupSessionsByRecency(titled.value, activeId.value, now.value)
   )
 
+  function sessionsForWorkflow(workflowId: string): ChatSession[] {
+    return titled.value
+      .filter((session) => session.workflowId === workflowId)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+  }
+
   function titleFor(id: string | null): string | undefined {
     return id === null ? undefined : customTitles.value[id]
   }
@@ -115,6 +123,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
+    sessionsForWorkflow,
     titleFor,
     rename,
     remove,

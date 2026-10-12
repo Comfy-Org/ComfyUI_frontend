@@ -39,6 +39,7 @@
           >
             {{ workflowOption.workflow.filename }}
           </span>
+          <span aria-hidden="true" :class="agentChatsSpacerClass" />
           <span
             :class="
               cn(
@@ -83,6 +84,11 @@
             />
           </span>
         </TabsTrigger>
+        <WorkflowAgentChatsMenu
+          :workflow-path="workflowOption.workflow.path"
+          :workflow-name="workflowOption.workflow.filename"
+          @open="hideTabPopover"
+        />
         <Button
           :class="
             cn(
@@ -154,6 +160,7 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+import WorkflowAgentChatsMenu from './WorkflowAgentChatsMenu.vue'
 import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 defineOptions({ inheritAttrs: false })
@@ -245,6 +252,12 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
 
 const tabActivity = useWorkflowTabActivityStore()
 
+const agentChatsSpacerClass = computed(() =>
+  tabActivity.agentChatsByPath.has(workflowOption.workflow.path)
+    ? 'w-7 shrink-0'
+    : 'hidden'
+)
+
 const isAgentEditing = computed(
   () => tabActivity.editingTabPath === workflowOption.workflow.path
 )
@@ -297,6 +310,10 @@ const handleMouseLeave = () => {
 
 const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
+}
+
+function hideTabPopover(): void {
+  popoverRef.value?.hidePopover()
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {

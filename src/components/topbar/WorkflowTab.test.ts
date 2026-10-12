@@ -71,8 +71,23 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels },
-      agent: { targetForThisChat: 'Agent target for this chat' }
+      g: {
+        close: 'Close',
+        ...statusAriaLabels,
+        ...agentAriaLabels,
+        relativeTime: {
+          now: 'now',
+          hoursAgo: '{count}h ago',
+          daysAgo: '{count}d ago'
+        }
+      },
+      agent: {
+        targetForThisChat: 'Agent target for this chat',
+        workflowChatsMenuLabel: 'Chats on {workflowName}',
+        workflowChatsCount:
+          '{count} chat on {workflowName} | {count} chats on {workflowName}',
+        newChatOnWorkflow: 'New chat on this workflow'
+      }
     }
   }
 })
@@ -280,6 +295,132 @@ describe('WorkflowTab - agent activity indicators', () => {
     await nextTick()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeTruthy()
     expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+})
+
+describe('WorkflowTab - agent chats', () => {
+  it('offers the tab’s chats and a new chat without switching tabs', async () => {
+    const open = vi.fn()
+    const workflowOption = makeWorkflowOption()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          [
+            {
+              id: 'th-recent',
+              title: 'Landscape chat',
+              updatedAt: Date.now()
+            },
+            {
+              id: 'th-older',
+              title: 'Older landscape chat',
+              updatedAt: Date.now() - 3 * 86_400_000
+            }
+          ]
+        ]
+      ]),
+      open
+    )
+    renderTab({ workflowOption })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '2 chats on test.json' })
+    )
+    expect(
+      (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
+    ).toEqual([
+      'Landscape chatnow',
+      'Older landscape chat3d ago',
+      'New chat on this workflow'
+    ])
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: /^Older landscape chat/ })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: '2 chats on test.json' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'New chat on this workflow' })
+    )
+
+    expect(open.mock.calls).toEqual([
+      ['/workflows/test.json', 'th-older'],
+      ['/workflows/test.json', null]
+    ])
+    expect(useWorkflowStore().activeWorkflow?.path).toBe(
+      '/workflows/other.json'
+    )
+  })
+
+  it('dates each chat from when its menu opens', async () => {
+    const workflowOption = makeWorkflowOption()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          [{ id: 'th-1', title: 'Landscape chat', updatedAt: Date.now() }]
+        ]
+      ]),
+      vi.fn()
+    )
+    renderTab({ workflowOption })
+    vi.setSystemTime(Date.now() + 2 * 3_600_000)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '1 chat on test.json' })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', { name: /^Landscape chat/ })
+    ).toHaveTextContent('2h ago')
+  })
+
+  it('caps the visible chat count at 9+', async () => {
+    const workflowOption = makeWorkflowOption()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          Array.from({ length: 12 }, (_, index) => ({
+            id: `th-${index}`,
+            title: `Chat ${index}`,
+            updatedAt: Date.now()
+          }))
+        ]
+      ]),
+      vi.fn()
+    )
+    renderTab({ workflowOption })
+
+    expect(
+      screen.getByRole('button', { name: '12 chats on test.json' })
+    ).toHaveTextContent('9+')
+  })
+
+  it('shows no chat count once the agent clears its tab chats', async () => {
+    const workflowOption = makeWorkflowOption()
+    const activity = useWorkflowTabActivityStore()
+    activity.setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          [{ id: 'th-1', title: 'Chat', updatedAt: Date.now() }]
+        ]
+      ]),
+      vi.fn()
+    )
+    renderTab({ workflowOption })
+    expect(
+      screen.getByRole('button', { name: '1 chat on test.json' })
+    ).toBeInTheDocument()
+
+    activity.clearAgentChats()
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: /chats? on test\.json/ })
+    ).toBeNull()
   })
 })
 

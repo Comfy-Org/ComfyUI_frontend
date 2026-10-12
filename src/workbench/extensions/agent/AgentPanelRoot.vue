@@ -518,6 +518,9 @@ onBeforeUnmount(() =>
   runPanelTeardown({
     disposeMinimapLayer: () => {
       agentMinimapLayer?.dispose()
+    },
+    clearTabChats: () => {
+      tabActivity.clearAgentChats()
     }
   })
 )
@@ -761,9 +764,8 @@ function warnWorkflowUnavailable(): void {
 }
 
 function warnRestoreFailed(): void {
-  const { view } = agentPanelStore
-  // A loading history row reports its own failure.
-  if (view.screen === 'history' && view.selection.status === 'loading') return
+  // A chat that is still opening reports its own failure.
+  if (agentPanelStore.selectingChat) return
   toast.warning(t('agent.targetWorkflowOpenFailed'), { duration: 5000 })
 }
 
@@ -1395,7 +1397,8 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
     updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
-    titleSource: thread.title ? 'server' : 'fallback'
+    titleSource: thread.title ? 'server' : 'fallback',
+    workflowId: thread.workflow_id || undefined
   }
 }
 
@@ -1418,20 +1421,107 @@ function reportThreadListLoadFailure(error: unknown): void {
   )
 }
 
-async function refreshHistory(): Promise<void> {
+let historyLoadGeneration = 0
+
+/**
+ * Replaces Chat history with the server list. Only the latest load applies its
+ * result or reports its failure.
+ */
+async function loadHistory(): Promise<
+  { ok: true } | { ok: false; error: unknown }
+> {
+  const generation = ++historyLoadGeneration
+  const isLatest = () => generation === historyLoadGeneration
   try {
     const { threads, complete } = await listThreads()
-    if (complete) history.replaceAll(threads.map(toChatSession))
-    else
-      reportThreadListLoadFailure(
-        'Agent thread list ended before its last page'
-      )
+    if (!isLatest()) return { ok: true }
+    if (!complete)
+      return {
+        ok: false,
+        error: 'Agent thread list ended before its last page'
+      }
+    history.replaceAll(threads.map(toChatSession))
+    return { ok: true }
   } catch (error) {
-    reportThreadListLoadFailure(error)
+    return isLatest() ? { ok: false, error } : { ok: true }
   }
 }
 
+async function refreshHistory(): Promise<void> {
+  const result = await loadHistory()
+  if (!result.ok) reportThreadListLoadFailure(result.error)
+}
+
 void refreshHistory()
+
+const viewedWorkflowId = computed(() => {
+  const viewed = workflowStore.activeWorkflow
+  return viewed ? cloudIdFor(viewed) : undefined
+})
+
+const chatsByTabPath = computed(
+  () =>
+    new Map(
+      workflowStore.openWorkflows.flatMap((tab) => {
+        const workflowId = cloudIdFor(tab)
+        const chats =
+          workflowId === undefined
+            ? []
+            : history
+                .sessionsForWorkflow(workflowId)
+                .filter(({ id }) => id !== threadId.value)
+                .map(({ id, title, updatedAt }) => ({ id, title, updatedAt }))
+        return chats.length ? [[tab.path, chats] as const] : []
+      })
+    )
+)
+
+const agentPanelRef = ref<InstanceType<typeof AgentPanel>>()
+
+async function openChatFromTab(
+  tabPath: string,
+  chatId: string | null
+): Promise<void> {
+  if (chatId !== null) {
+    await agentPanelRef.value?.openChat(chatId)
+    return
+  }
+  const tab = workflowStore.openWorkflows.find(({ path }) => path === tabPath)
+  if (!tab) return
+  const view = agentPanelStore.view
+  if (
+    workflowStore.activeWorkflow?.path !== tabPath &&
+    !(await workflowService.openWorkflow(tab))
+  )
+    return
+  if (
+    agentPanelStore.view === view &&
+    workflowStore.activeWorkflow?.path === tabPath
+  )
+    agentPanelRef.value?.startNewChat()
+}
+
+watch(
+  chatsByTabPath,
+  (chats) =>
+    tabActivity.setAgentChats(chats, (tabPath, chatId) => {
+      void openChatFromTab(tabPath, chatId)
+    }),
+  { immediate: true }
+)
+
+// Chats started or moved since the last load are missing from the list. A chat
+// being opened refreshes the list itself, and a failed reload stays quiet so it
+// never interrupts a tab switch.
+watch([viewedWorkflowId, threadId], async ([workflowId]) => {
+  if (workflowId === undefined || agentPanelStore.selectingChat) return
+  const result = await loadHistory()
+  if (!result.ok)
+    reportError(result.error, {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+})
 
 const currentChatReady = computed(
   () =>
@@ -1662,7 +1752,8 @@ watch(
 start({
   restore:
     agentPanelStore.view.screen === 'chat' ||
-    (agentPanelStore.view.selection.status === 'idle' &&
+    (agentPanelStore.view.screen === 'history' &&
+      agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
 
@@ -1923,6 +2014,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @change="onFilesPicked"
     />
     <AgentPanel
+      ref="agentPanelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"

@@ -7763,6 +7763,413 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
+  describe('chats on workflow tabs', () => {
+    const threadListRoute = /\/api\/agent\/threads(\?|$)/
+    const otherWorkflowThreads = [
+      agentThread({
+        id: 'th-other-older',
+        title: 'Older landscape chat',
+        last_message_at: '2026-10-01T10:00:00Z',
+        workflow_id: 'wf-other'
+      }),
+      agentThread({
+        id: 'th-other-recent',
+        title: 'Landscape chat',
+        last_message_at: '2026-10-08T10:00:00Z',
+        workflow_id: 'wf-other'
+      }),
+      agentThread({
+        id: 'th-target',
+        title: 'Another chat on the target',
+        last_message_at: '2026-10-09T10:00:00Z',
+        workflow_id: 'wf-42'
+      })
+    ]
+
+    function setupTargetAndOther() {
+      const {
+        target,
+        references: [other]
+      } = setupWorkflowContext({
+        targetId: 'wf-42',
+        references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+      })
+      return { target, other }
+    }
+
+    function tabChatTitles(path: string): string[] {
+      return (
+        useWorkflowTabActivityStore()
+          .agentChatsByPath.get(path)
+          ?.map(({ title }) => title) ?? []
+      )
+    }
+
+    async function renderWithOtherTabChats() {
+      const tabs = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      useAgentConversationStore().setThreadId('th-target-chat')
+      const { unmount } = renderWithSelectedTarget()
+      await waitFor(() =>
+        expect(tabChatTitles(tabs.other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+      )
+      return { ...tabs, unmount }
+    }
+
+    it('lists each open tab’s chats without touching the running turn, target or draft', async () => {
+      const { target, other } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      renderWithSelectedTarget()
+      await sendFromComposer('start editing current')
+      const textbox = screen.getByRole('textbox')
+      await userEvent.click(textbox)
+      await userEvent.paste('next idea')
+
+      workflowStore.activeWorkflow = other
+      await nextTick()
+
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+      )
+      expect(tabChatTitles(target.path)).toEqual(['Another chat on the target'])
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+      expect(textbox).toHaveTextContent('next idea')
+    })
+
+    it('reloads the chat list when another workflow comes into view', async () => {
+      const { other } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], [])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).not.toHaveLength(0)
+      )
+      respondToFetch(threadListRoute, () =>
+        json(200, agentThreadList(otherWorkflowThreads.slice(1)))
+      )
+
+      workflowStore.activeWorkflow = other
+      await nextTick()
+
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toEqual(['Landscape chat'])
+      )
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    })
+
+    it('reloads the chat list when the current chat changes', async () => {
+      const { target } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], [])
+      renderWithSelectedTarget()
+      await sendFromComposer('start editing current')
+      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute).length).toBeGreaterThan(1)
+      )
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-1',
+              title: 'Chat just left',
+              last_message_at: '2026-10-12T10:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+
+      await waitFor(() =>
+        expect(tabChatTitles(target.path)).toEqual(['Chat just left'])
+      )
+    })
+
+    it.for([
+      {
+        outcome: 'fails',
+        respond: () => json(500, { error: 'internal server error' })
+      },
+      {
+        outcome: 'ends before its last page',
+        respond: () =>
+          json(200, {
+            threads: [],
+            pagination: { has_more: true, limit: 100, offset: 0, total: 3 }
+          } satisfies AgentThreadListResponse)
+      }
+    ])(
+      'keeps the last list without an error overlay when a reload $outcome',
+      async ({ respond }) => {
+        const { target, other } = await renderWithOtherTabChats()
+        respondToFetch(threadListRoute, respond)
+
+        workflowStore.activeWorkflow = other
+        await nextTick()
+
+        await vi.waitFor(() =>
+          expect(reportError).toHaveBeenCalledWith(expect.anything(), {
+            surface: 'agent',
+            errorType: 'agent_thread_list_load_failed'
+          })
+        )
+        expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+        expect(tabChatTitles(other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+        expect(tabChatTitles(target.path)).toEqual([
+          'Another chat on the target'
+        ])
+      }
+    )
+
+    it('keeps the newest list when an older reload finishes last', async () => {
+      const { target, other } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], [])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).not.toHaveLength(0)
+      )
+      const pending: ((response: Response) => void)[] = []
+      respondToFetch(
+        threadListRoute,
+        () => new Promise<Response>((resolve) => pending.push(resolve))
+      )
+
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      workflowStore.activeWorkflow = target
+      await nextTick()
+      await vi.waitFor(() => expect(pending).toHaveLength(2))
+      const [respondToOlder, respondToNewer] = pending
+      respondToNewer(json(200, agentThreadList(otherWorkflowThreads)))
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+      )
+      const olderResponse = json(200, agentThreadList())
+      respondToOlder(olderResponse)
+      await vi.waitFor(() => expect(olderResponse.bodyUsed).toBe(true))
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(tabChatTitles(other.path)).toEqual([
+        'Landscape chat',
+        'Older landscape chat'
+      ])
+    })
+
+    it('does not mark or look up chats for a tab without a Cloud identity', async () => {
+      setupTargetAndOther()
+      const unsaved = addTab('workflows/unsaved.json')
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).not.toHaveLength(0)
+      )
+      const requestsBefore = fetchRequests(threadListRoute).length
+
+      workflowStore.activeWorkflow = unsaved
+      await nextTick()
+
+      expect(
+        useWorkflowTabActivityStore().agentChatsByPath.has(unsaved.path)
+      ).toBe(false)
+      expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore)
+    })
+
+    it('opens a chat picked from a tab, with its workflow, and reads the list once', async () => {
+      const { other } = await renderWithOtherTabChats()
+      respondToFetch(/\/th-other-recent\/messages/, () =>
+        json(200, [
+          {
+            id: 'landscape-user',
+            thread_id: 'th-other-recent',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'landscape-turn',
+            workflow_id: 'wf-other',
+            content: { text: 'Earlier landscape request' }
+          }
+        ] satisfies AgentMessages)
+      )
+      expect(useAgentChatHistoryStore().activeId).toBe('th-target-chat')
+      const requestsBefore = fetchRequests(threadListRoute).length
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent('Earlier landscape request')
+      expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+      expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toEqual(['Older landscape chat'])
+      )
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore + 1)
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore + 1)
+    })
+
+    it.for([
+      { outcome: 'opens', status: 200 },
+      { outcome: 'fails', status: 500 }
+    ])(
+      'shows the picked chat loading in place, then $outcome',
+      async ({ status }) => {
+        const { other } = await renderWithOtherTabChats()
+        let respond = (_response: Response) => {}
+        respondToFetch(
+          /\/th-other-recent\/messages/,
+          () =>
+            new Promise<Response>((resolve) => {
+              respond = resolve
+            })
+        )
+
+        useWorkflowTabActivityStore().openAgentChat(
+          other.path,
+          'th-other-recent'
+        )
+
+        expect(
+          await screen.findByText(i18n.global.t('agent.openingChat'))
+        ).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'Landscape chat' })
+        ).toBeDisabled()
+        expect(
+          screen.queryByRole('heading', {
+            name: i18n.global.t('agent.history')
+          })
+        ).toBeNull()
+        expect(screen.queryByRole('textbox')).toBeNull()
+
+        respond(
+          status === 200
+            ? json(200, [])
+            : json(500, { error: 'internal server error' })
+        )
+
+        if (status === 200) {
+          await waitFor(() =>
+            expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+          )
+          expect(screen.getByRole('textbox')).toBeInTheDocument()
+        } else {
+          expect(
+            await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+          ).toBeInTheDocument()
+          expect(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.backToPreviousChat')
+            })
+          ).toBeInTheDocument()
+        }
+      }
+    )
+
+    it('starts a new chat on a background tab after switching to it', async () => {
+      const { other } = await renderWithOtherTabChats()
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, null)
+
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      )
+      await waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBeNull()
+      )
+      expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    })
+
+    it('leaves the panel alone when the user moves on while that tab opens', async () => {
+      const { other } = await renderWithOtherTabChats()
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      const open = openWorkflow.getMockImplementation()
+      assert.exists(open)
+      openWorkflow.mockImplementationOnce(async (...args) => {
+        await opening
+        return open(...args)
+      })
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, null)
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      finishOpening()
+
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(
+        screen.getByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeInTheDocument()
+      expect(useAgentConversationStore().threadId).toBe('th-target-chat')
+    })
+
+    it('shows the picked chat as a failed Chat history row after the panel closes mid-open', async () => {
+      const { other, unmount } = await renderWithOtherTabChats()
+      respondToFetch(
+        /\/th-other-recent\/messages/,
+        () => new Promise<Response>(() => {})
+      )
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      await screen.findByText(i18n.global.t('agent.openingChat'))
+
+      unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.backToPreviousChat')
+        })
+      ).toBeInTheDocument()
+    })
+
+    it('clears the tab chats when the panel unmounts', async () => {
+      const { other } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      const { unmount } = renderWithSelectedTarget()
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toContain('Landscape chat')
+      )
+
+      unmount()
+
+      expect(useWorkflowTabActivityStore().agentChatsByPath.size).toBe(0)
+    })
+  })
+
   it('hides the active workflow in history and restores it on return', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')

@@ -1,5 +1,14 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
+
+interface AgentTabChat {
+  id: string
+  title: string
+  updatedAt: number
+}
+
+/** Opens a listed chat, or a new chat on the tab when `chatId` is null. */
+type AgentTabChatOpener = (tabPath: string, chatId: string | null) => void
 
 /**
  * Cross-feature workflow-tab activity, keyed by tab path. Feature extensions
@@ -12,6 +21,28 @@ export const useWorkflowTabActivityStore = defineStore(
     const editingTabPath = ref<string | null>(null)
     const creatingTab = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
+    const agentChatsByPath = shallowRef<
+      ReadonlyMap<string, readonly AgentTabChat[]>
+    >(new Map())
+    let agentChatOpener: AgentTabChatOpener | null = null
+
+    function setAgentChats(
+      chats: ReadonlyMap<string, readonly AgentTabChat[]>,
+      opener: AgentTabChatOpener
+    ): void {
+      agentChatsByPath.value = chats
+      agentChatOpener = opener
+    }
+
+    function clearAgentChats(): void {
+      agentChatsByPath.value = new Map()
+      agentChatOpener = null
+    }
+
+    function openAgentChat(tabPath: string, chatId: string | null): void {
+      agentChatOpener?.(tabPath, chatId)
+    }
+
     function setEditing(path: string | null): void {
       editingTabPath.value = path
     }
@@ -46,6 +77,10 @@ export const useWorkflowTabActivityStore = defineStore(
       editingTabPath,
       creatingTab,
       unseenModifiedPaths,
+      agentChatsByPath,
+      setAgentChats,
+      clearAgentChats,
+      openAgentChat,
       setEditing,
       setCreating,
       markModified,
