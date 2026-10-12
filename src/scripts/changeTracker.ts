@@ -356,13 +356,6 @@ export class ChangeTracker {
       return
     }
     if (!this._restoringState) {
-      // A transaction still open here can never close on this tracker: once
-      // the workflow is inactive, afterChange() skips the capture because the
-      // canvas shows another graph. Commit what the canvas holds now, while
-      // this workflow is still the active one, so the edits made inside the
-      // transaction (for example the layer editor's auto-saved widget values)
-      // are not left out of activeState. changeCount is left untouched so
-      // the late afterChange() still balances.
       if (this.changeCount > 0) this.commitCanvasState()
       else this.captureCanvasState()
     }
