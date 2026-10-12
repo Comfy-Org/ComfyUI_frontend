@@ -386,9 +386,7 @@ function formatSource<T>(
     status: 'collected'
   }
 }
-export async function collectCrdtDebugReport(
-  input: CrdtDebugReportInput
-): Promise<string> {
+function frontendSection(): string {
   const extensionNames = (() => {
     try {
       return useExtensionStore().extensions.map((extension) => extension.name)
@@ -396,6 +394,19 @@ export async function collectCrdtDebugReport(
       return [`<unavailable: ${String(error)}>`]
     }
   })()
+  return [
+    `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
+    `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
+    `- **Distribution:** ${DISTRIBUTION}`,
+    `- **Deploy environment:** ${useSystemStatsStore().systemStats?.system.deploy_environment ?? 'unknown'}`,
+    `- **User agent:** ${navigator.userAgent}`,
+    `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
+    `- **Extensions (${extensionNames.length}):** ${extensionNames.join(', ') || 'none'}`
+  ].join('\n')
+}
+export async function collectCrdtDebugReport(
+  input: CrdtDebugReportInput
+): Promise<string> {
   const sources = input.sources ?? DEFAULT_REPORT_SOURCES
   const agentTools = agentToolSection(input.agentMessages)
   const [stats, logs, settings] = await Promise.all([
@@ -476,18 +487,7 @@ export async function collectCrdtDebugReport(
   if (input.mergeTrace?.length) {
     sections.push('## Merge trace', mergeSection(input.mergeTrace))
   }
-  sections.push(
-    '## Frontend',
-    [
-      `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
-      `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
-      `- **Distribution:** ${DISTRIBUTION}`,
-      `- **Deploy environment:** ${useSystemStatsStore().systemStats?.system.deploy_environment ?? 'unknown'}`,
-      `- **User agent:** ${navigator.userAgent}`,
-      `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
-      `- **Extensions (${extensionNames.length}):** ${extensionNames.join(', ') || 'none'}`
-    ].join('\n')
-  )
+  sections.push('## Frontend', frontendSection())
   sections.push('## System', systemReport.section)
   sections.push(
     '## CRDT event log',
