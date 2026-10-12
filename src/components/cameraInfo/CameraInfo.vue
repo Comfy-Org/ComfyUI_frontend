@@ -1,109 +1,93 @@
 <template>
-  <div
-    class="relative size-full min-h-[300px]"
-    @pointerdown.stop
-    @mousedown.stop
+  <ViewportWidgetShell
+    ref="shell"
+    bottom-class="justify-end"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
   >
-    <div
-      ref="container"
-      class="relative size-full"
-      data-capture-wheel="true"
-      tabindex="-1"
-      @pointerdown.stop="focusContainer"
-      @contextmenu.stop.prevent
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
-    />
-    <div class="pointer-events-none absolute inset-x-0 top-0">
-      <div
-        ref="toolbar"
-        class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
-        @wheel.stop
+    <template #top>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="gizmosLabel"
+        tooltip-side="bottom"
+        type="button"
+        :disabled="lookingThrough"
+        :class="actionClass(!lookingThrough && gizmosOn)"
+        :aria-pressed="!lookingThrough && gizmosOn"
+        :aria-label="compact ? gizmosLabel : undefined"
+        @click="toggleGizmos"
       >
-        <button
-          v-tooltip.bottom="tip(gizmosLabel)"
-          type="button"
-          :disabled="lookingThrough"
+        <i
           :class="
             cn(
-              actionClass(!lookingThrough && gizmosOn),
-              lookingThrough && 'cursor-not-allowed opacity-40'
+              'size-4',
+              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
             )
           "
-          :aria-pressed="!lookingThrough && gizmosOn"
-          :aria-label="compact ? gizmosLabel : undefined"
-          @click="toggleGizmos"
-        >
-          <i
-            :class="
-              cn(
-                'size-4',
-                gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-              )
-            "
-          />
-          <span v-if="!compact">{{ gizmosLabel }}</span>
-        </button>
-        <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-        <button
-          v-for="option in transformGizmoOptions"
-          :key="option.value"
-          v-tooltip.bottom="tip($t(option.labelKey))"
-          type="button"
-          :disabled="lookingThrough || !option.enabled"
-          :aria-pressed="
+        />
+        <span v-if="!compact">{{ gizmosLabel }}</span>
+      </Button>
+      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <Button
+        v-for="option in transformGizmoOptions"
+        :key="option.value"
+        variant="textonly"
+        size="unset"
+        :tooltip="$t(option.labelKey)"
+        tooltip-side="bottom"
+        type="button"
+        :disabled="lookingThrough || !option.enabled"
+        :aria-pressed="
+          !lookingThrough && effectiveTransformGizmoMode === option.value
+        "
+        :aria-label="compact ? $t(option.labelKey) : undefined"
+        :class="
+          actionClass(
             !lookingThrough && effectiveTransformGizmoMode === option.value
-          "
-          :aria-label="compact ? $t(option.labelKey) : undefined"
-          :class="
-            cn(
-              actionClass(
-                !lookingThrough && effectiveTransformGizmoMode === option.value
-              ),
-              (lookingThrough || !option.enabled) &&
-                'cursor-not-allowed opacity-40'
-            )
-          "
-          @click="selectTransformGizmo(option.value)"
-        >
-          <i :class="cn('size-4', option.icon)" />
-          <span v-if="!compact">{{ $t(option.labelKey) }}</span>
-        </button>
-      </div>
-    </div>
-    <div class="pointer-events-none absolute inset-x-0 bottom-0">
-      <div
-        class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-interface-menu-surface px-2"
-        @wheel.stop
+          )
+        "
+        @click="selectTransformGizmo(option.value)"
       >
-        <button
-          v-tooltip.top="tip(lookThroughLabel)"
-          type="button"
-          :class="
-            cn(iconBtnClass, lookingThrough && 'bg-button-active-surface')
-          "
-          :aria-pressed="lookingThrough"
-          :aria-label="lookThroughLabel"
-          @click="toggleLookThrough"
-        >
-          <i class="icon-[lucide--video] size-4" />
-        </button>
-      </div>
-    </div>
-  </div>
+        <i :class="cn('size-4', option.icon)" />
+        <span v-if="!compact">{{ $t(option.labelKey) }}</span>
+      </Button>
+    </template>
+    <template #bottom>
+      <Button
+        variant="textonly"
+        size="icon"
+        :tooltip="lookThroughLabel"
+        type="button"
+        :class="cn(lookingThrough && 'bg-button-active-surface')"
+        :aria-pressed="lookingThrough"
+        :aria-label="lookThroughLabel"
+        @click="toggleLookThrough"
+      >
+        <i class="icon-[lucide--video] size-4" />
+      </Button>
+    </template>
+  </ViewportWidgetShell>
 </template>
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  actionClass,
-  iconBtnClass,
-  tip
-} from '@/components/load3d/menubar/menuBarStyles'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
 import { useCameraInfo } from '@/composables/useCameraInfo'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -111,7 +95,6 @@ import type { ComponentWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget
@@ -135,9 +118,10 @@ if (isComponentWidget(widget)) {
 
 const { t } = useI18n()
 
-const container = ref<HTMLElement | null>(null)
-const toolbar = ref<HTMLElement | null>(null)
-const { width: toolbarWidth } = useElementSize(toolbar)
+const shell = useTemplateRef<InstanceType<typeof ViewportWidgetShell>>('shell')
+const { width: toolbarWidth } = useElementSize(
+  computed(() => shell.value?.toolbar ?? null)
+)
 const compactWidthThreshold = 480
 const compact = computed(
   () => toolbarWidth.value > 0 && toolbarWidth.value < compactWidthThreshold
@@ -199,10 +183,6 @@ const effectiveTransformGizmoMode = computed<TransformGizmoMode>(() =>
     : 'none'
 )
 
-function focusContainer() {
-  container.value?.focus()
-}
-
 function toggleGizmos() {
   gizmosOn.value = !gizmosOn.value
 }
@@ -220,7 +200,8 @@ watch(effectiveTransformGizmoMode, (m) => setTransformGizmoMode(m))
 watch(lookingThrough, (on) => setLookThrough(on))
 
 onMounted(() => {
-  if (container.value) initialize(container.value)
+  const container = shell.value?.container
+  if (container) initialize(container)
 })
 
 onUnmounted(() => {

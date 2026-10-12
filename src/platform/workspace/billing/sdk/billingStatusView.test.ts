@@ -90,6 +90,34 @@ describe('projectBillingStatus', () => {
     }
   )
 
+  it('reads the renewal invoice amount back as a number', () => {
+    const invoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test',
+      amount_due: 5000n,
+      currency: 'usd'
+    }
+
+    expect(
+      projectBillingStatus({ ...DECODED, renewal_invoice: invoice })
+        ?.renewal_invoice
+    ).toStrictEqual({ ...invoice, amount_due: 5000 })
+  })
+
+  it('drops only a renewal invoice whose amount a number cannot hold exactly', () => {
+    const invoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test',
+      amount_due: TOO_LARGE,
+      currency: 'usd'
+    }
+
+    const projected = projectBillingStatus({
+      ...DECODED,
+      renewal_invoice: invoice
+    })
+    expect(projected).toBeDefined()
+    expect(projected?.renewal_invoice).toBeUndefined()
+  })
+
   it('carries a status with no credit stop and no scheduled change through untouched', () => {
     const plain: BillingStatusData = {
       ...DECODED,

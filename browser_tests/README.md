@@ -58,7 +58,7 @@ pnpm container:start
 ```
 
 The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
-Leave it running. Use another terminal for `pnpm dev` and a third for
+Leave it running. Use another terminal for `pnpm dev:test` and a third for
 `pnpm test:browser:local`.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
@@ -98,6 +98,10 @@ pnpm exec playwright install chromium webkit --with-deps
 
 ### Environment
 
+Start the dev server with `pnpm dev:test`. It removes the Vue dev overlay that
+blocks UI elements (`DISABLE_VUE_PLUGINS`) and loads the default workflow CI
+builds with (`VITE_USE_LEGACY_DEFAULT_GRAPH`).
+
 Create `.env` from the template and set the debugging keys:
 
 ```bash
@@ -105,9 +109,6 @@ cp .env_example .env
 ```
 
 ```bash
-# Remove Vue dev overlay that blocks UI elements
-DISABLE_VUE_PLUGINS=true
-
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173      # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188     # Direct backend
@@ -162,7 +163,7 @@ in a Docker container with networking disabled:
 ```bash
 pnpm install --frozen-lockfile
 VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
-docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.27
 scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
 ```
 
@@ -472,6 +473,13 @@ properties in methods rather than rebuilding locators.
 - When multiple nodes share a title, disambiguate:
   `vueNodes.getNodeByTitle(name).nth(n)` — strict mode fails on ambiguous
   locators.
+- Never locate a toast by its copy with `getByText` or
+  `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
+  toast's text in live regions with those roles. Use
+  `comfyPage.toast.withText(text)` and its kind locators such as
+  `toastErrors`. Tests without `comfyPage` (`cloudAppFixture`, `agentTest`,
+  or a `page`-only test) destructure the `toast` fixture instead. Specs may
+  not construct a `ToastHelper`; lint allows only type imports.
 
 ### Node references over coordinates
 
@@ -568,6 +576,7 @@ where its tags place it:
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
+| `@desktop`    | Runs against the desktop build                         |
 | `@oss`        | Excluded from the cloud project                        |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
@@ -576,6 +585,10 @@ WebKit engine does not expose embedded-WKWebView globals such as
 `window.webkit.messageHandlers`; inject them via `page.addInitScript()` and set the
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
+
+The `@desktop` tag only selects the desktop project. Tests that need Electron
+APIs must import `desktopFixture` from `@e2e/fixtures/desktopFixture` to install
+the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
@@ -740,6 +753,23 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
 ```
 
 Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+The dev server above is fine for the replay cases, but it cannot run the two
+agent cases that assert the panel stays **hidden** while the product flag is off
+(`agentPanel.spec.ts` "does not expose the Ask Comfy Agent button" and
+`agentPanelLifecycle.spec.ts` "preserves the stored preference while the flag is
+off"). `setupFlagGate()` in `src/extensions/core/agentPanel.ts` force-enables the
+panel whenever `import.meta.env.MODE === 'development'`, so against `pnpm dev`
+both cases see the button and fail no matter what the flag mock says. CI does not
+hit this because it serves a built `frontend-dist-cloud` artifact. To run them
+locally, serve a production build instead:
+
+```bash
+DISTRIBUTION=cloud pnpm build:cloud
+# serve dist/ (e.g. ComfyUI --front-end-root <repo>/dist) and point the run at it
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
+```
 
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
@@ -991,6 +1021,14 @@ pnpm test:browser:local --update-snapshots
 3. CI generates and commits the Linux baselines.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
+
+### Canvas baselines: pin the viewport instead of re-baselining
+
+If a canvas screenshot diff is only a viewport translation (same image size,
+the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
+test before the shot rather than regenerating. Regenerate only when the
+product changed, and open the diff to confirm the change is the one you made
+rather than a viewport shift.
 
 ## Debugging in CI
 

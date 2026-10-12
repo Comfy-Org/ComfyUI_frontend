@@ -7,8 +7,9 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useApp } from '@/scripts/appInstance'
+import type { DOMWidgetOptions } from '@/scripts/domWidget'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -23,9 +24,13 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  const widget = node.addDOMWidget(name, 'customtext', inputEl, {
+  // Declared separately (rather than reading `widget.options` from the
+  // outer closure below) because `addDOMWidget` can invoke `setValue`
+  // synchronously, while restoring a saved value, before the `widget`
+  // binding it returns is initialized.
+  const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const widgetState = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
       )
@@ -36,7 +41,7 @@ function addMultilineWidget(
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const id = widgetId(graphId, node.id, name)
       const widgetState = widgetStore.getWidget(id)
       if (widgetState) {
@@ -46,10 +51,12 @@ function addMultilineWidget(
       widgetStore.registerWidget(id, {
         type: 'customtext',
         value: v,
-        options: widget.options
+        options: widgetOptions
       })
     }
-  })
+  }
+
+  const widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
 
   widget.element = inputEl
 

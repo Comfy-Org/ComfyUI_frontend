@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 
 test.use({ connectWebSocketToServer: false })
@@ -9,9 +10,14 @@ test(
   'preserves inline workflow references through Send, history and Edit',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, promptHistory }) => {
+    await new AgentPanel(page).open()
     await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .getByRole('button', {
+        name: enMessages.sideToolbar.newBlankWorkflow,
+        exact: true
+      })
       .click()
+    await expect(page.getByTestId('workflow-tab')).toHaveCount(2)
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -21,7 +27,11 @@ test(
     const panel = page.locator('#agent-panel-root')
     const editor = panel.getByRole('textbox')
     const chips = editor.getByTestId('workflow-reference-chip')
-    await expect(page.getByTestId('workflow-tab')).toHaveCount(2)
+    const targetPicker = panel.getByRole('button', {
+      name: enMessages.agent.switchWorkflow
+    })
+    await expect(page.getByTestId('workflow-tab')).toHaveCount(3)
+    await expect(targetPicker).toHaveText('Unsaved Workflow (3)')
     await editor.fill('Before @ after')
     await expect(editor).toHaveText('Before @ after')
     await editor.press('ArrowLeft')
@@ -62,6 +72,7 @@ test(
     const text =
       'Before Unsaved Workflow between Unsaved Workflow (2) while saving after'
     await expect(editor).toHaveText(text)
+    await expect(targetPicker).toHaveText('Unsaved Workflow (3)')
     await editor.press('ArrowLeft')
     await editor.press('Backspace')
     await expect(chips).toHaveCount(1)
@@ -77,15 +88,7 @@ test(
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
-    await page
-      .getByRole('button', {
-        name: enMessages.sideToolbar.newBlankWorkflow,
-        exact: true
-      })
-      .click()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
+    await targetPicker.click()
     await page
       .getByRole('menuitemradio', { name: /Unsaved Workflow \(3\)/ })
       .click()
@@ -137,6 +140,7 @@ test(
     await panel
       .getByRole('button', { name: enMessages.agent.stop, exact: true })
       .click()
+    await panel.getByTestId('user-message-bubble').hover()
     await panel
       .getByRole('button', { name: enMessages.g.edit, exact: true })
       .click()

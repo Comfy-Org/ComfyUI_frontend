@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import { useErrorGroups } from './useErrorGroups'
 vi.mock(import('@/services/comfyRegistryService'), () => ({
@@ -16,14 +16,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),

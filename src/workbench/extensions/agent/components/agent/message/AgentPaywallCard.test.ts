@@ -7,7 +7,9 @@ import { i18n } from '@/i18n'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 
 describe('AgentPaywallCard visual contract', () => {
-  it('makes Add credits primary for a subscribed owner', async () => {
+  // Visual hierarchy is the Storybook surface's contract; this asserts the copy,
+  // the offered actions, and what each emits.
+  it('offers Upgrade plan and Add credits to a subscribed owner and emits each action', async () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentPaywallCard, {

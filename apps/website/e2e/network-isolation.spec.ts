@@ -36,6 +36,10 @@ test('network isolation rejects unexpected traffic and route bypasses', async ({
         await page.goto('https://unexpected.invalid/navigation').catch(() => {})
       })
 
+      test('unapproved github attachment', async ({ page }) => {
+        await page.goto('https://github.com/user-attachments/assets/deadbeef').catch(() => {})
+      })
+
       test('popup', async ({ page, context }) => {
         const blocked = context.waitForEvent('requestfailed')
         await page.evaluate(() => window.open('https://unexpected.invalid/popup'))
@@ -72,11 +76,14 @@ test('network isolation rejects unexpected traffic and route bypasses', async ({
     )
     expect(result.error).toBeUndefined()
     expect(result.status, result.stdout + result.stderr).toBe(1)
-    expect(result.stdout).toContain('3 failed')
+    expect(result.stdout).toContain('4 failed')
     expect(result.stdout).toContain('1 passed')
     expect(
       result.stdout.match(/Error: Unexpected external requests/g)
-    ).toHaveLength(3)
+    ).toHaveLength(4)
+    expect(result.stdout).toContain(
+      'github.com/user-attachments/assets/deadbeef'
+    )
     for (const path of ['navigation', 'popup', 'socket']) {
       expect(result.stdout).toContain(`unexpected.invalid/${path}`)
     }

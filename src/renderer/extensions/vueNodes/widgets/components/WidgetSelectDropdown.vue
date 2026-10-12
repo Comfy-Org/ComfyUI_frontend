@@ -181,7 +181,7 @@ async function updateFiles(files: File[]) {
       v-bind="combinedProps"
       :loading-more="toValue(outputAssets.isLoading)"
       :on-load-more="() => outputAssets.loadMore()"
-      :can-load-more="outputAssets.hasMore"
+      :can-load-more="toValue(outputAssets.hasMore)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useFreeTierQuota } from './useFreeTierQuota'
 
 vi.mock(import('@vueuse/core'), () => ({
@@ -19,20 +20,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { isGraphReady: true, rootGraph: {} }
-}))
+vi.mock(import('@/scripts/app'))
 vi.mock<unknown>(import('@/systems/badgeSystem'), () => ({
   graphCreditsBadges: () => mockCreditBadges.value
 }))
 
-const mockRemoteConfig = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return ref({ free_tier_balance: { allowance: 5, remaining: 5 } })
-})
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: mockRemoteConfig
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 describe('useFreeTierQuota', () => {
   let scope: EffectScope
@@ -48,8 +41,8 @@ describe('useFreeTierQuota', () => {
     scope = effectScope()
     mockIsCloud.value = true
     mockCreditBadges.value = []
-    mockRemoteConfig.value = {
-      free_tier_balance: { allowance: 5, remaining: 5 }
+    remoteConfig.value = {
+      free_tier_balance: { allowance: 5, used: 0, remaining: 5 }
     }
   })
 
@@ -85,8 +78,8 @@ describe('useFreeTierQuota', () => {
   it('updates the quota when remote config changes', async () => {
     const quota = createQuota()
 
-    mockRemoteConfig.value = {
-      free_tier_balance: { allowance: 10, remaining: 3 }
+    remoteConfig.value = {
+      free_tier_balance: { allowance: 10, used: 7, remaining: 3 }
     }
     await nextTick()
 

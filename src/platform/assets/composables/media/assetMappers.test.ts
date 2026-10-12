@@ -1,18 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
 
 import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
 
 vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()

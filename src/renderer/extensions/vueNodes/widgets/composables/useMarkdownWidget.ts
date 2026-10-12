@@ -13,8 +13,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -52,7 +52,7 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const storedValue = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
       )?.value
@@ -61,7 +61,7 @@ function addMarkdownWidget(
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const widgetState = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
       )

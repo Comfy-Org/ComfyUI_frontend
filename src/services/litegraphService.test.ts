@@ -1,10 +1,7 @@
 import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: undefined, isGraphReady: false },
-  ComfyApp: class {}
-}))
+vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -19,24 +16,30 @@ const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
-    Reflect.set(app, 'isGraphReady', false)
-    Reflect.set(app, 'canvas', undefined)
+    app.canvas.ds.visible_area.set([10, 20, 200, 100])
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
 
     expect(center).toEqual([0, 0])
   })
 
-  it('returns the visible-area centre once the canvas is ready', () => {
-    Reflect.set(app, 'isGraphReady', true)
-    Reflect.set(app, 'canvas', {
-      ds: { visible_area: [10, 20, 200, 100] }
-    })
+  it.for<{
+    dpr: number
+    visibleArea: [number, number, number, number]
+    center: [number, number]
+  }>([
+    { dpr: 1, visibleArea: [10, 20, 200, 100], center: [110, 70] },
+    { dpr: 2, visibleArea: [0, 0, 800, 600], center: [400, 300] }
+  ])(
+    'returns the CSS-pixel visible-area centre at DPR $dpr',
+    ({ dpr, visibleArea, center }) => {
+      app.canvas.dpr = dpr
+      app.canvas.ds.visible_area.set(visibleArea)
 
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([110, 70])
-  })
+      expect(useLitegraphService().getCanvasCenter()).toEqual(center)
+    }
+  )
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {

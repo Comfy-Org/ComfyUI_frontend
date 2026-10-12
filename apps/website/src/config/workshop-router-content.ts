@@ -1,9 +1,11 @@
-import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 import type {
   GeneratedExample,
-  WorkshopModel,
-  WorkshopModelDetail
+  RouterWorkshopModel,
+  RouterWorkshopModelDetail,
+  UseCase
 } from './models-catalogue'
+import { useCasesFor } from './models-catalogue'
 import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
@@ -18,8 +20,37 @@ import {
   workshopModels
 } from './workshop-browse-content'
 
+const PROMPT_TEXT_KEYS = ['prompt', 'text', 'high_level_description']
+
+export function promptText(prompt: unknown): string | undefined {
+  if (typeof prompt !== 'string' || !prompt.trim()) return
+  if (!prompt.trim().startsWith('{')) return prompt
+  let structured: unknown
+  try {
+    structured = JSON.parse(prompt)
+  } catch {
+    return
+  }
+  if (typeof structured !== 'object' || structured === null) return
+  const fields = new Map<string, unknown>(Object.entries(structured))
+  const text = PROMPT_TEXT_KEYS.map((key) => fields.get(key)).find(
+    (value) => typeof value === 'string' && value.trim()
+  )
+  return typeof text === 'string' ? text : undefined
+}
+
+function promptOf(
+  sample: { readonly prompt?: string },
+  example: { readonly values: Readonly<Record<string, unknown>> } | undefined
+): { prompt?: string } {
+  const prompt = promptText(
+    sample.prompt?.trim() ? sample.prompt : example?.values.prompt
+  )
+  return prompt ? { prompt } : {}
+}
+
 function examplesFor(
-  model: WorkshopModelDetail,
+  model: RouterWorkshopModelDetail,
   display: WorkshopDisplayEntry
 ): GeneratedExample[] {
   const samples = display.media.samples ?? []
@@ -47,7 +78,8 @@ function examplesFor(
       thumbnailUrl: sample.url,
       mediaKind: sample.kind,
       sampleOnly: Object.keys(values).length === 0,
-      values
+      values,
+      ...promptOf(sample, example)
     }
   })
 }
@@ -68,7 +100,7 @@ type RouterContentSource = NonNullable<
 >
 
 function defaultsFor(
-  detail: WorkshopModelDetail,
+  detail: RouterWorkshopModelDetail,
   source: RouterContentSource,
   execution: WorkshopContract | undefined
 ) {
@@ -86,9 +118,9 @@ function defaultsFor(
 }
 
 function detailFor(
-  model: WorkshopModel,
+  model: RouterWorkshopModel,
   contentBySlug: ReadonlyMap<string, RouterContentSource>
-): WorkshopModelDetail {
+): RouterWorkshopModelDetail {
   const source = contentBySlug.get(model.slug)
   if (!source) throw new Error(`Missing content record: ${model.slug}`)
   const execution = model.incompleteReason
@@ -96,7 +128,7 @@ function detailFor(
     : executionFor(source.record.catalogId, source.overlay.id)
   if (execution && execution.sourceCommit !== source.binding.sourceCommit)
     throw new Error(`Stale Router identity audit: ${model.routerId}`)
-  const detail: WorkshopModelDetail = {
+  const detail: RouterWorkshopModelDetail = {
     ...model,
     ...(execution ? { execution, form: formForContract(execution) } : {}),
     fields: [],
@@ -129,7 +161,7 @@ const authoredDetailBySlug = new Map(
 
 export function getAuthoredRouterWorkshopModelDetail(
   slug: string
-): WorkshopModelDetail | undefined {
+): RouterWorkshopModelDetail | undefined {
   return authoredDetailBySlug.get(
     authoredRouterModelSlugAliases.get(slug) ?? slug
   )
@@ -137,6 +169,25 @@ export function getAuthoredRouterWorkshopModelDetail(
 
 export function getRouterWorkshopModelDetail(
   slug: string
-): WorkshopModelDetail | undefined {
+): RouterWorkshopModelDetail | undefined {
   return detailBySlug.get(routerModelSlugAliases.get(slug) ?? slug)
+}
+
+/**
+ * Resolves a Router API `{provider}/{model}` id (or the legacy catalog id
+ * some content is filed under, when the two differ) plus its use case to
+ * that model's canonical `/hub/models/[slug]` href, one hop, without going
+ * through the redirect a bare `{provider}/{model}` id needs when the same
+ * id maps to more than one use case's page.
+ */
+export function getRouterModelHref(
+  modelId: string,
+  useCase: UseCase
+): string | undefined {
+  return workshopModels.find(
+    (model) =>
+      useCasesFor(model).includes(useCase) &&
+      (model.routerId === modelId ||
+        routerContentBySlug.get(model.slug)?.entry.id === modelId)
+  )?.href
 }

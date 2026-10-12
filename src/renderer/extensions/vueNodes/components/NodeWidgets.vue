@@ -4,9 +4,7 @@
   </div>
   <WidgetGrid
     v-else
-    :processed-widgets
-    :node-type
-    :can-select-inputs
+    v-bind="widgetModel"
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents
@@ -21,8 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import { onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -35,9 +34,15 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
+  processedWidgetModel?: {
+    processedWidgets: ProcessedWidget[]
+    nodeType: string
+    canSelectInputs: boolean
+  }
 }
 
-const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
+const { nodeData, widgetIds, processedWidgetModel } =
+  defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -66,8 +71,16 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
+const fallbackWidgetModel = useProcessedWidgets(
   () => nodeData,
   () => widgetIds
+)
+const widgetModel = computed(
+  () =>
+    processedWidgetModel ?? {
+      processedWidgets: fallbackWidgetModel.processedWidgets.value,
+      nodeType: fallbackWidgetModel.nodeType.value,
+      canSelectInputs: fallbackWidgetModel.canSelectInputs.value
+    }
 )
 </script>

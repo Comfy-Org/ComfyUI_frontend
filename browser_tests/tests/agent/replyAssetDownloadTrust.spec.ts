@@ -14,9 +14,6 @@ test.describe(
     tag: ['@cloud', '@ui']
   },
   () => {
-    // Keyed by asset rather than collected in arrival order: the three fetches
-    // race, so an index-based record silently changes which request each
-    // assertion is checking.
     let cookieByAsset: Map<string, string | null>
     let downloads: string[]
 
@@ -94,8 +91,6 @@ test.describe(
       await expect(downloadButton).toBeVisible()
       await downloadButton.click()
 
-      // All three assets download; the order they settle in is a race between
-      // three concurrent fetches and is not part of the contract.
       await expect
         .poll(() => [...downloads].sort())
         .toEqual(['hostile.png', 'trusted.png', 'untrusted.png'])
@@ -105,7 +100,6 @@ test.describe(
         'trusted.png',
         'untrusted.png'
       ])
-      // The session travels to the trusted view route and nowhere else.
       expect(cookieByAsset.get('trusted.png')).toContain('session=test-session')
       expect(cookieByAsset.get('untrusted.png')).toBeNull()
       expect(cookieByAsset.get('hostile.png')).toBeNull()

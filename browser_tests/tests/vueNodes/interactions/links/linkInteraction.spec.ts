@@ -7,6 +7,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -124,7 +125,7 @@ test.describe(
       // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)
@@ -132,6 +133,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
+        await expect(new Tooltip(comfyPage.page).open).toBeHidden()
         await expect(comfyPage.canvas).toHaveScreenshot(
           'vue-node-dragging-link.png'
         )
@@ -166,6 +168,26 @@ test.describe(
           targetId: vaeNode.id,
           targetSlot: 0
         })
+    })
+
+    test('undo right after dropping a link on a slot removes that link', async ({
+      comfyPage
+    }) => {
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await connectSlots(
+        comfyPage.page,
+        { nodeId: samplerNode.id, index: 0 },
+        { nodeId: vaeNode.id, index: 0 },
+        () => comfyPage.nextFrame()
+      )
+      await vaeInput.expectLinkCount(1)
+
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
     })
 
     test('should not create a link when slot types are incompatible', async ({
@@ -525,7 +547,7 @@ test.describe(
       )
       const dragTarget = {
         x: outputCenter.x + 150,
-        y: outputCenter.y - 140
+        y: outputCenter.y - 100
       }
 
       let dropPending = false

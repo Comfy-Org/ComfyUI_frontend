@@ -2,7 +2,7 @@
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
-        v-tooltip.top="{ value: t('g.arrange'), showDelay: 1000 }"
+        :tooltip="t('g.arrange')"
         variant="muted-textonly"
         :aria-label="t('g.arrange')"
       >
@@ -17,7 +17,7 @@
         side="bottom"
         :side-offset="5"
         :collision-padding="10"
-        class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
+        class="z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div
           v-if="activeLayout"
@@ -35,10 +35,7 @@
         </div>
         <div v-else class="flex flex-row gap-1">
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeVertically'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeVertically')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeVertically')"
             @click="start('vertical')"
@@ -46,10 +43,7 @@
             <i class="icon-[lucide--stretch-horizontal]" />
           </Button>
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeHorizontally'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeHorizontally')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeHorizontally')"
             @click="start('horizontal')"
@@ -57,7 +51,7 @@
             <i class="icon-[lucide--stretch-vertical]" />
           </Button>
           <Button
-            v-tooltip.top="{ value: t('g.arrangeAsGrid'), showDelay: 1000 }"
+            :tooltip="t('g.arrangeAsGrid')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeAsGrid')"
             @click="start('grid')"

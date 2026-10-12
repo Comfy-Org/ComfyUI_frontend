@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 type Bounds = [number, number, number, number]
 
 let pendingFrame: FrameRequestCallback | undefined
 
 function createDragAndScale() {
-  return new DragAndScale({ width: 1600, height: 900 } as HTMLCanvasElement)
+  return new DragAndScale(createTestCanvasElement({ width: 1600, height: 900 }))
 }
 
 function settle() {

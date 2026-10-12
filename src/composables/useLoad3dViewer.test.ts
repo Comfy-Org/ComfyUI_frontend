@@ -7,9 +7,10 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: vi.fn()
@@ -29,15 +30,9 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn((url: string) => `/${url}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
@@ -73,8 +68,11 @@ describe('useLoad3dViewer', () => {
   let mockLoad3d: Partial<Load3d>
   let mockSourceLoad3d: Partial<Load3d>
   let mockLoad3dService: ReturnType<typeof useLoad3dService>
-  let mockToastStore: ReturnType<typeof useToastStore>
   let mockNode: LGraphNode
+
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((url) => `/${url}`)
+  })
 
   beforeEach(() => {
     mockNode = createMockLGraphNode({
@@ -189,8 +187,6 @@ describe('useLoad3dViewer', () => {
       typeof useLoad3dService
     >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
-
-    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {
@@ -251,7 +247,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToInitializeLoad3dViewer'
       )
     })
@@ -273,7 +269,7 @@ describe('useLoad3dViewer', () => {
       viewer.backgroundColor.value = '#ff0000'
       await nextTick()
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToUpdateBackgroundColor'
       )
     })
@@ -303,7 +299,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.exportModel('glb')
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel'
       )
     })
@@ -604,7 +600,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToUploadBackgroundImage'
       )
     })
@@ -689,9 +685,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.no3dScene'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('toastMessages.no3dScene')
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
 
@@ -706,7 +700,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.fileUploadFailed'
       )
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
@@ -773,12 +767,8 @@ describe('useLoad3dViewer', () => {
 
   describe('standalone thumbnail persistence', () => {
     beforeEach(() => {
-      isAssetPreviewSupported.mockReset().mockReturnValue(false)
-      persistThumbnail.mockReset()
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-      )
+      isAssetPreviewSupported.mockReturnValue(false)
+      vi.mocked(fetch).mockImplementation(async () => new Response(new Blob()))
     })
 
     it('captures and persists a thumbnail after a standalone model loads', async () => {
@@ -851,6 +841,24 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeStandaloneViewer(containerRef, model2)
       expect(viewer.backgroundColor.value).toBe('#282828')
+    })
+
+    it('warns when loading another model into the standalone viewer fails', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      await viewer.initializeStandaloneViewer(containerRef, 'model1.glb')
+      vi.mocked(mockLoad3d.loadModel!).mockRejectedValueOnce(
+        new Error('parse failed')
+      )
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model2.glb')
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'toastMessages.failedToLoadModel'
+        })
+      ])
     })
 
     it('should save configuration during cleanup in standalone mode', async () => {

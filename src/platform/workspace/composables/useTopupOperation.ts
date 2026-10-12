@@ -1,7 +1,10 @@
 import { computed } from 'vue'
 
+import type { BillingClient } from '@comfyorg/account-core/billing'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -19,6 +22,7 @@ export function useTopupOperation() {
     : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
+  const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
 
   const isAddingCredits = computed(() =>
     sdkStore ? sdkStore.isAddingCredits : operationStore.isAddingCredits
@@ -44,11 +48,33 @@ export function useTopupOperation() {
     else operationStore.dismissOperation(operationId)
   }
 
+  /**
+   * Adopt a top-up the purchase left pending, so the caller is told when it
+   * settles. On the SDK rail the lifecycle adopted it when the command was
+   * issued, so there is nothing to register and a second registration would be
+   * a second poller on one operation.
+   */
+  async function adoptPendingOperation(
+    operationId: string,
+    metadata: {
+      attemptStartedAt: number
+      paymentIntentSource?: PaymentIntentSource
+    }
+  ): Promise<void> {
+    if (sdkStore) return
+    await operationStore.startOperation(operationId, 'topup', {
+      ...metadata,
+      autoHandleRequiresAction: true
+    })
+  }
+
   return {
+    billingClient,
     isAddingCredits,
     topupOperation,
     topup,
     retryPaymentAuthentication,
-    dismissOperation
+    dismissOperation,
+    adoptPendingOperation
   }
 }
