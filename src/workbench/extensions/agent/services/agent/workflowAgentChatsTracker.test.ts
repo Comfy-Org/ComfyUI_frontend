@@ -184,13 +184,20 @@ describe('registerWorkflowAgentChatsTracker', () => {
     )
   })
 
-  it('leaves out the chat the panel is in', async () => {
+  it('keeps the chat the panel is in, marked as current', async () => {
     const { portrait } = await trackLoaded()
 
     useAgentConversationStore().setThreadId('portrait-newer')
     await nextTick()
 
-    expect(chatTitles(portrait.path)).toEqual(['portrait-older'])
+    expect(
+      useWorkflowTabActivityStore()
+        .agentChatsByPath.get(portrait.path)
+        ?.map(({ title, current }) => ({ title, current }))
+    ).toEqual([
+      { title: 'portrait-newer', current: true },
+      { title: 'portrait-older', current: false }
+    ])
   })
 
   it('clears every count once the agent is no longer available', async () => {

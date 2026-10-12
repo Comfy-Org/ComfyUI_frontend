@@ -7888,9 +7888,14 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
       expect(workflowStore.activeWorkflow?.path).toBe(other.path)
-      await waitFor(() =>
-        expect(tabChatTitles(other.path)).toEqual(['Older landscape chat'])
-      )
+      expect(
+        useWorkflowTabActivityStore()
+          .agentChatsByPath.get(other.path)
+          ?.map(({ title, current }) => ({ title, current }))
+      ).toEqual([
+        { title: 'Landscape chat', current: true },
+        { title: 'Older landscape chat', current: false }
+      ])
       await vi.waitFor(() =>
         expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore + 1)
       )
@@ -8011,6 +8016,65 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('heading', { name: i18n.global.t('agent.history') })
       ).toBeInTheDocument()
       expect(useAgentConversationStore().threadId).toBe('th-target-chat')
+    })
+
+    it('keeps the open panel on its current chat when it is picked, returning from Chat history without loading it again', async () => {
+      const { target } = await renderWithOtherTabChats()
+      const messageReads = fetchRequests(/\/th-target-chat\/messages/).length
+      const historyHeading = () =>
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+
+      useWorkflowTabActivityStore().openAgentChat(target.path, 'th-target-chat')
+      await nextTick()
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      expect(historyHeading()).toBeInTheDocument()
+      useWorkflowTabActivityStore().openAgentChat(target.path, 'th-target-chat')
+
+      await waitFor(() => expect(historyHeading()).toBeNull())
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.queryByText(i18n.global.t('agent.openingChat'))).toBeNull()
+      expect(useAgentConversationStore().threadId).toBe('th-target-chat')
+      expect(fetchRequests(/\/th-target-chat\/messages/)).toHaveLength(
+        messageReads
+      )
+    })
+
+    it('reopens the closed panel on its current chat without opening the chat again', async () => {
+      const { other, unmount } = await renderWithOtherTabChats()
+      respondToFetch(/\/th-other-recent\/messages/, landscapeMessages)
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      await waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+      )
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      unmount()
+      useAgentPanelStore().close('topbar_button')
+      respondToFetch(
+        /\/th-other-recent\/messages/,
+        () => new Promise<Response>(() => {})
+      )
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      expect(useAgentPanelStore().isOpen).toBe(true)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent('Earlier landscape request')
+      expect(screen.queryByText(i18n.global.t('agent.openingChat'))).toBeNull()
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
     })
 
     it('shows the picked chat as a failed Chat history row after the panel closes mid-open', async () => {

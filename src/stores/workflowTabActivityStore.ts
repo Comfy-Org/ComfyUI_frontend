@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-interface AgentTabChat {
+export interface AgentTabChat {
   id: string
   title: string
   updatedAt: number
+  /** The chat the agent panel is in. */
+  current?: boolean
 }
 
 /** Opens a listed chat, or a new chat on the workflow when `chatId` is null. */

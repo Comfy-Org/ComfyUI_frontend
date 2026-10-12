@@ -128,7 +128,11 @@ function lastActive(updatedAt: number): string {
 const items = computed<MenuItem[]>(() => [
   ...chats.value.map((chat) => ({
     label: chat.title,
-    description: lastActive(chat.updatedAt),
+    description: chat.current
+      ? t('agent.currentWorkflowChat', {
+          lastActive: lastActive(chat.updatedAt)
+        })
+      : lastActive(chat.updatedAt),
     icon: 'icon-[lucide--message-square]',
     class: 'cursor-pointer',
     command: () => tabActivity.openAgentChat(workflowPath, chat.id)

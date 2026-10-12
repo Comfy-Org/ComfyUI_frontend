@@ -5634,6 +5634,7 @@
     "workflowChatsMenuLabel": "Chats on {workflowName}",
     "workflowChatsCount": "{count} chat on {workflowName} | {count} chats on {workflowName}",
     "newChatOnWorkflow": "New chat on this workflow",
+    "currentWorkflowChat": "Current · {lastActive}",
     "openingChat": "Opening chat…",
     "newChat": "New chat",
     "newChatTitle": "Untitled",

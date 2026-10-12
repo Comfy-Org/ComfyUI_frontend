@@ -123,6 +123,65 @@ describe('WorkflowAgentChatsMenu', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
+  it('marks the panel’s current chat in its place and closes when it is picked', async () => {
+    const open = vi.fn()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          'workflows/portrait.json',
+          [
+            {
+              id: 'th-newer',
+              title: 'Newer chat',
+              updatedAt: Date.now(),
+              current: false
+            },
+            {
+              id: 'th-current',
+              title: 'Open chat',
+              updatedAt: Date.now() - 3_600_000,
+              current: true
+            }
+          ]
+        ]
+      ]),
+      open
+    )
+    render(WorkflowAgentChatsMenu, {
+      props: {
+        workflowPath: 'workflows/portrait.json',
+        workflowName: 'portrait'
+      },
+      global: { plugins: [i18n] }
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    await user.click(
+      screen.getByRole('button', { name: '2 chats on portrait' })
+    )
+
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent)
+    ).toEqual([
+      'Newer chatnow',
+      'Open chatCurrent · 1h ago',
+      'New chat on this workflow'
+    ])
+    const current = screen.getByRole('menuitem', { name: 'Open chat' })
+    expect(current).toHaveAccessibleDescription('Current · 1h ago')
+    expect(
+      screen.getByRole('menuitem', { name: 'Newer chat' })
+    ).toHaveAccessibleDescription('now')
+
+    await user.click(current)
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      'workflows/portrait.json',
+      'th-current'
+    )
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   it('keeps only one menu open at a time', async () => {
     const user = renderMenus(['portrait', 'archive'])
     chatsButton('portrait').focus()

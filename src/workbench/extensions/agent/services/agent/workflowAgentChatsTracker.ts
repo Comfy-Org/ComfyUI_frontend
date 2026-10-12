@@ -4,9 +4,9 @@ import type { Ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AgentTabChat } from '@/stores/workflowTabActivityStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import type { ChatSession } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
@@ -106,14 +106,21 @@ export function registerWorkflowAgentChatsTracker(
     })
 
     const chatsByPath = computed(() => {
-      const chats = new Map<string, ChatSession[]>()
+      const chats = new Map<string, AgentTabChat[]>()
       if (!available.value) return chats
       const currentChatId = conversation.threadId
       for (const [path, workflowId] of resolver.cloudIdsByPath.value) {
-        const listed = (
-          history.sessionsByWorkflow.get(workflowId) ?? []
-        ).filter(({ id }) => id !== currentChatId)
-        if (listed.length) chats.set(path, listed)
+        const listed = history.sessionsByWorkflow.get(workflowId)
+        if (listed)
+          chats.set(
+            path,
+            listed.map(({ id, title, updatedAt }) => ({
+              id,
+              title,
+              updatedAt,
+              current: id === currentChatId
+            }))
+          )
       }
       return chats
     })

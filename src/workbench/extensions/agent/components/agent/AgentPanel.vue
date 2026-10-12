@@ -232,7 +232,18 @@ async function onSelectHistory(id: string): Promise<void> {
   )
 }
 
+const returnsToCurrentChat = computed(
+  () =>
+    view.value.screen === 'history' &&
+    sessionId === view.value.previousThreadId &&
+    (view.value.selection.status === 'idle' || currentChatReady)
+)
+
 async function openChat(id: string): Promise<void> {
+  if (id === sessionId) {
+    if (returnsToCurrentChat.value) view.value = { screen: 'chat' }
+    return
+  }
   await runSelection(
     id,
     { screen: 'opening', id, previousThreadId: sessionId },
@@ -246,11 +257,7 @@ async function openChat(id: string): Promise<void> {
 
 function onBackFromHistory(): void {
   if (view.value.screen !== 'history') return
-  if (
-    sessionId === view.value.previousThreadId &&
-    (view.value.selection.status === 'idle' || currentChatReady)
-  )
-    view.value = { screen: 'chat' }
+  if (returnsToCurrentChat.value) view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()
   else void onSelectHistory(view.value.previousThreadId)
 }

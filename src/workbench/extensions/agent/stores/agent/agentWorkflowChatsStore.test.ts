@@ -9,6 +9,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 
 import { useAgentChatHistoryStore } from './agentChatHistoryStore'
+import { useAgentConversationStore } from './agentConversationStore'
 import { useAgentPanelStore } from './agentPanelStore'
 import { useAgentWorkflowChatsStore } from './agentWorkflowChatsStore'
 
@@ -44,10 +45,11 @@ describe('useAgentWorkflowChatsStore', () => {
     useAgentPanelStore().enabled = true
   })
 
-  it('hands a picked chat to the mounted panel without reopening it', () => {
+  it('hands every pick, the current chat included, to the mounted panel without reopening it', () => {
     const store = useAgentWorkflowChatsStore()
     const opener = vi.fn()
     store.attachPanel(opener)
+    useAgentConversationStore().setThreadId('th-1')
 
     store.openChat('workflows/a.json', 'th-1')
 

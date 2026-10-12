@@ -9,6 +9,7 @@ import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
 import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import type { ChatSession } from './agentChatHistoryStore'
 import { useAgentChatHistoryStore } from './agentChatHistoryStore'
+import { useAgentConversationStore } from './agentConversationStore'
 import { useAgentPanelStore } from './agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
@@ -44,6 +45,7 @@ export const useAgentWorkflowChatsStore = defineStore(
     const rest = createAgentRestClient()
     const history = useAgentChatHistoryStore()
     const panel = useAgentPanelStore()
+    const conversation = useAgentConversationStore()
     const resolver = markRaw(
       useAgentWorkflowResolver({
         workflows: useWorkflowStore(),
@@ -85,7 +87,9 @@ export const useAgentWorkflowChatsStore = defineStore(
         panelOpener(workflowPath, chatId)
         return
       }
-      pendingRequest = { workflowPath, chatId }
+      if (chatId !== null && chatId === conversation.threadId)
+        panel.view = { screen: 'chat' }
+      else pendingRequest = { workflowPath, chatId }
       panel.open('workflow_chats')
     }
 
