@@ -11,7 +11,11 @@ describe('Workshop apps', () => {
   it('lists every app declared in the catalog, each at /hub/apps/<slug>/', () => {
     expect(appModels.map(({ appId, href }) => ({ appId, href }))).toEqual([
       { appId: 'studio', href: '/hub/apps/cinematic-studio/' },
-      { appId: 'reshoot', href: '/hub/apps/reshoot/' }
+      { appId: 'reshoot', href: '/hub/apps/reshoot/' },
+      {
+        appId: 'background-removal',
+        href: '/hub/apps/background-removal/'
+      }
     ])
   })
 
@@ -20,7 +24,8 @@ describe('Workshop apps', () => {
       appPagePaths().map(({ params, props }) => [params.app, props.model.appId])
     ).toEqual([
       ['cinematic-studio', 'studio'],
-      ['reshoot', 'reshoot']
+      ['reshoot', 'reshoot'],
+      ['background-removal', 'background-removal']
     ])
   })
 

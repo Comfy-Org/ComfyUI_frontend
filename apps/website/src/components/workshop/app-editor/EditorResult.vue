@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import EditorChecker from './EditorChecker.vue'
 import EditorCompare from './EditorCompare.vue'
 import EditorFrame from './EditorFrame.vue'
 import type { EditorView } from './view'
 
-const { before, after, view, width, height, labels } = defineProps<{
+const {
+  before,
+  after,
+  view,
+  width,
+  height,
+  labels,
+  checker = false
+} = defineProps<{
   before: string
   after: string
   view: EditorView
@@ -16,6 +25,8 @@ const { before, after, view, width, height, labels } = defineProps<{
     result: string
     slider: string
   }
+  /** Shows a checkerboard through the result's transparent pixels. */
+  checker?: boolean
 }>()
 </script>
 
@@ -31,12 +42,14 @@ const { before, after, view, width, height, labels } = defineProps<{
       :slider-label="labels.slider"
       :width
       :height
+      :checker
     />
     <EditorFrame v-else :width :height>
+      <EditorChecker v-if="checker && view === 'result'" />
       <img
         :src="view === 'result' ? after : before"
         :alt="view === 'result' ? labels.resultAlt : labels.originalAlt"
-        class="size-full rounded-sm object-cover"
+        class="relative size-full rounded-sm object-cover"
       />
     </EditorFrame>
   </div>

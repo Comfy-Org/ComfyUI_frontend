@@ -5133,6 +5133,9 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "backgroundRemoval": "Background Removal",
+      "backgroundRemovalSummary": "Cut the subject out of a photo and put it on a clean background, or none at all.",
+      "backgroundRemovalMeta": "Image · Recraft Remove Background",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
