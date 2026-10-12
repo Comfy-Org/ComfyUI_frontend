@@ -41,6 +41,7 @@ import {
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -274,7 +275,7 @@ function readDocNode(
       fields[key] = plain(value)
     }
   })
-  const parsed = zDocNodeFields.safeParse(fields)
+  const parsed = zDocNodeFields.safeParse(omitDocumentBookkeeping(fields))
   if (!parsed.success) {
     const { error } = parsed
     return {

@@ -3,6 +3,8 @@ import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
+
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by
  * definition id. `@comfyorg/comfy-multi-player` reads it through its private
@@ -13,13 +15,6 @@ const DEFINITIONS_ROOT = 'definitions'
 /** Mint-order registers kept beside the interior `nodes`/`links` maps. */
 const NODE_ORDER = 'node_order'
 const LINK_ORDER = 'link_order'
-
-/**
- * Per-node bookkeeping the op layer's applier stamps on every node record
- * (`NODE_INCARNATION_KEY`, not exported by the package). Its own `project()`
- * drops it; so does this reader.
- */
-const NODE_INCARNATION = '__incarnation'
 
 /** The op layer reserves double-underscore definition keys for bookkeeping. */
 function isDefinitionBookkeeping(key: string): boolean {
@@ -99,13 +94,6 @@ function orderedKeys(register: unknown, map: Y.Map<unknown>): string[] {
   return [...new Set(order)].filter((key) => map.has(key))
 }
 
-/**
- * Interior node record → serialised node. Named widget values go to
- * `widgets_values_named`, the only name-keyed slot `LGraphNode.configure()`
- * reads; the opaque positional form stays `widgets_values`. A record whose
- * `widgets` is not a map cannot be read and is skipped, as the package's
- * `tryProjectNode()` skips it.
- */
 function readInteriorNode(source: unknown): Record<string, unknown> | null {
   if (!(source instanceof Y.Map)) return null
   if (source.has('widgets') && !(source.get('widgets') instanceof Y.Map)) {
@@ -113,7 +101,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION || !isReadableKey(key)) return
+    if (!isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
         [...value.entries()].flatMap(([name, widgetValue]) =>
@@ -126,7 +114,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
       node[key] = plain(value)
     }
   })
-  return node
+  return omitDocumentBookkeeping(node)
 }
 
 function isSkippedDefinitionKey(key: string): boolean {

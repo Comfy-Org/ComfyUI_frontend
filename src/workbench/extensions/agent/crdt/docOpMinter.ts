@@ -102,22 +102,6 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
- *
- * `flags.ghost` is a placement-in-progress marker the placement click clears
- * without minting, so the document must not record it.
- */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -125,13 +109,11 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
-  const wireSerialized = { ...serialized }
-  Reflect.deleteProperty(wireSerialized, '__incarnation')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
-  } = wireSerialized
+  } = serialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   return named && !node.isVirtualNode
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }

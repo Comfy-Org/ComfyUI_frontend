@@ -1,4 +1,9 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import {
+  mint,
+  NODE_INCARNATION_KEY,
+  OPAQUE_WIDGETS_KEY,
+  WIDGET_FORM_KEY
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { assert, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -232,17 +237,22 @@ describe('readSubgraphDefinitions', () => {
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
   })
 
-  it('drops the op layer incarnation stamp from interior nodes', () => {
+  it('drops document bookkeeping from interior nodes while preserving opaque widget values', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     const node = storedNode(storedDefinition(doc, definition.id), 1)
-    expect(node.has('__incarnation')).toBe(true)
+    expect(node.has(NODE_INCARNATION_KEY)).toBe(true)
+    node.set(OPAQUE_WIDGETS_KEY, [29])
+    node.set(WIDGET_FORM_KEY, { kind: 'positional' })
 
     const [projected] = readSubgraphDefinitions(doc)
 
-    expect(projected.nodes?.[0]).not.toHaveProperty('__incarnation')
+    expect(projected.nodes?.[0]).not.toHaveProperty(NODE_INCARNATION_KEY)
+    expect(projected.nodes?.[0]).not.toHaveProperty(OPAQUE_WIDGETS_KEY)
+    expect(projected.nodes?.[0]).not.toHaveProperty(WIDGET_FORM_KEY)
+    expect(projected.nodes?.[0].widgets_values).toEqual([29])
   })
 
   it('drops define_subgraph bookkeeping from the projected definition', () => {
