@@ -2,7 +2,10 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentThreadListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -98,7 +101,12 @@ test.describe(
       }
 
       await page.route('**/api/agent/threads?*', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+        route.fulfill(
+          jsonRoute({
+            threads: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          } satisfies AgentThreadListResponse)
+        )
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'POST') {

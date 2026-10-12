@@ -1,6 +1,7 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -260,7 +261,12 @@ class TemplatePlacementHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+      route.fulfill(
+        jsonRoute({
+          threads: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        } satisfies AgentThreadListResponse)
+      )
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {

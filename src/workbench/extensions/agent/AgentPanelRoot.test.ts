@@ -4813,7 +4813,7 @@ describe('AgentPanelRoot history', () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
       return isThreadListUrl(url)
-        ? new Response('{"threads":[]}', {
+        ? new Response(JSON.stringify(agentThreadList()), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
           })
