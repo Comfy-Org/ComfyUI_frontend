@@ -8,6 +8,7 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -219,10 +220,9 @@ export class AgentPanel {
     route: () => Promise<void>
   ): Promise<AgentAttachmentOutcome> {
     await route()
+    const toasts = new ToastHelper(this.page)
     const toastReading = (messages: string[]): Locator =>
-      this.page.locator('.p-toast-message:visible').filter({
-        hasText: new RegExp(messages.map(escapeRegExp).join('|'))
-      })
+      toasts.withText(new RegExp(messages.map(escapeRegExp).join('|')))
     const attachmentRefusals = [
       enMessages.agent.attachmentTooLarge
         .replace('{name}', fileName)
@@ -255,9 +255,7 @@ export class AgentPanel {
     })
     while ((await remove.count()) > 0) await remove.first().click()
     await expect(this.attachmentChips).toHaveCount(0)
-    await expect(this.page.locator('.p-toast-message:visible')).toHaveCount(0, {
-      timeout: 10_000
-    })
+    await new ToastHelper(this.page).closeToasts()
   }
 
   async open(timeout?: number): Promise<Locator> {

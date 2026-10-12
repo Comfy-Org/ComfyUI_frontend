@@ -14,7 +14,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const PINNED_UPLOAD_LIMIT_BYTES = 1024 * 1024
 
 const VIDEO = 'plain_video.mp4'
-const AUDIO = 'agent-attach-sample.wav'
+const AUDIO = 'silence.wav'
 const CSV = 'agent-attach-sample.csv'
 
 test.describe(
