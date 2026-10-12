@@ -50,8 +50,7 @@ function isLinkVisible(graph: LGraph, link: LLink): boolean {
   )
 }
 
-/** Selected links that are still the graph's own, visible links. */
-export function getSelectedLinks(graph: LGraph): LLink[] {
+function getSelectedLinks(graph: LGraph): LLink[] {
   const selection = useLinkSelectionStore().selection
   if (!selection) return []
   return selection.links.filter(
@@ -59,7 +58,7 @@ export function getSelectedLinks(graph: LGraph): LLink[] {
   )
 }
 
-/** Ids of {@link getSelectedLinks}. */
+/** Ids of the selected links that are still the graph's own, visible links. */
 export function getSelectedLinkIds(graph: LGraph): LinkId[] {
   return getSelectedLinks(graph).map((link) => link.id)
 }
@@ -131,9 +130,16 @@ export function selectLinksForMarquee(
   renderedPaths: Iterable<LinkSegment>,
   selectedItemCount: number,
   [x, y, width, height]: ReadOnlyRect,
-  pointer: { shiftKey: boolean; altKey: boolean; canvasX: number }
+  pointer: { shiftKey: boolean; altKey: boolean; canvasX: number },
+  selectOnly = false
 ): void {
-  if (!graph || selectedItemCount || pointer.shiftKey || pointer.altKey) {
+  if (
+    !graph ||
+    selectOnly ||
+    selectedItemCount ||
+    pointer.shiftKey ||
+    pointer.altKey
+  ) {
     clearLinkSelection()
     return
   }

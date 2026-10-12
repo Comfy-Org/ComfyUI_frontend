@@ -65,8 +65,12 @@ export function deleteLinks(
 ): void {
   mutateLink(host, () => {
     for (const link of links) {
-      if (link.targetIsIoNode && graph instanceof Subgraph) {
-        graph.outputNode.slots[link.target_slot]?.disconnect()
+      const outputSlot =
+        link.targetIsIoNode && graph instanceof Subgraph
+          ? graph.outputNode.slots[link.target_slot]
+          : undefined
+      if (outputSlot?.linkIds.includes(link.id)) {
+        outputSlot.disconnect()
       } else {
         graph.removeLink(link.id)
       }

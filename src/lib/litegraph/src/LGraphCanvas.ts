@@ -4601,7 +4601,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.renderedPaths,
       this.selectedItems.size,
       normalizedRect,
-      e
+      e,
+      this.selectOnly
     )
     this.setDirty(true, true)
     this.onSelectionChange?.(this.selected_nodes)
@@ -4642,7 +4643,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.renderedPaths,
       this.selectedItems.size,
       normalizedRect,
-      e
+      e,
+      this.selectOnly
     )
     this.setDirty(true, true)
     this.onSelectionChange?.(this.selected_nodes)

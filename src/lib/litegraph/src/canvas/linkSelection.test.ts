@@ -125,6 +125,15 @@ describe('link marquee selection', () => {
     expect(getSelectedLinkIds(graph)).toEqual([])
   })
 
+  it('selects no links in select-only mode', () => {
+    const { graph, links } = createGraphWithLinks()
+    drawHorizontalLink(links[0], 10)
+
+    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS, true)
+
+    expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+
   it('skips hidden links', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
