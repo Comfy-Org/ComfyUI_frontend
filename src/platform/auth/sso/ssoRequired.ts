@@ -94,9 +94,7 @@ function presentAccountOutsideOrganization(): boolean {
         key: ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY,
         component,
         dialogComponentProps: {
-          renderer: 'reka',
-          headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+          headless: true
         }
       })
     })
