@@ -3,6 +3,12 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  isMediaRoute,
+  scopeMediaRoute
+} from '@/platform/auth/session/sessionMediaUrl'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -89,4 +95,63 @@ export function getAssetFileUrl(
     return api.apiURL(`/assets/${getAssetContentId(asset)}/content${query}`)
   }
   return asset.preview_url || getAssetUrl(asset)
+}
+
+/**
+ * URL for loading the asset's own video or audio file into a `<video>` or
+ * `<audio>` `src`, which sends cookies but no headers.
+ *
+ * On Cloud, a cookie-authenticated `/assets/:id/content` request is looked up
+ * in the session's default workspace only, so it 404s for an asset that lives
+ * in another workspace. `/view` looks across the user's workspaces, so an
+ * asset with a content hash is loaded through `/view?filename=<hash>`, the same
+ * way image previews are. Without a hash (or off Cloud) this falls back to
+ * {@link getAssetFileUrl} with an inline disposition.
+ *
+ * @param asset The asset whose file should be played
+ * @returns The URL to set as the media element's `src`
+ */
+export function getAssetInlineMediaUrl(asset: AssetItem): string {
+  if (isCloud && asset.hash) {
+    const params = new URLSearchParams({
+      filename: asset.hash,
+      type: getAssetType(asset)
+    })
+    return api.apiURL(`/view?${params}`)
+  }
+  return getAssetFileUrl(asset, { disposition: 'inline' })
+}
+
+/**
+ * Prepares a server-supplied media URL (e.g. `thumbnail_url`/`preview_url`)
+ * for an `<img>`, `<video>` or `<audio>` `src`, which sends cookies but no
+ * headers.
+ *
+ * Root-relative media routes go through `api.apiURL` so a web session names
+ * its workspace on them, as do absolute URLs on this page's own origin. Any
+ * other URL is returned as is: other-origin and signed external URLs, `blob:`
+ * and `data:` URLs, protocol-relative URLs and non-media routes.
+ *
+ * @param url The URL the server supplied, if any
+ * @returns The URL to load, or an empty string when there is none
+ */
+export function resolveMediaSrc(url: string | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('//')) return url
+  if (url.startsWith('/')) return isMediaRoute(url) ? api.apiURL(url) : url
+  return scopeSameOriginMediaUrl(url)
+}
+
+function scopeSameOriginMediaUrl(url: string): string {
+  const requests = webSessionRequests()
+  if (!requests || !/^https?:\/\//i.test(url)) return url
+  try {
+    const parsed = new URL(url)
+    if (parsed.origin !== window.location.origin) return url
+    const route = `${parsed.pathname}${parsed.search}${parsed.hash}`
+    const scoped = scopeMediaRoute(route, requests.workspaceId())
+    return scoped === route ? url : `${parsed.origin}${scoped}`
+  } catch {
+    return url
+  }
 }

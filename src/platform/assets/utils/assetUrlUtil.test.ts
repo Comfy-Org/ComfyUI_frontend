@@ -4,6 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
@@ -14,7 +15,16 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
 beforeEach(() => {
+  mockIsCloud.value = false
   vi.mocked(api.apiURL).mockImplementation(
     (path) => `http://localhost:8188/api${path}`
   )
@@ -76,6 +86,48 @@ describe('getAssetUrl', () => {
 
   it('omits the subfolder param for an asset at the type root', () => {
     expect(getAssetUrl(createAsset())).not.toContain('subfolder')
+  })
+})
+
+describe('getAssetInlineMediaUrl', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+  })
+
+  it('loads a hashed asset through /view on cloud', () => {
+    mockIsCloud.value = true
+    const asset = createAsset({ hash: 'abc123.webm' })
+
+    const url = new URL(getAssetInlineMediaUrl(asset))
+
+    expect(url.pathname).toBe('/api/view')
+    expect(url.searchParams.get('filename')).toBe('abc123.webm')
+    expect(url.searchParams.get('type')).toBe('output')
+  })
+
+  it('takes the type from the asset like getAssetUrl does', () => {
+    mockIsCloud.value = true
+    const asset = createAsset({ hash: 'abc123.webm', tags: ['input'] })
+
+    expect(
+      new URL(getAssetInlineMediaUrl(asset)).searchParams.get('type')
+    ).toBe('input')
+  })
+
+  it('falls back to the inline content url without a hash', () => {
+    mockIsCloud.value = true
+
+    expect(getAssetInlineMediaUrl(createAsset())).toBe(
+      'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+    )
+  })
+
+  it('keeps the inline content url off cloud even with a hash', () => {
+    const asset = createAsset({ hash: 'blake3:deadbeef' })
+
+    expect(getAssetInlineMediaUrl(asset)).toBe(
+      'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+    )
   })
 })
 
