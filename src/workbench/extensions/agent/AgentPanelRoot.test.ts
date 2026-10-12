@@ -262,7 +262,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
-import { formatBillingIdentity } from './composables/useBillingIdentity'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -1637,11 +1637,10 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
     paywallAgentScopedHasFunds.value = scopedHasFunds
     if (scopedHasFunds === undefined) return
-    const identity = formatBillingIdentity(
-      useCurrentUser().resolvedUserInfo.value?.id,
-      useTeamWorkspaceStore().workspaceId
+    useAgentPanelStore().observeAgentScopedFunds(
+      useBillingIdentity().value,
+      scopedHasFunds
     )
-    useAgentPanelStore().observeAgentScopedFunds(identity, scopedHasFunds)
   }
 
   beforeEach(() => {

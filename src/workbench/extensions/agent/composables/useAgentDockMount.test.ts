@@ -6,11 +6,9 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
-import { formatBillingIdentity } from './useBillingIdentity'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -115,8 +113,6 @@ describe('useAgentDockMount', () => {
     expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
   })
 
-  // Relocated from AgentPanelRoot.test.ts: the identity half of this watcher
-  // moved here, so the panel could no longer observe an identity switch.
   it('observes the scoped balance again after the billing identity changes', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const accountId = ref('account-a')
@@ -147,8 +143,8 @@ describe('useAgentDockMount', () => {
     }
     await nextTick()
 
-    expect(store.creditTransitionNotice?.identity).toBe(
-      formatBillingIdentity('account-b', useTeamWorkspaceStore().workspaceId)
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
     )
   })
 
