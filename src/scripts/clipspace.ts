@@ -89,11 +89,6 @@ export function copyToClipspace(node: LGraphNode) {
 
 export function pasteFromClipspace(node: LGraphNode) {
   if (clipspace.current) {
-    const selectedImage =
-      clipspace.current.images?.[clipspace.current.selectedIndex]
-    const selectedPreview =
-      clipspace.current.imgs?.[clipspace.current.selectedIndex]
-
     // image paste
     let combinedImgSrc: string | undefined
     if (
@@ -104,23 +99,22 @@ export function pasteFromClipspace(node: LGraphNode) {
       combinedImgSrc =
         clipspace.current.imgs[clipspace.current.combinedIndex].src
     }
-    if (clipspace.current.imgs && node.imgs) {
-      // Update node.images even if it's initially undefined (vueNodes mode)
-      if (clipspace.current.images) {
-        if (clipspace.current['img_paste_mode'] == 'selected') {
-          if (selectedImage)
-            useNodeOutputStore().setNodeOutputImages(node, [selectedImage])
-        } else {
-          useNodeOutputStore().setNodeOutputImages(
-            node,
-            clipspace.current.images
-          )
-        }
+    const selectedImage =
+      clipspace.current.images?.[clipspace.current.selectedIndex]
+    if (clipspace.current.images) {
+      if (clipspace.current.img_paste_mode !== 'selected') {
+        useNodeOutputStore().setNodeOutputImages(node, clipspace.current.images)
+      } else if (selectedImage) {
+        useNodeOutputStore().setNodeOutputImages(node, [selectedImage])
       }
-
+    }
+    if (clipspace.current.imgs && node.imgs) {
       // deep-copy to cut link with clipspace
       if (clipspace.current['img_paste_mode'] == 'selected') {
-        if (selectedPreview) {
+        const selectedPreview = clipspace.current.imgs.at(
+          clipspace.current.selectedIndex
+        )
+        if (clipspace.current.selectedIndex >= 0 && selectedPreview) {
           const img = new Image()
           img.src = selectedPreview.src
           node.imgs = [img]

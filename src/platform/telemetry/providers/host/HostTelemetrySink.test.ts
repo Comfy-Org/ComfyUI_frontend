@@ -181,6 +181,17 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards Agent credit transition notice interactions', () => {
+    new HostTelemetrySink().trackAgentCreditTransitionNotice({
+      action: 'shown'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+      { action: 'shown' }
+    )
+  })
+
   it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
@@ -349,6 +360,27 @@ describe('HostTelemetrySink', () => {
           '$feature/agent-starter-prompt-set': 'test'
         }),
       properties: { '$feature/agent-starter-prompt-set': 'test' }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseNotice({
+          action: 'dismissed',
+          placement: 'top-banner'
+        }),
+      properties: { action: 'dismissed', placement: 'top-banner' }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseExposure({
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }),
+      properties: {
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      }
     },
     {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,

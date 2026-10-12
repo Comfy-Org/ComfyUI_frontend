@@ -13,10 +13,14 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -243,6 +247,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditTransitionNotice?.(metadata)
+    )
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
@@ -461,6 +473,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
@@ -475,6 +495,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
   }
 
   // fallow-ignore-next-line unused-class-member
