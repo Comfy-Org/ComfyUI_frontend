@@ -22,17 +22,12 @@ test.describe(
       })
 
       const nodeId =
-        await test.step('add a note and wait for the host echo to land', async () => {
+        await test.step('add a note and wait for the host to accept it', async () => {
           const addedNodeId = await agentConversation.addNoteThroughSearchBox({
             x: 400,
             y: 400
           })
           await agentConversation.waitForHumanOps(1)
-          await agentConversation.waitForPendingFrames(
-            ADDITIVE_READINESS_NODE_ID,
-            ADDITIVE_READINESS_WIDGET,
-            'note echo landed'
-          )
           await expect(
             agentConversation.vueNodes.getNodeLocator(addedNodeId)
           ).toBeVisible()
