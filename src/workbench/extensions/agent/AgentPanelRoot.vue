@@ -308,8 +308,6 @@ const unresolvedPaywallPending = computed(() =>
   )
 )
 
-// Only the standing recovery card uses latest-entry semantics. The free-use
-// claim remains hidden while any unresolved inline paywall is still visible.
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not

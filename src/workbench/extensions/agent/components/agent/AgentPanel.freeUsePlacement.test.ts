@@ -7,7 +7,6 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
-
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
@@ -17,8 +16,6 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
-const PLACEMENTS = AGENT_FREE_USE_PLACEMENTS
 
 function mount(
   freeUsePlacement: FreeUseVariant,
@@ -46,9 +43,6 @@ function notice() {
 }
 
 describe('AgentPanel free-use placement', () => {
-  // `control` is also how AgentPanelRoot expresses every suppression — an
-  // ineligible viewer, or an inline paywall on screen — so this one case
-  // covers the panel's whole side of that contract.
   it('shows no notice in the control arm', () => {
     mount('control')
 
@@ -59,10 +53,7 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  // Each of the four slots re-emits `@notice` separately, so a slot that lost
-  // its re-emit, or carries the wrong `placement` literal, would send no
-  // interactions while its exposure still counted.
-  it.for(PLACEMENTS)(
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
     'renders and reports exactly one notice at %s',
     (variant) => {
       const onFreeUseNotice = vi.fn()
@@ -119,7 +110,7 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)(
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
     'leaves the starter prompts and placeholder untouched at %s',
     (variant) => {
       const control = mount('control')
