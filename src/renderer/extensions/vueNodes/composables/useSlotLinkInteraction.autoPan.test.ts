@@ -228,7 +228,8 @@ import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composabl
 function pointerEvent(
   clientX: number,
   clientY: number,
-  pointerId = 1
+  pointerId = 1,
+  shiftKey = false
 ): PointerEvent {
   return fromPartial<PointerEvent>({
     clientX,
@@ -238,7 +239,7 @@ function pointerEvent(
     ctrlKey: false,
     metaKey: false,
     altKey: false,
-    shiftKey: false,
+    shiftKey,
     target: document.createElement('div'),
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
@@ -289,6 +290,20 @@ describe('useSlotLinkInteraction', () => {
       expect(selectSlotLinks).toHaveBeenCalledTimes(calls)
     }
   )
+
+  it('a shift click keeps the existing selection', () => {
+    vi.mocked(selectSlotLinks).mockClear()
+    const { onPointerDown } = useSlotLinkInteraction({
+      nodeId: toNodeId('node1'),
+      index: 0,
+      type: 'output'
+    })
+    onPointerDown(pointerEvent(400, 300, 1, true))
+
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).not.toHaveBeenCalled()
+  })
 
   it('a drag that returns to its start is still a drag', () => {
     vi.mocked(selectSlotLinks).mockClear()
