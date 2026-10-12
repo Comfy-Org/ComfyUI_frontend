@@ -13,6 +13,7 @@ export interface ComposerAttachment {
   name: string
   ref: string
   previewUrl?: string
+  mediaUrl?: string
   uploading?: boolean
 }
 
