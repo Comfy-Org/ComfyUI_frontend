@@ -38,11 +38,8 @@ export class DragDropHelper {
       fileName?: string
       filePath?: string
       /**
-       * A file whose bytes are generated inside the page instead of read from
-       * disk. A file-size-limit case needs one larger than anything worth
-       * committing as a fixture, and the disk path below ships its bytes
-       * through `page.evaluate` as a plain number array — fine for a 6 KB clip,
-       * ruinous for a 20 MB one.
+       * Zero-filled bytes built in the page; shipping a large disk file
+       * through `page.evaluate` is slow.
        */
       generatedFile?: { name: string; type: string; byteLength: number }
       url?: string

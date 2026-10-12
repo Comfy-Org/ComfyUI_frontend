@@ -191,25 +191,27 @@ export class AgentPanel {
     )
   }
 
-  async dropFile(dragDrop: DragDropHelper, fileName: string): Promise<void> {
+  private async dropOptions() {
     const box = await this.root.boundingBox()
     if (!box) throw new Error('Agent panel is not visible')
-    await dragDrop.dragAndDropFile(fileName, {
+    return {
       preserveNativePropagation: true,
       dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    })
+    }
+  }
+
+  async dropFile(dragDrop: DragDropHelper, fileName: string): Promise<void> {
+    await dragDrop.dragAndDropFile(fileName, await this.dropOptions())
   }
 
   async dropGeneratedFile(
     dragDrop: DragDropHelper,
     generatedFile: { name: string; type: string; byteLength: number }
   ): Promise<void> {
-    const box = await this.root.boundingBox()
-    if (!box) throw new Error('Agent panel is not visible')
-    await dragDrop.dragAndDropGeneratedFile(generatedFile, {
-      preserveNativePropagation: true,
-      dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    })
+    await dragDrop.dragAndDropGeneratedFile(
+      generatedFile,
+      await this.dropOptions()
+    )
   }
 
   async handOverAttachment(
