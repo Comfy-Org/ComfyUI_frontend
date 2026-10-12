@@ -40,16 +40,21 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
-  default: {
-    render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
+vi.mock<unknown>(import('./WorkflowTabPopover.vue'), async () => {
+  const { defineComponent, h, ref } = await import('vue')
+  return {
+    default: defineComponent((_, { expose }) => {
+      const shown = ref(false)
+      expose({
+        showPopover: () => (shown.value = true),
+        hidePopover: () => (shown.value = false),
+        togglePopover: () => {}
+      })
+      return () =>
+        shown.value ? h('div', { 'data-testid': 'workflow-tab-preview' }) : null
+    })
   }
-}))
+})
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -353,6 +358,43 @@ describe('WorkflowTab - agent chats', () => {
     )
   })
 
+  it('opens the chats menu on hover in place of the tab preview card', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const workflowOption = makeWorkflowOption()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          [{ id: 'th-1', title: 'Landscape chat', updatedAt: Date.now() }]
+        ]
+      ]),
+      vi.fn()
+    )
+    renderTab({ workflowOption })
+    const chatsButton = screen.getByRole('button', {
+      name: '1 chat on test.json'
+    })
+
+    await user.hover(chatsButton)
+    expect(screen.queryByTestId('workflow-tab-preview')).toBeNull()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(
+      screen.getByRole('menuitem', { name: /^Landscape chat/ })
+    ).toBeVisible()
+
+    await user.hover(screen.getByText('test.json'))
+    await vi.advanceTimersByTimeAsync(150)
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.getByTestId('workflow-tab-preview')).toBeInTheDocument()
+
+    await user.hover(chatsButton)
+    expect(screen.queryByTestId('workflow-tab-preview')).toBeNull()
+    expect(useWorkflowStore().activeWorkflow?.path).toBe(
+      '/workflows/other.json'
+    )
+  })
+
   it('dates each chat from when its menu opens', async () => {
     const workflowOption = makeWorkflowOption()
     useWorkflowTabActivityStore().setAgentChats(
@@ -376,7 +418,7 @@ describe('WorkflowTab - agent chats', () => {
     ).toHaveTextContent('2h ago')
   })
 
-  it('caps the visible chat count at 9+', async () => {
+  it('shows only a chat icon, keeping the chat count in its name', async () => {
     const workflowOption = makeWorkflowOption()
     useWorkflowTabActivityStore().setAgentChats(
       new Map([
@@ -395,10 +437,10 @@ describe('WorkflowTab - agent chats', () => {
 
     expect(
       screen.getByRole('button', { name: '12 chats on test.json' })
-    ).toHaveTextContent('9+')
+    ).not.toHaveTextContent(/\S/)
   })
 
-  it('shows no chat count once the agent lists no chats for the tab', async () => {
+  it('shows no chats button once the agent lists no chats for the tab', async () => {
     const workflowOption = makeWorkflowOption()
     const activity = useWorkflowTabActivityStore()
     activity.setAgentChats(

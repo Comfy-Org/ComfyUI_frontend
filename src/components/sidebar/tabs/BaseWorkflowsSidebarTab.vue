@@ -77,6 +77,7 @@
                     v-if="treeNode.data"
                     :workflow-path="treeNode.data.path"
                     :workflow-name="treeNode.data.filename"
+                    class="mr-1"
                   />
                 </template>
                 <template #actions="{ node: treeNode }">

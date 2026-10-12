@@ -77,17 +77,17 @@ describe('BaseWorkflowsSidebarTab agent chats', () => {
     )
   })
 
-  it('shows a chat count on every Open, Bookmarks and Browse row of a workflow with chats', () => {
+  it('shows a chat icon on every Open, Bookmarks and Browse row of a workflow with chats', () => {
     setup()
 
-    const portraitCounts = screen.getAllByRole('button', {
+    const portraitChats = screen.getAllByRole('button', {
       name: '2 chats on portrait'
     })
-    expect(portraitCounts).toHaveLength(2)
-    expect(portraitCounts[0]).toHaveTextContent('2')
-    expect(
-      screen.getAllByRole('button', { name: '1 chat on archive' })
-    ).toHaveLength(2)
+    const archiveChats = screen.getAllByRole('button', {
+      name: '1 chat on archive'
+    })
+    expect(portraitChats).toHaveLength(2)
+    expect(archiveChats).toHaveLength(2)
     expect(
       within(screen.getByRole('treeitem', { name: 'sketch' })).queryByRole(
         'button',

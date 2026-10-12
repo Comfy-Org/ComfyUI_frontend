@@ -12,6 +12,7 @@
         "
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
+        @mouseover="handleMouseOver"
         @mouseleave="handleMouseLeave"
         @click="handleClick"
       >
@@ -84,12 +85,14 @@
             />
           </span>
         </TabsTrigger>
-        <WorkflowAgentChatsMenu
-          :workflow-path="workflowOption.workflow.path"
-          :workflow-name="workflowOption.workflow.filename"
-          class="absolute top-1/2 right-8 -translate-y-1/2"
-          @open="hideTabPopover"
-        />
+        <span ref="agentChatsRef" class="contents">
+          <WorkflowAgentChatsMenu
+            :workflow-path="workflowOption.workflow.path"
+            :workflow-name="workflowOption.workflow.filename"
+            class="absolute top-1/2 right-8 size-4 -translate-y-1/2 rounded-none text-smoke-800"
+            @open="hideTabPopover"
+          />
+        </span>
         <Button
           :class="
             cn(
@@ -196,6 +199,7 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
+const agentChatsRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
 
@@ -255,7 +259,7 @@ const tabActivity = useWorkflowTabActivityStore()
 
 const agentChatsSpacerClass = computed(() =>
   tabActivity.agentChatsByPath.has(workflowOption.workflow.path)
-    ? 'w-7 shrink-0'
+    ? 'w-4 shrink-0'
     : 'hidden'
 )
 
@@ -301,11 +305,26 @@ const thumbnailUrl = computed(() => {
 })
 
 // Event handlers that delegate to the popover component
+let pointerOnAgentChats = false
+
 const handleMouseEnter = (event: Event) => {
-  popoverRef.value?.showPopover(event)
+  if (!pointerOnAgentChats) popoverRef.value?.showPopover(event)
+}
+
+// The agent chats menu opens on hover too, so the preview card stays hidden
+// while the pointer is on its icon.
+const handleMouseOver = (event: MouseEvent) => {
+  const onAgentChats =
+    event.target instanceof Node &&
+    !!agentChatsRef.value?.contains(event.target)
+  if (onAgentChats === pointerOnAgentChats) return
+  pointerOnAgentChats = onAgentChats
+  if (onAgentChats) hideTabPopover()
+  else popoverRef.value?.showPopover(event)
 }
 
 const handleMouseLeave = () => {
+  pointerOnAgentChats = false
   popoverRef.value?.hidePopover()
 }
 
