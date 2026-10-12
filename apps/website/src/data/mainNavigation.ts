@@ -150,13 +150,11 @@ export function getMainNavigation(
           items: [
             {
               label: t('nav.cinematicStudio'),
-              href: routes.cinematicStudio,
-              newTab: true
+              href: routes.cinematicStudio
             },
             ...when(hubSections.reshoot, {
               label: t('nav.reshoot'),
-              href: routes.reshoot,
-              newTab: true
+              href: routes.reshoot
             })
           ],
           allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
@@ -220,11 +218,7 @@ export function getMainNavigation(
               href: routes.platformRouter,
               badge: 'new'
             },
-            { label: t('nav.builds'), href: routes.platformBuilder },
-            {
-              label: t('nav.managedBuilds'),
-              href: routes.managedBuilds
-            }
+            { label: t('nav.builds'), href: routes.platformBuilder }
           ]
         },
         {
@@ -265,6 +259,10 @@ export function getMainNavigation(
             {
               label: t('nav.comfyEnterprise'),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
             },
             {
               label: t('nav.fdct'),

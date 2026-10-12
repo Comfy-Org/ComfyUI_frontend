@@ -1,5 +1,5 @@
 import type { Settings } from '@/platform/settings/types'
-import type { ComfyApp } from '@/scripts/app'
+import type { ComfyApp } from '@/types/comfy'
 
 import type { ComfyComponent } from '.'
 import { prop } from '../../utils'

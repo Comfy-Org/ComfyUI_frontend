@@ -2774,6 +2774,10 @@
         "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
         "dismiss": "Not now"
       },
+      "outsideOrganization": {
+        "title": "This workspace is managed by single sign-on",
+        "body": "Your account isn't part of the organization that manages this workspace, so it can't open it. Switch to another workspace, or ask the organization's admin for access."
+      },
       "emailLabel": "Work email",
       "emailPlaceholder": "Enter your work email",
       "submit": "Continue",
@@ -5603,7 +5607,8 @@
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
-    "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
+    "freeUseNotice": "Try your first chat for free!",
+    "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",

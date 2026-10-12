@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { useAgentMentionPicker } from '../../../composables/agent/useAgentMentionPicker'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
@@ -66,14 +68,8 @@ const nodeId = computed(() =>
 </script>
 
 <template>
-  <AccessibleTooltip
-    :label="disabledReason ?? ''"
-    :disabled="!disabledReason"
-    :skip-delay-duration="0"
-    disable-hoverable-content
-    :collision-padding="8"
-  >
-    <template #trigger>
+  <Tooltip :disabled="!disabledReason">
+    <TooltipTrigger as-child>
       <div
         :id="`agent-reference-item-${index}`"
         ref="row"
@@ -127,6 +123,7 @@ const nodeId = computed(() =>
           class="icon-[lucide--chevron-right] size-4 shrink-0"
         />
       </div>
-    </template>
-  </AccessibleTooltip>
+    </TooltipTrigger>
+    <TooltipContent>{{ disabledReason }}</TooltipContent>
+  </Tooltip>
 </template>

@@ -416,7 +416,7 @@ export function useSubscriptionCheckout(
       const methods =
         rail === null
           ? await workspaceApi.listSavedPaymentMethods()
-          : await readOnRail(rail.readPaymentMethods)
+          : await readOnRail(rail.readPaymentMethods, 'listSavedPaymentMethods')
       if (methods === undefined) return
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
@@ -624,7 +624,7 @@ export function useSubscriptionCheckout(
         const status =
           readRail === null
             ? await workspaceApi.getBillingStatus()
-            : await readOnRail(readRail.readStatus)
+            : await readOnRail(readRail.readStatus, 'getBillingStatus')
         requiresRecovery =
           status?.billing_status === 'payment_failed' ||
           status?.billing_status === 'paused'

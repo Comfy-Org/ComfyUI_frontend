@@ -1,6 +1,8 @@
 import { omitBy } from 'es-toolkit'
 
+import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
 import {
+  isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
 } from '@comfyorg/account-core/sso'
@@ -8,8 +10,15 @@ import {
 import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import {
+  ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY,
+  SSO_REQUIRED_DIALOG_KEY
+} from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { presentInline } from '@/platform/auth/sso/ssoRequiredInline'
+import {
+  abandonSsoFlow,
+  trackSsoRequiredShown
+} from '@/platform/auth/sso/ssoTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -29,7 +38,10 @@ export interface SsoRequiredContext {
  * never erases the email the sign-in page passed. A refusal always answers the
  * organization, so one that names none clears an earlier one.
  */
-export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
+export function presentSsoRequired(
+  trigger: SsoRequiredTrigger,
+  context: SsoRequiredContext = {}
+): boolean {
   if (!useFeatureFlags().flags.ssoEnabled) return false
   const dialogStore = useDialogStore()
   const known = {
@@ -38,7 +50,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
       organizationId: context.organizationId
     })
   }
-  if (presentInline(known)) return true
+  if (presentInline(known, trigger)) return true
   void import('@/platform/auth/sso/SsoRequiredDialogContent.vue')
     .then(({ default: component }) => {
       if (dialogStore.isDialogOpen(SSO_REQUIRED_DIALOG_KEY)) {
@@ -48,6 +60,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         })
         return
       }
+      trackSsoRequiredShown('cloud_app', trigger, 'notice')
       dialogStore.showDialog({
         key: SSO_REQUIRED_DIALOG_KEY,
         component,
@@ -55,7 +68,8 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         dialogComponentProps: {
           renderer: 'reka',
           headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS,
+          onClose: abandonSsoFlow
         }
       })
     })
@@ -71,10 +85,46 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
   return true
 }
 
+function presentAccountOutsideOrganization(): boolean {
+  if (!useFeatureFlags().flags.ssoEnabled) return false
+  const dialogStore = useDialogStore()
+  if (dialogStore.isDialogOpen(ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY)) {
+    return true
+  }
+  void import('@/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue')
+    .then(({ default: component }) => {
+      dialogStore.showDialog({
+        key: ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY,
+        component,
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+        }
+      })
+    })
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'failure_loading_sso_outside_organization_dialog'
+      })
+      useToast().error(t('auth.sso.outsideOrganization.title'), {
+        description: t('auth.sso.outsideOrganization.body')
+      })
+    })
+  return true
+}
+
+/** A Cloud API request whose credential the organization refused. */
 export function presentForRefusal(status: number, body: unknown): boolean {
+  if (isAccountOutsideOrganizationRefusal(status, body)) {
+    return presentAccountOutsideOrganization()
+  }
   return (
     isSsoRequiredRefusal(status, body) &&
-    presentSsoRequired({ organizationId: ssoRequiredOrganizationId(body) })
+    presentSsoRequired('api_key', {
+      organizationId: ssoRequiredOrganizationId(body)
+    })
   )
 }
 

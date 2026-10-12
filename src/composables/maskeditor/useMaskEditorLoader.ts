@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {
@@ -74,7 +74,7 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
   }
 
   const pathPlusQueryParams = api.apiURL(
-    '/view?' + params.toString() + app.getPreviewFormatParam()
+    '/view?' + params.toString() + useApp().getPreviewFormatParam()
   )
   const imageElement = new Image()
   imageElement.crossOrigin = 'anonymous'

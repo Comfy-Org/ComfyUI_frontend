@@ -5,8 +5,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -132,10 +130,7 @@ function renderComponent(
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [getActivePinia()!, PrimeVue, i18n],
-      directives: {
-        tooltip: Tooltip
-      },
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
@@ -245,6 +240,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+  })
+
+  it('dismisses the keyboard-opened workspace name tooltip on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent('team')
+
+    await user.tab()
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Team Workspace'
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   it('keeps account actions available without workspace context', () => {
