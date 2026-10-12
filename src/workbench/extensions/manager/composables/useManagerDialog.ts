@@ -1,3 +1,5 @@
+import { effectScope } from 'vue'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -44,9 +46,6 @@ export function useManagerDialog() {
       },
       dialogComponentProps: {
         renderer: 'reka',
-        // Manager hosts PrimeVue overlays (SingleSelect, SearchAutocomplete)
-        // teleported to body. Reka's modal mode traps focus and disables body
-        // pointer-events, breaking those overlays. Mirrors Settings.
         modal: false,
         size: 'full',
         contentClass: MANAGER_CONTENT_CLASS
@@ -54,25 +53,20 @@ export function useManagerDialog() {
     })
   }
 
-  /**
-   * Opens the manager UI appropriate for the current {@link ManagerUIState}.
-   * @param options.initialTab - Initial tab to show (NEW_UI)
-   * @param options.legacyCommand - Command to execute (LEGACY_UI)
-   * @param options.showToastOnLegacyError - Toast when the legacy command fails
-   * @param options.isLegacyOnly - Show an error in NEW_UI instead of opening
-   */
   async function openManager(options?: OpenManagerOptions): Promise<void> {
-    const { managerUIState } = useManagerState()
+    const scope = effectScope()
+    const managerUIState = scope.run(
+      () => useManagerState().managerUIState.value
+    )
+    scope.stop()
     const settingsDialog = useSettingsDialog()
 
-    switch (managerUIState.value) {
+    switch (managerUIState) {
       case ManagerUIState.DISABLED:
         settingsDialog.show('extension')
         break
 
       case ManagerUIState.INCOMPATIBLE:
-        // Explicit user action re-surfaces guidance instead of redirecting
-        // into settings like DISABLED does.
         showIncompatibleManagerToast({ force: true })
         break
 

@@ -5,6 +5,7 @@
  * Phase 4 renderer flip.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -115,6 +116,21 @@ describe('useManagerDialog', () => {
   describe('openManager', () => {
     beforeEach(() => {
       __resetIncompatibleToastGuard()
+    })
+
+    it('repeated event-time opens do not react to later manager state changes', async () => {
+      setManagerState(ManagerUIState.DISABLED)
+      await useManagerDialog().openManager()
+      await useManagerDialog().openManager()
+
+      setManagerState(ManagerUIState.INCOMPATIBLE)
+      useSystemStatsStore().systemStats = systemStats([
+        'main.py',
+        '--enable-manager'
+      ])
+      await nextTick()
+
+      expect(useToast().toasts).toEqual([])
     })
 
     it('DISABLED redirects to the extension settings panel', async () => {
