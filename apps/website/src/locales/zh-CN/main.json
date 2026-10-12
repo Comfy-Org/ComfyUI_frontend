@@ -4526,6 +4526,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "paparazziMe": "狗仔偶遇",
+      "paparazziMeSummary": "选一位明星和一个场景，加上你的脸，生成你们俩的闪光灯狗仔照。",
+      "paparazziMeMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
