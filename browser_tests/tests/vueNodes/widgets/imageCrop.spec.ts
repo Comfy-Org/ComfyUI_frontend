@@ -841,10 +841,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         try {
           // /view URLs are stable now, so an already-loaded image is reused
           // in-page; a fresh document forces the fetch the route will fail.
-          await comfyPage.page.reload()
-          await comfyPage.page.waitForFunction(
-            () => window.app?.graph !== undefined
-          )
+          await comfyPage.workflow.reloadAndWaitForApp()
           const runDone = comfyPage.runButton.click()
           await expect.poll(() => abortedExamplePng).toBe(true)
           await expect(
@@ -854,6 +851,10 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           await expect(
             node.getByTestId('crop-overlay'),
             'crop overlay should hide when image fails'
+          ).toHaveCount(0)
+          await expect(
+            node.locator('img'),
+            'a failed image should not stay mounted'
           ).toHaveCount(0)
           await runDone
         } finally {

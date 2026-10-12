@@ -428,6 +428,23 @@ describe('useBoundingBoxes background image', () => {
     ])
   })
 
+  it('ignores an error from a background that was replaced', async () => {
+    appState.node = makeNode()
+    backgroundUrl.value = '/view?filename=old.png'
+    setup()
+    const [old] = FakeImage.created
+    backgroundUrl.value = '/view?filename=new.png'
+    await flush()
+    FakeImage.created[1].load(512, 512)
+    old.onerror?.()
+    await flush()
+
+    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    await flush()
+
+    expect(FakeImage.created).toHaveLength(2)
+  })
+
   it('does not refetch a loaded background when outputs change', async () => {
     appState.node = makeNode()
     backgroundUrl.value = '/view?filename=bg.png'
