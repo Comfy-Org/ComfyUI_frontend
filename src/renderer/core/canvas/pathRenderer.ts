@@ -168,25 +168,20 @@ export class CanvasPathRenderer {
   ): Path2D {
     const path = new Path2D()
 
-    // Determine final color
     const isHighlighted = context.highlightedIds?.has(link.id) ?? false
     const color = this.determineLinkColor(link, context, isHighlighted)
 
-    // Save context state
     ctx.save()
 
-    // Apply disabled pattern if needed
     if (link.disabled && context.patterns?.disabled) {
       ctx.strokeStyle = context.patterns.disabled
     } else {
       ctx.strokeStyle = color
     }
 
-    // Set line properties
     ctx.lineWidth = context.style.connectionWidth
     ctx.lineJoin = 'round'
 
-    // Draw border if needed
     if (context.style.borderWidth && !context.style.lowQuality) {
       this.drawLinkPath(
         ctx,
@@ -198,7 +193,6 @@ export class CanvasPathRenderer {
       )
     }
 
-    // Draw main link
     this.drawLinkPath(
       ctx,
       path,
@@ -208,15 +202,12 @@ export class CanvasPathRenderer {
       color
     )
 
-    // Calculate and store center position
     this.calculateCenterPoint(link, context)
 
-    // Draw arrows if needed
     if (context.style.showArrows) {
       this.drawArrows(ctx, link, context, color)
     }
 
-    // Draw center marker if needed (for link menu interaction)
     if (
       context.style.showCenterMarker &&
       context.scale &&
@@ -226,7 +217,6 @@ export class CanvasPathRenderer {
       this.drawCenterMarker(ctx, link, context, color)
     }
 
-    // Draw flow animation if needed
     if (link.flow && context.animation) {
       this.drawFlowAnimation(ctx, path, link, context)
     }
