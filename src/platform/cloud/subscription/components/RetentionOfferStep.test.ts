@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -322,8 +322,8 @@ describe('RetentionOfferStep', () => {
     )
 
     expect(workspaceApi.acceptRetentionOffer).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'warn' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'warning' })
     )
     expect(onDecide).toHaveBeenCalledExactlyOnceWith('dismissed')
   })

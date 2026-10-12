@@ -14,7 +14,6 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -464,6 +463,7 @@ test.describe(
 
     test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({
       page,
+      toast,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
@@ -486,7 +486,7 @@ test.describe(
       // and `toContainText` passes on any node in the collection, so either
       // alone would accept a message the user never sees. Filter to the text
       // and require it on screen.
-      const rejectionToast = new ToastHelper(page).toastErrors.filter({
+      const rejectionToast = toast.toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
       await expect(rejectionToast).toBeVisible({ timeout: 3_000 })

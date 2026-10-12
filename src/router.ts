@@ -23,9 +23,10 @@ import {
   markSsoReentry,
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
+import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useUserStore } from '@/stores/userStore'
@@ -191,6 +192,7 @@ if (isCloud) {
       attempt: ssoError ? 'failed' : hasRecentSsoReentry() ? 'recent' : 'none'
     })
     if (reentry.kind === 'sso-redirect' && markSsoReentry()) {
+      trackSsoRequiredShown('cloud_app', 'session_expired', 'redirect')
       window.location.assign(
         ssoStartUrl({
           email: reentry.email,
@@ -277,8 +279,7 @@ if (isCloud) {
     if (!isLoggedIn) {
       // For Electron, use dialog
       if (isDesktop) {
-        const dialogService = useDialogService()
-        const loginSuccess = await dialogService.showSignInDialog()
+        const loginSuccess = await useAuthDialogs().showSignInDialog()
         return loginSuccess ? next() : next(false)
       }
 

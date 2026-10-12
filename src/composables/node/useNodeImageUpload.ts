@@ -2,13 +2,14 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const UPLOAD_TIMEOUT_MS = 120_000
 const BYTES_PER_MB = 1024 * 1024
@@ -53,7 +54,7 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(buildUploadErrorMessage(resp))
+    useToast().warning(buildUploadErrorMessage(resp))
     return
   }
 
@@ -104,16 +105,20 @@ export const useNodeImageUpload = (
       return path
     } catch (error) {
       if (error instanceof DOMException && error.name === 'TimeoutError') {
-        useToastStore().addAlert(t('g.uploadTimedOut'))
+        useToast().warning(t('g.uploadTimedOut'))
       } else {
-        useToastStore().addAlert(String(error))
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     }
   }
 
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) {
-      useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+      useToast().warning(t('g.uploadAlreadyInProgress'))
       return []
     }
     node.isUploading = true

@@ -22,6 +22,7 @@ import {
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -234,10 +235,8 @@ async function payAndOpenVerification(page: Page, routes: TopupRoutes) {
 const completeVerification = (dialog: TopUpCreditsDialog) =>
   dialog.root.getByRole('button', { name: 'Complete verification' })
 
-const successToast = (page: Page) =>
-  page
-    .locator('.p-toast-message.p-toast-message-success')
-    .getByText('Credits added successfully')
+const successToast = (toast: ToastHelper) =>
+  toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
 
 function transports(requests: Request[]): string[] {
   return requests.map((request) => request.resourceType())
@@ -565,7 +564,8 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
 
   test.describe('hosted bank verification', () => {
     test('offers the verification again after the customer abandons the hosted page', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
@@ -581,11 +581,12 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await expect(completeVerification(dialog)).not.toHaveAttribute(
         'aria-busy'
       )
-      await expect(successToast(page)).toHaveCount(0)
+      await expect(successToast(toast)).toHaveCount(0)
     })
 
     test('settles the same purchase when the customer retries the verification', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
@@ -599,7 +600,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(successToast(page)).toBeVisible()
+      await expect(successToast(toast)).toBeVisible()
       await expect(dialog.root).toBeHidden()
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(operationIdsPolled(routes.pollRequests)).toEqual(
@@ -609,7 +610,8 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     })
 
     test('does not offer the verification again once the bank has accepted it', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
@@ -630,9 +632,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       }
 
       await expect(
-        page
-          .locator('.p-toast-message')
-          .getByText('Verify your payment to add your credits')
+        toast.withText('Verify your payment to add your credits')
       ).toHaveCount(0)
       // Shown as work in progress, not as a step the customer still owes.
       await expect(completeVerification(dialog)).toBeDisabled()
@@ -645,7 +645,8 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     })
 
     test('reports the outcome of a verified purchase after a reload', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(120_000)
       const routes = await setupTopUp(page)
@@ -660,7 +661,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(successToast(page)).toBeVisible({ timeout: 45_000 })
+      await expect(successToast(toast)).toBeVisible({ timeout: 45_000 })
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(transports(routes.pollRequests)).not.toContain('xhr')
       // The step was already done, so the reload has nothing to reopen.
@@ -704,7 +705,8 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
 
   test.describe('a plan change over an operation parked by an earlier attempt', () => {
     test('says the earlier payment has to finish, and issues no second subscribe', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(90_000)
       const routes = await setupSubscription(page)
@@ -725,7 +727,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await confirmUpgrade(page)
 
       await expect(
-        page.getByText(
+        toast.withText(
           'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
         )
       ).toBeVisible()

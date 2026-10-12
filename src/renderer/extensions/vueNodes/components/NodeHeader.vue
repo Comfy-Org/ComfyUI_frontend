@@ -38,21 +38,25 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <div
-          v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2"
-          data-testid="node-title"
-        >
-          <div class="flex-1 truncate">
-            <EditableText
-              :model-value="displayTitle"
-              :is-editing="isEditing"
-              :input-attrs="{ 'data-testid': 'node-title-input' }"
-              @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
-            />
-          </div>
-        </div>
+        <Tooltip :disabled="!tooltipText">
+          <TooltipTrigger as-child>
+            <div
+              class="flex min-w-0 flex-1 items-center gap-2"
+              data-testid="node-title"
+            >
+              <div class="flex-1 truncate">
+                <EditableText
+                  :model-value="displayTitle"
+                  :is-editing="isEditing"
+                  :input-attrs="{ 'data-testid': 'node-title-input' }"
+                  @edit="handleTitleEdit"
+                  @cancel="handleTitleCancel"
+                />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>{{ tooltipText }}</TooltipContent>
+        </Tooltip>
       </div>
 
       <CreditBadge
@@ -77,6 +81,9 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -114,17 +121,11 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || ''
-)
+const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
 
-const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
-  const description = getNodeDescription.value
-  return createTooltipConfig(description)
-})
+const tooltipText = computed(() =>
+  isEditing.value ? '' : getNodeDescription.value
+)
 
 const resolveTitle = (info: NodeState | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')

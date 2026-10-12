@@ -7,6 +7,9 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
+const mockFrontendBucket = {
+  value: undefined as 'canary' | 'stable' | undefined
+}
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
 
@@ -14,6 +17,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock(import('@/platform/telemetry/initDatadogRum'), () => ({
+  getFrontendBucket: () => mockFrontendBucket.value
 }))
 
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
@@ -50,10 +57,78 @@ function installDesktopBridge(capture: unknown = captureDesktopException) {
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockFrontendBucket.value = undefined
     delete window.__comfyDesktop2
     hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
+  })
+
+  it('tags Sentry and Datadog with the resolved canary bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(addError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('never lets a caller tag override the resolved bucket', async () => {
+    mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags: { bucket: 'stable' }
+    })
+
+    expect(captureException).toHaveBeenCalledWith(
+      error,
+      expect.objectContaining({
+        tags: expect.objectContaining({ bucket: 'canary' })
+      })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
+  })
+
+  it('omits the bucket tag before it resolves', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error('boom')
+
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    const [, sentryOptions] = captureException.mock.calls[0] as [
+      unknown,
+      { tags: Record<string, unknown> }
+    ]
+    expect(sentryOptions.tags).not.toHaveProperty('bucket')
   })
 
   it('reaches both Sentry and Datadog from a single call', async () => {

@@ -90,7 +90,7 @@ const planCards = computed(() =>
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
-    features: plan.features
+    featureGroups: plan.featureGroups
   }))
 )
 </script>
@@ -151,7 +151,7 @@ const planCards = computed(() =>
           creditsKey,
           creditsLabel,
           estimateKey,
-          features
+          featureGroups
         } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
@@ -176,8 +176,8 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div v-if="features.length" class="mt-8">
-          <PricingPlanFeatureList :features="[{ features }]" :locale />
+        <div v-if="featureGroups.length" class="mt-8">
+          <PricingPlanFeatureList :features="featureGroups" :locale />
         </div>
 
         <PricingCredits

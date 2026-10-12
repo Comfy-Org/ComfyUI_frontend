@@ -43,7 +43,6 @@ function renderPicker() {
     {
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: { ProgressSpinner: true }
       }
     }
@@ -58,9 +57,8 @@ beforeEach(() => {
     'Comfy.Templates.SelectedRunsOn': [],
     'Comfy.Templates.SortBy': 'default'
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => Response.json({ version: 0.4, nodes: [], links: [] }))
+  vi.mocked(fetch).mockImplementation(async () =>
+    Response.json({ version: 0.4, nodes: [], links: [] })
   )
   const store = useWorkflowTemplatesStore()
   store.isLoaded = true
@@ -151,5 +149,26 @@ describe('template picker close lifecycle', () => {
     expect(afterClose).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackTemplateLibraryClosed).not.toHaveBeenCalled()
     expect(store.loadingTemplateId).toBe('previous')
+  })
+})
+
+describe('template tags', () => {
+  it('discloses the hidden tags on tap without opening the template', async () => {
+    const store = useWorkflowTemplatesStore()
+    Object.assign(store, {
+      enhancedTemplates: store.enhancedTemplates.map((template) => ({
+        ...template,
+        tags: ['Image', 'Upscale', 'Video', 'Audio']
+      }))
+    })
+    renderPicker()
+
+    await userEvent.pointer({
+      keys: '[TouchA]',
+      target: await screen.findByRole('button', { name: 'Video, Audio' })
+    })
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Video, Audio')
+    expect(useWorkflowTemplatesStore().loadingTemplateId).toBeNull()
   })
 })

@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 
+import { createI18n } from 'vue-i18n'
+
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 
@@ -12,6 +15,24 @@ const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+)
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 const BillingStatusBanner = defineComponent({
   setup() {
@@ -29,6 +50,7 @@ const stubs = {
 }
 
 beforeEach(() => {
+  useBillingCapabilities().canManageMembers = computed(() => true)
   const workspaceUI = vi.mocked(useWorkspaceUI())
   workspaceUI.workspaceRole = computed(() => 'owner')
   const ownerPermissions = workspaceUI.permissions.value
@@ -50,7 +72,7 @@ describe('WorkspaceSettingsPanelContent', () => {
   it('keeps the billing banner mounted while switching sections', async () => {
     const { rerender, unmount } = render(WorkspaceSettingsPanelContent, {
       props: { section: 'planCredits' },
-      global: { stubs }
+      global: { stubs, plugins: [i18n] }
     })
 
     expect(screen.getByTestId('plan-body')).toBeInTheDocument()

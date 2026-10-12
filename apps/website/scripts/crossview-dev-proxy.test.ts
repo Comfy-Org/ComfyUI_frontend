@@ -89,18 +89,15 @@ describe('crossview dev proxy', () => {
 
   it('handles an upstream response-stream failure after sending headers', async () => {
     const failure = new Error('upstream failed')
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        Promise.resolve(
-          new Response(
-            new ReadableStream({
-              start(controller) {
-                controller.enqueue(new TextEncoder().encode('partial'))
-                queueMicrotask(() => controller.error(failure))
-              }
-            })
-          )
+    vi.mocked(fetch).mockImplementation(async () =>
+      Promise.resolve(
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('partial'))
+              queueMicrotask(() => controller.error(failure))
+            }
+          })
         )
       )
     )

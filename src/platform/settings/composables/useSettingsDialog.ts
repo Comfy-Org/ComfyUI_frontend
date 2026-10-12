@@ -2,7 +2,6 @@ import type { Component } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
@@ -30,7 +29,6 @@ export function registerSettingDialogComponent(
 }
 
 export function useSettingsDialog() {
-  const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 
   function hide() {
@@ -45,7 +43,7 @@ export function useSettingsDialog() {
       })
       return
     }
-    dialogService.showLayoutDialog({
+    dialogStore.showDialog({
       key: DIALOG_KEY,
       component: settingDialogComponent,
       props: {
@@ -55,6 +53,8 @@ export function useSettingsDialog() {
       },
       dialogComponentProps: {
         renderer: 'reka',
+        headless: true,
+        closable: true,
         // Settings hosts nested PrimeVue dialogs (Edit Keybinding, Overwrite
         // confirm, etc.) that teleport to body. Reka's modal mode traps focus
         // inside the Settings content and disables body pointer-events, which

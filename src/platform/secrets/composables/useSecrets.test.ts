@@ -1,13 +1,11 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretErrorCode, SecretMetadata } from '../types'
 import { useSecrets as useSecretsComposable } from './useSecrets'
-
-const mockAdd = vi.fn()
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
@@ -61,10 +59,6 @@ function createMockSecret(
   }
 }
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockAdd)
-})
-
 describe('useSecrets', () => {
   describe('fetchSecrets', () => {
     it('fetches and populates secrets list', async () => {
@@ -97,11 +91,13 @@ describe('useSecrets', () => {
       await fetchSecrets()
 
       expect(secrets.value).toEqual([])
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Network error'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Network error',
+          kind: 'error',
+          title: 'g.error'
+        })
+      ])
     })
   })
 
@@ -143,11 +139,13 @@ describe('useSecrets', () => {
       await deleteSecret(secret)
 
       expect(secrets.value).toHaveLength(1)
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Delete failed'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Delete failed',
+          kind: 'error',
+          title: 'g.error'
+        })
+      ])
     })
   })
 
@@ -191,7 +189,7 @@ describe('useSecrets', () => {
       await fetchProviders()
 
       expect(availableProviders.value).toBeNull()
-      expect(mockAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

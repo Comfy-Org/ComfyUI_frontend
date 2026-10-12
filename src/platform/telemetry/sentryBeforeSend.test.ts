@@ -109,4 +109,22 @@ describe('sentryBeforeSend', () => {
       sentryBeforeSend(eventFor(error), { originalException: error })
     ).toBeNull()
   })
+
+  it('adds Vue directive diagnostics to retained events', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          {
+            value: 'undefined is not a function',
+            stacktrace: { frames: [{ function: 'withDirectives' }] }
+          }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryBeforeSend(event, {})?.tags?.diagnostic).toBe(
+      'vue_directive_runtime'
+    )
+  })
 })

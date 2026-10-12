@@ -200,6 +200,17 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
+type OpsResultDropReason = 'inactive_target' | 'workflow_mismatch'
+
+function opsResultDropReason(
+  active: boolean,
+  workflowId: unknown,
+  subscribedWorkflowId: string | null
+): OpsResultDropReason | null {
+  if (!active) return 'inactive_target'
+  return workflowId === subscribedWorkflowId ? null : 'workflow_mismatch'
+}
+
 export interface AgentCrdtFollowerEvents {
   onMaterialized?: (event: {
     workflowId: string
@@ -389,6 +400,26 @@ function startAgentCrdtFollower(
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
+  const pendingRejected = new Map<string, Op[]>()
+
+  const applyRejectedOps = (
+    workflowId: string,
+    rejected: readonly Op[]
+  ): boolean => {
+    if (getGraph() === null) return false
+    reportMaterialized(
+      workflowId,
+      projection.revertRejected(workflowId, rejected)
+    )
+    return true
+  }
+
+  const drainRejectedOps = (workflowId: string): void => {
+    const rejected = pendingRejected.get(workflowId)
+    if (!rejected) return
+    if (applyRejectedOps(workflowId, rejected))
+      pendingRejected.delete(workflowId)
+  }
 
   const trackAcknowledgedDeletes = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
@@ -411,10 +442,18 @@ function startAgentCrdtFollower(
 
     const applied = new Set(outcome.result.applied)
     const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
-    )
+    if (!isTargetActive.value) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
+      return
+    }
+    if (!applyRejectedOps(workflowId, rejected))
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
@@ -590,11 +629,19 @@ function startAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
-    if (
-      !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+    const dropReason = opsResultDropReason(
+      isTargetActive.value,
+      detail?.workflowId,
+      subscribedWorkflowId.value
     )
+    if (dropReason !== null) {
+      recordDevEvent('doc_ops_result_dropped', {
+        reason: dropReason,
+        subscribedWorkflowId: subscribedWorkflowId.value,
+        frame: event.detail ?? null
+      })
       return
+    }
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
@@ -729,7 +776,10 @@ function startAgentCrdtFollower(
   // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
-    if (graph && bound !== null && isTargetActive.value) applyCollected(bound)
+    if (graph && bound !== null && isTargetActive.value) {
+      applyCollected(bound)
+      drainRejectedOps(bound)
+    }
   })
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
@@ -812,23 +862,37 @@ function startAgentCrdtFollower(
     if (justActivated) applyCollected(persisted)
   }
 
+  type TargetSnapshot = [string | null | undefined, boolean | undefined]
+  const isActivationEdge = (
+    active: boolean,
+    previous: TargetSnapshot | undefined
+  ): boolean => active && previous?.[1] === false
+  const acknowledgesFollowedDoc = (
+    next: string | null,
+    active: boolean,
+    justActivated: boolean
+  ): boolean =>
+    active &&
+    !justActivated &&
+    next !== null &&
+    next === subscribedWorkflowId.value
+
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
     rebindProjection(next)
     retarget(next)
+    drainRejectedOps(next)
     if (justActivated) applyCollected(next)
   }
 
   watch(
     [workflowId, isTargetActive],
-    (
-      [next, active],
-      previous: [string | null | undefined, boolean | undefined] | undefined
-    ) => {
+    ([next, active], previous: TargetSnapshot | undefined) => {
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there): a plain mount or retarget has no
       // collected changes to apply, the graph watcher covers readiness.
-      const justActivated = active && previous?.[1] === false
+      const justActivated = isActivationEdge(active, previous)
+      if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
       pendingLiveNodeIds.clear()
@@ -864,6 +928,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
+      () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

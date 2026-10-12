@@ -48,8 +48,6 @@ describe('shared Router rendering', () => {
     vi.spyOn(globalThis, 'btoa').mockImplementation(() => {
       throw cause
     })
-    const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
 
     await expect(
       router_render(
@@ -72,27 +70,24 @@ describe('shared Router rendering', () => {
     const source = new Blob([png], { type: 'image/png' })
     let grants = 0
     const bodies: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (url, init) => {
-        if (String(url).endsWith('/requests')) return queueNotEnabled()
-        if (String(url).endsWith('/customers/storage')) {
-          grants++
-          return Response.json({
-            upload_url: `https://storage.example/upload-${grants}`,
-            download_url: `https://storage.example/image-${grants}.png`
-          })
-        }
-        if (init?.method === 'PUT') return new Response(null)
-        expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
-          'same-attempt'
-        )
-        bodies.push(String(init?.body))
-        return bodies.length === 1
-          ? new Response('Provider unavailable', { status: 502 })
-          : prediction('https://storage.example/upscaled.png')
-      })
-    )
+    vi.mocked(globalThis.fetch).mockImplementation(async (url, init) => {
+      if (String(url).endsWith('/requests')) return queueNotEnabled()
+      if (String(url).endsWith('/customers/storage')) {
+        grants++
+        return Response.json({
+          upload_url: `https://storage.example/upload-${grants}`,
+          download_url: `https://storage.example/image-${grants}.png`
+        })
+      }
+      if (init?.method === 'PUT') return new Response(null)
+      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
+        'same-attempt'
+      )
+      bodies.push(String(init?.body))
+      return bodies.length === 1
+        ? new Response('Provider unavailable', { status: 502 })
+        : prediction('https://storage.example/upscaled.png')
+    })
     const slug = 'wavespeed--seedvr2-image--edit-images'
     const parameters = { source_images: [source] }
     const options = { token: 'retry-token', idempotencyKey: 'same-attempt' }
@@ -113,24 +108,21 @@ describe('shared Router rendering', () => {
   it('sends a prepared request again without preparing its inputs a second time', async () => {
     let grants = 0
     const bodies: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (url, init) => {
-        if (String(url).endsWith('/requests')) return queueNotEnabled()
-        if (String(url).endsWith('/customers/storage')) {
-          grants++
-          return Response.json({
-            upload_url: `https://storage.example/upload-${grants}`,
-            download_url: `https://storage.example/image-${grants}.png`
-          })
-        }
-        if (init?.method === 'PUT') return new Response(null)
-        bodies.push(String(init?.body))
-        return bodies.length === 1
-          ? new Response('Provider unavailable', { status: 502 })
-          : prediction('https://storage.example/upscaled.png')
-      })
-    )
+    vi.mocked(globalThis.fetch).mockImplementation(async (url, init) => {
+      if (String(url).endsWith('/requests')) return queueNotEnabled()
+      if (String(url).endsWith('/customers/storage')) {
+        grants++
+        return Response.json({
+          upload_url: `https://storage.example/upload-${grants}`,
+          download_url: `https://storage.example/image-${grants}.png`
+        })
+      }
+      if (init?.method === 'PUT') return new Response(null)
+      bodies.push(String(init?.body))
+      return bodies.length === 1
+        ? new Response('Provider unavailable', { status: 502 })
+        : prediction('https://storage.example/upscaled.png')
+    })
     const slug = 'wavespeed--seedvr2-image--edit-images'
     let prepared: RouterRenderOptions['prepared']
     await expect(
@@ -167,35 +159,32 @@ describe('shared Router rendering', () => {
       download_url: 'https://storage.example/input.png'
     }
     const calls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (url, init) => {
-        if (String(url).endsWith('/requests')) return queueNotEnabled()
-        calls.push(String(url))
-        const headers = new Headers(init?.headers)
-        if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`) {
-          expect(headers.get('Authorization')).toBe('Bearer test-key')
-          return Response.json(grant)
-        }
-        if (url === grant.upload_url) {
-          expect(init?.method).toBe('PUT')
-          expect(headers.has('Authorization')).toBe(false)
-          if (!(init?.body instanceof File)) throw new Error('Missing bytes')
-          expect(new Uint8Array(await init.body.arrayBuffer())).toEqual(png)
-          return new Response(null, { status: 200 })
-        }
-        expect(url).toBe(
-          `${WORKSHOP_ROUTER_BASE_URL}/v2/models/wavespeed/seedvr2`
-        )
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          image: grant.download_url
-        })
-        expect(headers.get('Idempotency-Key')).toBe('render-once')
-        return prediction('https://storage.example/upscaled.png', {
-          'X-Comfy-Request-Id': 'request-123'
-        })
+    vi.mocked(globalThis.fetch).mockImplementation(async (url, init) => {
+      if (String(url).endsWith('/requests')) return queueNotEnabled()
+      calls.push(String(url))
+      const headers = new Headers(init?.headers)
+      if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`) {
+        expect(headers.get('Authorization')).toBe('Bearer test-key')
+        return Response.json(grant)
+      }
+      if (url === grant.upload_url) {
+        expect(init?.method).toBe('PUT')
+        expect(headers.has('Authorization')).toBe(false)
+        if (!(init?.body instanceof File)) throw new Error('Missing bytes')
+        expect(new Uint8Array(await init.body.arrayBuffer())).toEqual(png)
+        return new Response(null, { status: 200 })
+      }
+      expect(url).toBe(
+        `${WORKSHOP_ROUTER_BASE_URL}/v2/models/wavespeed/seedvr2`
+      )
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        image: grant.download_url
       })
-    )
+      expect(headers.get('Idempotency-Key')).toBe('render-once')
+      return prediction('https://storage.example/upscaled.png', {
+        'X-Comfy-Request-Id': 'request-123'
+      })
+    })
     const result = await router_render(
       'wavespeed--seedvr2-image--edit-images',
       { source_images: [new Blob([png], { type: 'image/png' })] },
@@ -220,58 +209,55 @@ describe('shared Router rendering', () => {
       download_url: 'https://storage.example/input.png'
     }
     const calls: string[] = []
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (url, init) => {
-        if (String(url).endsWith('/requests')) return queueNotEnabled()
-        calls.push(String(url))
-        if (url === source) {
-          expect(new Headers(init?.headers).has('Authorization')).toBe(false)
-          return new Response(png, { headers: { 'Content-Type': 'image/png' } })
-        }
-        if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`)
-          return Response.json(grant)
-        if (url === grant.upload_url) {
-          expect(init?.method).toBe('PUT')
-          expect(new Headers(init?.headers).has('Authorization')).toBe(false)
-          return new Response(null)
-        }
-        expect(url).toBe(
-          `${WORKSHOP_ROUTER_BASE_URL}/v2/models/vertexai/gemini-3-pro-image`
-        )
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          contents: [
-            {
+    vi.mocked(globalThis.fetch).mockImplementation(async (url, init) => {
+      if (String(url).endsWith('/requests')) return queueNotEnabled()
+      calls.push(String(url))
+      if (url === source) {
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        return new Response(png, { headers: { 'Content-Type': 'image/png' } })
+      }
+      if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`)
+        return Response.json(grant)
+      if (url === grant.upload_url) {
+        expect(init?.method).toBe('PUT')
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        return new Response(null)
+      }
+      expect(url).toBe(
+        `${WORKSHOP_ROUTER_BASE_URL}/v2/models/vertexai/gemini-3-pro-image`
+      )
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        contents: [
+          {
+            parts: [
+              { text: 'Paint this in watercolor' },
+              {
+                fileData: {
+                  fileUri: grant.download_url,
+                  mimeType: 'image/png'
+                }
+              }
+            ]
+          }
+        ]
+      })
+      return Response.json({
+        candidates: [
+          {
+            content: {
               parts: [
-                { text: 'Paint this in watercolor' },
                 {
-                  fileData: {
-                    fileUri: grant.download_url,
+                  inlineData: {
+                    data: btoa(String.fromCharCode(...png)),
                     mimeType: 'image/png'
                   }
                 }
               ]
             }
-          ]
-        })
-        return Response.json({
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    inlineData: {
-                      data: btoa(String.fromCharCode(...png)),
-                      mimeType: 'image/png'
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        })
+          }
+        ]
       })
-    )
+    })
     const result = await router_render(
       'vertexai--gemini-3-pro-image--edit-images',
       { prompt: 'Paint this in watercolor', reference_images: [source] },
@@ -287,14 +273,13 @@ describe('shared Router rendering', () => {
 
   it('cancels after a storage grant without uploading or generating', async () => {
     const controller = new AbortController()
-    const requests = vi.fn<typeof fetch>(async () => {
+    vi.mocked(fetch).mockImplementation(async () => {
       controller.abort()
       return Response.json({
         upload_url: 'https://storage.example/upload',
         download_url: 'https://storage.example/input.png'
       })
     })
-    vi.stubGlobal('fetch', requests)
     await expect(
       router_render(
         'wavespeed--seedvr2-image--edit-images',
@@ -302,6 +287,6 @@ describe('shared Router rendering', () => {
         { token: 'test-key', signal: controller.signal }
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

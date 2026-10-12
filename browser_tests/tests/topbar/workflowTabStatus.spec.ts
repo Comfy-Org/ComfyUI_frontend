@@ -123,4 +123,39 @@ test.describe('Workflow tab status indicator', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect(backgroundTab.getByRole('img')).toHaveCount(0)
   })
+
+  test('keeps the manually scrolled position after a background status change', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 800, height: 720 })
+    const ws = await getWebSocket()
+    const { exec, jobId, backgroundTab } = await runOnBackgroundTab(
+      comfyPage,
+      ws
+    )
+    const topbar = comfyPage.menu.topbar
+    await topbar.openBlankWorkflows(9)
+    await topbar.tabs.evaluateAll((tabs) =>
+      Promise.all(
+        tabs.flatMap((tab) =>
+          tab.getAnimations().map((animation) => animation.finished)
+        )
+      )
+    )
+    await comfyPage.nextFrame()
+    await topbar.tabStrip.evaluate((strip) => {
+      strip.scrollLeft = 0
+    })
+    await expect(backgroundTab).toBeInViewport({ ratio: 1 })
+    await expect(topbar.getActiveTab()).not.toBeInViewport({ ratio: 1 })
+
+    exec.executionSuccess(jobId)
+
+    await expect(
+      backgroundTab.getByRole('img', { name: 'Completed' })
+    ).toBeVisible()
+    await expect(backgroundTab).toBeInViewport({ ratio: 1 })
+    await expect(topbar.getActiveTab()).not.toBeInViewport({ ratio: 1 })
+  })
 })

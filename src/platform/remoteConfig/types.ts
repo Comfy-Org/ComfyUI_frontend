@@ -111,10 +111,11 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   cancellation_survey_id?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
-  'agent-free-use-message-placement'?: string
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
+  /** Local prompts carry a renewable partner-node token instead of the workspace token. */
+  partner_node_token?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
@@ -129,6 +130,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
   sso_enabled?: boolean
+  local_web_sso?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean

@@ -20,6 +20,8 @@ import type {
   UserAttachment
 } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { SkillReference } from '../../types/skillReference'
+import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 
 export type { UserAttachment }
 
@@ -34,6 +36,7 @@ interface UserEntry {
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -44,6 +47,7 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  skillReference?: SkillReference
   settled: boolean
 }
 
@@ -63,6 +67,10 @@ interface ActiveTurnSlot {
  * cannot leave the card disabled for the rest of the session.
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
+
+function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
+  return part.type === 'tool' && part.name === 'load_skill'
+}
 
 export interface LiveTurn {
   threadId: string
@@ -215,6 +223,13 @@ export const useAgentConversationStore = defineStore(
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const userSkillReferences = ref(new Map<TurnId, SkillReference>())
+    /**
+     * Skill names in the last loaded history; each load replaces it, and live
+     * turns never add to it. Marks when an opened conversation needs the
+     * saved-skill catalog its references are shown against.
+     */
+    const historySkillNames = shallowRef<readonly string[]>([])
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
@@ -316,7 +331,11 @@ export const useAgentConversationStore = defineStore(
       tags?: string[],
       workflowReferences?: WorkflowReference[]
     ): void {
-      userTexts.value.set(turnId, text)
+      const prompt = parseSkillReferenceText(text, workflowReferences)
+      userTexts.value.set(turnId, prompt.text)
+      if (prompt.skillReference)
+        userSkillReferences.value.set(turnId, prompt.skillReference)
+      else userSkillReferences.value.delete(turnId)
       if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
         rememberAttachmentNames(attachments)
@@ -324,7 +343,7 @@ export const useAgentConversationStore = defineStore(
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
-        userWorkflowReferences.value.set(turnId, workflowReferences)
+        userWorkflowReferences.value.set(turnId, prompt.workflowReferences)
     }
 
     function setThreadId(id: string | null): void {
@@ -337,7 +356,7 @@ export const useAgentConversationStore = defineStore(
       text: string,
       parts: AssistantMessage['parts']
     ): void {
-      userTexts.value.set(turnId, text)
+      recordUser(turnId, text)
       const message = createAssistantMessage(turnId)
       message.streaming = false
       message.parts = parts
@@ -688,6 +707,7 @@ export const useAgentConversationStore = defineStore(
         message: slot.message,
         transport: slot.transport,
         userText: userTexts.value.get(slot.message.id),
+        skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false
       })
       clearActive()
@@ -854,8 +874,11 @@ export const useAgentConversationStore = defineStore(
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
-      )
+      ) {
         userTexts.value.set(entry.message.id, entry.userText)
+        if (entry.skillReference)
+          userSkillReferences.value.set(entry.message.id, entry.skillReference)
+      }
     }
 
     function removeHydratedCopy(
@@ -934,6 +957,30 @@ export const useAgentConversationStore = defineStore(
         { threadId: slot.threadId, messageId: slot.turnId },
         ...background
       ]
+    }
+
+    function liveTurnSkillState(
+      turn: LiveTurn
+    ): Pick<BackgroundTurn, 'message' | 'skillReference'> | undefined {
+      const slot = activeSlot.value
+      if (slot?.threadId === turn.threadId && slot.turnId === turn.messageId)
+        return {
+          message: slot.message,
+          skillReference: userSkillReferences.value.get(slot.message.id)
+        }
+      const entry = backgroundTurns.get(turn.messageId)
+      return entry?.threadId === turn.threadId && !entry.settled
+        ? entry
+        : undefined
+    }
+
+    function turnUsesSkill(turn: LiveTurn): boolean {
+      const live = liveTurnSkillState(turn)
+      return (
+        live !== undefined &&
+        (live.skillReference !== undefined ||
+          live.message.parts.some(isLoadSkillPart))
+      )
     }
 
     function settleTurn(
@@ -1017,6 +1064,8 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = new Map()
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
+      userSkillReferences.value = new Map()
+      historySkillNames.value = []
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
@@ -1074,6 +1123,12 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
+      userSkillReferences.value = transcript.userSkillReferences
+      historySkillNames.value = [
+        ...new Set(
+          [...transcript.userSkillReferences.values()].map(({ name }) => name)
+        )
+      ]
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedTurnIds = new Map(
@@ -1170,6 +1225,7 @@ export const useAgentConversationStore = defineStore(
             }
           : recordedMessage
         const text = userTexts.value.get(message.id)
+        const skillReference = userSkillReferences.value.get(message.id)
         const assistantEntries =
           isPaywallResolved && message.parts.length === 0 ? [] : [message]
         if (text === undefined) return assistantEntries
@@ -1180,7 +1236,8 @@ export const useAgentConversationStore = defineStore(
             text,
             attachments: userAttachments.value.get(message.id),
             tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id)
+            workflowReferences: userWorkflowReferences.value.get(message.id),
+            ...(skillReference ? { skillReference } : {})
           },
           ...assistantEntries
         ]
@@ -1247,6 +1304,8 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      turnUsesSkill,
+      historySkillNames,
       settleTurn,
       reset,
       hydrate

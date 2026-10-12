@@ -20,13 +20,13 @@
     </template>
   </div>
 
-  <GlobalToast />
-  <InviteAcceptedToast />
-  <RerouteMigrationToast />
-  <ModelImportProgressDialog />
-  <AssetExportProgressDialog />
+  <Toaster />
+  <ToastDock>
+    <ModelImportProgressDialog />
+    <AssetExportProgressDialog />
+    <ManagerProgressToast />
+  </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
@@ -53,12 +53,12 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
+import ToastDock from '@/components/ui/toast/ToastDock.vue'
+import Toaster from '@/components/ui/toast/Toaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
-import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
-import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
 import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
@@ -121,6 +121,7 @@ import ManagerProgressToast from '@/workbench/extensions/manager/components/Mana
 
 setupAutoQueueHandler()
 useProgressFavicon()
+useProgressTextPreviews()
 useBrowserTabTitle()
 
 const settingStore = useSettingStore()

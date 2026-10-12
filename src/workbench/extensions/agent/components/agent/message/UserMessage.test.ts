@@ -163,16 +163,26 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
+        { name: 'song.mp3', ref: 'upload_song.mp3', mediaUrl: 'blob:song' },
+        {
+          name: 'clip.mp4',
+          ref: 'upload_clip.mp4',
+          previewUrl: 'blob:poster',
+          mediaUrl: 'blob:video'
+        }
       ]
     })
 
     expect(stubbedAssets()).toEqual([
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
       {
-        url: expect.stringContaining(
-          '/view?filename=upload_clip.mp4&type=input'
-        ),
+        url: 'blob:song',
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
+      },
+      {
+        url: 'blob:video',
         filename: 'upload_clip.mp4',
         kind: 'video',
         label: 'clip.mp4'
@@ -293,12 +303,13 @@ describe('UserMessage', () => {
     await user.hover(screen.getByText('make it cinematic'))
     const copyButton = screen.getByRole('button', { name: t('agent.copy') })
     await user.hover(copyButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('agent.copy'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      t('agent.copy')
+    )
     await user.click(copyButton)
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 
   it('copies a reference-only message with readable workflow names', async () => {
@@ -349,9 +360,7 @@ describe('UserMessage', () => {
 
     const editButton = screen.getByRole('button', { name: t('g.edit') })
     await user.hover(editButton)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(t('g.edit'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(t('g.edit'))
     await user.click(editButton)
 
     expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])

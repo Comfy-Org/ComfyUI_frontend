@@ -1,8 +1,6 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { createI18n } from 'vue-i18n'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type {
   DocResetFrame,
@@ -27,6 +25,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 /**
@@ -103,11 +102,6 @@ const SEED: WorkflowJSON = {
 }
 
 const SEND_LABEL = enMessages.agent.send
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 /**
  * Parses a raw `/ws` message down to its `doc_subscribe` payload, or `null`
@@ -324,7 +318,7 @@ async function driveThroughDocReset(
 
   await expect.poll(() => socket !== null).toBe(true)
 
-  const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Run the workflow.')
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText('Run the workflow.').first()).toBeVisible()

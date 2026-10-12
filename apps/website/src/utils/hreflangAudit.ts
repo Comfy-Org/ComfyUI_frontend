@@ -6,12 +6,54 @@
  * rules exist because the first version of the crawler passed a broken cluster.
  */
 import type { Alternate } from './hreflangRoutes'
+import { parse } from 'parse5'
+import type { DefaultTreeAdapterTypes } from 'parse5'
 
 import { isExcludedFromSitemap } from '@/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
 import { astroRedirects } from '@/config/redirects'
 import { supportsLocaleRoute } from '@/config/routes'
 import { unprefixed } from './hreflangRoutes'
+
+function languageLinks(node: DefaultTreeAdapterTypes.ParentNode): Alternate[] {
+  return node.childNodes.flatMap((child) => {
+    if (!('tagName' in child)) return []
+    const nested = languageLinks(child)
+    if (child.tagName !== 'a') return nested
+    const attrs = new Map(child.attrs.map(({ name, value }) => [name, value]))
+    const hreflang = attrs.get('hreflang')
+    return hreflang === undefined
+      ? nested
+      : [{ hreflang, href: attrs.get('href') ?? '' }, ...nested]
+  })
+}
+
+export function languageLinksIn(html: string): Alternate[] {
+  return languageLinks(parse(html))
+}
+
+export function auditLanguageLinks(
+  pages: ReadonlyMap<string, readonly Alternate[]>,
+  origin: string
+): string[] {
+  return [...pages].flatMap(([route, links]) =>
+    links.flatMap(({ hreflang, href }) => {
+      const label = `${route}: language link ${hreflang}`
+      if (!href) return [`${label} has no href`]
+      let url: URL
+      try {
+        url = new URL(href, `${origin}${route}`)
+      } catch {
+        return [`${label} has an invalid href (${href})`]
+      }
+      if (url.origin !== origin) return [`${label} points off-origin (${href})`]
+      const target = routeOfHref(`${origin}${url.pathname}`, origin)
+      return pages.has(target)
+        ? []
+        : [`${label} -> ${target} was not built (404)`]
+    })
+  )
+}
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */

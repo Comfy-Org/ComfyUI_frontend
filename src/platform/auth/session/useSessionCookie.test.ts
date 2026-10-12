@@ -1,8 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const originalFetch = globalThis.fetch
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -23,13 +21,6 @@ describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
     useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    globalThis.fetch = vi.fn()
-  })
-
-  afterEach(() => {
-    // Restore the global fetch so a leaked mock doesn't bleed into later
-    // tests that depend on real fetch semantics.
-    globalThis.fetch = originalFetch
   })
 
   it('createSessionOrThrow posts the Firebase token and awaits success', async () => {

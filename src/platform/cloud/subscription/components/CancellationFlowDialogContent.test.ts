@@ -6,12 +6,12 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { CancellationSurveyExit } from '@/platform/cloud/subscription/utils/cancellationSurvey'
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -256,7 +256,7 @@ describe('CancellationFlowDialogContent', () => {
 
       expect(closeDialog).toHaveBeenCalledOnce()
       expect(cancelStages()).toEqual(stages)
-      expect(vi.mocked(useToastStore().add).mock.calls.length > 0).toBe(toast)
+      expect(useToast().toasts.length > 0).toBe(toast)
     }
   )
 

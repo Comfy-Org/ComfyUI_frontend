@@ -1,6 +1,48 @@
 import { describe, expect, it } from 'vitest'
 
-import { nameWithoutTask } from './task-label'
+import type { WorkshopModel } from '@/config/models-catalogue'
+
+import { nameWithoutTask, taskLabelFor } from './task-label'
+
+function model(
+  task: WorkshopModel['task'],
+  modality: WorkshopModel['modality']
+): WorkshopModel {
+  return {
+    slug: 'seedream',
+    name: 'Seedream',
+    workflowCount: 1,
+    href: '/models/seedream/',
+    routerId: 'test/seedream',
+    capabilities: [],
+    task,
+    modality
+  }
+}
+
+describe('the task pill on a card', () => {
+  it.for([
+    ['text-to-image', 'image', 'Text to image'],
+    ['image-to-video', 'video', 'Image to video'],
+    ['audio-to-text', 'text', 'Audio to text'],
+    ['image-to-3d', '3d', 'Image to 3D']
+  ] as const)(
+    'reads %s mid-sentence, naming the input and the output',
+    ([task, modality, label]) => {
+      expect(taskLabelFor(model(task, modality), 'en')).toBe(label)
+    }
+  )
+
+  it.for([
+    ['the task names no real output', 'text-to-other', 'image', 'Image'],
+    ['the model states no task', undefined, 'video', 'Video']
+  ] as const)(
+    'names only what comes out when %s',
+    ([, task, modality, label]) => {
+      expect(taskLabelFor(model(task, modality), 'en')).toBe(label)
+    }
+  )
+})
 
 describe('a card name beside its task pill', () => {
   it.for([

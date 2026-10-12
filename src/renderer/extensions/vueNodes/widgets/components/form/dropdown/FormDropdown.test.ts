@@ -1,12 +1,12 @@
 import { getActivePinia } from 'pinia'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import PrimeVue from 'primevue/config'
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -129,10 +129,6 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
   await screen.findByTestId('dropdown-menu')
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
-})
 
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {

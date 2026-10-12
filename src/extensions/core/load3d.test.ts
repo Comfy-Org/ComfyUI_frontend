@@ -1,11 +1,11 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
@@ -139,10 +139,6 @@ vi.mock(import('@/i18n'))
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
-  LiteGraph: fromPartial({ ContextMenu: fromAny(vi.fn()) })
 }))
 
 await import('@/extensions/core/load3d')
@@ -459,7 +455,7 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.unableToGetModelFilePath'
     )
   })
@@ -579,7 +575,7 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await flush()
 
     expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.failedToLoadModel'
     )
   })
@@ -1082,7 +1078,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.unableToGetModelFilePath'
     )
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()

@@ -121,10 +121,7 @@
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -164,10 +161,7 @@
           <span class="flex items-center gap-1">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -242,7 +236,7 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
@@ -271,7 +265,7 @@ const {
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
@@ -560,7 +554,7 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog({
+  void showTopUpCreditsDialog({
     source: paymentIntentSourceForAddCreditsClick('credits_panel')
   })
 }

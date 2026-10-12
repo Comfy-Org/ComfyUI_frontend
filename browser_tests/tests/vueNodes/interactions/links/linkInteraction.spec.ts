@@ -7,6 +7,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -132,7 +133,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
-        await expect(comfyPage.page.getByRole('tooltip')).toBeHidden()
+        await expect(new Tooltip(comfyPage.page).open).toBeHidden()
         await expect(comfyPage.canvas).toHaveScreenshot(
           'vue-node-dragging-link.png'
         )
@@ -546,7 +547,7 @@ test.describe(
       )
       const dragTarget = {
         x: outputCenter.x + 150,
-        y: outputCenter.y - 140
+        y: outputCenter.y - 100
       }
 
       let dropPending = false

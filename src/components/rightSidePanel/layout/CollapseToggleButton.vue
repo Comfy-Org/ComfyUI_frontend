@@ -9,9 +9,8 @@
   >
     <div v-if="show" class="ml-2 flex items-center overflow-hidden">
       <Button
-        v-tooltip.bottom="
-          isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')
-        "
+        :tooltip="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        tooltip-side="bottom"
         :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
         variant="textonly"
         size="icon-sm"

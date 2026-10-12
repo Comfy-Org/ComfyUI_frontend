@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
 import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -283,10 +283,7 @@ function onClose() {
 
 function abortForScopeChange() {
   didScopeAbort.value = true
-  toast.add({
-    severity: 'warn',
-    summary: t('subscription.cancelDialog.workspaceChanged')
-  })
+  toast.warning(t('subscription.cancelDialog.workspaceChanged'))
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
@@ -305,10 +302,8 @@ function reportCancelFailure(error: unknown) {
     cancelReport.confirmed({ operationFollows: false })
     cancelReport.failed(categorizeBillingApiError(error))
   }
-  toast.add({
-    severity: 'error',
-    summary: t('subscription.cancelDialog.failed'),
-    detail: getErrorMessage(error) ?? t('g.unknownError')
+  toast.error(t('subscription.cancelDialog.failed'), {
+    description: getErrorMessage(error) ?? t('g.unknownError')
   })
   isLoading.value = false
 }

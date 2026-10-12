@@ -1,19 +1,13 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access -- hidden file input has no role/label, queried by selector */
+import { describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-
-beforeEach(() => {
-  addAlert = useToastStore().addAlert
-})
-
-let addAlert: ReturnType<typeof useToastStore>['addAlert']
 
 const i18n = createI18n({
   legacy: false,
@@ -170,7 +164,7 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).toHaveBeenCalledWith(file)
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('rejects unsupported file extensions with a toast and no emit', async () => {
@@ -185,7 +179,12 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).not.toHaveBeenCalled()
-      expect(addAlert).toHaveBeenCalledWith('Unsupported HDRI format')
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'Unsupported HDRI format'
+        })
+      ])
     })
   })
 })

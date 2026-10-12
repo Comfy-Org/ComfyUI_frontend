@@ -1,9 +1,9 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -116,7 +116,13 @@ describe('useCameraInfo', () => {
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
-    expect(useToastStore().addAlert).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title:
+          'Failed to initialize Camera Info viewer. Try reloading the page.'
+      })
+    ])
   })
 
   it('forwards toolbar actions to the viewport', () => {

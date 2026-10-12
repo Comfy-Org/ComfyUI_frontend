@@ -311,7 +311,7 @@ describe('GettingStartedScreen', () => {
       await userEvent.click(retry)
 
       expect(
-        vi.mocked(useWorkflowTemplatesStore().loadWorkflowTemplates),
+        useWorkflowTemplatesStore().loadWorkflowTemplates,
         'The store swallows fetch errors and resolves with isLoaded false, so a failed catalog must be detected without a rejection'
       ).toHaveBeenCalledTimes(2)
       await waitFor(() =>

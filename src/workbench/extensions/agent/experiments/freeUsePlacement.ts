@@ -1,61 +1,81 @@
-import { computed, ref, watch } from 'vue'
+import { readonly, ref, watch } from 'vue'
 
 import {
   isAuthenticatedConfigLoaded,
-  remoteConfig,
-  remoteConfigRevision
+  remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
+import type {
+  AgentFreeUseNoticeMetadata,
+  AgentFreeUseVariant
+} from '@/platform/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
+import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
+
 export const FREE_USE_PLACEMENT_FLAG = 'agent-free-use-message-placement'
 
-export const FREE_USE_PLACEMENTS = [
+export const FREE_USE_VARIANTS = [
   'control',
-  'top-banner',
-  'near-composer',
-  'above-input',
-  'inside-input'
-] as const satisfies readonly ['control', ...AgentFreeUsePlacement[]]
+  ...AGENT_FREE_USE_PLACEMENTS
+] as const satisfies readonly AgentFreeUseVariant[]
 
-export type FreeUseVariant = (typeof FREE_USE_PLACEMENTS)[number]
+export type FreeUseVariant = AgentFreeUseVariant
 
-function isFreeUseVariant(value: string | undefined): value is FreeUseVariant {
-  return FREE_USE_PLACEMENTS.some((variant) => variant === value)
+function isFreeUseVariant(value: unknown): value is FreeUseVariant {
+  return FREE_USE_VARIANTS.some((variant) => variant === value)
 }
 
 export function useFreeUsePlacement() {
-  const assigned = ref<FreeUseVariant>()
-  const variant = computed(() => assigned.value ?? 'control')
+  const panelStore = useAgentPanelStore()
+  const assigned = ref<FreeUseVariant>('control')
 
-  const assign = () => {
-    const override =
-      getSessionOverride<string>(FREE_USE_PLACEMENT_FLAG) ??
-      getDevOverride<string>(FREE_USE_PLACEMENT_FLAG)
-    const value = override ?? remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
-    assigned.value = isFreeUseVariant(value) ? value : 'control'
-    if (override !== undefined) return
+  const override =
+    getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG) ??
+    getDevOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
+  const hasQaOverride = override !== undefined
 
+  function assign(): void {
+    const served = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
+    if (!isFreeUseVariant(served)) return
+    assigned.value = served
+    if (panelStore.reportedFreeUseExposure) return
+    panelStore.reportedFreeUseExposure = true
     useTelemetry()?.trackAgentFreeUseExposure({
-      placement: assigned.value,
-      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: assigned.value
+      placement: served,
+      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: served
     })
   }
 
-  if (isAuthenticatedConfigLoaded.value) {
+  if (hasQaOverride) {
+    if (isFreeUseVariant(override)) assigned.value = override
+    else
+      console.warn(
+        `[agent] ignoring unknown ${FREE_USE_PLACEMENT_FLAG} override ${JSON.stringify(override)}; expected one of ${FREE_USE_VARIANTS.join(', ')}`
+      )
+  } else if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
-    const stop = watch(
-      [isAuthenticatedConfigLoaded, remoteConfigRevision],
-      ([authenticated]) => {
-        if (!authenticated) return
-        assign()
-        stop()
-      }
-    )
+    const stop = watch(isAuthenticatedConfigLoaded, (authenticated) => {
+      if (!authenticated) return
+      assign()
+      stop()
+    })
   }
 
-  return { variant }
+  function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    if (hasQaOverride) return
+    if (metadata.action === 'shown') {
+      if (panelStore.reportedFreeUseImpression) return
+      panelStore.reportedFreeUseImpression = true
+    }
+    useTelemetry()?.trackAgentFreeUseNotice(metadata)
+  }
+
+  return {
+    variant: readonly(assigned),
+    reportNotice
+  }
 }

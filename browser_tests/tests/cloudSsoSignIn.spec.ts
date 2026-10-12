@@ -31,6 +31,7 @@ const APP_ROOT = new RegExp(
 const SSO_COPY = enMessages.auth.sso
 const OAUTH_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 const CONSENT_CHALLENGE: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: OAUTH_REQUEST_ID,
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',
@@ -288,18 +289,44 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(ssoStarts).toEqual([])
     })
 
-    test('an sso_error ingest sends back shows its message on the login page', async ({
+    test('an sso_error ingest sends back shows its message on the login page, then leaves the URL', async ({
       page
     }) => {
       await page.goto(`${APP_URL}/?sso_error=SSO_ORG_DISABLED`)
 
-      await expect(page).toHaveURL(
-        /\/cloud\/login\?.*sso_error=SSO_ORG_DISABLED/
-      )
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await expect(page).not.toHaveURL(/sso_error=/)
     })
 
-    test('a Firebase sign-in ingest refuses with sso_required opens the SSO dialog', async ({
+    test('a customer record refused with sso_required shows the SSO notice on the page, not a failure toast', async ({
+      page,
+      cloudAuth
+    }) => {
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      await page.route('**/customers', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 403, json: SSO_REQUIRED })
+          : route.fallback()
+      )
+
+      await signInWithEmail(page)
+
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
+      ).toBeVisible()
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+      await expect(page.getByText(/Failed to create customer/)).toHaveCount(0)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+    })
+
+    test('a Firebase sign-in ingest refuses with sso_required shows the SSO notice on the page', async ({
       page,
       cloudAuth
     }) => {
@@ -313,15 +340,18 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
 
       await signInWithEmail(page)
 
-      const dialog = page.getByRole('dialog')
       await expect(
-        dialog.getByRole('heading', { name: SSO_COPY.required.title })
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
       ).toBeVisible()
       await expect(
-        dialog.getByText(
-          SSO_COPY.required.bodyWithEmail.replace('{email}', CLOUD_SELF_EMAIL)
-        )
-      ).toBeVisible()
+        page.getByRole('button', { name: SSO_COPY.continueWithSso })
+      ).toHaveCount(1)
+      await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect(page).toHaveURL(/\/cloud\/login/)
     })
   })

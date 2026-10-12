@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-import { app } from '../app'
+import { useApp } from '@/scripts/appInstance'
 import { $el } from './utils'
 
 export function calculateImageGrid(
@@ -105,8 +105,8 @@ export function createImageHost(node: LGraphNode) {
       // Element from point uses a hittest find elements so we need to toggle pointer events
       el.style.pointerEvents = 'all'
       const over = document.elementFromPoint(
-        app.canvas.mouse[0],
-        app.canvas.mouse[1]
+        useApp().canvas.mouse[0],
+        useApp().canvas.mouse[1]
       )
       el.style.pointerEvents = 'none'
 

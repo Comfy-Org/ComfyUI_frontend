@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as registry from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -96,24 +96,27 @@ it('offers an explicit switch to the latest installable version, including Flagg
 })
 
 it.for([
-  { name: 'no eligible release', versions: [], severity: 'warn' },
-  { name: 'registry failure', versions: null, severity: 'error' }
-])('does not install and reports $name', async ({ versions, severity }) => {
-  const service = registry.useComfyRegistryService()
-  vi.spyOn(service, 'getPackVersions').mockResolvedValue(versions)
-  vi.spyOn(registry, 'useComfyRegistryService').mockReturnValue(service)
-  renderButton()
-
-  await userEvent.click(screen.getByRole('button', { name: 'Update' }))
-
-  await waitFor(() => {
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity })
+  { kind: 'warning', name: 'no eligible release', versions: [] },
+  { kind: 'error', name: 'registry failure', versions: null }
+] as const)(
+  'does not install and reports $name',
+  async ({ kind, versions }) => {
+    const service = registry.useComfyRegistryService()
+    vi.spyOn(service, 'getPackVersions').mockResolvedValue(
+      versions && [...versions]
     )
-  })
-  expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
-  expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
-})
+    vi.spyOn(registry, 'useComfyRegistryService').mockReturnValue(service)
+    renderButton()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Update' }))
+
+    await waitFor(() => {
+      expect(useToast().toasts).toEqual([expect.objectContaining({ kind })])
+    })
+    expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
+  }
+)
 
 it('does not re-enable disabled packs during a batch switch', async () => {
   const manager = useComfyManagerStore()
@@ -152,9 +155,7 @@ it('skips switching when the selected version is already installed', async () =>
   await userEvent.click(screen.getByRole('button', { name: 'Update' }))
 
   await waitFor(() => {
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'info' })
-    )
+    expect(useToast().info).toHaveBeenCalled()
   })
   expect(manager.installPack.call).not.toHaveBeenCalled()
 })

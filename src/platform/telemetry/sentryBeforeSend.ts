@@ -3,11 +3,12 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
 /**
  * Groups a `WorkspaceApiError` by what failed rather than where it was
  * caught, so each endpoint and server response gets its own Sentry issue.
- * Errors built outside the HTTP client have no `operation` and keep Sentry's
+ * Errors without an `operation`, such as SDK operation refusals, keep Sentry's
  * default grouping.
  */
 function groupWorkspaceApiError(
@@ -38,5 +39,7 @@ export function sentryBeforeSend(
   hint: EventHint
 ): ErrorEvent | null {
   const kept = sentryThirdPartyErrorFilter(event, hint)
-  return kept && groupWorkspaceApiError(kept, hint)
+  return (
+    kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
+  )
 }

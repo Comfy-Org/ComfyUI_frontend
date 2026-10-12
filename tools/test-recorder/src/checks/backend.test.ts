@@ -5,26 +5,28 @@ import { checkPlatform, detectPlatform } from './platform'
 
 describe('checkBackend', () => {
   it('passes when the backend is running multi-user', async () => {
-    vi.stubGlobal('fetch', (input: string | URL) =>
-      Promise.resolve(
-        String(input).includes('/api/users')
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+      return Promise.resolve(
+        input.includes('/api/users')
           ? new Response(JSON.stringify({ users: { abc: 'someone' } }))
           : new Response('{}')
       )
-    )
+    })
     const result = await checkBackend()
     expect(result.ok).toBe(true)
     expect(result.optional).toBeFalsy()
   })
 
   it('warns rather than fails when the backend is up but not multi-user', async () => {
-    vi.stubGlobal('fetch', (input: string | URL) =>
-      Promise.resolve(
-        String(input).includes('/api/users')
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+      return Promise.resolve(
+        input.includes('/api/users')
           ? new Response(JSON.stringify({ migrated: true }))
           : new Response('{}')
       )
-    )
+    })
     const result = await checkBackend()
     expect(result.ok).toBe(true)
     expect(result.optional).toBe(true)
@@ -32,40 +34,44 @@ describe('checkBackend', () => {
   })
 
   it('treats a malformed users value as not multi-user, not as a crash', async () => {
-    vi.stubGlobal('fetch', (input: string | URL) =>
-      Promise.resolve(
-        String(input).includes('/api/users')
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+      return Promise.resolve(
+        input.includes('/api/users')
           ? new Response(JSON.stringify({ users: null }))
           : new Response('{}')
       )
-    )
+    })
     const result = await checkBackend()
     expect(result.ok).toBe(true)
     expect(result.optional).toBe(true)
   })
 
   it('treats invalid JSON from /api/users as not multi-user, not as a crash', async () => {
-    vi.stubGlobal('fetch', (input: string | URL) =>
-      Promise.resolve(
-        String(input).includes('/api/users')
+    vi.mocked(fetch).mockImplementation((request: RequestInfo | URL) => {
+      const input = String(request)
+      return Promise.resolve(
+        input.includes('/api/users')
           ? new Response('not json')
           : new Response('{}')
       )
-    )
+    })
     const result = await checkBackend()
     expect(result.ok).toBe(true)
     expect(result.optional).toBe(true)
   })
 
   it('fails with the multi-user flag the tests need', async () => {
-    vi.stubGlobal('fetch', () => Promise.reject(new Error('ECONNREFUSED')))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.reject(new Error('ECONNREFUSED'))
+    )
     const result = await checkBackend()
     expect(result.ok).toBe(false)
     expect(result.installInstructions?.join(' ')).toContain('--multi-user')
   })
 
   it('fails on an error status rather than treating it as running', async () => {
-    vi.stubGlobal('fetch', () =>
+    vi.mocked(fetch).mockImplementation(() =>
       Promise.resolve(new Response('nope', { status: 500 }))
     )
     expect((await checkBackend()).ok).toBe(false)

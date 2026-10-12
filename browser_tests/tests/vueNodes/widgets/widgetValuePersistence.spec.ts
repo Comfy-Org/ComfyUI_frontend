@@ -1,3 +1,5 @@
+import type { Locator } from '@playwright/test'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -14,6 +16,47 @@ test.describe(
   () => {
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test.describe('Boolean drafts', () => {
+      test.use({ initialSettings: { 'Comfy.Workflow.Persist': true } })
+
+      for (const { action, toggleValue } of [
+        { action: 'click', toggleValue: (toggle: Locator) => toggle.click() },
+        {
+          action: 'Enter',
+          toggleValue: (toggle: Locator) => toggle.press('Enter')
+        }
+      ]) {
+        test(`keeps a toggle-only ${action} edit after reload`, async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('inputs/boolean_input')
+          await comfyPage.workflow.waitForDraftPersisted()
+          await comfyPage.workflow.reloadAndWaitForApp()
+          const toggle = comfyPage.vueNodes
+            .getNodeByTitle('Boolean')
+            .getByRole('switch')
+          await expect(toggle).toBeChecked()
+
+          await toggleValue(toggle)
+          await expect(toggle).not.toBeChecked()
+
+          await expect
+            .poll(async () =>
+              (await comfyPage.workflow.getDraftWorkflows()).some((workflow) =>
+                workflow.nodes.some(
+                  (node) =>
+                    node.type === 'PrimitiveBoolean' &&
+                    Object.values(node.widgets_values ?? {})[0] === false
+                )
+              )
+            )
+            .toBe(true)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect(toggle).not.toBeChecked()
+        })
+      }
     })
 
     test('an emptied text widget remains empty after save and reopen', async ({

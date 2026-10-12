@@ -3,14 +3,19 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+
 import SsoRequiredDialogContent from '@/platform/auth/sso/SsoRequiredDialogContent.vue'
+import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 
 async function renderDialog(
   props: {
@@ -53,6 +58,10 @@ describe('SsoRequiredDialogContent', () => {
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
   })
 
+  afterEach(() => {
+    ssoFlowStore.finish()
+  })
+
   it('explains the refusal and starts SSO for the known email', async () => {
     await renderDialog({ email: 'ada@acme.com', returnTo: '/cloud/user-check' })
 
@@ -68,6 +77,22 @@ describe('SsoRequiredDialogContent', () => {
     expect(target.searchParams.get('return_to')).toBe('/cloud/user-check')
     expect(target.searchParams.has('organization')).toBe(false)
     expect(useAuthStore().logout).not.toHaveBeenCalled()
+  })
+
+  it('reports the click as the shown attempt continuing to SSO', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
+    await renderDialog({ email: 'ada@acme.com' })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+
+    const [[shown], [continued]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock
+      .calls
+    expect(continued).toEqual({
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: shown.properties.flow_id }
+    })
   })
 
   it.for<{ name: string; email?: string }>([
@@ -122,6 +147,22 @@ describe('SsoRequiredDialogContent', () => {
     )
   })
 
+  it('reports no continue while signing the account out fails', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
+    useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })
+    vi.mocked(useAuthStore().logout).mockRejectedValueOnce(new Error('network'))
+    await renderDialog({ email: 'ada@acme.com' })
+    const continueButton = screen.getByRole('button', {
+      name: 'auth.sso.continueWithSso'
+    })
+
+    await userEvent.click(continueButton)
+    await waitFor(() => expect(continueButton).toBeEnabled())
+
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledOnce()
+    expect(ssoFlowStore.current()?.continued).toBeUndefined()
+  })
+
   it('lets the person retry when signing the account out fails', async () => {
     useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })
     vi.mocked(useAuthStore().logout)
@@ -152,5 +193,20 @@ describe('SsoRequiredDialogContent', () => {
     const target = assigned(assign)
     expect(target.pathname).toBe('/cloud/login')
     expect(target.searchParams.get('sso')).toBe('open')
+  })
+
+  it('leaves the continue to the login page it hands the attempt to', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
+    await renderDialog({})
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const [[shown], ...rest] = vi.mocked(useTelemetry()!.trackSsoEvent).mock
+      .calls
+    expect(rest).toEqual([])
+    expect(ssoFlowStore.current()?.flowId).toBe(shown.properties.flow_id)
   })
 })

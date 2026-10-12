@@ -85,7 +85,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Undo' }))
 
-      expect(vi.mocked(mockStore.canvasHistory).undo).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.undo).toHaveBeenCalledTimes(1)
     })
 
     it('should call canvasHistory.redo when redo button is clicked', async () => {
@@ -94,7 +94,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Redo' }))
 
-      expect(vi.mocked(mockStore.canvasHistory).redo).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.redo).toHaveBeenCalledTimes(1)
     })
   })
 

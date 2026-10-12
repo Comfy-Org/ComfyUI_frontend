@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
@@ -349,7 +349,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -513,7 +513,7 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
       expect(console.error).toHaveBeenCalled()
@@ -531,7 +531,7 @@ describe('LoaderManager', () => {
       })
 
       expect(console.error).toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -547,7 +547,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -560,7 +560,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -665,7 +665,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

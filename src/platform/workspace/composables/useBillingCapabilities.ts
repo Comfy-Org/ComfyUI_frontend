@@ -72,8 +72,9 @@ function readCapabilitiesResponse(
 ): Promise<BillingCapabilitiesResponse | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
-  return readOnRail(() =>
-    rail.readCapabilities({ signal, forceRefresh: revalidating })
+  return readOnRail(
+    () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
+    'getBillingCapabilities'
   )
 }
 
@@ -126,22 +127,23 @@ function useBillingCapabilitiesInternal() {
     )
   })
   const canSubscribeSelfServe = computed(
-    () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
+    () => capabilities.value?.can_subscribe_self_serve ?? false
   )
-  const canCancel = computed(
-    () => isCloud && (capabilities.value?.can_cancel ?? false)
-  )
+  const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
   const canReactivate = computed(
-    () => isCloud && (capabilities.value?.can_reactivate ?? false)
+    () => capabilities.value?.can_reactivate ?? false
   )
   const canChangeSeats = computed(
-    () => isCloud && (capabilities.value?.can_change_seats ?? false)
+    () => capabilities.value?.can_change_seats ?? false
+  )
+  const canManageMembers = computed(
+    () => capabilities.value?.can_manage_members ?? false
   )
   const canInviteMembers = computed(
-    () => isCloud && (capabilities.value?.can_invite_members ?? false)
+    () => capabilities.value?.can_invite_members ?? false
   )
   const canDowngradeToPersonal = computed(
-    () => isCloud && (capabilities.value?.can_downgrade_to_personal ?? false)
+    () => capabilities.value?.can_downgrade_to_personal ?? false
   )
   const isReady = computed(() => {
     if (!isCloud) return true
@@ -472,6 +474,7 @@ function useBillingCapabilitiesInternal() {
     canReactivate,
     canChangeSeats,
     canInviteMembers,
+    canManageMembers,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,

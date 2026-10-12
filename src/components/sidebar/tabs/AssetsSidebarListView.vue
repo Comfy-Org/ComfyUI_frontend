@@ -89,6 +89,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -139,6 +140,8 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
+  if (asset.preview_id && isHdrImageFilename(asset.name))
+    return hdrPreviewAssetUrl(asset.preview_id)
   if (mediaType === 'image' || mediaType === 'video') {
     return asset.preview_url || ''
   }

@@ -29,7 +29,7 @@ import {
   isAttemptInFlight,
   signInErrorMessage
 } from '@/config/auth-sign-in-state'
-import { addToast } from '@/config/auth-toast-state'
+import { authToast } from '@/config/auth-toast-state'
 import {
   isSwitchingAccount,
   requestedReturnPath
@@ -211,11 +211,9 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   })
 
   function toastSignInFailure(classification: AuthErrorClassification) {
-    const severity = severityForAuthError(classification)
-    addToast({
-      severity,
-      summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
-      detail: signInErrorMessage(classification, locale, hostname)
+    const kind = severityForAuthError(classification)
+    authToast[kind](t(`g.${kind}`), {
+      description: signInErrorMessage(classification, locale, hostname)
     })
   }
 

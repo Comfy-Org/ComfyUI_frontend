@@ -4,16 +4,17 @@ import { computed, ref } from 'vue'
 import { MODEL_NODE_MAPPINGS } from '@/platform/assets/mappings/modelNodeMappings'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { matchesWidgetName } from '@/utils/widgetBinding'
 
 /** Helper class that defines how to construct a node from a model. */
 export class ModelNodeProvider {
   /** The node definition to use for this model. */
   public nodeDef: ComfyNodeDefImpl
 
-  /** The node input key for where to insert the model name. */
-  public key: string
+  /** The input name or pattern used to select the model widget. */
+  public key: string | RegExp
 
-  constructor(nodeDef: ComfyNodeDefImpl, key: string) {
+  constructor(nodeDef: ComfyNodeDefImpl, key: string | RegExp) {
     this.nodeDef = nodeDef
     this.key = key
   }
@@ -25,15 +26,16 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
 
-  /** Internal computed for reactive caching of registered node types */
-  const registeredNodeTypes = computed<Record<string, string>>(() => {
-    return Object.fromEntries(
+  const registeredNodeTypes = computed<
+    Partial<Record<string, string | RegExp>>
+  >(() =>
+    Object.fromEntries(
       Object.values(modelToNodeMap.value)
         .filter((providers) => providers !== undefined)
         .flat()
         .map((provider) => [provider.nodeDef.name, provider.key])
     )
-  })
+  )
 
   /** Internal computed for efficient reverse lookup: nodeType -> category */
   const nodeTypeToCategory = computed(() => {
@@ -51,9 +53,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   })
 
   /** Get set of all registered node types for efficient lookup */
-  function getRegisteredNodeTypes(): Record<string, string> {
+  function getRegisteredNodeTypes(): Partial<Record<string, string | RegExp>> {
     registerDefaults()
     return registeredNodeTypes.value
+  }
+
+  function isModelWidget(nodeType: string, widgetName: string): boolean {
+    const key = getRegisteredNodeTypes()[nodeType]
+    return key !== undefined && matchesWidgetName(widgetName, key)
   }
 
   /**
@@ -125,7 +132,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function registerNodeProvider(
     modelType: string,
-    nodeProvider: ModelNodeProvider | { nodeDef: undefined; key: string }
+    nodeProvider:
+      | ModelNodeProvider
+      | { nodeDef: undefined; key: string | RegExp }
   ) {
     registerDefaults()
     if (!nodeProvider.nodeDef) return
@@ -138,7 +147,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param nodeClass The node class name to register.
    * @param key The key to use for the node input.
    */
-  function quickRegister(modelType: string, nodeClass: string, key: string) {
+  function quickRegister(
+    modelType: string,
+    nodeClass: string,
+    key: string | RegExp
+  ) {
     registerNodeProvider(
       modelType,
       new ModelNodeProvider(nodeDefStore.nodeDefsByName[nodeClass], key)
@@ -162,6 +175,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   return {
     modelToNodeMap,
     getRegisteredNodeTypes,
+    isModelWidget,
     getCategoryForNodeType,
     getNodeProvider,
     getAllNodeProviders,

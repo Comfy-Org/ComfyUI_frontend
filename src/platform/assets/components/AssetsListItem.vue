@@ -61,11 +61,17 @@
             />
           </template>
           <img
-            v-else
+            v-else-if="failedImageUrl !== previewUrl"
             :src="previewUrl"
             :alt="previewAlt"
             class="size-full object-cover"
             :draggable="false"
+            @error="failedImageUrl = previewUrl"
+          />
+          <i
+            v-else
+            aria-hidden="true"
+            class="absolute inset-0 m-auto icon-[lucide--image] size-4 text-text-secondary"
           />
         </div>
         <div
@@ -154,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { useId } from 'vue'
+import { ref, useId } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
@@ -207,6 +213,7 @@ const {
 } = useRetryableMediaSrc(() => (isVideoPreview ? previewUrl : undefined))
 
 const videoFailedDescriptionId = useId()
+const failedImageUrl = ref<string>()
 
 const {
   progressBarContainerClass,

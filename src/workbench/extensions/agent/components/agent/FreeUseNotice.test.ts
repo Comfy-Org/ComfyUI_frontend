@@ -1,19 +1,39 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import type { AgentFreeUsePlacement } from '@/platform/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
+import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
-const PLACEMENTS = [
-  'top-banner',
-  'near-composer',
-  'above-input',
-  'inside-input'
-] as const satisfies readonly AgentFreeUsePlacement[]
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+function signIn(id: string) {
+  vi.mocked(useCurrentUser).mockReturnValue({
+    ...useCurrentUser(),
+    resolvedUserInfo: computed(() => ({ id }))
+  })
+}
+
+/**
+ * `Learn more` is a real `target="_blank"` anchor, and happy-dom honours the
+ * click by navigating a detached frame to the live docs page with its own
+ * fetcher — so `vitest.network.setup.ts`, which guards `globalThis.fetch`, and
+ * a `window.open` spy, which happy-dom's anchor handler does not call, both
+ * miss it. Cancelling the default action is what stops the request; the click
+ * still propagates, so the component's own handler runs.
+ */
+function withoutNavigation() {
+  const cancel = (event: Event) => event.preventDefault()
+  document.addEventListener('click', cancel, { capture: true })
+  onTestFinished(() =>
+    document.removeEventListener('click', cancel, { capture: true })
+  )
+}
 
 function mount(placement: AgentFreeUsePlacement = 'top-banner') {
   return render(FreeUseNotice, {
@@ -23,31 +43,22 @@ function mount(placement: AgentFreeUsePlacement = 'top-banner') {
 }
 
 describe('FreeUseNotice', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it.for(PLACEMENTS)('carries the same copy at %s', (placement) => {
-    mount(placement)
-
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'Prompts and workflow runs are FREE during BETA.'
-    )
-    expect(screen.getByRole('link', { name: 'Learn more' })).toBeInTheDocument()
-  })
-
-  it('opens the explainer in a new tab rather than leaving the composer', () => {
+  it('carries the bounded copy and an explainer link', () => {
     mount()
 
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Try your first chat for free!'
+    )
     const link = screen.getByRole('link', { name: 'Learn more' })
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/get_started/cloud'
+      'https://docs.comfy.org/agent-tools/in-app-agent'
     )
   })
 
   it('reports a learn-more click', async () => {
+    withoutNavigation()
     const { emitted } = mount()
 
     await userEvent.click(screen.getByRole('link', { name: 'Learn more' }))
@@ -58,24 +69,72 @@ describe('FreeUseNotice', () => {
     ])
   })
 
-  it('hides itself and persists the dismissal', async () => {
-    const { emitted } = mount()
+  it('hides itself and stays dismissed across a remount', async () => {
+    const first = mount()
 
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
     expect(screen.queryByRole('note')).toBeNull()
-    expect(emitted('notice')).toEqual([
+    expect(first.emitted('notice')).toEqual([
       [{ action: 'shown', placement: 'top-banner' }],
       [{ action: 'dismissed', placement: 'top-banner' }]
     ])
-    expect(localStorage.getItem(FREE_USE_NOTICE_DISMISSED_KEY)).toBe('true')
-  })
+    first.unmount()
 
-  it('stays dismissed across placements, so an arm change cannot resurrect it', () => {
-    localStorage.setItem(FREE_USE_NOTICE_DISMISSED_KEY, 'true')
     const { emitted } = mount('inside-input')
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
+  })
+
+  it('keeps a dismissal to the account that made it', async () => {
+    signIn('first-user')
+    const first = mount()
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    first.unmount()
+
+    signIn('second-user')
+    const { emitted } = mount()
+
+    expect(screen.getByRole('note')).toBeInTheDocument()
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }]
+    ])
+  })
+
+  it('waits for auth, then follows the resolved account dismissal', async () => {
+    const authInitialized = ref(false)
+    const userId = ref<string | null>(null)
+    vi.mocked(useCurrentUser).mockReturnValue({
+      ...useCurrentUser(),
+      isAuthInitialized: computed(() => authInitialized.value),
+      resolvedUserInfo: computed(() =>
+        userId.value === null ? null : { id: userId.value }
+      )
+    })
+    localStorage.setItem(freeUseNoticeDismissedKey('dismissed-user'), 'true')
+
+    const { emitted } = mount()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(emitted('notice')).toBeUndefined()
+    expect(
+      localStorage.getItem(freeUseNoticeDismissedKey(undefined)),
+      'no default planted under the signed-out key on the way to the real one'
+    ).toBeNull()
+
+    userId.value = 'dismissed-user'
+    authInitialized.value = true
+    await nextTick()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(emitted('notice')).toBeUndefined()
+
+    userId.value = 'fresh-user'
+
+    expect(await screen.findByRole('note')).toBeInTheDocument()
+    expect(emitted('notice')).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }]
+    ])
   })
 })

@@ -5,7 +5,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useCompositorWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): ICompositorWidget => {

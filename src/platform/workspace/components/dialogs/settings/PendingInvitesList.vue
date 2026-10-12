@@ -86,7 +86,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
@@ -94,7 +94,7 @@ import {
 } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const toastStore = useToastStore()
+const toast = useToast()
 
 const { searchQuery = '', loaded = false } = defineProps<{
   invites: WorkspacePendingInvite[]
@@ -131,16 +131,11 @@ function isExpired(invite: WorkspacePendingInvite): boolean {
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
   if (await copyTextSilently(buildInviteLink(invite.token))) {
-    toastStore.add({
-      severity: 'success',
-      summary: t('workspacePanel.inviteLinks.copiedToast'),
-      life: 3000
+    toast.success(t('workspacePanel.inviteLinks.copiedToast'), {
+      duration: 3000
     })
   } else {
-    toastStore.add({
-      severity: 'error',
-      summary: t('workspacePanel.inviteLinks.copyFailedToast')
-    })
+    toast.error(t('workspacePanel.inviteLinks.copyFailedToast'))
   }
 }
 

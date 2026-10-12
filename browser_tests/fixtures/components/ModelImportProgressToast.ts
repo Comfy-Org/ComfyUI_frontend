@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
 export class ModelImportProgressToast {
   public readonly root: Locator
   public readonly expandButton: Locator
@@ -7,7 +9,9 @@ export class ModelImportProgressToast {
   public readonly filterOptions: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('status').filter({ hasText: 'Importing Models' })
+    this.root = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: 'Importing Models' })
     this.expandButton = this.root.getByRole('button', { name: 'Expand' })
     this.filterButton = this.root.getByRole('button', {
       name: /^(All|Completed|Failed)$/

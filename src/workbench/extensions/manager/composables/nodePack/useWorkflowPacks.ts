@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -32,6 +32,11 @@ const _useWorkflowPacks = () => {
   const workflowPacks = ref<WorkflowPack[]>([])
   const unresolvedNodeNames = ref<string[]>([])
 
+  /** A fetch asked for before the graph existed, owed a retry on `configured`. */
+  let fetchDeferredUntilConfigured = false
+
+  let fetchGeneration = 0
+
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
     if (typeof node.properties.cnr_id === 'string') {
       return node.properties.cnr_id
@@ -58,9 +63,7 @@ const _useWorkflowPacks = () => {
   ): Promise<WorkflowPack | undefined> => {
     const nodeName = node.type
 
-    // Check if node is a core node
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
-    if (nodeDef.isCoreNode) {
+    if (nodeDefStore.nodeDefsByName[nodeName]?.isCoreNode) {
       if (!systemStatsStore.systemStats) {
         await systemStatsStore.refetchSystemStats()
       }
@@ -113,13 +116,18 @@ const _useWorkflowPacks = () => {
    * Get the node packs for all nodes in the workflow (including subgraphs).
    * Nodes that have no local definition and no registry match are tracked
    * as unresolved so downstream consumers can surface them to the user.
+   *
+   * @returns `undefined` when the root graph does not exist yet.
    */
   const getWorkflowPacks = async () => {
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return undefined
+
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
 
     await Promise.all(
-      mapAllNodes(app.rootGraph, async (node) => {
+      mapAllNodes(rootGraph, async (node) => {
         const pack = await workflowNodeToPack(node)
         if (pack) {
           resolvedPacks.push(pack)
@@ -127,8 +135,7 @@ const _useWorkflowPacks = () => {
       })
     )
 
-    workflowPacks.value = resolvedPacks
-    unresolvedNodeNames.value = [...new Set(unresolved)]
+    return { resolvedPacks, unresolved }
   }
 
   const packsToUniqueIds = (packs: WorkflowPack[]) =>
@@ -150,6 +157,33 @@ const _useWorkflowPacks = () => {
   const filterWorkflowPack = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
 
+  const startFetchWorkflowPacks = async () => {
+    const generation = ++fetchGeneration
+
+    const parsed = await getWorkflowPacks()
+    if (generation !== fetchGeneration) return
+
+    fetchDeferredUntilConfigured = !parsed
+    if (!parsed) return
+
+    workflowPacks.value = parsed.resolvedPacks
+    unresolvedNodeNames.value = [...new Set(parsed.unresolved)]
+    await startFetch()
+  }
+
+  // Retry on `configured`, not on `isGraphReady`: `setup()` installs an empty
+  // graph before the workflow is configured into it.
+  useEventListener(
+    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    'configured',
+    () => {
+      if (!fetchDeferredUntilConfigured) return
+      startFetchWorkflowPacks().catch((err: unknown) => {
+        error.value = err instanceof Error ? err : new Error(String(err))
+      })
+    }
+  )
+
   onUnmounted(() => {
     cleanup()
   })
@@ -160,10 +194,7 @@ const _useWorkflowPacks = () => {
     isReady,
     workflowPacks: nodePacks,
     unresolvedNodeNames,
-    startFetchWorkflowPacks: async () => {
-      await getWorkflowPacks() // Parse the packs from the workflow nodes
-      await startFetch() // Fetch the packs infos from the registry
-    },
+    startFetchWorkflowPacks,
     filterWorkflowPack
   }
 }

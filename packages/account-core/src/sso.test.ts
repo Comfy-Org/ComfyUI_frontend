@@ -164,6 +164,34 @@ describe('ssoStartUrl', () => {
     expect(startParams(returnTo).get('return_to')).toBe('/')
   })
 
+  it.for([
+    {
+      name: 'keeps a URL on the calling app',
+      returnTo: 'https://billing.example/checkout?plan=pro',
+      expected: 'https://billing.example/checkout?plan=pro'
+    },
+    {
+      name: 'drops an API route on the calling app',
+      returnTo: 'https://billing.example/api/status',
+      expected: '/'
+    },
+    {
+      name: 'drops a URL on another origin',
+      returnTo: 'https://evil.example/x',
+      expected: '/'
+    }
+  ])('$name', ({ returnTo, expected }) => {
+    const params = new URL(
+      ssoStartUrl({
+        email: 'a@acme.com',
+        returnTo,
+        origin: ORIGIN,
+        appOrigin: 'https://billing.example'
+      })
+    ).searchParams
+    expect(params.get('return_to')).toBe(expected)
+  })
+
   it('keeps an app path that only starts with "api"', () => {
     expect(startParams('/apiary').get('return_to')).toBe('/apiary')
   })

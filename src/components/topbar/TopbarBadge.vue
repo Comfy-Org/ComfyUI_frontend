@@ -55,31 +55,34 @@
   </PopoverRoot>
 
   <!-- Full mode: Icon + Label + Text -->
-  <div
-    v-else
-    v-tooltip="badge.tooltip"
-    :class="
-      cn(
-        'flex h-full shrink-0 items-center gap-1 whitespace-nowrap',
-        reverseOrder && 'flex-row-reverse',
-        !noPadding && 'px-2'
-      )
-    "
-    :style="menuBackgroundStyle"
-  >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      aria-hidden="true"
-      :class="badgeIconClass"
-    />
-    <div class="font-inter text-xs font-medium" :class="textClasses">
-      {{ badge.text }}
-    </div>
-    <div v-if="showLabel" :class="labelClasses">
-      {{ badge.label }}
-    </div>
-  </div>
+  <Tooltip v-else :disabled="!badge.tooltip">
+    <TooltipTrigger as-child>
+      <div
+        :class="
+          cn(
+            'flex h-full shrink-0 items-center gap-1 whitespace-nowrap',
+            reverseOrder && 'flex-row-reverse',
+            !noPadding && 'px-2'
+          )
+        "
+        :style="menuBackgroundStyle"
+      >
+        <i
+          v-if="iconClass"
+          data-testid="badge-icon"
+          aria-hidden="true"
+          :class="badgeIconClass"
+        />
+        <div class="font-inter text-xs font-medium" :class="textClasses">
+          {{ badge.text }}
+        </div>
+        <div v-if="showLabel" :class="labelClasses">
+          {{ badge.label }}
+        </div>
+      </div>
+    </TooltipTrigger>
+    <TooltipContent>{{ badge.tooltip }}</TooltipContent>
+  </Tooltip>
 </template>
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
@@ -87,6 +90,9 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { TopbarBadge } from '@/types/comfy'
 
 const {

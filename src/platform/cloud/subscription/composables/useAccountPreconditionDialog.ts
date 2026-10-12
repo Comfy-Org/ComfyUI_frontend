@@ -1,7 +1,8 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
@@ -14,7 +15,9 @@ interface AccountPreconditionContext {
 // content: the `subscription` branch resolves to the subscription dialog, whose
 // inner content FE-978 specializes for cancelled/inactive team states.
 export function useAccountPreconditionDialog() {
-  const dialogService = useDialogService()
+  const { showApiNodesSignInDialog } = useAuthDialogs()
+  const { showSubscriptionRequiredDialog, showTopUpCreditsDialog } =
+    useBillingDialogs()
 
   function open(
     precondition: AccountPrecondition,
@@ -22,12 +25,12 @@ export function useAccountPreconditionDialog() {
   ): void {
     switch (precondition) {
       case 'sign_in':
-        void dialogService.showApiNodesSignInDialog(
+        void showApiNodesSignInDialog(
           context.nodeType ? [context.nodeType] : []
         )
         return
       case 'subscription':
-        void dialogService.showSubscriptionRequiredDialog({
+        void showSubscriptionRequiredDialog({
           reason: context.source ?? 'subscription_required'
         })
         return
@@ -39,7 +42,7 @@ export function useAccountPreconditionDialog() {
         // surfacing as unhandled rejections.
         const { fetchStatus, fetchBalance } = useBillingContext()
         void Promise.allSettled([fetchStatus(), fetchBalance()])
-        void dialogService.showTopUpCreditsDialog({
+        void showTopUpCreditsDialog({
           isInsufficientCredits: true,
           ...(context.source && { source: context.source })
         })

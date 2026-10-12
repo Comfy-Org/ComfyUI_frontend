@@ -10,7 +10,7 @@ function objectInfo(names: unknown) {
 
 describe('checkModels', () => {
   function stubJson(body: unknown, status = 200) {
-    vi.stubGlobal('fetch', () =>
+    vi.mocked(fetch).mockImplementation(() =>
       Promise.resolve(
         new Response(JSON.stringify(body), {
           status,
@@ -33,7 +33,9 @@ describe('checkModels', () => {
   })
 
   it('stays quiet when the backend is unreachable, which backend reports', async () => {
-    vi.stubGlobal('fetch', () => Promise.reject(new Error('ECONNREFUSED')))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.reject(new Error('ECONNREFUSED'))
+    )
     expect((await checkModels()).ok).toBe(true)
   })
 

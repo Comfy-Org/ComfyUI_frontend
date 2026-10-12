@@ -302,9 +302,7 @@ describe('MaskEditorContent', () => {
 
       expect(mockBrushDrawing.saveBrushSettings).toHaveBeenCalledTimes(1)
       expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
-      expect(
-        vi.mocked(mockStore.canvasHistory).clearStates
-      ).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.clearStates).toHaveBeenCalledTimes(1)
       expect(mockStore.resetState).toHaveBeenCalledTimes(1)
       expect(useMaskEditorDataStore().reset).toHaveBeenCalledTimes(1)
     })

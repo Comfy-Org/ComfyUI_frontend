@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -47,6 +48,18 @@ describe('canvas node picking', () => {
       })
     }
   )
+
+  it('holds notifications for the duration of node picking', async () => {
+    const { store } = setup()
+
+    store.startNodePicking()
+    await nextTick()
+    expect(useToast().held).toBe(true)
+
+    store.stopNodePicking()
+    await nextTick()
+    expect(useToast().held).toBe(false)
+  })
 
   it('does not animate an empty graph', () => {
     const { store, canvas, animate } = setup()

@@ -7,10 +7,10 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import CloudSurveyView from './CloudSurveyView.vue'
@@ -104,7 +104,6 @@ describe('CloudSurveyView', () => {
     vi.mocked(useTelemetry).mockReturnValue(
       fromPartial({ trackSurvey: mocks.trackSurvey })
     )
-    vi.spyOn(useToastStore(), 'add').mockImplementation(() => undefined)
   })
 
   it('tracks and advances after storing a first survey', async () => {
@@ -150,9 +149,7 @@ describe('CloudSurveyView', () => {
       surface: 'platform',
       errorType: 'error_submitting_onboarding_survey'
     })
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().error).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
@@ -167,7 +164,7 @@ describe('CloudSurveyView', () => {
 
     expect(router.currentRoute.value.name).toBe('survey')
     expect(mocks.reportError).not.toHaveBeenCalled()
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
@@ -185,9 +182,7 @@ describe('CloudSurveyView', () => {
       surface: 'platform',
       errorType: 'error_submitting_onboarding_survey'
     })
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().error).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
@@ -208,11 +203,9 @@ describe('CloudSurveyView', () => {
       surface: 'platform',
       errorType: 'error_navigating_from_onboarding_survey'
     })
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        summary: 'Survey saved, but onboarding could not continue',
-        detail: 'Please try again.'
-      })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Survey saved, but onboarding could not continue',
+      expect.objectContaining({ description: 'Please try again.' })
     )
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })

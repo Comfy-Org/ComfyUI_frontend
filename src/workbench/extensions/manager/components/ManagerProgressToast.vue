@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsContent from '@/components/ui/tabs/TabsContent.vue'
@@ -77,6 +77,17 @@ const currentTaskName = computed(() => {
     return t('manager.installingDependencies')
   const task = comfyManagerStore.taskLogs.at(-1)
   return task?.taskName ?? t('manager.installingDependencies')
+})
+
+const announcement = computed(() => {
+  if (comfyManagerStore.queueError && isInProgress.value)
+    return t('manager.queueWaitingToContinue')
+  if (isRestarting.value || isRestartCompleted.value)
+    return currentTaskName.value
+  if (isInProgress.value) return t('manager.installingDependencies')
+  if (hasSuccessfulTasks.value) return t('manager.restartToApplyChanges')
+  if (comfyManagerStore.failedTasksIds.length) return t('g.failed')
+  return t('g.completed')
 })
 
 const sectionsContainerRef = ref<HTMLElement | null>(null)
@@ -162,7 +173,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <Tabs
         v-if="isExpanded"
@@ -335,5 +346,5 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

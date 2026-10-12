@@ -7,7 +7,7 @@ import { websiteRoot } from '@website/paths'
 import { parseWorkflowCatalog } from '@/config/workshop-workflow-catalog-schema'
 import { isDirectExecution } from './script-entry-point'
 
-const coordinate = z.number().finite().min(-1e6).max(1e6)
+const coordinate = z.number().min(-1e6).max(1e6)
 const point = z.tuple([coordinate, coordinate])
 const id = z.union([z.number().int(), z.string()])
 const slots = z

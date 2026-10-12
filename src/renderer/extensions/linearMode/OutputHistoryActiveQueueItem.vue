@@ -28,7 +28,7 @@ function clearQueue(close: () => void) {
     <Popover side="top" :show-arrow="false" @focus-outside.prevent>
       <template #button>
         <Button
-          v-tooltip.top="t('linearMode.queue.clickToClear')"
+          :tooltip="t('linearMode.queue.clickToClear')"
           :aria-label="t('linearMode.queue.clickToClear')"
           variant="textonly"
           size="unset"

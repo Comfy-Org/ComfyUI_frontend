@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { zodToJsonSchema } from 'zod-to-json-schema'
+import { z } from 'zod'
 
 import {
   zComfyWorkflow,
@@ -9,26 +9,21 @@ import {
 import { zComfyNodeDef as zComfyNodeDefV2 } from '../src/schemas/nodeDef/nodeDefSchemaV2'
 import { zComfyNodeDef as zComfyNodeDefV1 } from '../src/schemas/nodeDefSchema'
 
+function toNamedJsonSchema(schema: z.ZodType, title: string) {
+  return {
+    title,
+    ...z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' })
+  }
+}
+
 // Convert both workflow schemas to JSON Schema
-const workflow04Schema = zodToJsonSchema(zComfyWorkflow, {
-  name: 'ComfyWorkflow0_4',
-  $refStrategy: 'none'
-})
+const workflow04Schema = toNamedJsonSchema(zComfyWorkflow, 'ComfyWorkflow0_4')
 
-const workflow1Schema = zodToJsonSchema(zComfyWorkflow1, {
-  name: 'ComfyWorkflow1_0',
-  $refStrategy: 'none'
-})
+const workflow1Schema = toNamedJsonSchema(zComfyWorkflow1, 'ComfyWorkflow1_0')
 
-const nodeDefV1Schema = zodToJsonSchema(zComfyNodeDefV1, {
-  name: 'ComfyNodeDefV1',
-  $refStrategy: 'none'
-})
+const nodeDefV1Schema = toNamedJsonSchema(zComfyNodeDefV1, 'ComfyNodeDefV1')
 
-const nodeDefV2Schema = zodToJsonSchema(zComfyNodeDefV2, {
-  name: 'ComfyNodeDefV2',
-  $refStrategy: 'none'
-})
+const nodeDefV2Schema = toNamedJsonSchema(zComfyNodeDefV2, 'ComfyNodeDefV2')
 
 // Create output directory if it doesn't exist
 const outputDir = './schemas'

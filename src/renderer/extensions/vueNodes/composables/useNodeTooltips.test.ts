@@ -57,20 +57,16 @@ const sam3DetectNodeDef: ComfyNodeDef = {
   experimental: false
 }
 
+function setTooltipsEnabled(enabled: boolean) {
+  vi.spyOn(useSettingStore(), 'get').mockImplementation(
+    <K extends keyof Settings>(key: K): Settings[K] =>
+      (key === 'Comfy.EnableTooltips' ? enabled : undefined) as Settings[K]
+  )
+}
+
 describe('useNodeTooltips', () => {
   beforeEach(() => {
-    vi.spyOn(useSettingStore(), 'get').mockImplementation(
-      <K extends keyof Settings>(key: K): Settings[K] => {
-        switch (key) {
-          case 'Comfy.EnableTooltips':
-            return true as Settings[K]
-          case 'LiteGraph.Node.TooltipDelay':
-            return 500 as Settings[K]
-          default:
-            return undefined as Settings[K]
-        }
-      }
-    )
+    setTooltipsEnabled(true)
 
     useNodeDefStore().addNodeDef(sam3DetectNodeDef)
     mergeOutputTooltipMessage(jsonTooltip)
@@ -84,7 +80,7 @@ describe('useNodeTooltips', () => {
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
     const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
+    expect(getInputSlotTooltip({ name: 'positive_coords' })).toBe(jsonTooltip)
     expect(console.error).not.toHaveBeenCalled()
   })
 
@@ -95,32 +91,36 @@ describe('useNodeTooltips', () => {
     expect(console.error).not.toHaveBeenCalled()
   })
 
-  it('returns empty tooltips for inputs absent from the live node definition', () => {
+  it('falls back to generic text for inputs absent from the live node definition', () => {
     const { getInputSlotTooltip, getWidgetTooltip } =
       useNodeTooltips('SAM3_Detect')
 
-    expect(getInputSlotTooltip('stale_input')).toBe('')
+    expect(
+      getInputSlotTooltip({ name: 'stale_input', localized_name: 'Stale' })
+    ).toBe('Input: Stale')
     expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
   })
+
+  it.for([
+    { enabled: true, expected: 'Full widget value' },
+    { enabled: false, expected: '' }
+  ])(
+    'shows widget values only while tooltips are enabled ($enabled)',
+    ({ enabled, expected }) => {
+      setTooltipsEnabled(enabled)
+      const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
+
+      expect(
+        getWidgetTooltip({ name: 'stale_widget' }, 'Full widget value')
+      ).toBe(expected)
+    }
+  )
 
   it('reads output slot tooltips without i18n placeholder errors', () => {
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
+    expect(getOutputSlotTooltip({ name: 'masks' }, 0)).toBe(jsonTooltip)
     expect(console.error).not.toHaveBeenCalled()
-  })
-
-  it('preserves the newline separating a widget label from its long value', () => {
-    const { createTooltipConfig } = useNodeTooltips('SAM3_Detect')
-
-    const config = createTooltipConfig(`${jsonTooltip}\n\na-long-value`)
-
-    // Without a whitespace-preserving rule the \n\n separator collapses to a
-    // space and the label runs into the value (BUG-020).
-    const pt = config.pt as { text?: { class?: string } } | undefined
-    const textClass = pt?.text?.class ?? ''
-    expect(textClass).toContain('whitespace-pre-line')
-    expect(config.value).toContain('\n\n')
   })
 
   it('resolves descriptions for definitions added after the backend fetch', () => {

@@ -26,6 +26,7 @@ function renderComposer() {
   return { store, target, editor: screen.getByRole('textbox') }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('workflow reference clipboard', () => {
   beforeEach(() => vi.useRealTimers())
 
@@ -54,6 +55,7 @@ describe('workflow reference clipboard', () => {
         `${before}@[Workflow: Reference B]${after}`
       )
       if (operation === 'copy') await user.keyboard('{Backspace}')
+      await waitFor(() => expect(store.draft).toBe(''))
       await user.paste(clipboard)
       expect(store.draft).toBe(before + after)
       expect(store.workflowReferences).toEqual([reference])

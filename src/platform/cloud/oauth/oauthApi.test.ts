@@ -8,6 +8,7 @@ import {
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const validChallenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Cursor',
@@ -36,7 +37,7 @@ const errorResponse = (status: number, message: string) =>
 
 describe('fetchOAuthConsentChallenge', () => {
   it('returns the parsed challenge on 200', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse(validChallenge))
+    vi.mocked(fetch).mockResolvedValue(okResponse(validChallenge))
 
     const result = await fetchOAuthConsentChallenge(
       validChallenge.oauth_request_id
@@ -46,24 +47,20 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('URL-encodes the oauth_request_id', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(okResponse(validChallenge))
+    vi.mocked(fetch).mockResolvedValue(okResponse(validChallenge))
 
     // Reserved characters get percent-encoded (defense-in-depth — valid UUIDs
     // never contain these chars, but the call should be safe regardless).
     await fetchOAuthConsentChallenge('id with spaces&injected=evil')
 
-    const url = fetchSpy.mock.calls[0]?.[0] as string
+    const url = vi.mocked(fetch).mock.calls[0]?.[0] as string
     expect(url).toContain(
       'oauth_request_id=id%20with%20spaces%26injected%3Devil'
     )
   })
 
   it('throws OAuthApiError with status on non-2xx', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      errorResponse(400, 'expired')
-    )
+    vi.mocked(fetch).mockResolvedValue(errorResponse(400, 'expired'))
 
     await expect(fetchOAuthConsentChallenge('abc')).rejects.toMatchObject({
       name: 'OAuthApiError',
@@ -72,7 +69,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects when scopes are not strings', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({ ...validChallenge, scopes: [123, 'mcp:tools:read'] })
     )
 
@@ -82,7 +79,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects when a workspace is missing required fields', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({
         ...validChallenge,
         workspaces: [{ id: 'x', name: 'y', type: 'personal' }]
@@ -95,7 +92,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects when workspace.type is not personal or team', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({
         ...validChallenge,
         workspaces: [{ id: 'x', name: 'y', type: 'enterprise', role: 'owner' }]
@@ -108,7 +105,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects when workspace.role is not owner or member', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({
         ...validChallenge,
         workspaces: [{ id: 'x', name: 'y', type: 'team', role: 'admin' }]
@@ -121,7 +118,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects when top-level fields are missing', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({ ...validChallenge, csrf_token: undefined })
     )
 
@@ -131,7 +128,7 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('rejects null body', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse(null))
+    vi.mocked(fetch).mockResolvedValue(okResponse(null))
 
     await expect(fetchOAuthConsentChallenge('abc')).rejects.toThrow(
       'OAuth consent challenge is invalid'
@@ -141,7 +138,7 @@ describe('fetchOAuthConsentChallenge', () => {
 
 describe('submitOAuthConsentDecision', () => {
   it('navigates to the redirect_url returned by cloud on success', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({ redirect_url: 'http://127.0.0.1:50632/cb?code=xyz' })
     )
     // jsdom location is not writable directly; replace href via spy.
@@ -185,9 +182,7 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it('throws OAuthApiError on non-2xx', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      errorResponse(403, 'scope broadening')
-    )
+    vi.mocked(fetch).mockResolvedValue(errorResponse(403, 'scope broadening'))
 
     await expect(
       submitOAuthConsentDecision({
@@ -200,7 +195,7 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it('carries the refusal code from the error body', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       new Response(
         JSON.stringify({
           code: 'origin_not_allowed',
@@ -226,7 +221,7 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it('throws when redirect_url is missing from a successful response', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse({}))
+    vi.mocked(fetch).mockResolvedValue(okResponse({}))
 
     await expect(
       submitOAuthConsentDecision({
@@ -243,7 +238,7 @@ describe('submitOAuthConsentDecision', () => {
     // authorization code via org.comfy.ios://oauth-callback. The backend
     // has already validated the URL byte-identically against the client's
     // registered redirect_uris.
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({
         redirect_url: 'org.comfy.ios://oauth-callback?code=xyz&state=s'
       })
@@ -327,7 +322,7 @@ describe('submitOAuthConsentDecision', () => {
   ] as const)(
     'rejects redirect_url %s (registration %s, expects %s): %s',
     async ([redirectUrl, expectedRedirectUri, expectedError]) => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         okResponse({ redirect_url: redirectUrl })
       )
 
@@ -346,7 +341,7 @@ describe('submitOAuthConsentDecision', () => {
   it('rejects an unsafe redirect_url scheme', async () => {
     // Defense in depth: even though the cloud backend is trusted, never
     // hand the browser off to a non-http(s) URL.
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       okResponse({ redirect_url: 'javascript:alert(1)' })
     )
 
@@ -361,9 +356,9 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it('sends the expected JSON body', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(okResponse({ redirect_url: 'http://x.test/' }))
+    vi.mocked(fetch).mockResolvedValue(
+      okResponse({ redirect_url: 'http://x.test/' })
+    )
 
     await submitOAuthConsentDecision({
       oauthRequestId: validChallenge.oauth_request_id,
@@ -372,7 +367,7 @@ describe('submitOAuthConsentDecision', () => {
       workspaceId: 'personal-workspace'
     })
 
-    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit
     expect(JSON.parse(init.body as string)).toEqual({
       oauth_request_id: validChallenge.oauth_request_id,
       csrf_token: validChallenge.csrf_token,

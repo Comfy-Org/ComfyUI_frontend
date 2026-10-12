@@ -14,24 +14,73 @@ function joinLaunchArgs(tokens: string[]): string {
   return tokens.map((t) => (/[\s"]/.test(t) ? `"${t}"` : t)).join(' ')
 }
 
-/** Drops any frontend override (`--front-end-root`/`--front-end-version`). */
-export function withoutFrontendOverride(args: string): string {
+function withoutFlags(args: string, flags: ReadonlySet<string>): string {
   const tokens = splitLaunchArgs(args)
   const kept = tokens.filter((token, i) => {
     const flag = token.split('=')[0]
-    if (FRONTEND_FLAGS.has(flag)) return false
-    return !(FRONTEND_FLAGS.has(tokens[i - 1]) && !token.startsWith('--'))
+    if (flags.has(flag)) return false
+    return !(flags.has(tokens[i - 1]) && !token.startsWith('--'))
   })
   return joinLaunchArgs(kept)
 }
 
+/** Drops any frontend override (`--front-end-root`/`--front-end-version`). */
+export function withoutFrontendOverride(args: string): string {
+  return withoutFlags(args, FRONTEND_FLAGS)
+}
+
+/** Sets `flag` to `value`, replacing any earlier value. */
+export function withLaunchArg(
+  args: string,
+  flag: string,
+  value: string
+): string {
+  return joinLaunchArgs([
+    ...splitLaunchArgs(withoutFlags(args, new Set([flag]))),
+    flag,
+    value
+  ])
+}
+
 /** Points the install at a local frontend build, replacing any override. */
 export function withFrontendRoot(args: string, root: string): string {
-  return joinLaunchArgs([
-    ...splitLaunchArgs(withoutFrontendOverride(args)),
-    '--front-end-root',
-    root
-  ])
+  return withLaunchArg(withoutFrontendOverride(args), '--front-end-root', root)
+}
+
+/**
+ * A backend the frontend and Desktop can both target. Non-prod CI builds call
+ * the staging API but the testcloud Cloud API, so one environment needs its
+ * own build.
+ */
+export interface QaEnv {
+  name: string
+  issuer: string
+  apiBase: string
+  buildEnv: Record<string, string>
+}
+
+export const QA_ENVS: Partial<Record<string, QaEnv>> = {
+  staging: {
+    name: 'staging',
+    issuer: 'https://stagingcloud.comfy.org',
+    apiBase: 'https://stagingapi.comfy.org',
+    buildEnv: { VITE_STAGING_CLOUD_BASE_URL: 'https://stagingcloud.comfy.org' }
+  },
+  testcloud: {
+    name: 'testcloud',
+    issuer: 'https://testcloud.comfy.org',
+    apiBase: 'https://testapi.comfy.org',
+    buildEnv: { VITE_STAGING_API_BASE_URL: 'https://testapi.comfy.org' }
+  }
+}
+
+/** The named environment, or why it can't be used. */
+export function pickEnv(name: string): QaEnv {
+  const env = Object.hasOwn(QA_ENVS, name) ? QA_ENVS[name] : undefined
+  if (env) return env
+  throw new Error(
+    `Unknown --env "${name}". Use one of: ${Object.keys(QA_ENVS).join(', ')}.`
+  )
 }
 
 /** Where Comfy Desktop keeps `installations.json`, packaged or dev build. */

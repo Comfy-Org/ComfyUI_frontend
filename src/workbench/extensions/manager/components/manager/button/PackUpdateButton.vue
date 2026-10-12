@@ -1,7 +1,7 @@
 <template>
   <ButtonGroup class="shrink-0">
     <Button
-      v-tooltip.top="
+      :tooltip="
         hasDisabledUpdatePacks
           ? $t('manager.disabledNodesWontUpdate')
           : $t('manager.updateLatestActiveTooltip')

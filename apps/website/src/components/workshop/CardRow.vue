@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { useMutationObserver, useResizeObserver } from '@vueuse/core'
-import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -28,32 +28,10 @@ function measure() {
 
 function page(direction: 1 | -1) {
   const el = row.value
+  if (direction === -1 ? atStart.value : atEnd.value) return
   if (el)
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
 }
-
-const prevArrow = useTemplateRef<HTMLButtonElement>('prevArrow')
-const nextArrow = useTemplateRef<HTMLButtonElement>('nextArrow')
-
-// Paging to an end spends the arrow the reader is standing on. Letting it
-// unmount under them drops focus to the document, and the row's other arrow,
-// which is only shown while the row holds focus, goes with it. So the row hands
-// focus across first, and a reader who arrived by keyboard can turn back. When
-// the row stops overflowing there is no arrow left to hand to, and the row
-// itself takes the focus, which keeps the reader where they were standing.
-function handOver(
-  spent: HTMLElement | null,
-  survivor: () => HTMLElement | null
-) {
-  if (document.activeElement !== spent) return
-  void nextTick(() => (survivor() ?? row.value)?.focus())
-}
-watch(atEnd, (spent) => {
-  if (spent) handOver(nextArrow.value, () => prevArrow.value)
-})
-watch(atStart, (spent) => {
-  if (spent) handOver(prevArrow.value, () => nextArrow.value)
-})
 
 // Which arrow is spent depends on the cards themselves, so the edges are
 // re-read whenever they change, not only on scroll.
@@ -61,19 +39,36 @@ onMounted(() => void nextTick(measure))
 useResizeObserver(row, measure)
 useMutationObserver(row, measure, { childList: true, subtree: true })
 
+// Both ends resting means there is nothing to page, so the row carries no
+// control it cannot honour. Paging to one end only dims that arrow, so the
+// reader standing on it keeps their place; the row itself takes the focus when
+// the cards stop overflowing and the arrows go with them.
+const overflows = computed(() => !atStart.value || !atEnd.value)
+const arrows = useTemplateRef<HTMLElement>('arrows')
+watch(overflows, (on) => {
+  if (on || !arrows.value?.contains(document.activeElement)) return
+  void nextTick(() => row.value?.focus())
+})
+
 // The arrows straddle the edge of the row, half over the cards and half over
 // the page, so the row reads as running past them. They are opaque, because a
 // card showing through a control reads as a rendering fault. Hovering lifts
 // them without colour: the yellow belongs to See all, and two yellows on one
 // row compete.
+// A pointer only reaches an arrow the reader can see. While the row hides them
+// the strip they straddle belongs to the card underneath; once they are up, a
+// spent one swallows the click rather than passing it to that card, because a
+// dimmed control that quietly opens a model is worse than one that does
+// nothing.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-none group-hover/row:pointer-events-auto group-focus-within/row:pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do
-// neither, so there they stay.
+// neither, and does not need them: the finger scrolls the row, and the next
+// card cut off at the edge says there is more. So it never gets them.
 const revealClass =
-  'pointer-events-none absolute -inset-x-1 top-0 bottom-2 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
+  'pointer-events-none absolute -inset-x-1 top-0 bottom-2 hidden opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 group-focus-within/row:opacity-100 can-hover:block'
 </script>
 
 <template>
@@ -96,37 +91,32 @@ const revealClass =
         <slot />
       </ul>
 
-      <!-- An arrow is only there while it has somewhere to go, so the row
-        never carries a control it cannot honour. -->
       <div
-        v-if="!atStart || !atEnd"
+        v-if="overflows"
+        ref="arrows"
         :class="revealClass"
         data-testid="card-row-arrows"
       >
-        <template v-if="!atStart">
-          <button
-            ref="prevArrow"
-            type="button"
-            :aria-label="t('workshop.sections.scrollBack')"
-            :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
-            data-testid="card-row-prev"
-            @click="page(-1)"
-          >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-          </button>
-        </template>
-        <template v-if="!atEnd">
-          <button
-            ref="nextArrow"
-            type="button"
-            :aria-label="t('workshop.sections.scrollForward')"
-            :class="cn(arrowClass, 'right-0 translate-x-1/2')"
-            data-testid="card-row-next"
-            @click="page(1)"
-          >
-            <ChevronRight class="size-4" aria-hidden="true" />
-          </button>
-        </template>
+        <button
+          type="button"
+          :aria-label="t('workshop.sections.scrollBack')"
+          :aria-disabled="atStart || undefined"
+          :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
+          data-testid="card-row-prev"
+          @click="page(-1)"
+        >
+          <ChevronLeft class="size-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          :aria-label="t('workshop.sections.scrollForward')"
+          :aria-disabled="atEnd || undefined"
+          :class="cn(arrowClass, 'right-0 translate-x-1/2')"
+          data-testid="card-row-next"
+          @click="page(1)"
+        >
+          <ChevronRight class="size-4" aria-hidden="true" />
+        </button>
       </div>
     </div>
   </div>

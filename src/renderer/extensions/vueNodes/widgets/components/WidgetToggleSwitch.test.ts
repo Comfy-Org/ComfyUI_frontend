@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -85,6 +87,39 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
     expect(onModelUpdate).toHaveBeenCalledWith(true)
   })
+
+  it.for([
+    { name: 'switch', options: {}, role: 'switch', label: 'test_toggle' },
+    {
+      name: 'labelled toggle',
+      options: { on: 'enabled', off: 'disabled' },
+      role: 'button',
+      label: 'disabled'
+    }
+  ])(
+    'records the updated value after clicking a $name',
+    async ({ options, role, label }) => {
+      let currentValue = true
+      const recordedValues: boolean[] = []
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {
+          captureCanvasState: () => recordedValues.push(currentValue)
+        }
+      })
+      const { user } = mountComponent(
+        createToggleWidget(true, options),
+        true,
+        (value) => {
+          currentValue = value ?? currentValue
+        }
+      )
+
+      await user.click(screen.getByRole(role, { name: label }))
+
+      expect(currentValue).toBe(false)
+      expect(recordedValues).toEqual([false])
+    }
+  )
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when toggled from false to true', async () => {

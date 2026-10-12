@@ -71,7 +71,7 @@ function renderComponent() {
   const user = userEvent.setup()
   const result = render(LightInfo, {
     props: { nodeId: toNodeId(7) },
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
   return { user, ...result }
 }
@@ -292,6 +292,18 @@ describe('LightInfo toolbar', () => {
 
       expect(state[action]).toHaveBeenCalledWith(value)
       expect(screen.getByRole('button', { name: after })).toBeInTheDocument()
+    }
+  )
+
+  it.for(['Add light', 'Output view'])(
+    'names the %s button in a tooltip',
+    async (button) => {
+      lightState([spot])
+      const { user } = renderComponent()
+
+      await user.hover(screen.getByRole('button', { name: button }))
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(button)
     }
   )
 

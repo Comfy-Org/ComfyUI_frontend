@@ -124,6 +124,29 @@ function setup() {
 }
 
 describe('Agent draft submission', () => {
+  it('restores an untouched skill draft with its references after a failed send', async () => {
+    const { composer, submit, pending } = setup()
+    composer.setSkillScope('workspace-a')
+    composer.applyEditorPrompt({
+      ...composer.prompt,
+      references: [
+        ...composer.prompt.references,
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Use defaults',
+          scope: 'workspace-a',
+          textOffset: composer.draft.length
+        }
+      ]
+    })
+    const prompt = composer.prompt
+    const sending = submit()
+    pending.resolve(false)
+    await sending
+    expect(composer.prompt).toEqual(prompt)
+  })
+
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {

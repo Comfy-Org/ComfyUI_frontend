@@ -17,6 +17,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -183,6 +184,26 @@ export class HostDoc {
       Y.encodeStateAsUpdate(this.doc, before),
       HOST_ACTOR,
       ops.map((op) => op.op_id)
+    )
+  }
+
+  seedDefinition(definition: ExportedSubgraph): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const minted = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [definition] } },
+      this.catalog
+    )
+      .getMap<unknown>('definitions')
+      .get(definition.id)
+    if (!(minted instanceof Y.Map)) {
+      throw new Error('the definition did not mint')
+    }
+    this.doc.getMap<unknown>('definitions').set(definition.id, minted.clone())
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
     )
   }
 

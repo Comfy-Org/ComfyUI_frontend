@@ -13,7 +13,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import * as registryService from '@/services/comfyRegistryService'
 import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'
@@ -135,8 +135,8 @@ describe('useComfyManagerStore', () => {
       expectedInstalled: false,
       expectedToasts: [
         expect.objectContaining({
-          severity: 'error',
-          detail:
+          kind: 'error',
+          description:
             'This action is not allowed by the current security configuration. See the terminal for details.'
         })
       ]
@@ -150,8 +150,8 @@ describe('useComfyManagerStore', () => {
       expectedInstalled: false,
       expectedToasts: [
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Download failed'
+          kind: 'error',
+          description: 'Download failed'
         })
       ]
     },
@@ -164,8 +164,8 @@ describe('useComfyManagerStore', () => {
       expectedInstalled: true,
       expectedToasts: [
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Version installation denied'
+          kind: 'error',
+          description: 'Version installation denied'
         })
       ]
     },
@@ -238,10 +238,10 @@ describe('useComfyManagerStore', () => {
       expect(store.isPackInstalled('test-pack')).toBe(expectedInstalled)
       expect(store.installedPacks).toEqual(installed)
       expect(store.isProcessingTasks).toBe(false)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(useToast().toasts).toEqual(expectedToasts)
 
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(useToast().toasts).toEqual(expectedToasts)
     }
   )
 
@@ -265,10 +265,10 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(false)
     expect(store.isPackInstalled('test-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(false)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Request rejected. Check the terminal.'
+        kind: 'error',
+        description: 'Request rejected. Check the terminal.'
       })
     ])
     expect(mockManagerService.startQueue).not.toHaveBeenCalled()
@@ -297,8 +297,10 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(true)
     expect(store.isProcessingTasks).toBe(true)
     expect(store.failedTasksIds).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([
-      expect.objectContaining({ detail: 'Queue start temporarily unavailable' })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'Queue start temporarily unavailable'
+      })
     ])
 
     await store.installPack.call(request)
@@ -342,8 +344,8 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(false)
     expect(store.isPackInstalled('test-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(false)
-    expect(useToastStore().messagesToAdd.at(-1)).toEqual(
-      expect.objectContaining({ severity: 'error', detail: result })
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({ kind: 'error', description: result })
     )
   })
 
@@ -374,8 +376,11 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('pending-pack')).toBe(true)
     expect(store.isPackInstalling('rejected-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(true)
-    expect(useToastStore().messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'error', detail: 'Request rejected' })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Request rejected'
+      })
     ])
   })
 
@@ -618,10 +623,10 @@ describe('useComfyManagerStore', () => {
       api.dispatchCustomEvent('cm-task-completed', detail)
       await nextTick()
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toEqual([
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Operation failed'
+          kind: 'error',
+          description: 'Operation failed'
         })
       ])
       expect(store.failedTasksLogs.map((log) => log.taskId)).toEqual([
@@ -698,7 +703,7 @@ describe('useComfyManagerStore', () => {
       api.dispatchCustomEvent('cm-task-completed', detail)
       await nextTick()
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toHaveLength(toastCount)
+      expect(useToast().toasts).toHaveLength(toastCount)
     }
   )
 
@@ -743,7 +748,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isTaskInProgress(taskId)).toBe(false)
     expect(store.succeededTasksLogs.map((log) => log.taskId)).toEqual([taskId])
     expect(store.failedTasksIds).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
 
     await store.enablePack({ id: 'other-pack', version: '1.0.0' })
     expect(store.isProcessingTasks).toBe(true)
@@ -881,7 +886,7 @@ describe('useComfyManagerStore', () => {
       newerResult: null,
       newerError: 'Latest startup failed',
       expectedToasts: [
-        expect.objectContaining({ detail: 'Latest startup failed' })
+        expect.objectContaining({ description: 'Latest startup failed' })
       ]
     },
     {
@@ -891,7 +896,7 @@ describe('useComfyManagerStore', () => {
       newerResult: null,
       newerError: 'Latest startup failed',
       expectedToasts: [
-        expect.objectContaining({ detail: 'Latest startup failed' })
+        expect.objectContaining({ description: 'Latest startup failed' })
       ]
     }
   ])(
@@ -932,7 +937,7 @@ describe('useComfyManagerStore', () => {
 
       expect(store.isProcessingTasks).toBe(true)
       expect(store.queueError).toBe(newerError)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(useToast().toasts).toEqual(expectedToasts)
     }
   )
 
@@ -963,7 +968,7 @@ describe('useComfyManagerStore', () => {
 
     expect(store.isProcessingTasks).toBe(true)
     expect(store.queueError).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps a newer completion event when an earlier queue status request finishes', async () => {

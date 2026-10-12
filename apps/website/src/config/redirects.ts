@@ -43,6 +43,9 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
+const RETIRED_PAGE_TEMPORARY_BECAUSE =
+  'retired, may return: the gallery and launches pages can be restored from git history'
+
 const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
@@ -143,6 +146,16 @@ export const siteRedirects: readonly SiteRedirect[] = [
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
+  {
+    source: '/about',
+    destination: '/about/',
+    slashFormIsPageBecause: '/about/ is the About page'
+  },
+  {
+    source: '/zh-CN/about',
+    destination: '/zh-CN/about/',
+    slashFormIsPageBecause: '/zh-CN/about/ is the About page'
+  },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
@@ -189,6 +202,46 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/customers/series-entertainment/'
   },
   { source: '/zh-CN/terms-of-service', destination: '/terms-of-service/' },
+  {
+    source: '/gallery',
+    destination: '/customers/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/gallery.md',
+    destination: '/customers.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/gallery',
+    destination: '/zh-CN/customers/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/gallery.md',
+    destination: '/zh-CN/customers.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/launches',
+    destination: '/events/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/launches.md',
+    destination: '/events.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/launches',
+    destination: '/zh-CN/events/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/launches.md',
+    destination: '/zh-CN/events.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
   { source: '/api', destination: '/platform/' },
   { source: '/zh-CN/api', destination: '/zh-CN/platform/' },
   { source: '/platform/models', destination: '/platform/router/' },
@@ -239,12 +292,20 @@ export function toVercelRedirects(
 }
 
 /**
+ * The redirect sources a link to a canonical (slashed) page must not match. A
+ * bare-only source such as `/about` is left out: its slash form is the page.
+ */
+export const linkStaleSources: readonly string[] = toVercelRedirects(
+  siteRedirects.filter(redirectsSlashForm)
+).map(({ source }) => source)
+
+/**
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
- * page at `/x/`, so those rows live in `vercel.json` only. The retired
- * /models and /p/supported-models addresses are left out too, so the build
- * ships no stub pages under them.
+ * page at `/x/`, so those rows live in `vercel.json` only, as do `.md` and
+ * `.txt` file addresses. The retired /models and /p/supported-models
+ * addresses are left out too, so the build ships no stub pages under them.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
@@ -253,6 +314,7 @@ export const astroRedirects: Record<string, RedirectConfig> =
         (row) =>
           isInternalDestination(row.destination) &&
           redirectsSlashForm(row) &&
+          !isFileAddress(row.source) &&
           !isRetiredAddress(row)
       )
       .map((row) => [

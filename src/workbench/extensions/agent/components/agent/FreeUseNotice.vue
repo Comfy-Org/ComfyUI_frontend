@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useStorage } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { useLocalStorage } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
-
-const FREE_USE_DOCS_URL = 'https://docs.comfy.org/get_started/cloud'
+import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
 const PLACEMENT_CLASSES = {
   'top-banner': 'px-4 py-3',
@@ -23,11 +23,22 @@ const PLACEMENT_CLASSES = {
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
-const dismissed = useStorage(FREE_USE_NOTICE_DISMISSED_KEY, false)
+const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
+const dismissed = useLocalStorage(
+  () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
+  false,
+  { writeDefaults: false }
+)
 
-onMounted(() => {
-  if (!dismissed.value) emit('notice', { action: 'shown', placement })
-})
+const visible = computed(() => isAuthInitialized.value && !dismissed.value)
+
+watch(
+  visible,
+  (onScreen) => {
+    if (onScreen) emit('notice', { action: 'shown', placement })
+  },
+  { immediate: true }
+)
 
 function onDismiss(): void {
   dismissed.value = true
@@ -37,7 +48,7 @@ function onDismiss(): void {
 
 <template>
   <div
-    v-if="!dismissed"
+    v-if="visible"
     role="note"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
@@ -54,7 +65,7 @@ function onDismiss(): void {
         variant="link"
         size="unset"
         as="a"
-        :href="FREE_USE_DOCS_URL"
+        :href="AGENT_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
         class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
