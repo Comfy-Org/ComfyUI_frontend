@@ -1026,9 +1026,11 @@ image of every screenshot assertion that failed there (stale or missing
 baseline) without rerunning Playwright. A flaky screenshot that passed on
 retry is never committed, and a run with no failed screenshot assertions
 commits nothing. The workflow reruns the `@screenshot` suite with
-`--update-snapshots` instead when the run is missing, takes over 45 minutes,
-or not every Playwright job uploaded its `snapshot-updates-*` artifact.
-Comment `/update-playwright full` to force the rerun.
+`--update-snapshots` instead when there is no run for the head commit, the
+run takes over 45 minutes, a Playwright job did not finish, no Playwright job
+ran, or a Playwright job left no `snapshot-updates-*` artifact (for example
+after a crash or once the artifacts expire after 7 days). Comment
+`/update-playwright full` to force the rerun.
 
 A failed screenshot assertion ends its test, so only the first stale
 screenshot of each test is committed and the next E2E run fails on the
