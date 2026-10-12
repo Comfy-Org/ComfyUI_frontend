@@ -190,9 +190,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: "The node code is open source to inspect, fork, and extend. The nvidia-vfx library underneath is Nvidia's proprietary SDK.",
-          'zh-CN':
-            '节点代码开源，可以查看、复刻与扩展。底层的 nvidia-vfx 库是 Nvidia 的专有 SDK。'
+          en: 'Open weights, ready for commercial use.',
+          'zh-CN': '开放权重，可用于商业用途。'
         },
         media: media.horizon,
         href: nvidiaRtxLinks.download
