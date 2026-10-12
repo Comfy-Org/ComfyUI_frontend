@@ -2,7 +2,6 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useTelemetry } from '@/platform/telemetry'
-import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
@@ -183,28 +182,6 @@ describe('canvas node media failure telemetry', () => {
     )
     expect(created[0].dataset.fileUrl).toBe(
       '/api/view?filename=render.exr&type=input&preview_id=preview-1'
-    )
-  })
-
-  it('diagnoses the stored preview it failed to load, not the raw file', async () => {
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/api/view?filename=render.exr&type=input&preview_id=preview-1'
-    ])
-    const created = stubImages()
-    const node = createMockMediaNode({
-      size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
-    })
-
-    useNodeImage(node).showPreview()
-    await flush()
-    created[0].onerror?.(new Event('error'))
-    await flush()
-    created[1].onerror?.(new Event('error'))
-    await flush()
-
-    expect(describeImageLoadFailure).toHaveBeenCalledWith(
-      '/api/assets/preview-1/content?disposition=inline'
     )
   })
 

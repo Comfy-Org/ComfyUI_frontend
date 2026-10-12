@@ -342,7 +342,7 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => shownUrl(url) !== shownUrl(oldUrls[i]))
 
-    if (!urlsChanged) return
+    if (!urlsChanged && !imageError.value) return
 
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
