@@ -52,11 +52,16 @@ export function hideLinks(
   scope: GraphScope,
   linkIds: Iterable<LinkId>
 ): void {
-  const ids = [...linkIds]
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
-    for (const linkId of ids) store.patch(scope, linkId, { hidden: true })
-    startLinkHideTransitions(scope.rootGraphId, ids, performance.now())
+    const newlyHidden: LinkId[] = []
+    for (const linkId of linkIds) {
+      if (store.getPresentation(scope, linkId)?.hidden === true) continue
+      store.patch(scope, linkId, { hidden: true })
+      if (store.getPresentation(scope, linkId)?.hidden === true)
+        newlyHidden.push(linkId)
+    }
+    startLinkHideTransitions(scope.rootGraphId, newlyHidden, performance.now())
   })
 }
 

@@ -52,6 +52,7 @@ import {
 } from './canvas/linkRevealState'
 import {
   cancelLinkHideTransition,
+  clearRootLinkHideTransitions,
   hasLinkHideTransitions,
   linkHideDashPattern,
   linkHideLabelScale,
@@ -85,6 +86,7 @@ import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
+  dropLinkBadgeHitAreas,
   drawHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
@@ -2139,8 +2141,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
-    if (graph && clearRootLinkReveals(graphScopeOf(graph).rootGraphId))
-      this.dirty_bgcanvas = true
+    if (graph) {
+      const { rootGraphId } = graphScopeOf(graph)
+      const revealsCleared = clearRootLinkReveals(rootGraphId)
+      const transitionsCleared = clearRootLinkHideTransitions(rootGraphId)
+      if (revealsCleared || transitionsCleared) this.dirty_bgcanvas = true
+    }
     if (newGraph === graph) return
     clearLinkBadgeHitAreas(this)
 
@@ -6073,7 +6079,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.default_link_color
     )
     const renderedRerouteSegments = new Set<Reroute>()
-    const hidingLinkIds = new Set<LinkId>()
+    const hidingLinks: {
+      link: LLink
+      alpha: number
+      startPos: Point
+      endPos: Point
+      startDirection?: LinkDirection
+      endDirection?: LinkDirection
+    }[] = []
 
     const renderConnection = (
       link: LLink,
@@ -6093,22 +6106,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
         if (alpha === undefined) return
 
-        hidingLinkIds.add(link.id)
-        ctx.save()
-        ctx.globalAlpha *= alpha
-        ctx.setLineDash(linkHideDashPattern(this.connections_width))
-        this._renderAllLinkSegments(
-          ctx,
+        hidingLinks.push({
           link,
+          alpha,
           startPos,
           endPos,
-          visibleReroutes,
-          renderedRerouteSegments,
-          now,
           startDirection,
           endDirection
-        )
-        ctx.restore()
+        })
         return
       }
 
@@ -6199,6 +6204,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
+    for (const hiding of hidingLinks) this._renderHidingLink(ctx, hiding, now)
+
     if (graph.floatingLinks.size > 0) {
       this._renderFloatingLinks(
         ctx,
@@ -6250,6 +6257,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
+    const hidingLinkIds = new Set(hidingLinks.map(({ link }) => link.id))
+    dropLinkBadgeHitAreas(this, hidingLinkIds)
     for (const [linkId, layout] of hiddenLinkLayouts) {
       if (!hidingLinkIds.has(linkId))
         drawHiddenLinkBadges(
@@ -6344,6 +6353,45 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
     ctx.globalAlpha = globalAlpha
+  }
+
+  private _renderHidingLink(
+    ctx: CanvasRenderingContext2D,
+    {
+      link,
+      alpha,
+      startPos,
+      endPos,
+      startDirection,
+      endDirection
+    }: {
+      link: LLink
+      alpha: number
+      startPos: Point
+      endPos: Point
+      startDirection?: LinkDirection
+      endDirection?: LinkDirection
+    },
+    now: number
+  ): void {
+    const hitTestedPaths = this.renderedPaths
+    this.renderedPaths = new Set(hitTestedPaths)
+    ctx.save()
+    ctx.globalAlpha *= alpha
+    ctx.setLineDash(linkHideDashPattern(this.connections_width))
+    this._renderAllLinkSegments(
+      ctx,
+      link,
+      startPos,
+      endPos,
+      [],
+      new Set(),
+      now,
+      startDirection,
+      endDirection
+    )
+    ctx.restore()
+    this.renderedPaths = hitTestedPaths
   }
 
   private _renderAllLinkSegments(

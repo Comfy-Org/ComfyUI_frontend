@@ -159,4 +159,20 @@ describe('link visibility mutations', () => {
     ).toBeUndefined()
     expect(linkHideTransitionAlpha(scope.rootGraphId, second, now)).toBe(1)
   })
+
+  it('does not restart the transition for a link that was already hidden', () => {
+    const scope = graphScopeOf(new LGraph())
+    const host = createHost()
+    const alreadyHidden = toLinkId(21)
+    const visible = toLinkId(22)
+    useLinkPresentationStore().patch(scope, alreadyHidden, { hidden: true })
+    const now = performance.now()
+
+    hideLinks(host, scope, [alreadyHidden, visible])
+
+    expect(
+      linkHideTransitionAlpha(scope.rootGraphId, alreadyHidden, now)
+    ).toBeUndefined()
+    expect(linkHideTransitionAlpha(scope.rootGraphId, visible, now)).toBe(1)
+  })
 })

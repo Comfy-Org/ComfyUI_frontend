@@ -40,6 +40,18 @@ export function clearLinkBadgeHitAreas(host: object): void {
   hitAreasByHost.delete(host)
 }
 
+export function dropLinkBadgeHitAreas(
+  host: object,
+  linkIds: ReadonlySet<LinkId>
+): void {
+  const hitAreas = hitAreasByHost.get(host)
+  if (!hitAreas || linkIds.size === 0) return
+  hitAreasByHost.set(
+    host,
+    hitAreas.filter((area) => !linkIds.has(area.linkId))
+  )
+}
+
 export function queryLinkBadgeAtPoint(
   host: object,
   x: number,

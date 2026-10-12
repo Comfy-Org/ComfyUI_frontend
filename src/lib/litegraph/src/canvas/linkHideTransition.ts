@@ -43,6 +43,12 @@ export function startLinkHideTransitions(
   if (startedAt.size > 0) startedAtByRoot.set(rootGraphId, startedAt)
 }
 
+export function clearRootLinkHideTransitions(
+  rootGraphId: RootGraphId
+): boolean {
+  return startedAtByRoot.delete(rootGraphId)
+}
+
 export function cancelLinkHideTransition(
   rootGraphId: RootGraphId,
   linkId: LinkId
