@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -36,12 +34,14 @@ const sizeToggleLabel = computed(() =>
     <div class="flex items-center gap-1">
       <h1
         id="agent-panel-title"
+        data-testid="agent-panel-title"
         class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
       >
         {{ t('agent.title') }}
       </h1>
       <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.takeTour'))"
+        :tooltip="t('agent.takeTour')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon-sm"
         :aria-label="t('agent.takeTour')"
@@ -59,7 +59,8 @@ const sizeToggleLabel = computed(() =>
 
     <div class="ml-auto flex items-center gap-2">
       <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
+        :tooltip="t('agent.newChat')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="t('agent.newChat')"
@@ -68,7 +69,8 @@ const sizeToggleLabel = computed(() =>
         <span class="icon-[lucide--message-circle-plus] size-4" />
       </Button>
       <Button
-        v-tooltip.bottom="buildTooltipConfig(sizeToggleLabel)"
+        :tooltip="sizeToggleLabel"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="sizeToggleLabel"
@@ -77,7 +79,8 @@ const sizeToggleLabel = computed(() =>
         <span :class="cn(sizeToggleIcon, 'size-4')" />
       </Button>
       <Button
-        v-tooltip.bottom="buildTooltipConfig(t('agent.close'))"
+        :tooltip="t('agent.close')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="t('agent.close')"

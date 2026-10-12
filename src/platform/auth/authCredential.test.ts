@@ -30,8 +30,6 @@ describe('notifyAuthCredential', () => {
   })
 
   it('swallows a throwing callback', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     expect(() =>
       notifyAuthCredential(() => {
         throw new Error('boom')

@@ -4,7 +4,8 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from './useComposer'
+import { starterPromptAttribution } from '../../utils/starterPrompts'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from './useComposer'
 
 vi.mock(import('@/platform/telemetry'))
@@ -17,7 +18,8 @@ const CHIP: AgentStarterPromptAttribution = {
   promptIndex: 1,
   promptCount: 5,
   promptTextHash: 'deadbeef',
-  locale: 'en'
+  locale: 'en',
+  assignment: 'control'
 }
 
 function setup(running = false) {
@@ -45,10 +47,8 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
-      attachment
-    ])
-    expect(composer.draft.value).toBe('  make a cat   ')
+    expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
+    expect(composer.draft.value).toBe('  make a cat  ')
     expect(composer.attachments.value).toEqual([attachment])
   })
 
@@ -105,7 +105,7 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
   })
@@ -176,13 +176,15 @@ describe('useComposer', () => {
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),
-      draft_was_empty: true
+      draft_was_empty: true,
+      '$feature/agent-starter-prompt-set': 'control'
     })
     // The id on the event is the id the send will be attributed with.
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(store.starterPrompt).toEqual({
       id: 'slot_2',
-      clickId: event.click_id
+      clickId: event.click_id,
+      assignment: 'control'
     })
   })
 
@@ -205,6 +207,21 @@ describe('useComposer', () => {
     )
   })
 
+  it('omits experiment properties when prompt attribution has no assignment', () => {
+    const { composer } = setup()
+
+    composer.insert(
+      'QA treatment',
+      starterPromptAttribution('QA treatment', 1, 5, 'en')
+    )
+
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
+    expect(useAgentComposerStore().starterPrompt).not.toHaveProperty(
+      'assignment'
+    )
+  })
+
   it('treats a whitespace-only draft as empty for clean prompt attribution', () => {
     const { composer } = setup()
     composer.setText('    ')
@@ -216,7 +233,7 @@ describe('useComposer', () => {
     )
   })
 
-  it('treats a reference-only draft as non-empty for prompt attribution', () => {
+  it('treats an attachment-only draft as non-empty for prompt attribution', () => {
     const { composer } = setup()
     composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
@@ -233,14 +250,14 @@ describe('useComposer', () => {
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
-    expect(second.draft.value).toBe('still here ')
+    expect(second.draft.value).toBe('still here')
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('still here ')
+    expect(first.draft.value).toBe('still here')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])

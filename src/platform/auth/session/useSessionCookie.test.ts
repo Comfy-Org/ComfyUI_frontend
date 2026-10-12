@@ -1,8 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const originalFetch = globalThis.fetch
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -23,13 +21,6 @@ describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
     useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    globalThis.fetch = vi.fn()
-  })
-
-  afterEach(() => {
-    // Restore the global fetch so a leaked mock doesn't bleed into later
-    // tests that depend on real fetch semantics.
-    globalThis.fetch = originalFetch
   })
 
   it('createSessionOrThrow posts the Firebase token and awaits success', async () => {
@@ -110,7 +101,6 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'session denied' }), {
@@ -127,7 +117,7 @@ describe('useSessionCookie', () => {
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('serializes strict session creation after the previous user response', async () => {
@@ -248,7 +238,6 @@ describe('useSessionCookie', () => {
   })
 
   it('reports a failed session deletion as auth_session_cookie_delete_failed and still resolves', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
         status: 500,
@@ -271,7 +260,7 @@ describe('useSessionCookie', () => {
       context: { had_pending_session_mutation: false },
       level: 'error'
     })
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('keeps the server message out of the reported deletion failure', async () => {

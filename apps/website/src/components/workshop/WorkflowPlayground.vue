@@ -45,10 +45,9 @@ import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
-const { model, scope, cloudHref } = defineProps<{
+const { model, scope } = defineProps<{
   model: WorkflowWorkshopModelDetail
   scope: string
-  cloudHref?: string
 }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
@@ -363,7 +362,6 @@ function start() {
     v-show="section === 'workflow'"
     :active="section === 'workflow'"
     :model="model"
-    :cloud-href="cloudHref"
   />
   <div
     v-show="section === 'api'"

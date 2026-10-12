@@ -5,11 +5,13 @@ import type {
   DesktopHostAuthState
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
+  canDesktopHostSwitchWorkspace,
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
   requestDesktopHostSignOut,
+  requestDesktopHostWorkspaceSwitch,
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -31,6 +33,14 @@ function fakeBridge(initial: DesktopHostAuthState) {
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
     signOut: vi.fn(
       async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+    ),
+    switchWorkspace: vi.fn(
+      async (workspaceId: string): Promise<DesktopHostAuthState> => ({
+        status: 'signed_in',
+        userId: 'user-1',
+        email: 'a@example.com',
+        workspaceId
+      })
     ),
     onChanged: vi.fn((callback: (state: DesktopHostAuthState) => void) => {
       listeners.add(callback)
@@ -188,6 +198,57 @@ describe('desktopHostSession', () => {
       expect(desktopHostUser.value === null).toBe(expected)
     }
   )
+
+  describe('workspace switch', () => {
+    it('follows Desktop onto the workspace it switched to', async () => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession(bridge)
+
+      expect(canDesktopHostSwitchWorkspace()).toBe(true)
+      await expect(requestDesktopHostWorkspaceSwitch('ws-2')).resolves.toBe(
+        true
+      )
+      expect(bridge.switchWorkspace).toHaveBeenCalledWith('ws-2')
+      expect(desktopHostUser.value?.workspaceId).toBe('ws-2')
+    })
+
+    it.for([
+      { name: 'Desktop stays on its workspace', result: SIGNED_IN },
+      { name: 'the switch fails', result: undefined }
+    ])('reports no switch when $name', async ({ result }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      if (result) bridge.switchWorkspace.mockResolvedValue(result)
+      else bridge.switchWorkspace.mockRejectedValue(new Error('consent'))
+      await startDesktopHostSession(bridge)
+
+      await expect(requestDesktopHostWorkspaceSwitch('ws-2')).resolves.toBe(
+        false
+      )
+      expect(desktopHostUser.value?.workspaceId).toBe('ws-1')
+    })
+
+    it('cannot switch on a Desktop build without the bridge method', async () => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      const { switchWorkspace: _omitted, ...olderBridge } = bridge
+      await startDesktopHostSession(olderBridge)
+
+      expect(canDesktopHostSwitchWorkspace()).toBe(false)
+      await expect(requestDesktopHostWorkspaceSwitch('ws-2')).resolves.toBe(
+        false
+      )
+    })
+
+    it('cannot switch while signed out', async () => {
+      const { bridge } = fakeBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      expect(canDesktopHostSwitchWorkspace()).toBe(false)
+      await expect(requestDesktopHostWorkspaceSwitch('ws-2')).resolves.toBe(
+        false
+      )
+      expect(bridge.switchWorkspace).not.toHaveBeenCalled()
+    })
+  })
 
   it('does not start a Desktop sign-in while inactive', async () => {
     await expect(requestDesktopHostSignIn()).resolves.toBe(false)

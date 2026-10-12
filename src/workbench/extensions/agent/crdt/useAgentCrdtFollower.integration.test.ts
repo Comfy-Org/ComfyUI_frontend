@@ -1,4 +1,4 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +12,11 @@ import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import {
+  DOC_HOST_MINTED_SINK_UPDATE_B64,
+  DOC_HOST_MULTI_PLAYER_VERSION,
+  DOC_HOST_SCHEMA_VERSION
+} from './__fixtures__/docHostMintedSink'
 import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
@@ -92,6 +97,54 @@ describe('useAgentCrdtFollower over a live graph', () => {
     } finally {
       view.unmount()
       host.destroy()
+    }
+  })
+
+  it(`projects a document minted by the cloud doc-host (comfy-multi-player ${DOC_HOST_MULTI_PLAYER_VERSION})`, async () => {
+    const hostDoc = new Y.Doc()
+    Y.applyUpdate(
+      hostDoc,
+      Uint8Array.from(atob(DOC_HOST_MINTED_SINK_UPDATE_B64), (char) =>
+        char.charCodeAt(0)
+      )
+    )
+    expect(readSchemaVersion(hostDoc)).toBe(DOC_HOST_SCHEMA_VERSION)
+    hostDoc.destroy()
+
+    const graph = shallowRef<LGraph | null>(new LGraph())
+    const view = render(
+      defineComponent({
+        setup() {
+          useAgentCrdtFollower(
+            ref(WORKFLOW_ID),
+            () => null,
+            ref(true),
+            () => graph.value
+          )
+          return () => null
+        }
+      }),
+      { global: { plugins: [getActivePinia()!] } }
+    )
+
+    try {
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 1
+      })
+      deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
+      })
+      await nextTick()
+
+      expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')
+    } finally {
+      view.unmount()
     }
   })
 })

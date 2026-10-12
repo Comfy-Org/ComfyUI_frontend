@@ -59,6 +59,7 @@ Steps:
 ### General
 
 - No commented-out code
+- No added comments other than curt JSDoc on an exported API; rationale belongs in the commit message or PR description
 - No `console.log` in production code (unless intentional logging)
 - No hardcoded URLs, credentials, or environment-specific values
 - Package manager is `pnpm`. Never use `npm`, `npx`, or `yarn`. Use `pnpm dlx` for one-off package execution

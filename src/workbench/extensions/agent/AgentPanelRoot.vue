@@ -11,7 +11,6 @@ import {
   onBeforeUnmount,
   onMounted,
   provide,
-  readonly,
   ref,
   watch
 } from 'vue'
@@ -22,7 +21,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -57,7 +55,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
@@ -78,7 +76,9 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -104,6 +104,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -133,6 +134,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -148,7 +150,7 @@ const CrdtDevPanel = defineAsyncComponent(
 )
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -156,6 +158,7 @@ const {
   tier: subscriptionTier,
   type: billingType,
   billingStatus,
+  canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
@@ -191,7 +194,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
-const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -281,6 +283,9 @@ watch(
  * nothing.
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const agentScopedHasFunds = computed(
+  () => subscription.value?.agentScopedHasFunds
+)
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
@@ -301,36 +306,68 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const unresolvedPaywallPending = computed(() =>
+  conversationEntries.value.some(
+    (entry) =>
+      entry.role === 'assistant' &&
+      entry.parts.some((part) => part.type === 'paywall')
+  )
+)
+
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  return !(
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  return !latestEntryHasPaywall.value
+})
 
 const agentPanelStore = useAgentPanelStore()
-const billingIdentity = computed(
-  () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
-)
+const billingIdentity = useBillingIdentity()
 
-/**
- * One impression per exhaustion episode, not per render: the surface is
- * standing, so it is visible for as long as the workspace is out of credits and
- * a per-render report would make impressions a function of session length.
- * Reset when funds return, so a later exhaustion reports again — mirroring how
- * `useBillingBanner` scopes its dismissal to one episode.
- */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
+
+const showCreditTransitionNotice = computed(
+  () =>
+    isCreditTransitionNoticeShown(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    canAccessSubscriptionFeatures.value &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value === true
+)
+
+function onDismissCreditTransitionNotice(): void {
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
+}
+
+function onCreditTransitionNoticeShown(): void {
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  if (
+    !agentPanelStore.claimCreditTransitionNoticeImpression(
+      billingIdentity.value
+    )
+  )
+    return
+  telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
+}
 
 function onStandingPaywallShown(): void {
   if (
@@ -602,7 +639,9 @@ let nodeReferenceWorkflow = selectionTags.value.length
   : null
 
 function viewedGraphNodes() {
-  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+  return (
+    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+  )
 }
 
 function mentionableNodes(): SelectedNode[] {
@@ -718,22 +757,14 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 function warnRestoreFailed(): void {
   const { view } = agentPanelStore
   // A loading history row reports its own failure.
   if (view.screen === 'history' && view.selection.status === 'loading') return
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetWorkflowOpenFailed'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetWorkflowOpenFailed'), { duration: 5000 })
 }
 
 function trackWorkflowOpenFailure(
@@ -874,12 +905,8 @@ const {
     },
     onReset: graphActivity.resetWorkflow,
     onSyncError: (message, code) =>
-      toast.add({
-        severity: 'error',
-        summary: t('agent.workflowSyncFailedTitle'),
-        detail: formatWorkflowSyncErrorDetail(t, message, code),
-        // A permanent desync remains visible until the person dismisses it.
-        life: 0
+      toast.error(t('agent.workflowSyncFailedTitle'), {
+        description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
   {
@@ -919,6 +946,10 @@ const restoreOpMinter = attachRestoreOpMinter({
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  docInputNames: (nodeId) => {
+    const parsed = parseNodeId(nodeId)
+    return parsed === null ? null : docInputNames(parsed)
+  },
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
@@ -1312,16 +1343,31 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-/**
- * DES-1221. This component mounts only while the panel is on screen, so
- * reading the flag here keeps the exposure — and the experiment's
- * denominator — to the panel openers the hypothesis is about.
- */
-const { variant: freeUsePlacement } = useFreeUsePlacement()
+// DES-1221. Read while the panel is on screen, so the experiment's denominator
+// is the panel openers the hypothesis is about.
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
+const {
+  assignment: starterPromptAssignment,
+  attributeExperiment: attributeStarterPromptExperiment,
+  expose: exposeStarterPromptSet
+} = useStarterPromptSet()
 
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+/**
+ * `Try your first chat for free!` is a claim about the Agent's own granted
+ * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
+ * is the whole gate: an absent field, an unsettled read and a rail that reports
+ * no scoped balance all fail closed without a separate branch.
+ */
+const freeUseGrantActive = computed(
+  () => subscription.value?.agentScopedHasFunds === true
+)
+
+const freeUsePlacement = computed(() =>
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
+    ? 'control'
+    : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1427,7 +1473,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
     void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const coachSteps = computed<CoachStep[]>(() => [
@@ -1512,7 +1558,12 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
+        ...(meta.starterPrompt?.assignment
+          ? {
+              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
+            }
+          : {})
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -1572,11 +1623,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
-provide('agentAssetDragActive', readonly(assetDragActive))
 
 watch(
   selectedTarget,
@@ -1664,12 +1713,32 @@ const attachment = useAttachment({
     ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: (message) => toast.warning(message, { duration: 5000 }),
+  onDuplicate: notifyDuplicateAttachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+watch(
+  [
+    () => resolvedUserInfo.value?.id,
+    () => workspaceStore.activeWorkspaceId,
+    () => assetsStore.deletingAssetIds.size
+  ],
+  attachment.forgetUploads
+)
+
+function notifyDuplicateAttachments(names: string[]): void {
+  toast.info(
+    t(
+      'agent.attachmentsAlreadyAdded',
+      { name: names[0], count: names.length },
+      names.length
+    ),
+    { duration: 3500 }
+  )
+}
 
 onBeforeUnmount(() =>
   runPanelTeardown({
@@ -1710,6 +1779,7 @@ function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
   if (node) {
     canvasStore.canvas?.deselect(node)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
@@ -1758,35 +1828,39 @@ function onPanelDragLeave(): void {
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
     return false
   }
 
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (asset.ref && asset.kind !== 'other') {
-    return (
-      panelRef.value?.addAttachment({
-        id: `asset:${asset.ref}`,
-        name: asset.name,
-        ref: asset.ref,
-        previewUrl: asset.previewUrl
-      }) ?? false
-    )
+    if (composerStore.attachments.some((item) => item.ref === asset.ref)) {
+      notifyDuplicateAttachments([asset.name])
+      return false
+    }
+    const added = composerStore.addAttachment({
+      id: `asset:${crypto.randomUUID()}`,
+      name: asset.name,
+      ref: asset.ref,
+      sourceKey,
+      previewUrl: asset.previewUrl,
+      mediaUrl: asset.mediaUrl,
+      mediaKind: asset.kind
+    })
+    if (!added) notifyDuplicateAttachments([asset.name])
+    return added
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async () => {
+      const file = await fetchDroppedAsset(asset)
+      return file && isAgentAttachable(file) ? file : undefined
+    },
+    sourceKey
+  )
   if (result === 'unsupported')
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
   return result === 'uploaded'
 }
 
@@ -1822,7 +1896,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -1838,7 +1912,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @change="onFilesPicked"
     />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1871,6 +1944,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
       :free-use-placement="freeUsePlacement"
+      :starter-prompt-assignment="starterPromptAssignment"
+      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
+      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
@@ -1903,7 +1979,26 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
+      <template #composerNotice>
+        <AgentCreditTransitionNotice
+          v-if="showCreditTransitionNotice"
+          data-testid="agent-credit-transition-notice"
+          @shown="onCreditTransitionNoticeShown"
+          @dismiss="onDismissCreditTransitionNotice"
+        />
+      </template>
     </AgentPanel>
+    <div
+      v-if="assetDragActive"
+      role="status"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+    >
+      <span
+        aria-hidden="true"
+        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+      />
+      <span>{{ t('agent.dragAndDropAssets') }}</span>
+    </div>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :key="onboardingKey"

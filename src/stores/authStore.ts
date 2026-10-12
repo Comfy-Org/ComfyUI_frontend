@@ -9,6 +9,10 @@ import { computed, ref, watch } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
 import {
+  isSsoRequiredRefusal,
+  ssoRequiredOrganizationId
+} from '@comfyorg/account-core/sso'
+import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account-core/provisioning'
@@ -22,6 +26,7 @@ import {
   requestDesktopHostSignOut
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
@@ -90,6 +95,17 @@ export class AuthStoreError extends Error {
     this.name = 'AuthStoreError'
     this.status = status
     this.code = code
+  }
+}
+
+/** The account belongs to an SSO organization, so it must sign in with SSO. */
+export class SsoRequiredAuthError extends AuthStoreError {
+  readonly organizationId: string | undefined
+
+  constructor(organizationId: string | undefined) {
+    super(t('auth.sso.required.body'), 403, 'sso_required')
+    this.name = 'SsoRequiredAuthError'
+    this.organizationId = organizationId
   }
 }
 
@@ -225,6 +241,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (nextUserId === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
+      void partnerNodeTokens.revokeAll()
     }
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
@@ -272,6 +289,27 @@ export const useAuthStore = defineStore('auth', () => {
     () => desktopHostUser.value?.id ?? null,
     (nextUserId, previousUserId) =>
       resetAccountState(previousUserId, nextUserId)
+  )
+
+  // Off Cloud, nothing else loads a host account's workspaces before the
+  // account menu needs them, including a Desktop sign-in that predates this
+  // store. A store already loaded for the Firebase or API-key account is
+  // dropped first, since Desktop now owns the credential.
+  watch(
+    () => desktopHostUser.value?.id ?? null,
+    (userId, previousUserId) => {
+      if (userId === null || isCloud) return
+      const teamWorkspaceStore = useTeamWorkspaceStore()
+      if (
+        previousUserId == null &&
+        teamWorkspaceStore.initState !== 'uninitialized'
+      ) {
+        useWorkspaceAuthStore().clearWorkspaceContext()
+        teamWorkspaceStore.resetForIdentityChange()
+      }
+      teamWorkspaceStore.initialize().catch(() => undefined)
+    },
+    { immediate: true }
   )
 
   // Listen for token refresh events
@@ -724,6 +762,13 @@ export const useAuthStore = defineStore('auth', () => {
     )
     if (!createCustomerRes.ok) {
       if (!completedUser) assertIdentityUnchanged(sessionIdentity)
+      const refusal: unknown = await createCustomerRes
+        .clone()
+        .json()
+        .catch(() => undefined)
+      if (isSsoRequiredRefusal(createCustomerRes.status, refusal)) {
+        throw new SsoRequiredAuthError(ssoRequiredOrganizationId(refusal))
+      }
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
@@ -943,8 +988,23 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
+  const revokePartnerNodeLogin = async (): Promise<void> => {
+    if (isCloud || !flags.partnerNodeTokenEnabled) return
+    const credential = isDesktopHostSignedIn()
+      ? await desktopHostTabToken()
+      : await revokingFirebaseIdToken()
+    void partnerNodeTokens.revokeLogin(credential)
+  }
+
+  const revokingFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const token = await user?.getIdToken().catch(() => undefined)
+    return currentUser.value?.uid === user?.uid ? token : undefined
+  }
+
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      await revokePartnerNodeLogin()
       const signsOutDesktopHost = isDesktopHostSignedIn()
       if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))

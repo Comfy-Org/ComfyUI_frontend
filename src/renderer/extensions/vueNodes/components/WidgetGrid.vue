@@ -53,25 +53,34 @@
               canSelectInputs && !row.widget.simplified.options?.disabled
             "
           >
-            <component
-              :is="row.widget.vueComponent"
-              v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-              :model-value="row.widget.simplified.value"
-              :widget="row.widget.simplified"
-              :node-id
-              :node-type
-              :invalid="row.widget.hasError"
-              :aria-invalid="row.widget.hasError || undefined"
-              :class="
-                cn(
-                  'col-span-2',
-                  row.widget.hasError && 'font-bold text-node-stroke-error'
-                )
-              "
-              @update:model-value="row.widget.updateHandler"
-              @contextmenu="row.widget.handleContextMenu"
-              @removed="restoreRowFocus"
-            />
+            <Tooltip :disabled="!row.widget.tooltipText">
+              <TooltipTrigger as-child>
+                <div class="col-span-2 grid grid-cols-subgrid">
+                  <component
+                    :is="row.widget.vueComponent"
+                    :model-value="row.widget.simplified.value"
+                    :widget="row.widget.simplified"
+                    :node-id
+                    :node-type
+                    :invalid="row.widget.hasError"
+                    :aria-invalid="row.widget.hasError || undefined"
+                    :class="
+                      cn(
+                        'col-span-2',
+                        row.widget.hasError &&
+                          'font-bold text-node-stroke-error'
+                      )
+                    "
+                    @update:model-value="row.widget.updateHandler"
+                    @contextmenu="row.widget.handleContextMenu"
+                    @removed="restoreRowFocus"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left">{{
+                row.widget.tooltipText
+              }}</TooltipContent>
+            </Tooltip>
           </AppInput>
         </div>
       </template>
@@ -80,9 +89,11 @@
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -94,7 +105,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

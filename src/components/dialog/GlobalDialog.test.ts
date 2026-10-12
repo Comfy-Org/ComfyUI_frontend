@@ -272,7 +272,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
   })
 
   it('opens the save dialog with an accessible name and description', async () => {
-    const warn = vi.spyOn(console, 'warn')
     mountDialog()
     const store = useDialogStore()
 
@@ -290,7 +289,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Save as' })
     expect(dialog).toHaveAccessibleDescription('Filename')
     expect(screen.getByLabelText('Filename')).toHaveFocus()
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {
@@ -591,26 +590,26 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog',
-    'p-toast-message'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+    ['class', 'p-overlay-mask'],
+    ['class', 'p-dialog'],
+    ['data-toast-kind', 'info'],
+    ['data-toast-dock', '']
+  ] as const)(
+    'prevents dismiss when target is inside %j',
+    ([attribute, value]) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute(attribute, value)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      const event = makeEvent(inner)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
@@ -619,8 +618,8 @@ describe('shouldPreventRekaDismiss', () => {
   })
 
   it('allows dismiss from the empty space beside a toast message', () => {
-    const container = document.createElement('div')
-    container.className = 'p-toast'
+    const container = document.createElement('ol')
+    container.setAttribute('data-testid', 'toast-viewport')
     document.body.appendChild(container)
 
     const event = makeEvent(container)
@@ -652,22 +651,33 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast-message'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
-      const overlay = document.createElement('div')
-      overlay.className = className
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+  it('focus-outside on a sibling PrimeVue dialog portal does not dismiss the parent', () => {
+    const overlay = document.createElement('div')
+    overlay.className = 'p-dialog'
+    const inner = document.createElement('button')
+    overlay.appendChild(inner)
+    document.body.appendChild(overlay)
 
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
+    const event = makeEvent(inner)
+    onRekaFocusOutside(event)
 
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
+    expect(event.defaultPrevented).toBe(true)
+    overlay.remove()
+  })
+
+  it('focus-outside on a toast does not dismiss the parent', () => {
+    const toast = document.createElement('div')
+    toast.dataset.toastKind = 'info'
+    const closeButton = document.createElement('button')
+    toast.appendChild(closeButton)
+    document.body.appendChild(toast)
+
+    const event = makeEvent(closeButton)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    toast.remove()
+  })
 
   it('focus-outside still dismisses when focus moves to a non-portal element', () => {
     const event = makeEvent(document.body)
