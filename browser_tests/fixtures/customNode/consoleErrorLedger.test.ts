@@ -136,29 +136,32 @@ describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
   })
 
-  it('matches only the observed bare-backend resource requests', () => {
-    const cases = [
-      [
-        'ComfyUI-UltraShape1',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
-      ],
-      [
-        'ComfyUI-UltraShape1',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=]'
-      ],
-      [
-        'WhatDreamsCost-ComfyUI',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
-      ],
-      [
-        'comfyui-impact-pack',
-        'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
-      ]
-    ] as const
-    for (const [pack, error] of cases) {
+  it.for([
+    [
+      'ComfyUI-UltraShape1',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
+    ],
+    [
+      'ComfyUI-UltraShape1',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=]'
+    ],
+    [
+      'WhatDreamsCost-ComfyUI',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
+    ],
+    [
+      'comfyui-impact-pack',
+      'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
+    ]
+  ] as const)(
+    'ledgers the observed bare-backend request for %s',
+    ([pack, error]) => {
       expect(unallowlistedErrors(pack, [error])).toEqual([])
       expect(unallowlistedErrors('Some-Future-Pack', [error])).toEqual([error])
     }
+  )
+
+  it('does not ledger an UltraShape request for another subfolder', () => {
     const otherSubfolder =
       'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=3d]'
     expect(

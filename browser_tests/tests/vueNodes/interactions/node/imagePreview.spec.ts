@@ -68,7 +68,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   test('shows the image once a missing file is uploaded under its name', async ({
     comfyPage
   }, testInfo) => {
-    const filename = `reupload-${Date.now()}.png`
+    const filename = `reupload-${crypto.randomUUID()}.png`
     const filePath = testInfo.outputPath(filename)
     copyFileSync(assetPath('test_upload_image.png'), filePath)
 

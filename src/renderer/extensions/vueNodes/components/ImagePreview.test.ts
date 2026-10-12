@@ -641,6 +641,22 @@ describe('ImagePreview', () => {
       expect(screen.getByTestId('main-image')).toBeInTheDocument()
     })
 
+    it('keeps gallery view when a failed image is retried', async () => {
+      const { rerender } = renderImagePreview()
+      const user = userEvent.setup()
+      await switchToGallery(user)
+
+      await fireEvent.error(screen.getByTestId('main-image'))
+      await nextTick()
+      await rerender({ imageUrls: [...defaultProps.imageUrls] })
+      await nextTick()
+
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        defaultProps.imageUrls[0]
+      )
+    })
+
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime

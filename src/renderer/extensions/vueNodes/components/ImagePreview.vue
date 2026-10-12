@@ -341,7 +341,12 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => url !== oldUrls[i])
 
-    if (!urlsChanged && !imageError.value) return
+    if (!urlsChanged) {
+      if (!imageError.value) return
+      imageError.value = false
+      startDelayedLoader()
+      return
+    }
 
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
