@@ -20,9 +20,10 @@ import type {
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -69,7 +70,7 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    useToast().warning(t('assetBrowser.failedToCreateNode'))
     return null
   }
 }
@@ -124,11 +125,13 @@ export function resolveComboValues(widget: IComboWidget): (string | number)[] {
   return Object.keys(values)
 }
 
-export function addToComboValues(widget: IComboWidget, value: string) {
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+export function addToComboValues(
+  widget: Pick<IComboWidget, 'options'>,
+  value: string
+) {
+  const values = widget.options.values
+  if (Array.isArray(values) && !values.includes(value)) {
+    values.push(value)
   }
 }
 
@@ -196,6 +199,13 @@ export function migrateWidgetsValues<TWidgetValue>(
   widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
+  if (
+    Object.values(inputDefs).some((input) =>
+      inputSpecTree(input).some((spec) => spec.type === 'COMFY_DYNAMICGROUP_V3')
+    )
+  )
+    return widgetsValues
+
   const widgetNames = new Set(widgets.map((w) => w.name))
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
@@ -312,7 +322,7 @@ export function getLinkTypeColor(typeName: string): string {
 
 export function resolveNode(
   nodeId: SerializedNodeId,
-  graph: LGraph | null | undefined = app.rootGraph
+  graph: LGraph | null | undefined = useApp().rootGraph
 ): LGraphNode | undefined {
   const parsedNodeId = parseNodeId(nodeId)
   if (!graph || !parsedNodeId) return undefined
@@ -327,7 +337,7 @@ export function resolveNode(
 export function resolveNodeWidget(
   nodeId: SerializedNodeId,
   widgetName?: string,
-  graph: LGraph = app.rootGraph
+  graph: LGraph = useApp().rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
   if (widgetName && typeof nodeId === 'string') {
     const locator = parseNodeLocatorId(nodeId)

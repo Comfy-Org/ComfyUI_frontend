@@ -110,7 +110,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -130,7 +130,7 @@ import {
   isValidEmail,
   normalizeEmail,
   sanitizeInviteEmails
-} from '@/platform/workspace/utils/inviteEmails'
+} from '@comfyorg/account-ui/billing/checkout'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const MAX_INVITES_PER_BATCH = 30
@@ -288,14 +288,10 @@ async function onSubmit() {
     })
 
     emails.value = failedEmails
-    toast.add({
-      severity: 'error',
-      summary: t(
-        'workspacePanel.inviteMemberDialog.failedCount',
-        failedEmails.length
-      ),
-      life: 5000
-    })
+    toast.error(
+      t('workspacePanel.inviteMemberDialog.failedCount', failedEmails.length),
+      { duration: 5000 }
+    )
   } finally {
     loading.value = false
   }

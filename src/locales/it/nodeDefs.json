@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Esegue il rendering del video finale a 1080p di un Draft di Seedance 2.5. Il finale mantiene la scena e il movimento del draft e riutilizza prompt, riferimenti, durata, rapporto d'aspetto e impostazione audio.",
+    "display_name": "ByteDance Seedance 2.5 Draft in Video finale",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "L'output draft_task_id di un nodo Seedance 2.5 eseguito con il modello Seedance 2.5 Draft, oppure un ID attività draft incollato. Imposta il controllo del seed di quel nodo su fisso, altrimenti l'esecuzione successiva genera un nuovo draft anziché riutilizzare quello esaminato. Un draft può essere sottoposto a rendering per 7 giorni dalla sua creazione."
+      },
+      "watermark": {
+        "name": "filigrana",
+        "tooltip": "Se aggiungere una filigrana al video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Genera un video utilizzando Seedance 2.0 da un'immagine del primo frame e, opzionalmente, dell'ultimo frame.",
     "display_name": "ByteDance Seedance 2.0 Da Primo-Ultimo Frame a Video",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più veloce ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.0 per la massima qualità e il 4K; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output mp4/mov; Seedance 2.5 Draft per un'anteprima rapida a 480p il cui draft_task_id esegue il rendering del finale a 1080p nel nodo Seedance 2.5 Draft in Video finale; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "ID attività di un'esecuzione di Seedance 2.5 Draft. Collegalo al nodo Seedance 2.5 Draft in Video finale per eseguire il rendering del finale a 1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Scomponi un'immagine in una base di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separazione Livelli",
+    "display_name": "ByteDance Seedream 5.0 Pro Separazione livelli (legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "controllo dopo generazione"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Documento livelli pronto per la modifica per Create Layered Image: la base più ogni elemento come proprio livello nominato, ritagliato stretto, alla sua vera posizione e ordine di sovrapposizione. Collega direttamente, oppure estendi con Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Scompone un'immagine in un piano di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
+    "display_name": "ByteDance Seedream 5.0 Separazione livelli",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "dimensione"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "L'immagine di base (piano di sfondo) su cui vengono sovrapposti i livelli."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Trasparenza dell'immagine di base (1 = trasparente, convenzione LoadImage); attualmente sempre completamente opaca."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Livelli trasparenti ordinati dal basso verso l'alto. Modalità tela completa: posizionati su una tela nera delle dimensioni della base nella posizione del loro riquadro di delimitazione. Modalità dimensione minima: ritagliati al rispettivo riquadro di delimitazione, ancorati in alto a sinistra e con riempimento fino alla dimensione del livello più grande."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Trasparenza per livello, allineata per indice con il batch layers (1 = trasparente, convenzione LoadImage). Per il compositing in stile ImageCompositeMasked, aggiungi prima InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Un riquadro di posizionamento per livello, allineato per indice con il batch layers (fornisci entrambi, più masks, a Livelli da riquadri di delimitazione per ricostruire il posizionamento di ciascun livello): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] è la regione di contenuto del livello nella propria cornice; viene posizionata sulla tela alla posizione del riquadro più tale offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Documento a livelli pronto da modificare per Crea immagine a livelli: il piano di base più ciascun elemento come livello separato denominato, ritagliato strettamente, nella sua posizione e ordine di sovrapposizione effettivi. Collega direttamente oppure estendi con Aggiungi livello."
       }
     }
   },
@@ -4773,7 +4860,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es. 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4843,7 +4930,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es. 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4851,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "velocità"
-      },
-      "model_style": {
-        "name": "stile"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "formato output",
@@ -5747,6 +5825,52 @@
       },
       "width": {
         "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Genera un'immagine con FLUX 3 a partire da un prompt oppure modifica e combina fino a 10 immagini di riferimento. Nel prompt, fai riferimento alle immagini come immagine 1, immagine 2 e così via.",
+    "display_name": "Immagine Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' segue la prima immagine di riferimento oppure seleziona un rapporto dal prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Riquadri facoltativi da Create Bounding Boxes che posizionano oggetti o testo nell'output. Le posizioni sono relative alla tela, quindi fornisci il rapporto d'aspetto dell'output."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Consenti al modello di effettuare ricerche sul prompt sul web e tramite ricerca immagini prima di generare."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Immagini di riferimento facoltative, fino a 10 in totale, di almeno 256x256 pixel ciascuna."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cosa generare o la modifica da apportare. Il prompt viene interpretato ed espanso prima della generazione."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Dimensione dell'output nel rapporto d'aspetto scelto: 0.75K corrisponde a circa 0,6 megapixel, 1K a 1 MP, 1.5K a 2,4 MP, 2K a 4,2 MP, 4K a 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolleranza della moderazione: 0 è l'impostazione più restrittiva."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed per determinare se il nodo deve essere eseguito di nuovo; FLUX 3 seleziona il proprio seed, quindi i risultati effettivi non sono deterministici indipendentemente da questo valore."
       }
     },
     "outputs": {
@@ -7347,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "Il rapporto d'aspetto del video in output."
+        "tooltip": "Il rapporto d'aspetto del video di output. Ignorato quando viene fornita un'immagine di input; il video segue il rapporto d'aspetto dell'immagine."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7366,11 +7490,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrizione testuale del video desiderato. Opzionale per grok-imagine-video-1.5 quando viene fornita un'immagine di input."
+        "tooltip": "Descrizione testuale del video desiderato. Facoltativa per i modelli grok-imagine-video-1.5 quando viene fornita un'immagine di input."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "La risoluzione del video in output. 1080p è disponibile solo per grok-imagine-video-1.5."
+        "tooltip": "La risoluzione del video di output. 1080p non è disponibile per grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -7672,6 +7796,67 @@
       },
       "1": {
         "name": "anteprima",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "Anima un'immagine trasformandola in un video con dialogo e audio sincronizzati usando HeyGen Video 1.0. L'immagine viene usata come primo fotogramma.",
+    "display_name": "HeyGen Video 1.0 da immagine a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Genera un video con dialogo e audio sincronizzati da un prompt di testo usando HeyGen Video 1.0. Facoltativamente, collega fino a 12 immagini, video e clip audio di riferimento e menzionali nel prompt come {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 da riferimento a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "rapporto_aspetto"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8289,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifica o combina fino a 5 immagini, guidato da un prompt di testo, usando Ideogram 4.5. Esegue nuovamente il rendering dell'intera immagine e può modificarne la dimensione o il rapporto d'aspetto; usa Ideogram 4.5 Modifica precisa per mantenere invariati i pixel non interessati.",
+    "display_name": "Ideogram 4.5 Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Genera immagini utilizzando P-Image, il modello text-to-image veloce di Ideogram. Tipografia avanzata e fotorealismo; supporta le didascalie strutturate JSON di Ideogram 4.0 per testo, colori e layout esatti.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8328,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Il prompt da cui è stata effettivamente generata l’immagine (la didascalia strutturata riscritta se prompt_upsampling era attivo, altrimenti il tuo prompt). Riutilizzalo con prompt_upsampling su OFF e lo stesso seed per riprodurre questa immagine."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifica un'immagine guidandosi con un prompt di testo usando la modifica precisa di Ideogram 4.5: cambia solo ciò che il prompt richiede, i pixel non interessati rimangono identici e l'output mantiene le dimensioni dell'immagine 1 (le immagini oltre ~4 MP vengono prima ridimensionate). Accetta fino a 4 immagini di riferimento.",
+    "display_name": "Ideogram 4.5 Modifica precisa",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Genera immagini da un prompt di testo usando Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 da testo a immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La didascalia strutturata da cui è stata generata l'immagine. Reinseriscila con magic_prompt impostato su 'off' e lo stesso seme per riprodurre l'immagine."
       }
     }
   },
@@ -8491,12 +8776,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Il lineare 1.0 usa lo stesso bianco di riferimento di 203 nit di sRGB; HLG usa un display di riferimento di 1000 nit. L'output lineare e le conversioni da lineare a HDR preservano i valori estesi senza tone mapping. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso sull'intero batch e comprimono i colori fuori gamma. Le conversioni vengono calcolate in float32 e restituiscono il dispositivo intermedio e dtype. L'alpha non premoltiplicato non viene trasformato nel colore.",
+    "description": "Converti tra sRGB, Rec.709 lineare, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 usa la curva EI 800 con primari Rec.709 e codici limitati a [0, 1]. ACEScct usa primari AP1 e punto di bianco D60, con adattamento Bradford a D65. Converti LogC3 o ACEScct in lineare per il salvataggio EXR. Il lineare 1.0 usa lo stesso bianco di riferimento da 203 nit di sRGB; HLG usa un display di riferimento da 1000 nit. Gli output lineari e ACEScct conservano i valori estesi. Le conversioni da lineare a HDR preservano le alte luci senza tone mapping; gli output HLG e PQ ritagliano i canali negativi. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso nell'intero batch e comprimono i colori fuori gamut. Le conversioni vengono calcolate in float32 e restituiscono device e dtype intermedi. L'alfa non premoltiplicato non viene trasformato nello spazio colore.",
     "display_name": "Converti spazio colore dell'immagine",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore."
+        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore. Converti LogC3 o ACEScct in lineare prima di salvare in EXR, oppure in sRGB/HDR/HDR PQ prima di salvare un video."
       },
       "image": {
         "name": "image"
@@ -16893,7 +17178,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati variano in base al modello: GPT-6 Astra low-max, GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
+        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati differiscono in base al modello: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, serie o low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
       },
       "truncation": {
         "name": "troncamento",
@@ -17053,40 +17338,6 @@
       "file": {
         "name": "file",
         "tooltip": "File di input da includere come contesto per il modello. Attualmente accetta solo file di testo (.txt) e PDF (.pdf)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "Generazione di video e audio con OpenAI.\n\nAVVISO DI DEPRECAMENTO: OpenAI interromperà il servizio dell'API Sora v2 a settembre 2026. Questo nodo verrà rimosso da ComfyUI in quel momento.",
-    "display_name": "OpenAI Sora - Video (DEPRECATO)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Testo guida; può essere vuoto se è presente un'immagine di input."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono comunque non deterministici."
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -18267,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "Intero",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "controllo dopo la generazione"
       },
       "value": {
@@ -18534,6 +18785,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "Applica Qwen Image DiffSynth ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "immagine"
       },
@@ -18545,6 +18799,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "forza"
@@ -22152,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "controlla dopo la generazione"
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
       },
       "seed": {
         "name": "seed"
@@ -23884,6 +24141,30 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Codifica testo Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "immagini",
+        "tooltip": "Immagini di riferimento opzionali, visualizzate dal codificatore di testo e aggiunte alla sequenza latente come fotogrammi puliti. Le immagini successive vengono ridimensionate in base alla prima e il latente campionato dovrebbe corrispondere alle sue dimensioni."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Senza un VAE, le immagini condizionano il codificatore di testo solo tramite la torre visiva."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28733,6 +29014,10 @@
       "positive": {
         "name": "positivo"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "Riempie con questa immagine, anziché con il grigio, i fotogrammi di riempimento del condizionamento dell'immagine, ancorando l'identità senza fissare i fotogrammi (riempimento anti-deriva in stile SVI, usato da modelli come ID-V2V)."
+      },
       "start_image": {
         "name": "immagine_iniziale"
       },
@@ -29713,8 +29998,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "Applica Z-Image Fun ControlNet",
+    "description": "Applica un Fun ControlNet Z-Image o Qwen Image 2.1 caricato con Load Model Patch.",
+    "display_name": "Applica Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "immagine"
       },
@@ -29729,6 +30018,9 @@
       },
       "model_patch": {
         "name": "patch_modello"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "intensità"

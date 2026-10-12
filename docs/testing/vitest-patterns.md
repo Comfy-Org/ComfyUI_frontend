@@ -50,11 +50,17 @@ Read an action from its store where it is used instead of caching it in a
 suite-level `let` assigned by `beforeEach`:
 
 ```typescript
-vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
-expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+expect(useToast().toasts).toEqual([
+  expect.objectContaining({ kind: 'error', title: 'Upload failed' })
+])
+expect(useToast().error).toHaveBeenCalledWith('Upload failed')
 ```
 
-Use a test-local `const store = useToastStore()` when several accesses become
+The global testing Pinia uses `stubActions: false`, so store actions run for
+real and are already spies. Prefer asserting on store state; do not mock the
+action.
+
+Use a test-local `const store = useToast()` when several accesses become
 hard to read. Keep shared variables when they own a per-test resource, a
 reactive fixture, or a value that teardown must restore.
 
@@ -121,12 +127,12 @@ Real example: [`src/components/searchbox/v2/__test__/testUtils.ts`](../../src/co
 With empty messages, `t('foo.bar')` returns `'foo.bar'` (the key). Assert against the key directly — no need to mock `t`:
 
 ```typescript
-expect(toastSpy).toHaveBeenCalledWith(
-  expect.objectContaining({ detail: 'mediaAsset.selection.exportStarted' })
+expect(useToast().success).toHaveBeenCalledWith(
+  'mediaAsset.selection.exportStarted'
 )
 ```
 
-For pluralization / interpolation arguments, spy on the consumer (e.g. the toast `add` fn) and inspect the captured payload, rather than spying on `t` itself.
+For pluralization / interpolation arguments, inspect the consumer's captured arguments (e.g. `useToast().success`) rather than spying on `t` itself.
 
 ## Mock Patterns
 
@@ -145,16 +151,34 @@ Because cleanup runs before every test, module-scope `vi.stubGlobal()` and
 
 ```typescript
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock)
-  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+  vi.spyOn(Date, 'now').mockReturnValue(0)
 })
 ```
+
+### Console output
+
+`vitest.console.setup.ts` spies on `console.debug`, `error`, `info`, `log`,
+and `warn` before every test, and every configuration sets
+`silent: 'passed-only'`, so console output appears only for failing tests.
+Do not spy on these methods again; `comfy/no-redundant-console-spy` reports
+it. Assert on the method directly, and use `vi.mocked()` only to replace its
+implementation:
+
+```typescript
+expect(console.warn).toHaveBeenCalledWith('deprecated')
+vi.mocked(console.log).mockImplementation((line) => lines.push(line))
+```
+
+The spies record calls made from `beforeEach` hooks too. Assert on the call
+you care about rather than the total call count. Run with `--silent=false` to
+see output from passing tests.
 
 Module-scope mock declarations remain appropriate. When a default
 implementation must survive automatic reset, pass it directly to `vi.fn()`:
 
 ```typescript
-const fetchMock = vi.fn(async () => ({ ok: true }))
+const loadSettings = vi.fn(async () => ({ theme: 'dark' }))
 ```
 
 ### Module mocks with vi.mock()
@@ -185,6 +209,20 @@ it('handles success', () => {
   // ... test code
 })
 ```
+
+### Match mock arguments with `vi.when`
+
+Use [Vitest 5's `vi.when`](https://vitest.dev/guide/recipes/conditional-mocking)
+when a mock returns fixed values for specific arguments. Keep
+`mockImplementation` for calculations and side effects. See
+[`UsageLogsTable.test.ts`](../../src/components/dialog/content/setting/UsageLogsTable.test.ts)
+for a typed paginated event response.
+
+Register behaviors inside the test or `beforeEach`; `mockReset` clears them
+before the next test. Preserve unmatched-call behavior with `onUnmatched`.
+Register exact matches before asymmetric catch-all matchers: Vitest matches
+behaviors in registration order and merges new arguments into an existing
+matching behavior.
 
 ## Testing Event Listeners
 

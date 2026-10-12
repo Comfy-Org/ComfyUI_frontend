@@ -1,9 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,14 +14,14 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
@@ -37,6 +35,7 @@ describe('ColorPickerButton', () => {
     locale: 'en',
     messages: {
       en: {
+        g: { color: 'Color' },
         color: {
           noColor: 'No Color',
           red: 'Red',
@@ -52,10 +51,7 @@ describe('ColorPickerButton', () => {
 
     render(ColorPickerButton, {
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        }
+        plugins: [i18n]
       }
     })
 
@@ -83,6 +79,37 @@ describe('ColorPickerButton', () => {
 
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
+  })
+
+  it('shows a swatch name when the swatch gets keyboard focus', async () => {
+    setCanvasSelection([createMockPositionable()])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.unhover(pickerButton)
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
+  })
+
+  it('clears the color when the active swatch is selected again', async () => {
+    const group = new LGraphGroup()
+    setCanvasSelection([group])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.click(screen.getByRole('button', { name: 'Red' }))
+    expect(group.color).toBe(LGraphCanvas.node_colors.red.groupcolor)
+
+    await user.click(pickerButton)
+    const redSwatch = screen.getByRole('button', { name: 'Red' })
+    expect(redSwatch).toHaveAttribute('aria-pressed', 'true')
+    await user.click(redSwatch)
+
+    expect(group.color).toBeUndefined()
   })
 
   it.for([

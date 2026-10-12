@@ -8,6 +8,7 @@ interface Diagnostic {
   readonly filename: string
   readonly message: string
   readonly severity: string
+  readonly labels: readonly { readonly span: { readonly line: number } }[]
 }
 
 const privateSigil = '#'
@@ -96,6 +97,30 @@ void Example
 `
   },
   {
+    file: path.join(probeDirs.source, 'mockMethodNames.ts'),
+    source: `interface Cache {
+  mockClear(): void
+  mockReset: () => void
+}
+type Store = { mockRestore(): void }
+class Fake {
+  mockClear() {}
+  mockReset = () => {}
+}
+const fake = { mockRestore() {}, 'mockClear': () => {}, mockReset }
+const { mockReset: renamed } = source
+const allowed = { reset() {}, mockFn: vi.fn() }
+void (fake as Cache & Store)
+void Fake
+void renamed
+void allowed
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'vitest.config.ts'),
+    source: 'export default { test: { mockReset: true, restoreMocks: true } }\n'
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
@@ -139,6 +164,60 @@ void (0 as unknown as GetI18nResponse)
     source: "test('misplaced', () => {})\n"
   },
   {
+    file: path.join(probeDirs.source, 'primevue.ts'),
+    source: `import Button from 'primevue/button'
+import { useToast } from 'primevue'
+import { definePreset } from '@primevue/themes'
+import prime from 'primevue-lookalike'
+export { default as Select } from 'primevue/select'
+export * from '@primevue/forms'
+const lazy = () => import('primevue/skeleton')
+const templated = () => import(\`primevue/dialog\`)
+void [Button, useToast, definePreset, prime, lazy, templated]
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'primevue.vue'),
+    source: `<script setup lang="ts">
+import Skeleton from 'primevue/skeleton'
+void Skeleton
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items.toSorted()
+items.toSpliced(0, 1)
+items.with(0, 1)
+items['toSorted']()
+items[\`toSorted\`]()
+items?.with(0, 1)
+new Uint8Array(1).toSorted()
+const fn = items.toSorted
+const method = 'map' as const
+items[method]()
+items.sort()
+void fn
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.vue'),
+    source: `<script setup lang="ts">
+const items = [1, 2].toSorted()
+void items
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.test.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items['toSorted']()
+`
+  },
+  {
     file: path.join(probeDirs.remote, 'remote.ts'),
     source: `import { z } from 'zod'
 const asserted = <Error>value
@@ -173,6 +252,18 @@ void z
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
     source: "test('allowed', () => {})\n"
+  },
+  {
+    file: path.join(probeDirs.source, 'disabled.test.ts'),
+    source: `it.skipIf(true)('a', () => {})
+describe.runIf(false)('b', () => {})
+test.skipIf(1).sequential('c', () => {})
+suite.runIf(0)('d', () => {})
+it.skipIf(false)('e', () => {})
+it.runIf(true)('f', () => {})
+it.skipIf(runtime)('g', () => {})
+other.skipIf(true)('h', () => {})
+`
   }
 ]
 
@@ -183,9 +274,21 @@ function hasStringProperty(value: object, property: keyof Diagnostic): boolean {
 
 function isDiagnostic(value: unknown): value is Diagnostic {
   if (typeof value !== 'object' || value === null) return false
+  if (!('labels' in value) || !Array.isArray(value.labels)) return false
   return (['code', 'filename', 'message', 'severity'] as const).every(
     (property) => hasStringProperty(value, property)
   )
+}
+
+function locations(diagnostics: readonly Diagnostic[]) {
+  return diagnostics
+    .map(({ filename, labels }) => [
+      path.basename(filename),
+      labels[0]?.span.line
+    ])
+    .toSorted(([fileA, lineA], [fileB, lineB]) =>
+      fileA === fileB ? Number(lineA) - Number(lineB) : fileA < fileB ? -1 : 1
+    )
 }
 
 function parseDiagnostics(output: string): Diagnostic[] {
@@ -198,10 +301,16 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  if (!report.diagnostics.every(isDiagnostic)) {
+  const ruleDiagnostics = report.diagnostics.filter(isRuleDiagnostic)
+  if (!ruleDiagnostics.every(isDiagnostic)) {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
-  return report.diagnostics
+  return ruleDiagnostics
+}
+
+// The suppressions-file summary ("new violations not covered...") has no rule code.
+function isRuleDiagnostic(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'code' in value
 }
 
 describe('restricted syntax rules', () => {
@@ -298,6 +407,28 @@ describe('restricted syntax rules', () => {
     )
   })
 
+  it('rejects members named after Vitest mock cleanup methods outside Vite configs', () => {
+    const mockNameFindings = findingsFor('no-vitest-mock-method-names')
+    expect(
+      mockNameFindings.map(({ filename, labels }) => [
+        path.basename(filename),
+        labels[0].span.line
+      ])
+    ).toEqual([
+      ['mockMethodNames.ts', 2],
+      ['mockMethodNames.ts', 3],
+      ['mockMethodNames.ts', 5],
+      ['mockMethodNames.ts', 7],
+      ['mockMethodNames.ts', 8],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10]
+    ])
+    expect(mockNameFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
   it('rejects direct canvas selection writes', () => {
     const selectionFindings = findingsFor('no-direct-selection-write')
     expect(
@@ -357,6 +488,54 @@ describe('restricted syntax rules', () => {
       ])
     }
   )
+
+  it('rejects static PrimeVue imports, re-exports, and dynamic imports', () => {
+    const primeVueFindings = findingsFor('no-primevue-imports')
+    expect(locations(primeVueFindings)).toEqual([
+      ['primevue.ts', 1],
+      ['primevue.ts', 2],
+      ['primevue.ts', 3],
+      ['primevue.ts', 5],
+      ['primevue.ts', 6],
+      ['primevue.ts', 7],
+      ['primevue.ts', 8],
+      ['primevue.vue', 2]
+    ])
+    expect(primeVueFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects statically named ES2023 array copy calls outside unit tests', () => {
+    const copyFindings = findingsFor('no-es2023-array-copy-method')
+    expect(locations(copyFindings)).toEqual([
+      ['arrayCopy.ts', 2],
+      ['arrayCopy.ts', 3],
+      ['arrayCopy.ts', 4],
+      ['arrayCopy.ts', 5],
+      ['arrayCopy.ts', 6],
+      ['arrayCopy.ts', 7],
+      ['arrayCopy.ts', 8],
+      ['arrayCopy.ts', 9],
+      ['arrayCopy.vue', 2]
+    ])
+    expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects test declarations disabled by a literal condition', () => {
+    const disabledFindings = findingsFor('no-statically-disabled-test')
+    expect(locations(disabledFindings)).toEqual([
+      ['disabled.test.ts', 1],
+      ['disabled.test.ts', 2],
+      ['disabled.test.ts', 3],
+      ['disabled.test.ts', 4]
+    ])
+    expect(disabledFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
 
   it('allows generated contracts', () => {
     expect(

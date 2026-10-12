@@ -116,9 +116,9 @@ describe('useWorkshopCredits', () => {
 
     await mod.refreshWorkshopCredits({ force: true })
 
-    expect(
-      vi.mocked(workshopBalanceReader.refresh)
-    ).toHaveBeenCalledExactlyOnceWith({ force: true })
+    expect(workshopBalanceReader.refresh).toHaveBeenCalledExactlyOnceWith({
+      force: true
+    })
   })
 
   it('resets the client when the session goes unsettled', async () => {
@@ -174,7 +174,7 @@ describe('useWorkshopCredits start()', () => {
     mod.useWorkshopCredits()
     session.value = liveSession('token-a')
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopBalanceReader.refresh)).toHaveBeenCalled()
+      expect(workshopBalanceReader.refresh).toHaveBeenCalled()
     )
     const forcedBefore = vi
       .mocked(workshopBalanceReader.refresh)
@@ -329,7 +329,7 @@ describe('watchForTopUp', () => {
       workspaceName: 'Personal',
       previousCredits: 100
     })
-    expect(vi.mocked(workshopBalanceReader.refresh)).not.toHaveBeenCalled()
+    expect(workshopBalanceReader.refresh).not.toHaveBeenCalled()
   })
 
   it('retires a watch when the active workspace changes', async () => {
@@ -472,7 +472,7 @@ describe('watchForTopUp', () => {
       previousCredits: 100
     })
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopBalanceReader.refresh)).toHaveBeenCalledOnce()
+      expect(workshopBalanceReader.refresh).toHaveBeenCalledOnce()
     )
     session.value = liveSession('other-token', 'ws-2')
     publish({ status: 'ok', cents: 1_000 })
@@ -480,5 +480,93 @@ describe('watchForTopUp', () => {
     await Promise.resolve()
 
     expect(state.value).toEqual({ status: 'idle' })
+  })
+})
+
+describe('markWorkshopCreditsDirty', () => {
+  async function dirtyChip(reads: number[]) {
+    vi.useFakeTimers()
+    const mod = await loadCredits()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const { balance } = mod.useWorkshopCredits()
+    session.value = liveSession()
+    await nextTick()
+    publish({ status: 'ok', cents: 1000 })
+    const pending = [...reads]
+    const refresh = vi.mocked(workshopBalanceReader.refresh)
+    refresh.mockClear()
+    refresh.mockImplementation(async () => {
+      const cents = pending.length > 1 ? pending.shift() : pending[0]
+      publish({ status: 'ok', cents: cents ?? 1000 })
+    })
+    return { mod, balance, refresh }
+  }
+
+  it('re-syncs until a late charge shows, then stops', async () => {
+    const { mod, balance, refresh } = await dirtyChip([1000, 1000, 900])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(900)
+    })
+    expect(refresh).toHaveBeenCalledTimes(3)
+    expect(refresh).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('keeps re-syncing for a second run that finished before the first was charged', async () => {
+    const { mod, balance, refresh } = await dirtyChip([1000, 900, 900, 800])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(0)
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(800)
+    })
+    expect(refresh).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not take a top-up during the re-sync for the charge', async () => {
+    const { mod, balance } = await dirtyChip([1500, 1500, 1400])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(1400)
+    })
+  })
+
+  it('gives up after about five minutes when the balance never moves', async () => {
+    const { mod, refresh } = await dirtyChip([])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(4 * 60_000)
+    const readsWithinWindow = refresh.mock.calls.length
+    await vi.advanceTimersByTimeAsync(60 * 60_000)
+
+    expect(readsWithinWindow).toBeGreaterThan(5)
+    expect(refresh.mock.calls.length - readsWithinWindow).toBeLessThanOrEqual(2)
+  })
+
+  it('stops re-syncing once the workspace changes', async () => {
+    const { mod, refresh } = await dirtyChip([])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(0)
+    session.value = liveSession('token-b', 'ws-2')
+    await nextTick()
+    refresh.mockClear()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

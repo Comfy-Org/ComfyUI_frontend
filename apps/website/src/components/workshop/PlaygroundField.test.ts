@@ -1,20 +1,17 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
-import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
-import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
-import {
-  defaultValues,
-  MAX_UPLOAD_BYTES
-} from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import type { WorkshopInputDefinition } from '@/config/workshop-input-definition'
+import { resolveWorkshopUrlInputs } from '@/config/workshop-url-input'
+import { defaultValues, MAX_UPLOAD_BYTES } from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
 
 function mountField(
@@ -44,6 +41,74 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('shows the localized video duration limit in its validation error', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'media',
+          urlUpload: 'video',
+          maxVideoDurationSeconds: 15
+        }
+      },
+      {},
+      'zh-CN',
+      { video: 'videoTooLong' }
+    )
+
+    expect(screen.getByTestId('error-video')).toHaveTextContent(
+      '请使用时长不超过 15 秒的视频。'
+    )
+  })
+
+  it('shows a multiline default in its editor without repeating it as help text', () => {
+    const field: FieldSchema = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      required: true,
+      multiline: true,
+      defaultValue:
+        'A continuous shot following the character through a forest.'
+    }
+    mountField(field, defaultValues([field]))
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue(
+      field.defaultValue
+    )
+    expect(screen.queryByText(`Default: ${field.defaultValue}`)).toBeNull()
+  })
+
+  it('grows the prompt box to the prompt an example drops into it', async () => {
+    const field: FieldSchema = {
+      kind: 'text',
+      name: 'prompt',
+      label: 'Prompt',
+      required: true,
+      multiline: true
+    }
+    const values = mountField(field, { prompt: 'A forest.' })
+    const box = screen.getByTestId<HTMLTextAreaElement>('field-prompt')
+    const lineHeight = 24
+    Object.defineProperty(box, 'scrollHeight', {
+      get: () => box.value.split('\n').length * lineHeight
+    })
+
+    values.value = {
+      prompt: 'A forest.\nThen a clearing.\nThen the sea.\nThen dusk.'
+    }
+    await nextTick()
+
+    expect(box.style.height).toBe(`${4 * lineHeight}px`)
+  })
+
   it('preserves a provider rejection when the input passes its form constraint', () => {
     mountField(
       {

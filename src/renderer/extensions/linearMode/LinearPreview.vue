@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -38,6 +39,32 @@ const selectedOutput = ref<AugmentedResultItem>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
+const menuSeparator: MenuItem = { separator: true }
+
+const selectedItemMenuEntries = computed<MenuItem[]>(() => {
+  const item = selectedItem.value
+  if (!item) return []
+
+  return [
+    ...(allOutputs(item).length > 1
+      ? [
+          {
+            icon: 'icon-[lucide--download]',
+            label: t('linearMode.downloadAll', {
+              count: allOutputs(item).length
+            }),
+            command: () => downloadAsset(item)
+          },
+          menuSeparator
+        ]
+      : []),
+    {
+      icon: 'icon-[lucide--trash-2]',
+      label: t('linearMode.deleteAllAssets'),
+      command: () => mediaActions.deleteAssets(item)
+    }
+  ]
+})
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -96,7 +123,7 @@ async function rerun(e: Event) {
     </template>
     <Button
       v-if="selectedOutput"
-      v-tooltip.top="t('g.download')"
+      :tooltip="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
       @click="() => downloadOutput(selectedOutput)"
@@ -112,34 +139,15 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
     </Button>
-    <Popover
-      v-if="selectedItem"
-      :entries="[
-        ...(allOutputs(selectedItem).length > 1
-          ? [
-              {
-                icon: 'icon-[lucide--download]',
-                label: t('linearMode.downloadAll', {
-                  count: allOutputs(selectedItem).length
-                }),
-                command: () => downloadAsset(selectedItem)
-              },
-              { separator: true }
-            ]
-          : []),
-        {
-          icon: 'icon-[lucide--trash-2]',
-          label: t('linearMode.deleteAllAssets'),
-          command: () => mediaActions.deleteAssets(selectedItem!)
-        }
-      ]"
-    >
-      <template #button>
-        <Button size="icon" :aria-label="t('g.moreOptions')">
-          <i class="icon-[lucide--ellipsis]" />
-        </Button>
+    <Menu v-if="selectedItem" :items="selectedItemMenuEntries">
+      <template #trigger>
+        <Button
+          size="icon"
+          :aria-label="t('g.moreOptions')"
+          icon="icon-[lucide--ellipsis]"
+        />
       </template>
-    </Popover>
+    </Menu>
   </section>
   <ImagePreview
     v-if="canShowPreview && latentPreview"

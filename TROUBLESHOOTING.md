@@ -180,6 +180,21 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 ---
 
+#### Q: ESLint does not report anything for a `.ts` file
+
+**Symptoms:**
+
+- `pnpm exec eslint path/to/file.ts` prints nothing, or "File ignored because no matching configuration was supplied"
+- An `eslint-disable` comment in a `.ts` file has no effect
+
+**Solution:**
+
+This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`, `.astro`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
+
+Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint).
+
+---
+
 #### Q: New lint errors after pulling/upgrading oxlint
 
 **Symptoms:**
@@ -200,6 +215,25 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 3. **If a rule seems wrong**, check `.oxlintrc.json` to see if it should be disabled or configured differently.
 
 **Why this happens:** oxlint version bumps often enable new rules by default.
+
+---
+
+#### Q: oxlint reports "There are suppressions that do not occur anymore"
+
+**Symptoms:**
+
+- Lint fails after you removed a `throw new Error(...)` or fixed another baselined violation
+- The help text points at `--prune-suppressions`
+
+**Solution:**
+
+`oxlint-suppressions.json` baselines pre-existing violations (mostly `comfy/no-new-error-throw`). Fixing one makes its entry stale; prune the file and commit it with your change:
+
+```bash
+pnpm oxlint --prune-suppressions
+```
+
+Never run `--suppress-all` to silence new violations in your own code.
 
 ---
 

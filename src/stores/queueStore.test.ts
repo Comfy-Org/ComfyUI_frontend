@@ -240,7 +240,7 @@ describe('TaskItemImpl', () => {
     expect(resultItemSupportsPreview(output)).toBe(true)
   })
 
-  it.skip('should parse text outputs', () => {
+  it('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {
@@ -256,6 +256,20 @@ describe('TaskItemImpl', () => {
     expect(task.flatOutputs[0].filename).toBe('')
     expect(task.previewableOutputs).toHaveLength(1)
     expect(task.previewOutput?.content).toBe('test')
+  })
+
+  it('should reject non-text preview outputs without a filename', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'image-job'),
+      preview_output: {
+        nodeId: '5',
+        mediaType: 'images'
+      } satisfies JobListItem['preview_output']
+    }
+
+    const task = new TaskItemImpl(job)
+
+    expect(task.flatOutputs).toHaveLength(0)
   })
 
   describe('error extraction getters', () => {

@@ -13,6 +13,7 @@ import type {
   ModelManagerInterface,
   UpDirection
 } from './interfaces'
+import { QuadWireframeManager } from './quadWireframe/QuadWireframeManager'
 
 export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null
@@ -30,6 +31,7 @@ export class SceneModelManager implements ModelManagerInterface {
   normalMaterial: THREE.MeshNormalMaterial
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
+  occluderMaterial: THREE.MeshBasicMaterial
   depthMaterial: THREE.MeshDepthMaterial
   clayMaterial: THREE.MeshStandardMaterial
   originalFileName: string | null = null
@@ -52,6 +54,7 @@ export class SceneModelManager implements ModelManagerInterface {
     size: THREE.Vector3
     center: THREE.Vector3
   } | null
+  private readonly quadWireframe = new QuadWireframeManager()
 
   constructor(
     scene: THREE.Scene,
@@ -95,6 +98,14 @@ export class SceneModelManager implements ModelManagerInterface {
       wireframe: true,
       transparent: false,
       opacity: 1.0
+    })
+
+    this.occluderMaterial = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 1
     })
 
     this.depthMaterial = new THREE.MeshDepthMaterial({
@@ -145,9 +156,11 @@ export class SceneModelManager implements ModelManagerInterface {
 
   dispose(): void {
     this.clearModel()
+    this.quadWireframe.dispose()
     this.normalMaterial.dispose()
     this.standardMaterial.dispose()
     this.wireframeMaterial.dispose()
+    this.occluderMaterial.dispose()
     this.depthMaterial.dispose()
     this.clayMaterial.dispose()
 
@@ -168,6 +181,7 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   private removeAllMainModelsFromScene(): void {
+    this.quadWireframe.clear()
     const oldMainModels: THREE.Object3D[] = []
     this.scene.traverse((obj) => {
       if (obj.name === 'MainModel') oldMainModels.push(obj)
@@ -293,7 +307,23 @@ export class SceneModelManager implements ModelManagerInterface {
       }
     })
 
+    this.syncQuadWireframe(mode)
     this.eventManager.emitEvent('materialModeChange', mode)
+  }
+
+  clearQuadWireframe(): void {
+    this.quadWireframe.clear()
+  }
+
+  private syncQuadWireframe(mode: MaterialMode): void {
+    if (mode !== 'wireframe') {
+      this.quadWireframe.hide()
+      return
+    }
+    if (!this.currentModel) return
+    for (const mesh of this.quadWireframe.show(this.currentModel)) {
+      mesh.material = this.occluderMaterial
+    }
   }
 
   setupModelMaterials(model: THREE.Object3D): void {
@@ -307,6 +337,7 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   clearModel(): void {
+    this.quadWireframe.clear()
     const objectsToRemove: THREE.Object3D[] = []
 
     for (const object of Array.from(this.scene.children)) {
