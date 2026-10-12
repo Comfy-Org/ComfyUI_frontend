@@ -1,6 +1,5 @@
 /**
- * Host classification: `isHostWhitelisted` enables SSO on safe, local-only
- * hosts, and `isLoopbackHost` recognises hosts that only name this machine.
+ * Whitelisting helper for enabling SSO on safe, local-only hosts.
  *
  * Built-ins (always allowed):
  *   • 'localhost' and any subdomain of '.localhost' (e.g., app.localhost)
@@ -37,11 +36,7 @@ export function normalizeHost(input: string): string {
   return h
 }
 
-/**
- * Whether a host can only name the machine the URL was written on: loopback,
- * the unspecified addresses, or IPv4-mapped loopback. Unlike
- * {@link isHostWhitelisted}, it excludes `*.comfy.org`.
- */
+/** Whether the host can only name the machine the URL was written on. */
 export function isLoopbackHost(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
   return (
@@ -112,8 +107,6 @@ function isUnspecifiedAddress(h: string): boolean {
   return h === '0.0.0.0' || h === '::'
 }
 
-// IPv4-mapped IPv6 (`::ffff:127.0.0.1`), which `URL` serialises in the hex
-// form `[::ffff:7f00:1]`; the dotted form is accepted as written too.
 const V6_MAPPED_HEX_RE = /^::ffff:([0-9a-f]{1,4}):[0-9a-f]{1,4}$/i
 const V6_MAPPED_DOTTED_RE = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i
 

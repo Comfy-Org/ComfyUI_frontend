@@ -26,10 +26,8 @@ export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
 }
 
 /**
- * Re-home an agent-authored URL on a ComfyUI media route from a loopback host
- * onto the page's own API, which serves the same routes. Built through
- * `api.apiURL` so it keeps the install's subpath, the `/api` prefix and the
- * web-session `workspace_id`. Any other URL is returned unchanged.
+ * Moves a loopback ComfyUI media URL onto the page's API route and returns any
+ * other URL unchanged.
  */
 export function resolveAgentAssetUrl(href: string): string {
   const url =
@@ -44,9 +42,6 @@ export function resolveAgentAssetUrl(href: string): string {
     window.location.origin
   )
   if (!rehomed) return href
-  // Carried across separately rather than handed to apiURL: scopeMediaRoute
-  // appends its `workspace_id` to the end of the route it is given, which
-  // would land after a fragment instead of in the query.
   rehomed.hash = url.hash
   return rehomed.href
 }
@@ -58,14 +53,6 @@ interface SrcsetCandidate {
   descriptor: string
 }
 
-/**
- * Split a `srcset` into candidates the way the HTML parser does (WHATWG
- * "parse a srcset attribute"), not on every comma: a URL runs until
- * whitespace, so a comma inside it stays part of it; a URL that ends in a
- * comma closes a descriptor-less candidate; otherwise the descriptors run
- * until a comma outside parentheses. Leading whitespace and stray commas
- * between candidates are skipped rather than read as an empty URL.
- */
 function srcsetCandidates(value: string): SrcsetCandidate[] {
   const candidates: SrcsetCandidate[] = []
   let position = skipSrcsetSeparators(value, 0)
@@ -131,16 +118,10 @@ function resolveSrcset(value: string): string {
 
 const REWRITABLE_ATTRS = ['src', 'href', 'poster', 'srcset'] as const
 
-/**
- * Prose without a media route skips the parse below. Keyed on the path, which
- * the URL parser keeps as written, not the host, which it normalizes.
- */
 const MAYBE_MEDIA_ROUTE = /[/\\](?:view|vhs[/\\]|assets[/\\])/
 
 export function rewriteAgentAssetHtml(html: string): string {
   if (!MAYBE_MEDIA_ROUTE.test(html)) return html
-  // A <template> keeps its contents in place; a document parse hoists some of
-  // them into <head>, where body.innerHTML drops them.
   const template = document.createElement('template')
   template.innerHTML = html
   let rewritten = false

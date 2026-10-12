@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it, vi } from 'vitest'
 
-// Node environment: `@/scripts/api` reads `location` at import.
 vi.mock(import('@/scripts/api'))
 
 import { zSeedFixture } from '@e2e/../scripts/agentConversationAssemble'
