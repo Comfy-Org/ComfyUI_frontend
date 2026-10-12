@@ -3892,7 +3892,7 @@
     "setAsDefault": "Set as workspace default",
     "clearDefault": "Clear workspace default",
     "failedToSetDefault": "Could not change the workspace default",
-    "linkTimedOut": "Could not load deployments in time. Try opening the link again.",
+    "linkTimedOut": "Could not open this deployment in time. Try opening the link again.",
     "linkRefused": "Could not open the deployment this link names",
     "linkWorkspaceRefused": "Could not open the workspace this link names. You're still in {workspaceName}."
   },

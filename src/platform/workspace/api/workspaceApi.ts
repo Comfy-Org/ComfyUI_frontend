@@ -366,14 +366,16 @@ export const workspaceApi = {
    */
   async pickDeployment(
     workspaceId: WorkspaceId,
-    payload: PickWorkspaceDeploymentRequest
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       await workspaceApiClient.put(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
         payload,
-        auth
+        { ...auth, ...(signal ? { signal } : {}) }
       )
     } catch (err) {
       handleAxiosError(err, 'pickDeployment')
