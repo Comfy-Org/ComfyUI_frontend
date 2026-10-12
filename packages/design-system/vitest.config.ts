@@ -17,6 +17,10 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.ts'],
     globals: false,
     env: { TZ: 'UTC' },
-    setupFiles: ['../../vitest.console.setup.ts', '../../vitest.timer.setup.ts']
+    setupFiles: [
+      '../../vitest.console.setup.ts',
+      '../../vitest.network.setup.ts',
+      '../../vitest.timer.setup.ts'
+    ]
   }
 })

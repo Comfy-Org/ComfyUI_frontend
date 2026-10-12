@@ -40,7 +40,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -61,7 +61,12 @@ import {
   getInputSpecType,
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
-import { ComfyApp, app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import {
+  clipspace,
+  copyToClipspace,
+  pasteFromClipspace
+} from '@/scripts/clipspace'
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -78,6 +83,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -189,7 +195,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -263,12 +269,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (useApp().dragOverNode?.id == this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (useApp().lastExecutionError?.node_id == this.id) {
         return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
@@ -324,7 +330,7 @@ export const useLitegraphService = () => {
     if (widgetInputSpec.type === 'COMFY_DYNAMICGROUP_V3')
       validateDynamicGroupWidgets(inputData, inputName)
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result = widgetConstructor(node, inputName, inputData, app)
+    const result = widgetConstructor(node, inputName, inputData, useApp())
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
     const returnedWidget = result && 'type' in result ? result : result?.widget
@@ -435,7 +441,7 @@ export const useLitegraphService = () => {
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       constructor() {
-        super(app.rootGraph, subgraph, instanceData)
+        super(useApp().rootGraph, subgraph, instanceData)
 
         subgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
@@ -697,9 +703,9 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.addAlert(
+              toast.warning(
                 t('toastMessages.errorCopyImage', {
-                  error: error instanceof Error ? error.message : error
+                  error: getErrorMessage(error) ?? t('g.unknownError')
                 })
               )
             }
@@ -752,19 +758,19 @@ export const useLitegraphService = () => {
       })
 
       // prevent conflict of clipspace content
-      if (!ComfyApp.clipspace_return_node) {
+      if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
           callback: () => {
-            ComfyApp.copyToClipspace(this)
+            copyToClipspace(this)
           }
         })
 
-        if (ComfyApp.clipspace != null) {
+        if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
             callback: markCoreMediaMenuCallback(() => {
-              ComfyApp.pasteFromClipspace(this)
+              pasteFromClipspace(this)
             }, 'input')
           })
         }
@@ -953,7 +959,7 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
+    const graph = useWorkflowStore().activeSubgraph ?? useApp().graph
     if (!node) return null
 
     graph.add(node, addOptions)
@@ -961,8 +967,8 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    if (!app.isGraphReady) return [0, 0]
-    const visibleArea = app.canvas.ds.visible_area
+    if (!useApp().isGraphReady) return [0, 0]
+    const visibleArea = useApp().canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / 2, y + h / 2]
   }
@@ -970,9 +976,9 @@ export const useLitegraphService = () => {
   function goToNode(nodeId: SerializedNodeId) {
     const parsedNodeId = parseNodeId(nodeId)
     if (!parsedNodeId) return
-    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
+    const graphNode = useApp().canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
-    app.canvas.animateToBounds(graphNode.boundingRect)
+    useApp().canvas.animateToBounds(graphNode.boundingRect)
   }
 
   function ensureBounds(nodes: LGraphNode[]) {

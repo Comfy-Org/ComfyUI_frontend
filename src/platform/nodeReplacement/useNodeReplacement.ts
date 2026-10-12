@@ -16,7 +16,7 @@ import type {
   MissingNodeType,
   NodeReplacement
 } from '@/platform/nodeReplacement/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
@@ -420,7 +420,7 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
 }
 
 export function useNodeReplacement() {
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
@@ -529,20 +529,16 @@ export function useNodeReplacement() {
       }
 
       if (replacedTypes.length > 0) {
-        toastStore.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('nodeReplacement.replacedAllNodes', {
+        toast.success(t('g.success'), {
+          description: t('nodeReplacement.replacedAllNodes', {
             count: replacedTypes.length
           }),
-          life: 3000
+          duration: 3000
         })
       }
       if (replacementFailed) {
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error', 'Error'),
-          detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+        toast.error(t('g.error'), {
+          description: t('nodeReplacement.replaceFailed')
         })
       }
     } catch (error) {
@@ -551,10 +547,8 @@ export function useNodeReplacement() {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error', 'Error'),
-        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
       })
       return replacedTypes
     } finally {
