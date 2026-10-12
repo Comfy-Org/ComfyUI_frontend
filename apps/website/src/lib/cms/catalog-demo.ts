@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, createHmac, randomBytes } from 'node:crypto'
 import { lstat, readFile, rename, writeFile } from 'node:fs/promises'
 import { z } from 'astro/zod'
 
@@ -14,6 +14,10 @@ const entry = z.object({
   expires: z.number().int().positive(),
   revoked: z.boolean(),
   sessionHash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  reusableSessionHash: z
     .string()
     .regex(/^[a-f0-9]{64}$/)
     .optional()
@@ -133,12 +137,17 @@ export async function redeemDemoInvitation(code: string) {
       (item) =>
         item.codeHash === digest(code) &&
         !item.revoked &&
-        !item.sessionHash &&
         item.expires > Date.now()
     )
     if (!item) return undefined
-    const token = randomBytes(32).toString('hex')
-    item.sessionHash = digest(token)
+    // DEV-only reusable invitation. A stable domain-separated session token
+    // lets repeated sign-ins coexist without growing an unbounded session list.
+    // Retain any previous random-token session, so existing tabs keep working.
+    const token = createHmac('sha256', code)
+      .update('comfy-ccc-local-demo-session-v1')
+      .digest('hex')
+    if (!item.sessionHash) item.sessionHash = digest(token)
+    item.reusableSessionHash = digest(token)
     return { token, expires: item.expires }
   })
 }
@@ -147,7 +156,7 @@ export async function resolveDemoSession(token: string) {
   const item = await transaction((entries) =>
     entries.find(
       (item) =>
-        item.sessionHash === digest(token) &&
+        (item.sessionHash === digest(token) || item.reusableSessionHash === digest(token)) &&
         !item.revoked &&
         item.expires > Date.now()
     )

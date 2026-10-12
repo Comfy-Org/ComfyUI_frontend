@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,7 +49,7 @@ describe('explicit local-demo invitations', () => {
     expect(long.expires).toBe(expires)
     expect(normal.expires).toBeLessThanOrEqual(Date.now() + 60 * 60 * 1000)
     const session = await redeemDemoInvitation(long.code)
-    expect(await redeemDemoInvitation(long.code)).toBeUndefined()
+    expect(await redeemDemoInvitation(long.code)).toEqual(session)
     expect((await resolveDemoSession(session!.token))?.name).toBe('Monday')
     await revokeDemoInvitation(
       (await listDemoInvitations()).find((item) => item.name === 'Monday')!.id
@@ -73,19 +74,37 @@ describe('explicit local-demo invitations', () => {
       ).rejects.toThrow()
     expect(await listDemoInvitations()).toEqual([])
   })
-  it('redeems once under concurrent requests; stores only code/session digests', async () => {
+  it('supports repeated and concurrent sign-ins without invalidating sessions or storing secrets', async () => {
     const invite = await createDemoInvitation('tester', 'publish')
     const results = await Promise.all([
       redeemDemoInvitation(invite.code),
       redeemDemoInvitation(invite.code)
     ])
-    expect(results.filter(Boolean)).toHaveLength(1)
+    expect(results.filter(Boolean)).toHaveLength(2)
+    expect(results[0]).toEqual(results[1])
     const session = results.find(Boolean)!
     expect((await resolveDemoSession(session.token))?.role).toBe('publish')
     const stored = await readFile(join(dir, 'invitations.json'), 'utf8')
     expect(stored).not.toContain(invite.code)
     expect(stored).not.toContain(session.token)
     expect(stored).not.toContain('not-a-real-signature')
+  })
+  it('preserves older random-token sessions while making the same invitation reusable', async () => {
+    const invite = await createDemoInvitation('existing tester', 'publish')
+    const legacyToken = 'b'.repeat(64)
+    const file = join(dir, 'invitations.json')
+    const entries = JSON.parse(await readFile(file, 'utf8'))
+    entries[0].sessionHash = createHash('sha256').update(legacyToken).digest('hex')
+    await writeFile(file, JSON.stringify(entries), { mode: 0o600 })
+    const next = await redeemDemoInvitation(invite.code)
+    expect(next).toBeDefined()
+    expect(await redeemDemoInvitation(invite.code)).toEqual(next)
+    expect((await resolveDemoSession(legacyToken))?.role).toBe('publish')
+    expect((await resolveDemoSession(next!.token))?.role).toBe('publish')
+    await revokeDemoInvitation((await listDemoInvitations())[0].id)
+    expect(await redeemDemoInvitation(invite.code)).toBeUndefined()
+    expect(await resolveDemoSession(legacyToken)).toBeUndefined()
+    expect(await resolveDemoSession(next!.token)).toBeUndefined()
   })
   it('revokes a redeemed session and leaves unrelated invitations valid', async () => {
     const first = await createDemoInvitation('first', 'edit')

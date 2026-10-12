@@ -12,7 +12,7 @@ for (const [name, value] of Object.entries(editorHeaders)) Astro.response.header
   <section class="mx-auto max-w-xl px-6 py-20">
     <div class="rounded-3xl border border-white/10 bg-primary-comfy-ink-light p-8">
       <h1 class="mb-4 text-3xl">Catalog demo sign-in</h1>
-      <p class="mb-6 text-primary-comfy-canvas">Enter your personal, one-time tester invitation. This is the local test catalog, not your production Comfy account. Invitations expire and can be revoked. Demo edits use a labeled shared fixture identity.</p>
+      <p class="mb-6 text-primary-comfy-canvas">{Astro.locals.t('cccDemo.signInInstructions')}</p>
       <form method="post" action="/admin/catalog-demo-session" data-astro-reload class="grid gap-4">
         <input type="hidden" name="csrf" value={csrf} />
         <label class="grid gap-2">Invitation code

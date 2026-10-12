@@ -87,6 +87,25 @@ try {
       })
     ).status()
   ).toBe(303)
+  // Reusing a local invitation in another browser must preserve both sessions.
+  const repeated = await request.newContext({
+    baseURL: remote.origin,
+    extraHTTPHeaders: { 'ngrok-skip-browser-warning': '1' }
+  })
+  try {
+    const repeatedPage = await repeated.get('/admin/catalog-sign-in')
+    const repeatedCSRF = field(await repeatedPage.text(), 'csrf')
+    if (!repeatedCSRF) throw new Error('Repeat sign-in CSRF missing')
+    expect((await repeated.post('/admin/catalog-demo-session', {
+      headers: { Origin: remote.origin },
+      form: { csrf: repeatedCSRF, code },
+      maxRedirects: 0
+    })).status()).toBe(303)
+    expect((await repeated.get('/admin/catalog')).status()).toBe(200)
+    expect((await guest.get('/admin/catalog')).status()).toBe(200)
+  } finally {
+    await repeated.dispose()
+  }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({
     storageState: await guest.storageState(),
@@ -259,7 +278,12 @@ try {
     const create = page.getByRole('link', { name: 'Add Content', exact: true })
     await expect(create).toHaveAttribute('href', `/admin/content/new?type=${type}`)
     await create.click()
-    await expect(page.getByRole('heading', { name: 'New content', exact: true })).toBeVisible()
+    try {
+      await expect(page.getByRole('heading', { name: 'New content', exact: true })).toBeVisible()
+    } catch (error) {
+      console.error(JSON.stringify({ failedSection: section, currentPath: new URL(page.url()).pathname, pageErrors: errors }))
+      throw error
+    }
     const card = cards.find((item) => item.href.startsWith(`/hub/${section}/`))
     if (!card) throw new Error(`Missing ${section} fixture`)
     await page.goto(remote.origin + card.href, { waitUntil: 'networkidle' })

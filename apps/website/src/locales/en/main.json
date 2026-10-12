@@ -1,4 +1,9 @@
 {
+  "cccDemo": {
+    "active": "Active",
+    "signInInstructions": "Enter your personal tester invitation. You can reuse it to sign in until its expiry. This is the local test catalog, not your production Comfy account. Invitations and sessions can be revoked. Demo edits use a labeled shared fixture identity.",
+    "invitationInstructions": "One invitation per tester. Codes can be reused until expiry; sessions stop immediately when revoked. New invitations default to one hour; explicitly extended invitations keep their displayed expiry. These access only the local fixture catalog and share its labeled author identity. Never share a production credential."
+  },
   "cccLocalDemo": {
     "help": "This local-only demo uses a verified, labeled fixture staff account. Click Open administration to sign into this browser. Editing and staging work; Publish and full Hub Preview are not yet available."
   },
