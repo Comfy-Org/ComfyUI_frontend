@@ -108,7 +108,11 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
       case 'list':
         return (
           page.list && (
-            <ModelLaunchListSection list={page.list} locale={locale} />
+            <ModelLaunchListSection
+              client:visible
+              list={page.list}
+              locale={locale}
+            />
           )
         )
       case 'steps':

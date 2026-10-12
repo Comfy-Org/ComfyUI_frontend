@@ -57,6 +57,8 @@ const VIDEO_URL =
 const IMAGE_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
+const LIST_AUDIO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(mp3|flac|m4a|ogg)$/
 const HERO_STILL_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const LOCALES = ['en', 'zh-CN'] as const
@@ -339,6 +341,15 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+
+    const listAudioOffenders = (page.list?.items ?? []).filter(
+      (item) =>
+        item.audioSources !== undefined &&
+        (item.audioSources.length === 0 ||
+          item.audioSources.some((source) => !LIST_AUDIO_URL.test(source.src)))
+    )
+
+    expect(listAudioOffenders.map((item) => item.id)).toEqual([])
   })
 
   it('orders every optional section it defines', () => {
@@ -352,9 +363,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('lists a playable MP3 first in every audio source list', () => {
-    const offenders = (page.audioGallery?.cards ?? []).filter(
-      (card) => card.audioSources[0]?.type !== 'audio/mpeg'
-    )
+    const offenders = [
+      ...(page.audioGallery?.cards ?? []),
+      ...(page.list?.items ?? []).filter((item) => item.audioSources)
+    ].filter((card) => card.audioSources?.[0]?.type !== 'audio/mpeg')
 
     expect(offenders.map((card) => card.id)).toEqual([])
   })

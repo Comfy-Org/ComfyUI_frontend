@@ -125,6 +125,7 @@ export interface ModelLaunchListItem {
   description: LocalizedText
   meta: readonly LocalizedText[]
   href: string
+  audioSources?: readonly { src: string; type: string }[]
 }
 
 export interface ModelLaunchList {

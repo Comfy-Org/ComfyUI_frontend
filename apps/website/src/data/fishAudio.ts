@@ -32,49 +32,7 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['audioGallery', 'steps', 'list', 'pricing', 'faq'],
-  audioGallery: {
-    cards: [
-      {
-        id: 'sample-01',
-        description: {
-          en: 'Two-character scene script',
-          'zh-CN': '双角色场景剧本'
-        },
-        prompt: {
-          en: 'NOOR (half awake, pleased): You made coffee. At four in the morning.\nDEV (quiet, not wanting to wake the house): The render finished. I wanted you to hear it first.\nNOOR (teasing him): And?\nDEV (a slow breath, then a grin in the voice): Come listen.',
-          'zh-CN':
-            'NOOR (half awake, pleased): You made coffee. At four in the morning.\nDEV (quiet, not wanting to wake the house): The render finished. I wanted you to hear it first.\nNOOR (teasing him): And?\nDEV (a slow breath, then a grin in the voice): Come listen.'
-        },
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ],
-        posterSrc: '/images/models/fish-audio-placeholder.webp'
-      },
-      {
-        id: 'sample-02',
-        description: {
-          en: 'Three-character scene script',
-          'zh-CN': '三角色场景剧本'
-        },
-        prompt: {
-          en: 'MAYA (brisk, checking a list): Doors in ten. Where is the second mic?\nJONAH (calling from across the room, cheerful): On the stool. Where you left it.\nMAYA (a beat, then sheepish): Right.\nLENA (low, steadying): Breathe. They came to hear you, not the mic.\nMAYA (a slow exhale, then a small laugh): Okay. Doors in ten.',
-          'zh-CN':
-            'MAYA (brisk, checking a list): Doors in ten. Where is the second mic?\nJONAH (calling from across the room, cheerful): On the stool. Where you left it.\nMAYA (a beat, then sheepish): Right.\nLENA (low, steadying): Breathe. They came to hear you, not the mic.\nMAYA (a slow exhale, then a small laugh): Okay. Doors in ten.'
-        },
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ],
-        posterSrc: '/images/models/fish-audio-voice-clone-placeholder.webp'
-      }
-    ]
-  },
+  sectionOrder: ['list', 'steps', 'pricing', 'faq'],
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
@@ -133,7 +91,13 @@ export const fishAudioPage: ModelLaunchPage = {
           { en: 'S2.1 Pro and S1', 'zh-CN': 'S2.1 Pro 与 S1' },
           { en: 'Premium', 'zh-CN': '高级' }
         ],
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
+        audioSources: [
+          {
+            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
       },
       {
         id: 'instant-voice-clone',
@@ -150,7 +114,13 @@ export const fishAudioPage: ModelLaunchPage = {
           { en: '1 to 20 recordings', 'zh-CN': '1 到 20 段录音' },
           { en: 'Free', 'zh-CN': '免费' }
         ],
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts'
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts',
+        audioSources: [
+          {
+            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
       },
       {
         id: 'speech-to-text',
@@ -167,7 +137,13 @@ export const fishAudioPage: ModelLaunchPage = {
           { en: '80+ languages', 'zh-CN': '80 多种语言' },
           { en: 'Premium', 'zh-CN': '高级' }
         ],
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text'
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text',
+        audioSources: [
+          {
+            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
       },
       {
         id: 'voice-selector',
@@ -183,7 +159,13 @@ export const fishAudioPage: ModelLaunchPage = {
           { en: 'Curated voices', 'zh-CN': '精选声音' },
           { en: 'Free', 'zh-CN': '免费' }
         ],
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
+        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
+        audioSources: [
+          {
+            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
       }
     ]
   },
