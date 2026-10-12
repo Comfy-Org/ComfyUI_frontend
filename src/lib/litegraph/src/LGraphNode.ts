@@ -1735,6 +1735,9 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
+      case LGraphEventMode.BYPASS:
+        break
+
       default:
         return false
     }

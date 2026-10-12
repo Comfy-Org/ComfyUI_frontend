@@ -12,6 +12,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -71,6 +72,11 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test('accepts bypass through changeMode', () => {
+    expect(node.changeMode(LGraphEventMode.BYPASS)).toBe(true)
+    expect(node.mode).toBe(LGraphEventMode.BYPASS)
   })
 
   test('preserves null property values', () => {

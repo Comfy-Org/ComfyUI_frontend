@@ -1182,6 +1182,13 @@ describe('LiveGraphApplier', () => {
       value: 3,
       expected: 3,
       renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 4,
+      expected: 4,
+      renderedSize: [210, 100]
     }
   ])(
     'announces $field once when applying and reapplying a document field',
@@ -1257,8 +1264,8 @@ describe('LiveGraphApplier', () => {
     })
     applyCollected()
 
-    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 4))
-    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 4))
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
 
     expect(graph.getNodeById(toNodeId(1))?.mode).toBe(0)
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
