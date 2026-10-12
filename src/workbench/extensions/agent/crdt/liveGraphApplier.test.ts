@@ -5,7 +5,15 @@ import type {
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -1152,6 +1160,138 @@ describe('LiveGraphApplier', () => {
       600, 400
     ])
   })
+
+  it.for([
+    {
+      field: 'flags.collapsed',
+      key: 'flags',
+      value: { collapsed: true },
+      expected: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    },
+    {
+      field: 'flags.pinned',
+      key: 'flags',
+      value: { pinned: true },
+      expected: true,
+      renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 3,
+      expected: 3,
+      renderedSize: [210, 100]
+    }
+  ])(
+    'announces $field once when applying and reapplying a document field',
+    ({ field, key, value, expected, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      const listener = vi.fn()
+      onTestFinished(onGraphIntent(listener))
+
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: 'set_node_field',
+          field,
+          value: expected,
+          source: 'agent-remote'
+        })
+      )
+      expect([...node.size]).toEqual([210, 100])
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
+
+  it('expands a pinned node and restores resizing when flags are removed', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        sourceNode(1, {
+          flags: { pinned: true, collapsed: true, allow_interaction: true }
+        })
+      ],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    node.resizable = false
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('flags', {}))
+
+    expect(node.collapsed).toBe(false)
+    expect(node.pinned).toBe(false)
+    expect(node.resizable).toBe(true)
+    expect(node.flags.allow_interaction).toBeUndefined()
+    expect([...node.renderingSize]).toEqual([210, 100])
+  })
+
+  it('creates trigger slots through the mode channel', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 3))
+
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    expect(node.inputs.map(({ name }) => name)).toContain('onTrigger')
+    expect(node.outputs.map(({ name }) => name)).toContain('onExecuted')
+  })
+
+  it('reports a refused mode once and preserves the live mode', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 4))
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 4))
+
+    expect(graph.getNodeById(toNodeId(1))?.mode).toBe(0)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_graph_node_mode_rejected' })
+    )
+  })
+
+  it.for([
+    { color: '#322', bgcolor: '#533', calls: 1 },
+    { color: '#123456', bgcolor: '#654321', calls: 0 }
+  ])(
+    'applies colours $color/$bgcolor using a named option when available',
+    ({ color, bgcolor, calls }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      const setColorOption = vi.spyOn(node, 'setColorOption')
+
+      applyEdit(() => {
+        nodesMap(doc).get('1')?.set('color', color)
+        nodesMap(doc).get('1')?.set('bgcolor', bgcolor)
+      })
+
+      expect(node.color).toBe(color)
+      expect(node.bgcolor).toBe(bgcolor)
+      expect(setColorOption).toHaveBeenCalledTimes(calls)
+    }
+  )
 
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
