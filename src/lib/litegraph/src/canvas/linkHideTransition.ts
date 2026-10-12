@@ -39,7 +39,14 @@ export const LINK_HIDE_EASINGS = {
 } satisfies Record<string, (t: number) => number>
 
 export type LinkHideEasing = keyof typeof LINK_HIDE_EASINGS
-export type LinkHideStyle = 'dotted' | 'elastic'
+export const LINK_HIDE_STYLES = [
+  'elastic',
+  'reel',
+  'thin',
+  'drop',
+  'dotted'
+] as const
+export type LinkHideStyle = (typeof LINK_HIDE_STYLES)[number]
 
 export const LINK_HIDE_TRANSITION: {
   style: LinkHideStyle
@@ -52,6 +59,7 @@ export const LINK_HIDE_TRANSITION: {
   snapOvershoot: number
   elasticDecay: number
   elasticFrequency: number
+  dropSag: number
   labelPopMs: number
   labelPopDelayMs: number
   labelPopFromScale: number
@@ -67,6 +75,7 @@ export const LINK_HIDE_TRANSITION: {
   snapOvershoot: 0.6,
   elasticDecay: 4.5,
   elasticFrequency: 5.5,
+  dropSag: 90,
   labelPopMs: 150,
   labelPopDelayMs: 0,
   labelPopFromScale: 0.9,
@@ -82,12 +91,12 @@ export interface LinkHideFrame {
 
 function lineMs(): number {
   const { style, holdMs, fadeMs, snapMs } = LINK_HIDE_TRANSITION
-  return style === 'elastic' ? snapMs : holdMs + fadeMs
+  return style === 'dotted' ? holdMs + fadeMs : snapMs
 }
 
 function labelStartMs(): number {
   const { style, labelPopDelayMs } = LINK_HIDE_TRANSITION
-  return style === 'elastic' ? labelPopDelayMs : lineMs()
+  return style === 'dotted' ? lineMs() : labelPopDelayMs
 }
 
 function totalMs(): number {
@@ -158,7 +167,7 @@ export function linkHideFrame(
   const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
   if (elapsed === undefined || elapsed >= lineMs()) return
   const { style, holdMs, fadeMs, snapMs, snapEasing } = LINK_HIDE_TRANSITION
-  if (style === 'elastic') {
+  if (style !== 'dotted') {
     return {
       style,
       alpha: 1,

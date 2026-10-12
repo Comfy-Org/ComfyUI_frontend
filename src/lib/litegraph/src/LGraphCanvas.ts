@@ -51,6 +51,7 @@ import {
   setRevealedLinks
 } from './canvas/linkRevealState'
 import {
+  LINK_HIDE_TRANSITION,
   cancelLinkHideTransition,
   clearRootLinkHideTransitions,
   hasLinkHideTransitions,
@@ -61,6 +62,7 @@ import {
 import type { LinkHideFrame } from './canvas/linkHideTransition'
 import type { LinkBadgeLayout } from './canvas/linkBadges'
 import { bezierHead, bezierTail, linkSpline } from './canvas/linkSnapGeometry'
+import type { CubicBezier } from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -6371,7 +6373,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { linkMarkerShape } = this
     this.linkMarkerShape = LinkMarkerShape.None
     try {
-      if (hiding.frame.style === 'elastic') {
+      if (hiding.frame.style !== 'dotted') {
         this._renderSnappingLink(ctx, hiding)
       } else {
         this._renderDottedLink(ctx, hiding, rerouteSegments, now)
@@ -6434,23 +6436,52 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       endDirection?: LinkDirection
     }
   ): void {
-    const remaining = Math.abs(1 - frame.retract) / 2
-    if (remaining === 0) return
     const spline = linkSpline(startPos, endPos, startDirection, endDirection)
-    const halves = [
-      bezierHead(spline, remaining),
-      bezierTail(spline, remaining)
-    ]
+    const progress = frame.retract
+    const fading = Math.min(1, Math.max(0, 1 - progress))
+    let halves: CubicBezier[]
+    let widthScale = 1
+    let alpha = 1
+    switch (frame.style) {
+      case 'reel': {
+        const remaining = Math.abs(1 - progress)
+        halves = remaining === 0 ? [] : [bezierHead(spline, remaining)]
+        break
+      }
+      case 'thin':
+        halves = [spline]
+        widthScale = fading
+        alpha = Math.sqrt(fading)
+        break
+      case 'drop': {
+        const sag = LINK_HIDE_TRANSITION.dropSag * progress
+        const [p0, p1, p2, p3] = spline
+        halves = [[p0, [p1[0], p1[1] + sag], [p2[0], p2[1] + sag], p3]]
+        alpha = fading
+        break
+      }
+      default: {
+        const remaining = Math.abs(1 - progress) / 2
+        halves =
+          remaining === 0
+            ? []
+            : [bezierHead(spline, remaining), bezierTail(spline, remaining)]
+      }
+    }
+    if (halves.length === 0 || widthScale === 0 || alpha === 0) return
+
     const color =
       link.color ||
       LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
       this.default_link_color
-    const strokes: [CanvasColour, number][] = [[color, this.connections_width]]
+    const width = this.connections_width * widthScale
+    const strokes: [CanvasColour, number][] = [[color, width]]
     if (this.render_connections_border && !this.low_quality) {
-      strokes.unshift(['rgba(0,0,0,0.5)', this.connections_width + 4])
+      strokes.unshift(['rgba(0,0,0,0.5)', width + 4 * widthScale])
     }
 
     ctx.save()
+    ctx.globalAlpha *= alpha
     ctx.lineCap = 'round'
     for (const [strokeStyle, lineWidth] of strokes) {
       ctx.strokeStyle = strokeStyle
