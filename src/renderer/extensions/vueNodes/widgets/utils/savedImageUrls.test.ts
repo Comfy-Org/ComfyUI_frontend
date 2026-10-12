@@ -25,6 +25,14 @@ describe('savedImageUrls', () => {
     ])
   })
 
+  it('keeps the content version so a rewritten file gets a new URL', () => {
+    expect(
+      savedImageUrls([
+        { filename: 'a.png', type: 'output', version: '18dd-46' }
+      ])
+    ).toEqual(['/api/view?filename=a.png&type=output&version=18dd-46'])
+  })
+
   it('appends the preview format param', () => {
     vi.spyOn(app, 'getPreviewFormatParam').mockReturnValue('&preview=webp')
 

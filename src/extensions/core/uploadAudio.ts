@@ -153,7 +153,8 @@ app.registerExtension({
             const resourceUrl = getResourceURL(
               audio.subfolder ?? '',
               audio.filename ?? '',
-              audio.type
+              audio.type,
+              audio.version
             )
             updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
           }
@@ -197,7 +198,8 @@ app.registerExtension({
       const resourceUrl = getResourceURL(
         audio.subfolder ?? '',
         audio.filename ?? '',
-        audio.type
+        audio.type,
+        audio.version
       )
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }

@@ -611,6 +611,20 @@ describe('ImagePreview', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('retries a failed image when the same URLs arrive again', async () => {
+      const urls = ['/api/view?filename=test.png&type=input']
+      const { rerender } = renderImagePreview({ imageUrls: urls })
+
+      await fireEvent.error(screen.getByTestId('main-image'))
+      await nextTick()
+      expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+
+      await rerender({ imageUrls: [...urls] })
+      await nextTick()
+
+      expect(screen.getByTestId('main-image')).toBeInTheDocument()
+    })
+
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime

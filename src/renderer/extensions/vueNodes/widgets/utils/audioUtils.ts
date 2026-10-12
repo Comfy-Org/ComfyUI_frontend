@@ -3,12 +3,14 @@ import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 export function getResourceURL(
   subfolder: string,
   filename: string,
-  type: ResultItemType = 'input'
+  type: ResultItemType = 'input',
+  version?: string
 ): string {
   const params = [
     'filename=' + encodeURIComponent(filename),
     'type=' + type,
-    'subfolder=' + subfolder
+    'subfolder=' + subfolder,
+    ...(version ? ['version=' + encodeURIComponent(version)] : [])
   ].join('&')
 
   return `/view?${params}`

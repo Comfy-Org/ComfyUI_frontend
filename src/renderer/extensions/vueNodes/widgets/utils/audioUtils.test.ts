@@ -8,4 +8,10 @@ describe('getResourceURL', () => {
       '/view?filename=a%20b.wav&type=output&subfolder=audio'
     )
   })
+
+  it('carries the content version so a rewritten file gets a new URL', () => {
+    expect(getResourceURL('', 'out.wav', 'output', '18dd-46')).toBe(
+      '/view?filename=out.wav&type=output&subfolder=&version=18dd-46'
+    )
+  })
 })
