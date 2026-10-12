@@ -36,6 +36,8 @@ export interface SubscriptionInfo {
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
   agentHasFunds: boolean
+  /** The Agent's dedicated granted balance, excluding shared workspace credits. */
+  agentScopedHasFunds?: boolean
 }
 
 /**

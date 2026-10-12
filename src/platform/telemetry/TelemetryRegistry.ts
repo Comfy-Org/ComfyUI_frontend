@@ -13,6 +13,7 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -240,6 +241,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentPaywallCtaClicked?.(metadata)
+    )
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditTransitionNotice?.(metadata)
     )
   }
 
