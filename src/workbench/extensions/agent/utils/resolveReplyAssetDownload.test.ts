@@ -106,8 +106,8 @@ describe('resolveReplyAssetDownload', () => {
     vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
 
     const download = await resolveReplyAssetDownload({
-      ...asset,
-      url: 'http://100.74.161.87:8190/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output'
+      ...generatedAsset,
+      url: `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output`
     })
 
     expect(download.url).toBe('/view?filename=ComfyUI_00001_.png&type=output')
