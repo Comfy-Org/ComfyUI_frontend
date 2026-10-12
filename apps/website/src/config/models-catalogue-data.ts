@@ -59,7 +59,17 @@ export const workflowModelSchema = presentationSchema.extend({
 
 const appModelSchema = presentationSchema.extend({
   type: z.literal('APP'),
-  appId: z.enum(['studio', 'reshoot']),
+  appId: z.enum([
+    'studio',
+    'reshoot',
+    'move-anything',
+    'relight',
+    'hand-product-swap',
+    'sprite-sheet',
+    'paparazzi-me',
+    'background-removal',
+    'virtual-try-on'
+  ]),
   routerId: z.never().optional(),
   workflowId: z.never().optional()
 })

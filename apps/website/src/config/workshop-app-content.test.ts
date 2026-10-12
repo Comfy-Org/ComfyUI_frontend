@@ -11,7 +11,17 @@ describe('Workshop apps', () => {
   it('lists every app declared in the catalog, each at /hub/apps/<slug>/', () => {
     expect(appModels.map(({ appId, href }) => ({ appId, href }))).toEqual([
       { appId: 'studio', href: '/hub/apps/cinematic-studio/' },
-      { appId: 'reshoot', href: '/hub/apps/reshoot/' }
+      { appId: 'reshoot', href: '/hub/apps/reshoot/' },
+      { appId: 'move-anything', href: '/hub/apps/move-anything/' },
+      { appId: 'relight', href: '/hub/apps/relight/' },
+      {
+        appId: 'background-removal',
+        href: '/hub/apps/background-removal/'
+      },
+      { appId: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' },
+      { appId: 'paparazzi-me', href: '/hub/apps/paparazzi-me/' },
+      { appId: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' },
+      { appId: 'virtual-try-on', href: '/hub/apps/virtual-try-on/' }
     ])
   })
 
@@ -20,7 +30,14 @@ describe('Workshop apps', () => {
       appPagePaths().map(({ params, props }) => [params.app, props.model.appId])
     ).toEqual([
       ['cinematic-studio', 'studio'],
-      ['reshoot', 'reshoot']
+      ['reshoot', 'reshoot'],
+      ['move-anything', 'move-anything'],
+      ['relight', 'relight'],
+      ['background-removal', 'background-removal'],
+      ['hand-product-swap', 'hand-product-swap'],
+      ['paparazzi-me', 'paparazzi-me'],
+      ['sprite-sheet', 'sprite-sheet'],
+      ['virtual-try-on', 'virtual-try-on']
     ])
   })
 

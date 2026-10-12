@@ -2025,7 +2025,7 @@ describe('CinematicStudio', () => {
       expect(document.title).toBe('Re-shoot a video - Comfy')
     })
 
-    it('lists only Cinematic Studio and Re-shoot a video in the Hub apps tab', async () => {
+    it('lists every app in the Hub apps tab', async () => {
       window.history.replaceState(
         null,
         '',
@@ -2036,14 +2036,45 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(2)
-      const [firstApp, secondApp] = apps
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(9)
+      const [
+        firstApp,
+        secondApp,
+        thirdApp,
+        fourthApp,
+        fifthApp,
+        sixthApp,
+        seventhApp,
+        eighthApp,
+        ninthApp
+      ] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
       ).toHaveAttribute('href', '/hub/apps/reshoot/')
+      expect(
+        within(thirdApp).getByRole('link', { name: 'Move anything' })
+      ).toHaveAttribute('href', '/hub/apps/move-anything/')
+      expect(
+        within(fourthApp).getByRole('link', { name: 'Relight' })
+      ).toHaveAttribute('href', '/hub/apps/relight/')
+      expect(
+        within(fifthApp).getByRole('link', { name: 'Background Removal' })
+      ).toHaveAttribute('href', '/hub/apps/background-removal/')
+      expect(
+        within(sixthApp).getByRole('link', { name: 'Hand product swap' })
+      ).toHaveAttribute('href', '/hub/apps/hand-product-swap/')
+      expect(
+        within(seventhApp).getByRole('link', { name: 'Paparazzi me' })
+      ).toHaveAttribute('href', '/hub/apps/paparazzi-me/')
+      expect(
+        within(eighthApp).getByRole('link', { name: 'Sprite Sheet Generator' })
+      ).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
+      expect(
+        within(ninthApp).getByRole('link', { name: 'Virtual try-on' })
+      ).toHaveAttribute('href', '/hub/apps/virtual-try-on/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {
