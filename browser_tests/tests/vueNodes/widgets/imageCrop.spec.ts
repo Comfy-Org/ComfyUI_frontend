@@ -78,6 +78,32 @@ async function waitForImageNaturalSize(
     .toBe(true)
 }
 
+/**
+ * Rewires the Crop Image node's `image` input in the `image_crop_with_source`
+ * fixture, where node 1 is the Load Image source and node 2 is the crop node.
+ */
+async function setImageInputConnected(
+  comfyPage: ComfyPage,
+  connected: boolean
+) {
+  await comfyPage.page.evaluate(
+    ({ shouldConnect, sourceId, cropId }) => {
+      const graph = window.app!.graph
+      const source = graph.getNodeById(sourceId)
+      const crop = graph.getNodeById(cropId)
+      if (!source || !crop) throw new Error('fixture nodes not found')
+      if (shouldConnect) {
+        source.connect(0, crop, 0)
+      } else {
+        crop.disconnectInput(0)
+      }
+    },
+    { shouldConnect: connected, sourceId: toNodeId(1), cropId: toNodeId(2) }
+  )
+  await comfyPage.nextFrame()
+  await comfyPage.nextFrame()
+}
+
 async function dragOnLocator(
   comfyPage: ComfyPage,
   target: Locator,
@@ -279,6 +305,31 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           })
         }
       )
+
+      test('Preview follows the image input being disconnected and reconnected', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await expect(node.locator('img'), 'preview before edit').toBeVisible()
+
+        await setImageInputConnected(comfyPage, false)
+        await expect
+          .soft(node, 'empty state after disconnect')
+          .toContainText('No input image connected')
+        await expect
+          .soft(node.locator('img'), 'no preview after disconnect')
+          .toHaveCount(0)
+
+        await setImageInputConnected(comfyPage, true)
+        await expect(
+          node.locator('img'),
+          'preview returns after reconnect'
+        ).toBeVisible()
+        await expect(
+          node.getByTestId('crop-overlay'),
+          'crop overlay returns after reconnect'
+        ).toBeVisible()
+      })
 
       test(
         'Drag crop box updates crop position',
