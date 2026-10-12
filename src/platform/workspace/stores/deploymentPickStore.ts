@@ -2,6 +2,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -263,7 +264,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const completed = await Promise.race([
       loadOnce().then(() => true),
       new Promise<false>((resolve) => {
-        timeout = setTimeout(() => resolve(false), 10_000)
+        timeout = setTimeout(
+          () => resolve(false),
+          DEPLOYMENT_LISTING_BACKSTOP_MS
+        )
       })
     ]).finally(() => clearTimeout(timeout))
     if (!completed) return { kind: 'timedOut' }

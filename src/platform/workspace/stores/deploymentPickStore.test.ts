@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -492,13 +494,35 @@ describe('useDeploymentPickStore', () => {
       const store = useDeploymentPickStore()
       const settled = vi.fn()
       const linked = store.pickFromLink('dep-1').then(settled)
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+      expect(settled).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
       expect(settled).toHaveBeenCalledWith({ kind: 'timedOut' })
       listed.resolve(listing)
       await linked
       expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
+
+    it.for([12_000, DEPLOYMENT_LISTING_BACKSTOP_MS - 1])(
+      'selects the linked deployment when the listing succeeds after %i ms',
+      async (delay) => {
+        vi.useFakeTimers()
+        const listed = deferred<WorkspaceDeploymentList>()
+        mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
+        mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+        const store = useDeploymentPickStore()
+        const linked = store.pickFromLink('dep-1')
+        await vi.advanceTimersByTimeAsync(delay)
+        listed.resolve(listing)
+        await expect(linked).resolves.toEqual({ kind: 'picked' })
+        expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledExactlyOnceWith(
+          'ws-1',
+          { deployment_id: 'dep-1' }
+        )
+        expect(reload).toHaveBeenCalledOnce()
+      }
+    )
 
     it('waits for the first listing, then picks and reloads', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
