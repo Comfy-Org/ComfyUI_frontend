@@ -7,15 +7,14 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -387,7 +386,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
@@ -437,7 +437,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           >
             <template #trigger>
               <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
@@ -494,8 +495,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"

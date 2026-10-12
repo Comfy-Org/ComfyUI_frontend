@@ -5,7 +5,6 @@ import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
 import { setAssertReporter } from '@/base/assert'
@@ -32,6 +31,7 @@ import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -46,6 +46,7 @@ if (isCloud) {
   stripPaymentReturnParams()
   installCloudApiAuth()
 }
+installWorkspaceApiAuth()
 
 bootstrapTracer.armWatchdog()
 
@@ -82,6 +83,10 @@ if (desktopHostAuth) {
   const { startDesktopHostSession } =
     await import('@/platform/auth/desktopHost/desktopHostSession')
   await startDesktopHostSession(desktopHostAuth)
+} else if (!isCloud) {
+  const { startLocalWebSession } =
+    await import('@/platform/auth/localWeb/localWebSession')
+  await startLocalWebSession()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -136,17 +141,13 @@ setAssertReporter(
   { forwardsToRum: isCloud }
 )
 
-app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
     zIndex: {
       modal: 1800,
       overlay: 1800,
-      menu: 1800,
-      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
-      // behind a body-portaled dropdown that lifts itself to modal + 1.
-      tooltip: 2000
+      menu: 1800
     },
     theme: {
       preset: ComfyUIPreset,

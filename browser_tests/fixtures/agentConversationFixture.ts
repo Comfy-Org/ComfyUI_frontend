@@ -42,7 +42,10 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import {
+  agentHumanAddBlueprint,
+  agentNestedSubgraphDefinition
+} from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
@@ -290,7 +293,8 @@ export class AgentConversationHarness {
   async boot(
     agentFlag: boolean,
     vueNodes: boolean,
-    bootAssets: ListAssetsResponse
+    bootAssets: ListAssetsResponse,
+    telemetryEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
@@ -299,6 +303,7 @@ export class AgentConversationHarness {
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
+      features: { enable_telemetry: telemetryEnabled },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
@@ -851,6 +856,12 @@ export class AgentConversationHarness {
     )
   }
 
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
+    )
+  }
+
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
@@ -1266,6 +1277,8 @@ interface ConversationFixtures {
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
+  // Opt in only for cases that assert telemetry through hostTelemetryFixture.
+  telemetryEnabled: boolean
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1279,6 +1292,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  telemetryEnabled: [false, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1299,7 +1313,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      bootAssets
+      bootAssets,
+      telemetryEnabled
     },
     use,
     testInfo
@@ -1320,7 +1335,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)
   }
 })

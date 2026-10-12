@@ -32,6 +32,40 @@ describe('AppCatalogue', () => {
     }
   )
 
+  it.for([
+    {
+      locale: 'en',
+      initial: 'C',
+      mark: 'Comfy app',
+      browseAll: 'Browse all apps'
+    },
+    {
+      locale: 'zh-CN',
+      initial: 'C',
+      mark: 'Comfy 应用',
+      browseAll: '浏览全部应用'
+    }
+  ] as const)(
+    'labels the cards in $locale on the shelf and in the full catalogue',
+    async ({ locale, initial, mark, browseAll }) => {
+      const user = userEvent.setup()
+      const markText = (container: HTMLElement) =>
+        within(container)
+          .getAllByTestId('model-card-provider')
+          .map((element) => element.textContent.trim())
+      render(AppCatalogue, { props: { apps: appsOf(9), locale } })
+
+      expect(markText(screen.getByTestId('app-shelf'))).toEqual(
+        Array(8).fill(`${initial}${mark}`)
+      )
+
+      await user.click(screen.getByRole('button', { name: browseAll }))
+      expect(markText(screen.getByTestId('app-search-results'))).toEqual(
+        Array(9).fill(`${initial}${mark}`)
+      )
+    }
+  )
+
   it('opens every app and leads back to the shelf', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AppCatalogue, { props: { apps: appsOf(9) } })

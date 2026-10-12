@@ -8,6 +8,7 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -103,6 +104,22 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
     expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches an SSO event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackSsoEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: 'flow-1' }
+    } as const
+    registry.trackSsoEvent(event)
+
+    expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -364,6 +381,9 @@ describe('TelemetryRegistry', () => {
       action: 'shown',
       placement: 'above-input'
     } satisfies AgentFreeUseNoticeMetadata
+    const creditTransitionNoticeMetadata = {
+      action: 'shown'
+    } satisfies AgentCreditTransitionNoticeMetadata
 
     const cases = [
       {
@@ -382,6 +402,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...freeUseNoticeMetadata },
         invoke: (registry) =>
           registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
+      {
+        method: 'trackAgentCreditTransitionNotice',
+        expected: { ...creditTransitionNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditTransitionNotice(
+            creditTransitionNoticeMetadata
+          )
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -471,6 +499,28 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentGraphProjection',
+        expected: {
+          op_id: 'op-1',
+          op_count: 2,
+          sequence: 7,
+          stage: 'applied',
+          added_count: 0,
+          removed_count: 2,
+          apply_failure_count: 0
+        },
+        invoke: (registry) =>
+          registry.trackAgentGraphProjection({
+            op_id: 'op-1',
+            op_count: 2,
+            sequence: 7,
+            stage: 'applied',
+            added_count: 0,
+            removed_count: 2,
+            apply_failure_count: 0
+          })
       },
       {
         method: 'trackAgentStopClicked',

@@ -97,6 +97,7 @@ import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionC
 import { isCloud } from '@/platform/distribution/types'
 
 import { PromptExecutionError, api } from '@/scripts/api'
+import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -330,6 +331,10 @@ describe('ComfyApp', () => {
     vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
       () => {}
     )
+  })
+
+  it('registers the exported singleton for useApp', () => {
+    expect(useApp()).toBe(singletonApp)
   })
 
   describe('loadGraphData', () => {
