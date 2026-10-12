@@ -17,7 +17,7 @@
       :min
       :max
       :step
-      step-snapping
+      :step-snapping="step !== 0"
       :disabled
     >
       <NumberFieldDecrement />

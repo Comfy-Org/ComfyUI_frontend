@@ -129,6 +129,24 @@ describe('Knob', () => {
     }
   )
 
+  it('maps a pointer press without snapping when step is 0', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(Knob, { props: { modelValue: 20, step: 0 } })
+    const slider = screen.getByRole('slider')
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 48, 48)
+    )
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: slider,
+      coords: { clientX: 0, clientY: 24 }
+    })
+
+    const [[value]] = emitted<[number]>()['update:modelValue']
+    expect(value).toBeCloseTo(100 / 6)
+  })
+
   it('ignores keyboard and pointer input and leaves the tab order when disabled', async () => {
     const user = userEvent.setup()
     const { emitted } = render(Knob, {

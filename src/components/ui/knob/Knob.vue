@@ -28,7 +28,7 @@ const dashOffset = computed(() => 75 * (1 - progress.value))
 
 function setValue(value: number) {
   if (disabled) return
-  const stepped = Math.round((value - min) / step) * step + min
+  const stepped = step ? Math.round((value - min) / step) * step + min : value
   modelValue.value = Math.min(max, Math.max(min, stepped))
 }
 
