@@ -163,6 +163,7 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
+        { name: 'song.mp3', ref: 'upload_song.mp3', mediaUrl: 'blob:song' },
         {
           name: 'clip.mp4',
           ref: 'upload_clip.mp4',
@@ -174,6 +175,12 @@ describe('UserMessage', () => {
 
     expect(stubbedAssets()).toEqual([
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
+      {
+        url: 'blob:song',
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
+      },
       {
         url: 'blob:video',
         filename: 'upload_clip.mp4',

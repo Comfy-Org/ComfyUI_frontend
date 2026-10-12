@@ -1,9 +1,7 @@
 import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { Route } from '@playwright/test'
 
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   MULTI_OUTPUT_FIRST,
   MULTI_OUTPUT_JOB_ID,
@@ -14,13 +12,10 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({ connectWebSocketToServer: false })
 
-// The last unverified link in the PM-1157/PM-1158 chain: what the SENT message
-// requests for a dragged NON-IMAGE output.
-//
-// #18197 proved the drag source is correct (a nested row attaches its own
-// output), and #18104 repaired `UserMessage`'s `splitAttachments` to prefer
-// `item.previewUrl`. This covers the remaining non-image path: the drag must
-// publish the asset's content URL rather than make the sent message rebuild
+// What the SENT message requests for a dragged nested video output (PM-1157/
+// PM-1158). #18197 proved the drag source is correct: a nested row attaches
+// its own output. This covers the send path: the sent message must keep the
+// dragged video's media URL rather than rebuild
 // `/view?filename=<ref>&type=input` from the display filename.
 //
 // This drives the REAL drag out of the panel rather than synthesizing a
@@ -40,7 +35,7 @@ const REPRESENTATIVE_VIDEO = {
 test(
   'renders a nested video output from its media URL, not its display name',
   { tag: ['@cloud', '@agent'] },
-  async ({ page, workflowSelection, promptHistory }) => {
+  async ({ page, agentPanel, workflowSelection, promptHistory }) => {
     // The boot fixture already routed `/api/assets` to an empty list, so these
     // are registered afterwards on purpose: Playwright matches the most
     // recently registered route first.
@@ -65,36 +60,16 @@ test(
         })
     )
 
-    // Serve every asset content URL, and record which ones the page asks for.
-    const contentRequests: string[] = []
-    await page.route(/\/api\/assets\/[^/]+\/content(\?.*)?$/, async (route) => {
-      contentRequests.push(new URL(route.request().url()).pathname)
-      await route.fulfill({
+    const serveVideo = (route: Route) =>
+      route.fulfill({
         path: assetPath('workflowInMedia/workflow.mp4'),
         contentType: 'video/mp4'
       })
-    })
+    await page.route(/\/api\/assets\/[^/]+\/content(\?.*)?$/, serveVideo)
+    await page.route(/\/api\/view\?.*/, serveVideo)
 
-    // The ref-based fallback lookup. Recorded rather than failed, so the test
-    // reports which URL the product actually chose.
-    const viewRequests: string[] = []
-    await page.route(/\/api\/view\?.*/, async (route) => {
-      viewRequests.push(route.request().url())
-      await route.fulfill({
-        path: assetPath('workflowInMedia/workflow.mp4'),
-        contentType: 'video/mp4'
-      })
-    })
-
-    await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
+    const panel = await agentPanel.open()
+    await agentPanel.chooseWorkflow()
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
     workflowSelection.finishSave(true)
 
@@ -109,27 +84,14 @@ test(
     await expect(nestedRow).toBeVisible()
     await nestedRow.dragTo(panel)
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     // `fill` would clear the ProseMirror doc and drop the attachment atom.
-    await composer.pressSequentially('use this generation')
-    await panel
-      .getByRole('button', { name: enMessages.agent.send, exact: true })
-      .click()
+    await agentPanel.composer.pressSequentially('use this generation')
+    await agentPanel.sendButton.click()
     await expect.poll(() => promptHistory.requests.length).toBe(1)
 
-    const video = panel.getByTestId('reply-video-preview')
-    await expect(video).toBeVisible()
-
-    // The dragged output is what the sent message must show. A nested output
-    // has no hash, so a ref-based `/view?filename=<display name>&type=input`
-    // only resolves when the display name happens to equal the storage name -
-    // the PM-1157/PM-1158 shape. Assert the source identifies the dragged
-    // asset by its own id instead.
-    const src = await video.getAttribute('src')
-    expect(
-      src,
-      `sent video src was ${src}; content requests: ${contentRequests.join(', ')}; ` +
-        `ref-based /view requests: ${viewRequests.join(', ')}`
-    ).toContain(`/assets/${NESTED_VIDEO.id}/content`)
+    await expect(panel.getByTestId('reply-video-preview')).toHaveAttribute(
+      'src',
+      new RegExp(`/assets/${NESTED_VIDEO.id}/content`)
+    )
   }
 )

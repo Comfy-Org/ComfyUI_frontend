@@ -51,6 +51,7 @@ import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
@@ -64,12 +65,10 @@ interface SessionNotice {
   text: string
 }
 
-interface SentAttachment {
-  ref: string
-  name: string
-  previewUrl?: string
-  mediaUrl?: string
-}
+type SentAttachment = Pick<
+  ComposerAttachment,
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+>
 
 interface SentTag {
   id: string
