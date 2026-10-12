@@ -20,11 +20,14 @@ describe('OpenjutsuPanel', () => {
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: 'Trim: Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)'
+        name: 'Trim: 2.0–8.0 s of 20.0 s'
       })
     )
 
     expect(emitted('trim')).toHaveLength(1)
+    expect(
+      screen.getByText('Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)')
+    ).toBeVisible()
   })
 
   it.for([

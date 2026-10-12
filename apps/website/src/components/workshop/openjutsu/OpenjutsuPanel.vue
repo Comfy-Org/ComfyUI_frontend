@@ -62,15 +62,15 @@ const sizeValue = computed({
   }
 })
 
-const partSummary = computed(() =>
+const part = computed(() =>
   clipSeconds === undefined || range === undefined || partSeconds === undefined
     ? undefined
-    : t('openjutsu.trim.summary', {
+    : {
         from: range.start.toFixed(1),
         to: (range.start + partSeconds).toFixed(1),
         seconds: partSeconds.toFixed(1),
         total: clipSeconds.toFixed(1)
-      })
+      }
 )
 </script>
 
@@ -86,7 +86,7 @@ const partSummary = computed(() =>
       @file="emit('video', $event)"
     >
       <button
-        v-if="partSummary"
+        v-if="part"
         type="button"
         class="flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/80 px-2.5 py-1 text-xs text-primary-warm-white tabular-nums transition hover:bg-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         data-testid="openjutsu-part"
@@ -94,9 +94,16 @@ const partSummary = computed(() =>
       >
         <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
-        {{ partSummary }}
+        {{ t('openjutsu.trim.chip', part) }}
       </button>
     </EditorSourceTile>
+    <p
+      v-if="part"
+      class="-mt-1 px-1 text-xs/relaxed text-primary-warm-gray"
+      data-testid="openjutsu-part-summary"
+    >
+      {{ t('openjutsu.trim.summary', part) }}
+    </p>
 
     <EditorSourceTile
       kind="image"
@@ -132,7 +139,7 @@ const partSummary = computed(() =>
       </p>
     </section>
 
-    <div class="grid grid-cols-2 gap-2">
+    <div class="flex flex-col gap-2">
       <CinematicMenu
         v-model="sizeValue"
         :options="sizes"
