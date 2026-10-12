@@ -126,6 +126,31 @@ try {
   const review = await guest.get('/admin/catalog-api/staging')
   expect(review.status()).toBe(200)
   const snapshot = snapshotSchema.parse(await review.json())
+  // Even a short current queue must exercise a long page without changing data.
+  const live = page.getByRole('button', { name: 'Open live site', exact: true })
+  const beforeScroll = await live.boundingBox()
+  if (!beforeScroll) throw new Error('LIVE control missing')
+  await page.locator('aside + section').evaluate((section) => {
+    section.setAttribute(
+      'data-scroll-original-style',
+      section.getAttribute('style') ?? ''
+    )
+    if (section instanceof HTMLElement) section.style.minHeight = '2500px'
+  })
+  await page.evaluate(() => window.scrollTo(0, 1400))
+  await expect(live).toBeInViewport()
+  const afterScroll = await live.boundingBox()
+  if (!afterScroll) throw new Error('LIVE control scrolled away')
+  expect(Math.abs(afterScroll.y - beforeScroll.y)).toBeLessThan(2)
+  expect(afterScroll.x).toBeLessThan(240)
+  await page.locator('aside + section').evaluate((section) => {
+    section.setAttribute(
+      'style',
+      section.getAttribute('data-scroll-original-style') ?? ''
+    )
+    section.removeAttribute('data-scroll-original-style')
+  })
+  await page.evaluate(() => window.scrollTo(0, 0))
   const unresolved = `You still have ${snapshot.unresolved_count} entries not approved or deferred.`
   if (snapshot.unresolved_count > 0) {
     await expect(page.getByRole('button', { name: 'Next →', exact: true })).toBeDisabled()

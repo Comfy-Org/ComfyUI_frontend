@@ -66,7 +66,7 @@ const itemClass =
     class="grid min-h-[calc(100dvh-var(--cms-preview-offset,0px))] grid-cols-[minmax(0,1fr)] content-start bg-admin-page font-admin text-admin-fg lg:grid-cols-[15rem_minmax(0,1fr)] lg:content-stretch"
   >
     <aside
-      class="flex flex-col gap-4 border-b border-admin-line bg-admin-chrome px-3 py-3 lg:sticky lg:top-(--cms-preview-offset,0px) lg:h-[calc(100dvh-var(--cms-preview-offset,0px))] lg:border-r lg:border-b-0"
+      class="flex flex-col gap-4 border-b border-admin-line bg-admin-chrome px-3 py-3 lg:fixed lg:inset-y-0 lg:top-(--cms-preview-offset,0px) lg:left-0 lg:z-20 lg:w-60 lg:border-r lg:border-b-0"
     >
       <a
         :href="links.find((link) => link.key === 'draft')?.href ?? '/admin/'"
@@ -88,7 +88,7 @@ const itemClass =
       </a>
       <nav
         :aria-label="t('cccConsole.navigation')"
-        class="flex gap-1 overflow-x-auto lg:flex-col"
+        class="flex gap-1 overflow-x-auto lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto"
       >
         <a
           v-for="link in links"
@@ -133,7 +133,7 @@ const itemClass =
         </template>
       </nav>
       <div
-        class="mt-auto hidden gap-1 rounded-lg border border-admin-line p-3 lg:grid"
+        class="mt-auto hidden shrink-0 gap-1 rounded-lg border border-admin-line p-3 lg:grid"
       >
         <p class="flex items-center gap-2 text-xs">
           <span
@@ -157,7 +157,7 @@ const itemClass =
       </div>
       <slot name="sidebar-footer" />
     </aside>
-    <section class="min-w-0 px-4 py-6 sm:px-8 lg:py-8">
+    <section class="min-w-0 px-4 py-6 sm:px-8 lg:col-start-2 lg:py-8">
       <div class="mx-auto max-w-8xl"><slot /></div>
     </section>
   </div>
