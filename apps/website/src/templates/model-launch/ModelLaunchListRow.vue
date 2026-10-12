@@ -6,6 +6,7 @@ import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchListItem } from './types'
 
+import PlayPauseButton from '@/components/common/PlayPauseButton.vue'
 import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', item } = defineProps<{
@@ -63,40 +64,19 @@ const trailingLabels = computed(() => [
       />
     </audio>
 
-    <button
+    <PlayPauseButton
       v-if="item.audioSources"
-      type="button"
+      :playing
       :aria-label="playing ? t('player.pause') : t('player.play')"
-      class="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-warm-white text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
       @click="playing = !playing"
-    >
-      <svg
-        v-if="playing"
-        class="size-4"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <rect x="6" y="4" width="4" height="16" />
-        <rect x="14" y="4" width="4" height="16" />
-      </svg>
-      <svg
-        v-else
-        class="ml-0.5 size-4"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path d="M8 5v14l11-7z" />
-      </svg>
-    </button>
+    />
     <a
       v-else
       :href="item.href"
       target="_blank"
       rel="noopener noreferrer"
       :aria-label="title"
-      class="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-warm-white text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow"
+      class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90"
     >
       <ArrowRight class="size-5" :stroke-width="2.5" />
     </a>
