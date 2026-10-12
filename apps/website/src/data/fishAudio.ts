@@ -44,6 +44,8 @@ export const fishAudioPage: ModelLaunchPage = {
   breadcrumbLabelKey: 'fishAudio.breadcrumb.model',
   breadcrumbUpdatedKey: 'fishAudio.breadcrumb.updated',
   hero: {
+    videoSrc: '/hero/fish-audio.mp4',
+    posterSrc: '/hero/fish-audio-poster.jpg',
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
