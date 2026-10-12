@@ -4,8 +4,6 @@ import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { createI18n } from 'vue-i18n'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
@@ -44,13 +42,17 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import {
+  agentHumanAddBlueprint,
+  agentNestedSubgraphDefinition
+} from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -67,14 +69,6 @@ const CANCEL_TIMEOUT = 10_000
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so the fixture renders the message
-// with the same library over the same locale file.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
@@ -254,7 +248,9 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
-    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -297,7 +293,8 @@ export class AgentConversationHarness {
   async boot(
     agentFlag: boolean,
     vueNodes: boolean,
-    bootAssets: ListAssetsResponse
+    bootAssets: ListAssetsResponse,
+    telemetryEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
@@ -306,6 +303,7 @@ export class AgentConversationHarness {
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
+      features: { enable_telemetry: telemetryEnabled },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
@@ -858,6 +856,12 @@ export class AgentConversationHarness {
     )
   }
 
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
+    )
+  }
+
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
@@ -1273,6 +1277,8 @@ interface ConversationFixtures {
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
+  // Opt in only for cases that assert telemetry through hostTelemetryFixture.
+  telemetryEnabled: boolean
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1286,6 +1292,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  telemetryEnabled: [false, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1306,7 +1313,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      bootAssets
+      bootAssets,
+      telemetryEnabled
     },
     use,
     testInfo
@@ -1327,7 +1335,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)
   }
 })
