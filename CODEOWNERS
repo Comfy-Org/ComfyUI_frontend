@@ -257,10 +257,6 @@
 /src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts @Comfy-Org/comfy_frontend_devs
 
-/docs/architecture/domains/records/prompt-authoring.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/note-nodes.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/text-output-preview.domain.json @Comfy-Org/comfy_frontend_devs
-/docs/architecture/domains/records/hdr-viewer.domain.json @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/dynamicPrompts.ts            @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/dynamicPrompts.test.ts       @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/editAttention.ts            @Comfy-Org/comfy_frontend_devs
