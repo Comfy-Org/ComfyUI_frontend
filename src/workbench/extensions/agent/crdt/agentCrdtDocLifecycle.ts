@@ -1,7 +1,7 @@
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_ACK_TIMEOUT_MS,

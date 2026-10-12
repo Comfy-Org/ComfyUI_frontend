@@ -1,19 +1,19 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useClipboard } from '@vueuse/core'
+import type { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 import { i18n } from '@/i18n'
 
 const { writeText } = vi.hoisted(() => ({
-  writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
-    Promise.resolve()
+  writeText: vi.fn<ReturnType<typeof useCopyToClipboard>['copyToClipboard']>(
+    () => Promise.resolve(true)
   )
 }))
 
-vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({ copyToClipboard: (text) => writeText(text) })
+}))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -24,7 +24,7 @@ import {
   devEvents,
   recordDevEvent,
   stringifyDevEvents
-} from './devPanelLog'
+} from './crdtLog'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -70,15 +70,10 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
-    vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()
-    Object.defineProperty(window.navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText }
-    })
   })
 
   it('copies the displayed document id', async () => {
@@ -96,16 +91,8 @@ describe('CrdtDevPanel clipboard controls', () => {
     const collectReport = vi
       .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
       .mockResolvedValue(report)
-    vi.mocked(useClipboard).mockReturnValue(
-      fromPartial({ copy: vi.fn(() => Promise.resolve()) })
-    )
     const user = userEvent.setup()
-    const writeReport = vi
-      .spyOn(navigator.clipboard, 'writeText')
-      .mockResolvedValue(undefined)
-      .mockRejectedValueOnce(
-        new DOMException('Clipboard denied', 'NotAllowedError')
-      )
+    writeText.mockResolvedValueOnce(false)
     renderPanel()
 
     await user.click(screen.getByRole('button', { name: 'Copy full report' }))
@@ -119,7 +106,7 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Retry copy report' }))
 
-    expect(writeReport).toHaveBeenLastCalledWith(report)
+    expect(writeText).toHaveBeenLastCalledWith(report)
     expect(collectReport).toHaveBeenCalledOnce()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
@@ -189,7 +176,7 @@ describe('CrdtDevPanel clipboard controls', () => {
   it('shows transient Copy failed feedback when the clipboard write fails', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      writeText.mockRejectedValueOnce(new Error('NotAllowedError'))
+      writeText.mockResolvedValueOnce(false)
       renderPanel()
 
       const docButton = screen.getByRole('button', {
@@ -302,10 +289,16 @@ describe('CrdtDevPanel clipboard controls', () => {
     let resolveSecond: (() => void) | undefined
     writeText
       .mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveFirst = resolve))
+        () =>
+          new Promise<boolean>(
+            (resolve) => (resolveFirst = () => resolve(true))
+          )
       )
       .mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveSecond = resolve))
+        () =>
+          new Promise<boolean>(
+            (resolve) => (resolveSecond = () => resolve(true))
+          )
       )
     recordDevEvent('doc_nodes_changed', {
       added: ['node-a', 'node-b'],
@@ -333,7 +326,10 @@ describe('CrdtDevPanel clipboard controls', () => {
     try {
       let resolveWrite: (() => void) | undefined
       writeText.mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveWrite = resolve))
+        () =>
+          new Promise<boolean>(
+            (resolve) => (resolveWrite = () => resolve(true))
+          )
       )
       const panel = renderPanel()
       screen

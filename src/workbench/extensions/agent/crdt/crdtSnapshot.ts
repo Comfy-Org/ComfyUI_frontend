@@ -1,11 +1,3 @@
-/**
- * The follower's read-only view of its own document.
- *
- * Split out of `crdtDebugReport.ts` so the composable — which every agent
- * panel loads eagerly — does not pull the report collector, its redaction
- * helpers and the extension store into that bundle. Only the debug panel,
- * behind its async boundary, needs those.
- */
 import {
   appliedOpIds,
   readGraph,
@@ -13,6 +5,7 @@ import {
   readStamps
 } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
+import { sanitizeSecrets } from '@/platform/telemetry/redact'
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -44,9 +37,16 @@ export function readCrdtSnapshot(
     'meta' | 'nodeIds' | 'linkIds' | 'appliedOpIds' | 'stamps'
   >
 ): CrdtDebugSnapshot {
+  const snapshot = {
+    ...base,
+    schemaError:
+      base.schemaError === null
+        ? null
+        : String(sanitizeSecrets(base.schemaError))
+  }
   if (doc === null) {
     return {
-      ...base,
+      ...snapshot,
       meta: {},
       nodeIds: [],
       linkIds: [],
@@ -57,19 +57,18 @@ export function readCrdtSnapshot(
   try {
     const graph = readGraph(doc)
     return {
-      ...base,
-      meta: readMeta(doc),
+      ...snapshot,
+      meta: sanitizeSecrets(readMeta(doc)),
       nodeIds: Object.keys(graph.nodes),
       linkIds: Object.keys(graph.links),
       appliedOpIds: appliedOpIds(doc),
-      stamps: readStamps(doc)
+      stamps: sanitizeSecrets(readStamps(doc))
     }
   } catch (error) {
-    // A doc this build cannot read (KA-11) still has to produce a report —
-    // that failure IS the bug being reported.
     return {
-      ...base,
-      schemaError: base.schemaError ?? String(error),
+      ...snapshot,
+      schemaError:
+        snapshot.schemaError ?? String(sanitizeSecrets(String(error))),
       meta: {},
       nodeIds: [],
       linkIds: [],

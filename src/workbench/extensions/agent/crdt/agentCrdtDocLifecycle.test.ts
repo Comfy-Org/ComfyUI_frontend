@@ -8,9 +8,9 @@ import {
   SUBSCRIBE_ACK_TIMEOUT_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './lifecycleTiming'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 
-vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
+vi.mock(import('./crdtLog'), () => ({ recordDevEvent: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
