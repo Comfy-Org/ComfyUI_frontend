@@ -4,41 +4,70 @@ import type { WorkflowReference } from '../types/workflowReference'
 import { workflowReferenceParts } from './workflowReferenceParts'
 
 describe('workflowReferenceParts', () => {
-  it('returns no parts for empty text and no references', () => {
-    expect(workflowReferenceParts('', [])).toEqual([])
-  })
+  const leading: WorkflowReference = {
+    id: 'a',
+    name: 'Lighting',
+    textOffset: 0
+  }
+  const middle: WorkflowReference = {
+    id: 'a',
+    name: 'Lighting',
+    textOffset: 5
+  }
+  const negative: WorkflowReference = {
+    id: 'a',
+    name: 'Lighting',
+    textOffset: -1
+  }
 
-  it('returns the whole string as one text part when there are no references', () => {
-    expect(workflowReferenceParts('  Use this\n', [])).toEqual([
-      { type: 'text', text: '  Use this\n' }
-    ])
-  })
-
-  it('keeps a lone leading reference and the remaining text', () => {
-    const lighting: WorkflowReference = {
-      id: 'a',
-      name: 'Lighting',
-      textOffset: 0
+  it.for([
+    { name: 'empty text', text: '', expected: [] },
+    {
+      name: 'complete text with whitespace',
+      text: '  Use this\n',
+      expected: [{ type: 'text', text: '  Use this\n' }]
     }
-
-    expect(workflowReferenceParts(' into the scene', [lighting])).toEqual([
-      { type: 'workflow', reference: lighting },
-      { type: 'text', text: ' into the scene' }
-    ])
+  ])('returns $name with no references', ({ text, expected }) => {
+    expect(workflowReferenceParts(text, [])).toEqual(expected)
   })
 
-  it('splits around a mid-string reference and keeps surrounding whitespace', () => {
-    const lighting: WorkflowReference = {
-      id: 'a',
-      name: 'Lighting',
-      textOffset: 5
+  it.for([
+    {
+      name: 'at the beginning',
+      text: ' into the scene',
+      reference: leading,
+      expected: [
+        { type: 'workflow', reference: leading },
+        { type: 'text', text: ' into the scene' }
+      ]
+    },
+    {
+      name: 'in the middle with surrounding whitespace',
+      text: 'Copy  into .',
+      reference: middle,
+      expected: [
+        { type: 'text', text: 'Copy ' },
+        { type: 'workflow', reference: middle },
+        { type: 'text', text: ' into .' }
+      ]
+    },
+    {
+      name: 'before the complete text for a negative offset',
+      text: 'Use this',
+      reference: negative,
+      expected: [
+        { type: 'workflow', reference: negative },
+        { type: 'text', text: 'Use this' }
+      ]
+    },
+    {
+      name: 'with empty text',
+      text: '',
+      reference: leading,
+      expected: [{ type: 'workflow', reference: leading }]
     }
-
-    expect(workflowReferenceParts('Copy  into .', [lighting])).toEqual([
-      { type: 'text', text: 'Copy ' },
-      { type: 'workflow', reference: lighting },
-      { type: 'text', text: ' into .' }
-    ])
+  ])('places one reference $name', ({ text, reference, expected }) => {
+    expect(workflowReferenceParts(text, [reference])).toEqual(expected)
   })
 
   it('emits multiple references in textOffset order without mutating input', () => {
@@ -67,34 +96,26 @@ describe('workflowReferenceParts', () => {
     ])
   })
 
-  it('treats textOffset as a UTF-16 index and clamps past the string', () => {
+  it('treats textOffset as a UTF-16 index', () => {
     const afterEmoji: WorkflowReference = {
       id: 'a',
       name: 'A',
       textOffset: 2
     }
-    const pastEnd: WorkflowReference = { id: 'b', name: 'B', textOffset: 99 }
 
     expect(workflowReferenceParts('😀x', [afterEmoji])).toEqual([
       { type: 'text', text: '😀' },
       { type: 'workflow', reference: afterEmoji },
       { type: 'text', text: 'x' }
     ])
+  })
+
+  it('clamps offsets past the string', () => {
+    const pastEnd: WorkflowReference = { id: 'b', name: 'B', textOffset: 99 }
+
     expect(workflowReferenceParts('Hi', [pastEnd])).toEqual([
       { type: 'text', text: 'Hi' },
       { type: 'workflow', reference: pastEnd }
-    ])
-  })
-
-  it('still emits a reference when the prompt text is empty', () => {
-    const lighting: WorkflowReference = {
-      id: 'a',
-      name: 'Lighting',
-      textOffset: 0
-    }
-
-    expect(workflowReferenceParts('', [lighting])).toEqual([
-      { type: 'workflow', reference: lighting }
     ])
   })
 })

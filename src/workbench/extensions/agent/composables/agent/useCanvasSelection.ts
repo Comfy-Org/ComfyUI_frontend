@@ -20,10 +20,11 @@ export interface UseCanvasSelectionOptions {
   isLive: MaybeRefOrGetter<boolean>
   enabled?: MaybeRefOrGetter<boolean>
   isTracking?: MaybeRefOrGetter<boolean>
-  isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
   retainStagedNode?: (node: SelectedNode) => boolean
+  /** User additions from canvas tracking or a mention, never draft restoration. */
+  onNodesAdded?: () => void
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
@@ -52,6 +53,13 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     ]
   }
 
+  function stageUserSelection(nodes: SelectedNode[]): void {
+    const previousKeys = new Set(staged.value.map(selectedNodeKey))
+    if (nodes.some((node) => !previousKeys.has(selectedNodeKey(node))))
+      options.onNodesAdded?.()
+    staged.value = nodes
+  }
+
   watch(
     () => toValue(options.enabled ?? true),
     (enabled) => {
@@ -70,12 +78,10 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
           [
             toValue(options.isLive),
             toValue(options.isTracking ?? true),
-            toValue(options.isPaused ?? false),
             toValue(options.scope ?? null),
             toValue(options.selection)
           ] as const,
-        ([isLive, isTracking, isPaused, scope, nodes]) => {
-          if (isPaused) return
+        ([isLive, isTracking, scope, nodes]) => {
           if (!isLive) {
             if (options.retainWhenNotLive) return
             staged.value = []
@@ -101,7 +107,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
           if (sig === consumedSig.value || sig === stagedSig.value) return
           consumedSig.value = null
           stagedSig.value = sig
-          staged.value = projectedNodes
+          stageUserSelection(projectedNodes)
         },
         { immediate: true, deep: true, flush: 'sync' }
       )
@@ -138,7 +144,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       staged.value.some((tag) => selectedNodeKey(tag) === selectedNodeKey(node))
     )
       return
-    staged.value = [...staged.value, node]
+    stageUserSelection([...staged.value, node])
   }
 
   function replace(nodes: SelectedNode[]): void {

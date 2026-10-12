@@ -276,7 +276,7 @@ async function signInWithEmail(page: Page) {
   )
   await page.getByRole('button', { name: 'Use email instead' }).click()
   await page.getByLabel('Email').fill(CLOUD_SELF_EMAIL)
-  await page.getByLabel('Password').fill('password')
+  await page.getByLabel('Password', { exact: true }).fill('password')
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByTestId(TestIds.user.currentUserButton)).toBeVisible()
 }

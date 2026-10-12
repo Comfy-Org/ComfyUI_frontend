@@ -81,9 +81,9 @@ export type WorkshopUrlEncoder = (
   signal: AbortSignal
 ) => Promise<string>
 
-async function uploadUrlInput(
-  field: FieldSchema,
+export async function uploadWorkshopFile(
   file: File,
+  name: string,
   signal: AbortSignal,
   upload?: WorkshopUrlEncoder
 ): Promise<string> {
@@ -92,9 +92,7 @@ async function uploadUrlInput(
     if (!upload) throw new Error('Upload unavailable')
     const url = await upload(file, signal)
     signal.throwIfAborted()
-    const errors = validateForm([field], { [field.name]: url })
-    if (!isHttpImageSource(url) || Object.keys(errors).length)
-      throw new Error('Invalid upload URL')
+    if (!isHttpImageSource(url)) throw new Error('Invalid upload URL')
     return url
   } catch (error) {
     signal.throwIfAborted()
@@ -103,7 +101,7 @@ async function uploadUrlInput(
       error.stage === 'upload_put' &&
       !error.response
     )
-      await readWorkshopFile(file.slice(0, 1), signal, field.name)
+      await readWorkshopFile(file.slice(0, 1), signal, name)
     const failure =
       error instanceof WorkshopRouterError
         ? error
@@ -111,11 +109,26 @@ async function uploadUrlInput(
     throw new WorkshopRouterError(
       'upload',
       failure.requestId,
-      { [field.name]: 'uploadFailed' },
+      { [name]: 'uploadFailed' },
       failure.response,
       failure.stage
     )
   }
+}
+
+async function uploadUrlInput(
+  field: FieldSchema,
+  file: File,
+  signal: AbortSignal,
+  upload?: WorkshopUrlEncoder
+): Promise<string> {
+  const url = await uploadWorkshopFile(file, field.name, signal, upload)
+  const errors = validateForm([field], { [field.name]: url })
+  if (Object.keys(errors).length)
+    throw new WorkshopRouterError('upload', null, {
+      [field.name]: 'uploadFailed'
+    })
+  return url
 }
 
 export async function resolveWorkshopUrlInputs(

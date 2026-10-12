@@ -23,8 +23,8 @@ application behavior.
   - File name must be fs-friendly scenario name
   - Test must be placed in a describe matching the top-level test plan item
   - Test title must match the scenario name
-  - Includes a comment with the step text before each step execution. Do not duplicate comments if step requires
-    multiple actions.
+  - Wraps each plan step in `test.step('<step text>', ...)`. A step that needs multiple actions is still one
+    `test.step`. Do not write comments.
   - Always use best practices from the log when generating tests.
 
    <example-generation>
@@ -49,13 +49,11 @@ application behavior.
   Following file is generated:
 
   ```ts file=add-valid-todo.spec.ts
-  // spec: specs/plan.md
-  // seed: tests/seed.spec.ts
-
   test.describe('Adding New Todos', () => {
     test('Add Valid Todo', async { page } => {
-      // 1. Click in the "What needs to be done?" input field
-      await page.click(...);
+      await test.step('Click in the "What needs to be done?" input field', async () => {
+        await page.click(...);
+      });
 
       ...
     });

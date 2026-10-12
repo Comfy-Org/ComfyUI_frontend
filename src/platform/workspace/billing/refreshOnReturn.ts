@@ -1,27 +1,53 @@
 /**
  * A cancellation, card change, or payment made in a hosted tab never pushes
- * back to this one, so the next `focus`/`visibilitychange` re-reads whatever
- * that tab could have changed. Shared by every opener of a hosted billing
- * tab or window so they arm the same return signal one way.
+ * back to this one, so every return to this tab re-reads whatever that tab
+ * could have changed. A return is leaving (`blur` or hidden) and coming back
+ * (`focus` or visible): the focus and visibility events of one return count
+ * once, and a return that lands while a refresh is still in flight gets one
+ * trailing refresh, because that read may predate what the hosted tab just
+ * did. It stays armed until the returned callback runs. Shared by every
+ * opener of a hosted billing tab or window so they arm the same return
+ * signal one way.
  */
 export function registerRefreshOnReturn(
   refresh: () => Promise<unknown>
 ): () => void {
-  const stopListening = () => {
-    document.removeEventListener('visibilitychange', onReturn)
-    window.removeEventListener('focus', onReturn)
+  let away = true
+  let inFlight = false
+  let trailing = false
+
+  const run = () => {
+    inFlight = true
+    void refresh().finally(() => {
+      inFlight = false
+      if (!trailing) return
+      trailing = false
+      run()
+    })
   }
-  const onReturn = (event: Event) => {
-    if (
-      event.type === 'visibilitychange' &&
-      document.visibilityState !== 'visible'
-    ) {
+  const onLeave = () => {
+    away = true
+  }
+  const onReturn = () => {
+    if (!away) return
+    away = false
+    if (inFlight) {
+      trailing = true
       return
     }
-    stopListening()
-    void refresh()
+    run()
   }
-  document.addEventListener('visibilitychange', onReturn)
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') onReturn()
+    else onLeave()
+  }
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('focus', onReturn)
-  return stopListening
+  window.addEventListener('blur', onLeave)
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    window.removeEventListener('focus', onReturn)
+    window.removeEventListener('blur', onLeave)
+  }
 }

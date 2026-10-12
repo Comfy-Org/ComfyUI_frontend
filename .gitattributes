@@ -15,3 +15,7 @@ apps/website/src/content/workshop-router-aliases.json linguist-generated=true
 apps/website/src/data/workshop-router-identity-audit.json linguist-generated=true
 apps/website/src/data/workshop-router-openapi.snapshot.json linguist-generated=true
 apps/website/src/data/workshop-node-pricing.json linguist-generated=true
+apps/website/src/config/model-urls.ts linguist-generated=true
+apps/website/MODEL_URL_MAP.md linguist-generated=true
+apps/website/vercel.json linguist-generated=true
+apps/website/src/config/hub-workflow-names.json linguist-generated=true

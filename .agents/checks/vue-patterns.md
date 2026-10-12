@@ -31,6 +31,7 @@ Available shadcn-vue replacements in `src/components/ui/`:
 - `stepper/` — Stepper
 - `tags-input/` — TagsInput
 - `search-input/` — SearchInput
+- `toast/` — `useToast()` store (`success/error/info/warning/loading`), Toaster, ToastDock, ToastPanel
 - `Popover.vue` — Popover
 
 For Reka UI primitives not yet wrapped, create a new component in `src/components/ui/` following the pattern in existing components (see `src/components/ui/AGENTS.md`): use `useForwardProps`, `cn()`, design tokens.

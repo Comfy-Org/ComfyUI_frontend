@@ -1,5 +1,5 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- stubs lack ARIA roles; data attributes for props */
-/* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- stubs lack ARIA roles; data attributes for props */
+/* oxlint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -172,6 +172,40 @@ describe('JobAssetsList', () => {
     expect(screen.getByText('Yesterday')).toBeTruthy()
     expect(container.querySelector('[data-job-id="job-1"]')).not.toBeNull()
     expect(container.querySelector('[data-job-id="job-2"]')).not.toBeNull()
+  })
+
+  it('lets keyboard users focus the scroll container', async () => {
+    const { user } = renderJobAssetsList({
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    expect(screen.getByRole('region', { name: 'Jobs' })).toHaveFocus()
+  })
+
+  it('lets callers opt the scroll container out of the tab order', async () => {
+    const { user } = renderJobAssetsList({
+      attrs: { tabindex: '-1' },
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    const list = screen.getByRole('region', { name: 'Jobs' })
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('leaves a list with no jobs out of the tab order and landmarks', async () => {
+    const { user } = renderJobAssetsList({ jobs: [] })
+
+    await user.tab()
+
+    const list = screen.getByTestId('job-assets-list')
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
   })
 
   it('forwards parent attrs to the scroll container', () => {

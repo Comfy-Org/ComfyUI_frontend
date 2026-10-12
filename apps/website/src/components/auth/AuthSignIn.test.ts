@@ -5,6 +5,8 @@ import { computed, readonly, ref } from 'vue'
 
 import type { User, UserCredential } from 'firebase/auth'
 
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
+
 import type {
   AccountCredential,
   SessionResult
@@ -14,11 +16,11 @@ import type {
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { dismissAllAuthToasts, useAuthToasts } from '@/config/auth-toast-state'
 import {
   testCredential,
   testFirebaseUser
-} from '../../config/__fixtures__/workshopSessionFakes'
+} from '@/config/__fixtures__/workshopSessionFakes'
 import {
   isNewWorkshopUser,
   isWorkshopProvisioningError,
@@ -28,16 +30,17 @@ import {
   signInWorkshopWithGoogle,
   signOutWorkshop,
   signUpWorkshopWithEmail
-} from '../../config/workshop-firebase'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-firebase'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { ssoStartUrlFor, warmSsoStartFlag } from '@/config/workshop-sso'
+import { t } from '@/i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -46,9 +49,10 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-firebase'))
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-firebase'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-sso'))
 
 const authFlag = ref(true)
 const authUser = ref<User | null>(null)
@@ -104,7 +108,7 @@ vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina
 }))
 
-const { messages: toasts } = useAuthToasts()
+const { toasts } = useAuthToasts()
 const replace = vi.fn<(url: string | URL) => void>()
 const assign = vi.fn<(url: string | URL) => void>()
 
@@ -120,6 +124,7 @@ beforeEach(() => {
   session.value = undefined
   settled.value = true
   vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue(okSession)
+  vi.mocked(ssoStartUrlFor).mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
   turnstileApi.render.mockImplementation(
     (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
@@ -133,7 +138,7 @@ beforeEach(() => {
   isInChina
     .mockReset()
     .mockImplementation(() => inChina.pending ?? Promise.resolve(inChina.value))
-  removeAllToasts()
+  dismissAllAuthToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
   assign.mockReset()
@@ -205,7 +210,7 @@ describe('AuthSignIn', () => {
     await clickGoogle()
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledWith(
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(
       expect.objectContaining({ uid: 'user-1' })
     )
   })
@@ -315,7 +320,7 @@ describe('AuthSignIn', () => {
       replace,
       'the cloud guard skips the redirect on switchAccount'
     ).not.toHaveBeenCalled()
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().ensureFresh).not.toHaveBeenCalled()
   })
 
   it('raises a warning toast when the visitor dismisses the pop-up', async () => {
@@ -331,10 +336,10 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('warn')
+    expect(toasts.value[0].kind).toBe('warning')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      t('auth.errors.auth/popup-closed-by-user', 'en')
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -429,7 +434,7 @@ describe('AuthSignIn', () => {
       })
     )
     expect(
-      vi.mocked(isNewWorkshopUser),
+      isNewWorkshopUser,
       'the cloud app hard-codes the answer for email; the provider is never asked'
     ).not.toHaveBeenCalled()
   })
@@ -492,9 +497,7 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     authFlag.value = false
     resolvePopup!(
@@ -513,7 +516,7 @@ describe('AuthSignIn', () => {
       'a flag disabled mid-flight must stop post-auth telemetry'
     ).not.toHaveBeenCalled()
     expect(
-      vi.mocked(useWorkshopSession().ensureFresh),
+      useWorkshopSession().ensureFresh,
       'and must not mint or persist a workspace session'
     ).not.toHaveBeenCalled()
   })
@@ -530,9 +533,7 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     authFlag.value = false
     resolvePopup!(
@@ -547,7 +548,7 @@ describe('AuthSignIn', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      vi.mocked(provisionWorkshopCustomer),
+      provisionWorkshopCustomer,
       'a disable during the popup must stop provisioning before it fires'
     ).not.toHaveBeenCalled()
     expect(captureAuthCompleted).not.toHaveBeenCalled()
@@ -565,9 +566,7 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     // A live boolean would pass (on at resolution); the generation must not.
     authFlag.value = false
@@ -584,7 +583,7 @@ describe('AuthSignIn', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      vi.mocked(provisionWorkshopCustomer),
+      provisionWorkshopCustomer,
       'an off->on flicker must still abandon the attempt'
     ).not.toHaveBeenCalled()
     expect(captureAuthCompleted).not.toHaveBeenCalled()
@@ -634,9 +633,7 @@ describe('AuthSignIn', () => {
     await user.click(submit)
     await user.click(submit)
 
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithEmail)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
   })
 
   it('recovers from an abandoned attempt so a later restore still signs in', async () => {
@@ -659,7 +656,7 @@ describe('AuthSignIn', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
@@ -709,7 +706,7 @@ describe('AuthSignIn', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
@@ -959,12 +956,12 @@ describe('AuthSignIn', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('error')
+    expect(toasts.value[0].kind).toBe('error')
     expect(
       alert.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
-    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
-    expect(toasts.value[0].life).toBeUndefined()
+    ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
+    expect(toasts.value[0].duration).toBe(Number.POSITIVE_INFINITY)
     expect(replace).not.toHaveBeenCalled()
   })
 
@@ -997,10 +994,8 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign up$/i }))
 
-    await waitFor(() =>
-      expect(vi.mocked(signUpWorkshopWithEmail)).toHaveBeenCalledOnce()
-    )
-    expect(vi.mocked(signUpWorkshopWithEmail)).toHaveBeenCalledWith(
+    await waitFor(() => expect(signUpWorkshopWithEmail).toHaveBeenCalledOnce())
+    expect(signUpWorkshopWithEmail).toHaveBeenCalledWith(
       'user@example.com',
       'Password1!',
       'cf-token'
@@ -1020,9 +1015,7 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithEmail)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
     expect(
       screen.queryByText(/pop-up window/i),
       'no pop-up exists in the email flow; the copy must not tell users to look for one'
@@ -1216,7 +1209,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
@@ -1246,7 +1239,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
@@ -1276,7 +1269,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
 
     unmount()
@@ -1299,7 +1292,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
 
     unmount()
@@ -1311,7 +1304,7 @@ describe('AuthSignIn controller lifecycle', () => {
       'provisioning completing after teardown must not continue the flow'
     ).not.toHaveBeenCalled()
     expect(
-      vi.mocked(useWorkshopSession().ensureFresh),
+      useWorkshopSession().ensureFresh,
       'and must not mint a session for a torn-down attempt'
     ).not.toHaveBeenCalled()
   })
@@ -1326,16 +1319,14 @@ describe('AuthSignIn controller lifecycle', () => {
     const { unmount } = render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     unmount()
     resolvePopup!(socialUser)
     await flush()
 
     expect(
-      vi.mocked(provisionWorkshopCustomer),
+      provisionWorkshopCustomer,
       'a popup resolving after teardown must not provision'
     ).not.toHaveBeenCalled()
     expect(captureAuthCompleted).not.toHaveBeenCalled()
@@ -1351,16 +1342,14 @@ describe('AuthSignIn controller lifecycle', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     authFlag.value = false
     resolvePopup!(socialUser)
     await flush()
 
     expect(
-      vi.mocked(signOutWorkshop),
+      signOutWorkshop,
       'abandoning after Firebase auth succeeded must roll the persisted identity back'
     ).toHaveBeenCalledOnce()
   })
@@ -1374,7 +1363,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
     expect(googleButton()).toHaveProperty('disabled', true)
 
@@ -1395,7 +1384,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
 
     await vi.advanceTimersByTimeAsync(16_000)
@@ -1405,7 +1394,7 @@ describe('AuthSignIn controller lifecycle', () => {
       'a slow-but-valid provider keeps the user signed in and says setup did not finish'
     ).toContain('account setup did not finish')
     expect(
-      vi.mocked(signOutWorkshop),
+      signOutWorkshop,
       'a provisioning timeout must not tear the fresh identity down like a full sign-out'
     ).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
@@ -1430,9 +1419,7 @@ describe('AuthSignIn controller lifecycle', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     authFlag.value = false
     resolvePopup!(socialUser)
@@ -1442,7 +1429,7 @@ describe('AuthSignIn controller lifecycle', () => {
     await flush()
 
     expect(
-      vi.mocked(signOutWorkshop),
+      signOutWorkshop,
       'abandoning after auth rolls the persisted identity back once'
     ).toHaveBeenCalledOnce()
     expect(
@@ -1461,7 +1448,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
     )
 
     await vi.advanceTimersByTimeAsync(16_000)
@@ -1478,7 +1465,7 @@ describe('AuthSignIn controller lifecycle', () => {
       'a provisioning result settling after the deadline must not continue the flow'
     ).not.toHaveBeenCalled()
     expect(
-      vi.mocked(useWorkshopSession().ensureFresh),
+      useWorkshopSession().ensureFresh,
       'and must not mint a session for the abandoned attempt'
     ).not.toHaveBeenCalled()
     expect(
@@ -1511,15 +1498,13 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
     resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
-    await waitFor(() =>
-      expect(vi.mocked(signOutWorkshop)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
 
     // The first attempt's own bounded rollback wait recovers its controls.
     authFlag.value = true
@@ -1582,15 +1567,13 @@ describe('AuthSignIn controller lifecycle', () => {
 
     await clickGoogle()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
 
     authFlag.value = false
     resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
-    await waitFor(() =>
-      expect(vi.mocked(signOutWorkshop)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
 
     // The sign-out outruns its own deadline; the controls recover even though
     // the rollback is still in flight — the deadline's benefit is preserved.
@@ -1619,7 +1602,7 @@ describe('AuthSignIn controller lifecycle', () => {
       "the retry's authentication is ordered strictly after the stale sign-out settles, or that sign-out would clear the new attempt's identity"
     ).toEqual(['authenticate', 'signOut:settled', 'authenticate'])
     expect(
-      vi.mocked(signOutWorkshop),
+      signOutWorkshop,
       'the new attempt must not be signed out by the abandoned attempt'
     ).toHaveBeenCalledOnce()
   })
@@ -1636,9 +1619,7 @@ describe('AuthSignIn controller lifecycle', () => {
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithEmail)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
 
     await vi.advanceTimersByTimeAsync(16_000)
 
@@ -1646,7 +1627,9 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+    expect(toasts.value[0].description).toBe(
+      t('auth.errors.generic', {}, { locale: 'en' })
+    )
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'
@@ -1659,9 +1642,7 @@ describe('AuthSignIn controller lifecycle', () => {
     render(AuthToast)
 
     await clickGoogle()
-    await waitFor(() =>
-      expect(vi.mocked(signInWorkshopWithGoogle)).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     await vi.advanceTimersByTimeAsync(16_000)
 
@@ -1673,6 +1654,99 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'an unbounded popup wait surfaces no timeout message'
     ).toHaveLength(0)
+  })
+})
+
+describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
+  const googleUser = testCredential(
+    testFirebaseUser({
+      uid: 'google-user',
+      email: 'google@example.com',
+      displayName: null
+    })
+  )
+  const googleButton = () =>
+    screen.getByRole('button', { name: /^sign in with google$/i })
+
+  /**
+   * The package reports the closed popup by rejecting; the options the page
+   * passed are what it would use for a result that still arrives.
+   */
+  function dismissedPopup() {
+    let options: PopupSignInOptions | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementationOnce((given) => {
+      options = given
+      return Promise.reject({
+        code: 'auth/popup-closed-by-user',
+        message: 'closed'
+      })
+    })
+    return {
+      options: () => options,
+      /** Firebase saves the identity before the popup promise resolves. */
+      finishLate() {
+        const credential = Promise.resolve().then(() => {
+          authUser.value = googleUser.user
+          return googleUser
+        })
+        options?.onResumed?.(credential)
+      }
+    }
+  }
+
+  beforeEach(() => {
+    vi.mocked(provisionWorkshopCustomer).mockResolvedValue()
+  })
+
+  it('finishes a late result through the usual sign-in: provisioning, session, then home', async () => {
+    const popup = dismissedPopup()
+    render(AuthSignIn)
+    render(AuthToast)
+    await clickGoogle()
+    await screen.findByRole('alert')
+    expect(googleButton()).toHaveProperty('disabled', false)
+
+    popup.finishLate()
+
+    await waitFor(() =>
+      expect(googleButton(), 'the page is signing in again').toHaveProperty(
+        'disabled',
+        true
+      )
+    )
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(provisionWorkshopCustomer).toHaveBeenCalledWith(googleUser)
+    expect(captureAuthCompleted).toHaveBeenCalledOnce()
+  })
+
+  it('declines a late result while another sign-in is under way', async () => {
+    const popup = dismissedPopup()
+    vi.mocked(signInWorkshopWithEmail).mockReturnValue(new Promise(() => {}))
+    const user = userEvent.setup()
+    render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
+  })
+
+  it('keeps a late result only while the page and the rollout still want it', async () => {
+    const popup = dismissedPopup()
+    const { unmount } = render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    authFlag.value = false
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(false))
+    authFlag.value = true
+    await waitFor(() => expect(googleButton()).toBeTruthy())
+    unmount()
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
   })
 })
 
@@ -1798,5 +1872,85 @@ describe('AuthSignIn insecure context', () => {
         Object.defineProperty(window, 'isSecureContext', descriptor)
       else delete (window as { isSecureContext?: boolean }).isSecureContext
     }
+  })
+})
+
+describe('AuthSignIn enterprise SSO', () => {
+  const SSO_START =
+    'https://cloud.example/api/auth/sso/start?email=ada%40acme.com&return_to=%2Fcloud%2Fuser-check'
+
+  const submitEmail = async (mode: 'signIn' | 'signUp') => {
+    render(AuthSignIn, { props: { mode } })
+    const user = userEvent.setup()
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'ada@acme.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    if (mode === 'signUp')
+      await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
+    await user.click(
+      screen.getByRole('button', {
+        name: mode === 'signUp' ? /^sign up$/i : /^sign in$/i
+      })
+    )
+  }
+
+  const firebaseEmail = {
+    signIn: signInWorkshopWithEmail,
+    signUp: signUpWorkshopWithEmail
+  } as const
+
+  it.for(['signIn', 'signUp'] as const)(
+    'starts the SSO flag read when the %s panel opens, before any submit',
+    (mode) => {
+      vi.mocked(warmSsoStartFlag).mockClear()
+
+      render(AuthSignIn, { props: { mode } })
+
+      expect(warmSsoStartFlag).toHaveBeenCalledOnce()
+      expect(ssoStartUrlFor).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    "sends an SSO email on %s to Cloud's SSO start instead of Firebase",
+    async (mode) => {
+      vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+
+      await submitEmail(mode)
+
+      await waitFor(() => expect(assign).toHaveBeenCalledWith(SSO_START))
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(firebaseEmail[mode]).not.toHaveBeenCalled()
+      expect(
+        screen.getByText("Continuing to your organization's sign-in…")
+      ).toBeTruthy()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    'signs in with Firebase on %s when the email has no SSO start',
+    async (mode) => {
+      vi.mocked(firebaseEmail[mode]).mockReturnValue(new Promise(() => {}))
+
+      await submitEmail(mode)
+
+      await waitFor(() => expect(firebaseEmail[mode]).toHaveBeenCalledOnce())
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('gives back live controls when the visitor returns from Cloud through the back-forward cache', async () => {
+    vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+    await submitEmail('signIn')
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const submit = screen.getByRole('button', { name: /^sign in$/i })
+    expect(submit.hasAttribute('disabled')).toBe(true)
+
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+
+    await waitFor(() => expect(submit.hasAttribute('disabled')).toBe(false))
   })
 })

@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { registerRefreshOnReturn } from './refreshOnReturn'
 
 describe('registerRefreshOnReturn', () => {
   it('fires on window focus', () => {
     const refresh = vi.fn(async () => {})
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     window.dispatchEvent(new Event('focus'))
 
@@ -14,7 +14,7 @@ describe('registerRefreshOnReturn', () => {
 
   it('fires on a visible visibilitychange', () => {
     const refresh = vi.fn(async () => {})
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     document.dispatchEvent(new Event('visibilitychange'))
 
@@ -25,7 +25,7 @@ describe('registerRefreshOnReturn', () => {
     const refresh = vi.fn(async () => {})
     const visibilitySpy = vi.spyOn(document, 'visibilityState', 'get')
     visibilitySpy.mockReturnValue('hidden')
-    registerRefreshOnReturn(refresh)
+    onTestFinished(registerRefreshOnReturn(refresh))
 
     document.dispatchEvent(new Event('visibilitychange'))
     expect(refresh).not.toHaveBeenCalled()
@@ -35,14 +35,61 @@ describe('registerRefreshOnReturn', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
-  it('is one-shot: a second return does not refetch', () => {
-    const refresh = vi.fn(async () => {})
-    registerRefreshOnReturn(refresh)
+  function held() {
+    const settles: Array<() => void> = []
+    const refresh = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          settles.push(resolve)
+        })
+    )
+    const settle = async (index: number) => {
+      settles[index]()
+      await refresh.mock.results[index]?.value
+      await Promise.resolve()
+    }
+    return { refresh, settle }
+  }
 
-    window.dispatchEvent(new Event('focus'))
-    window.dispatchEvent(new Event('focus'))
+  const leave = () => window.dispatchEvent(new Event('blur'))
+  const come = () => window.dispatchEvent(new Event('focus'))
+
+  it('refreshes again on a later return, so a return before the hosted tab finishes does not spend it', async () => {
+    const { refresh, settle } = held()
+    onTestFinished(registerRefreshOnReturn(refresh))
+
+    come()
+    await settle(0)
+    leave()
+    come()
+
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('coalesces the focus and visibilitychange of one return into one refresh', async () => {
+    const { refresh, settle } = held()
+    onTestFinished(registerRefreshOnReturn(refresh))
+
+    come()
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(refresh).toHaveBeenCalledTimes(1)
+    await settle(0)
 
     expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs one trailing refresh for a return that arrives while a refresh is in flight', async () => {
+    const { refresh, settle } = held()
+    onTestFinished(registerRefreshOnReturn(refresh))
+
+    come()
+    leave()
+    come()
+    expect(refresh).toHaveBeenCalledTimes(1)
+
+    await settle(0)
+
+    expect(refresh).toHaveBeenCalledTimes(2)
   })
 
   it('stops listening once the returned callback runs', () => {

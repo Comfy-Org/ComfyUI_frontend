@@ -3,9 +3,8 @@ import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
-import { tagRemoveButtonVariants } from './tag.variants'
+import { tagRemoveButtonVariants } from '@comfyorg/design-system/tag.variants'
 
 const {
   label,
@@ -20,7 +19,7 @@ const {
 
 <template>
   <Button
-    v-tooltip.top="tooltip ? buildTooltipConfig(tooltip) : undefined"
+    :tooltip
     type="button"
     variant="textonly"
     size="icon-sm"

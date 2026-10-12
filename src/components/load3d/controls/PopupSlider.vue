@@ -1,14 +1,15 @@
 <template>
   <div class="show-slider relative">
     <Button
-      v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
+      :tooltip="tooltipText"
+      tooltip-side="right"
       size="icon"
       variant="textonly"
       class="rounded-full"
       :aria-label="tooltipText"
       @click="toggleSlider"
     >
-      <i :class="['pi', icon, 'text-lg text-base-foreground']" />
+      <i :class="cn('pi', icon, 'text-lg text-base-foreground')" />
     </Button>
     <div
       v-show="showSlider"
@@ -27,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
