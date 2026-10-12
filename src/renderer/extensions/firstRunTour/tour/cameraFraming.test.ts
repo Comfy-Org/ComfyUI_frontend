@@ -149,8 +149,6 @@ describe('frameNode', () => {
 
   afterEach(() => {
     endRunningSteps()
-    camera.animateToBounds.mockClear()
-    camera.ds.fitToBounds.mockClear()
     camera.ds.offset = [0, 0]
     camera.ds.scale = 1
     useCanvasStore().canvas = null

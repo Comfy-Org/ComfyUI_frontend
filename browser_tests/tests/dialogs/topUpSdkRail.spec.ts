@@ -37,7 +37,7 @@ const BOOT_FEATURES = {
 const TOPUP_OPERATION_ID = 'op-e2e-topup'
 
 const SAVED_CARD = {
-  id: 'pm-1',
+  id: 'pm_e2e_visa',
   type: 'card',
   brand: 'visa',
   last4: '4242',
@@ -195,7 +195,8 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
    * that has to be rewritten when it lands.
    */
   test('surfaces a closed backend gate as a failed purchase, with no legacy retry', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const routes = await setupTopUp(page)
@@ -206,8 +207,6 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.purchaseRequests.length).toBe(1)
     expect(transport(routes.purchaseRequests[0])).toBe('fetch')
-    await expect(
-      page.locator('.p-toast-message.p-toast-message-error')
-    ).toBeVisible()
+    await expect(toast.toastErrors).toBeVisible()
   })
 })

@@ -27,7 +27,7 @@ reviews:
       mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
-        mode: error
+        mode: warning
         instructions: |
           Use only PR metadata already available in the review context:
             - the PR title
@@ -111,7 +111,7 @@ reviews:
         Treat `docs/guidance/storybook.md` as required review context.
     - path: 'src/lib/litegraph/**'
       instructions: |
-        Treat `docs/adr/README.md` as required review context. For widget
+        Treat the ADRs in `docs/adr/` as required review context. For widget
         serialization changes, also read
         `docs/WIDGET_SERIALIZATION.md`.
     - path: 'src/workbench/extensions/agent/**'

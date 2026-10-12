@@ -70,7 +70,7 @@ describe('Media3DTop', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <img> has no role until src is set
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <img> has no role until src is set
     expect(container.querySelector('img')).not.toBeInTheDocument()
     expect(
       screen.getByText('assetBrowser.media.threeDModelPlaceholder')
@@ -90,7 +90,7 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const img = container.querySelector('img')
     expect(img).toHaveAttribute('src', 'http://server/preview.png')
     expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
@@ -106,7 +106,7 @@ describe('Media3DTop', () => {
     await flush()
 
     expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const img = container.querySelector('img')
     expect(img).toHaveAttribute('src', 'http://server/from-name.png')
   })
@@ -138,7 +138,7 @@ describe('Media3DTop', () => {
       global: globalConfig
     })
     await flush()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('img')).not.toBeInTheDocument()
 
     // Simulate persistThumbnail patching the store: the prop arrives with the
@@ -152,7 +152,7 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const img = container.querySelector('img')
     expect(img).toHaveAttribute('src', 'http://server/patched.png')
   })
@@ -169,7 +169,7 @@ describe('Media3DTop', () => {
       global: globalConfig
     })
     await flush()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
       'http://server/first.png'
@@ -183,7 +183,7 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
       'http://server/first.png'
@@ -208,7 +208,7 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('img')).not.toBeInTheDocument()
   })
 })

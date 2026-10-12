@@ -77,7 +77,8 @@ function cancelledSubscription(
     renewalDate: null,
     endDate: CANCEL_DATE,
     isCancelled: true,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }
 }
 
@@ -90,7 +91,8 @@ const notCancelledSubscription: SubscriptionInfo = {
   renewalDate: NEXT_MONTHLY_RENEWAL,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 function story(

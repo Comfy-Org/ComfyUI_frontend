@@ -7,6 +7,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -72,15 +73,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
-
-  () => ({
-    useManagerState: vi.fn(() => ({
-      isNewManagerUI: { value: true }
-    }))
-  })
-)
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 describe('useConflictDetection', () => {
   const mockComfyManagerService = {
@@ -164,6 +157,7 @@ describe('useConflictDetection', () => {
 
   beforeEach(() => {
     // Setup mocks
+    vi.mocked(useManagerState()).isNewManagerUI = computed(() => true)
     vi.mocked(useComfyManagerService).mockReturnValue(mockComfyManagerService)
     vi.mocked(useComfyRegistryService).mockReturnValue(mockRegistryService)
     vi.mocked(useConflictAcknowledgment).mockReturnValue(mockAcknowledgment)

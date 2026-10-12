@@ -38,7 +38,7 @@ describe('MinimaxLicenseHeroSection', () => {
 
     expect(
       screen.getByRole('link', { name: 'REQUEST LICENSE' }).getAttribute('href')
-    ).toBe('/contact')
+    ).toBe('/contact/')
     expect(
       screen
         .getByRole('link', { name: 'TRY H3 ON COMFY CLOUD' })
@@ -54,7 +54,7 @@ describe('MinimaxLicenseHeroSection', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('link', { name: '申请许可' }).getAttribute('href')
-    ).toBe('/zh-CN/contact')
+    ).toBe('/zh-CN/contact/')
   })
 
   it('renders the CDN video with persistent mute controls', async () => {

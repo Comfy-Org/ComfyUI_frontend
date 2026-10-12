@@ -10,6 +10,7 @@ const EXCEPTION_NAMES = [
   'NotFoundError',
   'SecurityError',
   'InvalidStateError',
+  'NotSupportedError',
   'DataCloneError',
   'EncodingError',
   'QuotaExceededError',

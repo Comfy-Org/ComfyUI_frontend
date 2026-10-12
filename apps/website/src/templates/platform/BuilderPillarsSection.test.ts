@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import BuilderPillarsSection from './BuilderPillarsSection.vue'
 
 describe('BuilderPillarsSection', () => {
@@ -10,7 +10,9 @@ describe('BuilderPillarsSection', () => {
 
     for (const n of [1, 2, 3, 4] as const) {
       expect(
-        screen.getByText(t(`platform.builderPillars.${n}.title`, 'en'))
+        screen.getByText(
+          t(`platform.builderPillars.${n}.title`, {}, { locale: 'en' })
+        )
       ).toBeTruthy()
     }
   })

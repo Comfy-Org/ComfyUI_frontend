@@ -19,9 +19,11 @@ const hasSizeData = existsSync('temp/size')
 
 if (sizeStatus === 'ready' && hasSizeData) {
   try {
-    const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
-      encoding: 'utf-8'
-    }).trimEnd()
+    const sizeReport = execFileSync(
+      'pnpm',
+      ['exec', 'tsx', 'scripts/size-report.ts'],
+      { encoding: 'utf-8' }
+    ).trimEnd()
     lines.push(sizeReport)
   } catch {
     lines.push('## 📦 Bundle Size')

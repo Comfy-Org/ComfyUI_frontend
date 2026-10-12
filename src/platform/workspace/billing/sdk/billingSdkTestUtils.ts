@@ -119,6 +119,7 @@ export function fakeBillingSdk() {
     recover: vi.fn(async () => ({ status: 'ok' as const, value: undefined })),
     wake: vi.fn(),
     switchPresentation: vi.fn(() => 'unchanged' as const),
+    reportHostedStepOpened: vi.fn(),
     reportChallengeStarted: vi.fn(),
     reportChallengeSettled: vi.fn(),
     get: (operationId) => snapshot.find((state) => state.id === operationId),
@@ -140,6 +141,7 @@ export function fakeBillingSdk() {
     paymentMethods: fakeReader(),
     events: fakeReader(),
     topup: {
+      quoteTopup: vi.fn(),
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()
     },
@@ -148,6 +150,7 @@ export function fakeBillingSdk() {
       previewSubscribe: vi.fn(),
       resubscribe: vi.fn(),
       cancelSubscription: vi.fn(),
+      cancelOperation: vi.fn(),
       openPaymentPortal: vi.fn()
     },
     driveChallenge: vi.fn(async () => 'completed' as const),
@@ -161,7 +164,7 @@ export function fakeBillingSdk() {
         ...snapshot.filter((current) => current.id !== state.id),
         state
       ]
-      for (const listener of [...listeners]) listener(state)
+      for (const listener of Array.from(listeners)) listener(state)
     }
   }
 }
