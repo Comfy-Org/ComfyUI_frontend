@@ -147,6 +147,7 @@ test(
   { tag: ['@cloud', '@agent', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     const serverTurnId = 'e2e-server-turn'
+    const persistedAssistantRowId = 'e2e-server-assistant-row'
     const otherThreadId = 'e2e-other-thread'
     let liveTurnId = ''
     let attachmentThreadId = ''
@@ -199,7 +200,7 @@ test(
           content: resolvedImageRefs(posted)
         },
         {
-          id: liveTurnId,
+          id: persistedAssistantRowId,
           thread_id: threadId,
           turn_id: serverTurnId,
           seq: 2,
