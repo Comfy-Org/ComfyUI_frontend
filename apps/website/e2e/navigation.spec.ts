@@ -56,7 +56,7 @@ const RETIRED_BADGE_PANELS = [
     ],
     bare: [
       { label: 'Comfy CLI', href: '/cli/' },
-      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+      { label: 'Builds', href: '/platform/builder/' }
     ]
   },
   {
@@ -164,7 +164,6 @@ test.describe('Desktop dropdown @interaction', () => {
       'Comfy Cloud',
       'Comfy Agent',
       'Developer Platform',
-      'Managed Builds',
       'Docs'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
