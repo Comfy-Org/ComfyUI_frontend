@@ -1,5 +1,5 @@
 import type { SwapCanvas } from './clip'
-import { gridFrames, sourceFrames } from './clip'
+import { gridFrames, sourceFrames, spareSeconds } from './clip'
 import swapGraph from './swap.api.json'
 
 type Graph = Record<
@@ -63,6 +63,11 @@ export function swapWorkflow(request: SwapRequest): Graph {
   graph.sample.inputs.num_frames = sourceFrames(request.seconds)
   graph.frames.inputs.value = gridFrames(request.seconds)
   graph.cut.inputs.duration = request.seconds
+  // With nothing spare the cut would ask for more than was generated, and fail.
+  if (spareSeconds(request.seconds) === 0) {
+    graph.out.inputs.video = graph.cut.inputs.video
+    delete graph.cut
+  }
   graph['129'].inputs.noise_seed = request.seed
   Object.assign(graph['136'].inputs, {
     prompt: swapPrompt(request.target),
