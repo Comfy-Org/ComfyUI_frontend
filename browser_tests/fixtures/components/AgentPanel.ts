@@ -23,7 +23,6 @@ export class AgentPanel {
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
-  public readonly freeUseNotice: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
   public readonly root: Locator
@@ -69,9 +68,6 @@ export class AgentPanel {
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
-    this.freeUseNotice = this.root.getByRole('note', {
-      name: enMessages.agent.freeUseNoticeLabel
-    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,

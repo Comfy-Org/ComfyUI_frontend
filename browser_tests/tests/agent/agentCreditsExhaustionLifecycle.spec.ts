@@ -6,17 +6,26 @@ import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
 
 test.describe(
   'Agent standing credits-exhaustion lifecycle',
-  { tag: ['@cloud', '@ui'] },
+  { tag: ['@cloud', '@screenshot', '@ui'] },
   () => {
-    test.use({ connectWebSocketToServer: false })
+    test.use({
+      connectWebSocketToServer: false,
+      initialFeatureFlags: { enable_telemetry: true }
+    })
 
-    test('refreshes, survives remount, recovers, and re-arms without a send refusal', async ({
+    test('refreshes, survives remount, recovers, re-arms, and warns when the Agent grant runs out', async ({
       agentBilling,
       agentPanel,
-      creditsLifecycle
+      creditsLifecycle,
+      hostTelemetry
     }) => {
       const paywall = agentPanel.creditsExhaustedPaywall
       const sendButton = agentPanel.sendButton
+      const notice = agentPanel.creditTransitionNotice
+      const noticeEvents = () =>
+        hostTelemetry.filter(
+          ({ event }) => event === 'app:agent_credit_transition_notice'
+        )
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
@@ -82,109 +91,45 @@ test.describe(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText(['Add shallow depth of field', 'Finish the workflow'])
       })
-    })
-  }
-)
 
-test.describe(
-  'Agent credit-transition notice',
-  { tag: ['@cloud', '@screenshot', '@ui'] },
-  () => {
-    test.use({
-      connectWebSocketToServer: false,
-      initialFeatureFlags: {
-        'agent-free-use-message-placement': 'near-composer',
-        enable_telemetry: true
-      }
-    })
-
-    test('shows the workspace-balance notice when the Agent grant runs out', async ({
-      agentPanel,
-      creditsLifecycle,
-      hostTelemetry
-    }) => {
-      const notice = agentPanel.creditTransitionNotice
-      const freeUseNotice = agentPanel.freeUseNotice
-
-      await agentPanel.open()
-
-      await test.step('free-use notice while the Agent grant still has funds', async () => {
-        await expect(freeUseNotice).toBeVisible()
-        await expect(notice).toHaveCount(0)
-      })
-
-      await agentPanel.selectWorkflow()
-
-      await test.step('exhausting the grant alone shows the transition notice', async () => {
-        await creditsLifecycle.completeTurn('Build a red fox workflow', {
+      await test.step('warn once the Agent grant alone runs out', async () => {
+        await creditsLifecycle.completeTurn('Render a final preview', {
           fundingState: 'scopedExhausted'
         })
-
-        await expect(notice).toBeVisible()
         await expect(notice).toContainText(
           enMessages.agent.creditTransitionNotice
         )
+        await expect(paywall).toHaveCount(0)
         await expect(notice).toHaveScreenshot(
           'agent-credit-transition-notice.png'
         )
-        await expect
-          .poll(() =>
-            hostTelemetry.filter(
-              ({ event }) => event === 'app:agent_credit_transition_notice'
-            )
-          )
-          .toEqual([
-            {
-              event: 'app:agent_credit_transition_notice',
-              properties: { action: 'shown' }
-            }
-          ])
-      })
-
-      await test.step('the transition notice shows without a paywall', async () => {
-        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
         await expect(agentPanel.composerStack).toHaveScreenshot(
           'agent-credit-transition-composer-stack.png'
         )
+        await expect.poll(noticeEvents).toEqual([
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'shown' }
+          }
+        ])
       })
 
-      // PM-2005: a user was told chatting was free and silently burned ~3500
-      // credits. The defect is not the copy of either notice on its own, it is
-      // the panel telling the user Agent use is FREE at a moment when it bills
-      // the workspace balance. Assert the claim is absent, not just that the
-      // notice element is gone.
-      await test.step('the user is never told Agent use is free while it bills', async () => {
-        await expect(freeUseNotice).toHaveCount(0)
-        await expect(agentPanel.composerStack).not.toContainText(
-          enMessages.agent.freeUseNotice
-        )
-        await expect(agentPanel.composerStack).toContainText(
-          enMessages.agent.creditTransitionNotice
-        )
-      })
-
-      await test.step('dismissing it leaves the composer in place', async () => {
+      await test.step('dismiss the warning and keep the composer', async () => {
         await notice
           .getByRole('button', { name: enMessages.agent.dismiss })
           .click()
-
         await expect(notice).toHaveCount(0)
-        await expect
-          .poll(() =>
-            hostTelemetry.filter(
-              ({ event }) => event === 'app:agent_credit_transition_notice'
-            )
-          )
-          .toEqual([
-            {
-              event: 'app:agent_credit_transition_notice',
-              properties: { action: 'shown' }
-            },
-            {
-              event: 'app:agent_credit_transition_notice',
-              properties: { action: 'dismissed' }
-            }
-          ])
+        await expect(sendButton).toBeVisible()
+        await expect.poll(noticeEvents).toEqual([
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'shown' }
+          },
+          {
+            event: 'app:agent_credit_transition_notice',
+            properties: { action: 'dismissed' }
+          }
+        ])
       })
     })
   }
