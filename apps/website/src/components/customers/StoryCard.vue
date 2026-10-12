@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { StoryCard } from '../../utils/customers'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StoryCard } from '@/utils/customers'
 
 const { story, locale = 'en' } = defineProps<{
   story: StoryCard
@@ -19,6 +19,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
   >
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">
       <div
+        data-testid="customer-story-cover"
         class="size-full rounded-2xl bg-white/5 bg-cover bg-center"
         :style="{ backgroundImage: `url(${story.cover})` }"
       />

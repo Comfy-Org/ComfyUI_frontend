@@ -1,7 +1,7 @@
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import ModelLaunchHeroSection from '../templates/model-launch/ModelLaunchHeroSection.vue'
+import ModelLaunchHeroSection from '@/templates/model-launch/ModelLaunchHeroSection.vue'
 import { wan3Page } from './wan3'
 
 // The Wan 3.0 hero clip is ~10 MB against a ~4 MB mobile encode and a ~370 KB

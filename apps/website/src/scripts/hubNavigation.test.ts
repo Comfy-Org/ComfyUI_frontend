@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getRoutes } from '../config/routes'
+import { getRoutes } from '@/config/routes'
 
 import { HUB_TOOLBAR_ID } from './hubToolbar'
 

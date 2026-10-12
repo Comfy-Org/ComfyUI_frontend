@@ -240,6 +240,44 @@ describe('CheckoutEnding', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'a downgrade',
+      plan: { tier: 'STANDARD', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'MONTHLY' },
+      body: "Your plan for Acme Team changes to Standard on November 4, 2026. You'll keep Pro until then."
+    },
+    {
+      name: 'a yearly plan going monthly',
+      plan: { tier: 'PRO', duration: 'MONTHLY' },
+      kept: { tier: 'PRO', duration: 'ANNUAL' },
+      body: "Your plan for Acme Team changes to Pro on November 4, 2026. You'll keep Pro Yearly until then."
+    }
+  ] as const)(
+    '$name scheduled for later names the plan that starts, its date, and the plan kept until then',
+    ({ plan, kept, body }) => {
+      renderEnding({
+        kind: 'scheduled',
+        change: { plan, effectiveAt: '2026-11-04T00:00:00.000Z' },
+        kept
+      })
+
+      expect(
+        screen.getByRole('heading', { name: 'Your plan change is scheduled' })
+      ).toBeInTheDocument()
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+        'Pro$50.00 USD / mo'
+      )
+      expect(screen.queryByText(/credits added/)).not.toBeInTheDocument()
+      expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+      expect(
+        screen.getByText('You can close this tab now.')
+      ).toBeInTheDocument()
+    }
+  )
+
   it('names the plan this page bought on Success', () => {
     renderEnding({ kind: 'success' })
 

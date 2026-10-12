@@ -1,6 +1,7 @@
 import type {
   BillingOperationReceipt,
-  CapabilityDenialReason
+  CapabilityDenialReason,
+  SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import { isGrantLanding } from '@comfyorg/account-core/billing'
 
@@ -44,12 +45,14 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
- * `success` names the plan its quote priced: this page's own Pay sent it.
+ * `success` names the plan the server reports for the operation, or, for this
+ * page's own Pay settled without that report, the plan its quote priced.
  * `completed` is money this page watched settle without sending it;
  * `already_completed` was through before the page could offer a form. Those
  * two name a plan only from the `receipt` the server reported for the
  * operation. `received` with a receipt is a charge the server confirmed
- * whose credits are still landing.
+ * whose credits are still landing. `scheduled` is this page's own Pay on a
+ * quote the server priced to take effect later, so nothing has changed yet.
  */
 export type EndingScreen =
   | {
@@ -57,6 +60,11 @@ export type EndingScreen =
       /** A top-up bought credits, so its Success names no plan. */
       readonly purchase?: 'credits'
       readonly receipt?: BillingOperationReceipt
+    }
+  | {
+      readonly kind: 'scheduled'
+      readonly change: ScheduledChange
+      readonly kept: ScheduledChange['plan']
     }
   | {
       readonly kind: 'completed'
@@ -79,6 +87,8 @@ export type EndingScreen =
       readonly kind: 'refused'
       readonly code: string
       readonly copy: RefusalCopy
+      /** The sentence the server wrote for a quote it refused, shown in place of the copy. */
+      readonly serverMessage?: string
     }
   | {
       readonly kind: 'refused'
@@ -126,6 +136,15 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
 function refusedEnding(
   page: Extract<CheckoutPage, { kind: 'refused' }>
 ): EndingScreen {
+  if ('server' in page) {
+    const { code, message } = page.server
+    return {
+      kind: 'refused',
+      code,
+      copy: 'unknown',
+      ...(message === undefined ? {} : { serverMessage: message })
+    }
+  }
   const code = page.reason.toUpperCase()
   return page.scheduled === undefined
     ? { kind: 'refused', code, copy: REFUSAL_COPY[page.reason] }
@@ -174,14 +193,40 @@ function successEnding(operation: SettledOperation | undefined): EndingScreen {
   }
 }
 
+const tierAndDuration = ({
+  tier,
+  duration
+}: SubscriptionPreview['new_plan']): ScheduledChange['plan'] => ({
+  tier,
+  duration
+})
+
+/** A quote that takes effect later names the plan it starts and the one kept until then. */
+function scheduledEnding(
+  quoted: SubscriptionPreview | undefined
+): EndingScreen | undefined {
+  const kept = quoted?.current_plan
+  if (quoted === undefined || quoted.is_immediate || kept === undefined)
+    return undefined
+  return {
+    kind: 'scheduled',
+    change: {
+      plan: tierAndDuration(quoted.new_plan),
+      effectiveAt: quoted.effective_at
+    },
+    kept: tierAndDuration(kept)
+  }
+}
+
 function terminalEnding(
   page: Extract<CheckoutPage, { kind: 'terminal' }>
 ): EndingScreen {
   const { operation } = page
   if (operation !== undefined && isGrantLanding(operation))
     return { kind: 'received', code: operation.id, ...receiptOf(operation) }
-  if (page.attribution === 'started' || page.attribution === 'returned')
-    return successEnding(operation)
+  if (page.attribution === 'started')
+    return scheduledEnding(page.quote) ?? successEnding(operation)
+  if (page.attribution === 'returned') return successEnding(operation)
   const kind = TERMINAL_KIND[page.attribution]
   return operation === undefined
     ? { kind }
@@ -250,6 +295,8 @@ export function endingReceipt(screen: EndingScreen): EndingReceipt {
       const rows = receipt === undefined ? [] : settledRows(receipt)
       return { namesPlan: false, rows, rowsReplaceCode: rows.length > 0 }
     }
+    case 'scheduled':
+      return { namesPlan: true, rows: [], rowsReplaceCode: false }
     case 'received':
       return {
         namesPlan: false,

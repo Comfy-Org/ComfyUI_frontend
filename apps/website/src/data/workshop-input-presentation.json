@@ -887,40 +887,6 @@
         "defaultCandidates": []
       }
     },
-    "bfl/flux-pro-1.0-canny": {
-      "canny_high_threshold": {
-        "label": "Strong-edge threshold",
-        "help": "Set the threshold that identifies strong edges.",
-        "advanced": true,
-        "control": "slider"
-      },
-      "canny_low_threshold": {
-        "label": "Weak-edge threshold",
-        "help": "Set the lower threshold for edges connected to strong edges.",
-        "advanced": true,
-        "control": "slider"
-      },
-      "output_format": {
-        "options": ["jpeg", "png"]
-      },
-      "preprocessed_image": {
-        "label": "Edge map",
-        "help": "Provide a base64 edge map to skip edge detection.",
-        "advanced": false,
-        "control": "text-box"
-      }
-    },
-    "bfl/flux-pro-1.0-depth": {
-      "output_format": {
-        "options": ["jpeg", "png"]
-      },
-      "preprocessed_image": {
-        "label": "Depth map",
-        "help": "Provide a base64 depth map to skip depth estimation.",
-        "advanced": false,
-        "control": "text-box"
-      }
-    },
     "bfl/flux-pro-1.0-expand": {
       "bottom": {
         "label": "Expand bottom",
@@ -1171,6 +1137,9 @@
       },
       "seed": {
         "default": -1
+      },
+      "draft": {
+        "hidden": true
       }
     },
     "byteplus/dreamina-seedance-2-0-fast-260128": {
@@ -1190,6 +1159,9 @@
       },
       "seed": {
         "default": -1
+      },
+      "draft": {
+        "hidden": true
       }
     },
     "byteplus/dreamina-seedance-2-0-mini": {
@@ -1202,6 +1174,9 @@
       },
       "seed": {
         "default": -1
+      },
+      "draft": {
+        "hidden": true
       }
     },
     "byteplus/dreamina-seedance-2-5-260628": {
@@ -1249,60 +1224,6 @@
       "audio_config": {
         "label": "Audio settings",
         "help": "Set format, sample rate, speech speed, pitch, volume, or subtitles."
-      }
-    },
-    "byteplus/seedance-1-0-lite-i2v-250428": {
-      "duration": {
-        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-      },
-      "resolution": {
-        "options": ["480p", "720p", "1080p"],
-        "default": "720p"
-      },
-      "ratio": {
-        "default": "16:9"
-      },
-      "output_format": {
-        "hidden": true
-      },
-      "generate_audio": {
-        "hidden": true
-      },
-      "content": {
-        "label": "Video inputs",
-        "help": "Provide a text item and an image_url item containing the image to animate.",
-        "advanced": false,
-        "control": "text-area"
-      },
-      "seed": {
-        "default": -1
-      }
-    },
-    "byteplus/seedance-1-0-lite-t2v-250428": {
-      "duration": {
-        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-      },
-      "resolution": {
-        "options": ["480p", "720p", "1080p"],
-        "default": "720p"
-      },
-      "ratio": {
-        "default": "16:9"
-      },
-      "output_format": {
-        "hidden": true
-      },
-      "generate_audio": {
-        "hidden": true
-      },
-      "content": {
-        "label": "Video prompt",
-        "help": "Provide a text item describing the video; this model uses text-only input.",
-        "advanced": false,
-        "control": "text-area"
-      },
-      "seed": {
-        "default": -1
       }
     },
     "byteplus/seedance-1-0-pro-250528": {
@@ -1364,53 +1285,6 @@
       },
       "seed": {
         "default": -1
-      }
-    },
-    "byteplus/seededit-3-0-i2i-250628": {
-      "layer_decomposition": {
-        "hidden": true
-      },
-      "output_format": {
-        "hidden": true
-      },
-      "sequential_image_generation": {
-        "hidden": true
-      },
-      "guidance_scale": {
-        "default": 5.5
-      },
-      "image": {
-        "label": "Image to edit",
-        "help": "Provide one image URL or base64 image."
-      },
-      "size": {
-        "help": "Use adaptive sizing to follow the input image.",
-        "options": ["adaptive"],
-        "default": "adaptive"
-      }
-    },
-    "byteplus/seedream-3-0-t2i-250415": {
-      "layer_decomposition": {
-        "hidden": true
-      },
-      "output_format": {
-        "hidden": true
-      },
-      "sequential_image_generation": {
-        "hidden": true
-      },
-      "guidance_scale": {
-        "default": 2.5
-      },
-      "image": {
-        "hidden": true
-      },
-      "size": {
-        "label": "Resolution",
-        "help": "",
-        "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "2048x2048"],
-        "default": "1024x1024"
       }
     },
     "byteplus/seedream-4-0-250828": {
@@ -1945,6 +1819,12 @@
       "options": {
         "hidden": true
       },
+      "aspect_ratio": {
+        "hidden": true
+      },
+      "duration": {
+        "hidden": true
+      },
       "settings": {
         "label": "Video settings",
         "help": "Set resolution, aspect ratio, and duration for the generated clip.",
@@ -1959,107 +1839,6 @@
         "fixed": "single"
       },
       "series_amount": {
-        "hidden": true
-      }
-    },
-    "kling/kling-v1": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
-        "hidden": true
-      }
-    },
-    "kling/kling-v1-5": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
-        "hidden": true
-      },
-      "image": {
-        "label": "Starting image",
-        "help": "",
-        "imageSource": "url",
-        "urlUpload": "image"
-      },
-      "image_tail": {
-        "label": "End frame",
-        "imageSource": "url",
-        "urlUpload": "image",
-        "help": "Provide the ending image; omit camera controls and motion masks when using it."
-      },
-      "dynamic_masks": {
-        "label": "Motion paths",
-        "help": "Pair mask images with point paths to guide motion in selected areas.",
-        "advanced": true
-      },
-      "static_mask": {
-        "label": "Motion mask",
-        "help": "Provide a motion-brush mask with the same proportions as the input image.",
-        "advanced": true
-      },
-      "voice_list": {
-        "hidden": true
-      }
-    },
-    "kling/kling-v1-6": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
-        "hidden": true
-      }
-    },
-    "kling/kling-v2-1": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
-        "hidden": true
-      },
-      "image": {
-        "label": "Starting image",
-        "help": "Provide an image URL or base64 image without a data:image prefix."
-      },
-      "image_tail": {
-        "label": "End frame",
-        "help": "Provide the ending image; omit camera controls and motion masks when using it."
-      },
-      "dynamic_masks": {
-        "label": "Motion paths",
-        "help": "Pair mask images with point paths to guide motion in selected areas.",
-        "advanced": true
-      },
-      "static_mask": {
-        "label": "Motion mask",
-        "help": "Provide a motion-brush mask with the same proportions as the input image.",
-        "advanced": true
-      },
-      "voice_list": {
-        "hidden": true
-      }
-    },
-    "kling/kling-v2-1-master": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
         "hidden": true
       }
     },
@@ -2080,17 +1859,6 @@
         "help": "Choose standard for lower cost or pro for higher quality.",
         "advanced": true,
         "control": "dropdown"
-      }
-    },
-    "kling/kling-v2-master": {
-      "mode": {
-        "label": "Generation quality",
-        "help": "Choose standard for lower cost or pro for higher quality.",
-        "advanced": true,
-        "control": "dropdown"
-      },
-      "sound": {
-        "hidden": true
       }
     },
     "kling/kling-v3": {
@@ -2308,6 +2076,11 @@
         "control": "text-box"
       }
     },
+    "minimax/minimax-h3": {
+      "ratio": {
+        "options": ["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]
+      }
+    },
     "moonvalley/text-to-image": {
       "inference_params": {
         "label": "Generation settings",
@@ -2439,9 +2212,6 @@
       "quality": {
         "options": ["low", "medium", "high"]
       },
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Resolution",
         "help": "",
@@ -2451,15 +2221,18 @@
       },
       "moderation": {
         "fixed": "auto"
+      },
+      "image": {
+        "hidden": true
+      },
+      "mask": {
+        "hidden": true
       }
     },
     "openai/gpt-image-1.5": {
       "quality": {
         "options": ["low", "medium", "high"]
       },
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Resolution",
         "help": "",
@@ -2469,14 +2242,17 @@
       },
       "moderation": {
         "fixed": "auto"
+      },
+      "image": {
+        "hidden": true
+      },
+      "mask": {
+        "hidden": true
       }
     },
     "openai/gpt-image-2": {
       "quality": {
         "options": ["low", "medium", "high"]
-      },
-      "style": {
-        "hidden": true
       },
       "size": {
         "label": "Image size",
@@ -2500,9 +2276,6 @@
       }
     },
     "openai/gpt-image-2.5-flare": {
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Image size",
         "help": "",
@@ -2525,9 +2298,6 @@
       }
     },
     "openai/gpt-image-2.5-sunburst": {
-      "style": {
-        "hidden": true
-      },
       "size": {
         "label": "Image size",
         "help": "",
@@ -3159,39 +2929,6 @@
         "help": "Provide JSON with Type set to FBX, OBJ or GLB and Url set to the model URL."
       }
     },
-    "veo/veo-2.0-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide a prompt and optional starting image for a silent video."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set a duration of 5 to 8 seconds, aspect ratio, and output count.",
-        "advanced": false
-      }
-    },
-    "veo/veo-3.0-fast-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide an input object containing the prompt and optional reference media."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set duration, aspect ratio, output count, and other video settings.",
-        "advanced": false
-      }
-    },
-    "veo/veo-3.0-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide an input object containing the prompt and optional reference media."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set duration, aspect ratio, output count, and other video settings.",
-        "advanced": false
-      }
-    },
     "veo/veo-3.1-fast-generate-001": {
       "instances": {
         "label": "Video inputs",
@@ -3223,36 +2960,6 @@
         "label": "Video settings",
         "help": "Set duration, aspect ratio, output count, and other video settings.",
         "advanced": false
-      }
-    },
-    "vertexai/imagen-3.0-fast-generate-001": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
-      }
-    },
-    "vertexai/imagen-3.0-generate-001": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
-      }
-    },
-    "vertexai/imagen-3.0-generate-002": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
       }
     },
     "wan/happyhorse-1.0-i2v": {

@@ -1,10 +1,10 @@
 import type { FeaturesResponse } from './featureFlags.schema'
-import type { FeatureFlagsSnapshot } from '../data/feature-flags'
+import type { FeatureFlagsSnapshot } from '@/data/feature-flags'
 
 import { FeaturesResponseSchema } from './featureFlags.schema'
 import type { FetchErrorKind } from './snapshotFetch'
 
-import bundledSnapshot from '../data/feature-flags.snapshot.json' with { type: 'json' }
+import bundledSnapshot from '@/data/feature-flags.snapshot.json' with { type: 'json' }
 import { fetchWithRetry, readSnapshot, requestJson } from './snapshotFetch'
 
 const DEFAULT_BASE_URL = 'https://api.comfy.org'

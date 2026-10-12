@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Volume2, VolumeX } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
-import { resolutionLabel } from '../../../lib/workshop/cinematic-studio/video'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import { resolutionLabel } from '@/lib/workshop/cinematic-studio/video'
 import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicTooltip from './CinematicTooltip.vue'

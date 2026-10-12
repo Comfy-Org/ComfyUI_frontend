@@ -1,12 +1,15 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isCloud } from '@/platform/distribution/types'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
@@ -14,7 +17,18 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
+import type {
+  ComfyWorkflowJSON,
+  LegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zLegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -24,6 +38,21 @@ import { prepareTemplateInputs } from '../services/templateInputService'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
+export type PreparedWorkflowTemplate = {
+  id: string
+  sourceModule: string
+  workflowName: string
+  controller: AbortController
+  data: {
+    json: ComfyWorkflowJSON | LegacyLoadableWorkflow
+    template:
+      | ReturnType<
+          typeof useWorkflowTemplatesStore
+        >['enhancedTemplates'][number]
+      | undefined
+  }
+}
+
 function updateTemplateEducation(
   isPartnerNode: boolean | undefined,
   loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
@@ -32,7 +61,7 @@ function updateTemplateEducation(
   if (isPartnerNode && typeof loadedWorkflow === 'object') {
     educationStore.requestCard(loadedWorkflow.key)
   } else {
-    educationStore.dismissCard()
+    educationStore.retireCard()
   }
 }
 
@@ -139,8 +168,32 @@ export function useTemplateWorkflows() {
     return template?.sourceModule
   }
 
+  function startTemplateInputDownloads(id: string, sourceModule: string) {
+    if (!isDesktop || sourceModule !== 'default') return
+
+    void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
+      (assets) => {
+        startMissingTemplateInputDownloads(id, assets, {
+          getBridge: () => window.__comfyDesktop2,
+          reportError: (error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'workflow_template_input_download_failed',
+              level: 'warning'
+            })
+          }
+        })
+      }
+    )
+  }
+
+  function releasePreparedLoad(controller: AbortController) {
+    workflowTemplatesStore.finishTemplateLoad(controller)
+    if (ownedLoadController === controller) ownedLoadController = undefined
+  }
+
   function showTemplateError(detail: string) {
-    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+    useToast().error(t('g.error'), { description: detail })
   }
 
   function reportTemplateError(error: unknown) {
@@ -151,37 +204,25 @@ export function useTemplateWorkflows() {
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
-  async function loadTemplateData(
-    id: string,
-    sourceModule: string,
+  async function withPreparedSampleInputs(
+    workflow: ComfyWorkflowJSON,
+    inputs: TemplateInput[],
     signal: AbortSignal
   ) {
-    const json = await fetchTemplateJson(id, sourceModule, signal)
-    signal.throwIfAborted()
-    const template = workflowTemplatesStore.enhancedTemplates.find(
-      (template) =>
-        template.name === id && template.sourceModule === sourceModule
-    )
-    if (isCloud || sourceModule !== 'default' || !template?.io?.inputs?.length)
-      return { json, template }
-
-    const toast = useToastStore()
-    const progress = {
-      severity: 'info' as const,
-      summary: t('templateWorkflows.preparingMedia')
-    }
-    let preparedJson = json
+    const toast = useToast()
+    const progressToastId = createToastId()
+    let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
     try {
-      const workflow = await validateComfyWorkflow(json)
-      if (!workflow) return { json, template }
       const result = await prepareTemplateInputs(
         workflow,
-        template.io.inputs,
+        inputs,
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
         () => {
-          toast.add(progress)
+          toast.loading(t('templateWorkflows.preparingMedia'), {
+            id: progressToastId
+          })
         }
       )
       errors.push(...result.errors)
@@ -195,7 +236,7 @@ export function useTemplateWorkflows() {
       signal.throwIfAborted()
       errors.push(error)
     } finally {
-      toast.remove(progress)
+      toast.dismiss(progressToastId)
     }
     if (errors.length) {
       reportError(
@@ -205,24 +246,51 @@ export function useTemplateWorkflows() {
           errorType: 'error_loading_template_media'
         }
       )
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('templateWorkflows.error.preparingMedia'),
-        life: 8000
+      toast.warning(t('g.warning'), {
+        description: t('templateWorkflows.error.preparingMedia'),
+        duration: 8000
       })
     }
-    return { json: preparedJson, template }
+    return preparedJson
+  }
+
+  async function loadTemplateData(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const fetched = await fetchTemplateJson(id, sourceModule, signal)
+    signal.throwIfAborted()
+    if (!fetched) return null
+    const { json } = fetched
+
+    const template = workflowTemplatesStore.enhancedTemplates.find(
+      (template) =>
+        template.name === id && template.sourceModule === sourceModule
+    )
+    const inputs = template?.io?.inputs
+    if (isCloud || sourceModule !== 'default' || !inputs?.length)
+      return { json, template }
+
+    return {
+      json: fetched.strict
+        ? await withPreparedSampleInputs(fetched.json, inputs, signal)
+        : json,
+      template
+    }
   }
 
   async function loadTemplateGraph(
-    { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
+    {
+      json,
+      template
+    }: NonNullable<Awaited<ReturnType<typeof loadTemplateData>>>,
     workflowName: string,
     sourceModule: string
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
-        json,
+        json as ComfyWorkflowJSON,
         true,
         true,
         workflowName,
@@ -232,6 +300,7 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === undefined) return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      await syncCompletedTemplateInputsWithCurrentGraph()
       if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
@@ -240,67 +309,163 @@ export function useTemplateWorkflows() {
     }
   }
 
-  async function loadWorkflowTemplate(
+  async function resolveTemplatePayload(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const source = resolveTemplateSource(id, sourceModule)
+    if (!source) {
+      showTemplateError(
+        t('templateWorkflows.error.templateNotFound', { templateName: id })
+      )
+      return null
+    }
+    const data = await loadTemplateData(id, source, signal)
+    signal.throwIfAborted()
+    if (!data) {
+      showTemplateError(t('templateWorkflows.error.loading'))
+      return null
+    }
+    return { source, data }
+  }
+
+  async function prepareWorkflowTemplate(
     id: string,
     sourceModule: string
-  ): Promise<TemplateLoadResult> {
+  ): Promise<PreparedWorkflowTemplate | null> {
     if (!isTemplatesLoaded.value) {
       showTemplateError(t('templateWorkflows.error.loading'))
-      return 'not-started'
+      return null
     }
     const controller = workflowTemplatesStore.startTemplateLoad(id)
-    if (!controller) return 'not-started'
+    if (!controller) return null
     ownedLoadController = controller
     try {
-      const source = resolveTemplateSource(id, sourceModule)
-      if (!source) {
-        showTemplateError(
-          t('templateWorkflows.error.templateNotFound', { templateName: id })
-        )
-        return 'not-started'
+      const payload = await resolveTemplatePayload(
+        id,
+        sourceModule,
+        controller.signal
+      )
+      if (!payload) {
+        releasePreparedLoad(controller)
+        return null
       }
-      const data = await loadTemplateData(id, source, controller.signal)
-      controller.signal.throwIfAborted()
+      return {
+        id,
+        sourceModule: payload.source,
+        workflowName:
+          payload.source === 'default'
+            ? t(`templateWorkflows.template.${id}`, id)
+            : id,
+        controller,
+        data: payload.data
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) reportTemplateError(error)
+      releasePreparedLoad(controller)
+      return null
+    }
+  }
+
+  async function openPreparedWorkflowTemplate(
+    prepared: PreparedWorkflowTemplate
+  ): Promise<TemplateLoadResult> {
+    const { id, sourceModule, workflowName, controller, data } = prepared
+    try {
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
         return 'not-started'
 
-      const workflowName =
-        source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
       useTelemetry()?.trackTemplate({
         workflow_name: id,
-        template_source: source
+        template_source: sourceModule
       })
 
       dialogStore.closeDialog()
-      return await loadTemplateGraph(data, workflowName, source)
+      startTemplateInputDownloads(id, sourceModule)
+      return await loadTemplateGraph(data, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
     } finally {
-      workflowTemplatesStore.finishTemplateLoad(controller)
-      if (ownedLoadController === controller) ownedLoadController = undefined
+      releasePreparedLoad(controller)
     }
+  }
+
+  function discardPreparedWorkflowTemplate(
+    prepared: PreparedWorkflowTemplate | null
+  ) {
+    if (!prepared) return
+    workflowTemplatesStore.cancelTemplateLoad(prepared.controller)
+    if (ownedLoadController === prepared.controller)
+      ownedLoadController = undefined
+  }
+
+  async function loadWorkflowTemplate(
+    id: string,
+    sourceModule: string
+  ): Promise<TemplateLoadResult> {
+    const prepared = await prepareWorkflowTemplate(id, sourceModule)
+    if (!prepared) return 'not-started'
+    return openPreparedWorkflowTemplate(prepared)
   }
 
   /**
    * Fetches template JSON from the appropriate endpoint
    */
+  /**
+   * The payload plus whether strict validation accepted it. Sample-input
+   * preparation needs a strictly valid workflow, and carrying the answer out
+   * of here keeps it from parsing the same payload a second time - which also
+   * reported the schema warning twice for a legacy template.
+   */
+  type FetchedTemplate =
+    | { strict: true; json: ComfyWorkflowJSON }
+    | { strict: false; json: LegacyLoadableWorkflow }
+
   async function fetchTemplateJson(
     id: string,
     sourceModule: string,
     signal: AbortSignal
-  ) {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
-        r.json()
-      )
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`),
-        { signal }
-      ).then((r) => r.json())
+  ): Promise<FetchedTemplate | null> {
+    // Default templates provided by frontend are served on this separate endpoint
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+
+    const response = await fetch(url, { signal })
+    if (!response.ok) {
+      reportError(`Failed to fetch workflow template ${id}`, {
+        surface: 'graph',
+        errorType: 'error_fetching_workflow_template'
+      })
+      return null
     }
+
+    const json: unknown = await response.json()
+    let schemaMismatch: string | undefined
+    const validated = await validateComfyWorkflow(json, (detail) => {
+      schemaMismatch = detail
+    })
+    if (validated) return { strict: true, json: validated }
+
+    const legacy = zLegacyLoadableWorkflow.safeParse(json)
+    if (!legacy.success) {
+      reportError(`Workflow template ${id} is not a loadable workflow`, {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template'
+      })
+      return null
+    }
+    if (schemaMismatch) {
+      reportError(new Error(schemaMismatch), {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template_schema',
+        level: 'warning'
+      })
+    }
+    return { strict: false, json: legacy.data }
   }
 
   return {
@@ -319,6 +484,9 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
+    prepareWorkflowTemplate,
+    openPreparedWorkflowTemplate,
+    discardPreparedWorkflowTemplate,
     loadWorkflowTemplate
   }
 }

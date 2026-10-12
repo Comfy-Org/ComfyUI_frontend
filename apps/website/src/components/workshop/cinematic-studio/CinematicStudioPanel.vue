@@ -3,16 +3,16 @@ import { nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
-import { useCinematicPopover } from '../../../composables/useCinematicPopover'
-import { useCinematicShot } from '../../../composables/useCinematicShot'
-import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
-import { workshopAppRepo } from '../../../lib/workshop/apps'
-
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
-import RunLeaveDialog from '../RunLeaveDialog.vue'
+import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
+import { useCinematicPopover } from '@/composables/useCinematicPopover'
+import { useCinematicShot } from '@/composables/useCinematicShot'
+import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
+import { workshopAppRepo } from '@/lib/workshop/apps'
+import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import AppRepoLink from './AppRepoLink.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
@@ -127,7 +127,12 @@ function generate() {
       <p class="text-lg text-primary-warm-gray">
         {{ tc('cinematic.lead') }}
       </p>
-      <AppRepoLink :repo="workshopAppRepo('studio')" :locale class="shrink-0" />
+      <AppRepoLink
+        :repo="workshopAppRepo('studio')"
+        :app-slug="CINEMATIC_STUDIO_APP_SLUG"
+        :locale
+        class="shrink-0"
+      />
     </div>
     <div
       ref="layout"

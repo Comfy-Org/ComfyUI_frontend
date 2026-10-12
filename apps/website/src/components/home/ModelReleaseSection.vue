@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import { useWorkshopEnabled } from '../../scripts/posthog'
-import { getRoutes } from '../../config/routes'
-import { modelReleaseSlides } from '../../data/modelRelease'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
-import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
+import { useWorkshopEnabled } from '@/scripts/posthog'
+import { getRoutes } from '@/config/routes'
+import { modelReleaseSlides } from '@/data/modelRelease'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import FeaturedCarousel02 from '@/components/blocks/FeaturedCarousel02.vue'
+import type { FeaturedSplitSlide } from '@/components/blocks/FeaturedCarousel02.vue'
 
 const { locale = 'en', modelLinks = {} } = defineProps<{
   locale?: Locale

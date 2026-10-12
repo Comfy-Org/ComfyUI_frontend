@@ -269,6 +269,20 @@ describe('cancel telemetry on the billing SDK rail', () => {
     return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
   }
 
+  function lifecycle() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi.mocked(trackBillingEvent).mock.calls.map(([event]) =>
+      'failure_category' in event
+        ? {
+            stage: event.stage,
+            billing_client: event.billing_client,
+            failure_category: event.failure_category
+          }
+        : { stage: event.stage, billing_client: event.billing_client }
+    )
+  }
+
   it('reports one started and leaves the terminal to the lifecycle when a rail cancel settles an operation', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
@@ -313,16 +327,31 @@ describe('cancel telemetry on the billing SDK rail', () => {
     )
   })
 
-  it('reports one started when the missing route sends the cancel to the workspace client', async () => {
+  it('closes the refused SDK attempt and starts the workspace client attempt on its own client', async () => {
     flagState.billingSdkSubscriptionEnabled = true
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
       ROUTE_MISSING
     )
+    const billing = setupBilling()
 
-    await setupBilling().cancelSubscription()
+    await billing.cancelSubscription()
 
-    expect(workspaceApi.cancelSubscription).toHaveBeenCalledOnce()
-    expect(stages()).toEqual(['started'])
+    expect(lifecycle()).toEqual([
+      { stage: 'started', billing_client: 'sdk' },
+      {
+        stage: 'failed',
+        billing_client: 'sdk',
+        failure_category: 'api_rejected'
+      },
+      { stage: 'started', billing_client: 'legacy' }
+    ])
+
+    const firstClick = lifecycle().length
+    await billing.cancelSubscription()
+
+    expect(lifecycle().slice(firstClick)).toEqual([
+      { stage: 'started', billing_client: 'legacy' }
+    ])
   })
 })
 
@@ -418,6 +447,58 @@ describe('subscribe on the billing SDK rail', () => {
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledOnce()
     expect(workspaceApi.subscribe).toHaveBeenCalledTimes(2)
   })
+
+  it.for([
+    {
+      caller: 'reported the start',
+      options: { attemptStartedAt: 1 },
+      events: [
+        {
+          stage: 'failed',
+          operation_type: 'subscription',
+          billing_client: 'sdk',
+          failure_category: 'api_rejected'
+        },
+        {
+          stage: 'started',
+          operation_type: 'subscription',
+          billing_client: 'legacy'
+        }
+      ]
+    },
+    { caller: 'reported nothing', options: {}, events: [] }
+  ])(
+    'moves a start the caller $caller to the workspace client when the route is missing',
+    async ({ options, events }) => {
+      flagState.billingSdkSubscriptionEnabled = true
+      vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(ROUTE_MISSING)
+
+      await setupBilling().subscribe('pro-monthly', options)
+
+      const trackBillingEvent = useTelemetry()?.trackBillingEvent
+      if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+      expect(
+        vi
+          .mocked(trackBillingEvent)
+          .mock.calls.map(([event]) => event)
+          .filter((event) => event.operation === 'operation')
+          .map((event) =>
+            'failure_category' in event
+              ? {
+                  stage: event.stage,
+                  operation_type: event.operation_type,
+                  billing_client: event.billing_client,
+                  failure_category: event.failure_category
+                }
+              : {
+                  stage: event.stage,
+                  operation_type: event.operation_type,
+                  billing_client: event.billing_client
+                }
+          )
+      ).toEqual(events)
+    }
+  )
 
   it('surfaces a reactivation block under the code the checkout branches on', async () => {
     flagState.billingSdkSubscriptionEnabled = true

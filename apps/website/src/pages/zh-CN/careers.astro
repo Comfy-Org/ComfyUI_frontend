@@ -1,18 +1,18 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import HeroSection from '../../components/careers/HeroSection.vue'
-import RolesSection from '../../components/careers/RolesSection.vue'
-import WhyJoinSection from '../../components/careers/WhyJoinSection.vue'
-import TeamPhotosSection from '../../components/careers/TeamPhotosSection.vue'
-import FAQSection from '../../components/common/FAQSection.vue'
-import { fetchRolesForBuild } from '../../utils/ashby'
-import { reportAshbyOutcome } from '../../utils/ashby.ci'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/careers/HeroSection.vue'
+import RolesSection from '@/components/careers/RolesSection.vue'
+import WhyJoinSection from '@/components/careers/WhyJoinSection.vue'
+import TeamPhotosSection from '@/components/careers/TeamPhotosSection.vue'
+import FAQSection from '@/components/common/FAQSection.vue'
+import { fetchRolesForBuild } from '@/utils/ashby'
+import { reportAshbyOutcome } from '@/utils/ashby.ci'
 import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
   pageContext
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const outcome = await fetchRolesForBuild()
 reportAshbyOutcome(outcome)

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
-import { pricingPlans } from '../../data/pricingPlans'
-import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
-import { translationsFor } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
-import Button from '../ui/button/Button.vue'
-import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
+import { pricingPlans } from '@/data/pricingPlans'
+import type { BillingCycle, PricingPlan } from '@/data/pricingPlans'
+import { translationsFor } from '@/i18n/translations'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import PricingCard from './PricingCard.vue'
 import PricingContactBand from './PricingContactBand.vue'
 import PricingCredits from './PricingCredits.vue'
@@ -90,7 +90,7 @@ const planCards = computed(() =>
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
-    features: plan.features
+    featureGroups: plan.featureGroups
   }))
 )
 </script>
@@ -151,7 +151,7 @@ const planCards = computed(() =>
           creditsKey,
           creditsLabel,
           estimateKey,
-          features
+          featureGroups
         } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
@@ -176,8 +176,8 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div v-if="features.length" class="mt-8">
-          <PricingPlanFeatureList :features="[{ features }]" :locale />
+        <div v-if="featureGroups.length" class="mt-8">
+          <PricingPlanFeatureList :features="featureGroups" :locale />
         </div>
 
         <PricingCredits

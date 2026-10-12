@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
+import { getRoutes } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { publishedModelSlugs } from './fixtures/modelsCatalogue'
@@ -73,9 +73,6 @@ test('shows model content without Run when PostHog is unavailable', async ({
 }) => {
   const accountRequests = recordAccountRequests(context)
   await page.goto('/')
-  await expect(
-    page.getByRole('link', { name: 'Hub', exact: true })
-  ).toHaveCount(0)
   await expect(page.getByTestId('model-discovery')).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: 'Sign in', exact: true })

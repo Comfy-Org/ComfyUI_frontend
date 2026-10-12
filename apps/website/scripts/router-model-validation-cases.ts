@@ -2,8 +2,8 @@ import type {
   FieldErrorCode,
   FieldSchema,
   FieldValue
-} from '../src/config/workshop-playground'
-import { urlUploadField } from '../src/config/workshop-playground'
+} from '@/config/workshop-playground'
+import { urlUploadField } from '@/config/workshop-playground'
 
 interface InvalidInput {
   rule: string

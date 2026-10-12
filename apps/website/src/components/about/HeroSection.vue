@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import SectionLabel from '../common/SectionLabel.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

@@ -5,6 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -12,6 +13,9 @@ import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
 } from '@/platform/telemetry/types'
+import type * as SsoRequired from '@/platform/auth/sso/ssoRequired'
+
+type SsoRequiredModule = typeof SsoRequired
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -105,9 +109,18 @@ function fetchRequestHeaders(
   return input instanceof Request ? new Headers(input.headers) : new Headers()
 }
 
-interface RetrySignalLifecycle {
-  clearInitialTimeout: () => void
-  createSignal: () => AbortSignal | undefined
+/** Best-effort: the SSO screen never replaces the 403 the caller is owed. */
+async function presentSsoRequired(
+  present: (sso: SsoRequiredModule) => unknown
+): Promise<void> {
+  try {
+    await present(await import('@/platform/auth/sso/ssoRequired'))
+  } catch (error) {
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'failure_presenting_sso_required'
+    })
+  }
 }
 
 /**
@@ -136,6 +149,11 @@ export async function fetchWithUnifiedRemint(
       ? input.clone()
       : input
   const response = await fetch(input, init)
+  if (response.status === 403 && isCloud) {
+    await presentSsoRequired(({ presentForResponse }) =>
+      presentForResponse(response)
+    )
+  }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
   }
@@ -188,6 +206,15 @@ function isRetriableUnauthorized(
   return error.response?.status === 401
 }
 
+async function presentSsoRefusal(error: unknown): Promise<void> {
+  if (!isCloud || !axios.isAxiosError(error)) return
+  const response = error.response
+  if (response?.status !== 403) return
+  await presentSsoRequired(({ presentForRefusal }) =>
+    presentForRefusal(response.status, response.data)
+  )
+}
+
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
@@ -199,6 +226,7 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
+      await presentSsoRefusal(error)
       if (
         !isRetriableUnauthorized(error) ||
         !(await shouldRemintCloudRequest())

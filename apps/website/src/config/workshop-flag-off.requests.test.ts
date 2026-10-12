@@ -11,7 +11,7 @@ import type { User } from 'firebase/auth'
 import { mintBody, testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const CLOUD = WORKSHOP_CLOUD_BASE_URL
@@ -87,25 +87,22 @@ function stubCloud(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input)
-      sent.push(recordRequest(url, init))
-      const body = url.endsWith('/api/auth/token')
-        ? mintBody('jwt-1')
-        : url.endsWith('/api/billing/balance')
-          ? {
-              amount_micros: 211,
-              currency: 'usd',
-              effective_balance_micros: 211
-            }
-          : init?.credentials === 'include'
-            ? perUser
-            : anonymous
-      return new Response(JSON.stringify(body))
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const url = String(input)
+    sent.push(recordRequest(url, init))
+    const body = url.endsWith('/api/auth/token')
+      ? mintBody('jwt-1')
+      : url.endsWith('/api/billing/balance')
+        ? {
+            amount_micros: 211,
+            currency: 'usd',
+            effective_balance_micros: 211
+          }
+        : init?.credentials === 'include'
+          ? perUser
+          : anonymous
+    return new Response(JSON.stringify(body))
+  })
   return sent
 }
 
@@ -153,7 +150,7 @@ describe('website with unified_web_session not on', () => {
     '$name: boot, both balances, a session freshness check, a refocus and sign-out send main’s requests',
     async ({ anonymous, perUser, features }) => {
       const sent = stubCloud(anonymous, perUser)
-      const posthog = await import('../scripts/posthog')
+      const posthog = await import('@/scripts/posthog')
       vi.mocked(posthog.useWorkshopAuthFlag).mockReturnValue(
         readonly(ref(true))
       )

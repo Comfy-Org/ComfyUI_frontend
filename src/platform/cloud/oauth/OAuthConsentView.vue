@@ -274,10 +274,16 @@ function messageForError(error: unknown): string {
   if (error instanceof OAuthApiError) {
     if (error.status === 400) return t('oauth.consent.errorExpired')
     if (error.status === 401) return t('oauth.consent.sessionError')
-    if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
+    if (error.status === 403) return forbiddenMessage(error.code)
     if (error.status === 404) return t('oauth.consent.errorUnavailable')
   }
   return t('oauth.consent.genericError')
+}
+
+function forbiddenMessage(code: string | undefined): string {
+  return code === 'origin_not_allowed' || code === 'cross_site_request'
+    ? t('oauth.consent.errorOriginRefused')
+    : t('oauth.consent.errorScopeBroadening')
 }
 
 async function submit(decision: 'allow' | 'deny') {

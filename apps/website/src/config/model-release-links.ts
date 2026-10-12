@@ -1,4 +1,4 @@
-import { modelReleaseSlides } from '../data/modelRelease'
+import { modelReleaseSlides } from '@/data/modelRelease'
 
 export async function modelReleaseLinks(
   enabled: boolean

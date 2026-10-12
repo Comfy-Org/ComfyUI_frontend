@@ -2,20 +2,20 @@
 
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../src/config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import {
   authoredWorkshopModels,
   workshopModels
-} from '../src/config/workshop-browse-content'
-import { isWorkshopModelDisabled } from '../src/config/workshop-model-availability'
-import hubTemplates from '../src/data/hubTemplates.json'
-import templateModelJoin from '../src/data/templateModelJoin.json'
+} from '@/config/workshop-browse-content'
+import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
+import hubTemplates from '@/data/hubTemplates.json'
+import templateModelJoin from '@/data/templateModelJoin.json'
 import {
   partnerModelFor,
   useCaseForTemplate
-} from '../src/lib/hub/template-use-case'
-import { hubTemplatesSchema } from '../src/lib/hub/types'
-import type { HubTemplate } from '../src/lib/hub/types'
+} from '@/lib/hub/template-use-case'
+import { hubTemplatesSchema } from '@/lib/hub/types'
+import type { HubTemplate } from '@/lib/hub/types'
 import { buildTemplateModelJoin } from './generate-template-model-join'
 
 const model: WorkshopModel = {

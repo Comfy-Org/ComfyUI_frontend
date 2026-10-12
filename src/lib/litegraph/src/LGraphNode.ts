@@ -74,7 +74,11 @@ import {
   createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import {
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot,
+  initializeWidgetsView
+} from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
@@ -97,16 +101,10 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  IContextMenuValue,
-  IFoundSlot,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -114,6 +112,14 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
+import type { IContextMenuValue } from './types/contextMenu'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type { Panel } from './types/panel'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
 import {
@@ -191,18 +197,30 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+function cloneWidgetValueTwice(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const json = JSON.stringify(value)
+  return [JSON.parse(json), JSON.parse(json)]
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    positional.push(positionalValue)
+    Object.defineProperty(named, widget.name, {
+      value: namedValue,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
   }
   return { widgets_values: positional, widgets_values_named: named }
 }
@@ -1251,7 +1269,12 @@ export class LGraphNode
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            getWidgetRestorationSlot(
+              this,
+              widget,
+              positionalIndex++,
+              restoration.positional.length
+            )
           )
           if (restored) widget.value = restored.value
         }
@@ -1280,6 +1303,7 @@ export class LGraphNode
         )
       }
     } finally {
+      clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
   }
@@ -2308,6 +2332,8 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
+
+    if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens

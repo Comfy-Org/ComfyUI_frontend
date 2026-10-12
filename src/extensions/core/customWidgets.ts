@@ -1,3 +1,4 @@
+import { clamp } from 'es-toolkit'
 import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -7,6 +8,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { GET_CONFIG } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -161,7 +163,7 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
     name: string,
     protected valueGetter: () => T
   ) {
-    super({ name, node, options: {}, type: 'hidden', y: 0 })
+    super({ name, node, options: { socketless: true }, type: 'hidden', y: 0 })
   }
   drawWidget() {}
   onClick() {}
@@ -206,9 +208,33 @@ function onCustomIntCreated(this: LGraphNode) {
 }
 const DISPLAY_WIDGET_TYPES = new Set(['gradientslider', 'slider', 'knob'])
 
+const finiteNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const positiveNumber = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n !== undefined && n > 0 ? n : undefined
+}
+
+const fractionDigits = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n === undefined ? undefined : clamp(Math.trunc(n), 0, 100)
+}
+
+const lastDecimalPlace = (places: number) =>
+  Number((10 ** -places).toFixed(places))
+
 function onCustomFloatCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
+
+  const declaredPrecision = fractionDigits(valueWidget.options.precision) ?? 1
+  const declaredStep =
+    positiveNumber(valueWidget.options.step2) ??
+    lastDecimalPlace(declaredPrecision)
+  const declaredRound = valueWidget.options.round
+  const declaresRounding = positiveNumber(declaredRound) !== undefined
+  const nodePrecision = () => fractionDigits(this.properties.precision)
 
   let baseType = valueWidget.type
   Object.defineProperty(valueWidget, 'type', {
@@ -244,7 +270,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   Object.defineProperty(valueWidget.options, 'precision', {
-    get: () => this.properties.precision ?? 1,
+    get: () => nodePrecision() ?? declaredPrecision,
     set: (v) => {
       this.properties.precision = v
       valueWidget.callback?.(valueWidget.value)
@@ -252,19 +278,21 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
   Object.defineProperty(valueWidget.options, 'step2', {
     get: () => {
-      if (this.properties.step) return this.properties.step
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 5 * 10 ** -precision : 1
+      const configured = positiveNumber(this.properties.step)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places === undefined ? declaredStep : lastDecimalPlace(places)
     },
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
     get: () => {
-      if (this.properties.round) return this.properties.round
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 10 ** -precision : 0.1
+      const configured = positiveNumber(this.properties.round)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places !== undefined && declaresRounding
+        ? lastDecimalPlace(places)
+        : declaredRound
     },
     set: (v) => {
       this.properties.round = v
@@ -304,6 +332,10 @@ app.registerExtension({
         const values = () => connectedInputs.value
         const startValue = connectedInputs.value[0] ?? ''
         node.addWidget('combo', inputName, startValue, () => {}, { values })
+        node.onInputAdded = useChainCallback(node.onInputAdded, (input) => {
+          if (input.widget?.name !== inputName) return
+          input.widget[GET_CONFIG] = () => ['COMBO', { options: values }]
+        })
       }
     }
   }

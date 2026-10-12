@@ -2,43 +2,40 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
 import {
   initialWorkshopPageState,
   workshopExampleState
-} from '../../config/workshop-page-state'
-import {
-  restoreFormValues,
-  urlUploadField
-} from '../../config/workshop-playground'
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
+} from '@/config/workshop-page-state'
+import { restoreFormValues, urlUploadField } from '@/config/workshop-playground'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import {
   workflowNoticeKey,
   workflowStatusKey
-} from '../../config/workshop-workflow-presentation'
-import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+} from '@/config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '@/config/workshop-buy-credits'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { WorkflowCreditsRefusal } from '@/lib/workshop/workflow-credits-gate'
 import {
   withRefusalBaseline,
   workflowCreditsGate
-} from '../../lib/workshop/workflow-credits-gate'
-import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
-import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
-import { useTablist } from '../../composables/useTablist'
-import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
-import { useWorkflowRun } from '../../composables/useWorkflowRun'
-import { t } from '../../i18n/translations'
+} from '@/lib/workshop/workflow-credits-gate'
+import { panelSaysRefusal } from '@/lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '@/composables/useStickyFooterScrollPadding'
+import { useTablist } from '@/composables/useTablist'
+import { useWorkflowFormDraft } from '@/composables/useWorkflowFormDraft'
+import { useWorkflowRun } from '@/composables/useWorkflowRun'
+import { t } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
-import { sameFormValues } from '../../lib/workshop/form-values'
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
+import { sameFormValues } from '@/lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
@@ -48,10 +45,9 @@ import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
-const { model, scope, cloudHref } = defineProps<{
+const { model, scope } = defineProps<{
   model: WorkflowWorkshopModelDetail
   scope: string
-  cloudHref?: string
 }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
@@ -205,6 +201,15 @@ function tabIndex(item: (typeof sections)[number]): number {
   return section.value === item ? 0 : -1
 }
 
+function selectSection(item: (typeof sections)[number]) {
+  if (item !== section.value && enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'tab_switched',
+      properties: { ...modelAnalytics, tab: item }
+    })
+  section.value = item
+}
+
 function selectExample(index: number) {
   const example = initial.examples[index]
   if (!example || formDisabled.value) return
@@ -262,7 +267,7 @@ function start() {
       :aria-controls="`workflow-panel-${item}`"
       :tabindex="tabIndex(item)"
       class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
-      @click="section = item"
+      @click="selectSection(item)"
     >
       {{ t(sectionLabels[item]) }}
     </button>
@@ -336,7 +341,7 @@ function start() {
         </div>
       </form>
     </section>
-    <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7">
+    <div class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-7">
       <WorkflowResults
         :key="selectedRunId"
         :model="model"
@@ -357,7 +362,6 @@ function start() {
     v-show="section === 'workflow'"
     :active="section === 'workflow'"
     :model="model"
-    :cloud-href="cloudHref"
   />
   <div
     v-show="section === 'api'"

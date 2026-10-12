@@ -1,8 +1,8 @@
 import { onMounted, onScopeDispose } from 'vue'
 import type { Ref } from 'vue'
 
-import type { FieldSchema, FormValues } from '../config/workshop-playground'
-import { onBeforeSignInLeave } from '../config/workshop-return'
+import type { FieldSchema, FormValues } from '@/config/workshop-playground'
+import { onBeforeSignInLeave } from '@/config/workshop-return'
 import {
   transferWorkshopFormDraft,
   useWorkshopFormDraft
