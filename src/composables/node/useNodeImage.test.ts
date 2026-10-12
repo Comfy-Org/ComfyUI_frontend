@@ -163,6 +163,24 @@ describe('canvas node media failure telemetry', () => {
     )
   })
 
+  it('loads the stored preview of an HDR image instead of the raw file', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=render.exr&type=input&preview_id=preview-1'
+    ])
+    const created = stubImages()
+    const node = createMockMediaNode({
+      size: [400, 400],
+      graph: { setDirtyCanvas: vi.fn() }
+    })
+
+    useNodeImage(node).showPreview()
+    await flush()
+
+    expect(created[0].src).toBe(
+      '/api/assets/preview-1/content?disposition=inline'
+    )
+  })
+
   it('stays silent when the image loads', async () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
       '/api/view?filename=ok.png&type=output'

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import enMessages from '@/locales/en/main.json'
@@ -193,6 +194,40 @@ describe('useWidgetSelectActions', () => {
       await handleFilesUpdate([new File(['test'], 'uploaded.png')])
 
       expect(mockCallback).toHaveBeenCalledWith('uploaded.png')
+    })
+
+    it('remembers the stored preview of an upload', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              name: 'render.exr',
+              subfolder: '',
+              asset: { preview_id: 'preview-1' }
+            })
+        })
+      )
+      const setUploadPreviewId = vi.spyOn(
+        useNodeOutputStore(),
+        'setUploadPreviewId'
+      )
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'render.exr')])
+
+      expect(setUploadPreviewId).toHaveBeenCalledWith('render.exr', 'preview-1')
     })
 
     it('shows alert toast on upload failure', async () => {

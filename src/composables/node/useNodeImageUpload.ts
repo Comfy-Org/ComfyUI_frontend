@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { api } from '@/scripts/api'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -65,7 +66,12 @@ const uploadFile = async (
     await useAssetsStore().inputAssets.invalidate()
   }
 
-  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+  const path: string = data.subfolder
+    ? `${data.subfolder}/${data.name}`
+    : data.name
+  if (data.asset?.preview_id)
+    useNodeOutputStore().setUploadPreviewId(path, data.asset.preview_id)
+  return path
 }
 
 interface ImageUploadOptions {

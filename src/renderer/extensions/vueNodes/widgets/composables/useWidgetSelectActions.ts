@@ -10,6 +10,7 @@ import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/co
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 
@@ -87,7 +88,12 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       await useAssetsStore().inputAssets.invalidate()
     }
 
-    return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+    const path: string = data.subfolder
+      ? `${data.subfolder}/${data.name}`
+      : data.name
+    if (data.asset?.preview_id)
+      useNodeOutputStore().setUploadPreviewId(path, data.asset.preview_id)
+    return path
   }
 
   async function uploadFiles(files: File[]): Promise<string[]> {
