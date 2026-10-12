@@ -30,6 +30,27 @@ import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
 export class SubgraphOutput extends SubgraphSlot {
   declare parent: SubgraphOutputNode
 
+  private findExistingLink(targetSlot: number): LLink | undefined {
+    const { subgraph } = this.parent
+    return this.linkIds
+      .map((id) => subgraph.getLink(id))
+      .find(
+        (link) =>
+          link?.target_id === this.parent.id && link.target_slot === targetSlot
+      )
+  }
+
+  private mirrorNeedsRepair(existingLink: LLink | undefined): boolean {
+    return existingLink
+      ? this.linkIds.length !== 1 || this.linkIds[0] !== existingLink.id
+      : this.linkIds.length !== 0
+  }
+
+  private repairLinkMirror(existingLink: LLink | undefined): void {
+    this.linkIds.splice(0, this.linkIds.length)
+    if (existingLink) this.linkIds.push(existingLink.id)
+  }
+
   override connect(
     slot: INodeOutputSlot,
     node: LGraphNode,
@@ -56,16 +77,8 @@ export class SubgraphOutput extends SubgraphSlot {
     // Re-read after the extension hook because it may mutate topology.
     const targetSlot = this.parent.slots.indexOf(this)
     if (targetSlot === -1) return
-    const existingLink = this.linkIds
-      .map((id) => subgraph.getLink(id))
-      .find(
-        (link) =>
-          link?.target_id === this.parent.id && link.target_slot === targetSlot
-      )
-    const canonicalLinkIds = existingLink ? [existingLink.id] : []
-    const mirrorNeedsRepair =
-      canonicalLinkIds.length !== this.linkIds.length ||
-      canonicalLinkIds.some((id, index) => this.linkIds[index] !== id)
+    const existingLink = this.findExistingLink(targetSlot)
+    const mirrorNeedsRepair = this.mirrorNeedsRepair(existingLink)
     const changeStarted = existingLink != null || mirrorNeedsRepair
     if (changeStarted) {
       subgraph.beforeChange()
@@ -73,9 +86,7 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Serialized slots may retain duplicate, dangling, or unrelated ids.
     // Repair the mirror only after the hook approves and inside the change.
-    if (mirrorNeedsRepair) {
-      this.linkIds.splice(0, this.linkIds.length, ...canonicalLinkIds)
-    }
+    if (mirrorNeedsRepair) this.repairLinkMirror(existingLink)
 
     const linkId = mintLinkId(
       subgraph.state,

@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getConcreteWidgetSource,
+  transferConcreteWidgetOnRemove,
   toConcreteWidget
 } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -150,6 +151,7 @@ export function transferReplacedWidgetState(
   outgoing: IBaseWidget,
   replacement: IBaseWidget
 ): void {
+  transferConcreteWidgetOnRemove(outgoing, replacement)
   if (outgoing instanceof BaseWidget) outgoing.releaseRegisteredState()
   for (const input of node.inputs) {
     if (input._widget === outgoing) input._widget = replacement

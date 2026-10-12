@@ -861,6 +861,7 @@ describe('LGraphNode', () => {
         }
       }
     ] as const
+    const [inputRemoval, outputRemoval] = removalOperations
     const invalidSlots: readonly unknown[] = [
       -1,
       2,
@@ -872,11 +873,11 @@ describe('LGraphNode', () => {
       '0e0'
     ]
 
-    test.for(invalidSlots)('removeOutput ignores invalid slot $0', (slot) => {
+    test.for(invalidSlots)('removeOutput ignores invalid slot %j', (slot) => {
       const testNode = new LGraphNode('TestNode')
-      const { names, onRemoved } = removalOperations[1].setup(testNode)
+      const { names, onRemoved } = outputRemoval.setup(testNode)
 
-      removalOperations[1].remove(testNode, slot)
+      outputRemoval.remove(testNode, slot)
 
       expect(names()).toEqual(['first', 'second'])
       expect(onRemoved).not.toHaveBeenCalled()
@@ -884,9 +885,9 @@ describe('LGraphNode', () => {
 
     test('removeInput ignores an invalid runtime slot', () => {
       const testNode = new LGraphNode('TestNode')
-      const { names, onRemoved } = removalOperations[0].setup(testNode)
+      const { names, onRemoved } = inputRemoval.setup(testNode)
 
-      removalOperations[0].remove(testNode, '0x0')
+      inputRemoval.remove(testNode, '0x0')
 
       expect(names()).toEqual(['first', 'second'])
       expect(onRemoved).not.toHaveBeenCalled()

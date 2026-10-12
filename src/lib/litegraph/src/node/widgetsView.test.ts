@@ -2,6 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { chainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { BooleanWidget } from '@/lib/litegraph/src/widgets/BooleanWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -234,28 +235,6 @@ describe('widgets view', () => {
     expect(node.widgets).toEqual([other, wrapped])
   })
 
-  it('refreshes a wrapper when its source type changes', () => {
-    const node = new LGraphNode('test')
-    const onRemove = vi.fn()
-    const source = nonExtensibleWidget(onRemove)
-    const original = node.addCustomWidget(source)
-    const input = node.addInput('wrapped', 'number', {
-      widget: { name: 'wrapped' },
-      _widget: original
-    })
-
-    source.type = 'toggle'
-    const refreshed = node.addCustomWidget(source)
-
-    expect(refreshed).toBeInstanceOf(BooleanWidget)
-    expect(node.widgets).toEqual([refreshed])
-    expect(input._widget).toBe(refreshed)
-    expect(onRemove).not.toHaveBeenCalled()
-
-    node.removeWidget(refreshed)
-    expect(onRemove).toHaveBeenCalledOnce()
-  })
-
   it('retains an installed wrapper whose local type changes', () => {
     const node = new LGraphNode('test')
     const source = nonExtensibleWidget()
@@ -269,110 +248,79 @@ describe('widgets view', () => {
     expect(installed.type).toBe('hidden')
   })
 
-  it('refreshes a changed raw source in its installed slot', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const before = node.addWidget('number', 'before', 1, null)
-    const onRemove = vi.fn()
-    const source = nonExtensibleWidget(onRemove)
-    const installed = node.addCustomWidget(source)
-    const after = node.addWidget('number', 'after', 2, null)
-    const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
-    const input = node.addInput('wrapped', 'number', {
-      widget: { name: 'wrapped' },
-      _widget: installed
-    })
-
-    source.name = 'renamed'
-    source.type = 'toggle'
-    assert.exists(node.widgets)
-    node.widgets.unshift(source)
-
-    const refreshed = node.widgets[1]
-    expect(node.widgets).toEqual([before, refreshed, after])
-    expect(refreshed).toBeInstanceOf(BooleanWidget)
-    expect(input._widget).toBe(refreshed)
-    expect(onRemove).not.toHaveBeenCalled()
-    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
-    expect(
-      useWidgetValueStore()
-        .getNodeWidgets(graph.rootGraph.id, node.id)
-        .map((widget) => widget.type)
-    ).toEqual(['number', 'toggle', 'number'])
-
-    node.removeWidget(refreshed)
-    expect(onRemove).toHaveBeenCalledOnce()
-  })
-
-  it.for(
-    (
-      [
-        {
-          entry: 'addCustomWidget',
-          refresh(node: LGraphNode, source: IBaseWidget) {
-            return node.addCustomWidget(source)
-          }
-        },
-        {
-          entry: 'widgets.push',
-          refresh(node: LGraphNode, source: IBaseWidget) {
-            node.widgets?.push(source)
-            return node.widgets?.find(
-              (widget) => widget instanceof BooleanWidget
-            )
-          }
-        }
-      ] as const
-    ).flatMap((path) =>
-      (
-        [
-          {
-            callback: 'throws',
-            implementation: () => {
-              throw new Error('extension teardown failed')
-            }
-          },
-          {
-            callback: 'mutates the widget list',
-            implementation: (node: LGraphNode) => {
-              node.widgets?.splice(0, 1)
-            }
-          }
-        ] as const
-      ).map((callback) => ({ path, callback }))
-    )
-  )(
-    'does not run source teardown during refresh through $path.entry when it $callback.callback',
-    ({ path, callback }) => {
+  it.for([
+    {
+      entry: 'addCustomWidget',
+      attachCleanup(widget: IBaseWidget, cleanup: () => void) {
+        widget.onRemove = cleanup
+      },
+      refresh(node: LGraphNode, _widgets: IBaseWidget[], source: IBaseWidget) {
+        return node.addCustomWidget(source)
+      }
+    },
+    {
+      entry: 'widgets.unshift',
+      attachCleanup(widget: IBaseWidget, cleanup: () => void) {
+        widget.onRemove = chainCallback<IBaseWidget, IBaseWidget['onRemove']>(
+          widget.onRemove,
+          cleanup
+        )
+      },
+      refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
+        widgets.unshift(source)
+        return widgets[1]
+      }
+    }
+  ] as const)(
+    'refreshes wrapper state and defers teardown through $entry',
+    ({ attachCleanup, refresh }) => {
       const graph = new LGraph()
       const node = new LGraphNode('test')
       graph.add(node)
       const before = node.addWidget('number', 'before', 1, null)
-      const onRemove = vi.fn(() => callback.implementation(node))
-      const source = nonExtensibleWidget(onRemove)
+      const previousSourceCleanup = vi.fn()
+      const source = nonExtensibleWidget(previousSourceCleanup)
       const installed = node.addCustomWidget(source)
       const after = node.addWidget('number', 'after', 2, null)
+      assert.exists(node.widgets)
+      const widgets = node.widgets
+      let refreshComplete = false
+      const localCleanup = vi.fn(() => {
+        if (refreshComplete) return
+        widgets.splice(0, 1)
+        throw new Error('extension teardown ran during refresh')
+      })
+      attachCleanup(installed, localCleanup)
+      const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
       const input = node.addInput('wrapped', 'number', {
         widget: { name: 'wrapped' },
         _widget: installed
       })
 
+      const currentSourceCleanup = vi.fn()
+      source.onRemove = currentSourceCleanup
+      source.name = 'renamed'
       source.type = 'toggle'
-      let refreshed: IBaseWidget | undefined
-      expect(() => {
-        refreshed = path.refresh(node, source)
-      }).not.toThrow()
+      const refreshed = refresh(node, widgets, source)
+      refreshComplete = true
 
       expect(refreshed).toBeInstanceOf(BooleanWidget)
       expect(node.widgets).toEqual([before, refreshed, after])
       expect(input._widget).toBe(refreshed)
-      expect(onRemove).not.toHaveBeenCalled()
+      expect(previousSourceCleanup).not.toHaveBeenCalled()
+      expect(currentSourceCleanup).not.toHaveBeenCalled()
+      expect(localCleanup).not.toHaveBeenCalled()
+      expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
       expect(
         useWidgetValueStore()
           .getNodeWidgets(graph.rootGraph.id, node.id)
           .map((widget) => widget.type)
       ).toEqual(['number', 'toggle', 'number'])
+
+      node.removeWidget(refreshed)
+      expect(previousSourceCleanup).not.toHaveBeenCalled()
+      expect(currentSourceCleanup).toHaveBeenCalledOnce()
+      expect(localCleanup).toHaveBeenCalledOnce()
     }
   )
 

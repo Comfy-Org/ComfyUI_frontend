@@ -6,6 +6,7 @@ import type {
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import { rebaseChainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { toClass as instantiateClass } from '@/lib/litegraph/src/utils/type'
 
 import { AssetWidget } from './AssetWidget'
@@ -79,6 +80,7 @@ const toWidgetClass = instantiateClass
 interface ConcreteWidgetProvenance {
   source: IBaseWidget
   sourceType: IBaseWidget['type']
+  sourceOnRemove: IBaseWidget['onRemove']
 }
 
 const provenanceByConcreteWidget = new WeakMap<
@@ -88,6 +90,20 @@ const provenanceByConcreteWidget = new WeakMap<
 
 export function getConcreteWidgetSource(widget: IBaseWidget): IBaseWidget {
   return provenanceByConcreteWidget.get(widget)?.source ?? widget
+}
+
+export function transferConcreteWidgetOnRemove(
+  outgoing: IBaseWidget,
+  replacement: IBaseWidget
+): void {
+  const provenance = provenanceByConcreteWidget.get(outgoing)
+  if (!provenance || outgoing.onRemove === provenance.sourceOnRemove) return
+
+  replacement.onRemove = rebaseChainCallback(
+    outgoing.onRemove,
+    provenance.sourceOnRemove,
+    replacement.onRemove
+  )
 }
 
 function collectDescriptors(value: object) {
@@ -229,7 +245,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   if (result && wrapLegacyWidgets && !Object.is(result, widget)) {
     provenanceByConcreteWidget.set(result, {
       source: widget,
-      sourceType: widget.type
+      sourceType: widget.type,
+      sourceOnRemove: widget.onRemove
     })
   }
   return result
