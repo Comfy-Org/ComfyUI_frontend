@@ -9,8 +9,16 @@ been benchmarked; see "Open before a paid run".
 The graph is `src/lib/workshop/openjutsu/swap.api.json`, filled in by
 `workflow.ts` beside it. Every node is built into ComfyUI; no custom node pack.
 
-Build spec (outside the repo): `~/comfyvibe/projects/comfy_workshop/openjutsu/build/comfy-build.yaml`,
-Build `openjutsu-h3-swap` (`4dacf7e1-f80e-4315-902b-6c769af2e79e`), ComfyUI `52f98af2`.
+Workspace: `Workshop Apps` (where every Hub app's deployment lives), since
+2026-10-12. Build `openjutsu-h3-swap` (`d3f10ae7-3c0e-4f03-a476-eba190ef669c`),
+release `c8393b68-d81a-44b4-b6dd-b7a6e41da6f0`, ComfyUI `52f98af2`. Deployment
+`dep-4a66f1a2-f688-4169-8f30-8ddc1ce78b51`, RTX PRO 6000, US-NE-1, 0 to 1
+workers. The spec is outside the repo:
+`~/comfyvibe/projects/comfy_workshop/openjutsu/build-workshop-apps/comfy-build.yaml`.
+
+The benchmark ran on the first deployment, `dep-3b5009fe`, in Rob's personal
+workspace (Build `4dacf7e1`, spec in `openjutsu/build/`), now stopped. Same
+spec, same GPU and region.
 
 ## What it does
 
