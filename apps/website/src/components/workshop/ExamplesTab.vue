@@ -143,6 +143,7 @@ function actionFor(example: PlaygroundExample, active = false) {
                     : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
                 )
               "
+              data-testid="example-thumbnail"
             >
               <video
                 v-if="
