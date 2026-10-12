@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -110,6 +111,20 @@ describe('link marquee selection', () => {
     expect(getSelectedLinkIds(graph)).toEqual([links[1].id])
   })
 
+  it('drops a selected link once it is hidden or replaced', () => {
+    const { graph, links } = createGraphWithLinks()
+    drawHorizontalLink(links[0], 10)
+    drawHorizontalLink(links[1], 20)
+    selectLinksForMarquee(graph, links, 0, [40, 0, 20, 40], NO_MODIFIERS)
+
+    useLinkPresentationStore().patch(graphScopeOf(graph), links[0].id, {
+      hidden: true
+    })
+    graph.removeLink(links[1].id)
+
+    expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+
   it('skips hidden links', () => {
     const { graph, links } = createGraphWithLinks()
     drawHorizontalLink(links[0], 10)
@@ -158,6 +173,25 @@ describe('link marquee selection', () => {
     ])
     expect(events).toEqual(['before', 'after'])
     expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+
+  it('disconnects a deleted link from its subgraph output slot', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'value', type: 'number' }]
+    })
+    const origin = new LGraphNode('origin')
+    origin.addOutput('value', 'number')
+    subgraph.add(origin)
+    const outputSlot = subgraph.outputNode.slots[0]
+    const link = outputSlot.connect(origin.outputs[0], origin)
+    if (!link) throw new Error('connect failed')
+    drawHorizontalLink(link, 10)
+    selectLinksForMarquee(subgraph, [link], 0, [40, 0, 20, 40], NO_MODIFIERS)
+
+    deleteSelectedLinks(createHost(subgraph))
+
+    expect(subgraph.getLink(link.id)).toBeUndefined()
+    expect(outputSlot.linkIds).toEqual([])
   })
 
   it('does nothing without a link selection', () => {

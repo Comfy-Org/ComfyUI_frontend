@@ -169,7 +169,15 @@ describe('layoutMath utils', () => {
         ],
         expected: false
       },
-      { name: 'empty', points: [], expected: false }
+      { name: 'empty', points: [], expected: false },
+      {
+        name: 'non-finite',
+        points: [
+          { x: Number.NaN, y: 5 },
+          { x: 5, y: 5 }
+        ],
+        expected: false
+      }
     ])('$name -> $expected', ({ points, expected }) => {
       expect(polylineIntersectsBounds(points, bounds)).toBe(expected)
     })

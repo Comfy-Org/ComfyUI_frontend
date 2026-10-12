@@ -7,6 +7,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
 import type { LGraph } from '../LGraph'
+import { Subgraph } from '../subgraph/Subgraph'
 import type { LLink } from '../LLink'
 import type { Reroute } from '../Reroute'
 import type { CanvasPointerEvent } from '../types/events'
@@ -60,12 +61,16 @@ export function hideLinks(
 export function deleteLinks(
   host: LinkMutationHost,
   graph: LGraph,
-  linkIds: Iterable<LinkId>
+  links: Iterable<LLink>
 ): void {
   mutateLink(host, () => {
-    for (const linkId of linkIds) {
-      graph.removeLink(linkId)
-      layoutStore.deleteLinkLayout(linkId)
+    for (const link of links) {
+      if (link.targetIsIoNode && graph instanceof Subgraph) {
+        graph.outputNode.slots[link.target_slot]?.disconnect()
+      } else {
+        graph.removeLink(link.id)
+      }
+      layoutStore.deleteLinkLayout(link.id)
     }
   })
 }

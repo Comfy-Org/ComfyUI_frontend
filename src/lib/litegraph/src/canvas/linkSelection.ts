@@ -1,5 +1,8 @@
 import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
-import { polylineIntersectsBounds } from '@/renderer/core/layout/utils/layoutMath'
+import {
+  pointInBounds,
+  polylineIntersectsBounds
+} from '@/renderer/core/layout/utils/layoutMath'
 import type { Bounds, Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
@@ -40,89 +43,117 @@ function linkIdsDrawnInBounds(
   return linkIds
 }
 
-function selectedSegments(graph: LGraph, selected: Set<LinkId>): object[] {
-  const segments: object[] = [...selected].flatMap((linkId) => {
-    const link = graph.getLink(linkId)
-    return link ? [link] : []
-  })
-  for (const reroute of graph.reroutes.values()) {
-    if ([...reroute.linkIds].some((linkId) => selected.has(linkId)))
-      segments.push(reroute)
-  }
-  return segments
+function isLinkVisible(graph: LGraph, link: LLink): boolean {
+  return (
+    useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+      ?.hidden !== true
+  )
 }
 
-function polylineYsAtX(polyline: readonly Point[], x: number): number[] {
-  return polyline.slice(1).flatMap((end, i) => {
-    const start = polyline[i]
-    const [left, right] = start.x <= end.x ? [start, end] : [end, start]
-    if (x < left.x || x > right.x) return []
-    if (right.x === left.x) return [Math.min(left.y, right.y)]
-    const t = (x - left.x) / (right.x - left.x)
-    return [left.y + (right.y - left.y) * t]
-  })
+/** Selected links that are still the graph's own, visible links. */
+export function getSelectedLinks(graph: LGraph): LLink[] {
+  const selection = useLinkSelectionStore().selection
+  if (!selection) return []
+  return selection.links.filter(
+    (link) => graph.getLink(link.id) === link && isLinkVisible(graph, link)
+  )
+}
+
+/** Ids of {@link getSelectedLinks}. */
+export function getSelectedLinkIds(graph: LGraph): LinkId[] {
+  return getSelectedLinks(graph).map((link) => link.id)
+}
+
+function segmentsOf(graph: LGraph, links: readonly LLink[]): object[] {
+  const linkIds = new Set(links.map((link) => link.id))
+  const reroutes = [...graph.reroutes.values()].filter((reroute) =>
+    [...reroute.linkIds].some((linkId) => linkIds.has(linkId))
+  )
+  return [...links, ...reroutes]
+}
+
+function topmostCrossingAtX(
+  polyline: readonly Point[],
+  x: number,
+  marquee: Bounds
+): number {
+  let top = Infinity
+  for (let i = 1; i < polyline.length; i++) {
+    const a = polyline[i - 1]
+    const b = polyline[i]
+    const [left, right] = a.x <= b.x ? [a, b] : [b, a]
+    if (x < left.x || x > right.x) continue
+    const y =
+      right.x === left.x
+        ? Math.min(left.y, right.y)
+        : left.y + ((right.y - left.y) * (x - left.x)) / (right.x - left.x)
+    if (y >= marquee.y && y <= marquee.y + marquee.height)
+      top = Math.min(top, y)
+  }
+  return top
+}
+
+function topmostPointInside(
+  polyline: readonly Point[],
+  marquee: Bounds
+): number {
+  let top = Infinity
+  for (const point of polyline) {
+    if (pointInBounds(point, marquee)) top = Math.min(top, point.y)
+  }
+  return top
 }
 
 /** Canvas point on the topmost selected link at the marquee's release x. */
 export function getSelectedLinksAnchor(graph: LGraph): Point | null {
   const selection = useLinkSelectionStore().selection
-  const selected = new Set(getSelectedLinkIds(graph))
-  if (!selection || !selected.size) return null
-  const polylines = selectedSegments(graph, selected).flatMap((segment) => {
+  const links = getSelectedLinks(graph)
+  if (!selection || !links.length) return null
+  const { anchorX: x, marquee } = selection
+  const polylines = segmentsOf(graph, links).flatMap((segment) => {
     const polyline = getLinkPolyline(segment)
     return polyline ? [polyline] : []
   })
-  const x = selection.anchorX
-  const ys = polylines.flatMap((polyline) => polylineYsAtX(polyline, x))
-  if (ys.length) return { x, y: Math.min(...ys) }
-  const points = polylines.flat()
-  if (!points.length) return null
-  return { x, y: Math.min(...points.map((point) => point.y)) }
+  let crossing = Infinity
+  let inside = Infinity
+  for (const polyline of polylines) {
+    crossing = Math.min(crossing, topmostCrossingAtX(polyline, x, marquee))
+    inside = Math.min(inside, topmostPointInside(polyline, marquee))
+  }
+  if (crossing !== Infinity) return { x, y: crossing }
+  if (inside !== Infinity) return { x, y: inside }
+  return { x, y: marquee.y }
 }
 
-function selectLinksInBounds(
-  graph: LGraph,
-  renderedPaths: Iterable<LinkSegment>,
-  bounds: Bounds,
-  anchorX: number
-): void {
-  const scope = graphScopeOf(graph)
-  const presentation = useLinkPresentationStore()
-  const linkIds = [...linkIdsDrawnInBounds(renderedPaths, bounds)].filter(
-    (linkId) =>
-      graph.getLink(linkId) &&
-      presentation.getPresentation(scope, linkId)?.hidden !== true
-  )
-  useLinkSelectionStore().select(scope, linkIds, anchorX)
-}
-
-/** Selects links under a marquee that captured nothing else; otherwise clears. */
+/** Selects links under a marquee that left no items selected; otherwise clears. */
 export function selectLinksForMarquee(
   graph: LGraph | null,
   renderedPaths: Iterable<LinkSegment>,
-  capturedItemCount: number,
+  selectedItemCount: number,
   [x, y, width, height]: ReadOnlyRect,
   pointer: { shiftKey: boolean; altKey: boolean; canvasX: number }
 ): void {
-  if (graph && !capturedItemCount && !pointer.shiftKey && !pointer.altKey)
-    selectLinksInBounds(
-      graph,
-      renderedPaths,
-      { x, y, width, height },
-      pointer.canvasX
-    )
-  else clearLinkSelection()
+  if (!graph || selectedItemCount || pointer.shiftKey || pointer.altKey) {
+    clearLinkSelection()
+    return
+  }
+  const marquee = { x, y, width, height }
+  const links = [...linkIdsDrawnInBounds(renderedPaths, marquee)].flatMap(
+    (linkId) => {
+      const link = graph.getLink(linkId)
+      return link && isLinkVisible(graph, link) ? [link] : []
+    }
+  )
+  useLinkSelectionStore().select({ links, marquee, anchorX: pointer.canvasX })
 }
 
-/** Selected links that still exist in the graph. */
-export function getSelectedLinkIds(graph: LGraph): LinkId[] {
-  return useLinkSelectionStore()
-    .linkIdsIn(graphScopeOf(graph))
-    .filter((linkId) => graph.getLink(linkId))
-}
-
-export function clearLinkSelection(): void {
-  useLinkSelectionStore().clear()
+/** Clears the link selection, redrawing the host when anything was selected. */
+export function clearLinkSelection(
+  host?: Pick<LinkSelectionHost, 'setDirty'>
+): boolean {
+  const cleared = useLinkSelectionStore().clear()
+  if (cleared) host?.setDirty(true, true)
+  return cleared
 }
 
 /** Hides every selected link as one undo step. */
@@ -140,9 +171,9 @@ export function hideSelectedLinks(host: LinkSelectionHost): boolean {
 export function deleteSelectedLinks(host: LinkSelectionHost): boolean {
   const { graph } = host
   if (!graph) return false
-  const linkIds = getSelectedLinkIds(graph)
-  if (!linkIds.length) return false
-  deleteLinks(host, graph, linkIds)
+  const links = getSelectedLinks(graph)
+  if (!links.length) return false
+  deleteLinks(host, graph, links)
   clearLinkSelection()
   return true
 }

@@ -4209,8 +4209,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
       } else if (e.key === 'Escape') {
-        clearLinkSelection()
-        this.setDirty(true, true)
+        clearLinkSelection(this)
         if (this.linkConnector.isConnecting) {
           this.linkConnector.reset()
           e.preventDefault()
@@ -4599,7 +4598,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     selectLinksForMarquee(
       this.graph,
       this.renderedPaths,
-      this._getItemsInRect(normalizedRect).size,
+      this.selectedItems.size,
       normalizedRect,
       e
     )
@@ -4623,14 +4622,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const itemsInRect = this._getItemsInRect(normalizedRect)
     const { selectedItems } = this
-    selectLinksForMarquee(
-      this.graph,
-      this.renderedPaths,
-      itemsInRect.size,
-      normalizedRect,
-      e
-    )
-    this.setDirty(true, true)
 
     if (e.shiftKey) {
       changeCanvasSelection(this, itemsInRect, true)
@@ -4645,6 +4636,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       changeCanvasSelection(this, itemsInRect, true)
     }
 
+    selectLinksForMarquee(
+      this.graph,
+      this.renderedPaths,
+      this.selectedItems.size,
+      normalizedRect,
+      e
+    )
+    this.setDirty(true, true)
     this.onSelectionChange?.(this.selected_nodes)
   }
 
@@ -4661,8 +4660,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'> | undefined,
     sticky: boolean = false
   ): void {
+    clearLinkSelection(this)
     if (!item && this.selectOnly) return
-    clearLinkSelection()
 
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
@@ -4705,6 +4704,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selectGroupChildren = this.groupSelectChildren
     }: { selectGroupChildren?: boolean } = {}
   ): void {
+    clearLinkSelection(this)
     if (isCanvasItemSelected(this, item)) return
     changeCanvasSelection(this, [item], true, selectGroupChildren)
   }
@@ -4761,7 +4761,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
-    clearLinkSelection()
+    clearLinkSelection(this)
     if (!add_to_current_selection) this.deselectAll()
     changeCanvasSelection(this, itemsToSelect, true)
     this.onSelectionChange?.(this.selected_nodes)
@@ -4787,6 +4787,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   deselectAll(keepSelected?: Positionable): void {
     if (!this.graph) return
+    clearLinkSelection(this)
 
     const selected = this.selectedItems
     if (!selected.size) return

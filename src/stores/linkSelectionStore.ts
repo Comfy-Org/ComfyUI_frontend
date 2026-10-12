@@ -1,44 +1,28 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
-import type { GraphScope } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Bounds } from '@/renderer/core/layout/types'
 
 interface LinkSelection {
-  readonly scope: GraphScope
-  readonly linkIds: readonly LinkId[]
+  readonly links: readonly LLink[]
+  readonly marquee: Bounds
   readonly anchorX: number
-}
-
-const NO_LINKS: readonly LinkId[] = []
-
-function isSameScope(a: GraphScope, b: GraphScope): boolean {
-  return a.rootGraphId === b.rootGraphId && a.owningGraphId === b.owningGraphId
 }
 
 /** Links picked by a marquee that captured no other canvas items. */
 export const useLinkSelectionStore = defineStore('linkSelection', () => {
   const selection = shallowRef<LinkSelection | null>(null)
 
-  function select(
-    scope: GraphScope,
-    linkIds: Iterable<LinkId>,
-    anchorX: number
-  ): void {
-    const ids = [...linkIds]
-    selection.value = ids.length ? { scope, linkIds: ids, anchorX } : null
+  function select(next: LinkSelection): void {
+    selection.value = next.links.length ? next : null
   }
 
-  function clear(): void {
-    if (selection.value) selection.value = null
+  function clear(): boolean {
+    if (!selection.value) return false
+    selection.value = null
+    return true
   }
 
-  function linkIdsIn(scope: GraphScope): readonly LinkId[] {
-    const current = selection.value
-    return current && isSameScope(current.scope, scope)
-      ? current.linkIds
-      : NO_LINKS
-  }
-
-  return { selection, select, clear, linkIdsIn }
+  return { selection, select, clear }
 })

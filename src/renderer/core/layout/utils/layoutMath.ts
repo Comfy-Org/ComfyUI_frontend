@@ -21,6 +21,7 @@ export function boundsIntersect(a: Bounds, b: Bounds): boolean {
 }
 
 function segmentTouchesBounds(a: Point, b: Point, bounds: Bounds): boolean {
+  if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) return false
   const left = bounds.x
   const right = bounds.x + bounds.width
   const top = bounds.y
