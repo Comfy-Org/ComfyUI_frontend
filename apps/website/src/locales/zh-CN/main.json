@@ -5019,8 +5019,7 @@
     },
     "trim": {
       "edit": "裁剪",
-      "summary": "替换 {from} – {to} 秒（共 {total} 秒中的 {seconds} 秒）",
-      "chip": "{from}–{to} 秒（共 {total} 秒）"
+      "summary": "替换 {from} – {to} 秒（共 {total} 秒中的 {seconds} 秒）"
     },
     "needs": {
       "video": "先添加一段视频",

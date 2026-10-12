@@ -5626,8 +5626,7 @@
     },
     "trim": {
       "edit": "Trim",
-      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)",
-      "chip": "{from}–{to} s of {total} s"
+      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)"
     },
     "needs": {
       "video": "Add a video to start",
