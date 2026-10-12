@@ -996,7 +996,10 @@ describe('drawConnections hidden links', () => {
       maskLink,
       firstImageLink
     ]) {
-      presentationStore.patch(scope, link.id, { hidden: true })
+      presentationStore.patch(scope, link.id, {
+        hidden: true,
+        label: `link ${link.id}`
+      })
     }
 
     const ctx = createMockCtx()
@@ -1181,7 +1184,8 @@ describe('drawConnections hidden links', () => {
       const scope = graphScopeOf(graph)
       links.forEach((link, index) =>
         useLinkPresentationStore().patch(scope, link.id, {
-          hidden: hidden[index]
+          hidden: hidden[index],
+          label: `link ${index}`
         })
       )
       setRevealedLinks(

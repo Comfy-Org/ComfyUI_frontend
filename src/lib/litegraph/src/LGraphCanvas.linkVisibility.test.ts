@@ -2,12 +2,17 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  LGraphCanvas
+} from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   drawHiddenLinkBadges,
-  layoutHiddenLinkBadges
+  layoutHiddenLinkBadges,
+  queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
+import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
@@ -350,7 +355,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
         hidden: true
       })
-      const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+      layoutHiddenLinkBadges(canvas, canvas.ctx, [
         {
           link,
           presentation: { hidden: true },
@@ -359,9 +364,7 @@ describe('LGraphCanvas link visibility interactions', () => {
           color: '#89A'
         }
       ])
-      for (const layout of layouts.values()) {
-        drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
-      }
+      drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
       const prompt = vi
         .spyOn(canvas, 'prompt')
         .mockReturnValue(document.createElement('div'))
@@ -480,5 +483,84 @@ describe('LGraphCanvas link visibility interactions', () => {
 
     expect(showLinkMenu).toHaveBeenCalledWith(link, pointerEvent)
     expect(createReroute).not.toHaveBeenCalled()
+  })
+
+  describe('stacked hidden link badges', () => {
+    function createStackFixture() {
+      const { graph, canvas, link } = createFixture()
+      const source = graph.getNodeById(link.origin_id)
+      assert.exists(source)
+      const target = new LGraphNode('Second target')
+      target.addInput('in', 'MODEL')
+      graph.add(target)
+      const links = [link, createTestLink(graph, source, 0, target, 0)]
+      const scope = graphScopeOf(graph)
+      for (const hidden of links) {
+        useLinkPresentationStore().patch(scope, hidden.id, { hidden: true })
+      }
+      const relayout = () =>
+        layoutHiddenLinkBadges(
+          canvas,
+          canvas.ctx,
+          links.map((hidden, index) => ({
+            link: hidden,
+            presentation: { hidden: true },
+            startPos: [400, 300],
+            endPos: [700, 300 + index * 100],
+            color: '#89A'
+          }))
+        )
+      relayout()
+      drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
+      onTestFinished(() => canvas.pointer.reset())
+      return { graph, canvas, links, relayout }
+    }
+
+    function clickAt(canvas: LGraphCanvas, clientX: number, clientY: number) {
+      const init = { isPrimary: true, pointerId: 1, clientX, clientY }
+      canvas.processMouseDown(
+        new PointerEvent('pointerdown', { ...init, button: 0, buttons: 1 })
+      )
+      canvas.processMouseUp(
+        new PointerEvent('pointerup', { ...init, button: 0, buttons: 0 })
+      )
+    }
+
+    it('reveals every stacked link while the stack is hovered', () => {
+      const { graph, canvas, links } = createStackFixture()
+
+      canvas.processMouseMove(
+        new PointerEvent('pointermove', { clientX: 420, clientY: 300 })
+      )
+
+      const { rootGraphId } = graphScopeOf(graph)
+      expect(links.map(({ id }) => isLinkRevealed(rootGraphId, id))).toEqual([
+        true,
+        true
+      ])
+    })
+
+    it('expands on click and collapses on Escape', () => {
+      const { canvas, links, relayout } = createStackFixture()
+
+      clickAt(canvas, 420, 300)
+      relayout()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      relayout()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('collapses an expanded stack when empty canvas is clicked', () => {
+      const { canvas, relayout } = createStackFixture()
+
+      clickAt(canvas, 420, 300)
+      relayout()
+      clickAt(canvas, 100, 100)
+      relayout()
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
   })
 })

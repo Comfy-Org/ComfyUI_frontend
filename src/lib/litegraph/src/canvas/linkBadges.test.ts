@@ -7,13 +7,17 @@ import { toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
+import type { HiddenLinkBadge } from './linkBadges'
 import {
   BADGE_GAP,
   clearLinkBadgeHitAreas,
+  collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
   layoutHiddenLinkBadges,
   linkBadgeText,
-  queryLinkBadgeAtPoint
+  queryLinkBadgeAtPoint,
+  queryLinkBadgeHitAtPoint,
+  toggleLinkBadgeStack
 } from './linkBadges'
 
 const BADGE_COLOR = '#cab8ff'
@@ -37,7 +41,7 @@ function drawBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  const layouts = layoutHiddenLinkBadges(host, ctx, [
+  layoutHiddenLinkBadges(host, ctx, [
     {
       link,
       presentation: { hidden: true },
@@ -46,9 +50,7 @@ function drawBadgesInView(
       color: BADGE_COLOR
     }
   ])
-  for (const layout of layouts.values()) {
-    drawHiddenLinkBadges(ctx, layout, visibleArea)
-  }
+  drawHiddenLinkBadges(ctx, host, visibleArea)
 }
 
 describe('linkBadgeText', () => {
@@ -151,14 +153,14 @@ describe('link badge frame layout', () => {
     layoutHiddenLinkBadges(host, ctx, [
       {
         link: createLink(3, 'MASK'),
-        presentation: { hidden: true },
+        presentation: { hidden: true, label: 'third' },
         startPos: [100, 118],
         endPos: [400, 400],
         color: BADGE_COLOR
       },
       {
         link: createLink(2, 'IMAGE'),
-        presentation: { hidden: true },
+        presentation: { hidden: true, label: 'second' },
         startPos: [100, 100],
         endPos: [400, 300],
         color: BADGE_COLOR
@@ -261,24 +263,22 @@ describe('link badge frame layout', () => {
   it('culls using reversed and stacked badge extents', () => {
     const host = document.createElement('canvas')
     const ctx = createContext()
-    const layouts = layoutHiddenLinkBadges(
+    layoutHiddenLinkBadges(
       host,
       ctx,
       [1, 2].map((id) => ({
         link: createLink(id),
-        presentation: { hidden: true },
+        presentation: { hidden: true, label: 'MODEL' },
         startPos: [400, 100],
         endPos: [100, 100],
         color: BADGE_COLOR
       }))
     )
-    for (const layout of layouts.values()) {
-      drawHiddenLinkBadges(ctx, layout, [414, 113, 10, 18])
-    }
+    drawHiddenLinkBadges(ctx, host, [414, 113, 10, 18])
 
     expect(queryLinkBadgeAtPoint(host, 420, 122)).toBe(toLinkId(2))
     expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 123)
-    expect(ctx.fillText).toHaveBeenCalledTimes(2)
+    expect(ctx.fillText).toHaveBeenCalledTimes(1)
   })
 
   it.for([
@@ -337,12 +337,12 @@ describe('link badge frame layout', () => {
     {
       name: 'output-only visible',
       visibleArea: [120, 95, 1, 1],
-      paintCount: 2
+      paintCount: 1
     },
     {
       name: 'input-only visible',
       visibleArea: [330, 195, 1, 1],
-      paintCount: 2
+      paintCount: 1
     },
     { name: 'culled', visibleArea: [5000, 5000, 10, 10], paintCount: 0 }
   ] satisfies {
@@ -435,5 +435,112 @@ describe('badge ordering tie breakers', () => {
     expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(122)
     expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(2))
     expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+  })
+})
+
+describe('hidden link badge stacks', () => {
+  function fanOut(labels: (string | undefined)[]): HiddenLinkBadge[] {
+    return labels.map((label, index) => ({
+      link: new LLink(toLinkId(index + 1), 'MODEL', 4, 0, 10 + index, 0),
+      presentation: { hidden: true, label },
+      startPos: [100, 100],
+      endPos: [400, 100 + index * 100],
+      color: BADGE_COLOR
+    }))
+  }
+
+  function layoutFanOut(host: object, labels: (string | undefined)[]) {
+    const ctx = createContext()
+    const layouts = layoutHiddenLinkBadges(host, ctx, fanOut(labels))
+    drawHiddenLinkBadges(ctx, host, VISIBLE_AREA)
+    return { ctx, layouts }
+  }
+
+  it('collapses unlabelled links from one socket into one counted pill', () => {
+    const host = {}
+    const { ctx, layouts } = layoutFanOut(host, [undefined, undefined, ''])
+
+    expect(ctx.fillText).toHaveBeenCalledWith('MODEL ×3', 120, 101)
+    expect(
+      vi.mocked(ctx.fillText).mock.calls.filter(([, x]) => x < 250)
+    ).toHaveLength(1)
+    const outputs = [...layouts.values()].map(({ output }) => output)
+    expect(new Set(outputs).size).toBe(1)
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)).toMatchObject({
+      linkIds: [toLinkId(1), toLinkId(2), toLinkId(3)],
+      stackKey: 'output:4:0'
+    })
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBeUndefined()
+  })
+
+  it('draws offset layers behind a collapsed pill and makes them hittable', () => {
+    const host = {}
+    const { ctx } = layoutFanOut(host, [undefined, undefined, undefined])
+
+    expect(ctx.roundRect).toHaveBeenCalledWith(117, 94, 62, 18, [9])
+    expect(ctx.roundRect).toHaveBeenCalledWith(120, 97, 62, 18, [9])
+    expect(queryLinkBadgeHitAtPoint(host, 182, 115)?.stackKey).toBe(
+      'output:4:0'
+    )
+    expect(queryLinkBadgeHitAtPoint(host, 183, 115)).toBeUndefined()
+    expect(queryLinkBadgeHitAtPoint(host, 182, 116)).toBeUndefined()
+  })
+
+  it.for([
+    { name: 'a single hidden link', labels: [undefined] },
+    {
+      name: 'one unlabelled link beside a labelled one',
+      labels: [undefined, 'Named']
+    }
+  ])('keeps per-link badges for $name', ({ labels }) => {
+    const host = {}
+    layoutFanOut(host, labels)
+
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.stackKey).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+  })
+
+  it('places labelled links as their own badges directly below the stack', () => {
+    const host = {}
+    const { layouts } = layoutFanOut(host, [undefined, 'Named', undefined])
+
+    expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(100)
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(125)
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.linkIds).toEqual([
+      toLinkId(1),
+      toLinkId(3)
+    ])
+    expect(queryLinkBadgeAtPoint(host, 120, 125)).toBe(toLinkId(2))
+  })
+
+  it('expands to a head followed by one badge per link, and collapses back', () => {
+    const host = {}
+    toggleLinkBadgeStack(host, 'output:4:0')
+    const { layouts } = layoutFanOut(host, [undefined, undefined, 'Named'])
+
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.stackKey).toBe(
+      'output:4:0'
+    )
+    expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(122)
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(144)
+    expect(layouts.get(toLinkId(3))?.output.tip[1]).toBe(166)
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 120, 166)).toBe(toLinkId(3))
+
+    expect(collapseLinkBadgeStacks(host)).toBe(true)
+    expect(collapseLinkBadgeStacks(host)).toBe(false)
+    layoutFanOut(host, [undefined, undefined, 'Named'])
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.linkIds).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(3))
+  })
+
+  it('toggles an expanded stack closed from its head', () => {
+    const host = {}
+    toggleLinkBadgeStack(host, 'output:4:0')
+    toggleLinkBadgeStack(host, 'output:4:0')
+    const { layouts } = layoutFanOut(host, [undefined, undefined])
+
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(100)
   })
 })

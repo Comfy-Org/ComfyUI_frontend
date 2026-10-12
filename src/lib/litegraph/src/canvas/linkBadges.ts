@@ -15,10 +15,16 @@ const BADGE_HEIGHT = 18
 const BADGE_FONT_SIZE = 11
 const CONNECTOR_WIDTH = 3
 const BADGE_STACK_GAP = 4
+export const BADGE_ROW_PITCH = BADGE_HEIGHT + BADGE_STACK_GAP
 const BADGE_CONNECT_INSET = 2
+const STACK_LAYER_OFFSET = 3
+const MAX_STACK_LAYERS = 2
+
+type BadgeSide = 'input' | 'output'
 
 interface BadgeHitArea extends HasBoundingRect {
-  readonly linkId: LinkId
+  readonly linkIds: readonly LinkId[]
+  readonly stackKey?: string
   readonly boundingRect: Rect
 }
 
@@ -31,25 +37,48 @@ export interface HiddenLinkBadge {
 }
 
 interface LinkBadgePair {
-  badge: LGraphBadge
-  color: string
   output: BadgeEndpoint
   input: BadgeEndpoint
 }
 
+const BADGE_RANK = { stackHead: 0, unlabelled: 1, labelled: 2 } as const
+
+type BadgeRank = (typeof BADGE_RANK)[keyof typeof BADGE_RANK]
+
 interface BadgeEndpoint {
   nodeId: NodeId
   slot: number
-  side: 'input' | 'output'
+  side: BadgeSide
+  rank: BadgeRank
   socket: Point
+  badge: LGraphBadge
+  color: string
+  width: number
+  layers: number
   hitArea: BadgeHitArea
   tip: Point
 }
 
-const hitAreasByHost = new WeakMap<object, BadgeHitArea[]>()
+const endpointsByHost = new WeakMap<object, BadgeEndpoint[]>()
+const expandedStacksByHost = new WeakMap<object, Set<string>>()
 
 export function clearLinkBadgeHitAreas(host: object): void {
-  hitAreasByHost.delete(host)
+  endpointsByHost.delete(host)
+}
+
+function containsPoint([left, top, width, height]: Rect, x: number, y: number) {
+  return x >= left && x <= left + width && y >= top && y <= top + height
+}
+
+/** The badge hit area under a canvas point: one link, or a stack of links. */
+export function queryLinkBadgeHitAtPoint(
+  host: object,
+  x: number,
+  y: number
+): Readonly<BadgeHitArea> | undefined {
+  return endpointsByHost
+    .get(host)
+    ?.find(({ hitArea }) => containsPoint(hitArea.boundingRect, x, y))?.hitArea
 }
 
 export function queryLinkBadgeAtPoint(
@@ -57,20 +86,33 @@ export function queryLinkBadgeAtPoint(
   x: number,
   y: number
 ): LinkId | undefined {
-  return hitAreasByHost.get(host)?.find(({ boundingRect }) => {
-    const [left, top, width, height] = boundingRect
-    return x >= left && x <= left + width && y >= top && y <= top + height
-  })?.linkId
+  const hit = queryLinkBadgeHitAtPoint(host, x, y)
+  return hit && !hit.stackKey ? hit.linkIds[0] : undefined
+}
+
+export function toggleLinkBadgeStack(host: object, stackKey: string): void {
+  const expanded = expandedStacksByHost.get(host) ?? new Set<string>()
+  if (!expanded.delete(stackKey)) expanded.add(stackKey)
+  expandedStacksByHost.set(host, expanded)
+}
+
+/** Collapses every expanded stack on the host; returns whether any was open. */
+export function collapseLinkBadgeStacks(host: object): boolean {
+  const expanded = expandedStacksByHost.get(host)
+  expandedStacksByHost.delete(host)
+  return !!expanded?.size
+}
+
+function linkTypeText(type: LLink['type']): string {
+  if (typeof type === 'number') return '*'
+  return String(slotTypeKey(type) || '*')
 }
 
 export function linkBadgeText(
   type: LLink['type'],
   presentation: Readonly<LinkPresentation>
 ): string {
-  const label = presentation.label?.trim()
-  if (label) return label
-  if (typeof type === 'number') return '*'
-  return String(slotTypeKey(type) || '*')
+  return presentation.label?.trim() || linkTypeText(type)
 }
 
 function makeBadge(text: string, color: string): LGraphBadge {
@@ -87,7 +129,7 @@ function makeBadge(text: string, color: string): LGraphBadge {
 function overlapsBadge(
   left: number,
   top: number,
-  width: number,
+  [width, height]: readonly [number, number],
   area: BadgeHitArea
 ): boolean {
   const [areaLeft, areaTop, areaWidth, areaHeight] = area.boundingRect
@@ -95,7 +137,7 @@ function overlapsBadge(
     left < areaLeft + areaWidth &&
     left + width > areaLeft &&
     top < areaTop + areaHeight &&
-    top + BADGE_HEIGHT > areaTop
+    top + height > areaTop
   )
 }
 
@@ -103,14 +145,14 @@ function freeBadgeCenterY(
   hitAreas: readonly BadgeHitArea[],
   left: number,
   desiredCenterY: number,
-  width: number
+  size: readonly [number, number]
 ): number {
   let centerY = desiredCenterY
   let overlappingArea: BadgeHitArea | undefined
   do {
     const top = centerY - BADGE_HEIGHT / 2
     overlappingArea = hitAreas.find((area) =>
-      overlapsBadge(left, top, width, area)
+      overlapsBadge(left, top, size, area)
     )
     if (overlappingArea) {
       const [, top, , height] = overlappingArea.boundingRect
@@ -120,22 +162,80 @@ function freeBadgeCenterY(
   return centerY
 }
 
+function socketOf(link: LLink, side: BadgeSide) {
+  return side === 'output'
+    ? { nodeId: link.origin_id, slot: link.origin_slot }
+    : { nodeId: link.target_id, slot: link.target_slot }
+}
+
+function stackKeyOf(link: LLink, side: BadgeSide): string {
+  const { nodeId, slot } = socketOf(link, side)
+  return `${side}:${nodeId}:${slot}`
+}
+
+function isUnlabelled({ presentation }: HiddenLinkBadge): boolean {
+  return !presentation.label?.trim()
+}
+
+function groupStackedLinks(
+  hiddenLinks: readonly HiddenLinkBadge[]
+): Map<string, LinkId[]> {
+  const groups = new Map<string, LinkId[]>()
+  for (const hidden of hiddenLinks.filter(isUnlabelled)) {
+    for (const side of ['output', 'input'] as const) {
+      const key = stackKeyOf(hidden.link, side)
+      groups.set(key, [...(groups.get(key) ?? []), hidden.link.id])
+    }
+  }
+  for (const [key, linkIds] of groups) {
+    if (linkIds.length < 2) groups.delete(key)
+  }
+  return groups
+}
+
+interface EndpointSpec {
+  link: LLink
+  side: BadgeSide
+  rank: BadgeRank
+  socket: Point
+  text: string
+  color: string
+  linkIds: readonly LinkId[]
+  stackKey?: string
+  layers?: number
+}
+
 function createBadgeEndpoint(
-  link: LLink,
-  side: BadgeEndpoint['side'],
-  socket: Point,
-  width: number
+  ctx: CanvasRenderingContext2D,
+  spec: EndpointSpec
 ): BadgeEndpoint {
+  const { link, side, rank, socket, text, color, linkIds, stackKey } = spec
+  const layers = spec.layers ?? 0
+  const badge = makeBadge(text, color)
+  const width = badge.getWidth(ctx)
+  const layerExtent = layers * STACK_LAYER_OFFSET
   const isOutput = side === 'output'
-  const left = isOutput ? socket[0] + BADGE_GAP : socket[0] - BADGE_GAP - width
+  const left = isOutput
+    ? socket[0] + BADGE_GAP
+    : socket[0] - BADGE_GAP - width - layerExtent
   return {
-    nodeId: isOutput ? link.origin_id : link.target_id,
-    slot: isOutput ? link.origin_slot : link.target_slot,
+    ...socketOf(link, side),
     side,
+    rank,
     socket,
+    badge,
+    color,
+    width,
+    layers,
     hitArea: {
-      linkId: link.id,
-      boundingRect: [left, socket[1] - BADGE_HEIGHT / 2, width, BADGE_HEIGHT]
+      linkIds,
+      stackKey,
+      boundingRect: [
+        left,
+        socket[1] - BADGE_HEIGHT / 2,
+        width + layerExtent,
+        BADGE_HEIGHT + layerExtent
+      ]
     },
     tip: [isOutput ? left + width : left, socket[1]]
   }
@@ -151,7 +251,8 @@ function compareBadgeEndpoints(
   return (
     first.socket[1] - second.socket[1] ||
     first.slot - second.slot ||
-    first.hitArea.linkId - second.hitArea.linkId
+    first.rank - second.rank ||
+    first.hitArea.linkIds[0] - second.hitArea.linkIds[0]
   )
 }
 
@@ -160,15 +261,63 @@ export function layoutHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   hiddenLinks: readonly HiddenLinkBadge[]
 ): Map<LinkId, LinkBadgePair> {
+  const stacks = groupStackedLinks(hiddenLinks)
+  const expanded = expandedStacksByHost.get(host)
+  for (const stackKey of expanded ?? []) {
+    if (!stacks.has(stackKey)) expanded?.delete(stackKey)
+  }
+
   const layouts = new Map<LinkId, LinkBadgePair>()
   const endpoints: BadgeEndpoint[] = []
-  for (const { link, presentation, startPos, endPos, color } of hiddenLinks) {
-    const badge = makeBadge(linkBadgeText(link.type, presentation), color)
-    const width = badge.getWidth(ctx)
-    const output = createBadgeEndpoint(link, 'output', startPos, width)
-    const input = createBadgeEndpoint(link, 'input', endPos, width)
-    layouts.set(link.id, { badge, color, output, input })
-    endpoints.push(output, input)
+  const stackHeads = new Map<string, BadgeEndpoint>()
+  const addEndpoint = (spec: EndpointSpec) => {
+    const endpoint = createBadgeEndpoint(ctx, spec)
+    endpoints.push(endpoint)
+    return endpoint
+  }
+  const stackHead = (spec: EndpointSpec, stackKey: string) => {
+    const existing = stackHeads.get(stackKey)
+    if (existing) return existing
+    const linkIds = stacks.get(stackKey) ?? []
+    const head = addEndpoint({
+      ...spec,
+      rank: BADGE_RANK.stackHead,
+      text: `${linkTypeText(spec.link.type)} ×${linkIds.length}`,
+      linkIds,
+      stackKey,
+      layers: expanded?.has(stackKey)
+        ? 0
+        : Math.min(linkIds.length - 1, MAX_STACK_LAYERS)
+    })
+    stackHeads.set(stackKey, head)
+    return head
+  }
+  const placeEndpoint = (
+    hidden: HiddenLinkBadge,
+    side: BadgeSide,
+    socket: Point
+  ) => {
+    const { link, presentation, color } = hidden
+    const spec: EndpointSpec = {
+      link,
+      side,
+      socket,
+      color,
+      rank: isUnlabelled(hidden) ? BADGE_RANK.unlabelled : BADGE_RANK.labelled,
+      text: linkBadgeText(link.type, presentation),
+      linkIds: [link.id]
+    }
+    const stackKey = stackKeyOf(link, side)
+    if (!isUnlabelled(hidden) || !stacks.has(stackKey)) return addEndpoint(spec)
+    const head = stackHead(spec, stackKey)
+    return expanded?.has(stackKey) ? addEndpoint(spec) : head
+  }
+
+  for (const hidden of hiddenLinks) {
+    layouts.set(hidden.link.id, {
+      output: placeEndpoint(hidden, 'output', hidden.startPos),
+      input: placeEndpoint(hidden, 'input', hidden.endPos)
+    })
   }
   endpoints.sort(compareBadgeEndpoints)
 
@@ -176,18 +325,21 @@ export function layoutHiddenLinkBadges(
   let previousEndpoint: BadgeEndpoint | undefined
   for (const endpoint of endpoints) {
     const { hitArea, socket, tip, nodeId, side } = endpoint
-    const [left, , width] = hitArea.boundingRect
+    const [left, , width, height] = hitArea.boundingRect
     const desiredCenterY =
       previousEndpoint?.nodeId === nodeId && previousEndpoint.side === side
         ? Math.max(socket[1], previousEndpoint.tip[1])
         : socket[1]
-    const centerY = freeBadgeCenterY(hitAreas, left, desiredCenterY, width)
+    const centerY = freeBadgeCenterY(hitAreas, left, desiredCenterY, [
+      width,
+      height
+    ])
     hitArea.boundingRect[1] = centerY - BADGE_HEIGHT / 2
     tip[1] = centerY
     hitAreas.push(hitArea)
     previousEndpoint = endpoint
   }
-  hitAreasByHost.set(host, hitAreas)
+  endpointsByHost.set(host, endpoints)
   return layouts
 }
 
@@ -217,24 +369,52 @@ function drawConnector(
   ctx.restore()
 }
 
+function drawStackLayers(
+  ctx: CanvasRenderingContext2D,
+  { layers, width, color }: BadgeEndpoint,
+  left: number,
+  top: number
+): void {
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.strokeStyle = textOnColor(color)
+  ctx.lineWidth = 1
+  for (let layer = layers; layer > 0; layer--) {
+    const offset = layer * STACK_LAYER_OFFSET
+    ctx.globalAlpha = 1 - layer * 0.25
+    ctx.beginPath()
+    ctx.roundRect(left + offset, top + offset, width, BADGE_HEIGHT, [
+      BADGE_HEIGHT / 2
+    ])
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+function drawBadgeEndpoint(
+  ctx: CanvasRenderingContext2D,
+  endpoint: BadgeEndpoint
+): void {
+  const { side, socket, hitArea, width, badge, color } = endpoint
+  const [left, top] = hitArea.boundingRect
+  const connectorX =
+    side === 'output'
+      ? left + BADGE_CONNECT_INSET
+      : left + width - BADGE_CONNECT_INSET
+  drawConnector(ctx, socket, [connectorX, top + BADGE_HEIGHT / 2], color)
+  drawStackLayers(ctx, endpoint, left, top)
+  badge.draw(ctx, left, top)
+}
+
+/** Draws the badges from the host's last layout that touch the visible area. */
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
-  layout: LinkBadgePair,
+  host: object,
   visibleArea: ReadOnlyRect
 ): void {
-  const endpoints = [layout.output, layout.input]
-  const visible = endpoints.some(({ socket, hitArea }) =>
-    overlapBounding(getConnectorBounds(socket, hitArea), visibleArea)
-  )
-  if (!visible) return
-
-  for (const { side, socket, hitArea } of endpoints) {
-    const [left, top, width, height] = hitArea.boundingRect
-    const connectorX =
-      side === 'output'
-        ? left + BADGE_CONNECT_INSET
-        : left + width - BADGE_CONNECT_INSET
-    drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
-    layout.badge.draw(ctx, left, top)
+  for (const endpoint of endpointsByHost.get(host) ?? []) {
+    const bounds = getConnectorBounds(endpoint.socket, endpoint.hitArea)
+    if (overlapBounding(bounds, visibleArea)) drawBadgeEndpoint(ctx, endpoint)
   }
 }

@@ -185,7 +185,7 @@ describe('getCanvasContextMenuTarget', () => {
   it('returns a hidden link hit on its badge', () => {
     const link = createLink(5)
     hide(link)
-    const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+    layoutHiddenLinkBadges(canvas, canvas.ctx, [
       {
         link,
         presentation: { hidden: true },
@@ -194,9 +194,7 @@ describe('getCanvasContextMenuTarget', () => {
         color: '#cab8ff'
       }
     ])
-    for (const layout of layouts.values()) {
-      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
-    }
+    drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
     const target = resolve()
 
     expect(target.group).toBe(group)
@@ -251,7 +249,7 @@ describe('getCanvasContextMenuTarget', () => {
     const link = createLink(5)
     hide(link)
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+    layoutHiddenLinkBadges(canvas, canvas.ctx, [
       {
         link,
         presentation: { hidden: true },
@@ -260,9 +258,7 @@ describe('getCanvasContextMenuTarget', () => {
         color: '#cab8ff'
       }
     ])
-    for (const layout of layouts.values()) {
-      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
-    }
+    drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
 
     const target = resolve()
 
