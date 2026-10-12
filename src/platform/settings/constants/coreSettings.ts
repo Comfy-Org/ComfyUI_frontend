@@ -24,8 +24,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Agent.CrdtDebug.Level',
     name: 'CRDT diagnostic log level',
-    type: 'combo',
-    options: ['warn', 'info', 'debug', 'trace'],
+    type: 'hidden',
     defaultValue: 'info'
   },
   {
