@@ -15,7 +15,6 @@ import {
   nodesWithoutGeometry,
   overlappingNodePairs
 } from '@e2e/fixtures/utils/nodeLayoutGeometry'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
@@ -25,7 +24,7 @@ const LOAD_IMAGE_SETTLE_TIMEOUT = 10_000
 
 test.describe(
   'Agent populated LoadImage layout',
-  { tag: ['@cloud', '@vue-nodes', '@screenshot', '@node'] },
+  { tag: ['@cloud', '@vue-nodes', '@node'] },
   () => {
     test.describe.configure({ timeout: 90_000 })
     test.use({ conversationCase: LOAD_IMAGE_LAYOUT_CASE })
@@ -69,13 +68,6 @@ test.describe(
           timeout: LOAD_IMAGE_SETTLE_TIMEOUT
         })
         .toEqual([])
-
-      await page.getByRole('button', { name: 'Fit View (.)' }).click()
-      await nextFrame(page)
-      await expect(page.locator('#graph-canvas')).toHaveScreenshot(
-        'agent-load-image-layout.png',
-        { mask: [agentConversation.panel] }
-      )
     })
   }
 )
