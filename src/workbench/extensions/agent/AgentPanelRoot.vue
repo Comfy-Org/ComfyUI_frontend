@@ -17,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -119,7 +120,6 @@ import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
-  DEFAULT_AGENT_PAYWALL_PRESENTATION,
   resolveAgentPaywallPresentation,
   toAgentPaywallCta,
   toAgentPaywallReason
@@ -178,18 +178,16 @@ const {
   isReady: capabilityReadSettled,
   snapshotAuthoritative
 } = useBillingCapabilities()
-const paywallPresentation = computed(() => {
-  if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
-    return DEFAULT_AGENT_PAYWALL_PRESENTATION
-  }
-  return resolveAgentPaywallPresentation({
-    distribution: isCloud ? 'cloud' : 'local',
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    isCloud,
     role: workspaceRole.value,
     tier: subscriptionTier.value,
     canTopUp: canTopUp.value,
-    canSubscribeSelfServe: canSubscribeSelfServe.value
+    canSubscribeSelfServe: canSubscribeSelfServe.value,
+    hasResolvedCapabilities: hasResolvedCapabilities.value
   })
-})
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -264,45 +262,22 @@ watch(
   { immediate: true }
 )
 
-/**
- * The standing credit-exhaustion surface.
- *
- * The inline card above is reachable from exactly one moment: a turn POST that
- * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
- * way a user meets the ceiling — including a refusal inside a server-side LLM
- * hop that the browser cannot observe — needs a durable upgrade path.
- *
- * So this reads the funds signal the client already holds rather than waiting
- * for a refusal to carry it. It is deliberately the symmetric half of the
- * `hasFunds` watch above, which already clears paywalls when funds return.
- *
- * Consolidated cloud billing only: legacy balance loading currently collapses
- * unknown into false, so it cannot safely drive this surface.
- *
- * Non-blocking by construction — it renders beside the composer and disables
- * nothing.
- */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const agentScopedHasFunds = computed(
   () => subscription.value?.agentScopedHasFunds
 )
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
-  if (billingType.value !== 'workspace') return false
-  // Same gate as the impression report above: an unsettled read cannot say
-  // which presentation is right, and a card naming the wrong remediation is
-  // worse than no card.
   if (!capabilityReadSettled.value) return false
-  if (agentHasFunds.value !== false) return false
-  if (
-    billingStatus.value === 'paused' ||
-    billingStatus.value === 'payment_failed'
-  )
-    return false
-  // A standing card must offer a next step. Refusal-anchored inline cards can
-  // still explain member, sales-managed, or unavailable states without a CTA.
-  return ['subscribed', 'subscriptionRequired', 'local'].includes(
-    paywallPresentation.value.kind
+  return pendingServerFact(
+    'BE-20402',
+    billingType.value === 'workspace' &&
+      agentHasFunds.value === false &&
+      billingStatus.value !== 'paused' &&
+      billingStatus.value !== 'payment_failed' &&
+      ['subscribed', 'subscriptionRequired', 'local'].includes(
+        paywallPresentation.value.kind
+      )
   )
 })
 
@@ -345,11 +320,14 @@ const showCreditTransitionNotice = computed(
       billingIdentity.value
     ) &&
     consentAccepted.value &&
-    billingType.value === 'workspace' &&
     capabilityReadSettled.value &&
-    canAccessSubscriptionFeatures.value &&
-    agentScopedHasFunds.value === false &&
-    agentHasFunds.value === true
+    pendingServerFact(
+      'BE-20402',
+      billingType.value === 'workspace' &&
+        canAccessSubscriptionFeatures.value &&
+        agentScopedHasFunds.value === false &&
+        agentHasFunds.value === true
+    )
 )
 
 function onDismissCreditTransitionNotice(): void {
