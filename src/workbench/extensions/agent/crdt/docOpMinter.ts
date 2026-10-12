@@ -87,6 +87,12 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
+type SerializeDriftReporter = (
+  name: string,
+  liveSerialize: boolean | undefined,
+  storedSerialize: boolean | undefined
+) => void
+
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
  * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
@@ -103,7 +109,10 @@ type PendingOp =
  * `flags.ghost` is a placement-in-progress marker the placement click clears
  * without minting, so the document must not record it.
  */
-export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
+export function wireNodeSnapshot(
+  node: LGraphNode,
+  onSerializeDrift?: SerializeDriftReporter
+): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
     serialized = node.serialize()
@@ -118,6 +127,21 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
+
+  // serialize() omits widgets marked serialize:false from its named payload.
+  // Inspect the live widgets first so those omissions still report drift.
+  const rootGraphId = node.graph?.rootGraph.id
+  if (rootGraphId && onSerializeDrift) {
+    const widgetValueStore = useWidgetValueStore()
+    for (const widget of node.widgets ?? []) {
+      const stored = widgetValueStore.getWidget(
+        widgetId(rootGraphId, node.id, widget.name)
+      )
+      if (stored && widget.serialize !== stored.serialize)
+        onSerializeDrift(widget.name, widget.serialize, stored.serialize)
+    }
+  }
+
   return named && !node.isVirtualNode
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
     : snapshot
@@ -142,9 +166,15 @@ function valueWidgetsOnly(
 
 function isValueWidget(
   widget: IBaseWidget | undefined,
-  stored?: WidgetState
+  stored?: WidgetState,
+  onSerializeDrift?: (
+    liveSerialize: boolean | undefined,
+    storedSerialize: boolean | undefined
+  ) => void
 ): boolean {
   if (!widget && !stored) return false
+  if (widget && stored && widget.serialize !== stored.serialize)
+    onSerializeDrift?.(widget.serialize, stored.serialize)
   // A destructuring default fires on absent AND present-but-undefined alike,
   // which is what `IBaseWidget`'s own optional fields mean: the live widget
   // did not state this, so the registration the intent was keyed by answers.
@@ -176,7 +206,8 @@ function reachableIntentGraph(
  */
 function isValueWidgetWrite(
   owner: LGraphNode | null,
-  event: IntentOf<'set_widget'>
+  event: IntentOf<'set_widget'>,
+  onSerializeDrift?: SerializeDriftReporter
 ): boolean {
   const rootGraphId = owner?.graph?.rootGraph.id ?? event.graphId
   const stored = useWidgetValueStore().getWidget(
@@ -185,7 +216,9 @@ function isValueWidgetWrite(
   const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
-  return isValueWidget(widget, stored)
+  return isValueWidget(widget, stored, (liveSerialize, storedSerialize) =>
+    onSerializeDrift?.(event.name, liveSerialize, storedSerialize)
+  )
 }
 
 /**
@@ -400,7 +433,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       }
       const { graph, node } = entry
       if (node.graph !== graph) continue
-      const snapshot = wireNodeSnapshot(node)
+      const snapshot = wireNodeSnapshot(node, (name, live, stored) =>
+        reportSerializeDrift(graph.id, node.id, name, live, stored)
+      )
       if (!snapshot) {
         console.error(
           '[agent-crdt] add_node mint dropped: no snapshot for node',
@@ -429,6 +464,28 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (budget.has(key)) return
     budget.add(key)
     reportError(new Error(message), { surface: 'agent', errorType, context })
+  }
+
+  function reportSerializeDrift(
+    graphId: string,
+    nodeId: NodeId,
+    name: string,
+    liveSerialize: boolean | undefined,
+    storedSerialize: boolean | undefined
+  ): void {
+    reportOnce(
+      `widget_serialize:${graphId}:${String(nodeId)}:${name}`,
+      `Widget ${name} on node ${String(nodeId)} has a live serialize flag that disagrees with its registered metadata`,
+      'agent_crdt_widget_serialize_drift',
+      {
+        graphId,
+        nodeId,
+        widget: name,
+        liveSerialize: liveSerialize ?? null,
+        storedSerialize: storedSerialize ?? null
+      },
+      reportedDrift
+    )
   }
 
   /** True when `graph` is the bound document's root graph. */
@@ -468,7 +525,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const owner = eventGraph
       ? findNodeInHierarchy(eventGraph, event.nodeId)
       : null
-    if (!isValueWidgetWrite(owner, event)) return
+    if (
+      !isValueWidgetWrite(owner, event, (name, live, stored) =>
+        reportSerializeDrift(event.graphId, event.nodeId, name, live, stored)
+      )
+    )
+      return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const operation = routedWidgetOperation(
       graph,
