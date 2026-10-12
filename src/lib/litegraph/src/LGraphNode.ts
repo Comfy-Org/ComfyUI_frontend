@@ -270,7 +270,10 @@ export function createWidgetRestorationState(
     positional,
     named: named ? { ...named } : undefined,
     restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames)
+      named &&
+      (info.widgets_values_named ||
+        LiteGraph.namedValuesRestore ||
+        fallbackNames)
     )
   }
 }

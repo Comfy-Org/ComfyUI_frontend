@@ -43,7 +43,7 @@ describe('fallback widget names', () => {
     })
   })
 
-  it('keeps named restoration disabled when fallback names are absent', () => {
+  it('activates a supplied named register when fallback names are absent', () => {
     LiteGraph.namedValuesRestore = false
 
     const restoration = createWidgetRestorationState({
@@ -54,7 +54,7 @@ describe('fallback widget names', () => {
     expect(restoration).toStrictEqual({
       positional: [123],
       named: { seed: 456 },
-      restoreNamed: false
+      restoreNamed: true
     })
   })
 })
