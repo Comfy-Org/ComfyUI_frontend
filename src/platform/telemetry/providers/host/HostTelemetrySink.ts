@@ -14,7 +14,10 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentGraphProjectionMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
@@ -183,6 +186,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -377,6 +386,14 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentStarterPromptExposureMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

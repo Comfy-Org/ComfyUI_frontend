@@ -5,18 +5,23 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export class AgentPanel {
   public readonly activityRows: Locator
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
   public readonly composer: Locator
+  public readonly composerStack: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
+  public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
@@ -49,6 +54,7 @@ export class AgentPanel {
         })
       )
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
@@ -58,6 +64,9 @@ export class AgentPanel {
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.creditTransitionNotice = this.root.getByTestId(
+      'agent-credit-transition-notice'
+    )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
@@ -230,6 +239,32 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+    await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
+    await expect(
+      this.page
+        .locator('.p-tooltip, [role="tooltip"]')
+        .filter({ visible: true })
+    ).toHaveCount(0)
+  }
+
+  /** Denies every turn POST with this admission denial for the rest of the test. */
+  async rejectEveryTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') {
+        return route.fallback()
+      }
+      await route.fulfill({
+        ...jsonRoute(body),
+        status,
+        headers: { 'Retry-After': String(retryAfterSeconds) }
+      })
+    })
   }
 
   async openWorkSummary(): Promise<void> {
@@ -269,6 +304,7 @@ export class AgentPanel {
       .getByRole('menuitem', { name: enMessages.agent.nodes })
       .click()
     await expect(this.nodeSelectionBanner).toBeVisible()
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async exitNodeSelectionMode(): Promise<void> {

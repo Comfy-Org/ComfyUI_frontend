@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import { FREE_USE_VARIANTS } from '../../experiments/freeUsePlacement'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import '../../agentPanel.css'
@@ -24,6 +25,9 @@ const meta: Meta<typeof AgentPanel> = {
     userName: 'Comfy user',
     activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
     workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
+  },
+  argTypes: {
+    freeUsePlacement: { control: 'select', options: FREE_USE_VARIANTS }
   },
   decorators: [
     () => ({
@@ -96,4 +100,25 @@ export const ChipStates: Story = {
       }
     ]
   }
+}
+
+export const FreeUsePlacements: Story = {
+  name: 'DES-1221 a–e / placement arms',
+  render: (args) => ({
+    components: { AgentPanel },
+    setup() {
+      return { placements: FREE_USE_VARIANTS, args }
+    },
+    template: `
+      <div class="flex h-screen gap-4 overflow-x-auto">
+        <div v-for="placement in placements" :key="placement" class="shrink-0">
+          <div class="px-2 py-1 text-xs text-muted-foreground">{{ placement }}</div>
+          <div class="agent-scope bg-secondary-background h-full w-100">
+            <AgentPanel v-bind="args" :free-use-placement="placement" />
+          </div>
+        </div>
+      </div>
+    `
+  }),
+  decorators: [() => ({ template: '<story />' })]
 }
