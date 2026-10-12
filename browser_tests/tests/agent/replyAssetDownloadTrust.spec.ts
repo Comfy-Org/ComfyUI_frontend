@@ -1,5 +1,9 @@
 import { expect } from '@playwright/test'
-import type { AgentMessage } from '@comfyorg/ingest-types'
+import type {
+  AgentMessage,
+  AgentRunMode,
+  AgentThreadListResponse
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -7,6 +11,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 test.describe(
@@ -38,6 +43,32 @@ test.describe(
           content: { text: urls.map((url) => `![Asset](${url})`).join('\n\n') }
         }
       ]
+      const threads: AgentThreadListResponse = {
+        threads: [
+          {
+            created_at: '2026-09-01T00:00:00Z',
+            id: threadId,
+            last_message_at: '2026-09-01T00:00:00Z',
+            message_count: messages.length,
+            preview: 'Reply assets',
+            status: 'active',
+            title: 'Reply assets',
+            updated_at: '2026-09-01T00:00:00Z',
+            workflow_id: ''
+          }
+        ],
+        pagination: { has_more: false, limit: 100, offset: 0, total: 1 }
+      }
+      const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/threads', (route) =>
+        route.fulfill(jsonRoute(threads))
+      )
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(runMode))
+      )
       await page.route(`**/api/agent/threads/${threadId}/messages`, (route) =>
         route.fulfill(jsonRoute(messages))
       )
@@ -80,13 +111,8 @@ test.describe(
     test('keeps authentication on the trusted view route only', async ({
       page
     }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const downloadButton = page.getByRole('button', {
+      const panel = await new AgentPanel(page).open()
+      const downloadButton = panel.getByRole('button', {
         name: enMessages.agent.downloadAssets,
         exact: true
       })
