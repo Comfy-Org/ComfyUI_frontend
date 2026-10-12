@@ -51,12 +51,15 @@ const FUNDED_BILLING_STATUS = {
   max_seats: 1,
   occupied_seats: 1,
   scoped_effective_has_funds: { agent: true },
+  scoped_has_funds: { agent: true },
   scheduled_change: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   team_credit_stop: null
 } satisfies BillingStatusResponse
+
+export type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
 
 type HeldBillingRefresh = {
   entered: Promise<void>
@@ -91,11 +94,27 @@ class AgentBillingFixture {
       }
     | undefined
 
-  setAgentFunds(hasFunds: boolean): void {
-    this.status = {
-      ...FUNDED_BILLING_STATUS,
-      has_funds: hasFunds,
-      scoped_effective_has_funds: { agent: hasFunds }
+  setFundingState(state: AgentFundingState): void {
+    switch (state) {
+      case 'funded':
+        this.status = FUNDED_BILLING_STATUS
+        break
+      case 'exhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          has_funds: false,
+          scoped_effective_has_funds: { agent: false },
+          scoped_has_funds: { agent: false }
+        }
+        break
+      case 'scopedExhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          scoped_has_funds: { agent: false }
+        }
+        break
+      default:
+        state satisfies never
     }
   }
 
@@ -161,14 +180,14 @@ const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
 
-export const THINKING_EVENT: AgentWsEvent = {
-  type: 'agent_thinking',
-  data: {
-    delta: THINKING_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export function thinkingEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_thinking',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
+
+export const THINKING_EVENT = thinkingEvent(THINKING_TEXT)
 
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
@@ -207,6 +226,17 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
     tool_name: 'new_tab',
     status: 'success',
     duration_ms: 500,
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
+export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-new-tab',
+    tool_name: 'new_tab',
+    status: 'running',
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }

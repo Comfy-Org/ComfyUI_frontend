@@ -174,6 +174,8 @@ describe('attachDocOpMinter', () => {
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
+  let mayWrite: boolean
+  let refusals: number
 
   beforeEach(() => {
     graph = new LGraph()
@@ -183,6 +185,8 @@ describe('attachDocOpMinter', () => {
     bound = true
     docInputNames = () => null
     docPromotedWidgets = () => null
+    mayWrite = true
+    refusals = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -190,7 +194,11 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
-      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
+      mayWritePromotedHost: () => mayWrite,
+      onWidgetWriteRefused: () => {
+        refusals += 1
+      }
     })
   })
 
@@ -479,7 +487,9 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
-      docPromotedWidgets: () => null
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {}
     })
 
     const added = new TestSink()
@@ -944,6 +954,66 @@ describe('attachDocOpMinter', () => {
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
     ).toEqual([null, 'pasted'])
+    doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'an unpromoted host widget',
+      errorType: 'agent_crdt_promoted_widget_not_promoted',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        host.addWidget('text', 'extra', 'before', () => {}).value = 'after'
+      }
+    },
+    {
+      name: 'a drifted host layout',
+      errorType: 'agent_crdt_promoted_widget_order_drift',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        docPromotedWidgets = () => ({
+          valueCount: 2,
+          declaredNames: ['text', 'prefix'],
+          promotedNames: ['text', 'prefix']
+        })
+        host.widgets[1].value = 'misplaced'
+      }
+    },
+    {
+      name: 'a host the document cannot vouch for yet',
+      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        mayWrite = false
+        host.widgets[1].value = 'too early'
+      }
+    }
+  ])(
+    'reports and notifies a refused write to $name',
+    async ({ errorType, act }) => {
+      const { host, doc } = seedPromotedHost()
+
+      act(host)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType })
+      )
+      doc.destroy()
+    }
+  )
+
+  it('still mints for a host the caught-up document does not hold yet', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => null
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: host.id, widget: 'text' })
+    ])
+    expect(refusals).toBe(0)
     doc.destroy()
   })
 
