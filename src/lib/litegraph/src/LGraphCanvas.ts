@@ -6204,7 +6204,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    for (const hiding of hidingLinks) this._renderHidingLink(ctx, hiding, now)
+    const hidingRerouteSegments = new Set(renderedRerouteSegments)
+    for (const hiding of hidingLinks)
+      this._renderHidingLink(ctx, hiding, hidingRerouteSegments, now)
 
     if (graph.floatingLinks.size > 0) {
       this._renderFloatingLinks(
@@ -6362,6 +6364,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startDirection?: LinkDirection
       endDirection?: LinkDirection
     },
+    rerouteSegments: Set<Reroute>,
     now: number
   ): void {
     const { linkMarkerShape } = this
@@ -6370,7 +6373,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (hiding.frame.style === 'elastic') {
         this._renderSnappingLink(ctx, hiding)
       } else {
-        this._renderDottedLink(ctx, hiding, now)
+        this._renderDottedLink(ctx, hiding, rerouteSegments, now)
       }
     } finally {
       this.linkMarkerShape = linkMarkerShape
@@ -6387,6 +6390,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startDirection?: LinkDirection
       endDirection?: LinkDirection
     },
+    rerouteSegments: Set<Reroute>,
     now: number
   ): void {
     const { link, frame, startPos, endPos, startDirection, endDirection } =
@@ -6402,7 +6406,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startPos,
       endPos,
       [],
-      new Set(),
+      rerouteSegments,
       now,
       startDirection,
       endDirection
