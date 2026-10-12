@@ -17,3 +17,9 @@ diff_file="$(mktemp)"
 trap 'rm -f "$diff_file"' 0
 git diff --unified=0 --relative "$base"...HEAD -- > "$diff_file"
 pnpm fallow:audit --changed-since "$base" --diff-file "$diff_file" 1>&2
+
+if git diff --name-only "$base" HEAD | grep -q '^packages/code-quality/'; then
+  pnpm --filter @comfyorg/code-quality check
+  pnpm --filter @comfyorg/code-quality smoke:pack npm
+  pnpm --filter @comfyorg/code-quality smoke:pack pnpm
+fi

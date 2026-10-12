@@ -4,3 +4,6 @@ set -e
 pnpm exec lint-staged
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts
+if git diff --cached --name-only | grep -q '^packages/code-quality/'; then
+  pnpm --filter @comfyorg/code-quality check
+fi
