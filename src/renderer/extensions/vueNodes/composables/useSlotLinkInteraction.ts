@@ -161,6 +161,7 @@ export function useSlotLinkInteraction({
   let autoPan: AutoPanController | null = null
   let pointerDownClient: Point | null = null
   let hasDragged = false
+  let pressedWithModifier = false
 
   const latchDragPastClickDrift = (event: PointerEvent) => {
     if (hasDragged || !pointerDownClient) return
@@ -174,7 +175,7 @@ export function useSlotLinkInteraction({
 
   const isSlotClick = (event: PointerEvent) => {
     latchDragPastClickDrift(event)
-    return pointerDownClient !== null && !hasDragged
+    return pointerDownClient !== null && !hasDragged && !pressedWithModifier
   }
 
   const selectClickedSlotLinks = () => {
@@ -368,6 +369,7 @@ export function useSlotLinkInteraction({
     pointerSession.clear()
     pointerDownClient = null
     hasDragged = false
+    pressedWithModifier = false
     endDrag()
     activeAdapter = null
     raf.cancel()
@@ -825,6 +827,7 @@ export function useSlotLinkInteraction({
 
     pointerSession.begin(event.pointerId)
     pointerDownClient = { x: event.clientX, y: event.clientY }
+    pressedWithModifier = event.shiftKey || ctrlOrMeta || event.altKey
 
     toCanvasPointerEvent(event)
     updatePointerState(event)
