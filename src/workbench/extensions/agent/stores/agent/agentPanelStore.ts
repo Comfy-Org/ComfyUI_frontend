@@ -222,13 +222,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
-  /**
-   * Everything scoped to one panel open, in one place, because the panel is
-   * opened from two paths: `open()` and the restore branch of the watcher
-   * below. Anything reset in only one of them survives into the next epoch —
-   * the free-use flags did, so a restore after an in-place identity change
-   * reported no exposure and no impression while its dismissal still went out.
-   */
   function startOpenEpoch(): void {
     openedAt = Date.now()
     teardownReported = false

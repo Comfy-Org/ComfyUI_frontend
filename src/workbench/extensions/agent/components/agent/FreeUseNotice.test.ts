@@ -87,9 +87,6 @@ describe('FreeUseNotice', () => {
     expect(emitted('notice')).toBeUndefined()
   })
 
-  // A browser-wide dismissal would hide a treatment arm's notice from the next
-  // account on a shared browser or after a switch, while the panel still
-  // reports that viewer exposed to the arm.
   it('keeps a dismissal to the account that made it', async () => {
     signIn('first-user')
     const first = mount()
@@ -105,12 +102,7 @@ describe('FreeUseNotice', () => {
     ])
   })
 
-  // The dismissal key is account-scoped, so until auth settles the component is
-  // reading the signed-out key. Both halves matter, and each would pass the
-  // other's assertions: rendering before auth settles flashes the notice at
-  // someone who had dismissed it, while reading auth readiness once at mount
-  // hides it from every viewer whose account resolves later.
-  it('renders after auth settles, for a late user who had not dismissed it', async () => {
+  it('waits for auth, then follows the resolved account dismissal', async () => {
     const authInitialized = ref(false)
     const userId = ref<string | null>(null)
     vi.mocked(useCurrentUser).mockReturnValue({
@@ -138,9 +130,6 @@ describe('FreeUseNotice', () => {
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
 
-    // The notice appearing for an account that never dismissed it is the
-    // post-auth signal this case needs: without it, the absence asserted above
-    // is also what a gate that stopped re-reading after mount would produce.
     userId.value = 'fresh-user'
 
     expect(await screen.findByRole('note')).toBeInTheDocument()

@@ -16,7 +16,6 @@ interface MockBillingOptions {
   billingCapabilitiesStatus?: number
 }
 
-/** Active personal sub with zero balance; the base every caller layers on. */
 export const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
   has_funds: true,

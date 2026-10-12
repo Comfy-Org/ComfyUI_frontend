@@ -918,7 +918,6 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
  * Interactions with the notice itself. This event adds what the existing
  * outcome events cannot say: whether the notice was actually on screen in its
  * assigned arm, and what the viewer did with it.
- *
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
