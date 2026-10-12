@@ -135,7 +135,7 @@ function mountFollower() {
     return first
   }
 
-  return { submit, submitBatch }
+  return { submit, submitBatch, follower }
 }
 
 function rejection(opId: string, code: string): Record<string, unknown> {
@@ -286,6 +286,20 @@ describe('a human edit the doc host rejects', () => {
 
     expect(toastDescriptions()).toEqual([
       expect.stringContaining(GENERIC_REJECTION_TEXT)
+    ])
+  })
+
+  it('shares one notice between a refusal the minter raised and a host rejection', async () => {
+    const { submit, follower } = mountFollower()
+
+    follower.notifyWidgetWriteRefused()
+    expect(toastDescriptions()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
+    ])
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    expect(toastDescriptions()).toEqual([
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
 
