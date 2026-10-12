@@ -1,19 +1,87 @@
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-export const LINK_HIDE_TRANSITION = {
+export const LINK_HIDE_EASINGS = {
+  linear: (t: number) => t,
+  easeOutCubic: (t: number) => 1 - (1 - t) ** 3,
+  easeOutQuint: (t: number) => 1 - (1 - t) ** 5,
+  easeOutBack: (t: number) => {
+    const c1 = LINK_HIDE_TRANSITION.snapOvershoot
+    return 1 + (c1 + 1) * (t - 1) ** 3 + c1 * (t - 1) ** 2
+  },
+  easeOutElastic: (t: number) => {
+    if (t <= 0) return 0
+    if (t >= 1) return 1
+    const { elasticDecay, elasticFrequency } = LINK_HIDE_TRANSITION
+    return (
+      2 ** (-elasticDecay * t) *
+        Math.sin((t * elasticFrequency - 0.75) * ((2 * Math.PI) / 3)) +
+      1
+    )
+  },
+  spring: (t: number) => {
+    const { elasticDecay, elasticFrequency } = LINK_HIDE_TRANSITION
+    return (
+      1 - Math.exp(-elasticDecay * 0.6 * t) * Math.cos(elasticFrequency * t)
+    )
+  },
+  easeOutBounce: (t: number) => {
+    const n1 = 7.5625
+    const d1 = 2.75
+    if (t < 1 / d1) return n1 * t * t
+    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75
+    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375
+    return n1 * (t -= 2.625 / d1) * t + 0.984375
+  }
+} satisfies Record<string, (t: number) => number>
+
+export type LinkHideEasing = keyof typeof LINK_HIDE_EASINGS
+export type LinkHideStyle = 'dotted' | 'elastic'
+
+export const LINK_HIDE_TRANSITION: {
+  style: LinkHideStyle
+  holdMs: number
+  fadeMs: number
+  dashOnWidths: number
+  dashOffWidths: number
+  snapMs: number
+  snapEasing: LinkHideEasing
+  snapOvershoot: number
+  elasticDecay: number
+  elasticFrequency: number
+  labelPopMs: number
+  labelPopFromScale: number
+  labelPopOvershoot: number
+} = {
+  style: 'dotted',
   holdMs: 200,
   fadeMs: 200,
   dashOnWidths: 1.5,
   dashOffWidths: 1.5,
+  snapMs: 450,
+  snapEasing: 'easeOutElastic',
+  snapOvershoot: 1.70158,
+  elasticDecay: 10,
+  elasticFrequency: 10,
   labelPopMs: 150,
   labelPopFromScale: 0.9,
   labelPopOvershoot: 1.70158
-} as const
+}
+
+/** One frame of a link's hide transition: its opacity, and how far its two halves have snapped back toward their badges. */
+export interface LinkHideFrame {
+  style: LinkHideStyle
+  alpha: number
+  retract: number
+}
+
+function lineMs(): number {
+  const { style, holdMs, fadeMs, snapMs } = LINK_HIDE_TRANSITION
+  return style === 'elastic' ? snapMs : holdMs + fadeMs
+}
 
 function totalMs(): number {
-  const { holdMs, fadeMs, labelPopMs } = LINK_HIDE_TRANSITION
-  return holdMs + fadeMs + labelPopMs
+  return lineMs() + LINK_HIDE_TRANSITION.labelPopMs
 }
 
 function easeOutBack(t: number): number {
@@ -71,16 +139,24 @@ function elapsedSinceHide(
   cancelLinkHideTransition(rootGraphId, linkId)
 }
 
-/** Opacity of a link mid-transition, or `undefined` once its line has finished or never started. */
-export function linkHideTransitionAlpha(
+/** The frame to draw for a link mid-transition, or `undefined` once its line has gone or never started. */
+export function linkHideFrame(
   rootGraphId: RootGraphId,
   linkId: LinkId,
   now: number
-): number | undefined {
+): LinkHideFrame | undefined {
   const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
-  const { holdMs, fadeMs } = LINK_HIDE_TRANSITION
-  if (elapsed === undefined || elapsed >= holdMs + fadeMs) return
-  return elapsed <= holdMs ? 1 : 1 - (elapsed - holdMs) / fadeMs
+  if (elapsed === undefined || elapsed >= lineMs()) return
+  const { style, holdMs, fadeMs, snapMs, snapEasing } = LINK_HIDE_TRANSITION
+  if (style === 'elastic') {
+    return {
+      style,
+      alpha: 1,
+      retract: LINK_HIDE_EASINGS[snapEasing](elapsed / snapMs)
+    }
+  }
+  const alpha = elapsed <= holdMs ? 1 : 1 - (elapsed - holdMs) / fadeMs
+  return { style, alpha, retract: 0 }
 }
 
 /** Scale of a hidden link's labels as they pop in after the line fades; 1 when settled. */
@@ -91,8 +167,8 @@ export function linkHideLabelScale(
 ): number {
   const elapsed = elapsedSinceHide(rootGraphId, linkId, now)
   if (elapsed === undefined) return 1
-  const { holdMs, fadeMs, labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
-  const progress = Math.max(0, (elapsed - holdMs - fadeMs) / labelPopMs)
+  const { labelPopMs, labelPopFromScale } = LINK_HIDE_TRANSITION
+  const progress = Math.max(0, (elapsed - lineMs()) / labelPopMs)
   return labelPopFromScale + (1 - labelPopFromScale) * easeOutBack(progress)
 }
 

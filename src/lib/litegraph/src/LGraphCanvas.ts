@@ -55,9 +55,11 @@ import {
   clearRootLinkHideTransitions,
   hasLinkHideTransitions,
   linkHideDashPattern,
-  linkHideLabelScale,
-  linkHideTransitionAlpha
+  linkHideFrame,
+  linkHideLabelScale
 } from './canvas/linkHideTransition'
+import type { LinkHideFrame } from './canvas/linkHideTransition'
+import type { LinkBadgeLayout } from './canvas/linkBadges'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -6081,7 +6083,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const renderedRerouteSegments = new Set<Reroute>()
     const hidingLinks: {
       link: LLink
-      alpha: number
+      frame: LinkHideFrame
+      layout: LinkBadgeLayout
       startPos: Point
       endPos: Point
       startDirection?: LinkDirection
@@ -6099,16 +6102,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
         cancelLinkHideTransition(graphScope.rootGraphId, link.id)
       } else if (hiddenLayout) {
-        const alpha = linkHideTransitionAlpha(
-          graphScope.rootGraphId,
-          link.id,
-          now
-        )
-        if (alpha === undefined) return
+        const frame = linkHideFrame(graphScope.rootGraphId, link.id, now)
+        if (frame === undefined) return
 
         hidingLinks.push({
           link,
-          alpha,
+          frame,
+          layout: hiddenLayout,
           startPos,
           endPos,
           startDirection,
@@ -6357,16 +6357,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _renderHidingLink(
     ctx: CanvasRenderingContext2D,
-    {
-      link,
-      alpha,
-      startPos,
-      endPos,
-      startDirection,
-      endDirection
-    }: {
+    hiding: {
       link: LLink
-      alpha: number
+      frame: LinkHideFrame
+      layout: LinkBadgeLayout
       startPos: Point
       endPos: Point
       startDirection?: LinkDirection
@@ -6374,10 +6368,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     },
     now: number
   ): void {
+    if (hiding.frame.style === 'elastic') {
+      this._renderSnappingLink(ctx, hiding)
+      return
+    }
+    const { link, frame, startPos, endPos, startDirection, endDirection } =
+      hiding
     const hitTestedPaths = this.renderedPaths
     this.renderedPaths = new Set(hitTestedPaths)
     ctx.save()
-    ctx.globalAlpha *= alpha
+    ctx.globalAlpha *= frame.alpha
     ctx.setLineDash(linkHideDashPattern(this.connections_width))
     this._renderAllLinkSegments(
       ctx,
@@ -6392,6 +6392,62 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     ctx.restore()
     this.renderedPaths = hitTestedPaths
+  }
+
+  private _renderSnappingLink(
+    ctx: CanvasRenderingContext2D,
+    {
+      link,
+      frame,
+      layout,
+      startPos,
+      endPos,
+      startDirection = LinkDirection.RIGHT,
+      endDirection = LinkDirection.LEFT
+    }: {
+      link: LLink
+      frame: LinkHideFrame
+      layout: LinkBadgeLayout
+      startPos: Point
+      endPos: Point
+      startDirection?: LinkDirection
+      endDirection?: LinkDirection
+    }
+  ): void {
+    const middle: Point = [
+      (startPos[0] + endPos[0]) / 2,
+      (startPos[1] + endPos[1]) / 2
+    ]
+    const towards = (target: Point): Point => [
+      middle[0] + (target[0] - middle[0]) * frame.retract,
+      middle[1] + (target[1] - middle[1]) * frame.retract
+    ]
+    const color =
+      link.color ||
+      LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
+      this.default_link_color
+    this.renderLink(
+      ctx,
+      startPos,
+      towards(layout.outputTip),
+      null,
+      false,
+      null,
+      color,
+      startDirection,
+      LinkDirection.CENTER
+    )
+    this.renderLink(
+      ctx,
+      towards(layout.inputTip),
+      endPos,
+      null,
+      false,
+      null,
+      color,
+      LinkDirection.CENTER,
+      endDirection
+    )
   }
 
   private _renderAllLinkSegments(
