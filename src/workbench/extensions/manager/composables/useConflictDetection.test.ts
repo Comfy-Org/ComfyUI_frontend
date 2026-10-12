@@ -398,7 +398,7 @@ describe('useConflictDetection', () => {
     const bannedPackIds = (results: ConflictDetectionResult[]) =>
       results
         .filter((result) =>
-          result.conflicts?.some((conflict) => conflict.type === 'banned')
+          result.conflicts.some((conflict) => conflict.type === 'banned')
         )
         .map((result) => result.package_id)
 
