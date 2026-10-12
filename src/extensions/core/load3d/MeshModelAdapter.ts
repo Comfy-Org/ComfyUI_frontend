@@ -45,25 +45,17 @@ export class MeshModelAdapter implements ModelAdapter {
     ctx: ModelLoadContext,
     path: string,
     filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult | null> {
     const extension = filename.split('.').pop()?.toLowerCase()
-    const loadBytes =
-      fetchBytes ??
-      (() =>
-        new THREE.FileLoader()
-          .setResponseType('arraybuffer')
-          .loadAsync(
-            path + encodeURIComponent(filename)
-          ) as Promise<ArrayBuffer>)
     const object = await (extension === 'stl'
-      ? this.loadSTL(ctx, path, loadBytes)
+      ? this.loadSTL(ctx, path, fetchBytes)
       : extension === 'fbx'
-        ? this.loadFBX(ctx, path, loadBytes)
+        ? this.loadFBX(ctx, path, fetchBytes)
         : extension === 'obj'
-          ? this.loadOBJ(ctx, path, filename, loadBytes)
+          ? this.loadOBJ(ctx, path, filename, fetchBytes)
           : extension === 'gltf' || extension === 'glb'
-            ? this.loadGLTF(ctx, path, loadBytes)
+            ? this.loadGLTF(ctx, path, fetchBytes)
             : Promise.resolve(null))
     return object ? { object, capabilities: this.capabilities } : null
   }

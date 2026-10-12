@@ -82,13 +82,15 @@ describe('MeshModelAdapter OBJ worker loading', () => {
   })
 
   const path = 'http://localhost/api/view/'
+  const sharedObjBytes = new Uint8Array(OBJ_BYTES).buffer
+  const fetchBytes = () => Promise.resolve(sharedObjBytes)
 
   it('loads two overlapping requests for the same OBJ', async () => {
     const adapter = new MeshModelAdapter()
 
     const [first, second] = await Promise.all([
-      adapter.load(makeContext(), path, 'cube.obj'),
-      adapter.load(makeContext(), path, 'cube.obj')
+      adapter.load(makeContext(), path, 'cube.obj', fetchBytes),
+      adapter.load(makeContext(), path, 'cube.obj', fetchBytes)
     ])
 
     expect(first!.object).toBeInstanceOf(THREE.Object3D)
@@ -105,7 +107,7 @@ describe('MeshModelAdapter OBJ worker loading', () => {
     const adapter = new MeshModelAdapter()
 
     await expect(
-      adapter.load(makeContext(), path, 'cube.obj')
+      adapter.load(makeContext(), path, 'cube.obj', fetchBytes)
     ).rejects.toMatchObject({ name: 'DataCloneError' })
     expect(workers.every((w) => w.terminate.mock.calls.length > 0)).toBe(true)
   }, 2000)
@@ -118,16 +120,16 @@ describe('MeshModelAdapter OBJ worker loading', () => {
     }
     const adapter = new MeshModelAdapter()
 
-    await expect(adapter.load(makeContext(), path, 'cube.obj')).rejects.toThrow(
-      'worker crashed'
-    )
+    await expect(
+      adapter.load(makeContext(), path, 'cube.obj', fetchBytes)
+    ).rejects.toThrow('worker crashed')
   }, 2000)
 
   it('terminates the worker once the OBJ is parsed', async () => {
     const adapter = new MeshModelAdapter()
 
-    await adapter.load(makeContext(), path, 'cube.obj')
-    await adapter.load(makeContext(), path, 'cube.obj')
+    await adapter.load(makeContext(), path, 'cube.obj', fetchBytes)
+    await adapter.load(makeContext(), path, 'cube.obj', fetchBytes)
 
     expect(workers).toHaveLength(2)
     expect(workers.every((w) => w.terminate.mock.calls.length === 1)).toBe(true)
