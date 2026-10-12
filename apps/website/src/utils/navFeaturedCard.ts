@@ -5,70 +5,66 @@ const NAV_FEATURED_CARD_IMAGE_FLAG_PREFIX = 'nav-featured-card-image'
 
 const CONTROL_VARIANT = 'control'
 
+export type FlagVariantRead =
+  | { state: 'not_loaded' | 'unanswered' | 'no_flag' }
+  | { state: 'answered'; key: string }
+
+type VariantSource =
+  | 'not_loaded'
+  | 'unanswered'
+  | 'no_flag'
+  | 'control_flag'
+  | 'unknown_variant'
+  | 'flag'
+
 export type NavFeaturedCardEventProperties = {
-  /** Stable id of the promo placement, for example `gemini-omni`. */
   placement: string
-  /** Stable id of the dropdown holding the card, for example `products`. */
   dropdown: string
   href: string
-  /** The image variant actually rendered; `control` when none applies. */
   variant: string
+  variant_source: VariantSource
   locale: Locale
 }
 
 export type NavFeaturedMedia = {
   variant: string
+  variantSource: VariantSource
   imageSrc: string
   videoSrc?: string
   imageAlt?: string
 }
 
-/**
- * Picks the media to render for a flag answer. Anything that is not the key
- * of a configured variant (no flag, still loading, `control`, a key marketing
- * has not supplied images for) resolves to the control card, so the page
- * never depends on PostHog being reachable.
- */
 export function resolveFeaturedMedia(
   featured: NavFeatured,
-  flagValue: unknown
+  read: FlagVariantRead
 ): NavFeaturedMedia {
-  const { variants } = featured
-  if (
-    typeof flagValue === 'string' &&
-    flagValue !== CONTROL_VARIANT &&
-    variants &&
-    Object.hasOwn(variants, flagValue)
-  ) {
-    const { imageSrc, videoSrc, imageAlt } = variants[flagValue]
-    return {
-      variant: flagValue,
-      imageSrc,
-      videoSrc,
-      // A variant never inherits the control video, which would hide its image.
-      imageAlt: imageAlt ?? featured.imageAlt
-    }
-  }
-  return {
+  const control = {
     variant: CONTROL_VARIANT,
     imageSrc: featured.imageSrc,
     videoSrc: featured.videoSrc,
     imageAlt: featured.imageAlt
   }
+  if (read.state !== 'answered')
+    return { ...control, variantSource: read.state }
+  if (read.key === CONTROL_VARIANT)
+    return { ...control, variantSource: 'control_flag' }
+  const { variants } = featured
+  if (!variants || !Object.hasOwn(variants, read.key))
+    return { ...control, variantSource: 'unknown_variant' }
+  const { imageSrc, videoSrc, imageAlt } = variants[read.key]
+  return {
+    variant: read.key,
+    variantSource: 'flag',
+    imageSrc,
+    videoSrc,
+    imageAlt
+  }
 }
 
-/**
- * Each placement has its own multivariate PostHog flag, so its image test is
- * bucketed and read independently of the other promo cards. Create
- * `nav-featured-card-image-<placement>` in the PostHog project (prod 204330)
- * with variant keys that match the keys of that card's `variants`; the
- * `control` arm is the card as authored in `mainNavigation.ts`.
- */
 export function getFeaturedImageFlagKey(featured: NavFeatured): string {
   return `${NAV_FEATURED_CARD_IMAGE_FLAG_PREFIX}-${getFeaturedPlacement(featured)}`
 }
 
-/** The explicit `analyticsId`, else the path of the link without its locale. */
 export function getFeaturedPlacement(featured: NavFeatured): string {
   if (featured.analyticsId) return featured.analyticsId
   const path = featured.cta.href
@@ -81,19 +77,20 @@ export function getFeaturedPlacement(featured: NavFeatured): string {
 export function buildNavFeaturedCardEventProperties({
   featured,
   dropdown,
-  variant,
+  media,
   locale
 }: {
   featured: NavFeatured
   dropdown: string
-  variant: string
+  media: Pick<NavFeaturedMedia, 'variant' | 'variantSource'>
   locale: Locale
 }): NavFeaturedCardEventProperties {
   return {
     placement: getFeaturedPlacement(featured),
     dropdown,
     href: featured.cta.href,
-    variant,
+    variant: media.variant,
+    variant_source: media.variantSource,
     locale
   }
 }

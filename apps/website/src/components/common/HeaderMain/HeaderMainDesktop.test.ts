@@ -18,6 +18,7 @@ const viewedProperties = {
   dropdown: 'products',
   href: '/gemini-omni/',
   variant: 'control',
+  variant_source: 'not_loaded',
   locale: 'en'
 }
 
@@ -227,7 +228,12 @@ describe('HeaderMainDesktop', () => {
         const [card] = within(
           await screen.findByTestId('nav-dropdown')
         ).getAllByRole('link', { hidden: true })
-        const properties = { ...expected, variant: 'control', locale: 'en' }
+        const properties = {
+          ...expected,
+          variant: 'control',
+          variant_source: 'not_loaded',
+          locale: 'en'
+        }
         expect(captureNavFeaturedCardViewed).toHaveBeenCalledExactlyOnceWith(
           properties
         )

@@ -25,24 +25,18 @@ const { featured, dropdown, locale } = defineProps<{
   locale: Locale
 }>()
 
-// The dropdown content only mounts once the menu opens (the server-rendered
-// header holds no card), so the flag is read once here, when the card first
-// appears, and the media stays put for the whole open. A flag that has not
-// answered yet resolves to the control card.
-const flagValue = readFlagVariant(getFeaturedImageFlagKey(featured))
-const media = computed(() => resolveFeaturedMedia(featured, flagValue))
+const flagRead = readFlagVariant(getFeaturedImageFlagKey(featured))
+const media = computed(() => resolveFeaturedMedia(featured, flagRead))
 
 function eventProperties() {
   return buildNavFeaturedCardEventProperties({
     featured,
     dropdown,
-    variant: media.value.variant,
+    media: media.value,
     locale
   })
 }
 
-// reka-ui unmounts closed menu content (unmountOnHide), so mounting is the
-// card appearing, for a click and a hover open alike.
 onMounted(() => captureNavFeaturedCardViewed(eventProperties()))
 
 const WCAG_AUTOPLAY_LIMIT_SECONDS = 5

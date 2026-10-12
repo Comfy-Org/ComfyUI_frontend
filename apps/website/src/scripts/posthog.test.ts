@@ -764,6 +764,7 @@ describe('nav featured card analytics', () => {
     dropdown: 'products',
     href: '/gemini-omni/',
     variant: 'control',
+    variant_source: 'flag',
     locale: 'en'
   } as const
 
@@ -796,18 +797,25 @@ describe('nav featured card analytics', () => {
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })
 
-  it('reads a flag variant only after PostHog has answered, without an exposure event', async () => {
+  it('reads a flag variant through its states without an exposure event', async () => {
     const { initPostHog, readFlagVariant } = await import('./posthog')
     hoisted.mockGetFeatureFlag.mockReturnValue('bold-image')
-    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'not_loaded'
+    })
 
     initPostHog()
-    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'unanswered'
+    })
 
     emitFeatureFlags()
-    expect(readFlagVariant('nav-featured-card-image')).toBe('bold-image')
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'answered',
+      key: 'bold-image'
+    })
     expect(hoisted.mockGetFeatureFlag).toHaveBeenCalledWith(
-      'nav-featured-card-image',
+      'nav-featured-card-image-x',
       { send_event: false }
     )
   })
@@ -816,27 +824,72 @@ describe('nav featured card analytics', () => {
     { name: 'an off flag', answer: false },
     { name: 'a missing flag', answer: undefined },
     { name: 'a plain boolean flag', answer: true }
-  ])('has no variant for $name', async ({ answer }) => {
+  ])('reports no flag for $name', async ({ answer }) => {
     const { initPostHog, readFlagVariant } = await import('./posthog')
     initPostHog()
     hoisted.mockGetFeatureFlag.mockReturnValue(answer)
     emitFeatureFlags()
 
-    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'no_flag'
+    })
   })
 
-  it('has no variant when reading the flag throws', async () => {
+  it('reports no flag when reading the flag throws', async () => {
     const { initPostHog, readFlagVariant } = await import('./posthog')
     initPostHog()
     emitFeatureFlags()
     hoisted.mockGetFeatureFlag.mockImplementation(() => {
       throw new Error('boom')
     })
-
     vi.mocked(console.error).mockImplementation(() => {})
 
-    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'no_flag'
+    })
     expect(console.error).toHaveBeenCalledOnce()
+  })
+
+  it('captures at most one view per placement and keeps counting clicks', async () => {
+    const {
+      initPostHog,
+      captureNavFeaturedCardViewed,
+      captureNavFeaturedCardClicked
+    } = await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed({
+      ...properties,
+      placement: 'minimax-license'
+    })
+    captureNavFeaturedCardClicked(properties)
+    captureNavFeaturedCardClicked(properties)
+
+    expect(
+      hoisted.mockCapture.mock.calls.map(([name, props]) => [
+        name,
+        props.placement
+      ])
+    ).toEqual([
+      ['website:nav_featured_card_viewed', 'gemini-omni'],
+      ['website:nav_featured_card_viewed', 'minimax-license'],
+      ['website:nav_featured_card_clicked', 'gemini-omni'],
+      ['website:nav_featured_card_clicked', 'gemini-omni']
+    ])
+  })
+
+  it('does not use up a placement view while PostHog is not initialized', async () => {
+    const { initPostHog, captureNavFeaturedCardViewed } =
+      await import('./posthog')
+    captureNavFeaturedCardViewed(properties)
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+
+    expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+      'website:nav_featured_card_viewed',
+      properties
+    )
   })
 })
 

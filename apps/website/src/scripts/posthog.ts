@@ -24,7 +24,10 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
-import type { NavFeaturedCardEventProperties } from '@/utils/navFeaturedCard'
+import type {
+  FlagVariantRead,
+  NavFeaturedCardEventProperties
+} from '@/utils/navFeaturedCard'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -243,19 +246,17 @@ export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
   return readonly(flag)
 }
 
-/**
- * The variant key of the multivariate PostHog flag `name` for this visitor, or
- * undefined while PostHog has not answered, when the flag is off or missing,
- * and when PostHog never loaded. Reading it sends no exposure event.
- */
-export function readFlagVariant(name: string): string | undefined {
-  if (!initialized || !namedFlagsAnswered) return undefined
+export function readFlagVariant(name: string): FlagVariantRead {
+  if (!initialized) return { state: 'not_loaded' }
+  if (!namedFlagsAnswered) return { state: 'unanswered' }
   try {
     const value = posthog.getFeatureFlag(name, { send_event: false })
-    return typeof value === 'string' ? value : undefined
+    return typeof value === 'string'
+      ? { state: 'answered', key: value }
+      : { state: 'no_flag' }
   } catch (error) {
     console.error(`PostHog flag read failed for ${name}`, error)
-    return undefined
+    return { state: 'no_flag' }
   }
 }
 
@@ -531,9 +532,14 @@ export function captureAgentUsecaseVideoPlayed(video: string): void {
   })
 }
 
+const viewedNavFeaturedPlacements = new Set<string>()
+
 export function captureNavFeaturedCardViewed(
   properties: NavFeaturedCardEventProperties
 ): void {
+  if (!initialized || viewedNavFeaturedPlacements.has(properties.placement))
+    return
+  viewedNavFeaturedPlacements.add(properties.placement)
   captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardViewed, properties })
 }
 

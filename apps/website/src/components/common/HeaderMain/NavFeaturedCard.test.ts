@@ -39,7 +39,7 @@ const variantFeatured: NavFeatured = {
 const cardProps = { dropdown: 'products', locale: 'en' } as const
 
 beforeEach(() => {
-  vi.mocked(readFlagVariant).mockReturnValue(undefined)
+  vi.mocked(readFlagVariant).mockReturnValue({ state: 'unanswered' })
 })
 
 function renderVideoCard() {
@@ -107,6 +107,7 @@ describe('NavFeaturedCard', () => {
         dropdown: 'products',
         href: '/launch',
         variant: 'control',
+        variant_source: 'unanswered',
         locale: 'en'
       })
       expect(captureNavFeaturedCardClicked).not.toHaveBeenCalled()
@@ -130,13 +131,17 @@ describe('NavFeaturedCard', () => {
         dropdown: 'products',
         href: '/launch',
         variant: 'control',
+        variant_source: 'unanswered',
         locale: 'zh-CN'
       })
       expect(captureNavFeaturedCardViewed).toHaveBeenCalledTimes(1)
     })
 
     it('renders and reports the variant the flag assigns', async () => {
-      vi.mocked(readFlagVariant).mockReturnValue('bold-image')
+      vi.mocked(readFlagVariant).mockReturnValue({
+        state: 'answered',
+        key: 'bold-image'
+      })
       render(NavFeaturedCard, {
         props: { ...cardProps, featured: variantFeatured }
       })
@@ -145,10 +150,16 @@ describe('NavFeaturedCard', () => {
       ).toBe('https://example.com/bold.webp')
       await userEvent.click(screen.getByRole('link'))
       expect(captureNavFeaturedCardViewed).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: 'bold-image' })
+        expect.objectContaining({
+          variant: 'bold-image',
+          variant_source: 'flag'
+        })
       )
       expect(captureNavFeaturedCardClicked).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: 'bold-image' })
+        expect.objectContaining({
+          variant: 'bold-image',
+          variant_source: 'flag'
+        })
       )
     })
 
@@ -172,13 +183,19 @@ describe('NavFeaturedCard', () => {
     })
 
     it('renders the control card for a variant with no configured media', () => {
-      vi.mocked(readFlagVariant).mockReturnValue('bold-image')
+      vi.mocked(readFlagVariant).mockReturnValue({
+        state: 'answered',
+        key: 'bold-image'
+      })
       render(NavFeaturedCard, { props: { ...cardProps, featured } })
       expect(
         screen.getByRole('img', { name: 'Featured clip' }).getAttribute('src')
       ).toBe(featured.imageSrc)
       expect(captureNavFeaturedCardViewed).toHaveBeenCalledWith(
-        expect.objectContaining({ variant: 'control' })
+        expect.objectContaining({
+          variant: 'control',
+          variant_source: 'unknown_variant'
+        })
       )
     })
   })

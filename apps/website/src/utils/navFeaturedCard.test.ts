@@ -21,7 +21,12 @@ const control: NavFeatured = {
     },
     quiet: {
       imageSrc: 'https://media.comfy.org/quiet.webp',
-      videoSrc: 'https://media.comfy.org/quiet.webm'
+      videoSrc: 'https://media.comfy.org/quiet.webm',
+      imageAlt: 'Quiet alt'
+    },
+    control: {
+      imageSrc: 'https://media.comfy.org/ignored.webp',
+      imageAlt: 'Ignored alt'
     }
   }
 }
@@ -35,34 +40,48 @@ const controlMedia = {
 
 describe('resolveFeaturedMedia', () => {
   it.for([
-    { name: 'no flag', flag: undefined },
-    { name: 'a null answer', flag: null },
-    { name: 'a boolean answer', flag: true },
-    { name: 'the control key', flag: 'control' },
-    { name: 'an unknown key', flag: 'missing' },
-    { name: 'an inherited object key', flag: 'toString' },
-    { name: 'an empty key', flag: '' }
-  ])('falls back to the control card for $name', ({ flag }) => {
-    expect(resolveFeaturedMedia(control, flag)).toEqual(controlMedia)
-  })
+    { read: { state: 'not_loaded' }, source: 'not_loaded' },
+    { read: { state: 'unanswered' }, source: 'unanswered' },
+    { read: { state: 'no_flag' }, source: 'no_flag' },
+    { read: { state: 'answered', key: 'control' }, source: 'control_flag' },
+    { read: { state: 'answered', key: 'missing' }, source: 'unknown_variant' },
+    { read: { state: 'answered', key: 'toString' }, source: 'unknown_variant' },
+    { read: { state: 'answered', key: '' }, source: 'unknown_variant' }
+  ] as const)(
+    'renders the control card and reports $source for $read',
+    ({ read, source }) => {
+      expect(resolveFeaturedMedia(control, read)).toEqual({
+        ...controlMedia,
+        variantSource: source
+      })
+    }
+  )
 
-  it('falls back to control when the card defines no variants', () => {
+  it('reports an unknown variant when the card defines no variants', () => {
     const { variants: _variants, ...plain } = control
-    expect(resolveFeaturedMedia(plain, 'bold')).toEqual(controlMedia)
+    expect(
+      resolveFeaturedMedia(plain, { state: 'answered', key: 'bold' })
+    ).toEqual({ ...controlMedia, variantSource: 'unknown_variant' })
   })
 
-  it('swaps in a configured variant and inherits only the alt text', () => {
-    expect(resolveFeaturedMedia(control, 'bold')).toEqual({
+  it('swaps in a configured variant with its own alt text and no control video', () => {
+    expect(
+      resolveFeaturedMedia(control, { state: 'answered', key: 'bold' })
+    ).toEqual({
       variant: 'bold',
+      variantSource: 'flag',
       imageSrc: 'https://media.comfy.org/bold.webp',
       videoSrc: undefined,
       imageAlt: 'Bold alt'
     })
-    expect(resolveFeaturedMedia(control, 'quiet')).toEqual({
+    expect(
+      resolveFeaturedMedia(control, { state: 'answered', key: 'quiet' })
+    ).toEqual({
       variant: 'quiet',
+      variantSource: 'flag',
       imageSrc: 'https://media.comfy.org/quiet.webp',
       videoSrc: 'https://media.comfy.org/quiet.webm',
-      imageAlt: 'Control alt'
+      imageAlt: 'Quiet alt'
     })
   })
 })
@@ -100,7 +119,7 @@ describe('buildNavFeaturedCardEventProperties', () => {
       buildNavFeaturedCardEventProperties({
         featured: { ...control, analyticsId: 'gemini-omni' },
         dropdown: 'products',
-        variant: 'bold',
+        media: { variant: 'bold', variantSource: 'flag' },
         locale: 'zh-CN'
       })
     ).toEqual({
@@ -108,6 +127,7 @@ describe('buildNavFeaturedCardEventProperties', () => {
       dropdown: 'products',
       href: '/gemini-omni/',
       variant: 'bold',
+      variant_source: 'flag',
       locale: 'zh-CN'
     })
   })

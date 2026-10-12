@@ -27,19 +27,13 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
-/** Replacement media for one arm of a placement's image flag. */
 type NavFeaturedVariant = {
   imageSrc: string
   videoSrc?: string
-  imageAlt?: string
+  imageAlt: string
 }
 
 export type NavFeatured = {
-  /**
-   * Stable placement id sent with the card's analytics events. Keep it
-   * unchanged across copy, image, and locale changes so the numbers stay
-   * comparable; use a new id only for a different placement.
-   */
   analyticsId?: string
   imageSrc: string
   videoSrc?: string
@@ -51,13 +45,6 @@ export type NavFeatured = {
     ariaLabel?: string
     href: string
   }
-  /**
-   * Image arms for the PostHog multivariate flag
-   * `nav-featured-card-image-<placement>` (the placement is the card's
-   * `analyticsId`), keyed by the flag's variant keys. The top-level media is the `control`
-   * arm. Images and videos must be hosted on media.comfy.org. A visitor whose
-   * variant is not listed here sees the control card.
-   */
   variants?: Record<string, NavFeaturedVariant>
 }
 
@@ -66,7 +53,6 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
-      /** Stable dropdown id for analytics, such as `products`. */
       analyticsId: string
       activePathPrefix?: string
       badge?: 'new'
