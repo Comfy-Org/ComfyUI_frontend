@@ -19,7 +19,12 @@
  *   FE-KA11-1       nothing read `meta.schema_version`, so a doc written at a
  *                   schema this build does not understand was projected anyway.
  */
-import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  SCHEMA_VERSION,
+  SchemaVersionError,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -29,7 +34,6 @@ import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -1371,14 +1375,15 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     )
     transport.deliver('doc_update', docUpdateFrame(newerSchema))
 
-    // Fail CLOSED: the frame is never re-dispatched, so nothing renders.
     expect(projected).toHaveLength(0)
-    // …and the failure is distinguishable, not a silent "disconnected".
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
-    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
-    expect(console.error).toHaveBeenCalled()
+    expect(bridge.lastSchemaError).toBeInstanceOf(SchemaVersionError)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      bridge.lastSchemaError,
+      { surface: 'agent', errorType: 'failure_reading_agent_doc_schema' }
+    )
   })
 
   it('un-latches when a later same-lineage frame restores a readable schema_version', () => {
@@ -1402,7 +1407,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
     transport.deliver('doc_update', docUpdateFrame(incompatibleUpdate))
 
-    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+    expect(bridge.lastSchemaError).toBeInstanceOf(SchemaVersionError)
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
       'SchemaV3Node'
     )
@@ -1468,7 +1473,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     const unreadableState = Y.encodeStateVector(host)
     transport.deliver('doc_update', docUpdateFrame(Y.encodeStateAsUpdate(host)))
 
-    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+    expect(bridge.lastSchemaError).toBeInstanceOf(SchemaVersionError)
     expect(projected).toHaveLength(0)
 
     // A second, independently schema-valid frame for the SAME lineage merges
@@ -1488,21 +1493,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
     expect(bridge.lastSchemaError).toBeNull()
-  })
-
-  it('reads the version through the package public API, not a local copy', () => {
-    const doc = mint({ nodes: [], links: [] }, { types: {} })
-    expect(() => {
-      assertReadableSchema(doc)
-    }).not.toThrow()
-
-    doc.getMap('meta').set('schema_version', 99)
-    expect(() => {
-      assertReadableSchema(doc)
-    }).toThrow(FollowerSchemaError)
-    expect(() => {
-      assertReadableSchema(doc)
-    }).toThrow(/KA-11/)
   })
 })
 

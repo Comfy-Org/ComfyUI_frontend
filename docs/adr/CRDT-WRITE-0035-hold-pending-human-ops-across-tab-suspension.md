@@ -116,3 +116,22 @@ Alternatives considered:
 
 The backend can also re-project a document over a human draft at turn start;
 that is a separate, per-turn cause of the same symptom, tracked internally.
+
+### Open host decision: `base_version`
+
+As of 2026-10-12, [FE-3399](https://linear.app/comfyorg/issue/FE-3399)
+uses the package's `observedDocCounter` and `tickLamport` for human ops.
+The existing envelope still puts the same counter in `base_version` and
+`stamp[0]`. Before the first document update, the observed counter is zero.
+After an update, the package reads both winning stamps and clock reservations.
+
+The package's accepted [Lamport ordering decision](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/docs/adr/0005-lamport-ordering-v1-migration.md)
+defines `base_version` as a creator-owned Lamport counter, retaining its name
+for wire compatibility. Its [README example](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/README.md#L354-L365)
+still calls it a document version. This ADR's version terminology predates
+that package decision. The deployed host's contract remains unconfirmed.
+
+The host team must confirm whether deployed admission treats `base_version`
+as a document version or a Lamport counter before this change leaves draft.
+Package behavior supports the counter interpretation; frontend tests cannot
+confirm host deployment compatibility.

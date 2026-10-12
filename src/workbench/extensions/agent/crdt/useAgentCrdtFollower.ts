@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { observedDocCounter } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -532,7 +533,10 @@ function startAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: ownActor,
-    baseVersion: () => bridge.lastSequence,
+    observedCounter: () =>
+      bridge.follower.updatesApplied === 0
+        ? 0
+        : (observedDocCounter(bridge.follower.doc) ?? 0),
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
