@@ -1,7 +1,6 @@
 import type { StageStatus } from './stage-status'
 
-/** Asks the admin to record one review decision; true once it's saved. */
-export async function postDecision(
+async function send(
   csrf: string,
   ids: string[],
   status: StageStatus
@@ -19,4 +18,21 @@ export async function postDecision(
   } catch {
     return false
   }
+}
+
+let queue: Promise<unknown> = Promise.resolve()
+
+/**
+ * Asks the admin to record one review decision; true once it's saved.
+ * Decisions go out one at a time, in the order they were made, so quick
+ * clicks never race each other to the API.
+ */
+export function postDecision(
+  csrf: string,
+  ids: string[],
+  status: StageStatus
+): Promise<boolean> {
+  const result = queue.then(() => send(csrf, ids, status))
+  queue = result
+  return result
 }

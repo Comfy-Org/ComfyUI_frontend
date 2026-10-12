@@ -17,4 +17,25 @@ describe('postDecision', () => {
       status: 'APPROVED'
     })
   })
+  it('sends quick decisions one after another, in order', async () => {
+    const order: string[] = []
+    let inFlight = 0
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementation(async (_, init) => {
+        inFlight += 1
+        expect(inFlight).toBe(1)
+        const body = init?.body as FormData
+        order.push(JSON.parse(String(body.get('decision'))).ids[0])
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        inFlight -= 1
+        return Response.json({ ok: true })
+      })
+    vi.stubGlobal('fetch', fetch)
+    const results = await Promise.all(
+      ['a', 'b', 'c'].map((id) => postDecision('c', [id], 'APPROVED'))
+    )
+    expect(results).toEqual([true, true, true])
+    expect(order).toEqual(['a', 'b', 'c'])
+  })
 })
