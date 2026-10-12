@@ -18,9 +18,7 @@ class SsoRequiredSessionError extends Error {
 }
 
 /** Ingest refused the session because the sign-in predates a sign-out. */
-export class SessionRevokedError extends Error {
-  readonly code = 'SESSION_REVOKED'
-}
+export class SessionRevokedError extends Error {}
 
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
@@ -49,8 +47,12 @@ export const useSessionCookie = () => {
     const errorData: unknown = await response.json().catch(() => null)
     const message = (errorData as { message?: unknown } | null)?.message
     const text = typeof message === 'string' ? message : response.statusText
-    return isSsoRequiredRefusal(response.status, errorData)
-      ? new SsoRequiredSessionError(text)
+    if (isSsoRequiredRefusal(response.status, errorData)) {
+      return new SsoRequiredSessionError(text)
+    }
+    const code = (errorData as { code?: unknown } | null)?.code
+    return response.status === 401 && code === 'SESSION_REVOKED'
+      ? new SessionRevokedError(text)
       : new Error(text)
   }
 
