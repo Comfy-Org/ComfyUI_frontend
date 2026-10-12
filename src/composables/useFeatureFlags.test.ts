@@ -917,11 +917,17 @@ describe('useFeatureFlags', () => {
     })
 
     it.for([
-      { served: true, reported: true },
-      { served: undefined, reported: false }
+      { served: true, override: undefined, reported: true },
+      { served: undefined, override: undefined, reported: false },
+      { served: false, override: true, reported: true }
     ])(
-      'reports unified_web_session as $reported when the server serves $served',
-      ({ served, reported }) => {
+      'reports unified_web_session as $reported when the server serves $served and the session override is $override',
+      ({ served, override, reported }) => {
+        vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+          flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION
+            ? override
+            : undefined
+        )
         vi.mocked(distributionTypes).isCloud = true
         remoteConfigState.value = 'authenticated'
         authenticatedRemoteConfigState.value = 'authenticated'
