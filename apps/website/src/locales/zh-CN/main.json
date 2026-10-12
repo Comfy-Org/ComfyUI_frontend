@@ -4526,6 +4526,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "moveAnything": "随意移动",
+      "moveAnythingSummary": "把照片中的物体拖到新位置，模型会围绕它们重建画面。",
+      "moveAnythingMeta": "图像 · Qwen Image 2.1",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

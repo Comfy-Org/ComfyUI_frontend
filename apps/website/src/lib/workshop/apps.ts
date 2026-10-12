@@ -5,9 +5,14 @@ import type { CinematicCopyKey } from './cinematic-studio/copy'
 
 export type WorkshopAppId = AppWorkshopModel['appId']
 
+const appRoutes = {
+  studio: 'cinematicStudio',
+  reshoot: 'reshoot',
+  'move-anything': 'moveAnything'
+} as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
+
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
-  const routes = getRoutes(locale)
-  return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
+  return getRoutes(locale)[appRoutes[app]]
 }
 
 /** The app's open-source repository, once it is published. */
@@ -37,6 +42,12 @@ const appCopy = {
     summary: 'cinematic.hub.reshootSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.reshootMeta'
+  },
+  'move-anything': {
+    name: 'cinematic.hub.moveAnything',
+    summary: 'cinematic.hub.moveAnythingSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.moveAnythingMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,
