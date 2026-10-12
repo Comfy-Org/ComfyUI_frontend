@@ -109,20 +109,28 @@ describe('chunkWireOps', () => {
     ])
   })
 
-  it('splits on the per-batch byte cap', () => {
-    const bigValue = 'x'.repeat(Math.ceil(WIRE_MAX_BATCH_BYTES / 2))
-    const setWidget = (id: number): GraphOperation => ({
-      op: 'set_widget',
-      node_id: id,
-      widget: 'text',
-      value: bigValue
-    })
-    const ops = mintWireOps([setWidget(1), setWidget(2), setWidget(3)], MINT)
+  it.for([
+    { label: 'packs ASCII payloads to the byte cap', char: 'x', sizes: [3, 1] },
+    {
+      label: 'measures multibyte payloads in UTF-8 bytes',
+      char: 'é',
+      sizes: [1, 1, 1, 1]
+    }
+  ])('$label', ({ char, sizes }) => {
+    const value = char.repeat(Math.floor(WIRE_MAX_BATCH_BYTES / 3) - 1024)
+    const ops = mintWireOps(
+      [1, 2, 3, 4].map(
+        (id): GraphOperation => ({
+          op: 'set_widget',
+          node_id: id,
+          widget: 'text',
+          value
+        })
+      ),
+      MINT
+    )
 
-    const batches = chunkWireOps(ops)
-
-    expect(batches.length).toBe(3)
-    expect(batches.every((b) => b.length === 1)).toBe(true)
+    expect(chunkWireOps(ops).map((batch) => batch.length)).toEqual(sizes)
   })
 
   it('ships a single oversize op alone rather than dropping it', () => {
