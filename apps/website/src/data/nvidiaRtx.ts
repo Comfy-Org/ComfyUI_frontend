@@ -8,7 +8,7 @@ import { externalLinks } from '../config/routes'
 
 const nvidiaRtxLinks = {
   download: 'https://comfy.org/download/',
-  github: 'https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI',
+  github: 'https://github.com/Comfy-Org/ComfyUI_Nvidia_VFX_Nodes',
   // Swap for the Comfy Cloud workflow that chains all three nodes once it
   // exists; until then the CTA lands on the generic cloud entry point.
   cloud: externalLinks.cloudCta('nvidia_rtx')
@@ -245,9 +245,9 @@ export const nvidiaRtxPage: ModelLaunchPage = {
           'zh-CN': 'Nvidia VFX 节点可以在任何 GPU 上运行吗？'
         },
         answer: {
-          en: "No. The nvidia-vfx library requires an Nvidia GPU powered by Nvidia's proprietary technology.",
+          en: "No. The nvidia-vfx library requires an Nvidia GPU powered by Nvidia's proprietary technology. The RTX Video Frame Generation is supported on Nvidia 40 series and later only.",
           'zh-CN':
-            '不可以。nvidia-vfx 库需要由 Nvidia 专有技术驱动的 Nvidia GPU。'
+            '不可以。nvidia-vfx 库需要由 Nvidia 专有技术驱动的 Nvidia GPU。RTX 视频帧生成仅支持 Nvidia 40 系列及更新的显卡。'
         }
       },
       {

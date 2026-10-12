@@ -7839,8 +7839,8 @@ Enterprise`
       '三个由 Nvidia RTX 技术驱动的开源 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。'
   },
   'nvidiaRtx.breadcrumb.model': {
-    en: 'NVIDIA RTX',
-    'zh-CN': 'NVIDIA RTX'
+    en: 'NVIDIA VFX',
+    'zh-CN': 'NVIDIA VFX'
   },
   'nvidiaRtx.breadcrumb.updated': {
     en: 'Updated September 2026',
