@@ -7834,9 +7834,9 @@ Enterprise`
     'zh-CN': 'ComfyUI 的 Nvidia VFX 节点'
   },
   'nvidiaRtx.meta.description': {
-    en: "Three open-source ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion.",
+    en: "Three ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion.",
     'zh-CN':
-      '三个由 Nvidia RTX 技术驱动的开源 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。'
+      '三个由 Nvidia RTX 技术驱动的 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。'
   },
   'nvidiaRtx.breadcrumb.model': {
     en: 'NVIDIA VFX',
@@ -7851,9 +7851,9 @@ Enterprise`
     'zh-CN': 'Nvidia VFX 节点'
   },
   'nvidiaRtx.hero.description': {
-    en: "Three open-source nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
+    en: "Three nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
     'zh-CN':
-      '三个由 Nvidia RTX 技术驱动的开源节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。'
+      '三个由 Nvidia RTX 技术驱动的节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。'
   },
   'nvidiaRtx.hero.tagUpscale': {
     en: 'Super Resolution up to 4×',

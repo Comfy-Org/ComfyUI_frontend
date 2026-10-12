@@ -190,8 +190,9 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         tier: 'free',
         note: localNote,
         description: {
-          en: 'Open source, so you can inspect, fork, and extend every node.',
-          'zh-CN': '完全开源，每个节点都可以查看、复刻与扩展。'
+          en: "The node code is open source to inspect, fork, and extend. The nvidia-vfx library underneath is Nvidia's proprietary SDK.",
+          'zh-CN':
+            '节点代码开源，可以查看、复刻与扩展。底层的 nvidia-vfx 库是 Nvidia 的专有 SDK。'
         },
         media: media.horizon,
         href: nvidiaRtxLinks.download
@@ -257,8 +258,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
           'zh-CN': '这些节点是开源的吗？'
         },
         answer: {
-          en: `Yes. All three nodes are published on [GitHub](${nvidiaRtxLinks.github}) and install as a ComfyUI custom node.`,
-          'zh-CN': `是的。三个节点均已发布在 [GitHub](${nvidiaRtxLinks.github}) 上，可作为 ComfyUI 自定义节点安装。`
+          en: `The nodes are. All three are published on [GitHub](${nvidiaRtxLinks.github}) and install as a ComfyUI custom node. The nvidia-vfx library they call is Nvidia's proprietary SDK and is not open source.`,
+          'zh-CN': `节点是开源的。三个节点均已发布在 [GitHub](${nvidiaRtxLinks.github}) 上，可作为 ComfyUI 自定义节点安装。它们调用的 nvidia-vfx 库是 Nvidia 的专有 SDK，并不开源。`
         }
       },
       {
