@@ -58,6 +58,12 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
       await expect
         .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
         .toBeGreaterThan(0)
+
+      await image.dispatchEvent('load')
+      await comfyPage.contextMenu.openForVueNode(node)
+      const download = comfyPage.page.waitForEvent('download')
+      await comfyPage.contextMenu.clickMenuItemExact('Save Image')
+      expect((await download).suggestedFilename()).toBe(EXR_FILENAME)
     }
   )
 
@@ -116,3 +122,43 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
       .toContain(`filename=${EXR_FILENAME}`)
   })
 })
+
+test(
+  'keeps the HDR placeholder when the upload carries no stored preview',
+  { tag: ['@widget', '@vue-nodes'] },
+  async ({ comfyPage, comfyFiles }) => {
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      const response = await route.fetch()
+      const { asset, ...body } = await response.json()
+      const { preview_id: _, ...assetWithoutPreview } = asset ?? {}
+      await route.fulfill({
+        response,
+        json: { ...body, asset: assetWithoutPreview }
+      })
+    })
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const uploadResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/upload/image') && response.status() === 200
+    )
+
+    await node
+      .locator('input[type="file"]')
+      .setInputFiles(assetPath(EXR_FILENAME))
+    comfyFiles.deleteAfterTest({ filename: EXR_FILENAME, type: 'input' })
+    await uploadResponse
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () =>
+            window.app?.graph.nodes.find((n) => n.type === 'LoadImage')
+              ?.widgets?.[0]?.value
+        )
+      )
+      .toBe(EXR_FILENAME)
+    await expect(node.getByTestId('hdr-open-button')).toBeVisible()
+    await expect(node.getByTestId('main-image')).toBeHidden()
+  }
+)

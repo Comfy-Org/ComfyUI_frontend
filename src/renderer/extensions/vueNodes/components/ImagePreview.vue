@@ -117,6 +117,7 @@
         v-if="!imageError && !isHdrPlaceholder(currentImageUrl)"
         data-testid="main-image"
         :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"

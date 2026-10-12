@@ -178,6 +178,10 @@ describe('ImagePreview', () => {
       'src',
       '/api/assets/p1/content?disposition=inline'
     )
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'data-file-url',
+      exrUrl
+    )
 
     await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
 
