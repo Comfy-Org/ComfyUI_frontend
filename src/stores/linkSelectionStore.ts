@@ -7,6 +7,7 @@ import type { LinkId } from '@/types/linkId'
 interface LinkSelection {
   readonly scope: GraphScope
   readonly linkIds: readonly LinkId[]
+  readonly anchorX: number
 }
 
 const NO_LINKS: readonly LinkId[] = []
@@ -19,9 +20,13 @@ function isSameScope(a: GraphScope, b: GraphScope): boolean {
 export const useLinkSelectionStore = defineStore('linkSelection', () => {
   const selection = shallowRef<LinkSelection | null>(null)
 
-  function select(scope: GraphScope, linkIds: Iterable<LinkId>): void {
+  function select(
+    scope: GraphScope,
+    linkIds: Iterable<LinkId>,
+    anchorX: number
+  ): void {
     const ids = [...linkIds]
-    selection.value = ids.length ? { scope, linkIds: ids } : null
+    selection.value = ids.length ? { scope, linkIds: ids, anchorX } : null
   }
 
   function clear(): void {

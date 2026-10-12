@@ -5,10 +5,11 @@ import type { Ref } from 'vue'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
-import { getSelectedLinkBounds } from '@/lib/litegraph/src/canvas/linkSelection'
+import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { Point } from '@/renderer/core/layout/types'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
@@ -92,48 +93,33 @@ export function useSelectionToolboxPosition(
   /**
    * Update position based on selection
    */
-  const selectedLinkBounds = (): ReadOnlyRect[] => {
-    const { graph } = lgCanvas
-    if (!graph) return []
-    return getSelectedLinkBounds(graph)
+  const itemsAnchor = (): Point | null => {
+    const bounds = computeUnionBounds(
+      [...getSelectableItems()].flatMap((item) =>
+        item instanceof LGraphNode || item instanceof LGraphGroup
+          ? [getSelectionBounds(item)]
+          : []
+      )
+    )
+    return bounds ? { x: bounds.x + bounds.width / 2, y: bounds.y } : null
   }
 
-  const selectionBounds = (): ReadOnlyRect[] => {
-    const selectableItems = getSelectableItems()
-    if (!selectableItems.size) return selectedLinkBounds()
-    return [...selectableItems].flatMap((item) =>
-      item instanceof LGraphNode || item instanceof LGraphGroup
-        ? [getSelectionBounds(item)]
-        : []
-    )
+  const selectionAnchor = (): Point | null => {
+    if (getSelectableItems().size) return itemsAnchor()
+    const { graph } = lgCanvas
+    return graph ? getSelectedLinksAnchor(graph) : null
   }
 
   const updateSelectionBounds = () => {
-    const hasSelection =
-      getSelectableItems().size > 0 || selectedLinkBounds().length > 0
+    const anchor = selectionAnchor()
 
-    if (!hasSelection) {
-      visible.value = false
-      return
-    }
-
-    // Don't show toolbox while dragging
-    if (isDragging.value) {
+    if (!anchor || isDragging.value) {
       visible.value = false
       return
     }
 
     visible.value = true
-
-    const unionBounds = computeUnionBounds(selectionBounds())
-    if (!unionBounds) return
-
-    worldPosition.value = {
-      x: unionBounds.x + unionBounds.width / 2,
-      // createBounds() applied a default padding of 10px
-      // so adjust Y to maintain visual consistency
-      y: unionBounds.y - 10
-    }
+    worldPosition.value = { x: anchor.x, y: anchor.y - 10 }
 
     updateTransform()
   }

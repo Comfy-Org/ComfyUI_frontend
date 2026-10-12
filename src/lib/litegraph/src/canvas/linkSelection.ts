@@ -1,6 +1,6 @@
 import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { polylineIntersectsBounds } from '@/renderer/core/layout/utils/layoutMath'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds, Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -34,9 +34,7 @@ function linkIdsDrawnInBounds(graph: LGraph, bounds: Bounds): Set<LinkId> {
   return linkIds
 }
 
-/** Canvas-space bounds of every drawn segment of the selected links. */
-export function getSelectedLinkBounds(graph: LGraph): ReadOnlyRect[] {
-  const selected = new Set(getSelectedLinkIds(graph))
+function selectedSegments(graph: LGraph, selected: Set<LinkId>): object[] {
   const segments: object[] = [...selected].flatMap((linkId) => {
     const link = graph.getLink(linkId)
     return link ? [link] : []
@@ -45,19 +43,43 @@ export function getSelectedLinkBounds(graph: LGraph): ReadOnlyRect[] {
     if ([...reroute.linkIds].some((linkId) => selected.has(linkId)))
       segments.push(reroute)
   }
-  return segments.flatMap((segment) => {
-    const polyline = getLinkPolyline(segment)
-    if (!polyline?.length) return []
-    const xs = polyline.map((point) => point.x)
-    const ys = polyline.map((point) => point.y)
-    const x = Math.min(...xs)
-    const y = Math.min(...ys)
-    return [[x, y, Math.max(...xs) - x, Math.max(...ys) - y] as const]
+  return segments
+}
+
+function polylineYsAtX(polyline: readonly Point[], x: number): number[] {
+  return polyline.slice(1).flatMap((end, i) => {
+    const start = polyline[i]
+    const [left, right] = start.x <= end.x ? [start, end] : [end, start]
+    if (x < left.x || x > right.x) return []
+    if (right.x === left.x) return [Math.min(left.y, right.y)]
+    const t = (x - left.x) / (right.x - left.x)
+    return [left.y + (right.y - left.y) * t]
   })
 }
 
+/** Canvas point on the topmost selected link at the marquee's release x. */
+export function getSelectedLinksAnchor(graph: LGraph): Point | null {
+  const selection = useLinkSelectionStore().selection
+  const selected = new Set(getSelectedLinkIds(graph))
+  if (!selection || !selected.size) return null
+  const polylines = selectedSegments(graph, selected).flatMap((segment) => {
+    const polyline = getLinkPolyline(segment)
+    return polyline ? [polyline] : []
+  })
+  const x = selection.anchorX
+  const ys = polylines.flatMap((polyline) => polylineYsAtX(polyline, x))
+  if (ys.length) return { x, y: Math.min(...ys) }
+  const points = polylines.flat()
+  if (!points.length) return null
+  return { x, y: Math.min(...points.map((point) => point.y)) }
+}
+
 /** Selects the visible links drawn inside or across the bounds. */
-export function selectLinksInBounds(graph: LGraph, bounds: Bounds): void {
+export function selectLinksInBounds(
+  graph: LGraph,
+  bounds: Bounds,
+  anchorX: number
+): void {
   const scope = graphScopeOf(graph)
   const presentation = useLinkPresentationStore()
   const linkIds = [...linkIdsDrawnInBounds(graph, bounds)].filter(
@@ -65,7 +87,7 @@ export function selectLinksInBounds(graph: LGraph, bounds: Bounds): void {
       graph.getLink(linkId) &&
       presentation.getPresentation(scope, linkId)?.hidden !== true
   )
-  useLinkSelectionStore().select(scope, linkIds)
+  useLinkSelectionStore().select(scope, linkIds, anchorX)
 }
 
 /** Selects links under a marquee that captured nothing else; otherwise clears. */
@@ -73,10 +95,10 @@ export function selectLinksForMarquee(
   graph: LGraph | null,
   capturedItemCount: number,
   [x, y, width, height]: ReadOnlyRect,
-  modifiers: { shiftKey: boolean; altKey: boolean }
+  pointer: { shiftKey: boolean; altKey: boolean; canvasX: number }
 ): void {
-  if (graph && !capturedItemCount && !modifiers.shiftKey && !modifiers.altKey)
-    selectLinksInBounds(graph, { x, y, width, height })
+  if (graph && !capturedItemCount && !pointer.shiftKey && !pointer.altKey)
+    selectLinksInBounds(graph, { x, y, width, height }, pointer.canvasX)
   else clearLinkSelection()
 }
 

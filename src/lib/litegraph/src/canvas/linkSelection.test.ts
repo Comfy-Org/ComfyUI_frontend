@@ -9,13 +9,13 @@ import { graphScopeOf } from '@/types/graphScopeId'
 
 import {
   deleteSelectedLinks,
-  getSelectedLinkBounds,
+  getSelectedLinksAnchor,
   getSelectedLinkIds,
   hideSelectedLinks,
   selectLinksForMarquee
 } from './linkSelection'
 
-const NO_MODIFIERS = { shiftKey: false, altKey: false }
+const NO_MODIFIERS = { shiftKey: false, altKey: false, canvasX: 60 }
 
 function createGraphWithLinks() {
   const graph = new LGraph()
@@ -66,7 +66,7 @@ describe('link marquee selection', () => {
     {
       name: 'ignores links on a shift marquee',
       captured: 0,
-      modifiers: { shiftKey: true, altKey: false },
+      modifiers: { ...NO_MODIFIERS, shiftKey: true },
       expected: []
     }
   ])('$name', ({ captured, modifiers, expected }) => {
@@ -81,14 +81,23 @@ describe('link marquee selection', () => {
     )
   })
 
-  it('reports the drawn bounds of the selected links', () => {
+  it.for([
+    { name: 'the upper link at the release x', canvasX: 55, expected: 40 },
+    { name: 'the sloped link where it is higher', canvasX: 10, expected: 10 }
+  ])('anchors the menu above $name', ({ canvasX, expected }) => {
     const { graph, links } = createGraphWithLinks()
-    drawHorizontalLink(links[0], 10)
-    drawHorizontalLink(links[1], 20)
+    drawHorizontalLink(links[0], 40)
+    setLinkPolyline(links[1], [
+      { x: 0, y: 0 },
+      { x: 100, y: 100 }
+    ])
 
-    selectLinksForMarquee(graph, 0, [40, 0, 20, 15], NO_MODIFIERS)
+    selectLinksForMarquee(graph, 0, [0, 0, 100, 50], {
+      ...NO_MODIFIERS,
+      canvasX
+    })
 
-    expect(getSelectedLinkBounds(graph)).toEqual([[0, 10, 100, 0]])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x: canvasX, y: expected })
   })
 
   it('skips hidden links', () => {
