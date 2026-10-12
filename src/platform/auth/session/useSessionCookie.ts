@@ -17,6 +17,11 @@ class SsoRequiredSessionError extends Error {
   readonly code = 'SSO_REQUIRED'
 }
 
+/** Ingest refused the session because the sign-in predates a sign-out. */
+export class SessionRevokedError extends Error {
+  readonly code = 'SESSION_REVOKED'
+}
+
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
 let sessionMutationTail = Promise.resolve()
