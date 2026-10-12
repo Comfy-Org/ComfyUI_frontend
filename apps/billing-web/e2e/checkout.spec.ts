@@ -364,8 +364,12 @@ test('reloading on the result page while pending recovers it and shows the settl
   await signIn(entryPath('result'))
 
   await expect(
+    page.getByRole('link', { name: 'Return to ComfyUI' })
+  ).toHaveAttribute('href', /billing_ref=op_pending/)
+  await expect(page.getByText('Checking on your payment…')).toBeVisible()
+  await expect(
     page.getByRole('heading', { name: 'Review payment' })
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: 'Payment complete' })
   ).toHaveCount(0)

@@ -4,18 +4,19 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useWorkshopSessionBalance } from '../../config/workshop-session-balance'
+import { useWorkshopSessionBalance } from '@/config/workshop-session-balance'
 import {
   useWorkshopSessionAccount,
   useWorkshopWebSession
-} from '../../config/workshop-web-session-identity'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { initialsOf } from '../../lib/workshop/initials'
+} from '@/config/workshop-web-session-identity'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { initialsOf } from '@/lib/workshop/initials'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const user = useWorkshopSessionAccount()
 const balance = useWorkshopSessionBalance(useWorkshopWebSession())
@@ -24,7 +25,7 @@ const credits = computed(() =>
   balance.value.status === 'ok' ? balance.value.credits : undefined
 )
 const creditsUnit = computed(() =>
-  t(credits.value === 1 ? 'auth.header.credit' : 'auth.header.credits', locale)
+  t(credits.value === 1 ? 'auth.header.credit' : 'auth.header.credits')
 )
 </script>
 
@@ -47,7 +48,7 @@ const creditsUnit = computed(() =>
     <span
       role="img"
       data-testid="header-session-account"
-      :aria-label="`${t('auth.header.account', locale)}, ${user.email}`"
+      :aria-label="`${t('auth.header.account')}, ${user.email}`"
       :title="user.email"
       class="grid size-10 shrink-0 place-items-center rounded-full border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-bold text-primary-warm-white"
     >

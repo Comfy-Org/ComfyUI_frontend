@@ -553,6 +553,48 @@ describe('UnifiedPricingTable team plan CTA', () => {
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
   })
+
+  it('uses the billing catalog default team stop for display and checkout', async () => {
+    const user = userEvent.setup()
+    useBillingContext().teamCreditStops = computed(() => ({
+      default_stop_index: 1,
+      stops: [
+        {
+          id: 'stop-320',
+          credits: 67_520,
+          monthly: { list_price_cents: 32_000, price_cents: 30_400 },
+          yearly: { list_price_cents: 32_000, price_cents: 28_800 }
+        },
+        {
+          id: 'stop-640',
+          credits: 135_040,
+          monthly: { list_price_cents: 64_000, price_cents: 60_800 },
+          yearly: { list_price_cents: 64_000, price_cents: 57_600 }
+        }
+      ]
+    }))
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('1,620,480')).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+    expect(emitted('subscribeTeam')).toEqual([
+      [
+        {
+          stop: {
+            id: 'stop-640',
+            usd: 640,
+            credits: 135_040,
+            discountedUsd: 576
+          },
+          billingCycle: 'yearly',
+          isChange: false
+        }
+      ]
+    ])
+  })
 })
 
 // Server billing capabilities only resolve on Cloud, so Local/Desktop keeps

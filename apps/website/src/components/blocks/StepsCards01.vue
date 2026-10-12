@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import GlassCard from '../common/GlassCard.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
 
 interface StepCard {
   id: string

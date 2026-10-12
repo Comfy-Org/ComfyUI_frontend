@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout ref
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -52,7 +55,14 @@ jobs:
         run: pnpm lint:ci
 
       - name: Verify format
-        run: pnpm format:check
+        run: pnpm -r --include-workspace-root format:check
+
+      # Push runs gate the pushed range; a branch-creation push has no base.
+      - name: Check server facts on changed lines
+        if: ${{ (github.event.merge_group.base_sha || github.event.before) != '0000000000000000000000000000000000000000' }}
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+        run: pnpm lint:server-facts --base "$BASE_SHA"
 
       - name: Save lint caches
         if: always()

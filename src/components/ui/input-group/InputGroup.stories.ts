@@ -5,11 +5,11 @@ import InputGroupAddon from './InputGroupAddon.vue'
 import InputGroupButton from './InputGroupButton.vue'
 import InputGroupInput from './InputGroupInput.vue'
 
-const meta = {
+const meta: Meta<typeof InputGroup> = {
   title: 'Components/InputGroup',
   component: InputGroup,
   tags: ['autodocs']
-} satisfies Meta<typeof InputGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

@@ -27,9 +27,13 @@ type RefusalCode = Exclude<
 
 const CONTINUED: AttemptOutcome = { kind: 'continued' }
 
+const UNKNOWN_FAILURE: BillingTelemetryFailure = {
+  failure_category: 'unknown'
+}
+
 const UNEXPECTED_FAILURE: SettledOutcome = {
   kind: 'failed',
-  failure: { failure_category: 'unknown' }
+  failure: UNKNOWN_FAILURE
 }
 
 const API_REJECTED: BillingTelemetryFailure = {
@@ -80,6 +84,20 @@ function failureOfRefusal(
       failure_category: httpStatus === undefined ? 'network' : 'api_rejected'
     }
   )
+}
+
+function isRefusalCode(code: string): code is RefusalCode {
+  return Object.hasOwn(FAILURE_BY_REFUSAL, code)
+}
+
+/** The failure a refusal code names, whichever flow it reached this tab through; a code the SDK does not refuse with is unknown. */
+export function failureOfCode(
+  code: string,
+  httpStatus?: number
+): BillingTelemetryFailure {
+  return isRefusalCode(code)
+    ? failureOfRefusal(code, httpStatus)
+    : UNKNOWN_FAILURE
 }
 
 function outcomeOfOperation({

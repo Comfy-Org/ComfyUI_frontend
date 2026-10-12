@@ -51,8 +51,7 @@ export function successBreakdown(
 
   const format: DeductionFormat = {
     t,
-    money: (cents) => formatQuoteMoney(cents, breakdown.currency, locale),
-    duration: operation.receipt?.plan?.duration ?? page.plan?.duration
+    money: (cents) => formatQuoteMoney(cents, breakdown.currency, locale)
   }
   return {
     deductions: breakdown.reasons.map((reason) =>

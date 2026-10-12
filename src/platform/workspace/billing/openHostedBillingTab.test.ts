@@ -61,12 +61,8 @@ function fakeTab(): Window {
 
 describe('openHostedBillingTab', () => {
   beforeEach(() => {
-    mockHostedBillingRoute.mockReset().mockReturnValue(BILLING_WEB_ROUTE)
-    mockFetchStatus.mockClear()
-    mockFetchBalance.mockClear()
-    mockCapabilitiesRefresh.mockClear()
-    mockStop.mockClear()
-    mockRegisterRefreshOnReturn.mockClear().mockReturnValue(mockStop)
+    mockHostedBillingRoute.mockReturnValue(BILLING_WEB_ROUTE)
+    mockRegisterRefreshOnReturn.mockReturnValue(mockStop)
     flagState.hostedBillingDestination = 'billing_web'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
   })

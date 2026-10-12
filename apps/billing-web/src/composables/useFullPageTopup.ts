@@ -5,6 +5,7 @@ import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type {
   BillingResult,
   CapabilitiesSnapshot,
+  SavedPaymentMethod,
   TopupQuote,
   TopupQuoteResult
 } from '@comfyorg/account-core/billing'
@@ -72,9 +73,13 @@ function revisited(page: CheckoutPage): boolean {
  */
 export function useFullPageTopup() {
   const { entry, error: unreadableLink } = useBillingEntry()
-  const { capabilities, lifecycle, topup } = useBillingClient<
-    'capabilities' | 'lifecycle' | 'topup'
+  const { capabilities, lifecycle, paymentMethods, topup } = useBillingClient<
+    'capabilities' | 'lifecycle' | 'paymentMethods' | 'topup'
   >(undefined)
+
+  /** This page's latest successful read only: empty while reading, and after a failure. */
+  const savedMethods = shallowRef<readonly SavedPaymentMethod[]>([])
+  let savedGeneration = 0
 
   const amountCents = entry.value?.amountCents
   const page = shallowRef<CheckoutPage>(arrivalPage())
@@ -90,6 +95,12 @@ export function useFullPageTopup() {
     () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
   )
 
+  /**
+   * The lifecycle runs the bank's check in this page only when it already
+   * holds this origin's Stripe key; a Pay started before then goes to the
+   * hosted invoice, which never returns here.
+   */
+  const stripeKeyRead = awaitBillingWebStripeKey()
   const challengePort = createDeferredStripeChallengePort(
     awaitBillingWebStripeKey
   )
@@ -125,9 +136,19 @@ export function useFullPageTopup() {
     return latest
   }
 
+  /** The card on file is shown, never waited on: Pay charges it either way. */
+  async function readSaved() {
+    const mine = ++savedGeneration
+    savedMethods.value = []
+    const read = await paymentMethods.read()
+    if (mine !== savedGeneration || read.status !== 'ok') return
+    savedMethods.value = read.value.methods
+  }
+
   /** Capture never renders before reconciliation has answered. */
   async function readCapture() {
     if (amountCents === undefined) return
+    void readSaved()
     const [allowed, quoted] = await Promise.all([
       capabilities.read(),
       topup.quoteTopup({ amountCents })
@@ -194,6 +215,7 @@ export function useFullPageTopup() {
     if (!canPay.value) return
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
+    await stripeKeyRead
     const verdict = topupVerdictOf(await purchase.submit())
     if (mine !== payGeneration) return
     if (verdict.kind === 'settled') dispatch({ type: 'paySettled' })
@@ -220,6 +242,7 @@ export function useFullPageTopup() {
   return {
     page: shallowReadonly(page),
     quote: shallowReadonly(quote),
+    savedMethods: shallowReadonly(savedMethods),
     canPay,
     returnLink,
     settingsLink,

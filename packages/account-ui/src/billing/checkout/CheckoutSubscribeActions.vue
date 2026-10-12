@@ -48,7 +48,7 @@
     :can-submit="quoteIsCurrent"
     :theme-key
     @submitting-change="emit('submittingChange', $event)"
-    @confirm="emit('confirmPayment', $event)"
+    @confirm="(token, methodType) => emit('confirmPayment', token, methodType)"
     @phase="emit('paymentPhase', $event)"
   />
 
@@ -127,7 +127,7 @@ const {
 
 const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string]
+  confirmPayment: [confirmationToken: string, paymentMethodType: string]
   submittingChange: [submitting: boolean]
   paymentPhase: [phase: StripePaymentPhase]
 }>()

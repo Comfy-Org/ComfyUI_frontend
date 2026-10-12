@@ -36,12 +36,19 @@ const TIER_BY_SERVER_TIER: Record<
   ENTERPRISE: undefined
 }
 
+/** The contract's name for a plan tier the server reports; absent for one it has no name for. */
+export function checkoutTierOf(
+  tier: ServerTier
+): SubscriptionCheckoutTier | undefined {
+  return TIER_BY_SERVER_TIER[tier]
+}
+
 export function checkoutAttemptOf(
   quote: SubscriptionPreview,
   entry: { readonly source?: PaymentIntentSource } | undefined
 ): CheckoutAttempt {
   return {
-    tier: TIER_BY_SERVER_TIER[quote.new_plan.tier],
+    tier: checkoutTierOf(quote.new_plan.tier),
     cycle: isAnnualDuration(quote.new_plan.duration) ? 'yearly' : 'monthly',
     checkoutType:
       quote.transition_type === 'new_subscription' ? 'new' : 'change',

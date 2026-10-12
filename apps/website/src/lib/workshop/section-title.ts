@@ -1,6 +1,6 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { TranslationKey } from '../../i18n/translations'
+import type { UseCase } from '@/config/models-catalogue'
+import { OTHER_FORMAT_USE_CASES } from '@/config/workshop-sections'
+import type { TranslationKey } from '@/i18n/translations'
 import { useCaseLabelKey } from './use-case-label'
 
 /**

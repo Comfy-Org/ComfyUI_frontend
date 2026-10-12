@@ -14,7 +14,8 @@
 
 import {
   AUTH_TELEMETRY_EVENT,
-  SESSION_TELEMETRY_EVENT
+  SESSION_TELEMETRY_EVENT,
+  SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
@@ -28,11 +29,13 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
-  AuthMethod
+  AuthMethod,
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
@@ -151,7 +154,11 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
-  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  /**
+   * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
+   * `bootstrap/object-info`). Nested phases intentionally overlap their
+   * aggregate parent, so consumers must not sum entries across the map.
+   */
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
@@ -241,6 +248,14 @@ export interface OnboardingTourNudgeMetadata {
 export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
+
+export type InAppSurveyStage = 'shown' | 'sent' | 'dismissed'
+
+export interface InAppSurveyEvent {
+  surveyId: string
+  responses?: Record<string, string>
+  properties?: Record<string, string>
+}
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -677,6 +692,8 @@ export type AgentConsentOfferExit =
   | 'card_already_seen'
   /** Panel activation owns consent timing, so the automatic offer is dropped. */
   | 'activation_opened_panel'
+  /** The bounded panel-discovery window is complete and the panel is closed. */
+  | 'activation_window_complete'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -867,6 +884,17 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+export type AgentStarterPromptAssignment = NonNullable<
+  GetFeaturesResponses[200]['agent-starter-prompt-set']
+>
+interface AgentStarterPromptExperimentMetadata {
+  /**
+   * Assignment of the prompt set that rendered. Optional consumers omit it
+   * for QA overrides, unsupported locales, and surfaces rendered before
+   * authenticated config.
+   */
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
+}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -874,31 +902,37 @@ export type AgentStarterPromptId =
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
 /**
- * Interactions with the notice itself. The experiment's primary outcome and
- * guardrails are all read off events that already exist — `agent_panel_opened`,
- * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
- * by the PostHog variant property. This event adds only what those cannot say:
- * whether the notice was actually on screen in its assigned arm, and what the
- * viewer did with it.
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
-export interface AgentStarterPromptClickedMetadata extends Record<
+export interface AgentCreditTransitionNoticeMetadata extends Record<
   string,
   unknown
 > {
+  action: 'shown' | 'dismissed'
+}
+export interface AgentStarterPromptClickedMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -928,7 +962,12 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    */
   draft_was_empty: boolean
 }
-export interface AgentMessageSentMetadata extends Record<string, unknown> {
+export interface AgentStarterPromptExposureMetadata
+  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
+export interface AgentMessageSentMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -941,10 +980,16 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   /**
    * Minted client-side, one per send attempt, so duplicate deliveries of this
    * event collapse onto one message. A retry after a failed send is a new
-   * attempt and gets a new id. The backend does not receive it yet — the turn
-   * POST contract carries no client id — so it dedups within the frontend
-   * stream rather than joining to the backend turn; `thread_id` is the join
-   * today.
+   * attempt and gets a new id.
+   *
+   * Also sent to the backend on the turn POST (`client_message_id`), which
+   * echoes it onto its own `agent_turn_started` event. That is what makes this
+   * the join key for the message → turn step: the backend's `turn_id` is minted
+   * after the POST arrives, so it can never appear on this event, and
+   * `thread_id` is `null` for the first message in a thread — precisely the
+   * sends that matter most to activation. An older server that ignores the field
+   * leaves the correlation unknown for that turn, which is a gap in the read and
+   * never a failed send.
    */
   client_message_id: string
   input_method: AgentInputMethod
@@ -1307,6 +1352,8 @@ export interface TelemetryProvider {
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1340,9 +1387,13 @@ export interface TelemetryProvider {
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
+  trackInAppSurvey?(stage: InAppSurveyStage, event: InAppSurveyEvent): void
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
@@ -1428,6 +1479,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptExposure?(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1493,6 +1547,11 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
   UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
+  SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
+  SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
+  SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
@@ -1524,6 +1583,11 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // PostHog API surveys rendered by the app
+  IN_APP_SURVEY_SHOWN: 'survey shown',
+  IN_APP_SURVEY_SENT: 'survey sent',
+  IN_APP_SURVEY_DISMISSED: 'survey dismissed',
 
   // Onboarding Coachmarks
   ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
@@ -1603,8 +1667,10 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
@@ -1640,6 +1706,7 @@ export type TelemetryEventName =
   | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
   | BillingTelemetryEventName
   | CheckoutJourneyTelemetryEventName
+  | WebSessionTelemetryEvent['name']
 
 export const OnboardingTourEvents: Record<
   OnboardingTourStage,
@@ -1691,6 +1758,8 @@ export type TelemetryEventProperties =
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
+  | WebSessionTelemetryEvent['properties']
+  | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
@@ -1733,4 +1802,5 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata

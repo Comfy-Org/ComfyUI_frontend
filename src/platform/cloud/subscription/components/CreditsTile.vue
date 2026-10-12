@@ -121,10 +121,7 @@
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -148,7 +145,10 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted @max-[300px]:hidden">
+        <span
+          v-if="!isDurationUnknown"
+          class="text-sm text-muted @max-[300px]:hidden"
+        >
           {{ usedAfterAllowanceLabel }}
         </span>
       </div>
@@ -161,10 +161,7 @@
           <span class="flex items-center gap-1">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -235,10 +232,11 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
@@ -267,7 +265,7 @@ const {
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
@@ -281,7 +279,19 @@ const isAnnualBilling = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
+// Paid plan with no reported duration: the allowance cycle is unknown, so no
+// total is shown rather than guessing monthly. Free has no duration by design,
+// and Founders Edition is a fixed monthly grant.
+const isDurationUnknown = computed(
+  () =>
+    !!subscription.value?.tier &&
+    !subscription.value.duration &&
+    tierKey.value !== 'free' &&
+    tierKey.value !== 'founder'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
+  if (isDurationUnknown.value) return null
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isSalesManagedTier(subscription.value?.tier)
@@ -433,11 +443,23 @@ const isMonthlyDepleted = computed(
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
+// Depletion needs only the remaining allowance, not its cycle, so the
+// cycle-neutral signals still work when the duration is unknown.
+const isAllowanceDepleted = computed(
+  () =>
+    isMonthlyDepleted.value ||
+    (isDurationUnknown.value &&
+      isCloud &&
+      showBreakdown.value &&
+      !isLoadingBalance.value &&
+      balance.value != null &&
+      monthlyBonusCreditsValue.value <= 0)
+)
 const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
 
 const emptyStateNotice = computed(() => {
@@ -532,7 +554,9 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+  })
 }
 
 function handleUpgradeToAddCredits() {

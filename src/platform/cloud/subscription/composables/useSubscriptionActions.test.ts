@@ -1,5 +1,5 @@
-import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,7 +20,7 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -51,7 +51,9 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(
+        useBillingDialogs().showTopUpCreditsDialog
+      ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
       expect(
         useTelemetry()?.trackAddApiCreditButtonClicked
       ).toHaveBeenCalledWith({ source: 'settings_billing_panel' })
@@ -108,12 +110,12 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(isLoadingSupport.value).toBe(false)
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
+          description: 'Command failed',
+          kind: 'error'
         })
-      )
+      ])
     })
 
     it('reports a failed support request so it is visible without the user', async () => {
@@ -167,7 +169,7 @@ describe('useSubscriptionActions', () => {
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

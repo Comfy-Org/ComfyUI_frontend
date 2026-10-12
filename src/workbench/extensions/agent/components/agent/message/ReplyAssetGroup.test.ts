@@ -77,10 +77,10 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    findServerPreviewUrl.mockReset().mockResolvedValue(null)
-    findOutputAsset.mockReset().mockResolvedValue(undefined)
-    generateModelThumbnail.mockReset().mockResolvedValue(null)
+    isAssetPreviewSupported.mockReturnValue(false)
+    findServerPreviewUrl.mockResolvedValue(null)
+    findOutputAsset.mockResolvedValue(undefined)
+    generateModelThumbnail.mockResolvedValue(null)
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -158,7 +158,7 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getByTestId('audio-card').dataset.title).toBe('song.mp3')
     await userEvent.click(screen.getByRole('button', { name: 'model.glb' }))
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'model.glb' })
     )
   })
@@ -183,7 +183,7 @@ describe('ReplyAssetGroup', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'asset-3d-viewer',
         title: 'mesh.glb',
@@ -273,7 +273,7 @@ describe('ReplyAssetGroup', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
 
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({ title: '3d/ComfyUI_00001_.glb' })
     )
   })

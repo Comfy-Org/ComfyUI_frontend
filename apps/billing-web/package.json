@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "build": "pnpm typecheck && vite build",
     "dev": "vite --port 5174 --strictPort",
     "lint": "eslint src e2e vite.config.ts vitest.config.ts playwright.config.ts && stylelint 'src/**/*.{css,vue}'",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",

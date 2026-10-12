@@ -1,14 +1,18 @@
 import {
   getBillingTelemetryEventName,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -68,6 +72,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -89,7 +101,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     datadogRum.addAction(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
+      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 

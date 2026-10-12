@@ -10,6 +10,27 @@ import type {
 } from './stages.js'
 import type { PaymentIntentSource } from './vocabulary.js'
 
+/** The fixed amounts, in USD, a top-up dialog offers as one-click choices. */
+export const TOPUP_AMOUNT_PRESETS_USD = [10, 25, 50, 100] as const
+
+/** The preset the customer picked, or `custom` for any typed amount. */
+export type TopupAmountPreset =
+  | `${(typeof TOPUP_AMOUNT_PRESETS_USD)[number]}`
+  | 'custom'
+
+export function getTopupAmountPreset(
+  pickedPresetUsd: number | null
+): TopupAmountPreset {
+  const preset = TOPUP_AMOUNT_PRESETS_USD.find((usd) => usd === pickedPresetUsd)
+  return preset === undefined ? 'custom' : `${preset}`
+}
+
+type TopupStarted = BillingStarted & {
+  /** The amount being bought, in whole cents. */
+  amount_cents?: number
+  amount_preset?: TopupAmountPreset
+}
+
 export type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
@@ -29,7 +50,7 @@ export type TopupBillingEvent = {
   | BillingIntent
   | BillingCheckoutReceived<CreateTopupResponse['status']>
   | BillingRequestSent
-  | BillingStarted
+  | TopupStarted
   | BillingSucceeded
   | BillingFailed
 )

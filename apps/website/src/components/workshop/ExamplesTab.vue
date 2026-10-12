@@ -3,14 +3,14 @@ import { Check, Music2 } from '@lucide/vue'
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   exampleAlt,
   isVideoUrl,
   videoPosterUrl
-} from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -25,6 +25,7 @@ const {
   activeId?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
@@ -68,7 +69,7 @@ function actionFor(example: PlaygroundExample, active = false) {
     : active
       ? 'workshop.examples.using'
       : 'workshop.examples.use'
-  return t(key, locale)
+  return t(key)
 }
 </script>
 
@@ -80,15 +81,14 @@ function actionFor(example: PlaygroundExample, active = false) {
           t(
             samplesOnly
               ? 'workshop.examples.samples'
-              : 'workshop.examples.start',
-            locale
+              : 'workshop.examples.start'
           )
         }}
       </h2>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
-      {{ t('workshop.examples.empty', locale) }}
+      {{ t('workshop.examples.empty') }}
     </p>
 
     <!-- A phone scrolls the examples sideways, edge to edge; from a tablet up
@@ -115,7 +115,7 @@ function actionFor(example: PlaygroundExample, active = false) {
             :aria-label="`${example.title}: ${
               example.sampleOnly
                 ? actionFor(example)
-                : t('workshop.examples.open', locale)
+                : t('workshop.examples.open')
             }`"
             :aria-current="example.id === activeId ? 'true' : undefined"
             class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"

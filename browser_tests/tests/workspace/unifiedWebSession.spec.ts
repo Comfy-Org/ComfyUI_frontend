@@ -5,6 +5,7 @@ import type { Page, Request } from '@playwright/test'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
+  SESSION_REVOKED,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
   WEB_SESSION_MINT,
@@ -172,6 +173,29 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     })
   })
 
+  test('a session revoked elsewhere sends the open tab to the login page when it becomes visible', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.waitForAppReady()
+    expect(page.url()).not.toContain('/cloud/login')
+
+    await page.route('**/api/auth/session', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify(SESSION_REVOKED)
+          })
+        : route.fallback()
+    )
+    await page.evaluate(() =>
+      document.dispatchEvent(new Event('visibilitychange'))
+    )
+
+    await expect(page).toHaveURL(/\/cloud\/login/)
+  })
+
   test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
     comfyPage,
     tokenMints
@@ -227,10 +251,9 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       expect(page.url()).not.toContain('/cloud/login')
 
       await comfyPage.toast.closeToasts()
-      await page.keyboard.press('Escape')
-      await page.getByRole('button', { name: 'Current user' }).click()
+      await comfyPage.currentUserPopover.open()
       await expect(page.getByText(CLOUD_SELF_EMAIL)).toBeVisible()
-      await page.keyboard.press('Escape')
+      await comfyPage.currentUserPopover.close()
 
       const promptRequest = page.waitForRequest(isPromptPost)
       await comfyPage.workflow.loadWorkflow('default')

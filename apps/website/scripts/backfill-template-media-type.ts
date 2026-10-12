@@ -8,14 +8,12 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import {
-  hubTemplateDetailsSchema,
-  hubTemplatesSchema
-} from '../src/lib/hub/types'
-import type { HubTemplate, HubTemplateDetails } from '../src/lib/hub/types'
+import { websiteRoot } from '@website/paths'
+import { hubTemplateDetailsSchema, hubTemplatesSchema } from '@/lib/hub/types'
+import type { HubTemplate, HubTemplateDetails } from '@/lib/hub/types'
 import { isDirectExecution } from './script-entry-point'
 
-const DATA = join(import.meta.dirname, '..', 'src', 'data')
+const DATA = join(websiteRoot, 'src/data')
 const INDEX = join(DATA, 'hubTemplates.json')
 const DETAILS = join(DATA, 'hubTemplateDetails.json')
 

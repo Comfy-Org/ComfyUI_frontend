@@ -54,7 +54,7 @@
       variant="brand-solid"
       size="brand"
       class="mt-2 w-full"
-      :loading="loading"
+      :loading="loading || busy"
       :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
@@ -63,7 +63,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -82,14 +81,16 @@ import {
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
 const { t } = useI18n()
 
-defineProps<{
+const { busy = false } = defineProps<{
   authError?: string
+  busy?: boolean
 }>()
 
 const emit = defineEmits<{

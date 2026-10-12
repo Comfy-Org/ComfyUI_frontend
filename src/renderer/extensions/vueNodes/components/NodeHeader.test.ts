@@ -35,14 +35,11 @@ const setupMockStores = () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
 
-  // Mock tooltip delay setting
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] => {
       switch (key) {
         case 'Comfy.EnableTooltips':
           return true as Settings[K]
-        case 'LiteGraph.Node.TooltipDelay':
-          return 500 as Settings[K]
         default:
           return undefined as Settings[K]
       }
@@ -91,25 +88,15 @@ const createGlobalConfig = () => {
 
   const { pinia } = setupMockStores()
 
-  const tooltipDirective = {
-    mounted: vi.fn(),
-    updated: vi.fn(),
-    unmounted: vi.fn()
-  }
-
   return {
-    tooltipDirective,
     global: {
-      plugins: [i18n, pinia],
-      directives: {
-        tooltip: tooltipDirective
-      }
+      plugins: [i18n, pinia]
     }
   }
 }
 
 const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
-  const { global, tooltipDirective } = createGlobalConfig()
+  const { global } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()
   const user = userEvent.setup()
@@ -125,7 +112,7 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
     }
   })
 
-  return { ...result, user, onCollapse, onUpdateTitle, tooltipDirective }
+  return { ...result, user, onCollapse, onUpdateTitle }
 }
 
 describe('NodeHeader.vue', () => {
@@ -154,7 +141,7 @@ describe('NodeHeader.vue', () => {
     })
 
     // Enter edit mode
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
     // Edit and confirm
@@ -171,7 +158,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData({ title: 'KeepMe' })
     })
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
     const input = screen.getByTestId('node-title-input')
     await user.clear(input)
@@ -186,7 +173,7 @@ describe('NodeHeader.vue', () => {
   it('renders correct chevron icon based on collapsed prop', async () => {
     const { rerender } = renderHeader({ collapsed: false })
     const collapseButton = screen.getByTestId('node-collapse-button')
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const expandedIcon = collapseButton.querySelector('i')!
     expect(expandedIcon.classList).not.toContain('-rotate-90')
 
@@ -194,53 +181,37 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
 
   describe('Tooltips', () => {
-    it('applies tooltip directive to node title with correct configuration', () => {
-      const { tooltipDirective } = renderHeader({
+    it('shows the node description for its title', async () => {
+      const { user } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      expect(screen.getByTestId('node-title')).toBeInTheDocument()
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
+      await user.hover(screen.getByTestId('node-title'))
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Advanced sampling node for diffusion models'
+      )
     })
 
     it('disables tooltip when editing is active', async () => {
-      const { tooltipDirective } = renderHeader({
+      const { user } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      tooltipDirective.updated.mockClear()
+      await user.hover(screen.getByTestId('node-title'))
+      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
 
-      // eslint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+      await user.dblClick(screen.getByTestId('node-title'))
+      await user.unhover(screen.getByTestId('node-title'))
+      await user.hover(screen.getByTestId('node-title'))
 
-      expect(tooltipDirective.updated).toHaveBeenCalled()
-    })
-
-    it('creates tooltip configuration when component mounts', () => {
-      const { tooltipDirective } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
-      const mountedCall = tooltipDirective.mounted.mock.calls[0]
-      const binding = mountedCall[1]
-      expect(binding.value).toBeDefined()
-    })
-
-    it('uses tooltip container from provide/inject', () => {
-      const { tooltipDirective } = renderHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      expect(tooltipDirective.mounted).toHaveBeenCalled()
-      const mountedEl = tooltipDirective.mounted.mock.calls[0][0]
-      expect(mountedEl).toBe(screen.getByTestId('node-title'))
+      expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     })
   })
 })
