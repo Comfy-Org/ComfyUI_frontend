@@ -65,8 +65,8 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         en: 'SDR in, HDR out. Best viewed on an HDR display.',
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
       },
-      beforeSrc: `${placeholderClipBase}/local/racer.webm`,
-      afterSrc: `${placeholderClipBase}/gemini-omni/card-1.webm`
+      beforeSrc: '/nvidia-rtx/sdr-to-hdr-before.mp4',
+      afterSrc: '/nvidia-rtx/sdr-to-hdr-after.mp4'
     }
   ]
 }
