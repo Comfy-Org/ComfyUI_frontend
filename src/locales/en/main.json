@@ -3891,7 +3891,9 @@
     "followWorkspaceCaption": "Drop this browser's own pick and run on {deployment}",
     "setAsDefault": "Set as workspace default",
     "clearDefault": "Clear workspace default",
-    "failedToSetDefault": "Could not change the workspace default"
+    "failedToSetDefault": "Could not change the workspace default",
+    "linkRefused": "Could not open the deployment this link names",
+    "linkWorkspaceRefused": "Could not open the workspace this link names. You're still in {workspaceName}."
   },
   "selectionToolbox": {
     "executeButton": {

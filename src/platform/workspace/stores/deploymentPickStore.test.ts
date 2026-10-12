@@ -459,6 +459,70 @@ describe('useDeploymentPickStore', () => {
     expect(store.pickedDeploymentId).toBe('dep-2')
   })
 
+  describe('a pick from a link', () => {
+    it('waits for the first listing, then picks and reloads', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink('dep-1')).resolves.toEqual({
+        kind: 'picked'
+      })
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+        deployment_id: 'dep-1'
+      })
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it('does nothing for the deployment this browser already runs on', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink('dep-2')).resolves.toEqual({
+        kind: 'unchanged'
+      })
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    // The switcher stays hidden outside the rollout, but a link still asks,
+    // so the person learns why nothing changed.
+    it("hands back the server's refusal when the account is outside the rollout", async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('not enabled for this account yet', 403)
+      )
+      mockWorkspaceApi.pickDeployment.mockRejectedValue(
+        new WorkspaceApiError('not enabled for this account yet', 403)
+      )
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink('dep-1')).resolves.toEqual({
+        kind: 'refused',
+        message: 'not enabled for this account yet'
+      })
+      expect(store.state.phase).toBe('hidden')
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it("hands back a refused pick and keeps the listing's pick", async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockRejectedValue(
+        new WorkspaceApiError('deployment not found', 422)
+      )
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink('dep-gone')).resolves.toEqual({
+        kind: 'refused',
+        message: 'deployment not found'
+      })
+      expect(store.state.phase).toBe('ready')
+      expect(store.pickedDeploymentId).toBe('dep-2')
+      expect(reload).not.toHaveBeenCalled()
+    })
+  })
+
   it('does nothing without an active workspace', async () => {
     Object.assign(useTeamWorkspaceStore(), { workspaceId: null })
     const store = useDeploymentPickStore()
