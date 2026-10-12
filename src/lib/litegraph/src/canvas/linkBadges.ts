@@ -68,7 +68,8 @@ function makeBadge(text: string, color: string): LGraphBadge {
     fgColor: textOnColor(color),
     fontSize: BADGE_FONT_SIZE,
     height: BADGE_HEIGHT,
-    cornerRadius: BADGE_HEIGHT / 2
+    cornerRadius: BADGE_HEIGHT / 2,
+    centerOnCapHeight: true
   })
 }
 

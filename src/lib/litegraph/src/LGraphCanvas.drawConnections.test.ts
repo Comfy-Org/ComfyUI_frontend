@@ -38,7 +38,9 @@ function createMockCtx(): CanvasRenderingContext2D {
     scale: vi.fn(),
     drawImage: vi.fn(),
     fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
+    measureText: vi
+      .fn()
+      .mockReturnValue({ width: 50, actualBoundingBoxAscent: 8 }),
     closePath: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),

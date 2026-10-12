@@ -20,7 +20,9 @@ const VISIBLE_AREA: ReadOnlyRect = [0, 0, 1000, 1000]
 
 function createContext(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({
-    measureText: vi.fn().mockReturnValue({ width: 50 })
+    measureText: vi
+      .fn()
+      .mockReturnValue({ width: 50, actualBoundingBoxAscent: 8 })
   })
 }
 
@@ -173,7 +175,7 @@ describe('link badge frame layout', () => {
     )
 
     expect(queryLinkBadgeAtPoint(host, 420, 122)).toBe(toLinkId(2))
-    expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 123)
+    expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 126)
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
