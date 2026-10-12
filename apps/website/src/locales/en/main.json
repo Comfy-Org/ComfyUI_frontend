@@ -4347,6 +4347,53 @@
       "introCta": "see what it includes"
     }
   },
+  "fishAudio": {
+    "meta": {
+      "title": "Fish Audio on Comfy: Expressive Text to Speech",
+      "description": "Run Fish Audio S2.1 Pro on Comfy. Text to speech in 80+ languages with inline direction, instant voice cloning, and speech to text, on the canvas alongside every other model."
+    },
+    "breadcrumb": {
+      "model": "Fish Audio",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "titleModel": "Fish Audio S2.1 Pro",
+      "titleRest": " is here",
+      "description": "Text to speech that takes direction. Write the script, mark the delivery with tags like [whispering] or [excited], and get expressive speech back in 80+ languages. Clone a voice from a few short clips, run up to five speakers in one pass, and transcribe audio back to text, all on the canvas.",
+      "tagPartnerNode": "Partner node",
+      "tagTextToSpeech": "Text to Speech",
+      "tagVoiceCloning": "Voice Cloning",
+      "primaryCta": "RUN WORKFLOW",
+      "secondaryCta": "LEARN MORE"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "pricing": {
+      "banner": {
+        "title": "Start free. Upgrade when you're ready.",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "steps": {
+      "heading": "Make your first voice line",
+      "step": "Step",
+      "primaryCta": "RUN WORKFLOW",
+      "secondaryCta": "CLONE A VOICE"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run Fish Audio in the browser today. Batch narration with the API, or wire it into your own pipeline.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
+      "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
+      "highlightCta": "GET STARTED"
+    }
+  },
   "fdct": {
     "meta": {
       "title": "Forward Deployed Creatives {'|'} Comfy",

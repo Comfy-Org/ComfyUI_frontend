@@ -2378,6 +2378,53 @@
       "step": "步骤"
     }
   },
+  "fishAudio": {
+    "breadcrumb": {
+      "model": "Fish Audio",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "hero": {
+      "description": "听得懂指令的文本转语音。写下台词，用 [whispering] 或 [excited] 这样的标签标出表演方式，即可获得 80 多种语言的富有表现力的语音。用几段短录音克隆声音，一次运行最多五个说话人，并把音频转写回文字，全部在画布上完成。",
+      "primaryCta": "运行工作流",
+      "secondaryCta": "了解更多",
+      "tagPartnerNode": "合作伙伴节点",
+      "tagTextToSpeech": "文本转语音",
+      "tagVoiceCloning": "声音克隆",
+      "titleModel": "Fish Audio S2.1 Pro",
+      "titleRest": " 已上线"
+    },
+    "meta": {
+      "description": "在 Comfy 上运行 Fish Audio S2.1 Pro。支持 80 多种语言、带内嵌表演指令的文本转语音，即时声音克隆，以及语音转文字，可在画布上与其他所有模型一同使用。",
+      "title": "Comfy 上的 Fish Audio：富有表现力的文本转语音"
+    },
+    "pricing": {
+      "banner": {
+        "cta": "免费试用",
+        "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+        "title": "免费开始，准备好了再升级。"
+      }
+    },
+    "reviews": {
+      "heading": "400 万+ Comfy 创作者这样说",
+      "highlightCta": "开始使用",
+      "highlightDescription": "你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。",
+      "highlightTitle": "Comfy MCP：让你的智能体成为创意技术专家。"
+    },
+    "runOptions": {
+      "cta": "了解更多",
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在浏览器中运行 Fish Audio。用 API 批量生成旁白，或接入你自己的流程。"
+    },
+    "steps": {
+      "heading": "制作你的第一句语音",
+      "primaryCta": "运行工作流",
+      "secondaryCta": "克隆声音",
+      "step": "步骤"
+    }
+  },
   "modelDiscovery": {
     "browse": "浏览全部模型",
     "workflowRowLabel": "工作流",

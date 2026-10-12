@@ -10,6 +10,7 @@ import {
   qwenImage21AnnouncementPage,
   qwenImage21Page
 } from '@/data/qwenImage21'
+import { fishAudioPage } from '@/data/fishAudio'
 import { minimaxMusic3Page } from '@/data/minimaxMusic3'
 import { nanoBananaPage } from '@/data/nanoBanana'
 import { seedancePage } from '@/data/seedance'
@@ -36,6 +37,7 @@ import type {
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'fishAudio', page: fishAudioPage },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'chatgptImage25', page: chatgptImage25Page },
