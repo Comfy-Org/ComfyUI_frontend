@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { prepareModelRouterRender } from '../src/config/router-render'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { prepareModelRouterRender } from '@/config/router-render'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { createRouterRenderHelpers } from './router-render'
 
 const { prepareRouterRender, resolveRouterRender, router_for_model } =

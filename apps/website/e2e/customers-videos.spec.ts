@@ -4,8 +4,8 @@ import {
   customerVideoPath,
   customerVideoStories,
   getCustomerVideoStory
-} from '../src/data/customerVideos'
-import { t } from '../src/i18n/translations'
+} from '@/data/customerVideos'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const blackMath = getCustomerVideoStory('black-math')
@@ -29,23 +29,25 @@ test.describe('Customer watch pages @smoke', () => {
       )
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         'href',
-        `https://comfy.org${customerVideoPath(story.slug)}/`
+        `https://comfy.org${customerVideoPath(story.slug)}`
       )
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         story.title
       )
 
       const breadcrumb = page.getByRole('navigation', {
-        name: t('ui.breadcrumb', 'en')
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       await expect(
-        breadcrumb.getByRole('link', { name: t('breadcrumb.home', 'en') })
+        breadcrumb.getByRole('link', {
+          name: t('breadcrumb.home', {}, { locale: 'en' })
+        })
       ).toHaveAttribute('href', '/')
       await expect(
         breadcrumb.getByRole('link', {
-          name: t('nav.customerStories', 'en')
+          name: t('nav.customerStories', {}, { locale: 'en' })
         })
-      ).toHaveAttribute('href', '/customers')
+      ).toHaveAttribute('href', '/customers/')
       // The current page is plain text, never a link, in both the visible
       // breadcrumb and the JSON-LD BreadcrumbList.
       await expect(breadcrumb.getByText(story.title)).toBeVisible()
@@ -67,26 +69,27 @@ test.describe('Customer watch pages @smoke', () => {
         | { name: string; item?: string }[]
         | undefined
       expect(items?.map((item) => item.name)).toEqual([
-        t('breadcrumb.home', 'en'),
-        t('nav.customerStories', 'en'),
+        t('breadcrumb.home', {}, { locale: 'en' }),
+        t('nav.customerStories', {}, { locale: 'en' }),
         story.title
       ])
       expect(items?.at(-1)?.item).toBeUndefined()
 
       const video = graph.find((node) => node['@type'] === 'VideoObject')
-      expect(video?.name).toBe(story.title)
-      expect(video?.description).toBe(story.description)
-      expect(video?.thumbnailUrl).toBe(story.poster)
-      expect(video?.contentUrl).toBe(story.videoSrc)
-      expect(video?.inLanguage).toBe('en')
-      expect((video?.publisher as { '@id'?: string })?.['@id']).toBe(
-        'https://comfy.org/#organization'
+      expect(video).toEqual(
+        expect.objectContaining({
+          name: story.title,
+          description: story.description,
+          thumbnailUrl: story.poster,
+          contentUrl: story.videoSrc,
+          uploadDate: story.uploadDate,
+          inLanguage: 'en',
+          publisher: { '@id': 'https://comfy.org/#organization' }
+        })
       )
 
       const webPage = graph.find((node) => node['@type'] === 'WebPage')
-      expect((webPage?.mainEntity as { '@id'?: string })?.['@id']).toBe(
-        video?.['@id']
-      )
+      expect(webPage?.mainEntity).toEqual({ '@id': video?.['@id'] })
 
       const player = page.locator('video')
       await expect(player).toHaveCount(1)
@@ -100,8 +103,10 @@ test.describe('Customer watch pages @smoke', () => {
       await expect(track).toHaveAttribute('kind', 'subtitles')
 
       await expect(
-        page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
-      ).toHaveAttribute('href', '/customers')
+        page.getByRole('link', {
+          name: t('customers.watch.browseAll', {}, { locale: 'en' })
+        })
+      ).toHaveAttribute('href', '/customers/')
     })
   }
 
@@ -120,8 +125,8 @@ test.describe('Customer watch pages @smoke', () => {
     ).toBeVisible()
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
-      page.locator(`a[href="/customers/${silverside.relatedStorySlug}"]`, {
-        hasText: t('customers.watch.readWrittenStory', 'en')
+      page.locator(`a[href="/customers/${silverside.relatedStorySlug}/"]`, {
+        hasText: t('customers.watch.readWrittenStory', {}, { locale: 'en' })
       })
     ).toBeVisible()
   })

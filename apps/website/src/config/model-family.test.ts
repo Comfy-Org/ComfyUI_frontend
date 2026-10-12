@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { groupByFamily } from './model-family'
-import type { WorkshopModel } from './models-catalogue'
+import type { RouterWorkshopModel } from './models-catalogue'
 
 function model(
   name: string,
   slug: string,
-  extra: Partial<WorkshopModel> = {}
-): WorkshopModel {
+  extra: Partial<RouterWorkshopModel> = {}
+): RouterWorkshopModel {
   return {
     slug,
     name,

@@ -30,7 +30,7 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
 <template>
   <div
     v-if="typeformError || !isValidTypeformId"
-    class="text-danger flex h-full items-center text-sm"
+    class="flex h-full items-center text-sm text-destructive-background"
   >
     {{ t('typeform.loadError') }}
   </div>

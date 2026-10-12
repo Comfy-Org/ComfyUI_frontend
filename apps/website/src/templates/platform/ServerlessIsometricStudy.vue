@@ -15,11 +15,12 @@ import {
   watchEffect
 } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const textureId = useId()
 
@@ -369,7 +370,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    :aria-label="t('platform.serverlessVisual.ariaLabel')"
     :data-pattern="patternIndex"
     :data-phase="phase"
     :data-reset-indicator-progress="resetIndicatorProgress"

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ArrowRight, X } from '@lucide/vue'
 
-import type { BannerData } from '../../config/banner'
-import type { Locale } from '../../i18n/translations'
+import type { BannerData } from '@/config/banner'
+import type { Locale } from '@/i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
-import { useBannerDismissal } from '../../composables/useBannerDismissal'
+import { useBannerDismissal } from '@/composables/useBannerDismissal'
 
 const GRADIENT_BACKGROUND =
   'linear-gradient(90deg, var(--color-primary-comfy-plum) 0%, var(--color-secondary-deep-plum) 53.85%, var(--color-secondary-mauve) 100%)'
@@ -32,6 +32,7 @@ const {
   /** Hides the close control for a banner that isn't meant to be dismissed. */
   dismissible?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
 </script>
@@ -59,11 +60,13 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
             "
           >
             <p
-              class="ppformula-text-center text-sm text-primary-warm-white md:text-base/6"
+              class="inline-block text-sm text-primary-warm-white md:text-base/6"
             >
-              {{ data.title }}
+              <span :class="cn(data.description && 'font-bold')">
+                {{ data.title }}
+              </span>
               <span v-if="data.description" class="text-primary-warm-white/80">
-                {{ data.description }}
+                {{ ` ${data.description}` }}
               </span>
             </p>
             <Button
@@ -84,7 +87,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              :aria-label="t('nav.close', locale)"
+              :aria-label="t('nav.close')"
               @click="close"
             >
               <X class="size-5" aria-hidden="true" />

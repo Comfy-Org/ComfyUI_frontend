@@ -6,6 +6,7 @@
  * templates or their conditions changing.
  */
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import { validateActionUrl } from '@comfyorg/account-core/billing'
 
 import type {
   BillingAuthenticationState,
@@ -35,9 +36,15 @@ export interface BillingOperationRecordView {
   readonly canRetryAuthentication: boolean
   /** The declined-attempt line a surface shows under its own summary. */
   readonly errorMessage: string | null
+  /** True only when the server says cancelling this pending operation would take effect. */
+  readonly cancelable: boolean
 }
 
 /**
+ * `actionUrl` is validated here for the same reason the legacy store validates
+ * it at registration: the surfaces that read this record hand the URL to
+ * `window.open`.
+ *
  * `superseded` has no counterpart in the legacy record: the scope moved on
  * under the operation, so there is nothing for this workspace's surfaces to
  * read — the same outcome `readOnRail` gives a superseded read.
@@ -65,14 +72,15 @@ export function projectOperationRecord(
           : null,
       isAuthenticating: false,
       canRetryAuthentication: false,
-      errorMessage: null
+      errorMessage: null,
+      cancelable: false
     }
   }
 
   return {
     ...identity,
     status: 'pending',
-    actionUrl: state.actionUrl ?? null,
+    actionUrl: validateActionUrl(state.actionUrl) ?? null,
     phase: state.serverPhase ?? null,
     authenticationState: state.authenticationState ?? null,
     isAuthenticating: state.challenge?.status === 'in_progress',
@@ -80,6 +88,7 @@ export function projectOperationRecord(
     errorMessage:
       state.authenticationState === 'failed_retryable'
         ? declineDetail(state.declineReason ?? 'authentication_failed')
-        : null
+        : null,
+    cancelable: state.cancelable === true
   }
 }

@@ -16,7 +16,7 @@ export function getDataFromJSON(
         const jsonContent = parseJsonWithNonFinite<Record<string, unknown>>(
           reader.result
         )
-        if (jsonContent?.templates) {
+        if (jsonContent.templates) {
           resolve({ templates: jsonContent.templates })
           return
         }

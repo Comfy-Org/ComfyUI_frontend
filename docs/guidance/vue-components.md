@@ -40,8 +40,8 @@ Prefer Vue native options when available:
 - Refer to packages/design-system/src/css/style.css for design tokens and tailwind configuration
 - Exception: when third-party libraries render runtime DOM outside Vue templates
   (for example xterm internals inside PrimeVue terminal wrappers), scoped
-  `:deep()` selectors are allowed. Add a brief inline comment explaining why the
-  exception is required.
+  `:deep()` selectors are allowed. State why the exception is required in the
+  PR description. Do not add a comment.
 
 ## Props, Slots & Reactivity
 

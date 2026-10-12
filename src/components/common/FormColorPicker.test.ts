@@ -100,7 +100,7 @@ describe('FormColorPicker', () => {
     const textInput = screen.getByPlaceholderText('Color') as HTMLInputElement
     expect(textInput.disabled).toBe(true)
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- the picker trigger has no stable accessible name
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container -- the picker trigger has no stable accessible name
     const trigger = container.querySelector(
       '.color-picker-wrapper > button'
     ) as HTMLButtonElement | null

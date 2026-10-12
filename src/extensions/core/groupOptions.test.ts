@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ContextMenuDivElement,
   IContextMenuValue
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,
@@ -13,21 +13,14 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
+import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const { registerExtension } = vi.hoisted(() => ({
-  registerExtension: vi.fn()
-}))
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ registerExtension })
-}))
+vi.mock(import('@/scripts/app'))
 
 import '@/extensions/core/groupOptions'
 
-const ext = registerExtension.mock.calls[0]?.[0] as ComfyExtension
+const ext = vi.mocked(app.registerExtension).mock.calls[0]?.[0]
 
 const graphChange = vi.fn()
 
@@ -80,7 +73,6 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 ]
 
 beforeEach(() => {
-  graphChange.mockClear()
   vi.mocked(useSettingStore().get).mockReturnValue(10)
 })
 

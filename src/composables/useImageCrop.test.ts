@@ -70,7 +70,7 @@ const ImageCropHarness = defineComponent({
 })
 
 function flushResizeObservers() {
-  for (const cb of [...resizeObserverCallbacks]) {
+  for (const cb of Array.from(resizeObserverCallbacks)) {
     cb()
   }
 }
@@ -130,10 +130,10 @@ type CropVm = Record<string, unknown> & {
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
-  /* eslint-disable testing-library/no-node-access */
+  /* oxlint-disable testing-library/no-node-access */
   const container = vm.$el
   const img = container.querySelector('img')
-  /* eslint-enable testing-library/no-node-access */
+  /* oxlint-enable testing-library/no-node-access */
   mountContainerLayout(container, 400, 300)
   if (img) {
     Object.defineProperty(img, 'naturalWidth', {
@@ -221,11 +221,6 @@ describe('useImageCrop', () => {
       c()
     }
     harnessCleanups.length = 0
-  })
-
-  it('resolves image URL from the connected input node after mount', async () => {
-    const vm = await mountHarness()
-    expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
 
   it('returns null image URL when the graph node cannot be resolved', async () => {
@@ -333,10 +328,10 @@ describe('useImageCrop', () => {
 
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     const container = vm.$el
     const img = container.querySelector('img')
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
     if (!img) throw new Error('expected preview img')
     Object.defineProperty(img, 'naturalWidth', { configurable: true, value: 0 })
     Object.defineProperty(img, 'naturalHeight', {

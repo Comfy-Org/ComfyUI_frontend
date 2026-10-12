@@ -89,13 +89,13 @@ describe('projectTopupResult', () => {
     ).toMatchObject({ billing_op_id: 'op-1', status: 'failed' })
   })
 
-  it('reports nothing for a purchase this tab stopped observing', () => {
+  it('reports a purchase this tab stopped observing as still pending', () => {
     expect(
       projectTopupResult(
         { status: 'unsettled', operation: settledTopup('timed_out') },
         1000
       )
-    ).toBeUndefined()
+    ).toMatchObject({ billing_op_id: 'op-1', status: 'pending' })
   })
 
   it('throws the API error whose code the dialog already handles', () => {

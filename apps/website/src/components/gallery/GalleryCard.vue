@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 
-import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
+import type { GalleryItem } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {

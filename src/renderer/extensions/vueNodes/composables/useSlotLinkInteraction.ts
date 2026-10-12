@@ -11,7 +11,7 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import {
   clearCanvasPointerHistory,
@@ -29,6 +29,7 @@ import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
@@ -599,6 +600,7 @@ export function useSlotLinkInteraction({
 
     cleanupInteraction()
     app.canvas.setDirty(true, true)
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const handlePointerUp = (event: PointerEvent) => {

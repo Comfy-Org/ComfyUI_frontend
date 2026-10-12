@@ -33,7 +33,7 @@ const animationFrame = vi.hoisted(() => vi.fn())
 vi.mock(import('@/composables/canvas/visibleCanvasViewport'), () => ({
   visibleCanvasViewport: () => viewport
 }))
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { rootGraph: {} } }))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
 vi.mock<unknown>(import('vue-router'), () => ({
   NavigationFailureType: { cancelled: 8, duplicated: 16 },

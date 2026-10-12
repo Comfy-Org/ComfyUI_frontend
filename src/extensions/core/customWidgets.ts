@@ -1,12 +1,16 @@
-import { shallowReactive } from 'vue'
+import { clamp } from 'es-toolkit'
+import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { GET_CONFIG } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@/types/widgetId'
@@ -85,7 +89,7 @@ function onCustomComboCreated(this: LGraphNode) {
     )
     if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
-    comboWidget.value = values[0] ?? ''
+    comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
   }
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
@@ -100,7 +104,6 @@ function onCustomComboCreated(this: LGraphNode) {
     const newCount = node.widgets.length - 1
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
-    if (!widget) return
     let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
@@ -132,7 +135,6 @@ function onCustomComboCreated(this: LGraphNode) {
     })
   }
   const widgets = this.widgets!
-  const node = this
   widgets.push({
     name: 'index',
     type: 'hidden',
@@ -148,10 +150,34 @@ function onCustomComboCreated(this: LGraphNode) {
       widgets
         .slice(2)
         .findIndex(
-          (w) => w.value === resolveChoiceValue(node, comboWidget, resolverNode)
+          (w) => w.value === resolveChoiceValue(this, comboWidget, resolverNode)
         )
   })
   addOption(this)
+}
+
+class StubWidget<T extends WidgetValue> extends BaseWidget {
+  override serialize = true
+  constructor(
+    node: LGraphNode,
+    name: string,
+    protected valueGetter: () => T
+  ) {
+    super({ name, node, options: { socketless: true }, type: 'hidden', y: 0 })
+  }
+  drawWidget() {}
+  onClick() {}
+  override get value(): T {
+    return this.valueGetter()
+  }
+  override set value(_: T) {}
+}
+function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+  return computed(() =>
+    node.inputs
+      .filter((input) => input.name.startsWith(prefix) && input.link)
+      .map((input) => input.label ?? input.localized_name ?? input.name)
+  )
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -182,9 +208,33 @@ function onCustomIntCreated(this: LGraphNode) {
 }
 const DISPLAY_WIDGET_TYPES = new Set(['gradientslider', 'slider', 'knob'])
 
+const finiteNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const positiveNumber = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n !== undefined && n > 0 ? n : undefined
+}
+
+const fractionDigits = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n === undefined ? undefined : clamp(Math.trunc(n), 0, 100)
+}
+
+const lastDecimalPlace = (places: number) =>
+  Number((10 ** -places).toFixed(places))
+
 function onCustomFloatCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
+
+  const declaredPrecision = fractionDigits(valueWidget.options.precision) ?? 1
+  const declaredStep =
+    positiveNumber(valueWidget.options.step2) ??
+    lastDecimalPlace(declaredPrecision)
+  const declaredRound = valueWidget.options.round
+  const declaresRounding = positiveNumber(declaredRound) !== undefined
+  const nodePrecision = () => fractionDigits(this.properties.precision)
 
   let baseType = valueWidget.type
   Object.defineProperty(valueWidget, 'type', {
@@ -220,7 +270,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   Object.defineProperty(valueWidget.options, 'precision', {
-    get: () => this.properties.precision ?? 1,
+    get: () => nodePrecision() ?? declaredPrecision,
     set: (v) => {
       this.properties.precision = v
       valueWidget.callback?.(valueWidget.value)
@@ -228,19 +278,21 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
   Object.defineProperty(valueWidget.options, 'step2', {
     get: () => {
-      if (this.properties.step) return this.properties.step
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 5 * 10 ** -precision : 1
+      const configured = positiveNumber(this.properties.step)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places === undefined ? declaredStep : lastDecimalPlace(places)
     },
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
     get: () => {
-      if (this.properties.round) return this.properties.round
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 10 ** -precision : 0.1
+      const configured = positiveNumber(this.properties.round)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places !== undefined && declaresRounding
+        ? lastDecimalPlace(places)
+        : declaredRound
     },
     set: (v) => {
       this.properties.round = v
@@ -252,20 +304,39 @@ function onCustomFloatCreated(this: LGraphNode) {
 app.registerExtension({
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
-    if (nodeData?.name === 'CustomCombo')
+    if (nodeData.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
       )
-    else if (nodeData?.name === 'PrimitiveInt')
+    else if (nodeData.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomIntCreated
       )
-    else if (nodeData?.name === 'PrimitiveFloat')
+    else if (nodeData.name === 'PrimitiveFloat')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated
       )
+  },
+  getCustomWidgets() {
+    return {
+      COMFY_BRANCH_INPUT_NAMES: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        node.addCustomWidget(new StubWidget<string[]>(node, inputName, values))
+      },
+      COMFY_BRANCH_SELECTOR: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        const startValue = connectedInputs.value[0] ?? ''
+        node.addWidget('combo', inputName, startValue, () => {}, { values })
+        node.onInputAdded = useChainCallback(node.onInputAdded, (input) => {
+          if (input.widget?.name !== inputName) return
+          input.widget[GET_CONFIG] = () => ['COMBO', { options: values }]
+        })
+      }
+    }
   }
 })

@@ -28,7 +28,7 @@ const uploadButtonStyle = cn(
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex justify-start gap-1 px-4">
+  <div class="mb-4 flex justify-start gap-1 px-4 text-muted-foreground">
     <button
       v-for="option in filterOptions"
       :key="option.value"

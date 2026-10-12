@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { until, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -12,12 +12,13 @@ import {
   AgentApiError,
   createAgentRestClient
 } from '../../services/agent/agentRestClient'
+import { useAgentSendGateStore } from './agentSendGateStore'
 
 const DEFAULT_PREFERENCE: AgentRunModePreference = {
   mode: 'ask_approval',
   credit_limit: null
 }
-export const DEFAULT_CREDIT_LIMIT = 300
+const DEFAULT_CREDIT_LIMIT = 300
 const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
@@ -103,9 +104,18 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   async function load(): Promise<void> {
     const revision = saveRevision
+    const appliedRevision = appliedSaveRevision
     try {
       const serverPreference = await api.getRunMode()
-      if (revision === saveRevision) apply(serverPreference)
+      // BOTH counters. A save that starts before this load and then parks on
+      // the send gate does not bump saveRevision again while it waits, so the
+      // revision check alone still matches when its PUT lands first — and
+      // this GET, taken before that write, would put the old mode back while
+      // the server enforces the new one. The gate widens that window from one
+      // PUT round trip to the length of a send, which is what makes it worth
+      // closing here.
+      if (revision === saveRevision && appliedRevision === appliedSaveRevision)
+        apply(serverPreference)
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
       localPreference()
@@ -126,7 +136,29 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       appliedSaveRevision = revision
       apply(savedPreference)
     }
+    // The picked mode is deliberately NOT applied here: this control shows
+    // what is SAVED, with the popover's own spinner covering the write (see
+    // Composer.test.ts, 'blocks a second pick while the write is in flight').
+    // Waiting for a send in flight widens that window; it does not change it.
     try {
+      // The server pins a turn's run mode when that turn's POST ARRIVES, not
+      // when the user pressed send, so a mode written while the composer
+      // already looks sent overtakes the message and re-authorizes it
+      // (PM-1660). Bounded by the gate's own MAX_HOLD_MS and nothing else: a
+      // second timeout here could only fire while overlapping sends were
+      // legitimately holding the gate, and firing meant rejecting the user's
+      // change behind an error toast with the mode left as it was.
+      //
+      // The `isSending` check is load-bearing, not an optimisation: awaiting
+      // unconditionally adds a microtask, and that is enough for a
+      // back-to-back second save to supersede this one before it reaches the
+      // revision check below, so the first never sends its PUT.
+      const sendGate = useAgentSendGateStore()
+      if (sendGate.isSending) await until(() => sendGate.isSending).toBe(false)
+      // A second pick can park on the same gate (two popover instances, or
+      // one remounted mid-write) and both wake on the same release, so their
+      // PUTs would race and the server would keep whichever landed last.
+      if (revision !== saveRevision) return
       applySaved(await api.putRunMode(next))
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error

@@ -73,10 +73,6 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
   test('dragging the video asset onto the canvas opens its embedded workflow', async ({
     comfyPage
   }) => {
-    // Expected to fail until #18111 lands: the drag publishes the card's job
-    // id, so the drop fetches the 404 body instead of the MP4.
-    test.fail()
-
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     const card = tab.getAssetCardByName('agent_generated_video')

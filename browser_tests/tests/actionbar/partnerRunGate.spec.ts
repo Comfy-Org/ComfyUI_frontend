@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { apiKeyAuthFixture } from '@e2e/fixtures/apiKeyAuthFixture'
 import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -103,4 +104,45 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     const queueAttempts = await page.evaluate(() => window.__promptQueueings)
     expect(queueAttempts).toBe(0)
   })
+})
+
+apiKeyAuthFixture.describe('Partner nodes run gate (local, API key)', () => {
+  apiKeyAuthFixture(
+    'keeps Run while a stored API key is still validating',
+    async ({ comfyPage }) => {
+      const page = comfyPage.page
+      let releaseValidation = () => {}
+      const validation = new Promise<void>((resolve) => {
+        releaseValidation = resolve
+      })
+      await page.route('**/customers', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await validation
+        return route.fulfill({ status: 201, json: { id: 'api-key-user-e2e' } })
+      })
+
+      await comfyPage.goto()
+      await comfyPage.waitForAppReady()
+      await comfyPage.workflow.loadWorkflow(PARTNER_WORKFLOW)
+      await comfyPage.nextFrame()
+
+      const signInButton = page.getByTestId(
+        TestIds.partnerNodes.signInToRunButton
+      )
+      await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
+      await expect(signInButton).toHaveCount(0)
+
+      const validationResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url().endsWith('/customers') &&
+          response.status() === 201
+      )
+      releaseValidation()
+      await validationResponse
+      await comfyPage.nextFrame()
+      await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
+      await expect(signInButton).toHaveCount(0)
+    }
+  )
 })

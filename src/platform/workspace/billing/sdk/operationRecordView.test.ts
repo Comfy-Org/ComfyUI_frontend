@@ -35,6 +35,11 @@ describe('projectOperationRecord', () => {
       { status: 'pending', actionUrl: 'https://pay.example/1' }
     ],
     [
+      'a hosted step that is not https is refused, as the poller refuses it',
+      pendingTopup({ actionUrl: 'javascript:alert(1)' }),
+      { status: 'pending', actionUrl: null }
+    ],
+    [
       'the server phase is reported as the record phase',
       pendingTopup({ serverPhase: 'awaiting_payment_method' }),
       { status: 'pending', phase: 'awaiting_payment_method' }
@@ -53,6 +58,21 @@ describe('projectOperationRecord', () => {
       'a challenge awaiting the customer offers a retry',
       pendingTopup({ challenge: challenge('required') }),
       { isAuthenticating: false, canRetryAuthentication: true }
+    ],
+    [
+      "a pending operation carries the server's cancelable claim",
+      pendingSubscription({ cancelable: true }),
+      { status: 'pending', cancelable: true }
+    ],
+    [
+      'a pending operation the server makes no cancelable claim for is not cancelable',
+      pendingSubscription(),
+      { status: 'pending', cancelable: false }
+    ],
+    [
+      'a settled operation is never cancelable',
+      settledTopup('succeeded'),
+      { status: 'succeeded', cancelable: false }
     ],
     [
       'the kind is preserved so a lookup can tell operations apart',
