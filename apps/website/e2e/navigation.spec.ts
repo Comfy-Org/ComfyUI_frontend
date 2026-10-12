@@ -436,11 +436,18 @@ test.describe('Footer @smoke', () => {
         ])
       )
     ).toEqual(socialChannels.map(([, href]) => [href, '_blank', 'noopener']))
-    await expect(
-      footer.getByRole('navigation', { name: 'Resources' }).getByRole('link', {
-        name: new RegExp(socialChannels.map(([label]) => label).join('|'))
-      })
-    ).toHaveCount(0)
+    const socialHrefs: readonly string[] = socialChannels.map(
+      ([, href]) => href
+    )
+    const resourceHrefs = await footer
+      .getByRole('navigation', { name: 'Resources' })
+      .getByRole('link')
+      .evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => anchor.getAttribute('href') ?? '')
+      )
+    expect(resourceHrefs.filter((href) => socialHrefs.includes(href))).toEqual(
+      []
+    )
   })
 
   test('copyright text is visible', async ({ page }) => {
