@@ -123,6 +123,61 @@ function parseRegisteredLinks(value: unknown) {
   })
 }
 
+function parseValidationIssues(value: unknown) {
+  if (!Array.isArray(value))
+    throw new CampaignLinkError(
+      'UTM Manager returned invalid validation issues'
+    )
+  return value.map((item: unknown) => {
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      !('code' in item) ||
+      typeof item.code !== 'string' ||
+      !('message' in item) ||
+      typeof item.message !== 'string'
+    )
+      throw new CampaignLinkError(
+        'UTM Manager returned an invalid validation issue'
+      )
+    return { code: item.code, message: item.message }
+  })
+}
+
+function parseValidation(value: unknown, links: CampaignLink[]) {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('results' in value) ||
+    !Array.isArray(value.results) ||
+    value.results.length !== links.length
+  )
+    throw new CampaignLinkError(
+      'UTM Manager returned an invalid validation report'
+    )
+  return value.results.map((item: unknown, index: number) => {
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      !('index' in item) ||
+      item.index !== index ||
+      !('errors' in item) ||
+      !('warnings' in item) ||
+      !('existingLinks' in item) ||
+      !Array.isArray(item.existingLinks)
+    )
+      throw new CampaignLinkError(
+        'UTM Manager returned an invalid validation result'
+      )
+    return {
+      fullUrl: links[index].fullUrl,
+      errors: parseValidationIssues(item.errors),
+      warnings: parseValidationIssues(item.warnings),
+      existingMatches: item.existingLinks.length
+    }
+  })
+}
+
 export async function syncCampaignLinks(
   requested: CampaignLink[],
   {
@@ -144,8 +199,7 @@ export async function syncCampaignLinks(
       method,
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-User-Name': 'Campaign Links automation'
+        'Content-Type': 'application/json'
       },
       ...(body !== undefined && { body: JSON.stringify(body) }),
       redirect: 'error',
@@ -168,7 +222,17 @@ export async function syncCampaignLinks(
   const missing = unique.filter(
     ({ fullUrl }) => !known.has(canonicalUrl(fullUrl))
   )
-  if (apply && missing.length) {
+  const validation = missing.length
+    ? parseValidation(
+        await api('/links/validate', 'POST', { links: missing }),
+        missing
+      )
+    : []
+  const requiresReview = validation.some(
+    ({ errors, warnings, existingMatches }) =>
+      errors.length > 0 || warnings.length > 0 || existingMatches > 0
+  )
+  if (apply && missing.length && !requiresReview) {
     await api('/links-batch', 'POST', { action: 'create', links: missing })
     const saved = parseRegisteredLinks(await api('/links'))
     const savedUrls = new Set(saved.map(({ fullUrl }) => canonicalUrl(fullUrl)))
@@ -181,8 +245,11 @@ export async function syncCampaignLinks(
     mode: apply ? 'create-drafts' : 'check',
     requested: unique.length,
     skipped: unique.length - missing.length,
-    created: apply ? missing.length : 0,
-    missing: apply ? [] : missing.map(({ fullUrl }) => fullUrl),
+    created: apply && !requiresReview ? missing.length : 0,
+    missing:
+      apply && !requiresReview ? [] : missing.map(({ fullUrl }) => fullUrl),
+    requiresReview,
+    validation,
     links: unique.map(({ title, fullUrl, campaign }) => ({
       title,
       fullUrl,

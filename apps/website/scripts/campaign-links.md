@@ -11,8 +11,13 @@ Campaign names follow the existing `comfy_vfx` convention, with `comfy_` or
 `agency_` prefixes and vertical suffixes. Medium remains `ads`.
 
 - **preview** generates a downloadable URL report without contacting the manager.
-- **check** reads the manager and reports missing links without creating anything.
-- **create-drafts** creates missing records and reads them back to verify they saved.
+- **check** reads the manager, validates missing links, and reports the results
+  without creating anything.
+- **create-drafts** validates missing records before creating them, then reads
+  them back to verify they saved. Errors, warnings, or newly detected duplicates
+  hold the entire batch for review; the report sets `requiresReview: true` and
+  lists the issues. Review them before rerunning. Destinations are never changed
+  automatically.
 
 Duplicate detection compares full URLs returned by the manager with query
 parameters sorted. The manager excludes soft-deleted records, so a deleted URL
@@ -22,15 +27,18 @@ records. GitHub serializes runs to avoid overlapping writes.
 It does not publish Bitly links, launch ads or change landing pages.
 
 Cloud activation requires merging this workflow onto `main` and configuring the
-`UTM_MANAGER_TOKEN` GitHub Actions secret with a credential verified by the UTM
-Manager owner. The [manager backend](https://github.com/Comfy-Org/UTM_link_manager)
-validates requests against its production `ACCESS_TOKEN`. It does not enforce
-token expiry or endpoint scopes; the token grants access beyond draft creation.
-The owner must approve its use and configure it directly in GitHub from the
-production secret store. Rotation requires updating both services. Do not copy
-a personal browser session into GitHub. No credential is embedded in code or
-output. Drafts use the creator name `Campaign Links automation`; no person is
-impersonated.
+`UTM_MANAGER_TOKEN` GitHub Actions secret with a scoped API key from the manager's
+API Tokens page. It needs `links:read` and `links:draft:create`; publishing,
+analytics, editing, and deleting are outside this workflow. The server assigns
+creator attribution from the token owner and creator label; set the label to
+`Campaign Links automation`. Tokens can expire or be revoked; update the GitHub
+secret when replacing one. Do not use the legacy shared token or copy a personal
+browser session into GitHub. No credential is embedded in code or output.
+
+The [UTM Manager skill](https://utm-link-manager.pages.dev/skills/utm-link-manager/SKILL.md)
+documents the API contract. Batches contain at most ten links, below its
+100-link limit. Authenticated execution is available only after merging onto
+`main`; pull-request runs receive no manager credential.
 
 The target URLs use intended `comfy.org` production routes. They remain drafts
 until the campaign pages and partner assets receive launch clearance. Campaign

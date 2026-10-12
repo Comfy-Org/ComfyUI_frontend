@@ -10,6 +10,17 @@ function linkResponse(links: { id: string; fullUrl: string }[]) {
   return Response.json({ links })
 }
 
+function validationResponse(links: { fullUrl: string }[]) {
+  return Response.json({
+    results: links.map((_, index) => ({
+      index,
+      errors: [],
+      warnings: [],
+      existingLinks: []
+    }))
+  })
+}
+
 describe('campaign link automation', () => {
   it('reports an actionable validation failure', () => {
     expect(() => buildCampaignLinks({ vertical: 'unknown' })).toThrowError(
@@ -120,11 +131,14 @@ describe('campaign link automation', () => {
       vertical: 'advertising',
       track: 'comfy-led'
     })
-    const request = vi.fn<typeof fetch>().mockResolvedValue(linkResponse([]))
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(linkResponse([]))
+      .mockResolvedValueOnce(validationResponse(links))
     const report = await syncCampaignLinks(links, { token: 'test', request })
     expect(report).toMatchObject({ created: 0, missing: [links[0]?.fullUrl] })
     expect(
-      request.mock.calls.filter(([, init]) => init?.method === 'POST')
+      request.mock.calls.filter(([url]) => String(url).endsWith('/links-batch'))
     ).toEqual([])
   })
 
@@ -133,6 +147,7 @@ describe('campaign link automation', () => {
     const request = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(linkResponse(links.slice(0, 1)))
+      .mockResolvedValueOnce(validationResponse(links.slice(1)))
       .mockResolvedValueOnce(linkResponse(links.slice(1)))
       .mockResolvedValueOnce(linkResponse(links))
       .mockResolvedValueOnce(linkResponse(links))
@@ -142,15 +157,12 @@ describe('campaign link automation', () => {
     expect(
       await syncCampaignLinks(links, { token: 'test', apply: true, request })
     ).toMatchObject({ skipped: 2, created: 0 })
-    const writes = request.mock.calls.filter(
-      ([, init]) => init?.method === 'POST'
+    const writes = request.mock.calls.filter(([url]) =>
+      String(url).endsWith('/links-batch')
     )
     expect(writes).toHaveLength(1)
     expect(writes[0]?.[0]).toBe(
       'https://utm-link-manager.pages.dev/api/links-batch'
-    )
-    expect(new Headers(writes[0]?.[1]?.headers).get('X-User-Name')).toBe(
-      'Campaign Links automation'
     )
     expect(JSON.parse(String(writes[0]?.[1]?.body))).toEqual({
       action: 'create',
@@ -191,6 +203,7 @@ describe('campaign link automation', () => {
     const request = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(linkResponse([]))
+      .mockResolvedValueOnce(validationResponse(buildCampaignLinks()))
       .mockResolvedValueOnce(linkResponse([]))
       .mockResolvedValueOnce(linkResponse([]))
     await expect(
@@ -201,7 +214,97 @@ describe('campaign link automation', () => {
       })
     ).rejects.toThrow('could not be verified')
     expect(
-      request.mock.calls.filter(([, init]) => init?.method === 'POST')
+      request.mock.calls.filter(([url]) => String(url).endsWith('/links-batch'))
     ).toHaveLength(1)
   })
+
+  it.for([
+    {
+      name: 'errors',
+      errors: [{ code: 'invalid_base_url', message: 'Invalid destination' }],
+      warnings: [],
+      existingLinks: []
+    },
+    {
+      name: 'warnings',
+      errors: [],
+      warnings: [{ code: 'campaign_reuse', message: 'Review campaign reuse' }],
+      existingLinks: []
+    },
+    {
+      name: 'new duplicates',
+      errors: [],
+      warnings: [],
+      existingLinks: [{ id: 'concurrent-link', status: 'pending' }]
+    }
+  ])(
+    'holds draft creation for review after preflight $name',
+    async ({ name: _name, ...result }) => {
+      const links = buildCampaignLinks({
+        vertical: 'vfx',
+        track: 'comfy-led',
+        version: 'v1'
+      })
+      const request = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(linkResponse([]))
+        .mockResolvedValueOnce(
+          Response.json({ results: [{ index: 0, ...result }] })
+        )
+      const report = await syncCampaignLinks(links, {
+        token: 'test',
+        apply: true,
+        request
+      })
+      expect(report).toMatchObject({
+        created: 0,
+        requiresReview: true,
+        missing: [links[0].fullUrl]
+      })
+      expect(report.validation[0]).toMatchObject({
+        fullUrl: links[0].fullUrl,
+        errors: result.errors,
+        warnings: result.warnings
+      })
+      expect(
+        request.mock.calls.filter(([url]) =>
+          String(url).endsWith('/links-batch')
+        )
+      ).toEqual([])
+      expect(request.mock.calls[1]?.[0]).toBe(
+        'https://utm-link-manager.pages.dev/api/links/validate'
+      )
+      expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toEqual({
+        links
+      })
+    }
+  )
+
+  it.for([
+    { results: [] },
+    { results: [{ index: 0, errors: [], warnings: [{}], existingLinks: [] }] }
+  ])(
+    'refuses to create drafts from malformed preflight reports %j',
+    async (response) => {
+      const request = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(linkResponse([]))
+        .mockResolvedValueOnce(Response.json(response))
+      await expect(
+        syncCampaignLinks(
+          buildCampaignLinks({
+            vertical: 'vfx',
+            track: 'comfy-led',
+            version: 'v1'
+          }),
+          { token: 'test', apply: true, request }
+        )
+      ).rejects.toThrow('invalid validation')
+      expect(
+        request.mock.calls.filter(([url]) =>
+          String(url).endsWith('/links-batch')
+        )
+      ).toEqual([])
+    }
+  )
 })
