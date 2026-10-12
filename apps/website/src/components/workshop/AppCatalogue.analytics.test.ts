@@ -21,23 +21,15 @@ const clicked = (slug: string, source: string, position: number) => ({
 })
 
 describe('AppCatalogue analytics', () => {
-  it('reports which app was opened from the shelf and from Browse all', async () => {
+  it('reports which app was opened and where it sat in the grid', async () => {
     const user = userEvent.setup()
     render(AppCatalogue, { props: { apps } })
 
     await user.click(
-      within(screen.getByTestId('app-shelf')).getAllByRole('link')[2]
+      within(screen.getByTestId('app-grid')).getAllByRole('link')[8]
     )
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith(
-      clicked('apps/app-2', 'app_row', 2)
-    )
-
-    await user.click(screen.getByRole('button', { name: /Browse all apps/ }))
-    await user.click(
-      within(screen.getByTestId('app-search-results')).getAllByRole('link')[8]
-    )
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith(
-      clicked('apps/app-8', 'results_grid', 8)
+      clicked('apps/app-8', 'app_row', 8)
     )
   })
 })

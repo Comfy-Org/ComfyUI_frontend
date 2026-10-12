@@ -173,13 +173,7 @@ whenever(
       />
     </template>
   </WorkflowCatalogue>
-  <AppCatalogue
-    v-else
-    v-model:browse-all="browseAll"
-    :apps="appCards"
-    :locale
-    @section="inSection = $event"
-  >
+  <AppCatalogue v-else :apps="appCards" :locale>
     <template #tabs>
       <CatalogueTabs
         v-if="!inSection"
