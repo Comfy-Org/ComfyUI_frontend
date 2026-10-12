@@ -6,7 +6,8 @@ import { useClipboard } from '@vueuse/core'
 
 import { i18n } from '@/i18n'
 
-const { writeText } = vi.hoisted(() => ({
+const { reportError, writeText } = vi.hoisted(() => ({
+  reportError: vi.fn(),
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
     Promise.resolve()
   )
@@ -14,6 +15,7 @@ const { writeText } = vi.hoisted(() => ({
 
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -71,6 +73,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()
+    reportError.mockClear()
     Object.defineProperty(window.navigator, 'clipboard', {
       configurable: true,
       value: { writeText }
@@ -194,6 +197,10 @@ describe('CrdtDevPanel clipboard controls', () => {
       await userEvent.click(docButton)
 
       expect(writeText).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'crdt_dev_panel_clipboard_write_failed'
+      })
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)

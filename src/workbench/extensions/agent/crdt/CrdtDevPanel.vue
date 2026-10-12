@@ -416,7 +416,11 @@ async function writeClipboard(text: string): Promise<boolean> {
   try {
     await copy(text)
     return true
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_clipboard_write_failed'
+    })
     return false
   }
 }
