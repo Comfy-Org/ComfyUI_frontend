@@ -150,7 +150,7 @@ function getExtensionFailureSignals(
 
   return failures.flatMap((failure) => {
     if (typeof failure !== 'object' || failure === null) return []
-    return [Reflect.get(failure, 'stack'), Reflect.get(failure, 'ext')].filter(
+    return [Reflect.get(failure, 'ext'), Reflect.get(failure, 'stack')].filter(
       (value): value is string => typeof value === 'string'
     )
   })

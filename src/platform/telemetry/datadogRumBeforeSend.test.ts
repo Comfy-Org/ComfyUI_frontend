@@ -318,6 +318,27 @@ describe('rumBeforeSend', () => {
     })
   })
 
+  it('extracts custom attribution from an extension path without a stack', () => {
+    const event = createErrorEvent(
+      'Error loading 1 extension',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: 'error_loading_extension',
+      failures: [
+        {
+          ext: '/extensions/comfyui-foo/main.js',
+          message: 'ReferenceError: broken'
+        }
+      ]
+    }
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.context).toMatchObject({
+      error: { origin: 'extension', extension: 'comfyui-foo' }
+    })
+  })
+
   const malformedContexts: Array<[string, Record<string, unknown>]> = [
     ['missing error type', { failures: [] }],
     [
