@@ -18,15 +18,6 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    value instanceof Promise ||
-    (typeof value === 'object' &&
-      value !== null &&
-      typeof (value as { then?: unknown }).then === 'function')
-  )
-}
-
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
   '/extensions/cloud/sentry.js'
@@ -298,7 +289,7 @@ export const useExtensionService = () => {
         { args }
       )
 
-    const pending: unknown[] = []
+    const pending: Promise<void>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       try {
         const fn = ext[method]
@@ -318,17 +309,16 @@ export const useExtensionService = () => {
           continue
         }
 
-        const result: unknown = fn.call(ext, ...args, app)
         pending.push(
-          isPromiseLike(result)
-            ? Promise.resolve(result).catch((error) => logError(ext, error))
-            : result
+          Promise.resolve(fn.call(ext, ...args, app))
+            .then(() => undefined)
+            .catch((error) => logError(ext, error))
         )
       } catch (error) {
         logError(ext, error)
       }
     }
-    return await Promise.all(pending)
+    await Promise.all(pending)
   }
 
   return {

@@ -172,41 +172,67 @@ describe('extension loading', () => {
   })
 
   describe('invokeExtensionsAsync', () => {
-    const hook = 'addCustomNodeDefs'
+    const hook = 'init'
+
+    function createCallableThenable(
+      error: Error
+    ): (() => void) & Promise<void> {
+      const callable = () => undefined
+      const rejected = Promise.reject<void>(error)
+      Reflect.defineProperty(callable, 'then', {
+        value: rejected.then.bind(rejected)
+      })
+      Reflect.defineProperty(callable, 'catch', {
+        value: rejected.catch.bind(rejected)
+      })
+      Reflect.defineProperty(callable, 'finally', {
+        value: rejected.finally.bind(rejected)
+      })
+      Reflect.defineProperty(callable, Symbol.toStringTag, { value: 'Promise' })
+      return callable as typeof callable & Promise<void>
+    }
 
     it('skips extensions without the hook and preserves registration order', async () => {
       const calls: string[] = []
       const store = useExtensionStore()
-      store.registerExtension({ name: 'a', [hook]: () => calls.push('a') })
+      store.registerExtension({
+        name: 'a',
+        [hook]: () => {
+          calls.push('a')
+        }
+      })
       store.registerExtension({ name: 'none' })
-      store.registerExtension({ name: 'b', [hook]: () => calls.push('b') })
+      store.registerExtension({
+        name: 'b',
+        [hook]: () => {
+          calls.push('b')
+        }
+      })
 
-      await useExtensionService().invokeExtensionsAsync(hook, {})
+      await useExtensionService().invokeExtensionsAsync(hook)
 
       expect(calls).toEqual(['a', 'b'])
     })
 
-    it('invokes sync hooks before awaiting async hooks and keeps their results', async () => {
+    it('invokes sync hooks before awaiting async hooks', async () => {
       const calls: string[] = []
       const store = useExtensionStore()
       store.registerExtension({
         name: 'sync',
         [hook]: () => {
           calls.push('sync')
-          return 0
         }
       })
       store.registerExtension({
         name: 'async',
         [hook]: async () => {
           calls.push('async')
-          return false
         }
       })
 
-      const pending = useExtensionService().invokeExtensionsAsync(hook, {})
+      const pending = useExtensionService().invokeExtensionsAsync(hook)
       expect(calls).toEqual(['sync', 'async'])
-      await expect(pending).resolves.toEqual([0, false])
+      await expect(pending).resolves.toBeUndefined()
     })
 
     it('isolates a throwing hook and continues with later extensions', async () => {
@@ -220,7 +246,24 @@ describe('extension loading', () => {
       })
       store.registerExtension({ name: 'after', [hook]: after })
 
-      await useExtensionService().invokeExtensionsAsync(hook, {})
+      await useExtensionService().invokeExtensionsAsync(hook)
+
+      expect(after).toHaveBeenCalledOnce()
+      expect(console.error).toHaveBeenCalledOnce()
+    })
+
+    it('isolates a rejection from a callable thenable', async () => {
+      const error = new Error('boom')
+      const callableThenable = createCallableThenable(error)
+      const after = vi.fn()
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'rejects',
+        [hook]: () => callableThenable
+      })
+      store.registerExtension({ name: 'after', [hook]: after })
+
+      await useExtensionService().invokeExtensionsAsync(hook)
 
       expect(after).toHaveBeenCalledOnce()
       expect(console.error).toHaveBeenCalledOnce()
