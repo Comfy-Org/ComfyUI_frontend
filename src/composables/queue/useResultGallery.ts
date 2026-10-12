@@ -33,7 +33,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       return
     }
 
-    // Use target's outputs if available, otherwise fall back to all previews
     const items = (
       targetOutputs?.length
         ? targetOutputs
