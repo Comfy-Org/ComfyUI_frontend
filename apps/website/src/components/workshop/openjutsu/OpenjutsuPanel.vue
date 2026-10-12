@@ -4,10 +4,8 @@ import { computed } from 'vue'
 
 import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
 import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
-import CinematicReferenceButton from '@/components/workshop/cinematic-studio/CinematicReferenceButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
@@ -57,19 +55,6 @@ const sizeValue = computed({
   }
 })
 
-function pickedFile(image: StudioImage | undefined) {
-  return image instanceof File ? image : undefined
-}
-
-const character = computed({
-  get: (): StudioImage | undefined =>
-    characterUrl ? { url: characterUrl, name: characterName ?? '' } : undefined,
-  set: (image) => {
-    const file = pickedFile(image)
-    if (file) emit('character', file)
-  }
-})
-
 const partSummary = computed(() =>
   clipSeconds === undefined || range === undefined || partSeconds === undefined
     ? undefined
@@ -105,6 +90,16 @@ const partSummary = computed(() =>
       </button>
     </EditorSourceTile>
 
+    <EditorSourceTile
+      kind="image"
+      :src="characterUrl"
+      :name="characterName"
+      :add-label="t('openjutsu.needs.character')"
+      :change-label="t('reshoot.clip.change')"
+      input-test-id="openjutsu-character-file"
+      @file="emit('character', $event)"
+    />
+
     <section class="flex flex-col gap-2">
       <label for="openjutsu-target" class="sr-only">
         {{ t('openjutsu.target.heading') }}
@@ -119,14 +114,6 @@ const partSummary = computed(() =>
           :placeholder="t('openjutsu.target.placeholder')"
           class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         />
-        <div class="flex items-center gap-2 pb-2.5 pl-2.5">
-          <CinematicReferenceButton
-            v-model="character"
-            kind="cast"
-            :removable="false"
-            :locale
-          />
-        </div>
       </div>
     </section>
 

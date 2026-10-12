@@ -36,8 +36,8 @@ describe('OpenjutsuPanel', () => {
     },
     {
       slot: 'character',
-      action: 'Add a character reference',
-      input: 'cinematic-reference-cast',
+      action: 'Add a character image',
+      input: 'openjutsu-character-file',
       file: new File(['face'], 'face.png', { type: 'image/png' })
     }
   ] as const)(
@@ -61,7 +61,7 @@ describe('OpenjutsuPanel', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Add a character reference: face.png'
+        name: 'Change: face.png'
       })
     ).toBeVisible()
     expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
