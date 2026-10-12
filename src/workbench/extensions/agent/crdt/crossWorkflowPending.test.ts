@@ -128,7 +128,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
   }
 }))
 
-vi.mock(import('./devPanelLog'), () => ({
+vi.mock(import('./crdtLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 

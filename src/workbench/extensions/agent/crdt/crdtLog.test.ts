@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { wireLog } from './crdtLog'
-import { clearDevEvents, devEvents } from './devPanelLog'
+import { wireLog, clearDevEvents, devEvents } from './crdtLog'
 
 describe('crdtLog', () => {
   beforeEach(() => {

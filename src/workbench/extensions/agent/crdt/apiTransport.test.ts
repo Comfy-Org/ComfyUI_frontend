@@ -8,7 +8,7 @@ import { api } from '@/scripts/api'
 import { createLoggedTransport } from './agentCrdtTransport'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import { clearDevEvents, devEvents, stringifyDevEvents } from './crdtLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
 const mutableApi = api as unknown as {
@@ -69,7 +69,7 @@ describe('createLoggedTransport.send', () => {
     })
   })
 
-  it('redacts outbound frame content in both console and stored events', () => {
+  it('sanitizes outbound frame content in both console and stored events', () => {
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'trace'
     const sensitiveFrame = JSON.stringify({
