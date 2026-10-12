@@ -176,11 +176,13 @@ export function setCrdtDebugEnabled(enabled: boolean): void {
   writeStorage(ENABLED_KEY, String(enabled))
 }
 
-window.addEventListener('storage', (event) => {
-  if (event.key !== null && event.key !== ENABLED_KEY) return
-  cachedEnabled = null
-  cachedStoredEnabled = undefined
-})
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== null && event.key !== ENABLED_KEY) return
+    cachedEnabled = null
+    cachedStoredEnabled = undefined
+  })
+}
 
 /**
  * Whether the user turned the instrument OFF, as opposed to never having said.
