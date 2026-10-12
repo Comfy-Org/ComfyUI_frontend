@@ -155,8 +155,8 @@ export class LayoutFollowerBridge extends EventTarget {
    * The host seq this follower is known to be at: the last applied update, or
    * — before any update has been applied for the current subscribe — the seq
    * the host acknowledged. An already-current follower receives an ack and no
-   * catch-up, so without the fallback the outbound op `baseVersion` would sit
-   * at 0 until the next live frame.
+   * catch-up, so without the fallback this would sit at 0 until the next
+   * live frame. A sequencing number only: op stamps never read it.
    */
   get lastSequence(): number {
     return this.lastSeq ?? this.ackSeq ?? 0

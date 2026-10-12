@@ -15,6 +15,7 @@ const bridgeState = vi.hoisted(() => {
       if (!transport.up) return
       this.subscribedWorkflowId = workflowId
       this.lastSequence = 0
+      this.stampFloor = 0
     })
 
     unsubscribe = vi.fn(() => {
@@ -27,8 +28,10 @@ const bridgeState = vi.hoisted(() => {
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
     lastSequence = 0
+    stampFloor = 0
     follower = {
       updatesApplied: 0,
+      lamportFloor: () => this.stampFloor,
       doc: {
         getMap: () => ({ toJSON: () => ({}) })
       }
@@ -256,9 +259,9 @@ describe('R-73 cross-workflow pending operations', () => {
   it('guards status from a late workflow A result while workflow B is active', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
-    bridge().lastSequence = 41
+    bridge().stampFloor = 41
     await enqueue([deleteNode('a-inflight')])
-    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
+    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 42 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
@@ -276,7 +279,7 @@ describe('R-73 cross-workflow pending operations', () => {
     await enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
-    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
+    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 1 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     dispatchOpsResult({

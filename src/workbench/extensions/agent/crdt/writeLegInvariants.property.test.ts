@@ -69,13 +69,7 @@ describe('CRDT human write-leg invariants (property)', () => {
       workflowId: () => WORKFLOW_ID,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 0,
-      observedVersion: () => 0,
-      reserveVersions: (
-        _workflowId: string,
-        _observed: number,
-        _count: number
-      ) => 1,
+      lamportFloor: () => 0,
       onBatchSettled: () => {}
     }
     const sender = createOpSender(deps)
@@ -121,7 +115,6 @@ describe('CRDT human write-leg invariants (property)', () => {
     fc.assert(
       fc.property(arbOperations, (operations) => {
         const sent: (readonly DocOp[])[] = []
-        let producerVersion = 41
         let resultListener = (_result: OpsResultView): void => {
           throw new Error('Expected an operation-result listener')
         }
@@ -141,17 +134,7 @@ describe('CRDT human write-leg invariants (property)', () => {
           workflowId: () => WORKFLOW_ID,
           tab: TAB,
           actor: () => ACTOR,
-          baseVersion: () => ++producerVersion,
-          observedVersion: () => 41,
-          reserveVersions: (
-            _workflowId: string,
-            observed: number,
-            count: number
-          ) => {
-            const firstVersion = Math.max(producerVersion, observed) + 1
-            producerVersion = firstVersion + count - 1
-            return firstVersion
-          },
+          lamportFloor: () => 41,
           onBatchSettled: () => {}
         }
         const sender = createOpSender(deps)
@@ -205,13 +188,7 @@ describe('CRDT human write-leg invariants (property)', () => {
             workflowId: () => WORKFLOW_ID,
             tab: TAB,
             actor: () => ACTOR,
-            baseVersion: () => 73,
-            observedVersion: () => 72,
-            reserveVersions: (
-              _workflowId: string,
-              observed: number,
-              _count: number
-            ) => observed + 1,
+            lamportFloor: () => 73,
             onBatchSettled: () => {}
           }
           const sender = createOpSender(deps)
