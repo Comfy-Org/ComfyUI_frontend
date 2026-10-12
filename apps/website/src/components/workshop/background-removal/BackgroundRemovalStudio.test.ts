@@ -77,7 +77,7 @@ describe('BackgroundRemovalStudio', () => {
         screen.getByRole('toolbar', { name: 'Background Removal tools' })
       ).queryByRole('link')
     ).toBeNull()
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith({
+    expect(renderCutout).toHaveBeenCalledWith({
       imageUrl: '/images/apps/background-removal/plant.jpg',
       mode: 'remove',
       background: { kind: 'color', color: '#d9ccf5' },
@@ -116,7 +116,7 @@ describe('BackgroundRemovalStudio', () => {
     await fireEvent.update(edge, '35')
     await fireEvent.update(edge, '60')
     await user.click(within(panel()).getByTestId('background-removal-run'))
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+    expect(renderCutout).toHaveBeenCalledWith(
       expect.objectContaining({ edgeSoftness: 60 })
     )
   })
@@ -143,7 +143,7 @@ describe('BackgroundRemovalStudio', () => {
     expect(tile('Custom colour')).toBeChecked()
     expect(tile('Transparent')).not.toBeChecked()
     await user.click(within(panel()).getByTestId('background-removal-run'))
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+    expect(renderCutout).toHaveBeenCalledWith(
       expect.objectContaining({
         background: { kind: 'color', color: '#336699' }
       })
@@ -184,7 +184,7 @@ describe('BackgroundRemovalStudio', () => {
     expect(run).toHaveTextContent('Replace background')
     await user.click(run)
 
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+    expect(renderCutout).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: 'replace',
         replace: {
@@ -214,7 +214,7 @@ describe('BackgroundRemovalStudio', () => {
       filter: 'grayscale(40%)'
     })
     await user.click(within(panel()).getByTestId('background-removal-run'))
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+    expect(renderCutout).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: 'adjust',
         adjust: expect.objectContaining({ target: 'foreground', grayscale: 40 })
