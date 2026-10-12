@@ -84,15 +84,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const data = await resp.json()
 
-    if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-      await useAssetsStore().inputAssets.invalidate()
-    }
-
     const path: string = data.subfolder
       ? `${data.subfolder}/${data.name}`
       : data.name
-    if (data.asset?.preview_id)
-      useNodeOutputStore().setUploadPreviewId(path, data.asset.preview_id)
+    if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+      await useAssetsStore().inputAssets.invalidate()
+      useNodeOutputStore().setUploadPreviewId(path, data.asset?.preview_id)
+    }
     return path
   }
 

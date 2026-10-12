@@ -73,7 +73,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * The stash owns the object URL retain taken when the previews were set.
    */
   const stashedPreviews = new Map<string, NodePreviewMap>()
-  /** Stored previews of files uploaded this session, keyed by upload path. */
   const uploadPreviewIds = new Map<string, string>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
@@ -257,8 +256,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  function setUploadPreviewId(path: string, previewId: string) {
-    uploadPreviewIds.set(path, previewId)
+  function setUploadPreviewId(path: string, previewId: string | undefined) {
+    if (previewId) uploadPreviewIds.set(path, previewId)
+    else uploadPreviewIds.delete(path)
   }
 
   function setNodeOutputImages(

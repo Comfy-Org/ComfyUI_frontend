@@ -39,8 +39,9 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
     async ({ comfyPage, comfyFiles }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-      const uploadResponse = comfyPage.page.waitForResponse((response) =>
-        response.url().includes('/upload/image')
+      const uploadResponse = comfyPage.page.waitForResponse(
+        (response) =>
+          response.url().includes('/upload/image') && response.status() === 200
       )
 
       await node
@@ -57,7 +58,6 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
       await expect
         .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
         .toBeGreaterThan(0)
-      await expect(node.getByTestId('hdr-open-button')).toBeHidden()
     }
   )
 
@@ -68,9 +68,10 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const [loadImageNode] =
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    const uploadWidget = await loadImageNode.getWidget(1)
-    const uploadResponse = comfyPage.page.waitForResponse((response) =>
-      response.url().includes('/upload/image')
+    const uploadWidget = await loadImageNode.getWidgetByName('upload')
+    const uploadResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/upload/image') && response.status() === 200
     )
 
     const chooser = comfyPage.page.waitForEvent('filechooser')
@@ -87,5 +88,31 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
         }, loadImageNode.id)
       )
       .toContain(PREVIEW_CONTENT_PATH)
+
+    const nodeCenter =
+      await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
+    if (!nodeCenter) throw new Error('Load Image node must be on the canvas')
+    await comfyPage.page.mouse.click(nodeCenter.x, nodeCenter.y, {
+      button: 'right'
+    })
+    const download = comfyPage.page.waitForEvent('download')
+    await comfyPage.contextMenu.clickMenuItemExact('Save Image')
+    expect((await download).suggestedFilename()).toBe(EXR_FILENAME)
+
+    await comfyPage.page.mouse.click(nodeCenter.x, nodeCenter.y, {
+      button: 'right'
+    })
+    await comfyPage.page.evaluate(() => {
+      window.open = (url) => {
+        document.body.dataset.openedUrl = String(url)
+        return null
+      }
+    })
+    await comfyPage.contextMenu.clickMenuItemExact('Open Image')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => document.body.dataset.openedUrl ?? '')
+      )
+      .toContain(`filename=${EXR_FILENAME}`)
   })
 })

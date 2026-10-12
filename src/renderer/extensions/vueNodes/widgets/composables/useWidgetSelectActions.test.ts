@@ -230,6 +230,40 @@ describe('useWidgetSelectActions', () => {
       expect(setUploadPreviewId).toHaveBeenCalledWith('render.exr', 'preview-1')
     })
 
+    it('remembers no preview for an upload outside the input folder', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              name: 'render.exr',
+              subfolder: '',
+              asset: { preview_id: 'preview-1' }
+            })
+        })
+      )
+      const setUploadPreviewId = vi.spyOn(
+        useNodeOutputStore(),
+        'setUploadPreviewId'
+      )
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'output',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'render.exr')])
+
+      expect(setUploadPreviewId).not.toHaveBeenCalled()
+    })
+
     it('shows alert toast on upload failure', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({

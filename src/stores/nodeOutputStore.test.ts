@@ -172,6 +172,10 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
     store.setNodeOutputs(node, 'other.exr')
     expect(viewUrl().searchParams.has('preview_id')).toBe(false)
+
+    store.setUploadPreviewId('render.exr', undefined)
+    store.setNodeOutputs(node, 'render.exr')
+    expect(viewUrl().searchParams.has('preview_id')).toBe(false)
   })
 
   it('owns preview arrays after setting them', () => {

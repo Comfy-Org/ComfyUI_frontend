@@ -61,16 +61,13 @@ const uploadFile = async (
 
   const data = await resp.json()
 
-  // Update AssetsStore input assets when files are uploaded to input folder
-  if (formFields.type === 'input' || !formFields.type) {
-    await useAssetsStore().inputAssets.invalidate()
-  }
-
   const path: string = data.subfolder
     ? `${data.subfolder}/${data.name}`
     : data.name
-  if (data.asset?.preview_id)
-    useNodeOutputStore().setUploadPreviewId(path, data.asset.preview_id)
+  if (formFields.type === 'input' || !formFields.type) {
+    await useAssetsStore().inputAssets.invalidate()
+    useNodeOutputStore().setUploadPreviewId(path, data.asset?.preview_id)
+  }
   return path
 }
 

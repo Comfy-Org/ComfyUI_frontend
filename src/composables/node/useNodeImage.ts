@@ -140,7 +140,9 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
-      img.src = getHdrPreviewUrl(url) ?? url
+      const previewUrl = getHdrPreviewUrl(url)
+      if (previewUrl) img.dataset.fileUrl = url
+      img.src = previewUrl ?? url
     })
 
   const onLoaded = (elements: HTMLImageElement[]) => {

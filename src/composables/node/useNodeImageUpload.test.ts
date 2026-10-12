@@ -192,6 +192,23 @@ describe('useNodeImageUpload', () => {
     )
   })
 
+  it('remembers no preview for an upload outside the input folder', async () => {
+    const setUploadPreviewId = vi.spyOn(
+      useNodeOutputStore(),
+      'setUploadPreviewId'
+    )
+    const { handleUpload } = useNodeImageUpload(node, {
+      folder: 'output',
+      onUploadComplete
+    })
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      successResponse('render.exr', undefined, { preview_id: 'preview-1' })
+    )
+
+    await handleUpload(createFile('render.exr', 'image/x-exr'))
+    expect(setUploadPreviewId).not.toHaveBeenCalled()
+  })
+
   it('calls onUploadError when all uploads fail', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(failResponse())
 

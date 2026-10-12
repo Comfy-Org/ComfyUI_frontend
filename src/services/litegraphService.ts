@@ -83,6 +83,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -730,8 +731,7 @@ export const useLitegraphService = () => {
             {
               content: 'Open Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 void openFileInNewTab(url.toString())
               }, 'preview')
             },
@@ -739,8 +739,7 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
               }, 'preview')
