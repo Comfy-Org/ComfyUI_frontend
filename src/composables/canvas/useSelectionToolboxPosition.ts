@@ -5,9 +5,11 @@ import type { Ref } from 'vue'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -60,6 +62,7 @@ export function useSelectionToolboxPosition(
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+  const linkSelectionStore = useLinkSelectionStore()
 
   useEventListener(
     lgCanvas.canvas,
@@ -89,10 +92,30 @@ export function useSelectionToolboxPosition(
   /**
    * Update position based on selection
    */
-  const updateSelectionBounds = () => {
-    const selectableItems = getSelectableItems()
+  const selectedLinkBounds = (): ReadOnlyRect[] => {
+    const { graph } = lgCanvas
+    if (!graph) return []
+    return getSelectedLinkIds(graph).flatMap((linkId) => {
+      const bounds = layoutStore.getLinkLayout(linkId)?.bounds
+      return bounds ? [[bounds.x, bounds.y, bounds.width, bounds.height]] : []
+    })
+  }
 
-    if (!selectableItems.size) {
+  const selectionBounds = (): ReadOnlyRect[] => {
+    const selectableItems = getSelectableItems()
+    if (!selectableItems.size) return selectedLinkBounds()
+    return [...selectableItems].flatMap((item) =>
+      item instanceof LGraphNode || item instanceof LGraphGroup
+        ? [getSelectionBounds(item)]
+        : []
+    )
+  }
+
+  const updateSelectionBounds = () => {
+    const hasSelection =
+      getSelectableItems().size > 0 || selectedLinkBounds().length > 0
+
+    if (!hasSelection) {
       visible.value = false
       return
     }
@@ -105,16 +128,7 @@ export function useSelectionToolboxPosition(
 
     visible.value = true
 
-    // Get bounds for all selected items
-    const allBounds: ReadOnlyRect[] = []
-    for (const item of selectableItems) {
-      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        allBounds.push(getSelectionBounds(item))
-      }
-    }
-
-    // Compute union bounds
-    const unionBounds = computeUnionBounds(allBounds)
+    const unionBounds = computeUnionBounds(selectionBounds())
     if (!unionBounds) return
 
     worldPosition.value = {
@@ -167,7 +181,11 @@ export function useSelectionToolboxPosition(
   }
 
   watch(
-    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    [
+      () => canvasStore.selectedItems,
+      () => layoutStore.layoutVersion,
+      () => linkSelectionStore.selection
+    ],
     ([selectedItems], [previousSelectedItems]) => {
       if (selectedItems !== previousSelectedItems)
         handleSelectionMembershipChange()
