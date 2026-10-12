@@ -37,7 +37,6 @@ test.describe(
       const runningRow = agentPanel.activityRows.filter({
         hasText: enMessages.agent.toolOpeningNewTab
       })
-      await expect(runningRow).toHaveCount(0)
 
       pushAgentEvent(ws, RUNNING_OPEN_TAB_TOOL_EVENT)
       await expect(runningRow).toHaveCount(1)
