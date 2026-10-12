@@ -12,7 +12,7 @@ export const zResultItem = z.object({
   type: resultItemType.optional(),
   display_name: z.string().optional(),
   id: z.string().optional(),
-  version: z.string().optional().catch(undefined)
+  version: z.coerce.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
