@@ -79,7 +79,8 @@ const useNodePreview = <T extends MediaElement>(
     if (result === null) {
       // Reported once per URL, after retries are spent — a report per attempt
       // would inflate the count by exactly `MAX_RETRIES + 1`.
-      void describeImageLoadFailure(url).then((diagnostics) => {
+      const failedUrl = getHdrPreviewUrl(url) ?? url
+      void describeImageLoadFailure(failedUrl).then((diagnostics) => {
         useTelemetry()?.trackImageLoadFailed({
           ...diagnostics,
           source: telemetrySource,

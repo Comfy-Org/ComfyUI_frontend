@@ -336,11 +336,11 @@ const gridCols = computed(() => {
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
-    // Only reset state if URLs actually changed (not just array reference)
+    const shownUrl = (url: string) => getHdrPreviewUrl(url) ?? url
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => url !== oldUrls[i])
+      newUrls.some((url, i) => shownUrl(url) !== shownUrl(oldUrls[i]))
 
     if (!urlsChanged) return
 

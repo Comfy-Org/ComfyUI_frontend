@@ -631,6 +631,24 @@ describe('ImagePreview', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('keeps a shown HDR preview loaded when only its file URL changes', async () => {
+      const { container, rerender } = renderImagePreview({
+        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=1']
+      })
+      await fireEvent.load(screen.getByRole('img'))
+      await nextTick()
+
+      await rerender({
+        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=2']
+      })
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
+
+      expect(
+        container.querySelector('[aria-busy="true"]')
+      ).not.toBeInTheDocument()
+    })
+
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime

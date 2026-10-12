@@ -56,6 +56,15 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
         .toBeGreaterThan(0)
 
       await image.dispatchEvent('load')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () =>
+              window.app?.graph.nodes.find((n) => n.type === 'LoadImage')
+                ?.imgs?.[0]?.dataset.testid
+          )
+        )
+        .toBe('main-image')
       await comfyPage.contextMenu.openForVueNode(node)
       const download = comfyPage.page.waitForEvent('download')
       await comfyPage.contextMenu.clickMenuItemExact('Save Image')
