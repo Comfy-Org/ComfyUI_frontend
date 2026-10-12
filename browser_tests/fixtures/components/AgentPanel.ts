@@ -6,6 +6,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -290,6 +291,7 @@ export class AgentPanel {
       .getByRole('menuitem', { name: enMessages.agent.nodes })
       .click()
     await expect(this.nodeSelectionBanner).toBeVisible()
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async exitNodeSelectionMode(): Promise<void> {
