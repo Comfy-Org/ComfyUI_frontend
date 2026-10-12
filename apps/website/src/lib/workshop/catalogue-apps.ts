@@ -15,7 +15,12 @@ const copy = {
     'zh-CN': '像在片场一样执导镜头'
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  spriteSheetName: { en: 'Sprite Sheet Generator', 'zh-CN': '精灵图生成器' },
+  spriteSheetTask: {
+    en: 'Animate a character for a game',
+    'zh-CN': '为游戏制作角色动画'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {

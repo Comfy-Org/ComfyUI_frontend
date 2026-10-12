@@ -4526,6 +4526,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "spriteSheet": "精灵图生成器",
+      "spriteSheetSummary": "把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。",
+      "spriteSheetMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
