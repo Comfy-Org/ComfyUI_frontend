@@ -1,0 +1,71 @@
+{
+  "id": "extension-manager",
+  "capability": "Extension manager",
+  "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
+  "modules": [
+    {
+      "path": "src/workbench/extensions/manager/types/compatibility.types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/comfyManagerTypes.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
+      "role": "presentation"
+    },
+    { "path": "src/workbench/extensions/manager/utils/**", "role": "domain" },
+    {
+      "path": "src/workbench/extensions/manager/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/manager/stores/**",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/manager/services/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/manager/components/**",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Compatibility and version policy determine pack conflicts and ordering",
+      "checks": [
+        "src/workbench/extensions/manager/utils/systemCompatibility.test.ts",
+        "src/workbench/extensions/manager/utils/versionUtil.test.ts",
+        "src/workbench/extensions/manager/utils/nodePackSort.test.ts"
+      ]
+    },
+    {
+      "name": "Queued pack operations and dialog lifecycle preserve manager behavior",
+      "checks": [
+        "src/workbench/extensions/manager/composables/useManagerQueue.test.ts",
+        "src/workbench/extensions/manager/composables/useManagerDialog.test.ts",
+        "src/workbench/extensions/manager/stores/comfyManagerStore.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing menus and missing-node panels may continue importing manager internals during inventory.",
+    "Application-to-dialog and utility-to-store coupling remains visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}
