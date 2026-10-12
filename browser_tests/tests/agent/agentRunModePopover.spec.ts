@@ -17,6 +17,102 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
+  // Source: qspec-4 story 94, https://app.notion.com/p/QA-Test-Plan-cloud-1-54-patch-prod-e7901922-to-c378cf82-Agent-backports-3e56d73d3650816f92afe110226eda06
+  test('Tab reaches each composer action in its visual order', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    // A plain string, not a RegExp: the locale text goes into the pattern
+    // unescaped, so a `(`, `?` or `+` in a translation would change or break
+    // the match. Playwright's non-exact `name` already does a
+    // case-insensitive substring match, which is what this needs.
+    const composer = panel.getByRole('textbox', {
+      name: enMessages.agent.placeholder.split(',')[0]
+    })
+    const addToPrompt = panel.getByRole('button', {
+      name: enMessages.agent.addToPrompt
+    })
+    const runMode = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const send = panel.getByRole('button', {
+      name: enMessages.agent.send,
+      exact: true
+    })
+
+    await expect(composer).toBeVisible()
+    await expect(addToPrompt).toBeVisible()
+    await expect(runMode).toBeVisible()
+    await expect(send).toBeVisible()
+    await composer.fill('Make the image warmer')
+    await composer.focus()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(addToPrompt).toBeFocused()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(runMode).toBeFocused()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(send).toBeFocused()
+  })
+
+  // Source: qspec-4 story 95, reports/qa/2026-09-02-a11y.md (A11Y-V1-01), https://github.com/Comfy-Org/ComfyUI_frontend/pull/16596
+  test('discloses the expanded state of composer menus', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    // Deliberately NOT getByRole: while the modal menu is open the composer
+    // subtree leaves the accessibility tree, and Playwright's role engine
+    // excludes anything hidden from it — so a role locator resolves 0 elements
+    // exactly when this case needs to read `aria-expanded="true"`. getByLabel
+    // matches the `aria-label` attribute directly and keeps resolving, so it
+    // carries the trigger through the whole closed → open → closed transition.
+    // Measured, both arms, rather than assumed: an ancestor `aria-hidden` (and
+    // `display: none`) takes getByRole to 0 while getByLabel stays at 1 and
+    // still reads the attribute.
+    const addToPrompt = panel.getByLabel(enMessages.agent.addToPrompt, {
+      exact: true
+    })
+    // getByRole here and getByLabel above is not an inconsistency: each
+    // locator matches what its own component exposes, and swapping either one
+    // resolves 0 elements. `RunModePopover.vue` passes `:modal="false"` to
+    // `DropdownMenuRoot`, so opening it does not aria-hide the composer and
+    // the role locator keeps resolving — while its trigger's accessible name
+    // comes from a `<span>` text node with no `aria-label`, so getByLabel
+    // cannot find it at all. `ComposerAddMenu.vue` is the mirror image:
+    // modal by default, and its trigger carries
+    // `:aria-label="t('agent.addToPrompt')"`. If the run-mode popover ever
+    // becomes modal, this locator is what breaks first.
+    const runMode = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const attachFiles = comfyPage.page.getByRole('menuitem', {
+      name: enMessages.agent.attachFiles
+    })
+
+    await expect(addToPrompt).toBeVisible()
+    await expect(runMode).toBeVisible()
+
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
+    await addToPrompt.click()
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'true')
+    await expect(attachFiles).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(addToPrompt).toHaveAttribute('aria-expanded', 'false')
+    await expect(runMode).toHaveAttribute('aria-expanded', 'false')
+    await runMode.click()
+    await expect(runMode).toHaveAttribute('aria-expanded', 'true')
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(runMode).toHaveAttribute('aria-expanded', 'false')
+  })
+
   test('Escape dismisses the run permissions popover', async ({
     agentPanel,
     comfyPage
@@ -187,7 +283,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
       await expect(
-        page.getByText(enMessages.agent.runModeSaveFailed)
+        comfyPage.toast.withText(enMessages.agent.runModeSaveFailed)
       ).toBeVisible()
       await expect(autoOption).toBeFocused()
       await expect(autoOption).not.toBeChecked()
@@ -204,6 +300,104 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
         })
       ).toBeVisible()
       expect(savedModes).toEqual(['auto', 'auto'])
+    })
+  })
+
+  // PM-1660/PM-1661, reproduced from the reporter's recording: the POST that
+  // carries the message waits on the cloud-workflow refresh first. The server
+  // pins a turn's run mode when that POST arrives, so a mode written inside
+  // that window re-authorized a turn sent under the previous mode.
+  test('a mode picked while a message is still in flight is saved after it', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const reachedServer: string[] = []
+    let holdTheSend = false
+    let releaseTheSend: () => void = () => {}
+    const sendHeld = new Promise<void>((resolve) => {
+      releaseTheSend = resolve
+    })
+
+    // Both halves of the send are held. Holding the workflow refresh alone
+    // would not be enough: prepareWorkflow() abandons it after
+    // PREPARE_TIMEOUT_MS and issues the POST anyway, which then waits here.
+    await page.route('**/api/workflows?*', async (route) => {
+      if (holdTheSend) await sendHeld
+      await route.fallback()
+    })
+    await page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      // Recorded where the POST is FORWARDED, not where it is intercepted.
+      // Recording on interception would let a PUT that overtook a still-held
+      // POST still read back as ['message', 'run-mode'] and pass.
+      if (holdTheSend) await sendHeld
+      await route.fallback()
+      reachedServer.push('message')
+    })
+    await page.route('**/api/agent/run-mode', async (route) => {
+      const request = route.request()
+      // ask_approval, which is also agentRunModeStore's own default, so the
+      // starting mode does not depend on this route winning a race.
+      // DockedAgentPanel fires load() on setup, and asserting a mode only this
+      // mock can produce was right about one attempt in four: it failed the
+      // initial run and two retries in CI and was reported 'flaky' only
+      // because a fourth attempt passed.
+      if (request.method() !== 'PUT')
+        return route.fulfill(
+          jsonRoute({
+            mode: 'ask_approval',
+            credit_limit: null
+          } satisfies AgentRunModePreference)
+        )
+      reachedServer.push('run-mode')
+      return route.fulfill(
+        jsonRoute(zAgentRunMode.parse(request.postDataJSON()))
+      )
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const askTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const autoTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAuto,
+      exact: true
+    })
+    await expect(askTrigger).toBeVisible()
+
+    holdTheSend = true
+    await agentPanel.sendMessage('run the wf')
+
+    // Picked in the ESCALATING direction: the turn was sent under
+    // ask_approval, so a PUT that overtook it would let an already-sent turn
+    // run without a consent card.
+    await test.step('switching mode now does not overtake the message', async () => {
+      await askTrigger.click()
+      await page
+        .getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAuto)
+        })
+        .click()
+
+      // A cheap sanity guard, not the regression detector: reachedServer is
+      // pushed from a Node-side route handler, which the DOM assertion above
+      // it does not order against. The detector is the final assertion.
+      // Nothing at all should have been forwarded while the send is held.
+      await expect(
+        page.getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAuto)
+        })
+      ).toHaveAttribute('aria-busy', 'true')
+      expect(reachedServer).toEqual([])
+
+      releaseTheSend()
+      await expect(autoTrigger).toBeVisible()
+      // The load-bearing assertion: the write landed, and it landed second.
+      await expect.poll(() => reachedServer).toEqual(['message', 'run-mode'])
     })
   })
 })

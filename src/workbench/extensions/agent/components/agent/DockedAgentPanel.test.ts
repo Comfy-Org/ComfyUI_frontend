@@ -6,8 +6,8 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -150,6 +150,22 @@ describe('DockedAgentPanel', () => {
         errorType: 'agent_run_mode_load_failure'
       })
     )
+  })
+
+  it('publishes its width for portaled overlays only while docked', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
+
+    store.isOpen = false
+    await nextTick()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
   })
 
   it('does not mount the Agent root until the panel opens', async () => {

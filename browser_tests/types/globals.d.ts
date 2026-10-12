@@ -1,3 +1,5 @@
+import '@/types'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -65,6 +67,11 @@ declare global {
       event: string
       properties: Record<string, unknown>
     }) => Promise<void>
+    /**
+     * Pushes a host auth state change through the mocked Desktop bridge.
+     * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
+     */
+    __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

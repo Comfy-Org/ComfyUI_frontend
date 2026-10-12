@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -160,6 +160,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
@@ -217,9 +218,6 @@ const statusReadPaths = [
     idleReader: () => mockGetBillingStatus
   }
 ]
-
-// Mock fetch
-global.fetch = vi.fn()
 
 beforeEach(() => {
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
@@ -2638,7 +2636,7 @@ describe('useSubscription', () => {
       await requireActiveSubscription()
 
       expect(
-        useDialogService().showSubscriptionRequiredDialog
+        useBillingDialogs().showSubscriptionRequiredDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -2654,7 +2652,7 @@ describe('useSubscription', () => {
       await requireActiveSubscription()
 
       expect(
-        useDialogService().showSubscriptionRequiredDialog
+        useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalled()
     })
   })

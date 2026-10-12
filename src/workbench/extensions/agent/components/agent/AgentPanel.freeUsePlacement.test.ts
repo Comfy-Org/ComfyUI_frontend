@@ -1,35 +1,32 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-// The inline prompt editor builds a ResizeObserver at import time; jsdom omits it.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import type {
+  AgentFreeUseNoticeMetadata,
+  AgentFreeUsePlacement
+} from '@/platform/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
-import { FREE_USE_PLACEMENTS } from '../../experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 
-const PLACEMENTS = FREE_USE_PLACEMENTS.filter(
-  (variant) => variant !== 'control'
-)
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-function mount(freeUsePlacement: FreeUseVariant) {
+function mount(
+  freeUsePlacement: FreeUseVariant,
+  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void
+) {
   return render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
-      freeUsePlacement
+      freeUsePlacement,
+      onFreeUseNotice
     },
     global: {
       plugins: [i18n],
@@ -46,10 +43,6 @@ function notice() {
 }
 
 describe('AgentPanel free-use placement', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('shows no notice in the control arm', () => {
     mount('control')
 
@@ -60,41 +53,48 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)('shows exactly one notice for %s', (variant) => {
-    mount(variant)
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
+    'renders and reports exactly one notice at %s',
+    (variant) => {
+      const onFreeUseNotice = vi.fn()
+      mount(variant, onFreeUseNotice)
 
-    const notices = screen.getAllByRole('note', {
-      name: 'Free use notice'
-    })
-    expect(notices).toHaveLength(1)
-    expect(notices[0]).toHaveAttribute('data-placement', variant)
-  })
-
-  it.for([
-    ['top-banner', true, false, false],
-    ['near-composer', false, false, false],
-    ['above-input', false, true, false],
-    ['inside-input', false, true, true]
-  ] as const)(
-    'renders %s in its region',
-    ([variant, beforePrompts, inComposer, inInputBox]) => {
-      mount(variant)
-
-      const prompts = screen.getByTestId('suggested-prompts')
-      expect(
-        Boolean(
-          notice().compareDocumentPosition(prompts) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-        )
-      ).toBe(beforePrompts)
-      expect(screen.getByTestId('agent-composer').contains(notice())).toBe(
-        inComposer
-      )
-      expect(screen.getByTestId('composer-input-box').contains(notice())).toBe(
-        inInputBox
-      )
+      expect(notice()).toHaveAttribute('data-placement', variant)
+      expect(onFreeUseNotice.mock.calls).toEqual([
+        [{ action: 'shown', placement: variant }]
+      ])
     }
   )
+
+  const REGIONS = [
+    'agent-panel-footer',
+    'agent-composer',
+    'composer-input-box'
+  ] as const
+  type Region = (typeof REGIONS)[number]
+
+  function noticeIn(region: Region) {
+    return within(screen.getByTestId(region)).queryByRole('note', {
+      name: 'Free use notice'
+    })
+  }
+
+  const CASES: readonly [AgentFreeUsePlacement, readonly Region[]][] = [
+    ['top-banner', []],
+    ['near-composer', ['agent-panel-footer']],
+    ['above-input', ['agent-panel-footer', 'agent-composer']],
+    [
+      'inside-input',
+      ['agent-panel-footer', 'agent-composer', 'composer-input-box']
+    ]
+  ]
+
+  it.for(CASES)('renders %s in its region', ([variant, containing]) => {
+    mount(variant)
+
+    expect(notice()).toBeInTheDocument()
+    expect(REGIONS.filter((region) => noticeIn(region))).toEqual(containing)
+  })
 
   it('hides the top banner while chat history is open', async () => {
     mount('top-banner')
@@ -110,7 +110,7 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)(
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
     'leaves the starter prompts and placeholder untouched at %s',
     (variant) => {
       const control = mount('control')
@@ -127,18 +127,15 @@ describe('AgentPanel free-use placement', () => {
     }
   )
 
-  it('reports the impression and the dismissal of the notice', async () => {
-    const { emitted } = mount('above-input')
-
-    expect(emitted('freeUseNotice')).toEqual([
-      [{ action: 'shown', placement: 'above-input' }]
-    ])
+  it('reports the dismissal of the notice', async () => {
+    const onFreeUseNotice = vi.fn()
+    mount('above-input', onFreeUseNotice)
 
     await userEvent.click(
       within(notice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(emitted('freeUseNotice')).toEqual([
+    expect(onFreeUseNotice.mock.calls).toEqual([
       [{ action: 'shown', placement: 'above-input' }],
       [{ action: 'dismissed', placement: 'above-input' }]
     ])

@@ -22,14 +22,11 @@ const models = selectRouterModels({}).map(({ slug }) => {
   assert.exists(model)
   return { model, slug, ...initialWorkshopPageState(model) }
 })
-const network = vi.fn<typeof fetch>()
 const credential = vi.fn(async () => 'unused-validation-credential')
 const upload = vi.fn<WorkshopUrlEncoder>()
 
 beforeEach(() => {
-  network.mockRejectedValue(new Error('Validation must not access the network'))
   upload.mockRejectedValue(new Error('Validation must not upload inputs'))
-  vi.stubGlobal('fetch', network)
 })
 
 describe('published model validation grid', () => {
@@ -37,7 +34,7 @@ describe('published model validation grid', () => {
     describe(slug, () => {
       it('accepts its initial RUN inputs', () => {
         expect(() => resolveModelRouterRender(model)).not.toThrow()
-        expect(network).not.toHaveBeenCalled()
+        expect(fetch).not.toHaveBeenCalled()
       })
 
       it.for(
@@ -52,7 +49,7 @@ describe('published model validation grid', () => {
           resolveModelRouterRender(model, {}, { form: { schema, values } })
             .values
         ).toEqual(values)
-        expect(network).not.toHaveBeenCalled()
+        expect(fetch).not.toHaveBeenCalled()
       })
 
       it.for(invalidRouterModelInputs(schema))(
@@ -73,7 +70,7 @@ describe('published model validation grid', () => {
             reason: 'validation',
             fieldErrors: { [field]: error }
           })
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
           expect(upload).not.toHaveBeenCalled()
           expect(credential).not.toHaveBeenCalled()
         }
@@ -110,7 +107,7 @@ describe('published model validation grid', () => {
             )
           ).resolves.toBeUndefined()
           expect(readWorkshopVideoMetadata).toHaveBeenCalled()
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
 
@@ -132,7 +129,7 @@ describe('published model validation grid', () => {
             reason: 'validation',
             fieldErrors: { [field]: 'videoTooLong' }
           })
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
 
@@ -172,7 +169,7 @@ describe('published model validation grid', () => {
             )
           ).resolves.toBeUndefined()
           expect(readWorkshopVideoMetadata).toHaveBeenCalled()
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
 
@@ -194,7 +191,7 @@ describe('published model validation grid', () => {
             reason: 'validation',
             fieldErrors: { [field]: 'videoWidthOutOfRange' }
           })
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
 
@@ -240,7 +237,7 @@ describe('published model validation grid', () => {
             )
           ).resolves.toBeUndefined()
           expect(readWorkshopImageMetadata).toHaveBeenCalled()
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
 
@@ -265,7 +262,7 @@ describe('published model validation grid', () => {
             reason: 'validation',
             fieldErrors: { [field]: 'imageAspectRatioOutOfRange' }
           })
-          expect(network).not.toHaveBeenCalled()
+          expect(fetch).not.toHaveBeenCalled()
         }
       )
     })

@@ -159,6 +159,25 @@ test.describe(
       })
 
       await test.step('route the promoted seed edit without changing text', async () => {
+        const outboundBeforeRemoteEdit = outboundFrames.length
+        await page.evaluate((hostId) => {
+          const app = window.app
+          if (!app) throw new Error('Comfy app was not initialized')
+          const host = app.graph.nodes.find(
+            ({ id }) => String(id) === String(hostId)
+          )
+          const seed = host?.widgets?.find(({ name }) => name === 'seed')
+          if (!seed)
+            throw new Error('Promoted seed widget was not materialized')
+          const callback = seed.callback
+          seed.callback = function (...args) {
+            localStorage.setItem(
+              'agent-subgraph-follower-seed-callback',
+              String(args[0])
+            )
+            return callback?.apply(this, args)
+          }
+        }, AGENT_SUBGRAPH_HOST_ID)
         socket.send(JSON.stringify(frames.followUp))
 
         await expect
@@ -186,6 +205,22 @@ test.describe(
         await expect(
           node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
         ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              localStorage.getItem('agent-subgraph-follower-seed-callback')
+            )
+          )
+          .toBe(String(AGENT_SUBGRAPH_EDITED_SEED))
+        const quietWindowStartedAt = Date.now()
+        await expect(async () => {
+          expect(
+            outboundFrames
+              .slice(outboundBeforeRemoteEdit)
+              .some((frame) => frame.includes('doc_ops'))
+          ).toBe(false)
+          expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(500)
+        }).toPass({ timeout: 1_000, intervals: [50, 100, 150, 200] })
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })
