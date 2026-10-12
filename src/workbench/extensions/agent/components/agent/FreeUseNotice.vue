@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -10,8 +9,8 @@ import type {
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
-
-import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 const PLACEMENT_CLASSES = {
   'top-banner': 'px-4 py-3',
@@ -23,11 +22,10 @@ const PLACEMENT_CLASSES = {
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
-const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
-const dismissed = useLocalStorage(
-  () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
-  false,
-  { writeDefaults: false }
+const { isAuthInitialized } = useCurrentUser()
+const dismissed = useAccountStorage(
+  StorageKeys.agentFreeUseNoticeDismissed,
+  false
 )
 
 const visible = computed(() => isAuthInitialized.value && !dismissed.value)

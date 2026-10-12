@@ -68,7 +68,6 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  adoptSharedOnboardingFlag,
   hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
@@ -528,16 +527,6 @@ const onboardingKey = computed(() =>
     resolvedUserInfo.value?.id,
     workspaceStore.activeWorkspaceId
   )
-)
-watch(
-  onboardingKey,
-  (key) => {
-    // Only carry the pre-consent, device-wide flag into a scope that had
-    // already accepted consent when it loaded. A newly consenting scope has
-    // not seen this scoped tour yet and should receive it once.
-    if (key && consentAccepted.value) adoptSharedOnboardingFlag(key)
-  },
-  { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const coachDeferredBy = computed(() =>

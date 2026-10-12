@@ -1,12 +1,9 @@
-import { useLocalStorage, useTimestamp } from '@vueuse/core'
+import { useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 export interface ChatSession {
   id: string
@@ -55,19 +52,12 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const sessions = ref<ChatSession[]>([])
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
-  const workspaceId = getWorkspaceId()
-
-  clearLegacyAgentStorage()
-
-  // The server owns thread titles but has no rename or delete endpoint yet
-  // (BE-3130), so renames live in a local overlay applied over the server
-  // titles and deletes in a local tombstone set filtered out of every refresh.
-  const customTitles = useLocalStorage<Partial<Record<string, string>>>(
-    StorageKeys.agentChatTitles(workspaceId),
+  const customTitles = useAccountStorage<Partial<Record<string, string>>>(
+    StorageKeys.agentChatTitles,
     {}
   )
-  const deletedIds = useLocalStorage<string[]>(
-    StorageKeys.agentDeletedThreads(workspaceId),
+  const deletedIds = useAccountStorage<string[]>(
+    StorageKeys.agentDeletedThreads,
     []
   )
 

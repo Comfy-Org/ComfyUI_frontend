@@ -14,11 +14,11 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  useAccountScope,
+  useAccountStorage
+} from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -380,8 +380,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  clearLegacyAgentStorage()
+  const scope = useAccountScope()
+  const owner = scope.value
+  const storedThread = useAccountStorage<string | null>(
+    StorageKeys.agentThread,
+    null,
+    {},
+    computed(() => (scope.value === owner ? owner : null))
+  )
 
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
@@ -531,12 +537,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function initializeWorkflowContext(hasThread: boolean): void {
     workflow?.initialize?.(hasThread)
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && storedThread.value === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -549,9 +550,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     connection = 'initial'
     const surviving = conversationStore.threadId
     const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
+      conversationStore.messages.length === 0 ? storedThread.value : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
@@ -818,8 +817,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (storedThread.value === threadId) storedThread.value = null
       return false
     }
     reportError(error, {
@@ -1032,7 +1030,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    storedThread.value = ack.thread_id
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -1577,7 +1575,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    storedThread.value = null
     pendingThreadSource.value = source ?? null
   }
 
@@ -1605,7 +1603,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      storedThread.value = threadId
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1934,7 +1932,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(threadStorageKey)
+    storedThread.value = null
   }
 
   const isSending = computed(() => sending.value)

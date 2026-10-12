@@ -5,6 +5,9 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 export interface CoachStep {
   target: string
@@ -15,32 +18,12 @@ export interface CoachStep {
   tooltip?: string
 }
 
-const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
-
 export function scopedOnboardingKey(
   userId: string | undefined,
   workspaceId: string | null | undefined
 ): string | null {
-  if (!userId || !workspaceId) return null
-  return `${SHARED_ONBOARDING_KEY}.${userId}.${workspaceId}`
-}
-
-/**
- * The coach marks recorded one flag for the whole device, while consent is
- * recorded per account and workspace. A user who had seen the marks anywhere
- * therefore joined a new workspace, accepted consent again, and got no
- * guidance. Carry the old flag onto the scope in front of the user, then drop
- * the shared one so later scopes start clean.
- */
-export function adoptSharedOnboardingFlag(scopedKey: string): void {
-  try {
-    if (localStorage.getItem(SHARED_ONBOARDING_KEY) !== 'true') return
-    if (localStorage.getItem(scopedKey) === null)
-      localStorage.setItem(scopedKey, 'true')
-    localStorage.removeItem(SHARED_ONBOARDING_KEY)
-  } catch {
-    // Storage is unavailable, so the coach marks run again.
-  }
+  const scope = accountScope(userId, workspaceId)
+  return scope === null ? null : StorageKeys.agentOnboarded(scope)
 }
 
 const reportedMissingTargets = new Set<string>()
@@ -63,7 +46,7 @@ export function reportMissingCoachTarget(target: string, step: number): void {
 
 export function hasSeenCoach(scopedKey: string): boolean {
   try {
-    return localStorage.getItem(scopedKey) === 'true'
+    return agentStorage.getItem(scopedKey) === 'true'
   } catch {
     return false
   }
@@ -76,9 +59,9 @@ export function hasSeenCoach(scopedKey: string): boolean {
  */
 export function resetCoach(scopedKey: string): void {
   try {
-    localStorage.removeItem(scopedKey)
+    agentStorage.removeItem(scopedKey)
   } catch {
-    // Storage is unavailable, so the coach marks already run every time.
+    return
   }
 }
 
@@ -104,9 +87,9 @@ export function trackCoachDeferral(
 
 export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
-  storageKey = SHARED_ONBOARDING_KEY
+  storageKey: string
 ) {
-  const seen = useStorage(storageKey, false)
+  const seen = useStorage(storageKey, false, agentStorage)
   const index = ref(0)
   const step = computed(() => toValue(steps)[index.value])
   const active = computed(() => !seen.value && !!step.value)

@@ -1,12 +1,20 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import RunNoticeBanner from './RunNoticeBanner.vue'
 
-const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+const STORAGE_KEY = StorageKeys.agentRunNoticeDismissed(
+  accountScope('user-1', 'personal')!
+)
 
 function mount(
   workflowName: string | undefined = '3d_hunyuan-v2.1',
@@ -21,6 +29,7 @@ function mount(
 describe('RunNoticeBanner', () => {
   beforeEach(() => {
     localStorage.clear()
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-1' }))
   })
 
   it('names the one workflow the agent can edit', () => {
