@@ -963,8 +963,6 @@ test.describe('Model playground', () => {
     await page.keyboard.press('Tab')
     await chosen.focus()
 
-    // The pick already wears a yellow ring, so focus has to arrive as
-    // something else or it cannot be seen landing on the chosen card.
     await expect(thumbnail).toHaveCSS('outline-style', 'solid')
     await expect(thumbnail).toHaveCSS('outline-color', 'rgb(240, 239, 237)')
   })
