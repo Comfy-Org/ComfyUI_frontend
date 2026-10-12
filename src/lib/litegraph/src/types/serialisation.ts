@@ -1,4 +1,5 @@
 import type { UUID } from '@/utils/uuid'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
@@ -9,13 +10,12 @@ import type { FloatingRerouteSlot } from '../Reroute'
 import type {
   Dictionary,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
   ISlotType,
   Point,
   Size
 } from '../interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './slots'
 import type { LiteGraph } from '../litegraph'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
@@ -218,7 +218,7 @@ export interface SerialisableReroute {
   floating?: FloatingRerouteSlot
 }
 
-export interface SerialisableLLink {
+export interface SerialisableLLink extends LinkPresentation {
   /** Link ID */
   id: number
   /** Output node ID */

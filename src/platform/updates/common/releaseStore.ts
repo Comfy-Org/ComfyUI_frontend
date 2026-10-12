@@ -4,6 +4,7 @@ import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -24,9 +25,10 @@ export const useReleaseStore = defineStore('release', () => {
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
   const onboardingTourStore = useOnboardingTourStore()
+  const onboardingOverlayStore = useOnboardingOverlayStore()
 
   const currentVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
   )
 
   // Release data from settings
@@ -44,7 +46,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Most recent release
   const recentRelease = computed(() => {
-    return releases.value[0] ?? null
+    return releases.value.at(0) ?? null
   })
 
   // 3 most recent releases
@@ -139,7 +141,9 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    const { version } = recentRelease.value
+    const release = recentRelease.value
+    if (!release) return false
+    const { version } = release
 
     // Changelog seen → clear dot
     if (
@@ -172,6 +176,10 @@ export const useReleaseStore = defineStore('release', () => {
   const shouldShowPopup = computed(() => {
     // Deferred, not dropped: the tour ends and this re-evaluates.
     if (onboardingTourStore.activeTour === 'firstRun') {
+      return false
+    }
+
+    if (onboardingOverlayStore.active) {
       return false
     }
 
@@ -255,9 +263,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip fetching if API nodes are disabled via argv
     if (
-      systemStatsStore.systemStats?.system?.argv?.includes(
-        '--disable-api-nodes'
-      )
+      systemStatsStore.systemStats?.system.argv?.includes('--disable-api-nodes')
     ) {
       return
     }
@@ -279,7 +285,7 @@ export const useReleaseStore = defineStore('release', () => {
         },
         {
           deployEnvironment:
-            systemStatsStore.systemStats?.system?.deploy_environment
+            systemStatsStore.systemStats?.system.deploy_environment
         }
       )
 

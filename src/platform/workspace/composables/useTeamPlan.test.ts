@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 
 const {
   mockIsActiveSubscription,
   mockIsInitialized,
   mockIsTeamPlan,
   mockMaxSeats,
-  mockSubscription,
-  mockSubscriptionStatus
+  mockSubscription
 } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
@@ -16,23 +19,13 @@ const {
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
     mockMaxSeats: ref<number | null>(30),
-    mockSubscription: ref<{ isCancelled?: boolean } | null>({
+    mockSubscription: ref<Pick<SubscriptionInfo, 'isCancelled'> | null>({
       isCancelled: false
-    }),
-    mockSubscriptionStatus: ref<string | null>('active')
+    })
   }
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: mockIsActiveSubscription,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
-    maxSeats: mockMaxSeats,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 async function setup() {
   const { useTeamPlan } = await import('./useTeamPlan')
@@ -41,12 +34,35 @@ async function setup() {
 
 describe('useTeamPlan', () => {
   beforeEach(() => {
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            agentHasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true
     mockMaxSeats.value = 30
     mockSubscription.value = { isCancelled: false }
-    mockSubscriptionStatus.value = 'active'
   })
 
   it('enables Team features from the active plan identity', async () => {
@@ -93,21 +109,6 @@ describe('useTeamPlan', () => {
     mockSubscription.value = null
     const plan = await setup()
     expect(plan.isCancelled.value).toBe(false)
-  })
-
-  it('flags a cancelled or ended Team plan as lapsed', async () => {
-    const plan = await setup()
-    mockSubscriptionStatus.value = 'canceled'
-    expect(plan.hasLapsedTeamPlan.value).toBe(true)
-    mockSubscriptionStatus.value = 'ended'
-    expect(plan.hasLapsedTeamPlan.value).toBe(true)
-  })
-
-  it('does not flag a personal plan as a lapsed Team plan', async () => {
-    mockIsTeamPlan.value = false
-    mockSubscriptionStatus.value = 'ended'
-    const plan = await setup()
-    expect(plan.hasLapsedTeamPlan.value).toBe(false)
   })
 
   it('reports loading until billing initialization completes', async () => {

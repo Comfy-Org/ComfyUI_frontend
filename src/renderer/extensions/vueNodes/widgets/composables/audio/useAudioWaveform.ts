@@ -95,8 +95,6 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
 
     mediaElementSource.value = null
 
-    if (!audioElement) return false
-
     audioContext.value = new window.AudioContext()
     analyser.value = audioContext.value.createAnalyser()
 

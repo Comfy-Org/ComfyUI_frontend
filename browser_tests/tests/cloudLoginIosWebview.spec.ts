@@ -18,12 +18,12 @@ async function injectWkWebViewBridge(page: Page) {
 }
 
 test.describe('Cloud login on iOS (FE-1357)', { tag: '@mobile-ios' }, () => {
-  test('offers Google without an in-app-browser notice in Chrome', async ({
-    browser
-  }) => {
-    const context = await browser.newContext({ userAgent: CHROME_IOS_UA })
-    try {
-      const page = await context.newPage()
+  test.describe('Chrome', () => {
+    test.use({ userAgent: CHROME_IOS_UA })
+
+    test('offers Google without an in-app-browser notice in Chrome', async ({
+      page
+    }) => {
       await injectWkWebViewBridge(page)
 
       await page.goto(APP_URL)
@@ -33,9 +33,7 @@ test.describe('Cloud login on iOS (FE-1357)', { tag: '@mobile-ios' }, () => {
       await expect(
         page.getByTestId('google-sso-in-app-browser-notice')
       ).toBeHidden()
-    } finally {
-      await context.close()
-    }
+    })
   })
 
   test('offers Google without an in-app-browser notice in Safari', async ({
@@ -52,14 +50,15 @@ test.describe('Cloud login on iOS (FE-1357)', { tag: '@mobile-ios' }, () => {
     ).toBeHidden()
   })
 
-  test('offers Google with a notice in an embedded WKWebView', async ({
-    browser
-  }) => {
-    const wkWebViewUa =
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-    const context = await browser.newContext({ userAgent: wkWebViewUa })
-    try {
-      const page = await context.newPage()
+  test.describe('WKWebView', () => {
+    test.use({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    })
+
+    test('offers Google with a notice in an embedded WKWebView', async ({
+      page
+    }) => {
       await injectWkWebViewBridge(page)
 
       await page.goto(APP_URL)
@@ -69,8 +68,6 @@ test.describe('Cloud login on iOS (FE-1357)', { tag: '@mobile-ios' }, () => {
       await expect(
         page.getByTestId('google-sso-in-app-browser-notice')
       ).toBeVisible()
-    } finally {
-      await context.close()
-    }
+    })
   })
 })

@@ -1,8 +1,10 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 
-test.describe('Supported model FAQ @smoke', () => {
+import { test } from './fixtures/blockExternalMedia'
+
+test.describe('Model file FAQ @smoke', () => {
   test('renders the same questions as the FAQPage schema', async ({ page }) => {
-    await page.goto('/p/supported-models/grok-imagine/')
+    await page.goto('/hub/models/local/4x-ultrasharp/')
 
     const faqHeading = page.getByRole('heading', {
       name: 'Frequently Asked Questions'
@@ -17,7 +19,7 @@ test.describe('Supported model FAQ @smoke', () => {
       .locator('script[type="application/ld+json"]')
       .evaluateAll((scripts) => {
         const nodes = scripts.flatMap((script) => {
-          const value = JSON.parse(script.textContent ?? '{}') as {
+          const value = JSON.parse(script.innerHTML) as {
             '@graph'?: Array<Record<string, unknown>>
           }
           return value['@graph'] ?? []

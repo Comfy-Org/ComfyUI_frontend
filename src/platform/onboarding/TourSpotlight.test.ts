@@ -11,7 +11,7 @@ import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
 import type { SpotlightStep } from './onboardingTours'
 
-vi.mock('@primeuix/utils/zindex', () => ({
+vi.mock<unknown>(import('@primeuix/utils/zindex'), () => ({
   ZIndex: { set: vi.fn(), clear: vi.fn() }
 }))
 

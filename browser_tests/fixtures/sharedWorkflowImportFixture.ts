@@ -1,14 +1,15 @@
-import { test as base } from '@playwright/test'
+import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type { Page } from '@playwright/test'
 import type {
   Asset,
   ImportPublishedAssetsRequest,
-  ListAssetsResponse
+  ListAssetsResponse,
+  AssetInfo
 } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 
 import type { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import type { AssetInfo } from '@/schemas/apiSchema'
 
 type SharedWorkflowResponse = z.input<typeof zSharedWorkflowResponse>
 
@@ -177,7 +178,7 @@ async function mockSharedWorkflowImportFlow(
   await page.route(/\/api\/assets(?=\?|$)/, async (route) => {
     const url = new URL(route.request().url())
     const includeTags = getTagParam(url, 'include_tags')
-    const isInputAssetRequest = includeTags.includes('input')
+    const isInputAssetRequest = assetRequestIncludesTag(url.href, 'input')
 
     if (isInputAssetRequest) {
       recordRequestEvent(

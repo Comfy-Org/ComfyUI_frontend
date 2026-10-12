@@ -231,7 +231,7 @@ function onRowDragOver(id: string, e: DragEvent): void {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const ratio = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5
   const pos = dropPositionFor(ratio)
-  if (dropHint.value?.id !== id || dropHint.value?.pos !== pos)
+  if (dropHint.value?.id !== id || dropHint.value.pos !== pos)
     dropHint.value = { id, pos }
 }
 

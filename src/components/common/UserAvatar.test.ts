@@ -1,7 +1,6 @@
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { fireEvent, render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -26,7 +25,7 @@ describe('UserAvatar', () => {
   function renderComponent(props: ComponentProps<typeof UserAvatar> = {}) {
     return render(UserAvatar, {
       global: {
-        plugins: [PrimeVue, i18n]
+        plugins: [i18n]
       },
       props
     })
@@ -62,8 +61,8 @@ describe('UserAvatar', () => {
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
   })
 
-  it('falls back to icon when image fails to load', async () => {
-    renderComponent({
+  it('falls back on image error and retries when the photo URL changes', async () => {
+    const { rerender } = renderComponent({
       photoUrl: 'https://example.com/broken-image.jpg'
     })
 
@@ -73,6 +72,20 @@ describe('UserAvatar', () => {
     await fireEvent.error(img)
     await nextTick()
 
+    expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+
+    await rerender({ ariaLabel: 'Updated label' })
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+
+    await rerender({ photoUrl: 'https://example.com/replacement.jpg' })
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://example.com/replacement.jpg'
+    )
+    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
+
+    await fireEvent.error(screen.getByRole('img'))
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
   })
 

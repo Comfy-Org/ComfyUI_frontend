@@ -1,29 +1,19 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const canvasMocks = vi.hoisted(() => ({
-  canvas: {
-    graph: {
-      getNodeById: vi.fn((): unknown => null)
-    }
-  },
-  linearMode: false
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasMocks
-}))
-
 const resolveMock = vi.hoisted(() => vi.fn())
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget',
+  import('@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'),
   () => ({
     resolveWidgetFromHostNode: resolveMock
   })
 )
 
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => true))
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
@@ -32,6 +22,13 @@ import { toNodeId } from '@/types/nodeId'
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
 
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({
+    canvas: document.createElement('canvas'),
+    graph: { getNodeById: vi.fn(() => null) }
+  })
+})
+
 describe('WidgetDOM', () => {
   beforeEach(() => {
     isDOMWidgetMock.mockReturnValue(true)
@@ -39,7 +36,9 @@ describe('WidgetDOM', () => {
 
   function mountWithWidget(domElement: HTMLElement | null) {
     if (domElement) {
-      canvasMocks.canvas.graph.getNodeById.mockReturnValue({ mock: true })
+      vi.mocked(
+        useCanvasStore().getCanvas().graph!.getNodeById
+      ).mockReturnValue(new LGraphNode('test'))
       resolveMock.mockReturnValue({
         node: { mock: true },
         widget: { element: domElement, name: 'dom' }
@@ -64,12 +63,14 @@ describe('WidgetDOM', () => {
 
     const { container } = mountWithWidget(hosted)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBe(hosted)
   })
 
   it('renders an empty container when no host node is found', () => {
-    canvasMocks.canvas.graph.getNodeById.mockReturnValue(null)
+    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
+      null
+    )
     resolveMock.mockReturnValue(undefined)
 
     const { container } = render(WidgetDOM, {
@@ -83,10 +84,10 @@ describe('WidgetDOM', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const root = container.firstElementChild as HTMLElement
     expect(root).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(root.children).toHaveLength(0)
   })
 
@@ -94,7 +95,9 @@ describe('WidgetDOM', () => {
     const hosted = document.createElement('div')
     hosted.setAttribute('data-testid', 'hosted-dom')
 
-    canvasMocks.canvas.graph.getNodeById.mockReturnValue({ mock: true })
+    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
+      new LGraphNode('test')
+    )
     resolveMock.mockReturnValue({
       node: { mock: true },
       widget: { element: hosted, name: 'dom' }
@@ -112,13 +115,13 @@ describe('WidgetDOM', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBeNull()
   })
 
   it('renders a visible root element for pointer-event capture', () => {
     const { container } = mountWithWidget(document.createElement('span'))
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const root = container.firstElementChild as HTMLElement
     expect(root).toBeVisible()
   })

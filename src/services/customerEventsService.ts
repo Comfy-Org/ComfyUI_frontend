@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
@@ -62,7 +63,7 @@ export const useCustomerEventsService = () => {
       return routeSpecificErrors[status]
     }
     return (
-      axiosError.response?.data?.message ??
+      axiosError.response?.data.message ??
       `${context} failed with status ${status}`
     )
   }
@@ -161,18 +162,6 @@ export const useCustomerEventsService = () => {
     return Object.keys(otherParams).length > 0
   }
 
-  function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
-
-    return Object.entries(params)
-      .map(([key, value]) => {
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
-      })
-      .join('<br>')
-  }
-
   function formatAmount(amountMicros?: number) {
     if (!amountMicros) return '0.00'
     return (amountMicros / 100).toFixed(2)
@@ -191,10 +180,25 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 
-    const authHeaders = await authStore.getUserAuthHeader()
+    let authHeaders
+    try {
+      authHeaders =
+        (await webSessionResourceHeader()) ??
+        (await authStore.getUserAuthHeader())
+    } catch (err) {
+      if (requestId !== latestRequestId) return null
+      isLoading.value = false
+      error.value = describeRequestError(err, errorContext)
+      return null
+    }
     if (requestId !== latestRequestId) {
       return null
     }
@@ -241,7 +245,6 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue,
-    getTooltipContent
+    formatJsonValue
   }
 }

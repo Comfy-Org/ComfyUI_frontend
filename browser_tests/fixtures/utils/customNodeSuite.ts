@@ -143,7 +143,7 @@ export function onPromptIdResponse(
   return {
     detach: () => page.off('response', listener),
     settled: async () => {
-      await Promise.allSettled([...parsing])
+      await Promise.allSettled(parsing)
     }
   }
 }

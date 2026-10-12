@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via useForwardPropsEmits */
 import type { AccordionRootEmits, AccordionRootProps } from 'reka-ui'
 import { AccordionRoot, useForwardPropsEmits } from 'reka-ui'
 

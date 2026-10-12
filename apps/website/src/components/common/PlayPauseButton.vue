@@ -38,7 +38,7 @@ const {
     type="button"
     :class="
       cn(
-        'bg-primary-comfy-yellow flex shrink-0 cursor-pointer items-center justify-center',
+        'flex shrink-0 cursor-pointer items-center justify-center bg-primary-comfy-yellow',
         size === 'sm' ? 'size-8 rounded-lg lg:size-10' : 'size-12 rounded-xl'
       )
     "

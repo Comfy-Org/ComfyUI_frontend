@@ -1,29 +1,24 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import PaintBucketSettingsPanel from '@/components/maskeditor/PaintBucketSettingsPanel.vue'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockStore = vi.hoisted(() => ({
-  paintBucketTolerance: 5,
-  fillOpacity: 100,
-  setPaintBucketTolerance: vi.fn(),
-  setFillOpacity: vi.fn()
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
-
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -44,8 +39,8 @@ const renderPanel = () =>
 
 describe('PaintBucketSettingsPanel', () => {
   beforeEach(() => {
-    mockStore.paintBucketTolerance = 5
-    mockStore.fillOpacity = 100
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({ paintBucketTolerance: 5, fillOpacity: 100 })
   })
 
   it('should bind tolerance slider to store value', () => {

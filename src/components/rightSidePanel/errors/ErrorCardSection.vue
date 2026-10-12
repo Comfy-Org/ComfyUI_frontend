@@ -3,7 +3,7 @@
     <div class="flex min-h-8 w-full items-center gap-2 px-3">
       <button
         type="button"
-        class="focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-1"
+        class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-1 focus-visible:ring-border-default"
         :aria-expanded="!collapse"
         :aria-controls="bodyId"
         @click="collapse = !collapse"
@@ -22,14 +22,15 @@
         >
           {{ count }}
         </span>
-        <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+        <span class="min-w-0 truncate text-sm text-base-foreground">
           {{ title }}
         </span>
+        <slot name="title-badge" />
       </button>
       <slot name="actions" />
       <button
         type="button"
-        class="focus-visible:ring-ring flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-1"
+        class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-1 focus-visible:ring-border-default"
         :aria-expanded="!collapse"
         :aria-controls="bodyId"
         :aria-label="

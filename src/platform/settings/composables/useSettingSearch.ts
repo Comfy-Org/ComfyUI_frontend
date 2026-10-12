@@ -1,14 +1,16 @@
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+
+export type SettingTreeNode = TreeNode<SettingParams>
 
 interface SearchableNavItem {
   key: string
@@ -118,9 +120,10 @@ export function useSettingSearch() {
   const getSearchResults = (
     activeCategory: SettingTreeNode | null
   ): ISettingGroup[] => {
-    const groupedSettings: {
-      [key: string]: { category: string; settings: SettingParams[] }
-    } = {}
+    const groupedSettings = new Map<
+      string,
+      { category: string; settings: SettingParams[] }
+    >()
 
     filteredSettingIds.value.forEach((id) => {
       const setting = settingStore.settingsById[id]
@@ -131,23 +134,23 @@ export function useSettingSearch() {
           : info.subCategory
 
       if (activeCategory === null || activeCategory.label === info.category) {
-        if (!groupedSettings[groupKey]) {
-          groupedSettings[groupKey] = {
+        let group = groupedSettings.get(groupKey)
+        if (!group) {
+          group = {
             category: info.category,
             settings: []
           }
+          groupedSettings.set(groupKey, group)
         }
-        groupedSettings[groupKey].settings.push(setting)
+        group.settings.push(setting)
       }
     })
 
-    return Object.entries(groupedSettings).map(
-      ([key, { category, settings }]) => ({
-        label: activeCategory === null ? key.split('/')[1] : key,
-        ...(activeCategory === null ? { category } : {}),
-        settings
-      })
-    )
+    return [...groupedSettings].map(([key, { category, settings }]) => ({
+      label: activeCategory === null ? key.split('/')[1] : key,
+      ...(activeCategory === null ? { category } : {}),
+      settings
+    }))
   }
 
   return {

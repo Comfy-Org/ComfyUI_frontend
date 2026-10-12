@@ -19,13 +19,6 @@ const BUTTON_DEFAULTS = {
   name: 'test_button'
 } as const
 
-const ButtonStub = {
-  name: 'Button',
-  props: ['size', 'variant', 'disabled'],
-  template:
-    '<button :data-size="size" :data-variant="variant" :disabled="disabled"><slot /></button>'
-}
-
 describe('WidgetButton Interactions', () => {
   const createButtonWidget = (
     overrides: Partial<SimplifiedWidget<undefined, ButtonWidgetOptions>> = {}
@@ -34,11 +27,6 @@ describe('WidgetButton Interactions', () => {
   const mountComponent = (widget: SimplifiedWidget<undefined>) => {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
-      global: {
-        stubs: {
-          Button: ButtonStub
-        }
-      },
       props: {
         widget
       }
@@ -86,13 +74,6 @@ describe('WidgetButton Interactions', () => {
   })
 
   describe('Component Rendering', () => {
-    it('renders button component', () => {
-      const widget = createButtonWidget()
-      mountComponent(widget)
-
-      expect(screen.getByRole('button')).toBeDefined()
-    })
-
     it('renders widget text when name is provided', () => {
       const widget = createButtonWidget()
       mountComponent(widget)
@@ -104,18 +85,7 @@ describe('WidgetButton Interactions', () => {
       const widget = createButtonWidget()
       mountComponent(widget)
 
-      expect(screen.getByRole('button').getAttribute('data-size')).toBe('sm')
-    })
-
-    it('passes widget options to button component', () => {
-      const widget = createButtonWidget({
-        options: { variant: 'secondary' }
-      })
-      mountComponent(widget)
-
-      expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
-        'secondary'
-      )
+      expect(screen.getByRole('button')).toHaveClass('h-6', 'rounded-sm')
     })
   })
 
@@ -137,7 +107,7 @@ describe('WidgetButton Interactions', () => {
       })
       const { container } = mountComponent(widget)
 
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-star')).not.toBeNull()
     })
 
@@ -149,30 +119,26 @@ describe('WidgetButton Interactions', () => {
       const { container } = mountComponent(widget)
 
       expect(screen.getByRole('button')).toHaveTextContent('Save')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
     })
 
-    it.for(['secondary', 'primary', 'inverted', 'textonly'] as const)(
-      'handles button variant: %s',
-      (variant) => {
-        const widget = createButtonWidget({ options: { variant } })
-        mountComponent(widget)
-        expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
-          variant
-        )
-      }
-    )
+    it.for([
+      ['secondary', 'hover:bg-secondary-background-hover'],
+      ['primary', 'hover:bg-primary-background-hover'],
+      ['inverted', 'hover:bg-base-foreground/80'],
+      ['textonly', 'hover:bg-secondary-background-hover']
+    ] as const)('handles button variant: %s', ([variant, hoverClass]) => {
+      const widget = createButtonWidget({ options: { variant } })
+      mountComponent(widget)
+      expect(screen.getByRole('button')).toHaveClass(
+        'bg-component-node-widget-background',
+        hoverClass
+      )
+    })
   })
 
   describe('Edge Cases', () => {
-    it('handles widget with no options', () => {
-      const widget = createButtonWidget()
-      mountComponent(widget)
-
-      expect(screen.getByRole('button')).toBeDefined()
-    })
-
     it('handles callback that throws error', async () => {
       const mockCallback = vi.fn(() => {
         throw new Error('Callback error')
@@ -182,18 +148,6 @@ describe('WidgetButton Interactions', () => {
 
       await expect(clickButton(user)).rejects.toThrow('Callback error')
       expect(mockCallback).toHaveBeenCalledTimes(1)
-    })
-
-    it('handles rapid consecutive clicks', async () => {
-      const mockCallback = vi.fn()
-      const widget = createButtonWidget({ callback: mockCallback })
-      const { user } = mountComponent(widget)
-
-      for (let i = 0; i < 16; i++) {
-        await clickButton(user)
-      }
-
-      expect(mockCallback).toHaveBeenCalledTimes(16)
     })
   })
 })

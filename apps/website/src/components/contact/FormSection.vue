@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import { t } from '../../i18n/translations'
-import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
-import SectionLabel from '../common/SectionLabel.vue'
+import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import { translationsFor } from '@/i18n/translations'
+import HubspotFormEmbed from '@/components/common/HubspotFormEmbed.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
+// Locales without their own HubSpot form fall back to the English one.
 const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 
 const contactFormIds: Partial<Record<Locale, string>> = {
@@ -45,33 +48,33 @@ useHeroAnimation({
     class="px-4 py-20 lg:flex lg:gap-16 lg:px-20 lg:py-24"
   >
     <!-- Left column: intro + image -->
-    <div class="lg:w-1/2">
+    <div class="min-w-0 lg:w-1/2">
       <div class="lg:max-w-xl">
         <SectionLabel ref="badgeRef">
-          {{ t(tk('badge'), locale) }}
+          {{ t(tk('badge')) }}
         </SectionLabel>
 
         <h1
           ref="headingRef"
           class="mt-4 text-3xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
-          {{ t(tk('heading'), locale) }}
+          {{ t(tk('heading')) }}
         </h1>
 
         <div ref="descRef">
           <p class="mt-4 text-sm text-primary-comfy-canvas">
-            {{ t(tk('description'), locale) }}
+            {{ t(tk('description')) }}
           </p>
 
           <p class="mt-4 text-sm text-primary-comfy-canvas">
-            {{ t(tk('supportLink'), locale) }}
+            {{ t(tk('supportLink')) }}
             <a
               href="https://docs.comfy.org/"
               target="_blank"
               rel="noopener noreferrer"
               class="text-primary-comfy-yellow underline"
             >
-              {{ t(tk('supportLinkCta'), locale) }}
+              {{ t(tk('supportLinkCta')) }}
             </a>
           </p>
         </div>
@@ -84,6 +87,8 @@ useHeroAnimation({
           class="w-full rounded-2xl object-cover"
         />
       </div>
+
+      <SocialProofBarSection class="lg:-ml-20" />
     </div>
 
     <!-- Right column: form -->

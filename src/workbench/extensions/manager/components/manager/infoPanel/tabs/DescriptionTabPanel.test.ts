@@ -121,7 +121,7 @@ describe('DescriptionTabPanel', () => {
         if (test.expected.isUrl) {
           const links = screen.getAllByRole('link')
           const link = links.find((a) =>
-            a.textContent?.includes(test.expected.text)
+            a.textContent.includes(test.expected.text)
           )
           expect(link).toBeDefined()
           expect(link!).toHaveAttribute('href', test.expected.text)
@@ -159,6 +159,44 @@ describe('DescriptionTabPanel', () => {
         }
       })
       expect(screen.getByText('No description available')).toBeInTheDocument()
+    })
+  })
+
+  describe('unsafe URLs from the registry', () => {
+    it('does not bind a javascript: repository URL as a clickable href', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: 'javascript:alert(1)'
+        })
+      })
+
+      expect(screen.queryByRole('link')).toBeNull()
+      expect(screen.queryByText('javascript:alert(1)')).toBeNull()
+    })
+
+    it('does not bind a javascript: license URL as a clickable href', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          license: JSON.stringify({ text: 'javascript:alert(1)' })
+        })
+      })
+
+      // A license `text` field is always rendered as plain text (never a
+      // link), so this only proves the plain-text fallback still renders.
+      const licenseText = screen.getByText('javascript:alert(1)')
+      expect(licenseText).toBeInTheDocument()
+      expect(licenseText.tagName).toBe('SPAN')
+    })
+
+    it('does not bind a javascript: license URL built from a LICENSE file', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          license: 'LICENSE',
+          repository: 'javascript:alert(1)'
+        })
+      })
+
+      expect(screen.queryByRole('link')).toBeNull()
     })
   })
 })

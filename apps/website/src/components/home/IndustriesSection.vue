@@ -3,15 +3,24 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
-import { useAutoAdvance } from '../../composables/useAutoAdvance'
+import { useAutoAdvance } from '@/composables/useAutoAdvance'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
-import BrandButton from '../common/BrandButton.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import BrandButton from '@/components/common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  heading,
+  body
+} = defineProps<{
+  locale?: Locale
+  heading?: string
+  body?: string
+}>()
+const { t } = translationsFor(locale)
 
 interface Industry {
   label: string
@@ -26,25 +35,25 @@ const MEDIA_BASE = 'https://media.comfy.org/website/homepage/use-case'
 
 const industries: Industry[] = [
   {
-    label: t('industries.vfx', locale),
+    label: t('industries.vfx'),
     primarySrc: `${MEDIA_BASE}/left1.webm`,
     secondarySrc: `${MEDIA_BASE}/right1.webm`,
     ambientSrc: '/industries/ambient-vfx-animation.webm'
   },
   {
-    label: t('industries.advertising', locale),
+    label: t('industries.advertising'),
     primarySrc: `${MEDIA_BASE}/left2.webm`,
     secondarySrc: `${MEDIA_BASE}/right2.webm`,
     ambientSrc: '/industries/ambient-advertising.webm'
   },
   {
-    label: t('industries.gaming', locale),
+    label: t('industries.gaming'),
     primarySrc: `${MEDIA_BASE}/left3.webm`,
     secondarySrc: '/industries/secondary-gaming.webm',
     ambientSrc: '/industries/ambient-gaming.webm'
   },
   {
-    label: t('industries.ecommerce', locale),
+    label: t('industries.ecommerce'),
     primarySrc: `${MEDIA_BASE}/left4.webm`,
     secondarySrc: `${MEDIA_BASE}/right4.webm`,
     ambientSrc: '/industries/ambient-ecommerce-fashion.webm',
@@ -121,24 +130,37 @@ const ambientClipId = `industries-ambient-${uid}`
     </svg>
 
     <div
-      class="max-w-9xl mx-auto grid grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
+      class="mx-auto grid max-w-9xl grid-cols-1 gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:gap-10 lg:px-20 lg:py-28"
     >
       <!-- Copy column -->
       <div class="flex flex-col items-start gap-10">
-        <div class="flex flex-col gap-6">
-          <p
-            class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+        <div v-if="heading" class="flex flex-col gap-6">
+          <h2
+            class="max-w-md text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
           >
-            {{ t('industries.label', locale) }}
+            {{ heading }}
+          </h2>
+          <p
+            v-if="body"
+            class="max-w-md text-lg/relaxed text-primary-warm-gray"
+          >
+            {{ body }}
           </p>
-          <p class="text-primary-warm-gray max-w-md text-lg/relaxed">
-            {{ t('industries.body', locale) }}
+        </div>
+        <div v-else class="flex flex-col gap-6">
+          <p
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
+          >
+            {{ t('industries.label') }}
+          </p>
+          <p class="max-w-md text-lg/relaxed text-primary-warm-gray">
+            {{ t('industries.body') }}
           </p>
         </div>
 
         <nav
           class="flex flex-col items-start gap-7"
-          :aria-label="t('industries.navLabel', locale)"
+          :aria-label="t('industries.navLabel')"
           @pointerenter="hovering = true"
           @pointerleave="((hovering = false), resume())"
         >
@@ -163,8 +185,12 @@ const ambientClipId = `industries-ambient-${uid}`
           </button>
         </nav>
 
-        <BrandButton :href="externalLinks.workflows" variant="outline">
-          {{ t('industries.cta', locale) }}
+        <BrandButton
+          :href="externalLinks.workflows"
+          variant="outline"
+          class="font-bold"
+        >
+          {{ t('industries.cta') }}
         </BrandButton>
       </div>
 

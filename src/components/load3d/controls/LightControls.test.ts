@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LightControls from '@/components/load3d/controls/LightControls.vue'
@@ -9,6 +9,7 @@ import type {
   HDRIConfig,
   MaterialMode
 } from '@/extensions/core/load3d/interfaces'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightIntensityMaximum': 10,
@@ -16,17 +17,13 @@ const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightAdjustmentIncrement': 0.5
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) => settingValues[key]
-  })
-}))
+beforeEach(() => {
+  useSettingStore().$patch({ settingValues })
+})
 
-vi.mock('@/composables/useDismissableOverlay', () => ({
+vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()
 }))
-
-vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,
@@ -46,27 +43,32 @@ function renderComponent(opts: RenderOpts = {}) {
   const materialMode = ref<MaterialMode>(opts.materialMode ?? 'original')
   const hdriConfig = ref<HDRIConfig | undefined>(opts.hdriConfig)
 
-  const utils = render(LightControls, {
-    props: {
-      lightIntensity: lightIntensity.value,
-      'onUpdate:lightIntensity': (v: number | undefined) => {
-        if (v !== undefined) lightIntensity.value = v
-      },
-      materialMode: materialMode.value,
-      'onUpdate:materialMode': (v: MaterialMode | undefined) => {
-        if (v) materialMode.value = v
-      },
-      hdriConfig: hdriConfig.value,
-      'onUpdate:hdriConfig': (v: HDRIConfig | undefined) => {
-        hdriConfig.value = v
-      },
-      embedded: opts.embedded ?? false
-    },
-    global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+  const utils = render(
+    defineComponent({
+      setup: () => () =>
+        h(LightControls, {
+          lightIntensity: lightIntensity.value,
+          'onUpdate:lightIntensity': (v: number | undefined) => {
+            if (v !== undefined) lightIntensity.value = v
+          },
+          materialMode: materialMode.value,
+          'onUpdate:materialMode': (v: MaterialMode | undefined) => {
+            if (v) materialMode.value = v
+          },
+          hdriConfig: hdriConfig.value,
+          'onUpdate:hdriConfig': (v: HDRIConfig | undefined) => {
+            hdriConfig.value = v
+          },
+          embedded: opts.embedded ?? false
+        })
+    }),
+    {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: () => {} }
+      }
     }
-  })
+  )
 
   return {
     ...utils,
@@ -103,19 +105,21 @@ describe('LightControls', () => {
       const { user } = renderComponent({ lightIntensity: 5 })
       await user.click(screen.getByRole('button', { name: 'Light intensity' }))
 
-      const slider = screen.getByRole('slider') as HTMLInputElement
-      expect(slider.min).toBe('1')
-      expect(slider.max).toBe('10')
-      expect(slider.step).toBe('0.5')
+      const slider = await screen.findByRole('slider')
+      expect(slider).toHaveAttribute('aria-valuemin', '1')
+      expect(slider).toHaveAttribute('aria-valuemax', '10')
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+      expect(slider).toHaveAttribute('aria-valuenow', '5.5')
     })
 
     it('updates lightIntensity v-model when the slider changes', async () => {
       const { user, lightIntensity } = renderComponent({ lightIntensity: 5 })
       await user.click(screen.getByRole('button', { name: 'Light intensity' }))
 
-      const slider = screen.getByRole('slider') as HTMLInputElement
-      slider.value = '7.5'
-      slider.dispatchEvent(new Event('input', { bubbles: true }))
+      const slider = await screen.findByRole('slider')
+      slider.focus()
+      await user.keyboard('{ArrowRight>5}')
 
       expect(lightIntensity.value).toBe(7.5)
     })
@@ -133,10 +137,12 @@ describe('LightControls', () => {
       const { user } = renderComponent({ hdriConfig })
       await user.click(screen.getByRole('button', { name: 'Light intensity' }))
 
-      const slider = screen.getByRole('slider') as HTMLInputElement
-      expect(slider.min).toBe('0')
-      expect(slider.max).toBe('5')
-      expect(slider.step).toBe('0.1')
+      const slider = await screen.findByRole('slider')
+      expect(slider).toHaveAttribute('aria-valuemin', '0')
+      expect(slider).toHaveAttribute('aria-valuemax', '5')
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+      expect(slider).toHaveAttribute('aria-valuenow', '2.1')
     })
 
     it('writes back to hdriConfig.intensity instead of lightIntensity when the slider changes', async () => {
@@ -150,9 +156,9 @@ describe('LightControls', () => {
       })
       await user.click(screen.getByRole('button', { name: 'Light intensity' }))
 
-      const slider = screen.getByRole('slider') as HTMLInputElement
-      slider.value = '3.5'
-      slider.dispatchEvent(new Event('input', { bubbles: true }))
+      const slider = await screen.findByRole('slider')
+      slider.focus()
+      await user.keyboard('{ArrowRight>15}')
 
       expect(cfg.value?.intensity).toBe(3.5)
       expect(lightIntensity.value).toBe(5) // unchanged
@@ -160,13 +166,13 @@ describe('LightControls', () => {
   })
 
   describe('embedded mode', () => {
-    it('renders the slider inline without the trigger button when embedded is true', () => {
+    it('renders the slider inline without the trigger button when embedded is true', async () => {
       renderComponent({ embedded: true })
 
       expect(
         screen.queryByRole('button', { name: 'Light intensity' })
       ).not.toBeInTheDocument()
-      expect(screen.getByRole('slider')).toBeInTheDocument()
+      expect(await screen.findByRole('slider')).toBeInTheDocument()
     })
   })
 })

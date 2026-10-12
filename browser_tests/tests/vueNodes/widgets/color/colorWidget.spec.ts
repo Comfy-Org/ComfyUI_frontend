@@ -34,3 +34,49 @@ test.describe('Vue Color Widget defaults', { tag: '@vue-nodes' }, () => {
     await expect(colorTrigger).toBeVisible()
   })
 })
+
+test.describe(
+  'Vue integer color widget',
+  { tag: ['@vue-nodes', '@node', '@widget'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'vueNodes/empty-image-integer-color'
+      )
+    })
+
+    test('round-trips packed RGB values without alpha', async ({
+      comfyPage
+    }) => {
+      const colorWidget = comfyPage.vueNodes.getWidgetRowByLabel(
+        'Empty Image',
+        'color'
+      )
+      await expect(colorWidget).toContainText('#000000')
+
+      await colorWidget.getByRole('button').click()
+      await expect(comfyPage.page.getByLabel('Alpha')).toHaveCount(0)
+
+      const hexInput = comfyPage.page.getByLabel('Hex')
+      await hexInput.fill('#00ff00')
+      await expect(colorWidget).toContainText('#00ff00')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (node) => node.type === 'EmptyImage'
+            )!
+            const widgetIndex = node.widgets!.findIndex(
+              (widget) => widget.name === 'color'
+            )
+            return {
+              value: node.widgets![widgetIndex].value,
+              serializedValue: node.serialize().widgets_values?.[widgetIndex]
+            }
+          })
+        )
+        .toEqual({ value: 0x00ff00, serializedValue: 0x00ff00 })
+    })
+  }
+)

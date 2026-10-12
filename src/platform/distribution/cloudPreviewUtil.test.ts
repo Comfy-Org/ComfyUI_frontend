@@ -4,7 +4,7 @@ import { appendCloudResParam } from './cloudPreviewUtil'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
-vi.mock('./types', () => ({
+vi.mock(import('./types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }

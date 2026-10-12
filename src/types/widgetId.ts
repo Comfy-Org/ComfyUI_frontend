@@ -5,7 +5,7 @@ type UUID = string
 /**
  * A widget's canonical identity: `graphId:nodeId:name`.
  * Duplicate widget names must be normalized before deriving this ID.
- * See ADR 0008's "Widget identity keys on name" section.
+ * See ADR-ECS-0008's "Widget identity keys on name" section.
  */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
@@ -22,6 +22,23 @@ export function widgetId(
     encodeURIComponent(String(localNodeId)),
     encodeURIComponent(name)
   ].join(SEPARATOR) as WidgetId
+}
+
+function nameIsWritable(widget: object): boolean {
+  try {
+    for (
+      let target: object | null = widget;
+      target;
+      target = Reflect.getPrototypeOf(target)
+    ) {
+      const descriptor = Object.getOwnPropertyDescriptor(target, 'name')
+      if (!descriptor) continue
+      return 'writable' in descriptor ? !!descriptor.writable : !!descriptor.set
+    }
+    return Object.isExtensible(widget)
+  } catch {
+    return false
+  }
 }
 
 export function ensureUniqueWidgetNames(
@@ -56,26 +73,137 @@ export function ensureUniqueWidgetNames(
       renames.push({ widget, name })
     }
 
-    if (
-      renames.some(({ widget }) => {
-        const descriptor = Object.getOwnPropertyDescriptor(widget, 'name')
-        return descriptor
-          ? 'writable' in descriptor
-            ? !descriptor.writable
-            : !descriptor.set
-          : !Object.isExtensible(widget)
-      })
-    ) {
+    if (renames.some(({ widget }) => !nameIsWritable(widget))) {
       console.warn('Cannot safely rename duplicate widgets')
       return false
     }
 
-    for (const { widget, name } of renames) widget.name = name
-    return true
+    let unique = true
+    for (const { widget, name } of renames) {
+      try {
+        widget.name = name
+        if (widget.name !== name) unique = false
+      } catch {
+        unique = false
+      }
+    }
+    return unique
   } catch (error) {
     console.warn('Failed to rename duplicate widgets', error)
     return false
   }
+}
+
+const UNREADABLE_NAME = Symbol('unreadable widget name')
+
+export type RefusedWidget<T> =
+  | { widget: T; cause: 'unreadable-name'; name: undefined }
+  | { widget: T; cause: 'duplicate-name'; name: string }
+  | { widget: T; cause: 'unresolved-duplicate'; name: string }
+
+function readName(widget: { name: unknown }): string | typeof UNREADABLE_NAME {
+  try {
+    const raw = widget.name
+    if (typeof raw === 'symbol') return UNREADABLE_NAME
+    const key = String(raw)
+    encodeURIComponent(key)
+    return key
+  } catch {
+    return UNREADABLE_NAME
+  }
+}
+
+function tryRename(widget: { name: unknown }, name: string): boolean {
+  try {
+    widget.name = name
+    return widget.name === name
+  } catch {
+    return false
+  }
+}
+
+export function isWidgetNameUnreadable(widget: { name: unknown }): boolean {
+  return readName(widget) === UNREADABLE_NAME
+}
+
+function readableNames(widgets: readonly { name: unknown }[]): Set<string> {
+  const names = new Set<string>()
+  for (const widget of widgets) {
+    const name = readName(widget)
+    if (name !== UNREADABLE_NAME) names.add(name)
+  }
+  return names
+}
+
+function freeSuffixedName(
+  name: string,
+  isTaken: (candidate: string) => boolean
+): string {
+  let index = 1
+  while (isTaken(`${name}#${index}`)) index++
+  return `${name}#${index}`
+}
+
+function resolveCollision(
+  widget: { name: unknown },
+  key: string,
+  used: Set<string>,
+  reserved: Set<string>,
+  isNameTaken: (name: string) => boolean
+): 'renamed' | 'unresolved-duplicate' | 'duplicate-name' {
+  const candidate = freeSuffixedName(
+    key,
+    (name) => used.has(name) || reserved.has(name) || isNameTaken(name)
+  )
+  if (tryRename(widget, candidate)) {
+    used.add(candidate)
+    reserved.add(candidate)
+    return 'renamed'
+  }
+  return nameIsWritable(widget) ? 'unresolved-duplicate' : 'duplicate-name'
+}
+
+export function dropUnrenamableDuplicateWidgets<T extends { name: unknown }>(
+  widgets: T[],
+  isNameTaken: (name: string) => boolean = () => false
+): RefusedWidget<T>[] {
+  const kept: T[] = []
+  const refused: RefusedWidget<T>[] = []
+  const used = new Set<string>()
+  const reserved = readableNames(widgets)
+  const verdicts = new Map<T, boolean>()
+
+  for (const widget of widgets) {
+    const previous = verdicts.get(widget)
+    if (previous !== undefined) {
+      if (previous) kept.push(widget)
+      continue
+    }
+
+    const key = readName(widget)
+    if (key === UNREADABLE_NAME) {
+      verdicts.set(widget, false)
+      refused.push({ widget, cause: 'unreadable-name', name: undefined })
+      continue
+    }
+
+    if (!used.has(key)) {
+      used.add(key)
+      verdicts.set(widget, true)
+      kept.push(widget)
+      continue
+    }
+
+    const outcome = resolveCollision(widget, key, used, reserved, isNameTaken)
+    const keep = outcome !== 'duplicate-name'
+    verdicts.set(widget, keep)
+    if (keep) kept.push(widget)
+    if (outcome !== 'renamed')
+      refused.push({ widget, cause: outcome, name: key })
+  }
+
+  if (refused.length) widgets.splice(0, widgets.length, ...kept)
+  return refused
 }
 
 function decodeWidgetIdSegment(segment: string): string {

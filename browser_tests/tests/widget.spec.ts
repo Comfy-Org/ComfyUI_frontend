@@ -7,9 +7,7 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
@@ -383,8 +381,6 @@ test.describe(
       const saveNodes =
         await comfyPage.nodeOps.getNodeRefsByType('SaveAnimatedWEBP')
       const saveAnimatedWebpNode = saveNodes[0]
-      if (!saveAnimatedWebpNode)
-        throw new Error('SaveAnimatedWEBP node not found')
 
       // Simulate the graph executing
       await comfyPage.page.evaluate(
@@ -434,7 +430,6 @@ test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     const [loadAudioNode] =
       await comfyPage.nodeOps.getNodeRefsByType('LoadAudio')
-    if (!loadAudioNode) throw new Error('LoadAudio node not found')
     const audioWidget = await loadAudioNode.getWidgetByName('audio')
     const uploadWidget = await loadAudioNode.getWidgetByName('upload')
     const filename = 'test-audio.wav'

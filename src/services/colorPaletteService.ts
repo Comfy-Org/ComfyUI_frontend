@@ -8,7 +8,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
 import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -27,8 +27,11 @@ export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
-    useErrorHandling()
+  const {
+    toastErrorHandler,
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync
+  } = useErrorHandling()
 
   /**
    * Validates the palette against the zod schema.
@@ -40,8 +43,7 @@ export const useColorPaletteService = () => {
     const result = paletteSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = fromZodError(result.error)
-    throw new Error(`Invalid color palette against zod schema:\n${error}`)
+    throw fromZodError(result.error)
   }
 
   const persistCustomColorPalettes = async () => {
@@ -82,7 +84,7 @@ export const useColorPaletteService = () => {
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
     )
     Object.assign(
-      app.canvas.default_connection_color_byType,
+      useApp().canvas.default_connection_color_byType,
       types,
       linkColorPalette
     )
@@ -100,9 +102,7 @@ export const useColorPaletteService = () => {
   function loadLinkColorPaletteForVueNodes(
     linkColorPalette: Colors['node_slot']
   ) {
-    if (!linkColorPalette) return
-    const rootStyle = document.documentElement?.style
-    if (!rootStyle) return
+    const rootStyle = document.documentElement.style
 
     for (const dataType of nodeDefStore.nodeDataTypes) {
       const cssVar = `color-datatype-${dataType}`
@@ -120,9 +120,7 @@ export const useColorPaletteService = () => {
     palette: Colors['litegraph_base'],
     colorPaletteId: string
   ) {
-    if (!palette) return
-    const rootStyle = document.documentElement?.style
-    if (!rootStyle) return
+    const rootStyle = document.documentElement.style
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
       if (!validThemeProp(themeVar)) {
@@ -149,16 +147,16 @@ export const useColorPaletteService = () => {
    */
   const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
     // Sets the colors of the LiteGraph objects
-    app.canvas.node_title_color = palette.NODE_TITLE_COLOR
-    app.canvas.default_link_color = palette.LINK_COLOR
+    useApp().canvas.node_title_color = palette.NODE_TITLE_COLOR
+    useApp().canvas.default_link_color = palette.LINK_COLOR
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      app.canvas.clear_background_color = 'transparent'
+      useApp().canvas.clear_background_color = 'transparent'
     } else {
-      app.canvas.background_image = palette.BACKGROUND_IMAGE
-      app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+      useApp().canvas.background_image = palette.BACKGROUND_IMAGE
+      useApp().canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
     }
-    app.canvas._pattern = undefined
+    useApp().canvas._pattern = undefined
 
     if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
       console.warn(
@@ -210,7 +208,6 @@ export const useColorPaletteService = () => {
     comfyColorPalette: Colors['comfy_base'],
     isLightTheme: boolean
   ) => {
-    if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
       rootStyle.setProperty('--' + key, value)
@@ -249,7 +246,8 @@ export const useColorPaletteService = () => {
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      return
     }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
@@ -264,7 +262,7 @@ export const useColorPaletteService = () => {
       completedPalette.colors.comfy_base,
       completedPalette.light_theme === true
     )
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
   }
@@ -277,7 +275,8 @@ export const useColorPaletteService = () => {
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      return
     }
     downloadBlob(
       colorPalette.id + '.json',

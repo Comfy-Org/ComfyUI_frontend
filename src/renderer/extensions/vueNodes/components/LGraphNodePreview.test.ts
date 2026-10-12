@@ -1,16 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
+import { useWidgetStore } from '@/stores/widgetStore'
+
 import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-
-vi.mock('@/stores/widgetStore', () => ({
-  useWidgetStore: () => ({ inputIsWidget: () => true })
-}))
+import type { WidgetValueBinding } from '@/utils/widgetBinding'
 
 const WidgetGridProbe = {
   props: ['processedWidgets'],
@@ -45,12 +44,12 @@ const nodeDef = fromPartial<ComfyNodeDefV2>({
 
 function renderedWidgets(
   def: ComfyNodeDefV2,
-  props: { widgetValues?: Record<string, string> } = {}
+  props: { widgetValues?: readonly WidgetValueBinding[] } = {}
 ) {
   render(LGraphNodePreview, {
     props: { nodeDef: def, ...props },
     global: {
-      plugins: [createTestingPinia({ stubActions: false })],
+      plugins: [getActivePinia()!],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -59,23 +58,27 @@ function renderedWidgets(
     }
   })
   const nodeData: { widgets?: ProbedWidget[] } = JSON.parse(
-    screen.getByTestId('node-data').textContent ?? ''
+    screen.getByTestId('node-data').textContent
   )
   return nodeData.widgets ?? []
 }
 
 function renderedComboWidget(
-  props: { widgetValues?: Record<string, string> } = {}
+  props: { widgetValues?: readonly WidgetValueBinding[] } = {}
 ) {
   return renderedWidgets(nodeDef, props).find((w) => w.name === 'ckpt_name')
 }
+
+beforeEach(() => {
+  vi.mocked(useWidgetStore().inputIsWidget).mockReturnValue(true)
+})
 
 describe('LGraphNodePreview', () => {
   it('does not synchronize preview geometry with the canvas layout', () => {
     render(LGraphNodePreview, {
       props: { nodeDef },
       global: {
-        plugins: [createTestingPinia({ stubActions: false })],
+        plugins: [getActivePinia()!],
         stubs: {
           NodeHeader: true,
           NodeSlots: {
@@ -104,13 +107,37 @@ describe('LGraphNodePreview', () => {
 
   it('leads the combo options with the provided widget value', () => {
     const widget = renderedComboWidget({
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' }
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ]
     })
 
     expect(widget?.options?.values).toEqual([
       'sd_xl_base_1.0.safetensors',
       'a.safetensors',
       'b.safetensors'
+    ])
+  })
+
+  it('previews a pattern-bound value only on the first matching widget', () => {
+    const widgets = renderedWidgets(
+      fromPartial<ComfyNodeDefV2>({
+        name: 'MultiModel',
+        inputs: {
+          strength: { type: 'FLOAT', default: 0.5 },
+          model_a: { type: 'COMBO', options: ['A.safetensors'] },
+          model_b: { type: 'COMBO', options: ['B.safetensors'] }
+        }
+      }),
+      {
+        widgetValues: [{ selector: /^model_/, value: 'C.safetensors' }]
+      }
+    )
+
+    expect(widgets.map(({ name, value }) => ({ name, value }))).toEqual([
+      { name: 'strength', value: 0.5 },
+      { name: 'model_a', value: 'C.safetensors' },
+      { name: 'model_b', value: 'B.safetensors' }
     ])
   })
 
@@ -121,7 +148,9 @@ describe('LGraphNodePreview', () => {
   })
 
   it('leads with an explicitly empty provided value', () => {
-    const widget = renderedComboWidget({ widgetValues: { ckpt_name: '' } })
+    const widget = renderedComboWidget({
+      widgetValues: [{ selector: 'ckpt_name', value: '' }]
+    })
 
     expect(widget?.value).toBe('')
     expect(widget?.options?.values).toEqual([
