@@ -895,6 +895,34 @@ interface AgentStarterPromptExperimentMetadata {
    */
   '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
 }
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
+}
+/**
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
+ */
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
+  placement: AgentFreeUsePlacement
+}
 export interface AgentStarterPromptClickedMetadata
   extends
     Record<string, unknown>,
@@ -1445,6 +1473,8 @@ export interface TelemetryProvider {
   trackAgentStarterPromptExposure?(
     metadata: AgentStarterPromptExposureMetadata
   ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1629,6 +1659,8 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',

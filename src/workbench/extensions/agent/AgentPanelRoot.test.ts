@@ -29,6 +29,7 @@ import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
@@ -101,6 +102,7 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -246,6 +248,7 @@ const paywallBilling = vi.hoisted(() => ({
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -331,7 +334,9 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+              agentHasFunds:
+                paywallAgentHasFunds.value ?? paywallHasFunds.value,
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -452,6 +457,7 @@ beforeEach(() => {
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  paywallAgentScopedHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -612,6 +618,76 @@ describe('AgentPanelRoot first-use experience', () => {
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  const reportFreeUseNotice = vi.fn()
+
+  function placeFundedFreeUseNotice() {
+    paywallHasFunds.value = true
+    paywallAgentScopedHasFunds.value = true
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
+    )
+  }
+
+  function freeUseNotice() {
+    return screen.findByRole('note', { name: 'Free use notice' })
+  }
+
+  it('forwards free-use notice interactions to the experiment', async () => {
+    placeFundedFreeUseNotice()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
+    )
+
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
+  })
+
+  it.for([
+    { label: 'the grant is spent but paid credits remain', scoped: false },
+    { label: 'no scoped balance is reported at all', scoped: undefined }
+  ])('says nothing about free turns when $label', async ({ scoped }) => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('hides the notice while any inline paywall remains unresolved', async () => {
+    placeFundedFreeUseNotice()
+    const conversation = useAgentConversationStore()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await freeUseNotice()
+
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    conversation.recordFailedSend(
+      toTurnId('msg-failed'),
+      'try again',
+      'Send failed'
+    )
+    await screen.findByText('Send failed')
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+
+    conversation.resolvePaywalls()
+
+    expect(await freeUseNotice()).toBeInTheDocument()
   })
 })
 
