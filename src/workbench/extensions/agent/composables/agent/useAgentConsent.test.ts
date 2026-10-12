@@ -49,7 +49,8 @@ const recordConsentOfferDeclined = vi.hoisted(() => vi.fn())
 vi.mock(
   import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
   () => ({
-    consentOfferDeclined: () => Promise.resolve(false),
+    consentOfferDeclined: () =>
+      Promise.resolve({ ok: true, declined: false } as const),
     recordConsentOfferDeclined
   })
 )

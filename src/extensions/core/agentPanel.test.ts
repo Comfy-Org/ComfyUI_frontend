@@ -16,6 +16,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
+import type { ConsentOfferDeclinedResult } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -27,6 +28,7 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -138,8 +140,9 @@ const READY_AGENT = { state: 'ready', reason: null } as const
 // Stubbed rather than driven through the real settings store because that
 // store's loader retries with exponential backoff, so an unmocked read costs
 // every test in this file several seconds of a request that cannot succeed here.
-const offerDeclined = ref(false)
-const consentOfferDeclined = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
+const consentOfferDeclined = vi.hoisted(() =>
+  vi.fn<() => Promise<ConsentOfferDeclinedResult>>()
+)
 vi.mock(
   import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
   () => ({
@@ -228,10 +231,7 @@ describe('AgentPanel extension flag gate', () => {
     setAgentReady(false)
     releaseFirstRunScreen()
     activeTour.value = null
-    offerDeclined.value = false
-    consentOfferDeclined.mockImplementation(() =>
-      Promise.resolve(offerDeclined.value)
-    )
+    consentOfferDeclined.mockResolvedValue({ ok: true, declined: false })
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
@@ -1245,7 +1245,7 @@ describe('AgentPanel extension flag gate', () => {
       // later cleared.
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      offerDeclined.value = true
+      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
 
       await loadEntryAndSetup()
       const exited = await offerExited()
@@ -1277,7 +1277,7 @@ describe('AgentPanel extension flag gate', () => {
         })
       )
 
-      offerDeclined.value = true
+      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
       closeDialog()
       const exited = await offerExited()
       // `retry_armed` reports the hold as the exit was taken, like every other
@@ -1302,13 +1302,15 @@ describe('AgentPanel extension flag gate', () => {
       startupDecision = new Promise<boolean>((resolve) => {
         decideStartup = resolve
       })
+      consentOfferDeclined
+        .mockResolvedValueOnce({ ok: true, declined: false })
+        .mockResolvedValueOnce({ ok: true, declined: true })
 
       await loadEntryAndSetup()
       await vi.waitFor(() =>
         expect(consentOfferDeclined).toHaveBeenCalledOnce()
       )
 
-      offerDeclined.value = true
       currentUser.value = { id: 'account-b' }
       Object.assign(consentStore, { identity: 'account-b/workspace-a' })
       await vi.waitFor(() =>
@@ -1339,13 +1341,37 @@ describe('AgentPanel extension flag gate', () => {
       // decision nobody made.
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      offerDeclined.value = true
+      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
       agentStore.isOpen = false
 
       await loadEntryAndSetup()
       await vi.waitFor(() =>
         expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
       )
+    })
+
+    it('does not offer or spend the one-shot when refusal status cannot be read', async () => {
+      const failure = new Error('offline')
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      consentOfferDeclined.mockResolvedValue({ ok: false, cause: failure })
+
+      await loadEntryAndSetup()
+      const exited = await offerExited()
+      await vi.waitFor(() =>
+        expect(exited).toHaveBeenCalledExactlyOnceWith({
+          exit: 'startup_probe_failed',
+          stage: 'startup',
+          retry_armed: false
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+        surface: 'agent',
+        errorType: 'agent_consent_auto_offer_failure'
+      })
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
     })
   })
 

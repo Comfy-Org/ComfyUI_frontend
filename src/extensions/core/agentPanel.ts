@@ -428,9 +428,17 @@ export function registerAgentPanelExtension(): void {
         // and the one-shot key is burned is a window for a second card.
         const refusalIdentity = consentStore.identity
         Promise.all([whenStartupDecided(), consentOfferDeclined()])
-          .then(([decided, declined]) => {
+          .then(([decided, refusal]) => {
             if (consentStore.identity !== refusalIdentity) return
-            if (declined) {
+            if (!refusal.ok) {
+              reportOfferExit('startup_probe_failed', 'startup')
+              reportError(refusal.cause, {
+                surface: 'agent',
+                errorType: 'agent_consent_auto_offer_failure'
+              })
+              return
+            }
+            if (refusal.declined) {
               // Not transient and never retried, so the hold goes with it: the
               // offer is not owed any more, this page load or any later one.
               reportOfferExit('consent_declined', 'startup')
