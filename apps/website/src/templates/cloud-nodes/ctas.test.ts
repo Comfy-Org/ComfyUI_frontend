@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '@/config/routes'
 import { cloudNodesCtas } from './ctas'
 
 const locales: Locale[] = ['en', 'zh-CN']
@@ -25,8 +25,8 @@ describe('cloudNodesCtas', () => {
   })
 
   it('keeps the localized download path for zh-CN', () => {
-    expect(cloudNodesCtas('en').getStarted.href).toBe('/download')
-    expect(cloudNodesCtas('zh-CN').getStarted.href).toBe('/zh-CN/download')
+    expect(cloudNodesCtas('en').getStarted.href).toBe('/download/')
+    expect(cloudNodesCtas('zh-CN').getStarted.href).toBe('/zh-CN/download/')
   })
 
   it('points updating at the canonical docs page', () => {

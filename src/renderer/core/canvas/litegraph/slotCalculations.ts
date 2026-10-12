@@ -7,11 +7,11 @@
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'

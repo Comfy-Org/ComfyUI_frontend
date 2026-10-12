@@ -69,7 +69,6 @@ describe('isValidSemver', () => {
 
   it('rejects empty / non-string input', () => {
     expect(isValidSemver('')).toBe(false)
-    // @ts-expect-error exercising runtime guard
     expect(isValidSemver(undefined)).toBe(false)
   })
 })

@@ -67,6 +67,12 @@ for (const { name, status, message } of REFUSAL_CASES) {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(page.getByRole('alert')).toContainText(message)
+    await expect(
+      page.getByRole('link', { name: 'Return to ComfyUI' })
+    ).toHaveAttribute('href', 'https://testcloud.comfy.org/')
+    await expect(
+      page.getByRole('button', { name: 'Retry session' })
+    ).toHaveCount(0)
     const mint = cloud.requests.find(
       (request) => request.path === '/auth/token'
     )
@@ -77,3 +83,54 @@ for (const { name, status, message } of REFUSAL_CASES) {
     ).toBe(false)
   })
 }
+
+test('reloading a tab whose workspace was deleted surfaces that reason instead of a blank page', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/auth/token', () => ({
+    body: {
+      token: 'e2e-team-jwt',
+      expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      permissions: ['workspace:read', 'billing:write'],
+      role: 'owner',
+      workspace: { id: 'ws_team_e2e', name: 'Acme Team', type: 'team' }
+    }
+  }))
+  const subscription = entryPath('subscription', {
+    workspace: 'ws_team_e2e'
+  })
+  await signIn(subscription)
+  await expect(page.getByText('Billing for Acme Team')).toBeVisible()
+
+  cloud.reply('POST', '/auth/token', () => ({
+    status: 404,
+    body: { error: 'workspace not found' }
+  }))
+  for (const path of [
+    '/billing/status',
+    '/billing/balance',
+    '/billing/plans',
+    '/billing/payment-methods',
+    '/billing/capabilities'
+  ]) {
+    cloud.reply('GET', path, () => ({
+      status: 401,
+      body: { error: 'unauthorized' }
+    }))
+  }
+  const opened = new URL(page.url())
+  const openedPath = `${opened.pathname}${opened.search}`
+  await page.reload()
+
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/sign-in' &&
+      url.searchParams.get('returnTo') === openedPath
+  )
+  await expect(page.getByRole('alert')).toContainText(
+    "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
+  )
+  await expect(page.getByText('Billing for Acme Team')).toHaveCount(0)
+})

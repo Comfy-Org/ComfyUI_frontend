@@ -50,3 +50,7 @@ export function isAgentAttachable(file: File): boolean {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
   return ATTACHABLE_EXTENSIONS.has(extension)
 }
+
+export function attachableClipboardFiles(clipboard: DataTransfer): File[] {
+  return Array.from(clipboard.files).filter(isAgentAttachable)
+}

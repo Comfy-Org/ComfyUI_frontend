@@ -54,8 +54,9 @@ function createTestI18n() {
     messages: {
       en: {
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.'
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.'
         }
       }
     }
@@ -84,6 +85,7 @@ function mountOverlayState() {
     template: `
       <section>
         <span data-testid="visible">{{ isVisible }}</span>
+        <span data-testid="has-error">{{ hasError }}</span>
         <span data-testid="title">{{ overlayTitle }}</span>
         <span data-testid="message">{{ overlayMessage }}</span>
       </section>
@@ -104,6 +106,59 @@ describe('useErrorOverlayState', () => {
     mockErrorGroups.missingModelGroups.value = []
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
+  })
+
+  it.for([
+    'missing_node',
+    'swap_nodes',
+    'missing_model',
+    'missing_media'
+  ] as const)(
+    'treats %s as a warning even if it blocked the last run',
+    (type) => {
+      mockAllErrorGroups.value = [
+        {
+          type,
+          severity: 'missing',
+          groupKey: type,
+          displayTitle: 'Setup required',
+          count: 1,
+          priority: 0,
+          blockedLastRun: true
+        }
+      ]
+      mountOverlayState()
+
+      expect(screen.getByTestId('has-error')).toHaveTextContent('false')
+    }
+  )
+
+  it('keeps error severity when missing resources and an execution error coexist', () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_model',
+        severity: 'missing',
+        groupKey: 'missing_model',
+        displayTitle: 'Missing Models',
+        count: 2,
+        priority: 2,
+        blockedLastRun: false
+      },
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Execution failed',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [{ id: '1', title: 'KSampler', errors: [{ message: 'Failed' }] }]
+      }
+    ]
+    mountOverlayState()
+
+    expect(screen.getByTestId('has-error')).toHaveTextContent('true')
+    expect(screen.getByTestId('title')).toHaveTextContent('3 issues found')
   })
 
   it('uses the raw message for a single uncataloged execution error', async () => {
@@ -137,6 +192,7 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('visible')).toHaveTextContent('true')
     expect(screen.getByTestId('title')).toHaveTextContent('Execution failed')
     expect(screen.getByTestId('message')).toHaveTextContent('Only error')
+    expect(screen.getByTestId('has-error')).toHaveTextContent('true')
   })
 
   it('uses toast copy for a single validation error', async () => {
@@ -475,9 +531,9 @@ describe('useErrorOverlayState', () => {
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
-    expect(screen.getByTestId('title')).toHaveTextContent('2 errors found')
+    expect(screen.getByTestId('title')).toHaveTextContent('2 issues found')
     expect(screen.getByTestId('message')).toHaveTextContent(
-      'Resolve them before running the workflow.'
+      'Resolve these issues before running the workflow.'
     )
   })
 
@@ -586,9 +642,9 @@ describe('useErrorOverlayState', () => {
     await nextTick()
 
     expect(screen.getByTestId('visible')).toHaveTextContent('true')
-    expect(screen.getByTestId('title')).toHaveTextContent('5 errors found')
+    expect(screen.getByTestId('title')).toHaveTextContent('5 issues found')
     expect(screen.getByTestId('message')).toHaveTextContent(
-      'Resolve them before running the workflow.'
+      'Resolve these issues before running the workflow.'
     )
   })
 })

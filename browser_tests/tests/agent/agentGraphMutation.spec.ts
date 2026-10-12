@@ -2,8 +2,6 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   BUILD_VIDEO_GRAPH_TOOL_EVENT,
   GRAPH_SUBSCRIBED_EVENT,
@@ -11,7 +9,8 @@ import {
   MESSAGE_DONE_EVENT,
   VIDEO_GRAPH_DONE_EVENT,
   VIDEO_GRAPH_DONE_TEXT,
-  agentTest
+  agentTest,
+  pushAgentEvent
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -29,55 +28,43 @@ test.describe(
     })
 
     test('GM-96 / PM-921 does not present an uncommitted build as finished', async ({
-      comfyPage,
+      agentPanel,
       postedMessages,
       getWebSocket
     }) => {
-      const page = comfyPage.page
       const ws = await getWebSocket()
-      const panel = page.locator('#agent-panel-root')
-      await page
-        .getByRole('button', { name: enMessages.agent.entryButton })
-        .click()
-      await panel
-        .getByRole('textbox', { name: /^Describe ideas/ })
-        .fill('Build a Wan 2.2 two-stage video graph')
-      await panel.getByRole('button', { name: 'Send' }).click()
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      await agentPanel.sendMessage('Build a Wan 2.2 two-stage video graph')
       await expect.poll(() => postedMessages.length).toBe(1)
 
-      ws.send(JSON.stringify(BUILD_VIDEO_GRAPH_TOOL_EVENT))
-      await expect(
-        panel.getByRole('button', { name: 'Worked for 2.1 seconds' })
-      ).toBeVisible()
-      ws.send(JSON.stringify(VIDEO_GRAPH_DONE_EVENT))
-      ws.send(JSON.stringify(MESSAGE_DONE_EVENT))
-      await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
+      pushAgentEvent(ws, BUILD_VIDEO_GRAPH_TOOL_EVENT)
+      pushAgentEvent(ws, VIDEO_GRAPH_DONE_EVENT)
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(agentPanel.workSummary).toBeVisible()
 
       test.fail(
         true,
         'PM-921: the agent reports a build that was not committed'
       )
-      await expect(panel.getByText(VIDEO_GRAPH_DONE_TEXT)).toBeHidden()
+      await expect(
+        agentPanel.root.getByText(VIDEO_GRAPH_DONE_TEXT)
+      ).toBeHidden()
     })
 
     test('materializes a committed graph node on the canvas', async ({
+      agentPanel,
       comfyPage,
       postedMessages,
       getWebSocket
     }) => {
-      const page = comfyPage.page
       const ws = await getWebSocket()
       const clientFrames: string[] = []
       ws.onMessage((message) => clientFrames.push(message.toString()))
 
-      await page
-        .getByRole('button', { name: enMessages.agent.entryButton })
-        .click()
-      const panel = page.locator('#agent-panel-root')
-      await panel
-        .getByRole('textbox', { name: /^Describe ideas/ })
-        .fill('Build a graph')
-      await panel.getByRole('button', { name: 'Send' }).click()
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      await agentPanel.sendMessage('Build a graph')
       await expect.poll(() => postedMessages.length).toBe(1)
       await expect
         .poll(() =>
