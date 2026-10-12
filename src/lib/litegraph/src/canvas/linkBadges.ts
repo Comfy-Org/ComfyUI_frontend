@@ -181,9 +181,14 @@ function socketOf(link: LLink, side: BadgeSide) {
     : { nodeId: link.target_id, slot: link.target_slot }
 }
 
-function stackKeyOf(link: LLink, side: BadgeSide): string {
+function stackKeyOf(
+  link: LLink,
+  side: BadgeSide,
+  graphId: string | undefined
+): string {
   const { nodeId, slot } = socketOf(link, side)
-  return `${side}:${nodeId}:${slot}`
+  const socketKey = `${side}:${nodeId}:${slot}`
+  return graphId ? `${graphId}/${socketKey}` : socketKey
 }
 
 function isUnlabelled({ presentation }: HiddenLinkBadge): boolean {
@@ -191,12 +196,13 @@ function isUnlabelled({ presentation }: HiddenLinkBadge): boolean {
 }
 
 function groupStackedLinks(
-  hiddenLinks: readonly HiddenLinkBadge[]
+  hiddenLinks: readonly HiddenLinkBadge[],
+  graphId: string | undefined
 ): Map<string, LinkId[]> {
   const groups = new Map<string, LinkId[]>()
   for (const hidden of hiddenLinks.filter(isUnlabelled)) {
     for (const side of ['output', 'input'] as const) {
-      const key = stackKeyOf(hidden.link, side)
+      const key = stackKeyOf(hidden.link, side, graphId)
       const group = groups.get(key)
       if (group) group.push(hidden.link.id)
       else groups.set(key, [hidden.link.id])
@@ -277,9 +283,10 @@ function compareBadgeEndpoints(
 export function layoutHiddenLinkBadges(
   host: object,
   ctx: CanvasRenderingContext2D,
-  hiddenLinks: readonly HiddenLinkBadge[]
+  hiddenLinks: readonly HiddenLinkBadge[],
+  graphId?: string
 ): Map<LinkId, LinkBadgePair> {
-  const stacks = groupStackedLinks(hiddenLinks)
+  const stacks = groupStackedLinks(hiddenLinks, graphId)
   const expanded = expandedStacksByHost.get(host)
   for (const stackKey of expanded ?? []) {
     if (!stacks.has(stackKey)) expanded?.delete(stackKey)
@@ -328,7 +335,7 @@ export function layoutHiddenLinkBadges(
       text: linkBadgeText(link.type, presentation),
       linkIds: [link.id]
     }
-    const stackKey = stackKeyOf(link, side)
+    const stackKey = stackKeyOf(link, side, graphId)
     if (!isUnlabelled(hidden) || !stacks.has(stackKey)) return addEndpoint(spec)
     const head = stackHead(spec, stackKey)
     return expanded?.has(stackKey)

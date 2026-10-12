@@ -494,6 +494,8 @@ function marqueeSelectsLinks(
   )
 }
 
+function toggleStackOnceOnDoubleClick(): void {}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -2775,7 +2777,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           toggleLinkBadgeStack(this, stackKey)
           this.dirty_bgcanvas = true
         }
-        pointer.onDoubleClick = () => {}
+        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return

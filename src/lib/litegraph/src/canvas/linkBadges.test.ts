@@ -587,4 +587,23 @@ describe('hidden link badge stacks', () => {
 
     expect(collapseLinkBadgeStacks(host)).toBe(true)
   })
+
+  it('keeps an expanded stack to the graph it was opened in', () => {
+    const host = {}
+    const ctx = createContext()
+    layoutHiddenLinkBadges(host, ctx, fanOut([undefined, undefined]), 'graph-a')
+    toggleLinkBadgeStack(host, 'graph-a/output:4:0')
+
+    const layouts = layoutHiddenLinkBadges(
+      host,
+      ctx,
+      fanOut([undefined, undefined]),
+      'graph-b'
+    )
+
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.stackKey).toBe(
+      'graph-b/output:4:0'
+    )
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(100)
+  })
 })

@@ -77,5 +77,5 @@ export function layoutGraphLinkBadges(
         defaultLinkColor
     })
   }
-  return layoutHiddenLinkBadges(host, ctx, hiddenLinks)
+  return layoutHiddenLinkBadges(host, ctx, hiddenLinks, scope.owningGraphId)
 }

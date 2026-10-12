@@ -611,6 +611,30 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
     })
 
+    it('expands a stack exactly once on a double click', () => {
+      const { canvas, links, relayout } = createStackFixture()
+      const init = { isPrimary: true, pointerId: 1, clientX: 420, clientY: 300 }
+      for (const timeStamp of [100, 200]) {
+        const down = new PointerEvent('pointerdown', {
+          ...init,
+          button: 0,
+          buttons: 1
+        })
+        const up = new PointerEvent('pointerup', {
+          ...init,
+          button: 0,
+          buttons: 0
+        })
+        vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(timeStamp)
+        vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(timeStamp + 20)
+        canvas.processMouseDown(down)
+        canvas.processMouseUp(up)
+      }
+      relayout()
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
     it('collapses an expanded stack when empty canvas is clicked', () => {
       const { canvas, relayout } = createStackFixture()
 
