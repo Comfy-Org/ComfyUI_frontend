@@ -87,6 +87,7 @@
         <WorkflowAgentChatsMenu
           :workflow-path="workflowOption.workflow.path"
           :workflow-name="workflowOption.workflow.filename"
+          class="absolute top-1/2 right-8 -translate-y-1/2"
           @open="hideTabPopover"
         />
         <Button

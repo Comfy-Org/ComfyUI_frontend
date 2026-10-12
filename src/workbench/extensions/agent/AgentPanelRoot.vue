@@ -92,11 +92,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type {
-  AgentActiveTabData,
-  AgentThreadSummary
-} from './schemas/agentApiSchema'
-import type { ChatSession } from './stores/agent/agentChatHistoryStore'
+import type { AgentActiveTabData } from './schemas/agentApiSchema'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
@@ -106,7 +102,6 @@ import type {
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
-import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import {
   isRetryableRequestFailure,
@@ -115,6 +110,7 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { useAgentWorkflowChatsStore } from './stores/agent/agentWorkflowChatsStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
@@ -393,12 +389,8 @@ const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
-const workflowResolver = useAgentWorkflowResolver({
-  workflows: workflowStore,
-  bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows(),
-  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
-})
+const workflowChats = useAgentWorkflowChatsStore()
+const workflowResolver = workflowChats.resolver
 const {
   refreshCloudWorkflowIds,
   forgetCloudWorkflowId,
@@ -518,9 +510,6 @@ onBeforeUnmount(() =>
   runPanelTeardown({
     disposeMinimapLayer: () => {
       agentMinimapLayer?.dispose()
-    },
-    clearTabChats: () => {
-      tabActivity.clearAgentChats()
     }
   })
 )
@@ -822,7 +811,6 @@ const {
   status,
   notices,
   threadId,
-  listThreads,
   loadThread,
   boundWorkflowId,
   bindWorkflow,
@@ -1390,18 +1378,6 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
-function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
-  const updatedAt = stamp ? Date.parse(stamp) : Date.now()
-  return {
-    id: thread.id,
-    title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
-    titleSource: thread.title ? 'server' : 'fallback',
-    workflowId: thread.workflow_id || undefined
-  }
-}
-
 function reportThreadListLoadFailure(error: unknown): void {
   reportError(error, {
     surface: 'agent',
@@ -1421,107 +1397,53 @@ function reportThreadListLoadFailure(error: unknown): void {
   )
 }
 
-let historyLoadGeneration = 0
-
-/**
- * Replaces Chat history with the server list. Only the latest load applies its
- * result or reports its failure.
- */
-async function loadHistory(): Promise<
-  { ok: true } | { ok: false; error: unknown }
-> {
-  const generation = ++historyLoadGeneration
-  const isLatest = () => generation === historyLoadGeneration
-  try {
-    const { threads, complete } = await listThreads()
-    if (!isLatest()) return { ok: true }
-    if (!complete)
-      return {
-        ok: false,
-        error: 'Agent thread list ended before its last page'
-      }
-    history.replaceAll(threads.map(toChatSession))
-    return { ok: true }
-  } catch (error) {
-    return isLatest() ? { ok: false, error } : { ok: true }
-  }
-}
-
 async function refreshHistory(): Promise<void> {
-  const result = await loadHistory()
+  const result = await workflowChats.loadChats()
   if (!result.ok) reportThreadListLoadFailure(result.error)
 }
 
 void refreshHistory()
 
-const viewedWorkflowId = computed(() => {
-  const viewed = workflowStore.activeWorkflow
-  return viewed ? cloudIdFor(viewed) : undefined
-})
-
-const chatsByTabPath = computed(
-  () =>
-    new Map(
-      workflowStore.openWorkflows.flatMap((tab) => {
-        const workflowId = cloudIdFor(tab)
-        const chats =
-          workflowId === undefined
-            ? []
-            : history
-                .sessionsForWorkflow(workflowId)
-                .filter(({ id }) => id !== threadId.value)
-                .map(({ id, title, updatedAt }) => ({ id, title, updatedAt }))
-        return chats.length ? [[tab.path, chats] as const] : []
-      })
-    )
-)
-
 const agentPanelRef = ref<InstanceType<typeof AgentPanel>>()
 
-async function openChatFromTab(
-  tabPath: string,
+async function openWorkflowChat(
+  workflowPath: string,
   chatId: string | null
 ): Promise<void> {
   if (chatId !== null) {
     await agentPanelRef.value?.openChat(chatId)
     return
   }
-  const tab = workflowStore.openWorkflows.find(({ path }) => path === tabPath)
-  if (!tab) return
+  const workflow = workflowStore.getWorkflowByPath(workflowPath)
+  if (!workflow) return
   const view = agentPanelStore.view
   if (
-    workflowStore.activeWorkflow?.path !== tabPath &&
-    !(await workflowService.openWorkflow(tab))
+    workflowStore.activeWorkflow?.path !== workflowPath &&
+    !(await workflowService.openWorkflow(workflow))
   )
     return
   if (
     agentPanelStore.view === view &&
-    workflowStore.activeWorkflow?.path === tabPath
+    workflowStore.activeWorkflow?.path === workflowPath
   )
     agentPanelRef.value?.startNewChat()
 }
 
-watch(
-  chatsByTabPath,
-  (chats) =>
-    tabActivity.setAgentChats(chats, (tabPath, chatId) => {
-      void openChatFromTab(tabPath, chatId)
-    }),
-  { immediate: true }
-)
-
-// Chats started or moved since the last load are missing from the list. A chat
-// being opened refreshes the list itself, and a failed reload stays quiet so it
-// never interrupts a tab switch.
-watch([viewedWorkflowId, threadId], async ([workflowId]) => {
-  if (workflowId === undefined || agentPanelStore.selectingChat) return
-  const result = await loadHistory()
-  if (!result.ok)
-    reportError(result.error, {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
-    })
+const pendingWorkflowChatRequest = workflowChats.takePendingRequest()
+let detachFromWorkflowChats: (() => void) | undefined
+onMounted(() => {
+  detachFromWorkflowChats = workflowChats.attachPanel(
+    (workflowPath, chatId) => {
+      void openWorkflowChat(workflowPath, chatId)
+    }
+  )
+  if (pendingWorkflowChatRequest)
+    void openWorkflowChat(
+      pendingWorkflowChatRequest.workflowPath,
+      pendingWorkflowChatRequest.chatId
+    )
 })
+onBeforeUnmount(() => detachFromWorkflowChats?.())
 
 const currentChatReady = computed(
   () =>
@@ -1751,10 +1673,11 @@ watch(
 // happens to have been assigned by start(). Register scope cleanup first.
 start({
   restore:
-    agentPanelStore.view.screen === 'chat' ||
-    (agentPanelStore.view.screen === 'history' &&
-      agentPanelStore.view.selection.status === 'idle' &&
-      threadId.value === agentPanelStore.view.previousThreadId)
+    pendingWorkflowChatRequest === null &&
+    (agentPanelStore.view.screen === 'chat' ||
+      (agentPanelStore.view.screen === 'history' &&
+        agentPanelStore.view.selection.status === 'idle' &&
+        threadId.value === agentPanelStore.view.previousThreadId))
 })
 
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {

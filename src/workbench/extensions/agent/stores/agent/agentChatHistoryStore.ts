@@ -84,11 +84,19 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     groupSessionsByRecency(titled.value, activeId.value, now.value)
   )
 
-  function sessionsForWorkflow(workflowId: string): ChatSession[] {
-    return titled.value
-      .filter((session) => session.workflowId === workflowId)
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-  }
+  /** Chats by the workflow they are on, most recent first. */
+  const sessionsByWorkflow = computed(() => {
+    const byWorkflow = new Map<string, ChatSession[]>()
+    for (const session of [...titled.value].sort(
+      (a, b) => b.updatedAt - a.updatedAt
+    )) {
+      if (session.workflowId === undefined) continue
+      const chats = byWorkflow.get(session.workflowId) ?? []
+      chats.push(session)
+      byWorkflow.set(session.workflowId, chats)
+    }
+    return byWorkflow
+  })
 
   function titleFor(id: string | null): string | undefined {
     return id === null ? undefined : customTitles.value[id]
@@ -123,7 +131,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
-    sessionsForWorkflow,
+    sessionsByWorkflow,
     titleFor,
     rename,
     remove,

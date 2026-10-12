@@ -98,9 +98,9 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('deleted')
 
     expect(
-      store
-        .sessionsForWorkflow('wf-portrait')
-        .map(({ id, title }) => [id, title])
+      store.sessionsByWorkflow
+        .get('wf-portrait')
+        ?.map(({ id, title }) => [id, title])
     ).toEqual([
       ['newer', 'newer'],
       ['older', 'Renamed portrait chat']

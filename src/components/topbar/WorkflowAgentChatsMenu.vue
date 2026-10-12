@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,9 +10,14 @@ import type { MenuItem } from '@/components/ui/menu/types'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-const { workflowPath, workflowName } = defineProps<{
+const {
+  workflowPath,
+  workflowName,
+  class: className
+} = defineProps<{
   workflowPath: string
   workflowName: string
+  class?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{ open: [] }>()
@@ -73,7 +80,12 @@ const items = computed<MenuItem[]>(() => [
         variant="muted-textonly"
         size="unset"
         :aria-label="countLabel"
-        class="absolute top-1/2 right-8 h-5 w-7 -translate-y-1/2 gap-0.5 rounded-sm text-xs tabular-nums"
+        :class="
+          cn(
+            'h-5 w-7 shrink-0 gap-0.5 rounded-sm text-xs tabular-nums',
+            className
+          )
+        "
         @click.stop
       >
         <i class="icon-[lucide--message-square] size-3 shrink-0" />

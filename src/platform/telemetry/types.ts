@@ -631,7 +631,12 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'workflow_chats'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'

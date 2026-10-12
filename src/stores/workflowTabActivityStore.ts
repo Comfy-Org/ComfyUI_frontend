@@ -7,13 +7,13 @@ interface AgentTabChat {
   updatedAt: number
 }
 
-/** Opens a listed chat, or a new chat on the tab when `chatId` is null. */
-type AgentTabChatOpener = (tabPath: string, chatId: string | null) => void
+/** Opens a listed chat, or a new chat on the workflow when `chatId` is null. */
+type AgentTabChatOpener = (workflowPath: string, chatId: string | null) => void
 
 /**
- * Cross-feature workflow-tab activity, keyed by tab path. Feature extensions
- * (the agent panel) write it; the topbar reads it, so the topbar never has to
- * import feature internals.
+ * Cross-feature workflow-tab activity, keyed by workflow path. Feature
+ * extensions (the agent panel) write it; the topbar and the Workflows sidebar
+ * read it, so neither has to import feature internals.
  */
 export const useWorkflowTabActivityStore = defineStore(
   'workflowTabActivity',
@@ -34,13 +34,8 @@ export const useWorkflowTabActivityStore = defineStore(
       agentChatOpener = opener
     }
 
-    function clearAgentChats(): void {
-      agentChatsByPath.value = new Map()
-      agentChatOpener = null
-    }
-
-    function openAgentChat(tabPath: string, chatId: string | null): void {
-      agentChatOpener?.(tabPath, chatId)
+    function openAgentChat(workflowPath: string, chatId: string | null): void {
+      agentChatOpener?.(workflowPath, chatId)
     }
 
     function setEditing(path: string | null): void {
@@ -79,7 +74,6 @@ export const useWorkflowTabActivityStore = defineStore(
       unseenModifiedPaths,
       agentChatsByPath,
       setAgentChats,
-      clearAgentChats,
       openAgentChat,
       setEditing,
       setCreating,

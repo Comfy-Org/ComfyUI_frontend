@@ -398,7 +398,7 @@ describe('WorkflowTab - agent chats', () => {
     ).toHaveTextContent('9+')
   })
 
-  it('shows no chat count once the agent clears its tab chats', async () => {
+  it('shows no chat count once the agent lists no chats for the tab', async () => {
     const workflowOption = makeWorkflowOption()
     const activity = useWorkflowTabActivityStore()
     activity.setAgentChats(
@@ -415,7 +415,7 @@ describe('WorkflowTab - agent chats', () => {
       screen.getByRole('button', { name: '1 chat on test.json' })
     ).toBeInTheDocument()
 
-    activity.clearAgentChats()
+    activity.setAgentChats(new Map(), vi.fn())
     await nextTick()
 
     expect(

@@ -292,8 +292,35 @@ describe('Agent workflow resolution', () => {
     expect(resolver.nextSaveFilename(scratch)).toBe('Draft (3)')
   })
 
+  it('maps a closed saved workflow to its Cloud id only when no other stored workflow shares its name', async () => {
+    const { resolver } = setup(
+      [workflow('workflows/open.json', 'open')],
+      [
+        { id: 'wf-open', name: 'open' },
+        { id: 'wf-unique', name: 'unique' },
+        { id: 'wf-twin', name: 'twin' },
+        { id: 'wf-draft', name: 'draft' }
+      ],
+      [
+        workflow('workflows/a/unique.json', 'unique'),
+        workflow('workflows/a/twin.json', 'twin'),
+        workflow('workflows/b/twin.json', 'twin'),
+        workflow('workflows/draft.json', 'draft', { isTemporary: true })
+      ]
+    )
+
+    await resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.cloudIdsByPath.value).toEqual(
+      new Map([
+        ['workflows/open.json', 'wf-open'],
+        ['workflows/a/unique.json', 'wf-unique']
+      ])
+    )
+  })
+
   it.for(['success', 'failure'])(
-    'ignores a superseded refresh outcome: %s',
+    'gives a superseded refresh the newest outcome instead of its own: %s',
     async (outcome) => {
       const { resolver, listCloudWorkflows } = setup([
         workflow('workflows/current.json', 'Current')
@@ -314,7 +341,7 @@ describe('Agent workflow resolution', () => {
       if (outcome === 'success')
         resolveFirst(listing([{ id: 'stale', name: 'Current' }]))
       else rejectFirst(new Error('Stale failure'))
-      expect(await first).toBe(false)
+      expect(await first).toBe(true)
       expect(resolver.availableWorkflowReferences.value).toEqual([
         { id: 'latest', name: 'Current' }
       ])

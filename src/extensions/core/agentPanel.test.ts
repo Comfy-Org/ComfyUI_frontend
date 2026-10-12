@@ -22,6 +22,7 @@ import type { EffectScope } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { registerWorkflowAgentChatsTracker } from '@/workbench/extensions/agent/services/agent/workflowAgentChatsTracker'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -139,6 +140,13 @@ vi.mock(
   import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({
     registerWorkflowTabActivityTracker: vi.fn(() => () => {})
+  })
+)
+
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/workflowAgentChatsTracker'),
+  () => ({
+    registerWorkflowAgentChatsTracker: vi.fn(() => () => {})
   })
 )
 
@@ -1602,6 +1610,42 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     expect(registerWorkflowTabActivityTracker).toHaveBeenCalledTimes(1)
   })
+
+  it('starts tracking workflow chats once the agent is usable, gated on sign-in and consent', async () => {
+    agentFlagEnabled.value = true
+
+    await loadEntryAndSetup()
+
+    await vi.waitFor(() =>
+      expect(registerWorkflowAgentChatsTracker).toHaveBeenCalledOnce()
+    )
+    const [available] = vi.mocked(registerWorkflowAgentChatsTracker).mock
+      .calls[0]
+    expect(available.value).toBe(true)
+    Object.assign(consentStore, { accepted: false })
+    expect(available.value).toBe(false)
+    Object.assign(consentStore, { accepted: true })
+    currentUser.value = null
+    expect(available.value).toBe(false)
+  })
+
+  it.for([
+    { case: 'the flag is off', flag: false, signedIn: true, consent: true },
+    { case: 'signed out', flag: true, signedIn: false, consent: true },
+    { case: 'consent is missing', flag: true, signedIn: true, consent: false }
+  ])(
+    'does not load workflow chat tracking when $case',
+    async ({ flag, signedIn, consent }) => {
+      agentFlagEnabled.value = flag
+      if (!signedIn) currentUser.value = null
+      Object.assign(consentStore, { accepted: consent })
+
+      await loadEntryAndSetup()
+      await vi.dynamicImportSettled()
+
+      expect(registerWorkflowAgentChatsTracker).not.toHaveBeenCalled()
+    }
+  )
 
   it('projects consent into the panel visibility gate', async () => {
     await loadEntryAndSetup()

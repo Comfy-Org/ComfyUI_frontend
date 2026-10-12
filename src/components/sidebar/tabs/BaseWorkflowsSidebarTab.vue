@@ -72,6 +72,13 @@
                     >*</span
                   >
                 </template>
+                <template #trailing="{ node: treeNode }">
+                  <WorkflowAgentChatsMenu
+                    v-if="treeNode.data"
+                    :workflow-path="treeNode.data.path"
+                    :workflow-name="treeNode.data.filename"
+                  />
+                </template>
                 <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
@@ -165,6 +172,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
+import WorkflowAgentChatsMenu from '@/components/topbar/WorkflowAgentChatsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
