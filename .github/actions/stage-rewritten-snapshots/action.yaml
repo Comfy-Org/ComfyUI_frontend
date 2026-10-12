@@ -3,7 +3,7 @@ description: >
   After a Playwright run with --update-snapshots, collects every modified or
   new file under a `*-snapshots/` directory inside the Playwright config
   directory and uploads them as an artifact, laid out relative to that
-  directory, in the shape commit-snapshot-updates merges back.
+  directory, in the shape snapshot-update-commit.yaml merges back.
 
 inputs:
   config-dir:

@@ -13,12 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
+  plan:
     if: >
       ( github.event_name == 'pull_request' &&
         github.event.label.name == 'Update Website Screenshots' ) ||
@@ -34,103 +29,21 @@ jobs:
       ( github.event.issue.pull_request &&
         github.event_name == 'issue_comment' &&
         github.event.comment.user.login == 'github-actions[bot]' &&
-        github.actor != 'github-actions[bot]' &&
         contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
         contains(github.event.comment.body, '- [x] Update website screenshots') &&
         !contains(github.event.changes.body.from, '- [x] Update website screenshots') )
-    outputs:
-      pr-number: ${{ steps.pr-info.outputs.pr-number }}
-      branch: ${{ steps.pr-info.outputs.branch }}
-      head-sha: ${{ steps.pr-info.outputs.head-sha }}
-    steps:
-      - name: Verify sender permissions
-        if: >
-          github.event_name == 'issue_comment' &&
-          contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->')
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-              ...context.repo,
-              username: context.actor
-            })
-            if (!['admin', 'write'].includes(data.permission)) {
-              core.setFailed(`User ${context.actor} does not have write access`)
-            }
-
-      - name: Get PR info
-        id: pr-info
-        uses: actions/github-script@v9
-        env:
-          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
-        with:
-          script: |
-            const prNumber = Number(process.env.PR_NUMBER)
-            const { data: pr } = await github.rest.pulls.get({
-              ...context.repo,
-              pull_number: prNumber
-            })
-            if (pr.head.repo?.full_name !== pr.base.repo.full_name) {
-              core.setFailed('Fork PRs cannot be updated: this workflow cannot push to a fork.')
-              return
-            }
-            core.setOutput('pr-number', prNumber)
-            core.setOutput('branch', pr.head.ref)
-            core.setOutput('head-sha', pr.head.sha)
-
-  post-starting-comment:
-    needs: setup
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-    concurrency:
-      group: website-pr-comment-${{ needs.setup.outputs.pr-number }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/upsert-comment-section
-        with:
-          pr-number: ${{ needs.setup.outputs.pr-number }}
-          section-name: screenshot-update
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          section-content: |-
-            ## 📸 Screenshot Update
-
-            > [!NOTE]
-            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-  harvest:
-    needs: setup
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      mode: ${{ steps.harvest.outputs.mode }}
-      run-id: ${{ steps.harvest.outputs.run-id }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: .github/actions/harvest-snapshot-updates
-          persist-credentials: false
-
-      - name: Find the E2E run's screenshot updates
-        id: harvest
-        uses: ./.github/actions/harvest-snapshot-updates
-        with:
-          e2e-workflow: ci-website-e2e.yaml
-          head-sha: ${{ needs.setup.outputs.head-sha }}
-          artifact-prefix: website-snapshot-updates-
-          job-prefix: website-e2e-shard
-          comment-body: ${{ github.event.comment.body }}
-          wait-minutes: '30'
+    uses: ./.github/workflows/snapshot-update-plan.yaml
+    with:
+      command: /update-website-screenshots
+      e2e-workflow: ci-website-e2e.yaml
+      artifact-prefix: website-snapshot-updates-
+      job-prefix: website-e2e-shard
+      section-name: screenshot-update
+      title: 📸 Screenshot Update
 
   update-screenshots:
-    needs: [setup, harvest]
-    if: needs.harvest.outputs.mode == 'full'
+    needs: plan
+    if: needs.plan.outputs.full == 'true'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
@@ -140,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.setup.outputs.head-sha }}
+          ref: ${{ needs.plan.outputs.head-sha }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -182,122 +95,20 @@ jobs:
           artifact-name: website-snapshot-updates-full
 
   commit:
-    needs: [setup, harvest, update-screenshots]
-    if: ${{ !cancelled() && (needs.harvest.outputs.mode == 'harvest' || needs.update-screenshots.result == 'success') }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-    outputs:
-      has-changes: ${{ steps.commit.outputs.has-changes }}
-      changed-count: ${{ steps.commit.outputs.changed-count }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.setup.outputs.branch }}
-          token: ${{ secrets.PR_GH_TOKEN }}
-
-      - name: Checkout snapshot actions from the workflow's ref
-        uses: actions/checkout@v7
-        with:
-          path: trusted
-          sparse-checkout: .github/actions
-          persist-credentials: false
-
-      - name: Commit updated screenshots
-        id: commit
-        uses: ./trusted/.github/actions/commit-snapshot-updates
-        with:
-          artifact-prefix: website-snapshot-updates-
-          config-dir: apps/website
-          snapshot-paths: apps/website/e2e/
-          branch: ${{ needs.setup.outputs.branch }}
-          head-sha: ${{ needs.setup.outputs.head-sha }}
-          message: '[automated] Update website screenshot expectations'
-          run-id: ${{ needs.harvest.outputs.run-id }}
-
-  post-result-comment:
-    needs: [setup, harvest, update-screenshots, commit]
-    if: always() && !cancelled() && needs.setup.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-    concurrency:
-      group: website-pr-comment-${{ needs.setup.outputs.pr-number }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Build screenshot-update section content
-        id: content
-        uses: actions/github-script@v9
-        env:
-          HARVEST_RUN_ID: ${{ needs.harvest.outputs.run-id }}
-          COMMIT_RESULT: ${{ needs.commit.result }}
-          HAS_CHANGES: ${{ needs.commit.outputs.has-changes }}
-          CHANGED_COUNT: ${{ needs.commit.outputs.changed-count }}
-        with:
-          script: |
-            const harvestRunId = process.env.HARVEST_RUN_ID
-            const committed = process.env.COMMIT_RESULT === 'success'
-            const hasChanges = process.env.HAS_CHANGES === 'true'
-            const changedCount = parseInt(process.env.CHANGED_COUNT) || 0
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-
-            const lines = ['## 📸 Screenshot Update', '']
-
-            if (!committed) {
-              lines.push(
-                '> [!CAUTION]',
-                `> Screenshot update failed. [View workflow run](${runUrl})`
-              )
-            } else if (!hasChanges) {
-              lines.push(
-                '> [!TIP]',
-                '> All screenshots are already up to date.'
-              )
-            } else {
-              const s = changedCount === 1 ? '' : 's'
-              const source = harvestRunId
-                ? ` taken from the [E2E run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${harvestRunId}) without rerunning Playwright`
-                : ''
-              lines.push(
-                '> [!TIP]',
-                `> Updated ${changedCount} screenshot${s}${source} and pushed to the branch.`
-              )
-            }
-
-            core.setOutput('section-content', lines.join('\n'))
-
-      - uses: ./.github/actions/upsert-comment-section
-        with:
-          pr-number: ${{ needs.setup.outputs.pr-number }}
-          section-name: screenshot-update
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          section-content: ${{ steps.content.outputs.section-content }}
-
-      - name: Remove label
-        if: always() && github.event_name == 'pull_request'
-        # Label cleanup is best-effort; the restricted pull_request token may
-        # lack permission to remove labels and must not fail the run.
-        continue-on-error: true
-        uses: actions/github-script@v9
-        env:
-          PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
-        with:
-          script: |
-            try {
-              await github.rest.issues.removeLabel({
-                ...context.repo,
-                issue_number: Number(process.env.PR_NUMBER),
-                name: 'Update Website Screenshots'
-              })
-            } catch (e) {
-              if (e.status !== 404) {
-                throw e
-              }
-              core.info('Label "Update Website Screenshots" was already removed')
-            }
+    needs: [plan, update-screenshots]
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    uses: ./.github/workflows/snapshot-update-commit.yaml
+    with:
+      ready: ${{ needs.plan.outputs.run-id != '' || needs.update-screenshots.result == 'success' }}
+      unavailable: ${{ needs.plan.outputs.unavailable }}
+      pr-number: ${{ needs.plan.outputs.pr-number }}
+      branch: ${{ needs.plan.outputs.branch }}
+      head-sha: ${{ needs.plan.outputs.head-sha }}
+      run-id: ${{ needs.plan.outputs.run-id }}
+      artifact-prefix: website-snapshot-updates-
+      config-dir: apps/website
+      label: Update Website Screenshots
+      section-name: screenshot-update
+      title: 📸 Screenshot Update
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}

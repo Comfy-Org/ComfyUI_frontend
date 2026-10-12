@@ -14,14 +14,15 @@ import { dirname, join, relative } from 'node:path'
 import { expect, it, onTestFinished } from 'vitest'
 import { isMap, isSeq, parseDocument } from 'yaml'
 
-const ACTION = join(
+const WORKFLOW = join(
   import.meta.dirname,
-  '../../.github/actions/commit-snapshot-updates/action.yaml'
+  '../../../.github/workflows/snapshot-update-commit.yaml'
 )
 
 function mergeScript() {
-  const steps = parseDocument(readFileSync(ACTION, 'utf8')).getIn([
-    'runs',
+  const steps = parseDocument(readFileSync(WORKFLOW, 'utf8')).getIn([
+    'jobs',
+    'commit',
     'steps'
   ])
   const step = isSeq(steps)
@@ -47,7 +48,7 @@ function listFiles(root: string) {
 }
 
 it('merges only snapshot PNGs, replacing goldens of the same size and mtime', () => {
-  const root = mkdtempSync(join(tmpdir(), 'commit-snapshot-updates-'))
+  const root = mkdtempSync(join(tmpdir(), 'merge-snapshot-updates-'))
   onTestFinished(() => rmSync(root, { recursive: true, force: true }))
   const download = join(root, 'download')
   const checkout = join(root, 'checkout')
