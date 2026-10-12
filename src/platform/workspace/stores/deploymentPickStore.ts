@@ -13,7 +13,6 @@ import type {
 } from '@/platform/workspace/deploymentPickState'
 import {
   changeBetween,
-  isSwitchInFlight,
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
@@ -27,6 +26,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 type LinkPickOutcome =
   | { kind: 'picked' }
   | { kind: 'unchanged' }
+  | { kind: 'timedOut' }
   | { kind: 'refused'; message: string }
 
 /**
@@ -127,7 +127,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * even when a newer load fails or never answers.
    */
   const isVisible = computed(() => 'deployments' in state.value)
-  const isSwitching = computed(() => isSwitchInFlight(state.value))
+  const isSwitching = computed(() => state.value.phase === 'switching')
   /**
    * The deployment this page booted on, from the first listing that
    * answered: null for Comfy Cloud (a gone pick included), undefined before
@@ -257,9 +257,19 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * or not the workspace's, gets the server's refusal rather than nothing.
    */
   async function pickFromLink(deploymentId: string): Promise<LinkPickOutcome> {
-    await loadOnce()
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase === 'switching') return { kind: 'unchanged' }
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const completed = await Promise.race([
+      loadOnce().then(() => true),
+      new Promise<false>((resolve) => {
+        timeout = setTimeout(() => resolve(false), 10_000)
+      })
+    ]).finally(() => clearTimeout(timeout))
+    if (!completed) return { kind: 'timedOut' }
+    if (workspaceStore.workspaceId !== id || isSwitching.value) {
+      return { kind: 'unchanged' }
+    }
     if (deploymentId === pickedDeploymentId.value) return { kind: 'unchanged' }
     const refusal = await pickAndReload(id, deploymentId)
     return refusal === null
