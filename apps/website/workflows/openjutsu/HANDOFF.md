@@ -7,20 +7,15 @@ measured costs.
 
 ## Where everything is
 
-| Thing            | Where                                                                                                    |
-| ---------------- | -------------------------------------------------------------------------------------------------------- |
-| Engine and tests | `rob/app-openjutsu`                                                                                      |
-| Redesign         | `mariana/openjutsu-fullscreen`, PR #20636 against `rob/app-openjutsu`                                    |
-| Both combined    | `rob/openjutsu-handoff` (this branch): Mar's branch, plus the app proxy ids and the price on the page    |
-| Backend          | Comfy-Org/cloud#13014 (draft), branch `rob/app-proxy-openjutsu`                                          |
-| Deployment       | `dep-4a66f1a2-f688-4169-8f30-8ddc1ce78b51`, Workshop Apps workspace, 0 to 1 workers, ready               |
-| Flag             | `workshop-openjutsu-app-enabled` in PostHog: `comfy_staff` at 100%, nobody else                          |
-| Build spec       | Outside the repo, on Rob's machine: `~/comfyvibe/projects/comfy_workshop/openjutsu/build-workshop-apps/` |
+| Thing      | Where                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------- |
+| The app    | `rob/app-openjutsu`: engine, Mar's redesign (PR #20636, merged in), `main` as of 2026-10-13, app proxy ids |
+| Backend    | Comfy-Org/cloud#13014 (draft, checks green), ticket BE-20545, branch `rob/app-proxy-openjutsu`             |
+| Deployment | `dep-4a66f1a2-f688-4169-8f30-8ddc1ce78b51`, Workshop Apps workspace, 0 to 1 workers, ready                 |
+| Flag       | `workshop-openjutsu-app-enabled` in PostHog: `comfy_staff` at 100%, nobody else                            |
+| Build spec | Outside the repo, on Rob's machine: `~/comfyvibe/projects/comfy_workshop/openjutsu/build-workshop-apps/`   |
 
-This branch repeats three commits that are already on the other two branches
-(the display ordering, the final-cut fix, the character tile), and carries two
-reverts of interface changes Rob tried and dropped. They merge cleanly; squash
-or rebuild the branch if the history matters.
+`rob/openjutsu-handoff` is an earlier snapshot and can be deleted.
 
 ## What is left, in order
 
@@ -33,21 +28,26 @@ or rebuild the branch if the history matters.
    `DECISION PENDING`. Same shape as BE-17672.
 3. **Merge cloud#13014**, then run `/add-rates app-proxy`. Set `starting_at` in
    `rates.json` and `products.yaml` to the apply day; both say 2026-10-12 now.
-4. **Merge #20636 into `rob/app-openjutsu`**, then merge `main`. The merge of
-   `main` conflicts only in the two locale files: `main` added a `changelog`
-   section where `openjutsu` sits, and both are kept. The merge commit is then
-   stopped by the pre-commit `lint:server-facts --staged` step, which flags
-   `main`'s own workspace and billing files because a merge stages them. That
-   is unresolved.
-5. **Take the last two commits of this branch** onto the result: the app proxy
-   ids in `src/config/workshop-env.ts` and `src/lib/workshop/openjutsu/price.ts`.
-6. **Add a browser test with a faked app proxy**, as
+4. **Add a browser test with a faked app proxy**, as
    `e2e/fixtures/reshootProxy.ts` does for Re-shoot. Not started.
-7. **Run one swap through the staging app proxy** with a signed-in account and
+5. **Run one swap through the staging app proxy** with a signed-in account and
    check the quote, the charge and a refusal. Nothing but the local proxy has
    been exercised so far.
-8. **Open the PR to `main`**, behind the flag. A ticket and a design doc are
+6. **Open the PR to `main`**, behind the flag. A ticket and a design doc are
    drafted; ask Rob for them.
+
+## Worth a second look in review
+
+- The merge of `main` conflicted in the two locale files, the site header and
+  the site footer. The locale files were merged key by key from the common
+  ancestor (no key lost on either side). The header keeps Mar's
+  `WorkshopAccount` with `main`'s `hub-sections` prop; the footer keeps her
+  `in-data-workshop-editor:hidden` class without the `ref` that `main` removed.
+- A run refused for credits is worded for an owner or a member by asking the
+  shared `studioGate` about an empty balance (`emptyBalanceGate` in
+  `swap-rules.ts`), so the role rule stays in one place. Under
+  ADR-API-SERVER-FACTS-0042 the backend should emit that fact; Re-shoot has the
+  same derivation.
 
 ## Decisions Rob has made
 
