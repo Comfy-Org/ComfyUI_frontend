@@ -262,13 +262,13 @@ describe('MediaAssetCard', () => {
 
   it('inspects an HDR asset on double click', async () => {
     const user = userEvent.setup()
-    const hdrAsset = { ...asset, name: 'sky.exr', preview_url: undefined }
-    const { container, emitted } = renderCard({
-      loading: false,
-      asset: hdrAsset
-    })
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the preview area has no role of its own
-    const preview = container.querySelector('.aspect-square')!
+    const hdrAsset = {
+      ...asset,
+      name: 'sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    }
+    const { emitted } = renderCard({ loading: false, asset: hdrAsset })
+    const preview = await screen.findByRole('img', { name: 'sky.exr' })
 
     await user.dblClick(preview)
 

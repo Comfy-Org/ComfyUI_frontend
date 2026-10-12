@@ -35,11 +35,7 @@ export function getAssetUrl(
   return api.apiURL(`/view?${params}`)
 }
 
-/**
- * `/view` URL of the asset's own file. An HDR asset's `preview_url` points at
- * its generated preview, so the path comes from `loader_path` where the
- * backend sends it.
- */
+/** `/view` URL of the asset's own file, not its preview. */
 export function getAssetViewUrl(asset: AssetItem): string {
   const root = (['input', 'output', 'temp'] as const).find((tag) =>
     asset.tags.includes(tag)

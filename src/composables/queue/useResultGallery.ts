@@ -27,20 +27,18 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     // Request was superseded by a newer one
     if (targetOutputs === null && targetTask) return
 
+    const previewOutput = targetTask?.previewOutput
+    if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
+      openHdrViewer(resultItemUrl(previewOutput))
+      return
+    }
+
     // Use target's outputs if available, otherwise fall back to all previews
     const outputs = targetOutputs?.length
       ? targetOutputs
       : tasks.map((t) => t.previewOutput).filter((o) => !!o)
-    // The gallery can't render HDR; a job with only HDR outputs opens the viewer.
     const items = outputs.filter((o) => !isHdrImageFilename(o.filename))
-
-    const previewOutput = targetTask?.previewOutput
-    if (!items.length) {
-      if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
-        openHdrViewer(resultItemUrl(previewOutput))
-      }
-      return
-    }
+    if (!items.length) return
 
     galleryItems.value = items
     galleryActiveIndex.value = findActiveIndex(

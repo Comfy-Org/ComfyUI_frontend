@@ -106,6 +106,17 @@ describe('getAssetViewUrl', () => {
     )
   })
 
+  it('falls back to getAssetUrl without a root tag', () => {
+    const asset = createAsset({
+      name: 'sky.exr',
+      tags: [],
+      loader_path: 'renders/sky.exr',
+      preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(getAssetUrl(asset))
+  })
+
   it('falls back to getAssetUrl without a loader_path', () => {
     const asset = createAsset({
       name: 'sky.exr',

@@ -181,11 +181,28 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(-1)
   })
 
-  it('opens a job with HDR and image outputs in the gallery on its images', async () => {
+  it('opens the HDR viewer for a job whose cover is HDR, even with image outputs', async () => {
     const image = createResultItem('image.png')
     const exr = createResultItem('/api/view?filename=out.exr')
     exr.filename = 'out.exr'
     const task = createTask(exr, [image, exr])
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    await onViewItem(createJobViewItem('job-mixed', task))
+
+    expect(openHdrViewer).toHaveBeenCalledWith('/api/view?filename=out.exr')
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBe(-1)
+  })
+
+  it('opens a job with an image cover in the gallery without its HDR outputs', async () => {
+    const image = createResultItem('image.png')
+    const exr = createResultItem('/api/view?filename=out.exr')
+    exr.filename = 'out.exr'
+    const task = createTask(image, [exr, image])
 
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
       () => [task]

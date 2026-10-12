@@ -38,7 +38,6 @@ export function useNodeOutputsExport() {
     return getDownloadableOutputs(node).length > 1
   }
 
-  /** The backend can't render EXR/HDR thumbnails; use their generated preview, if any. */
   function thumbnailUrl(output: DownloadableOutput): string {
     if (!isHdrImageFilename(output.filename)) {
       return getGridThumbnailUrl(outputFileUrl(output))

@@ -18,7 +18,6 @@ export class HdrViewerDialog {
       this.root.getByText('Resolution', { exact: true })
     ).toBeVisible()
     await expect(this.root.getByRole('alert')).toBeHidden()
-    // The image lightbox would be a second dialog.
     await expect(this.page.getByRole('dialog')).toHaveCount(1)
   }
 }

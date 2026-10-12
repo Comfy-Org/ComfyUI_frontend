@@ -29,7 +29,6 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
 }>({
   mockHdrJob: [
     async ({ jobsRoutes, page }, use) => {
-      // Job history and the assets sidebar page jobs with different limits.
       await jobsRoutes.mockJobsScenario({ history: [hdrJob], queue: [] })
       await jobsRoutes.mockJobsHistory([hdrJob])
       await mockViewFiles(page, {
@@ -38,7 +37,6 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
           contentType: 'image/x-exr'
         }
       })
-      // Only the subfolder URL serves the EXR, so a decoded viewer proves the URL.
       await page.route('**/api/view**', async (route) => {
         const url = new URL(route.request().url())
         const wrongFolder =
@@ -52,8 +50,6 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
   ]
 })
 
-// History-mode routing to the viewer; the assets-mode by-id URL is pinned in
-// AssetsSidebarTab.test.ts.
 test.describe('HDR outputs open in the HDR viewer', { tag: '@ui' }, () => {
   test.describe('from job history', () => {
     test.use({ initialSettings: { 'Comfy.Queue.QPOV2': true } })
