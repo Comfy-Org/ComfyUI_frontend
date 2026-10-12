@@ -87,7 +87,7 @@ describe('useHandProductSwap', () => {
         result: { url: `/images/apps/hand-product-swap/${result}`, seed: 42 }
       })
       expect(swap.comparing.value).toBe(false)
-      expect(vi.mocked(renderSwapImage)).not.toHaveBeenCalled()
+      expect(renderSwapImage).not.toHaveBeenCalled()
     }
   )
 
@@ -98,7 +98,7 @@ describe('useHandProductSwap', () => {
     swap.seed.value = 9
     await finish(swap)
 
-    expect(vi.mocked(renderSwapImage)).toHaveBeenLastCalledWith({
+    expect(renderSwapImage).toHaveBeenLastCalledWith({
       hand: HAND_EXAMPLE.url,
       product: 'blob:upload',
       resolution: '4K',
