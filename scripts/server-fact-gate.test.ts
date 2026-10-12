@@ -186,35 +186,84 @@ describe('server-fact gate on a real diff', () => {
     workDir = undefined
   })
 
-  function runGateAfterEdit(before: string[], after: string[]) {
+  function createRepo(files: Record<string, string[]>) {
     const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-gate-'))
     workDir = dir
-    const run = (...args: string[]) =>
+    const git = (...args: string[]) =>
       execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
-    run('init', '-q')
-    run('config', 'user.email', 'gate@test.invalid')
-    run('config', 'user.name', 'gate')
+    const write = (file: string, lines: string[]) =>
+      writeFileSync(path.join(dir, file), lines.join('\n'))
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.email', 'gate@test.invalid')
+    git('config', 'user.name', 'gate')
     for (const linked of ['node_modules', 'tools']) {
       symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
     }
     writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
     mkdirSync(path.join(dir, 'src'))
-    writeFileSync(path.join(dir, gatedFile), before.join('\n'))
-    run('add', '.')
-    run('commit', '-q', '-m', 'base')
-    writeFileSync(path.join(dir, gatedFile), after.join('\n'))
+    for (const [file, lines] of Object.entries(files)) write(file, lines)
+    git('add', '.')
+    git('commit', '-q', '-m', 'base')
+    return { dir, git, write }
+  }
+
+  function runGate(dir: string, ...args: string[]) {
     return spawnSync(
       process.execPath,
       [
         '--import',
         'tsx',
         path.join(repoRoot, 'scripts/server-fact-gate.ts'),
-        '--base',
-        'HEAD'
+        ...args
       ],
       { cwd: dir, encoding: 'utf8' }
     )
   }
+
+  function runGateAfterEdit(before: string[], after: string[]) {
+    const { dir, write } = createRepo({ [gatedFile]: before })
+    write(gatedFile, after)
+    return runGate(dir, '--base', 'HEAD')
+  }
+
+  const recombination = [
+    'const { canInviteMembers } = useBillingCapabilities()',
+    'export const canInvite =',
+    '  canInviteMembers.value || isPlanEnded.value',
+    ''
+  ]
+  const clean = ['export const ready = true', '']
+
+  it.for([
+    {
+      name: 'passes a finding the merged branch brings in',
+      incoming: recombination,
+      ours: clean,
+      status: 0
+    },
+    {
+      name: 'reports a finding this branch adds',
+      incoming: clean,
+      ours: recombination,
+      status: 1
+    }
+  ])('$name when staging a merge', ({ incoming, ours, status }) => {
+    const otherFile = 'src/other.ts'
+    const base = ['export const base = true', '']
+    const { dir, git, write } = createRepo({
+      [gatedFile]: base,
+      [otherFile]: base
+    })
+    git('checkout', '-q', '-b', 'incoming')
+    write(gatedFile, incoming)
+    git('commit', '-q', '-am', 'incoming')
+    git('checkout', '-q', 'main')
+    write(otherFile, ours)
+    git('commit', '-q', '-am', 'ours')
+    git('merge', '-q', '--no-commit', '--no-ff', 'incoming')
+
+    expect(runGate(dir, '--staged').status).toBe(status)
+  })
 
   it('reports a recombination exposed by deleting only its pendingServerFact wrapper lines', () => {
     const wrapped = [
