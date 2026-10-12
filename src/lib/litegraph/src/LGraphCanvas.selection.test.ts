@@ -55,7 +55,7 @@ function marquee(
   } as CanvasPointerEvent
   if (canvas.liveSelection) {
     canvas['handleLiveSelect'](event, dragRect, initialSelection)
-    canvas['finalizeLiveSelect']()
+    canvas['finalizeLiveSelect'](event, dragRect)
   } else {
     canvas['_handleMultiSelect'](event, dragRect)
   }

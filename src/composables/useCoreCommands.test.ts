@@ -14,6 +14,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import {
+  deleteSelectedLinks,
+  hideSelectedLinks
+} from '@/lib/litegraph/src/canvas/linkSelection'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -26,6 +30,11 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
+
+vi.mock(import('@/lib/litegraph/src/canvas/linkSelection'), () => ({
+  deleteSelectedLinks: vi.fn(() => false),
+  hideSelectedLinks: vi.fn(() => false)
+}))
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
@@ -482,6 +491,26 @@ describe('useCoreCommands', () => {
 
       expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should delete selected links when no items are selected', async () => {
+      app.canvas.selectedItems = new Set() as typeof app.canvas.selectedItems
+      vi.mocked(deleteSelectedLinks).mockReturnValueOnce(true)
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(deleteSelectedLinks).toHaveBeenCalledWith(app.canvas)
+      expect(app.canvas.canvas.dispatchEvent).not.toHaveBeenCalled()
+      expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['Comfy.Canvas.HideSelectedLinks', hideSelectedLinks],
+      ['Comfy.Canvas.DeleteSelectedLinks', deleteSelectedLinks]
+    ] as const)('%s acts on the link selection', async ([id, action]) => {
+      await findCommand(id).function()
+
+      expect(action).toHaveBeenCalledWith(app.canvas)
     })
 
     it('should preserve selected items in selection-only mode', async () => {

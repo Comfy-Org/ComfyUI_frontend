@@ -1,5 +1,6 @@
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '../types/contextMenu'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -53,6 +54,19 @@ export function hideLinks(
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
     for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+  })
+}
+
+export function deleteLinks(
+  host: LinkMutationHost,
+  graph: LGraph,
+  linkIds: Iterable<LinkId>
+): void {
+  mutateLink(host, () => {
+    for (const linkId of linkIds) {
+      graph.removeLink(linkId)
+      layoutStore.deleteLinkLayout(linkId)
+    }
   })
 }
 
