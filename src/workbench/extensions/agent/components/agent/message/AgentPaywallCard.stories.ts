@@ -44,9 +44,6 @@ export const SubscriptionRequired: Story = {
   render: renderAtMinimumWidth
 }
 
-// A `message` renders only when capabilities resolved to nothing actionable.
-// Any other kind has a localized body that is better copy than English prose
-// from the server, so these two stories use `unavailable`.
 export const AdmissionError: Story = {
   args: {
     presentation: { kind: 'unavailable' },
@@ -69,8 +66,6 @@ export const Unavailable: Story = {
   render: renderAtMinimumWidth
 }
 
-// The read is still in flight, so the localized body renders even though a
-// server `message` is present.
 export const Unresolved: Story = {
   args: {
     presentation: { kind: 'unresolved' },
