@@ -19,7 +19,6 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
-import type { DevEvent } from './devPanelLog'
 import {
   clearDevEvents,
   devEvents,
@@ -246,95 +245,6 @@ describe('CrdtDevPanel clipboard controls', () => {
     ).toHaveLength(1)
   })
 
-  it('keeps the log usable when a node-id list changes between reads', async () => {
-    const user = userEvent.setup()
-    const detail: { removed: string[] } = { removed: ['node-removed'] }
-    let addedReads = 0
-    Object.defineProperty(detail, 'added', {
-      configurable: true,
-      enumerable: false,
-      get: () => (addedReads++ === 0 ? ['node-added'] : 1)
-    })
-    devEvents.value = [
-      {
-        seq: 1,
-        at: Date.now(),
-        kind: 'doc_nodes_changed',
-        scope: 'doc',
-        level: 'info',
-        detail
-      } satisfies DevEvent
-    ]
-    renderPanel()
-    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
-
-    await user.click(
-      screen.getByRole('button', { name: 'Copy node id node-added' })
-    )
-
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('node-added')
-  })
-
-  it('keeps the log usable when node-id properties throw', async () => {
-    const user = userEvent.setup()
-    const addedThrows: unknown = Object.defineProperty(
-      { removed: ['node-removed'] },
-      'added',
-      {
-        get: () => {
-          throw new Error('added is unreadable')
-        }
-      }
-    )
-    const removedThrows: unknown = Object.defineProperty(
-      { added: ['node-added'] },
-      'removed',
-      {
-        get: () => {
-          throw new Error('removed is unreadable')
-        }
-      }
-    )
-    recordDevEvent('doc_nodes_changed', addedThrows)
-    recordDevEvent('doc_nodes_changed', removedThrows)
-    renderPanel()
-    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
-
-    await user.click(
-      screen.getByRole('button', { name: 'Copy node id node-removed' })
-    )
-    await user.click(
-      screen.getByRole('button', { name: 'Copy node id node-added' })
-    )
-
-    expect(writeText).toHaveBeenNthCalledWith(1, 'node-removed')
-    expect(writeText).toHaveBeenNthCalledWith(2, 'node-added')
-  })
-
-  it('keeps the log usable when a node-id array cannot be iterated', async () => {
-    const user = userEvent.setup()
-    const unreadableIds = new Proxy(['node-unreadable'], {
-      get: (target, property, receiver) => {
-        if (property === Symbol.iterator) {
-          throw new Error('node ids cannot be iterated')
-        }
-        return Reflect.get(target, property, receiver)
-      }
-    })
-    recordDevEvent('doc_nodes_changed', {
-      added: unreadableIds,
-      removed: ['node-retained']
-    })
-    renderPanel()
-    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
-
-    await user.click(
-      screen.getByRole('button', { name: 'Copy node id node-retained' })
-    )
-
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('node-retained')
-  })
-
   it('serializes circular and bigint details without losing their content', async () => {
     const user = userEvent.setup()
     const detail: { count: bigint; self?: unknown } = { count: 7n }
@@ -349,47 +259,36 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
   })
 
-  it('falls back to String() when a detail refuses to serialize', async () => {
+  it('shows a placeholder when a detail can be neither serialized nor stringified', async () => {
     const user = userEvent.setup()
     recordDevEvent('doc_update', {
       toJSON() {
         throw new Error('not serializable')
+      },
+      toString() {
+        throw new Error('not stringifiable')
       }
     })
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    expect(screen.getByText('[object Object]')).toBeInTheDocument()
+    expect(screen.getByText('[unserializable detail]')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('[object Object]')
+    expect(writeText).toHaveBeenCalledExactlyOnceWith('[unserializable detail]')
   })
 
   it('bounds retained details and truncates excerpts on code-point boundaries', async () => {
     const user = userEvent.setup()
-    devEvents.value = [
-      {
-        seq: 1,
-        at: Date.now(),
-        kind: 'doc_update',
-        scope: 'doc',
-        level: 'info',
-        detail: 'x'.repeat(20_100)
-      },
-      {
-        seq: 2,
-        at: Date.now(),
-        kind: 'doc_reset',
-        scope: 'doc',
-        level: 'info',
-        detail: `${'x'.repeat(198)}😀tail`
-      }
-    ] satisfies readonly DevEvent[]
+    recordDevEvent('doc_update', {
+      added: Array.from({ length: 3000 }, (_, index) => `node-${index}`)
+    })
+    recordDevEvent('doc_update', { [`${'x'.repeat(197)}😀tail`]: 1 })
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    expect(screen.getByText(`"${'x'.repeat(198)}😀…`)).toBeInTheDocument()
+    expect(screen.getByText(`{"${'x'.repeat(197)}😀…`)).toBeInTheDocument()
     const detailButtons = screen.getAllByRole('button', {
       name: 'Copy log detail'
     })

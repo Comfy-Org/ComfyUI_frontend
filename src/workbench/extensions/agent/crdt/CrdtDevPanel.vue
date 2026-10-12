@@ -105,6 +105,7 @@ const S = {
   copyDocumentId: 'Copy document id',
   copyLogDetail: 'Copy log detail',
   moreNodeIds: (count: number) => `+${count} more`,
+  unserializableDetail: '[unserializable detail]',
   copyLog: 'Copy log',
   copyReport: 'Copy full report',
   copying: 'Collecting…',
@@ -246,7 +247,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  unmounted = true
   itemCopyRequest++
   if (pollHandle !== undefined) clearInterval(pollHandle)
   clearTimeout(logCopyReset)
@@ -408,7 +408,6 @@ const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 let itemCopyRequest = 0
-let unmounted = false
 
 const copyReportLabel = computed(() => {
   if (reportCopyState.value.status === 'busy') return S.copying
@@ -436,7 +435,7 @@ async function writeClipboard(text: string): Promise<boolean> {
 async function copyItem(key: string, text: string) {
   const request = ++itemCopyRequest
   const ok = await writeClipboard(text)
-  if (unmounted || request !== itemCopyRequest) return
+  if (request !== itemCopyRequest) return
   itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
   itemCopyReset = setTimeout(() => (itemCopy.value = null), 1600)
@@ -621,7 +620,7 @@ function stringifyDetail(detail: unknown): string {
   try {
     return JSON.stringify(detail, devEventReplacer()) ?? ''
   } catch {
-    return String(detail)
+    return S.unserializableDetail
   }
 }
 
@@ -638,12 +637,8 @@ function truncateDetail(detail: string, limit = 200): string {
 }
 
 function readNodeIdList(detail: object, key: 'added' | 'removed'): unknown[] {
-  try {
-    const value: unknown = Reflect.get(detail, key)
-    return Array.isArray(value) ? [...value] : []
-  } catch {
-    return []
-  }
+  const value: unknown = Reflect.get(detail, key)
+  return Array.isArray(value) ? value : []
 }
 
 function eventNodeIds(event: DevEvent): string[] {
