@@ -392,6 +392,7 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    document.addEventListener('astro:page-load', resetNavFeaturedCardViews)
     tagFlagEnvironment(true)
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
@@ -534,12 +535,22 @@ export function captureAgentUsecaseVideoPlayed(video: string): void {
 
 const viewedNavFeaturedPlacements = new Set<string>()
 
+const UNRESOLVED_VARIANT_SOURCES: readonly string[] = [
+  'not_loaded',
+  'unanswered'
+]
+
+function resetNavFeaturedCardViews(): void {
+  viewedNavFeaturedPlacements.clear()
+}
+
 export function captureNavFeaturedCardViewed(
   properties: NavFeaturedCardEventProperties
 ): void {
   if (!initialized || viewedNavFeaturedPlacements.has(properties.placement))
     return
-  viewedNavFeaturedPlacements.add(properties.placement)
+  if (!UNRESOLVED_VARIANT_SOURCES.includes(properties.variant_source))
+    viewedNavFeaturedPlacements.add(properties.placement)
   captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardViewed, properties })
 }
 

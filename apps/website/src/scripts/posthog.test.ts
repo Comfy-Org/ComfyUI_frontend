@@ -879,6 +879,59 @@ describe('nav featured card analytics', () => {
     ])
   })
 
+  it.for(['unanswered', 'not_loaded'] as const)(
+    'keeps the placement view open after a %s view so a resolved reopen is counted',
+    async (variantSource) => {
+      const { initPostHog, captureNavFeaturedCardViewed } =
+        await import('./posthog')
+      initPostHog()
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed(properties)
+      captureNavFeaturedCardViewed(properties)
+
+      expect(
+        hoisted.mockCapture.mock.calls.map(([, props]) => props.variant_source)
+      ).toEqual([variantSource, variantSource, 'flag'])
+    }
+  )
+
+  it.for(['flag', 'control_flag', 'no_flag', 'unknown_variant'] as const)(
+    'uses up the placement view on a resolved %s view',
+    async (variantSource) => {
+      const { initPostHog, captureNavFeaturedCardViewed } =
+        await import('./posthog')
+      initPostHog()
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed({ ...properties, variant_source: 'flag' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('lets each page view count its own view, resetting on astro:page-load', async () => {
+    const { initPostHog, captureNavFeaturedCardViewed } =
+      await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    expect(hoisted.mockCapture).toHaveBeenCalledTimes(1)
+
+    document.dispatchEvent(new Event('astro:page-load'))
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    expect(hoisted.mockCapture).toHaveBeenCalledTimes(2)
+  })
+
   it('does not use up a placement view while PostHog is not initialized', async () => {
     const { initPostHog, captureNavFeaturedCardViewed } =
       await import('./posthog')
