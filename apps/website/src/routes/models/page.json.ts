@@ -12,7 +12,7 @@ export const getStaticPaths: GetStaticPaths = () =>
   workshopPages.map((model) => ({ params: { slug: model.slug } }))
 
 export const GET: APIRoute = async ({ params, locals }) => {
-  const catalog = cmsEnabled() ? await loadSiteCatalog(locals.site) : undefined
+  const catalog = cmsEnabled() ? await loadSiteCatalog(locals.catalogAuthoring ?? locals.site, locals.catalogLocale) : undefined
   if (catalog && !catalog.ok) return catalogUnavailable()
   if (catalog?.ok && !catalog.details.some((item) => item.slug === params.slug))
     return new Response('Not found', { status: 404 })

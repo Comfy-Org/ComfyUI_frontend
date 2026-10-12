@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -13,7 +14,7 @@ import {
 } from '@/lib/cms/catalog'
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.site)
+  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -39,6 +40,7 @@ const records = catalog?.ok
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
+  <StaffContentActions create type={section === 'apps' ? 'app' : 'workflow'} />
   <script>
     import '@/scripts/hubNavigation'
   </script>

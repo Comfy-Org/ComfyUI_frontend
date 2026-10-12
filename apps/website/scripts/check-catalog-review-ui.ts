@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { chromium, expect, request } from '@playwright/test'
 import { z } from 'zod'
+import { websiteRoot } from '@website/paths'
 
 const local = new URL(process.env.CCC_LOCAL_SITE ?? 'http://127.0.0.1:4349')
 const remote = new URL(process.env.CCC_REMOTE_SITE ?? local.origin)
@@ -92,11 +93,15 @@ try {
     viewport: { width: 1440, height: 1000 },
     extraHTTPHeaders: { 'ngrok-skip-browser-warning': '1' }
   })
-  await context.route('**/*', (route) =>
-    new URL(route.request().url()).origin === remote.origin
-      ? route.continue()
-      : route.abort()
-  )
+  await context.route('**/*', (route) => {
+    const url = new URL(route.request().url())
+    if (url.origin === remote.origin) return route.continue()
+    // The unrelated animated public footer needs valid image bytes even when
+    // external traffic is blocked; use the normal website E2E placeholder.
+    if (url.hostname === 'media.comfy.org' && url.pathname.startsWith('/website/homepage/footer-logo-seq/'))
+      return route.fulfill({ path: join(websiteRoot, 'e2e/assets/placeholder-1x1.webp'), status: 200 })
+    return route.abort()
+  })
   const page = await context.newPage()
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -245,6 +250,41 @@ try {
     '/api/v1/catalog/agents'
   ])
     expect((await guest.get(path)).status()).toBe(200)
+  // Verified editors see type-specific creation links and exact-UID editing.
+  const cards = z.array(z.object({ href: z.string() })).parse(
+    await (await guest.get('/models/catalogue.json')).json()
+  )
+  for (const [section, type] of [['models', 'model'], ['apps', 'app'], ['workflows', 'workflow']]) {
+    await page.goto(remote.origin + `/hub/${section}/`, { waitUntil: 'networkidle' })
+    const create = page.getByRole('link', { name: 'Add Content', exact: true })
+    await expect(create).toHaveAttribute('href', `/admin/content/new?type=${type}`)
+    await create.click()
+    await expect(page.getByRole('heading', { name: 'New content', exact: true })).toBeVisible()
+    const card = cards.find((item) => item.href.startsWith(`/hub/${section}/`))
+    if (!card) throw new Error(`Missing ${section} fixture`)
+    await page.goto(remote.origin + card.href, { waitUntil: 'networkidle' })
+    const edit = page.getByRole('link', { name: 'Edit', exact: true })
+    await expect(edit).toHaveAttribute('href', /^\/admin\/content\/[0-9a-f-]{36}\/edit$/)
+    await edit.click()
+    await expect(page.getByRole('heading', { name: 'Edit content', exact: true })).toBeVisible()
+  }
+  const anonymous = await request.newContext({
+    baseURL: remote.origin,
+    extraHTTPHeaders: { 'ngrok-skip-browser-warning': '1' }
+  })
+  try {
+    for (const section of ['models', 'apps', 'workflows']) {
+      const detail = cards.find((item) => item.href.startsWith(`/hub/${section}/`))
+      if (!detail) throw new Error('Missing anonymous detail fixture')
+      for (const path of [`/hub/${section}/`, detail.href]) {
+        const response = await anonymous.get(path)
+        expect(response.status()).toBe(200)
+        expect(await response.text()).not.toMatch(/href="\/admin\/content\/(?:new|[0-9a-f-]{36}\/edit)/)
+      }
+    }
+  } finally {
+    await anonymous.dispose()
+  }
   expect(errors).toEqual([])
   const after = snapshotSchema.parse(
     await (await guest.get('/admin/catalog-api/staging')).json()

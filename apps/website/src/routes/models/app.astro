@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import {
@@ -24,7 +25,7 @@ interface Props {
 }
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.site)
+  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -38,6 +39,9 @@ const model = catalog?.ok
     )
   : Astro.props.model
 if (!model) return new Response('Not found', { status: 404 })
+const current = catalog?.ok
+  ? catalog.projection.items.find((item) => item.slug === Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, ''))
+  : undefined
 const app = model.appId
 
 // Video models carry no estimate: the pricing rules have none that match a
@@ -58,6 +62,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   ogImage={modelOgImage(model)}
   noindex
 >
+  <StaffContentActions uid={current?.uid} />
   <CinematicStudioPage
     apps={liveApps}
     models={models}

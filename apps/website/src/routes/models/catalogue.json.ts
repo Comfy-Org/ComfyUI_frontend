@@ -9,7 +9,7 @@ import {
 
 export async function GET(context?: APIContext) {
   if (cmsEnabled()) {
-    const catalog = await loadSiteCatalog(context?.locals.site)
+    const catalog = await loadSiteCatalog(context?.locals.catalogAuthoring ?? context?.locals.site, context?.locals.catalogLocale)
     return catalog.ok ? Response.json(catalog.models) : catalogUnavailable()
   }
   return Response.json([...workshopPages, ...appModels])

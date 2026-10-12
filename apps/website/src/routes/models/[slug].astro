@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import ModelPage from '@/components/workshop/ModelPage.vue'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -39,7 +40,7 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
       }))
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.site)
+  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -82,6 +83,7 @@ const ogImage = modelOgImage(model)
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
 >
+  <StaffContentActions uid={current?.uid} />
   {model.routerId === undefined ? (
     <>
       <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>

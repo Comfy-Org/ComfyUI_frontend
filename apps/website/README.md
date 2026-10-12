@@ -16,6 +16,14 @@ desktop/mobile using an explicitly supplied fixture credential file. It creates
 and revokes only its own invitation and makes no catalog content mutations.
 No demo credentials, invitations or local media belong in Git.
 
+Verified CCC editors see `Add Content` on Models, Apps and Workflows lists,
+preselecting that content type, and `Edit` on their content detail pages. Edit
+uses the exact catalog resource UID, never a guessed slug or execution ID, and
+opens the existing Draft without creating a save. Both HTML and island JSON
+reads prefer the freshly verified CCC authoring session, so Draft/timewarp
+selection remains consistent. Anonymous or non-editing visitors see no authoring
+links; the editor API separately rechecks authorization on every operation.
+
 ## CCC review discovery
 
 With `SITE_CATALOG_API_URL` configured in a non-production review environment,

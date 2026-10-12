@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -14,7 +15,7 @@ import {
 } from '@/lib/cms/catalog'
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.site)
+  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -48,6 +49,7 @@ const jsonLd = modelsHubJsonLd({
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
 >
+  <StaffContentActions create type="model" />
   <script>
     import '@/scripts/hubNavigation'
   </script>
