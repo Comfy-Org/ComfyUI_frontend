@@ -3,7 +3,7 @@ import type { Mock } from 'vitest'
 import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { AuthStoreError } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
   BillingStatusResponse,
@@ -72,6 +72,73 @@ describe('useLegacyBilling', () => {
 
       expect(useLegacyBilling().renewalInvoice.value).toBeNull()
     })
+  })
+
+  describe('funds', () => {
+    type FundsCase = {
+      name: string
+      status: Partial<BillingStatusResponse>
+      amountMicros: number
+      hasFunds: boolean
+      agentHasFunds: boolean
+      agentScopedHasFunds: boolean | undefined
+    }
+
+    it.for<FundsCase>([
+      {
+        name: 'no funds on the server despite a positive total',
+        status: { has_funds: false },
+        amountMicros: 500,
+        hasFunds: false,
+        agentHasFunds: false,
+        agentScopedHasFunds: undefined
+      },
+      {
+        name: 'funds on the server despite a zero total',
+        status: { has_funds: true },
+        amountMicros: 0,
+        hasFunds: true,
+        agentHasFunds: true,
+        agentScopedHasFunds: undefined
+      },
+      {
+        name: 'agent funds from its own scoped balance',
+        status: {
+          has_funds: false,
+          scoped_has_funds: { agent: true },
+          scoped_effective_has_funds: { agent: true }
+        },
+        amountMicros: 0,
+        hasFunds: false,
+        agentHasFunds: true,
+        agentScopedHasFunds: true
+      }
+    ])(
+      'renders the server verdict: $name',
+      ({
+        status,
+        amountMicros,
+        hasFunds,
+        agentHasFunds,
+        agentScopedHasFunds
+      }) => {
+        useAuthStore().balance = {
+          amount_micros: amountMicros,
+          currency: 'usd'
+        }
+        useSubscription().subscriptionStatus.value = {
+          is_active: true,
+          has_funds: false,
+          ...status
+        } as BillingStatusResponse
+
+        expect(useLegacyBilling().subscription.value).toMatchObject({
+          hasFunds,
+          agentHasFunds,
+          agentScopedHasFunds
+        })
+      }
+    )
   })
 
   describe('resubscribe', () => {

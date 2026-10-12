@@ -96,14 +96,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const maxSeats = computed(() => null)
   const occupiedSeats = computed(() => null)
 
-  const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
   const subscription = computed<SubscriptionInfo | null>(() => {
-    // A past-due legacy status has no tier and is inactive, yet must still
-    // reach the payment-recovery banner.
+    const status = legacySubscriptionStatus.value
     if (
       !legacyCanAccessSubscriptionFeatures.value &&
       !subscriptionTier.value &&
-      !legacySubscriptionStatus.value?.renewal_invoice
+      !status?.renewal_invoice
     ) {
       return null
     }
@@ -112,13 +110,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
       isActive: legacyCanAccessSubscriptionFeatures.value,
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
-      planSlug: null, // Legacy doesn't use plan slugs
-      scheduledChange: null, // Legacy rail cannot schedule plan changes
-      renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
-      endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: status?.renewal_date ?? null,
+      endDate: status?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: hasFunds.value,
-      agentHasFunds: hasFunds.value
+      hasFunds: status?.has_funds ?? false,
+      agentHasFunds:
+        status?.scoped_effective_has_funds?.agent ?? status?.has_funds ?? false,
+      agentScopedHasFunds: status?.scoped_has_funds?.agent
     }
   })
 
