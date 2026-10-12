@@ -1,0 +1,134 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { ToastProvider } from 'reka-ui'
+import { computed, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+import type { ToastId } from '@/types/toastId'
+
+import ToastClose from './ToastClose.vue'
+import ToastDescription from './ToastDescription.vue'
+import ToastRoot from './ToastRoot.vue'
+import ToastTitle from './ToastTitle.vue'
+import ToastViewport from './ToastViewport.vue'
+import { useToast } from './toastStore'
+import type { Toast } from './toastStore'
+
+const toast = useToast()
+const { held, toasts } = storeToRefs(toast)
+const { t } = useI18n()
+
+onBeforeUnmount(toast.dismissAll)
+
+const shownToasts = computed(() => (held.value ? [] : toasts.value))
+const latestToastId = computed(() => shownToasts.value.at(-1)?.id)
+const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
+
+const isAssertive = (item: Toast) =>
+  item.kind === 'error' || item.kind === 'warning'
+const politeToasts = computed(() =>
+  toasts.value.filter((item) => !isAssertive(item))
+)
+const assertiveToasts = computed(() => toasts.value.filter(isAssertive))
+
+function announcement(item: Toast) {
+  return [item.title, item.description, item.action?.label]
+    .filter(Boolean)
+    .join('. ')
+}
+
+let escapeToastId: ToastId | undefined
+
+function preserveToastOnEscape(event: KeyboardEvent, id: ToastId) {
+  if (!event.defaultPrevented) escapeToastId = id
+}
+
+function updateToastOpen(id: ToastId, open: boolean) {
+  if (open) return
+  if (escapeToastId === id) {
+    escapeToastId = undefined
+    return
+  }
+  toast.dismiss(id)
+}
+
+const icons = {
+  success: 'icon-[lucide--circle-check] text-success-background',
+  error: 'icon-[lucide--circle-x] text-destructive-background',
+  info: 'icon-[lucide--info] text-primary-background',
+  warning: 'icon-[lucide--triangle-alert] text-warning-background',
+  loading:
+    'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary-background'
+} as const
+</script>
+
+<template>
+  <div class="sr-only">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+      :aria-label="regionLabel"
+    >
+      <p v-for="item in politeToasts" :key="item.id">
+        {{ announcement(item) }}
+      </p>
+    </div>
+    <div
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="false"
+      :aria-label="regionLabel"
+    >
+      <p v-for="item in assertiveToasts" :key="item.id">
+        {{ announcement(item) }}
+      </p>
+    </div>
+  </div>
+  <ToastProvider v-if="shownToasts.length" :label="regionLabel" disable-swipe>
+    <ToastRoot
+      v-for="item in shownToasts"
+      :key="item.instance"
+      :open="true"
+      :duration="item.duration"
+      data-testid="toast"
+      :data-toast-kind="item.kind"
+      @escape-key-down="preserveToastOnEscape($event, item.id)"
+      @update:open="updateToastOpen(item.id, $event)"
+    >
+      <i
+        :class="cn(icons[item.kind], 'col-start-1 row-start-1 size-5')"
+        aria-hidden="true"
+      />
+      <ToastTitle class="col-start-2 row-start-1">{{ item.title }}</ToastTitle>
+      <ToastClose
+        v-if="item.closable"
+        class="col-start-3 row-start-1"
+        data-testid="toast-close"
+      />
+      <ToastDescription v-if="item.description" class="col-start-2 row-start-2">
+        {{ item.description }}
+      </ToastDescription>
+      <Button
+        v-if="item.action"
+        class="col-span-2 col-start-2 row-start-3 mt-3 justify-self-end"
+        size="md"
+        variant="secondary"
+        @click="item.action.onClick()"
+      >
+        {{ item.action.label }}
+      </Button>
+    </ToastRoot>
+    <ToastViewport
+      :label="
+        (hotkey: string) =>
+          t('toastMessages.notificationsViewportLabel', { hotkey })
+      "
+      :z-index-version="latestToastId"
+      data-testid="toast-viewport"
+    />
+  </ToastProvider>
+</template>

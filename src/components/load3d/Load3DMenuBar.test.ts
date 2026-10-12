@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  createSharedComposable,
+  useDocumentVisibility,
+  useElementSize,
+  useStorage
+} from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -17,16 +24,23 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  createSharedComposable: (composable: () => unknown) => composable,
-  useDocumentVisibility: () => ref('visible'),
-  useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) }),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedTopBarWidth = ref(0)
+  vi.mocked(createSharedComposable).mockImplementation(
+    (composable) => composable
+  )
+  vi.mocked(useDocumentVisibility).mockImplementation(() => ref('visible'))
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedTopBarWidth,
+      height: ref(40)
+    })
+  )
+  vi.mocked(useStorage).mockImplementation((_key, defaultValue) =>
+    ref(defaultValue)
+  )
 })
 
 const i18n = createI18n({
@@ -87,8 +101,7 @@ function renderMenuBar(overrides: RenderProps = {}) {
       ...overrides
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user: userEvent.setup() }
@@ -107,11 +120,15 @@ async function openCategoryMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DMenuBar', () => {
-  it('shows scene controls by default', () => {
-    renderMenuBar()
+  it('shows scene controls by default', async () => {
+    const { user } = renderMenuBar()
     expect(
       screen.getByRole('button', { name: 'Show grid' })
     ).toBeInTheDocument()
+    await openCategoryMenu(user)
+    expect(
+      screen.getByRole('button', { name: 'Scene', pressed: true })
+    ).toHaveClass('bg-secondary-background-selected')
   })
 
   it('toggles showGrid on the bound config when the grid button is clicked', async () => {
@@ -264,6 +281,19 @@ describe('Load3DMenuBar', () => {
     const trigger = screen.getByTestId('load3d-category-menu')
     expect(trigger).not.toHaveTextContent('Scene')
     expect(trigger).toHaveAccessibleName('Scene')
+  })
+
+  it('keeps focus on the category trigger when the bar turns narrow', async () => {
+    mockedTopBarWidth = ref(600)
+    renderMenuBar()
+    const trigger = screen.getByTestId('load3d-category-menu')
+    trigger.focus()
+
+    mockedTopBarWidth.value = 300
+    await nextTick()
+
+    expect(screen.getByTestId('load3d-category-menu')).toBe(trigger)
+    expect(trigger).toHaveFocus()
   })
 
   it('still lists labeled categories in the menu when the bar is narrow', async () => {

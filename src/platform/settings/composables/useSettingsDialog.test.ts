@@ -1,5 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
-import type * as I18nModule from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
@@ -12,35 +10,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return isCloudRef.value
   }
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  t: (k: string) => k
-}))
+import {
+  registerSettingDialogComponent,
+  useSettingsDialog
+} from '@/platform/settings/composables/useSettingsDialog'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
-
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+const SettingDialogStub = { name: 'SettingDialogStub' }
 
 beforeEach(() => {
   useDialogStore().showDialog = showDialog
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  registerSettingDialogComponent(SettingDialogStub)
 })
 
 describe('useSettingsDialog', () => {
@@ -79,6 +65,12 @@ describe('useSettingsDialog', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.overlayClass).toBe('p-8')
+  })
+
+  it('show() opens the registered dialog component', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.component).toBe(SettingDialogStub)
   })
 
   it('show(panel) forwards defaultPanel to the dialog props', () => {

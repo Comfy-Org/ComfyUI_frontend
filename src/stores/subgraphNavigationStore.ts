@@ -14,27 +14,15 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
-
-function currentCanvas(
-  canvas: typeof app.canvas | undefined = app.canvas
-): typeof app.canvas | undefined {
-  return canvas
-}
-
-function currentRootGraph(graph: LGraph | Subgraph): LGraph | undefined {
-  return graph.rootGraph
-}
-
-function appRootGraph(rootGraph: LGraph | undefined): LGraph | undefined {
-  return rootGraph
-}
 
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
@@ -46,6 +34,7 @@ export const useSubgraphNavigationStore = defineStore(
   () => {
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
+    const canvasScheduler = useCanvasScheduler()
     const router = useRouter()
     const routeHash = useRouteHash()
 
@@ -62,10 +51,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Get the ID of the root graph for the currently active workflow. */
     const getCurrentRootGraphId = () => {
-      const canvas = currentCanvas(canvasStore.getCanvas())
-      return canvas?.graph
-        ? (currentRootGraph(canvas.graph)?.id ?? 'root')
-        : 'root'
+      return canvasStore.canvas?.graph?.rootGraph.id ?? 'root'
     }
 
     /**
@@ -89,8 +75,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** ID of the graph currently shown on the canvas. */
     function getActiveGraphId(): string {
-      const canvas = currentCanvas(canvasStore.getCanvas())
-      return canvas?.subgraph?.id ?? getCurrentRootGraphId()
+      return canvasStore.canvas?.subgraph?.id ?? getCurrentRootGraphId()
     }
 
     // ── Navigation stack ─────────────────────────────────────────────
@@ -101,7 +86,7 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const navigationStack = computed(() =>
       idStack.value
-        .map((id) => app.rootGraph.subgraphs.get(id))
+        .map((id) => useApp().rootGraph.subgraphs.get(id))
         .filter(isNonNullish)
     )
 
@@ -124,7 +109,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Get the current viewport state, or null if the canvas is not available. */
     const getCurrentViewport = (): DragAndScaleState | null => {
-      const canvas = currentCanvas(canvasStore.getCanvas())
+      const canvas = canvasStore.canvas
       if (!canvas) return null
       return {
         scale: canvas.ds.state.scale,
@@ -141,7 +126,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Apply a viewport state to the canvas. */
     function applyViewport(viewport: DragAndScaleState): void {
-      const canvas = currentCanvas()
+      const canvas = canvasStore.canvas
       if (!canvas) return
       canvas.ds.scale = viewport.scale
       canvas.ds.offset[0] = viewport.offset[0]
@@ -150,8 +135,11 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     function restoreViewport(graphId: string): void {
-      const canvas = currentCanvas()
+      const canvas = canvasStore.canvas
       if (!canvas) return
+
+      if (getActiveGraphId() === graphId)
+        canvasScheduler.cancel('subgraph-navigation-fit')
 
       const expectedKey = buildCacheKey(graphId)
       const viewport = viewportCache.get(expectedKey)
@@ -161,10 +149,13 @@ export const useSubgraphNavigationStore = defineStore(
       }
 
       // First visit — fit to content so subgraph nodes are visible
-      requestAnimationFrame(() => {
-        if (getActiveGraphId() !== graphId) return
-        if (!canvas.graph?.nodes.length) return
-        useLitegraphService().fitView()
+      canvasScheduler.schedule({
+        key: 'subgraph-navigation-fit',
+        isCurrent: () => getActiveGraphId() === graphId,
+        run: () => {
+          if (!canvas.graph?.nodes.length) return
+          useLitegraphService().fitView()
+        }
       })
     }
 
@@ -239,7 +230,7 @@ export const useSubgraphNavigationStore = defineStore(
     let navigationIntentId = 0
     let routeWriteId = 0
     let blockedRouteHash: string | undefined
-    let pendingWorkflowResetGraph: typeof app.rootGraph | undefined
+    let pendingWorkflowResetGraph: ComfyApp['rootGraph'] | undefined
 
     function createNavigationIntent(
       hash: string,
@@ -288,15 +279,15 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     function ensureCanvasOnRoot() {
-      const root = appRootGraph(app.rootGraph)
-      const canvas = currentCanvas(canvasStore.getCanvas())
+      const root = useApp().rootGraphOrUndefined
+      const canvas = canvasStore.canvas
       if (!root || !canvas) return
       if (canvas.graph?.id !== root.id) canvas.setGraph(root)
     }
 
     async function redirectToRoot(reason: string, navigationId: number) {
       if (navigationId !== navigationIntentId) return
-      const root = app.rootGraph
+      const root = useApp().rootGraph
       const rootHash = '#' + root.id
       console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
       try {
@@ -307,7 +298,7 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function navigateToHash(newHash: string, navigationId: number) {
-      const root = app.rootGraph
+      const root = useApp().rootGraph
       const locatorId = newHash.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
 
@@ -346,6 +337,7 @@ export const useSubgraphNavigationStore = defineStore(
           } catch (err) {
             if (navigationId !== navigationIntentId) return
             reportError(err, {
+              surface: 'graph',
               errorType: 'workflow_navigation_failure',
               level: 'warning',
               context: { stage: 'recovery' }
@@ -354,9 +346,9 @@ export const useSubgraphNavigationStore = defineStore(
           }
           if (navigationId !== navigationIntentId) return
           const loadedGraph =
-            app.rootGraph.id === locatorId
-              ? app.rootGraph
-              : app.rootGraph.subgraphs.get(locatorId)
+            useApp().rootGraph.id === locatorId
+              ? useApp().rootGraph
+              : useApp().rootGraph.subgraphs.get(locatorId)
           if (!loadedGraph) {
             return redirectToRoot(
               'subgraph not found after workflow load',
@@ -375,7 +367,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     async function safeRouterCall(op: () => Promise<unknown>, label: string) {
       try {
-        await op()
+        return !isNavigationFailure(await op())
       } catch (err) {
         if (
           !isNavigationFailure(err, NavigationFailureType.duplicated) &&
@@ -383,6 +375,7 @@ export const useSubgraphNavigationStore = defineStore(
         ) {
           console.warn(`[subgraphNavigation] ${label} rejected`, err)
         }
+        return false
       }
     }
 
@@ -394,7 +387,7 @@ export const useSubgraphNavigationStore = defineStore(
         state: { [routeWriteStateKey]: writeId }
       }
       try {
-        await safeRouterCall(
+        return await safeRouterCall(
           () => (replace ? router.replace(target) : router.push(target)),
           replace ? 'router.replace' : 'router.push'
         )
@@ -404,21 +397,24 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function syncGraphHash(intent: GraphNavigationIntent) {
-      if (intent.id !== navigationIntentId) return
+      if (intent.id !== navigationIntentId) return false
       if (!routeHash.value) {
-        const rootHash = '#' + app.rootGraph.id
-        await writeRouteHash(rootHash, true)
-        if (intent.id !== navigationIntentId) return
+        const rootHash = '#' + useApp().rootGraph.id
+        if (!(await writeRouteHash(rootHash, true))) return false
+        if (intent.id !== navigationIntentId) return false
       }
       const currentId = routeHash.value?.slice(1)
-      if (intent.hash.slice(1) === currentId) return
+      if (intent.hash.slice(1) === currentId) return true
 
-      await writeRouteHash(intent.hash, false)
+      return writeRouteHash(intent.hash, false)
     }
 
-    function queueGraphHash(intent: GraphNavigationIntent): Promise<void> {
+    function queueGraphHash(intent: GraphNavigationIntent): Promise<boolean> {
       const result = hashUpdateTail.then(() => syncGraphHash(intent))
-      hashUpdateTail = result.catch(() => undefined)
+      hashUpdateTail = result.then(
+        () => undefined,
+        () => undefined
+      )
       return result
     }
 
@@ -435,6 +431,43 @@ export const useSubgraphNavigationStore = defineStore(
       if (intent.source === 'graph' && intent.id === navigationIntentId) {
         await queueGraphHash(intent)
       }
+    }
+
+    async function navigateToGraph(targetGraph: LGraph): Promise<boolean> {
+      const canvas = canvasStore.canvas
+      const targetId = targetGraph.id
+      const belongsToCurrentWorkflow =
+        targetGraph === useApp().rootGraph ||
+        (targetGraph.rootGraph === useApp().rootGraph &&
+          useApp().rootGraph.subgraphs.get(targetId) === targetGraph)
+
+      if (!canvas?.graph || !targetId || !belongsToCurrentWorkflow) return false
+      if (canvas.graph === targetGraph) return true
+
+      const previousGraph = canvas.graph
+      const intent = createNavigationIntent('#' + targetId, 'graph')
+      await withNavBlocked(
+        async () => canvas.setGraph(targetGraph),
+        intent.hash
+      )
+      if (intent.id !== navigationIntentId) return false
+
+      const hashWritten = await queueGraphHash(intent)
+      if (
+        !hashWritten &&
+        intent.id === navigationIntentId &&
+        canvas.graph === targetGraph
+      ) {
+        await withNavBlocked(
+          async () => canvas.setGraph(previousGraph),
+          '#' + previousGraph.id
+        )
+      }
+      return (
+        hashWritten &&
+        intent.id === navigationIntentId &&
+        canvas.graph === targetGraph
+      )
     }
 
     async function updateHash(
@@ -500,7 +533,7 @@ export const useSubgraphNavigationStore = defineStore(
         return Promise.resolve()
       }
 
-      return queueGraphHash(intent)
+      await queueGraphHash(intent)
     }
     watch(
       () => canvasStore.currentGraph,
@@ -536,8 +569,8 @@ export const useSubgraphNavigationStore = defineStore(
       saveViewport(getActiveGraphId())
       const graph = canvasStore.getCanvas().graph
       pendingWorkflowResetGraph =
-        suppressWorkflowReset && graph !== app.rootGraph
-          ? app.rootGraph
+        suppressWorkflowReset && graph !== useApp().rootGraph
+          ? useApp().rootGraph
           : undefined
       isWorkflowSwitching = true
       setTimeout(() => {
@@ -555,6 +588,7 @@ export const useSubgraphNavigationStore = defineStore(
       saveCurrentViewport,
       beginWorkflowNavigation,
       endWorkflowNavigation,
+      navigateToGraph,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache

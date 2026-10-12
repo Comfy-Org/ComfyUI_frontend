@@ -10,7 +10,7 @@ import type {
   BoundingBoxInputSpec,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 function isBoundingBoxLikeWidget(
   widget: IBaseWidget
@@ -53,10 +53,6 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
             subWidget.value = widget.value[field]
           }
         }
-      },
-      {
-        serialize: true,
-        canvasOnly: false
       }
     )
 
@@ -83,7 +79,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
           step2: 1,
           precision: 0,
           serialize: false,
-          canvasOnly: true
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
         }
       )
 

@@ -1,8 +1,12 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 
+import { createI18n } from 'vue-i18n'
+
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 
 const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
@@ -10,12 +14,25 @@ const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
   mockBannerUnmounted: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
-  })
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 const BillingStatusBanner = defineComponent({
   setup() {
@@ -29,11 +46,18 @@ const stubs = {
   BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
   PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
-  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' },
-  WorkspaceProfilePic: { template: '<div />' }
+  PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' }
 }
 
 beforeEach(() => {
+  useBillingCapabilities().canManageMembers = computed(() => true)
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  workspaceUI.workspaceRole = computed(() => 'owner')
+  const ownerPermissions = workspaceUI.permissions.value
+  workspaceUI.permissions = computed(() => ({
+    ...ownerPermissions,
+    canViewPendingInvites: true
+  }))
   Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Acme Team' })
   vi.mocked(useTeamWorkspaceStore().fetchMembers).mockResolvedValue([])
   vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
@@ -48,14 +72,11 @@ describe('WorkspaceSettingsPanelContent', () => {
   it('keeps the billing banner mounted while switching sections', async () => {
     const { rerender, unmount } = render(WorkspaceSettingsPanelContent, {
       props: { section: 'planCredits' },
-      global: { stubs }
+      global: { stubs, plugins: [i18n] }
     })
 
     expect(screen.getByTestId('plan-body')).toBeInTheDocument()
     expect(screen.queryByTestId('members-body')).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Acme Team' })
-    ).toBeInTheDocument()
     expect(mockBannerMounted).toHaveBeenCalledTimes(1)
     expect(mockBannerUnmounted).not.toHaveBeenCalled()
 

@@ -17,11 +17,7 @@ const extensions = await vi.hoisted(async () => {
     await import('@/utils/__tests__/extensionTestUtils')
   return createExtensionCapture()
 })
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
+app.registerExtension = extensions.registerExtension
 await import('./customWidgets')
 const extension = extensions.getExtension('Comfy.CustomWidgets')
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
@@ -167,7 +163,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       findWidget(comboNode, 'choice')!.value = 'two'
 
       const { output } = await graphToPrompt(rootGraph)
-      const promptInputs = output[`${comboNode.id}`].inputs
+      const promptInputs = output[comboNode.id].inputs
 
       // "two" is index 1 of ["one", "two", "three"].
       expect(promptInputs.index).toBe(1)

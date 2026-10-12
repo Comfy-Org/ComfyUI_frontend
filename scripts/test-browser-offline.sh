@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 dist="$(realpath -m "${PLAYWRIGHT_OFFLINE_DIST:-$repo_root/dist}")"
-image="${COMFYUI_TEST_IMAGE:-ghcr.io/comfy-org/comfyui-ci-container:0.0.22}"
+image="${COMFYUI_TEST_IMAGE:-ghcr.io/comfy-org/comfyui-ci-container:0.0.27}"
 
 test -f "$dist/index.html" || {
   echo "No build at $dist. Run pnpm build or set PLAYWRIGHT_OFFLINE_DIST." >&2

@@ -9,13 +9,12 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
@@ -193,8 +192,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteInput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
@@ -208,8 +206,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteOutput(
-    // @ts-expect-error - Reroute type needs fixing
-    reroute: Reroute,
+    _reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>

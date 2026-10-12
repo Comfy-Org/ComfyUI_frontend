@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ButtonVariants } from '../ui/button'
-import Button from '../ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   title,
@@ -26,7 +26,7 @@ const {
     :href="href"
     :class="
       cn(
-        'rounded-4.5xl flex flex-col justify-between p-8 transition-opacity hover:opacity-90',
+        'flex flex-col justify-between rounded-4.5xl p-8 transition-opacity hover:opacity-90',
         bg
       )
     "

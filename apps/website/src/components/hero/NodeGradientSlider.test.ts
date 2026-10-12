@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { lastNumberEmitted } from '../../test/emitted'
+import { lastNumberEmitted } from '@/test/emitted'
 import NodeGradientSlider from './NodeGradientSlider.vue'
 
 const defaultProps = {

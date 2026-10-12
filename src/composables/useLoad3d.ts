@@ -25,6 +25,7 @@ import type {
   MaterialMode,
   Model3DInfo,
   ModelConfig,
+  StoredModelConfig,
   SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
@@ -32,7 +33,7 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -51,12 +52,17 @@ export type Load3dCachedOutput = {
 }
 
 const load3dSceneDirty = new WeakMap<LGraphNode, boolean>()
+const load3dSceneRevisions = new WeakMap<LGraphNode, number>()
 const load3dOutputCache = new WeakMap<LGraphNode, Load3dCachedOutput>()
 
 export const markLoad3dSceneDirty = (node: LGraphNode | null): void => {
   if (!node) return
+  load3dSceneRevisions.set(node, (load3dSceneRevisions.get(node) ?? 0) + 1)
   load3dSceneDirty.set(node, true)
 }
+
+export const getLoad3dSceneRevision = (node: LGraphNode): number =>
+  load3dSceneRevisions.get(node) ?? 0
 
 export const isLoad3dSceneDirty = (node: LGraphNode): boolean =>
   load3dSceneDirty.get(node) !== false
@@ -67,10 +73,13 @@ export const getLoad3dOutputCache = (
 
 export const setLoad3dOutputCache = (
   node: LGraphNode,
-  output: Load3dCachedOutput
-): void => {
+  output: Load3dCachedOutput,
+  sceneRevision: number = getLoad3dSceneRevision(node)
+): boolean => {
+  if (getLoad3dSceneRevision(node) !== sceneRevision) return false
   load3dOutputCache.set(node, output)
   load3dSceneDirty.set(node, false)
+  return true
 }
 const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
@@ -277,9 +286,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     } catch (error) {
       console.error('Error initializing Load3d:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeLoad3dViewer')
-      )
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
 
@@ -299,9 +306,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     const savedModelConfig = node.properties['Model Config'] as
-      | (Omit<Partial<ModelConfig>, 'gizmo'> & {
-          gizmo?: Partial<GizmoConfig>
-        })
+      | StoredModelConfig
       | undefined
     if (savedModelConfig) {
       modelConfig.value = {
@@ -762,7 +767,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           showAsBackground: false
         }
       }
-      useToastStore().addAlert(t('toastMessages.failedToLoadHDRI'))
+      useToast().warning(t('toastMessages.failedToLoadHDRI'))
     } finally {
       loading.value = false
       loadingMessage.value = ''
@@ -793,7 +798,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const handleExportModel = async (format: string) => {
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dSceneToExport'))
+      useToast().warning(t('toastMessages.no3dSceneToExport'))
       return
     }
 
@@ -801,7 +806,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       await load3d.exportModel(format)
     } catch (error) {
       console.error('Error exporting model:', error)
-      useToastStore().addAlert(
+      useToast().warning(
         t('toastMessages.failedToExportModel', {
           format: format.toUpperCase()
         })
@@ -811,7 +816,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -832,7 +837,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
 
       if (!uploadedPath) {
-        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        useToast().warning(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -844,7 +849,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       )
 
       loadingMessage.value = t('load3d.loadingModel')
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
@@ -857,7 +863,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
     } catch (error) {
       console.error('Model drop failed:', error)
-      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     } finally {
       loading.value = false
       loadingMessage.value = ''
@@ -964,6 +970,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       if (!load3d || !isAssetPreviewSupported()) return
 
       const node = nodeRef.value
+      if (node?.properties['Last Time Model Folder'] === 'temp') return
       const modelWidget = node?.widgets?.find(
         (w) => w.name === 'model_file' || w.name === 'image'
       )

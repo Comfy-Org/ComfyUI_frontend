@@ -4,12 +4,13 @@ import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import {
   BADGE_GAP,
   clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
+  layoutHiddenLinkBadges,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
@@ -35,16 +36,17 @@ function drawBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  return drawHiddenLinkBadges(
+  const layout = layoutHiddenLinkBadges(
     host,
     ctx,
     link,
     { hidden: true },
     startPos,
     endPos,
-    BADGE_COLOR,
-    visibleArea
+    BADGE_COLOR
   )
+  drawHiddenLinkBadges(ctx, layout, visibleArea)
+  return layout
 }
 
 describe('linkBadgeText', () => {
@@ -55,6 +57,7 @@ describe('linkBadgeText', () => {
       expected: 'Checkpoint'
     },
     { type: 'MODEL', presentation: {}, expected: 'MODEL' },
+    { type: ['IMAGE', 'MASK'], presentation: {}, expected: 'IMAGE,MASK' },
     { type: '', presentation: {}, expected: '*' },
     { type: -1, presentation: {}, expected: '*' }
   ] satisfies {

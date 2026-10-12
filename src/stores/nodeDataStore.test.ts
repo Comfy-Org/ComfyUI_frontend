@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
@@ -14,7 +14,6 @@ import type { UUID } from '@/utils/uuid'
 import { useNodeDataStore } from './nodeDataStore'
 
 const rootA: UUID = 'root-a'
-
 function node(id: number, graphId: UUID = rootA): NodeState {
   return createNodeState({ id: toNodeId(id), graphId, title: `Node ${id}` })
 }
@@ -316,5 +315,15 @@ describe('nodeDataStore registration via LGraph', () => {
     graph.remove(lgraphNode)
 
     expect(registeredState(graph, lgraphNode)).toBeUndefined()
+  })
+
+  it('does not crash the litegraph module graph on load', async () => {
+    vi.resetModules()
+    await import('@/lib/litegraph/src/LGraphGroup')
+    await import('@/stores/nodeDataStore')
+    const { SubgraphNode } =
+      await import('@/lib/litegraph/src/subgraph/SubgraphNode')
+
+    expect(SubgraphNode).toBeTypeOf('function')
   })
 })

@@ -1,6 +1,5 @@
-import type * as VueUseModule from '@vueuse/core'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { until } from '@vueuse/core'
+import { until, useStorage } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -17,11 +16,8 @@ const { mockDismissalStorage } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return { mockDismissalStorage: ref({} as Record<string, number>) }
 })
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUseModule>()),
-  useStorage: vi.fn(() => mockDismissalStorage),
-  until: vi.fn(() => Promise.resolve())
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
 
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
@@ -29,6 +25,7 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
+    vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 
@@ -335,7 +332,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(vi.mocked(until)).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
@@ -349,7 +346,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(vi.mocked(until)).not.toHaveBeenCalled()
+      expect(until).not.toHaveBeenCalled()
     })
   })
 

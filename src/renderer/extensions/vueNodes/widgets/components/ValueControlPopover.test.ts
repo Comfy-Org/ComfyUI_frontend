@@ -1,7 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -16,9 +15,6 @@ const CONTROL_LABELS = {
   decrement: 'Decrement Value',
   randomize: 'Randomize Value'
 } as const satisfies Record<ControlOptions, string>
-
-const isHTMLInputElement = (el: HTMLElement): el is HTMLInputElement =>
-  el instanceof HTMLInputElement
 
 const i18n = createI18n({
   legacy: false,
@@ -47,13 +43,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  props: { as: { type: String, default: 'button' } },
-  template: '<label v-bind="$attrs"><slot /></label>'
-})
-
 function renderPopover(modelValue: ControlOptions = 'randomize') {
   const value = ref<ControlOptions | undefined>(modelValue)
   const Harness = defineComponent({
@@ -63,8 +52,7 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
   })
   const utils = render(Harness, {
     global: {
-      plugins: [PrimeVue, i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [i18n]
     }
   })
   return { ...utils, value }
@@ -110,6 +98,30 @@ describe('ValueControlPopover', () => {
         Object.keys(CONTROL_LABELS).length
       )
     })
+
+    it('associates labels with radios within each instance', async () => {
+      const user = userEvent.setup()
+      const Harness = defineComponent({
+        components: { ValueControlPopover },
+        template: `
+          <ValueControlPopover />
+          <ValueControlPopover />
+        `
+      })
+      render(Harness, { global: { plugins: [i18n] } })
+
+      const fixedRadios = screen
+        .getAllByRole('radio')
+        .filter((radio) => radio.getAttribute('value') === 'fixed')
+      const fixedLabels = screen.getAllByText(CONTROL_LABELS.fixed)
+
+      expect(fixedRadios[0].id).not.toBe(fixedRadios[1].id)
+      await user.click(fixedLabels[0])
+      expect(fixedRadios[0]).toHaveAttribute('aria-checked', 'true')
+      expect(fixedRadios[1]).toHaveAttribute('aria-checked', 'false')
+      await user.click(fixedLabels[1])
+      expect(fixedRadios[1]).toHaveAttribute('aria-checked', 'true')
+    })
   })
 
   describe('Selection', () => {
@@ -117,10 +129,9 @@ describe('ValueControlPopover', () => {
       renderPopover('increment')
       const checked = screen
         .getAllByRole('radio')
-        .filter(isHTMLInputElement)
-        .find((r) => r.checked)
+        .find((radio) => radio.getAttribute('aria-checked') === 'true')
       expect(checked).toBeDefined()
-      expect(checked?.value).toBe('increment')
+      expect(checked).toHaveAttribute('value', 'increment')
     })
 
     it('updates v-model when a different option is selected', async () => {
@@ -129,8 +140,7 @@ describe('ValueControlPopover', () => {
 
       const fixedRadio = screen
         .getAllByRole('radio')
-        .filter(isHTMLInputElement)
-        .find((r) => r.value === 'fixed')
+        .find((radio) => radio.getAttribute('value') === 'fixed')
       expect(fixedRadio).toBeDefined()
 
       await user.click(fixedRadio!)

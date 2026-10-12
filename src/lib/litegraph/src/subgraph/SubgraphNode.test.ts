@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
-  BaseWidget,
+  LegacyWidget,
   LGraph,
   LGraphNode,
   LiteGraph,
@@ -287,7 +287,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('preserves a promoted widget when re-resolution fails', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
     })
@@ -317,7 +316,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('declines promotion when an empty widget name cannot be registered', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [
         { name: '', type: 'STRING' },
@@ -357,7 +355,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('clears an existing promotion when registration is later declined', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })
@@ -432,8 +429,7 @@ describe('SubgraphNode Synchronization', () => {
     expect(widget.widgetId).toBeDefined()
 
     expect(() => {
-      // @ts-expect-error Abstract class instantiation
-      new BaseWidget({ ...widget, node: subgraphNode })
+      new LegacyWidget({ ...widget, node: subgraphNode })
     }).not.toThrow()
   })
 

@@ -1,0 +1,20 @@
+{
+  "byteplus/seedream-4": "edit-images",
+  "byteplus/seedream-4-5": "generate-images",
+  "byteplus/seedream-5-lite": "generate-images",
+  "byteplus/seedream-5-pro": "generate-images",
+  "gemini/omni-1.1-flash": "animate-images",
+  "gemini/omni-flash-preview": "animate-images",
+  "kling/motion-control": "animate-images",
+  "kling/v3": "animate-images",
+  "minimax/hailuo-02": "animate-images",
+  "openai/sora-2": "generate-videos",
+  "openai/sora-2-pro": "generate-videos",
+  "vertexai/gemini-2.5-flash-image": "edit-images",
+  "vertexai/gemini-3-pro-image": "edit-images",
+  "vertexai/gemini-nano-banana-2": "edit-images",
+  "vertexai/veo-3": "animate-images",
+  "wan/reference-video": "animate-images",
+  "xai/grok-imagine-video": "animate-images",
+  "xai/grok-imagine-video-1.5": "generate-videos"
+}

@@ -10,13 +10,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      graph_mouse: [0, 0]
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 

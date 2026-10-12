@@ -5,10 +5,7 @@
       class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
     >
       <Button
-        v-tooltip.top="{
-          value: $t('mediaAsset.selection.deselectAll'),
-          showDelay: 300
-        }"
+        :tooltip="$t('mediaAsset.selection.deselectAll')"
         variant="inverted"
         size="icon-lg"
         type="button"
@@ -24,10 +21,7 @@
       </span>
       <div class="ml-auto flex shrink-0 items-center gap-1">
         <Button
-          v-tooltip.top="{
-            value: $t('mediaAsset.selection.downloadSelected'),
-            showDelay: 300
-          }"
+          :tooltip="$t('mediaAsset.selection.downloadSelected')"
           variant="inverted"
           size="icon-lg"
           type="button"
@@ -41,10 +35,7 @@
         <template v-if="showDelete">
           <span class="h-6 w-px bg-base-background/20" aria-hidden="true" />
           <Button
-            v-tooltip.top="{
-              value: $t('mediaAsset.selection.deleteSelected'),
-              showDelay: 300
-            }"
+            :tooltip="$t('mediaAsset.selection.deleteSelected')"
             variant="inverted"
             size="icon-lg"
             type="button"

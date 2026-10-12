@@ -1,44 +1,21 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const {
-  mockFetchStatus,
-  mockToastAdd,
-  mockTrackInviteSent,
-  mockTrackInviteFailed
-} = vi.hoisted(() => ({
-  mockFetchStatus: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockTrackInviteSent: vi.fn(),
-  mockTrackInviteFailed: vi.fn()
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ fetchStatus: mockFetchStatus })
-}))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWorkspaceInviteSent: mockTrackInviteSent,
-    trackWorkspaceInviteFailed: mockTrackInviteFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -58,6 +35,7 @@ function pendingInviteFor(email: string): WorkspacePendingInvite {
 }
 
 function renderForm(props: Record<string, unknown> = {}) {
+  mockBillingContext()
   const user = userEvent.setup()
   const result = render(InviteMembersForm, {
     props: {
@@ -79,6 +57,14 @@ function submitButton() {
   return screen.getByRole('button', { name: 'Send invites' })
 }
 
+type SubmittedPayload = [string[], WorkspacePendingInvite[]]
+
+function submittedPayloads(
+  emitted: () => Record<string, unknown[] | undefined>
+): SubmittedPayload[] {
+  return (emitted().submitted ?? []) as SubmittedPayload[]
+}
+
 describe('InviteMembersForm', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -86,7 +72,7 @@ describe('InviteMembersForm', () => {
     vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([
       ...useTeamWorkspaceStore().pendingInvites
     ])
-    mockFetchStatus.mockResolvedValue(undefined)
+
     vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
       async (email: string) => pendingInviteFor(email)
     )
@@ -129,27 +115,37 @@ describe('InviteMembersForm', () => {
     )
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 2
     })
-    expect(mockFetchStatus).toHaveBeenCalledOnce()
-    expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(submittedPayloads(emitted)).toHaveLength(1)
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com', 'c@d.com'])
+    expect(submittedPayloads(emitted)[0][1].map((i) => i.email)).toEqual([
+      'a@b.com',
+      'c@d.com'
+    ])
   })
 
   it('completes submission when the billing refresh fails', async () => {
     const refreshError = new Error('refresh failed')
-    mockFetchStatus.mockRejectedValueOnce(refreshError)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
+    vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
+      refreshError
+    )
 
     await user.type(emailInput(), 'a@b.com{Enter}')
     await user.click(submitButton())
 
-    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    await waitFor(() =>
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com'])
+    )
     expect(submitButton()).toBeEnabled()
-    expect(mockFetchStatus).toHaveBeenCalledOnce()
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
   })
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
@@ -160,11 +156,12 @@ describe('InviteMembersForm', () => {
     vi.mocked(
       useTeamWorkspaceStore().fetchPendingInvites
     ).mockRejectedValueOnce(refreshError)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'stale@example.com{Enter}')
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
 
     expect(
       screen.queryByText(
@@ -174,7 +171,7 @@ describe('InviteMembersForm', () => {
     await user.click(submitButton())
 
     await waitFor(() =>
-      expect(emitted().submitted).toEqual([[['stale@example.com']]])
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['stale@example.com'])
     )
   })
 
@@ -224,11 +221,14 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
-    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
@@ -238,9 +238,9 @@ describe('InviteMembersForm', () => {
     await waitFor(() =>
       expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
     )
-    expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
-    expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
-    expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['ok@x.com', 'fail@x.com'])
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
@@ -260,12 +260,15 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
-    expect(mockTrackInviteSent).not.toHaveBeenCalled()
-    expect(mockFetchStatus).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 
   it('keeps over-limit chips visible and blocks submission', async () => {
@@ -339,7 +342,7 @@ describe('InviteMembersForm', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith(
       'new@example.com'
     )
-    expect(emitted().submitted).toEqual([[['new@example.com']]])
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['new@example.com'])
   })
 
   it('caps unlimited workspaces to one invite batch', async () => {

@@ -34,10 +34,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     const userId = await comfyPage.setupUser(
       `playwright-local-auth-${testInfo.parallelIndex}`
     )
-    await comfyPage.setupSettings({
-      'Comfy.TutorialCompleted': true,
-      'Comfy.userId': userId
-    })
+    await comfyPage.setupSettings({ userId })
 
     await comfyPage.cloudAuth.mockAuth()
     await mockWorkspace(page, workspace('personal', 'owner'), [])

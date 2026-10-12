@@ -1,48 +1,43 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const principles = [
   {
-    title: t('brand.voice.direct.title', locale),
-    body: t('brand.voice.direct.body', locale)
+    title: t('brand.voice.direct.title'),
+    body: t('brand.voice.direct.body')
   },
   {
-    title: t('brand.voice.precise.title', locale),
-    body: t('brand.voice.precise.body', locale)
+    title: t('brand.voice.precise.title'),
+    body: t('brand.voice.precise.body')
   },
   {
-    title: t('brand.voice.human.title', locale),
-    body: t('brand.voice.human.body', locale)
+    title: t('brand.voice.human.title'),
+    body: t('brand.voice.human.body')
   },
   {
-    title: t('brand.voice.antihype.title', locale),
-    body: t('brand.voice.antihype.body', locale)
+    title: t('brand.voice.antihype.title'),
+    body: t('brand.voice.antihype.body')
   }
 ]
 
-const doExamples = [
-  t('brand.voice.do.0', locale),
-  t('brand.voice.do.1', locale)
-]
+const doExamples = [t('brand.voice.do.0'), t('brand.voice.do.1')]
 
-const dontExamples = [
-  t('brand.voice.dont.0', locale),
-  t('brand.voice.dont.1', locale)
-]
+const dontExamples = [t('brand.voice.dont.0'), t('brand.voice.dont.1')]
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:px-20 lg:py-12">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.voice.heading', locale) }}
+      {{ t('brand.voice.heading') }}
     </SectionHeader>
 
-    <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm leading-[1.6]">
+    <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm/[1.6]">
       <div v-for="principle in principles" :key="principle.title">
         <dt class="text-primary-comfy-yellow">{{ principle.title }}</dt>
         <dd class="text-primary-warm-gray">{{ principle.body }}</dd>
@@ -50,22 +45,22 @@ const dontExamples = [
     </dl>
 
     <div class="mt-12 grid gap-4 md:grid-cols-2">
-      <div class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl p-8">
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
         <div class="flex items-center gap-2">
           <span
-            class="bg-primary-comfy-yellow size-2.5 rounded-full"
+            class="size-2.5 rounded-full bg-primary-comfy-yellow"
             aria-hidden="true"
           />
           <span
             class="text-sm font-bold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('brand.voice.doLabel', locale) }}
+            {{ t('brand.voice.doLabel') }}
           </span>
         </div>
         <div
           v-for="example in doExamples"
           :key="example"
-          class="bg-transparency-ink-t80 rounded-2xl p-5"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
         >
           <p class="text-base/[1.45] text-primary-comfy-canvas">
             {{ example }}
@@ -73,7 +68,7 @@ const dontExamples = [
         </div>
       </div>
 
-      <div class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl p-8">
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
         <div class="flex items-center gap-2">
           <span
             class="size-2.5 rounded-full bg-primary-warm-gray"
@@ -82,13 +77,13 @@ const dontExamples = [
           <span
             class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
           >
-            {{ t('brand.voice.dontLabel', locale) }}
+            {{ t('brand.voice.dontLabel') }}
           </span>
         </div>
         <div
           v-for="example in dontExamples"
           :key="example"
-          class="bg-transparency-ink-t80 rounded-2xl p-5"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
         >
           <p class="text-base/[1.45] text-primary-warm-gray line-through">
             {{ example }}

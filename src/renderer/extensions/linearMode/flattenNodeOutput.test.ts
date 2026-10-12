@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}
