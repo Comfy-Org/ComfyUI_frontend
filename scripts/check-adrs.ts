@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const ADR_FILE_PATTERN =
   /^([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/
 const LEGACY_REFERENCE_PATTERN =
-  /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/
+  /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?<![/A-Za-z0-9])(?:docs\/)?adr\/\d{4}-/
 
 type Adr = {
   date: string
