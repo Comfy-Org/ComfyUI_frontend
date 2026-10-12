@@ -13,7 +13,6 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { TOOLTIP_TEXT_CLASS } from '@/composables/useTooltipConfig'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -36,6 +35,7 @@ const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
 }>()
+const emit = defineEmits<{ finished: [] }>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -107,13 +107,16 @@ function reportStep(action: AgentOnboardingAction): void {
 }
 
 function onNext(): void {
+  const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
   next()
+  if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finish()
+  emit('finished')
 }
 
 const targetObserver = new MutationObserver(resolveTargets)
@@ -259,10 +262,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border-default"
         />
         <div
-          :class="cn(TOOLTIP_TEXT_CLASS, 'wrap-break-word whitespace-pre-line')"
+          class="rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-base-foreground shadow-interface"
         >
           {{ step.tooltip }}
         </div>

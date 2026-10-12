@@ -1,3 +1,8 @@
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
@@ -6,9 +11,13 @@ import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -21,13 +30,14 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -66,12 +76,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import {
-  CANCELLATION_STAGE_EVENTS,
-  TelemetryEvents,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload
-} from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -180,6 +185,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -364,6 +375,26 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -406,6 +437,12 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
   }
 
   trackAgentOnboardingNotShown(

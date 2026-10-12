@@ -10,8 +10,13 @@ export const SIDEBAR_MIN_SIZE = 10
 /** Minimum panel size (%) for the builder panel */
 export const BUILDER_MIN_SIZE = 15
 
+/** Width (px) the pinned side panels always leave for the graph canvas. */
+export const CENTER_PANEL_MIN_WIDTH = 160
+
 /** Minimum sidebar panel width (px). The twin of `min-w-78` on `.side-bar-panel`. */
 export const SIDEBAR_MIN_WIDTH = 312
+
+export const PROPERTIES_PANEL_MIN_WIDTH = 240
 
 /**
  * Width (px) of the side toolbar rail: `--sidebar-default-floating-width` plus

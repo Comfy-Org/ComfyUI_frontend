@@ -140,7 +140,7 @@
       "id": 16,
       "type": "LoadImageMask",
       "title": "Edit mask (white = edit)",
-      "pos": [300, 600],
+      "pos": [-2900, 5390],
       "size": [300, 310],
       "flags": {},
       "order": 0,

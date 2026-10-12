@@ -1,17 +1,17 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { minimaxLicensePage } from '../src/data/minimaxLicense'
-import type { Locale } from '../src/i18n/translations'
-import { t } from '../src/i18n/translations'
-import { faqAnswerPlainText, parseFaqAnswer } from '../src/utils/faqAnswer'
+import { getRoutes } from '@/config/routes'
+import { minimaxLicensePage } from '@/data/minimaxLicense'
+import type { Locale } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
+import { faqAnswerPlainText, parseFaqAnswer } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
-const CONTACT_HREF = 'https://comfy.org/contact'
+const CONTACT_HREF = 'https://comfy.org/contact/'
 const META_TITLE = t('minimaxLicense.meta.title')
 const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')
@@ -137,13 +137,13 @@ test.describe('MiniMax license page — zh-CN', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: t('minimaxLicense.hero.title', 'zh-CN')
+        name: t('minimaxLicense.hero.title', {}, { locale: 'zh-CN' })
       })
     ).toBeVisible()
 
     const steps = page.getByRole('heading', {
       level: 2,
-      name: t('minimaxLicense.steps.heading', 'zh-CN')
+      name: t('minimaxLicense.steps.heading', {}, { locale: 'zh-CN' })
     })
     await steps.scrollIntoViewIfNeeded()
     await expect(steps).toBeVisible()

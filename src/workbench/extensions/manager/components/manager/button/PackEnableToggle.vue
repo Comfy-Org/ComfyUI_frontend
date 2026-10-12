@@ -1,18 +1,16 @@
 <template>
   <div class="flex items-center gap-2">
-    <div
+    <Button
       v-if="packageConflict?.has_conflict"
-      v-tooltip="{
-        value: $t('manager.conflicts.warningTooltip'),
-        showDelay: 300
-      }"
-      class="flex size-6 cursor-pointer items-center justify-center"
+      :tooltip="$t('manager.conflicts.warningTooltip')"
+      variant="muted-textonly"
+      size="icon-sm"
+      class="size-6"
+      :aria-label="$t('manager.conflicts.warningTooltip')"
       @click="showConflictModal(true)"
     >
-      <i
-        class="icon-[lucide--triangle-alert] text-xl text-warning-background"
-      />
-    </div>
+      <i class="icon-[lucide--triangle-alert] size-6 text-warning-background" />
+    </Button>
     <Switch
       v-if="!canToggleDirectly"
       :model-value="isEnabled"
@@ -35,6 +33,7 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'

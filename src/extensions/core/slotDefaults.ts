@@ -41,7 +41,11 @@ app.registerExtension({
   },
   slot_types_default_out: {},
   slot_types_default_in: {},
-  async beforeRegisterNodeDef(this: SlotDefaultsExtension, nodeType, nodeData) {
+  async beforeRegisterNodeDef(
+    this: SlotDefaultsExtension,
+    _nodeType,
+    nodeData
+  ) {
     const nodeId = nodeData.name
     const { inputTypes, outputTypes } = collectRegistrableSlotTypes(nodeData)
 
@@ -58,10 +62,7 @@ app.registerExtension({
       if (!(lowerType in LiteGraph.registered_slot_in_types)) {
         LiteGraph.registered_slot_in_types[lowerType] = { nodes: [] }
       }
-      LiteGraph.registered_slot_in_types[lowerType].nodes.push(
-        // @ts-expect-error ComfyNode
-        nodeType.comfyClass
-      )
+      LiteGraph.registered_slot_in_types[lowerType].nodes.push(nodeId)
     }
 
     for (const type of outputTypes) {
@@ -76,8 +77,7 @@ app.registerExtension({
       if (!(type in LiteGraph.registered_slot_out_types)) {
         LiteGraph.registered_slot_out_types[type] = { nodes: [] }
       }
-      // @ts-expect-error ComfyNode
-      LiteGraph.registered_slot_out_types[type].nodes.push(nodeType.comfyClass)
+      LiteGraph.registered_slot_out_types[type].nodes.push(nodeId)
 
       if (!LiteGraph.slot_types_out.includes(type)) {
         LiteGraph.slot_types_out.push(type)

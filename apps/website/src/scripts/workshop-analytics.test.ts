@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../config/models-catalogue'
-import { WorkshopWorkflowError } from '../config/workshop-workflow-api'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import {
   WorkshopRouterError,
   workshopResponseDetails
-} from '../config/workshop-router-errors'
+} from '@/config/workshop-router-errors'
 import {
   workshopFailureAnalytics,
   workshopRouterErrorType,
@@ -55,6 +55,15 @@ describe('Workshop execution attribution', () => {
       })
     }
   )
+
+  it('files an app page as an app, not a workflow, whatever it runs', () => {
+    const app: WorkshopModel = { ...page, type: 'APP', appId: 'studio' }
+    expect(workshopModelAnalytics(app)).toMatchObject({
+      model_slug: 'image-edit',
+      page_type: 'app',
+      app_slug: 'image-edit'
+    })
+  })
 
   it('reports Cloud validation codes and only declared input names', () => {
     const details = workshopWorkflowFailureAnalytics(

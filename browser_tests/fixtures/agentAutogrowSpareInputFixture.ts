@@ -17,6 +17,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -34,15 +35,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * `src/core/graph/widgets/dynamicWidgets.ts` when an autogrow input is
  * connected, and the CRDT document never carries it. A tab return
  * re-subscribes the follower and replays the document over the live nodes,
- * and `reconcile()` in `agentNodeMaterializer.ts` used to `continue` past
- * any live node the agent scope already owns — so the payload's input list
- * won, and the client-only spare was dropped.
+ * and the follower's reconcile step used to `continue` past any live node
+ * the agent scope already owns — so the payload's input list won, and the
+ * client-only spare was dropped.
  *
- * Fixed in #18127 (`3c202143e2`): `reconcile()` now calls
- * `reconcileAutogrowInputs(live)` for exactly those already-owned live
- * nodes, which re-runs the existing growth path for each autogrow group
- * whose last connected slot has no spare behind it. That fix shipped with
- * unit cover only.
+ * Fixed in #18127 (`3c202143e2`) by re-running the growth path after each
+ * reconcile; the follower now leaves a live node's input list alone and
+ * connects document links through `LGraphNode.connect`, so the autogrow
+ * hooks themselves keep the spare slot.
  *
  * Sibling case: `agentAutogrowTabSwitchReconcile.spec.ts` drives the same
  * seed and the same tab switch, and asserts the surviving slot's color and
@@ -235,6 +235,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     )
 
   await test.step('open the agent panel and target the workflow', async () => {
+    await loadSeedIntoActiveTab(page, seed)
     await agentPanel.open()
     await agentPanel.selectWorkflow()
   })

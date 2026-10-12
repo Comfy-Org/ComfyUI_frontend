@@ -140,43 +140,43 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'xwide',
         label: 'cinematic.option.extremeWide',
         phrase: 'extreme wide shot',
-        preview: frame('desert')
+        preview: frame('options/shot-xwide')
       },
       {
         id: 'wide',
         label: 'cinematic.option.wide',
         phrase: 'wide shot',
-        preview: frame('motel')
+        preview: frame('options/shot-wide')
       },
       {
         id: 'medium',
         label: 'cinematic.option.medium',
         phrase: 'medium shot',
-        preview: frame('bus-stop')
+        preview: frame('options/shot-medium')
       },
       {
         id: 'close',
         label: 'cinematic.option.closeUp',
         phrase: 'close-up',
-        preview: frame('letter')
+        preview: frame('options/shot-close')
       },
       {
         id: 'xclose',
         label: 'cinematic.option.extremeCloseUp',
         phrase: 'extreme close-up',
-        preview: frame('portrait')
+        preview: frame('options/shot-xclose')
       },
       {
         id: 'ots',
         label: 'cinematic.option.overShoulder',
         phrase: 'over-the-shoulder shot',
-        preview: frame('train')
+        preview: frame('options/shot-ots')
       },
       {
         id: 'low',
         label: 'cinematic.option.lowAngle',
         phrase: 'low angle shot',
-        preview: frame('neon-street')
+        preview: frame('options/shot-low')
       }
     ]
   },
@@ -189,43 +189,43 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'golden',
         label: 'cinematic.option.goldenHour',
         phrase: 'golden hour sunlight',
-        preview: frame('motel')
+        preview: frame('options/light-golden')
       },
       {
         id: 'overcast',
         label: 'cinematic.option.overcast',
         phrase: 'soft overcast daylight',
-        preview: frame('portrait')
+        preview: frame('options/light-overcast')
       },
       {
         id: 'blue',
         label: 'cinematic.option.blueHour',
         phrase: 'blue hour twilight',
-        preview: frame('train')
+        preview: frame('options/light-blue')
       },
       {
         id: 'night',
         label: 'cinematic.option.practicalNight',
         phrase: 'night lit by practical lights',
-        preview: frame('bus-stop')
+        preview: frame('options/light-night')
       },
       {
         id: 'neon',
         label: 'cinematic.option.neon',
         phrase: 'neon light',
-        preview: frame('diner')
+        preview: frame('options/light-neon')
       },
       {
         id: 'lowkey',
         label: 'cinematic.option.lowKey',
         phrase: 'low key lighting',
-        preview: frame('letter')
+        preview: frame('options/light-lowkey')
       },
       {
         id: 'silhouette',
         label: 'cinematic.option.silhouette',
         phrase: 'backlit silhouette',
-        preview: frame('desert')
+        preview: frame('options/light-silhouette')
       }
     ]
   },
@@ -238,43 +238,43 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'clean',
         label: 'cinematic.option.digitalClean',
         phrase: 'clean digital image',
-        preview: frame('bus-stop')
+        preview: frame('options/film-clean')
       },
       {
         id: 't500',
         label: 'cinematic.option.tungsten500',
         phrase: 'tungsten 500T film',
-        preview: frame('bus-stop')
+        preview: frame('options/film-t500')
       },
       {
         id: 'd250',
         label: 'cinematic.option.daylight250',
         phrase: 'daylight 250D film',
-        preview: frame('motel')
+        preview: frame('options/film-d250')
       },
       {
         id: 'bw400',
         label: 'cinematic.option.blackWhite400',
         phrase: 'black and white 400 film',
-        preview: frame('portrait')
+        preview: frame('options/film-bw400')
       },
       {
         id: 'slide',
         label: 'cinematic.option.reversal',
         phrase: 'reversal slide film',
-        preview: frame('diner')
+        preview: frame('options/film-slide')
       },
       {
         id: 'expired',
         label: 'cinematic.option.expired',
         phrase: 'expired film',
-        preview: frame('desert')
+        preview: frame('options/film-expired')
       },
       {
         id: 'bleach',
         label: 'cinematic.option.bleachBypass',
         phrase: 'bleach bypass',
-        preview: frame('letter')
+        preview: frame('options/film-bleach')
       }
     ]
   },
@@ -287,49 +287,49 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
         id: 'neonoir',
         label: 'cinematic.option.neoNoir',
         phrase: 'neo-noir look',
-        preview: frame('neon-street')
+        preview: frame('options/look-neonoir')
       },
       {
         id: 'western',
         label: 'cinematic.option.western',
         phrase: 'western look',
-        preview: frame('desert')
+        preview: frame('options/look-western')
       },
       {
         id: 'scifi',
         label: 'cinematic.option.sciFi',
         phrase: 'science fiction look',
-        preview: frame('diner')
+        preview: frame('options/look-scifi')
       },
       {
         id: 'drama',
         label: 'cinematic.option.periodDrama',
         phrase: 'period drama look',
-        preview: frame('motel')
+        preview: frame('options/look-drama')
       },
       {
         id: 'thriller',
         label: 'cinematic.option.thriller',
         phrase: 'thriller look',
-        preview: frame('red-coat')
+        preview: frame('options/look-thriller')
       },
       {
         id: 'doc',
         label: 'cinematic.option.documentary',
         phrase: 'documentary look',
-        preview: frame('portrait')
+        preview: frame('options/look-doc')
       },
       {
         id: 'road',
         label: 'cinematic.option.roadMovie',
         phrase: 'road movie look',
-        preview: frame('train')
+        preview: frame('options/look-road')
       }
     ]
   }
 ]
 
-export const gradeGroup: DirectionGroup = {
+export const gradeGroup: DirectionGroup<'grade'> = {
   part: 'grade',
   title: 'cinematic.part.grade',
   options: [
@@ -422,6 +422,8 @@ export const ASPECT_RATIOS = [
   { id: '21:9', label: 'cinematic.aspect.scope' },
   { id: '16:9', label: 'cinematic.aspect.widescreen' },
   { id: '4:3', label: 'cinematic.aspect.academy' },
+  { id: '3:2', label: 'cinematic.aspect.landscapePhoto' },
+  { id: '2:3', label: 'cinematic.aspect.portraitPhoto' },
   { id: '1:1', label: 'cinematic.aspect.square' },
   { id: '9:16', label: 'cinematic.aspect.vertical' }
 ] as const satisfies readonly { id: string; label: CinematicCopyKey }[]

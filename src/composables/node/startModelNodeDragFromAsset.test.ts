@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
@@ -23,10 +23,6 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 describe('startModelNodeDragFromAsset', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
   it('starts a ghost drag for the resolved node carrying the widget value', () => {
     const nodeDef = fromPartial<ComfyNodeDefImpl>({
       name: 'CheckpointLoaderSimple'
@@ -40,7 +36,9 @@ describe('startModelNodeDragFromAsset', () => {
 
     expect(error).toBeUndefined()
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'sidebar_drag'
     })
   })
@@ -57,7 +55,9 @@ describe('startModelNodeDragFromAsset', () => {
     startModelNodeDragFromAsset(createAsset(), 'asset_browser')
 
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      widgetValues: [
+        { selector: 'ckpt_name', value: 'sd_xl_base_1.0.safetensors' }
+      ],
       source: 'asset_browser'
     })
   })

@@ -2,9 +2,10 @@
   <div class="flex items-center">
     <span v-if="position === 'left'" class="mr-2 shrink-0">{{ text }}</span>
     <div
+      role="separator"
       :class="
         cn(
-          'grow border-t border-interface-stroke',
+          'grow border-0 border-t border-interface-stroke',
           type === 'dashed' && 'border-dashed',
           type === 'dotted' && 'border-dotted'
         )

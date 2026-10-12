@@ -87,7 +87,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: { template: '<div />' },
         // Clicking moves the v-model selection to a different stop ($200) so
         // tests can move off the current stop.
         CreditSlider: {
@@ -117,6 +116,7 @@ beforeEach(() => {
           endDate: null,
           isCancelled: false,
           hasFunds: true,
+          agentHasFunds: true,
           ...mockSubscription.value
         }
       : null
@@ -553,6 +553,48 @@ describe('UnifiedPricingTable team plan CTA', () => {
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
   })
+
+  it('uses the billing catalog default team stop for display and checkout', async () => {
+    const user = userEvent.setup()
+    useBillingContext().teamCreditStops = computed(() => ({
+      default_stop_index: 1,
+      stops: [
+        {
+          id: 'stop-320',
+          credits: 67_520,
+          monthly: { list_price_cents: 32_000, price_cents: 30_400 },
+          yearly: { list_price_cents: 32_000, price_cents: 28_800 }
+        },
+        {
+          id: 'stop-640',
+          credits: 135_040,
+          monthly: { list_price_cents: 64_000, price_cents: 60_800 },
+          yearly: { list_price_cents: 64_000, price_cents: 57_600 }
+        }
+      ]
+    }))
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('1,620,480')).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+    expect(emitted('subscribeTeam')).toEqual([
+      [
+        {
+          stop: {
+            id: 'stop-640',
+            usd: 640,
+            credits: 135_040,
+            discountedUsd: 576
+          },
+          billingCycle: 'yearly',
+          isChange: false
+        }
+      ]
+    ])
+  })
 })
 
 // Server billing capabilities only resolve on Cloud, so Local/Desktop keeps
@@ -727,8 +769,24 @@ const TESTCLOUD_CATALOG: Plan[] = [
   apiPlan('PRO', 'ANNUAL', 120_000, 96_000)
 ]
 
+const CATALOG_GRANTS: Record<string, number> = {
+  'standard-annual': 60_000,
+  'creator-annual': 96_000,
+  'pro-annual': 240_000,
+  'standard-monthly': 5_000,
+  'creator-monthly': 8_000,
+  'pro-monthly': 20_000
+}
+
+const TESTCLOUD_CATALOG_WITH_GRANTS: Plan[] = TESTCLOUD_CATALOG.map((plan) => ({
+  ...plan,
+  credits: CATALOG_GRANTS[plan.slug]
+}))
+
 const CATALOG_CARDS = [
   {
+    source: 'the tier fallback',
+    plans: TESTCLOUD_CATALOG,
     cycle: 'yearly',
     credits: ['50,400', '88,800', '253,200'],
     videos: ['4,560', '8,040', '22,980'],
@@ -736,24 +794,33 @@ const CATALOG_CARDS = [
     neverShown: ['23,887', '42,086', '120,000', '50,402', '88,801']
   },
   {
+    source: 'the tier fallback',
+    plans: TESTCLOUD_CATALOG,
     cycle: 'monthly',
     credits: ['4,200', '7,400', '21,100'],
     videos: ['380', '670', '1,915'],
     billed: ['Billed monthly', 'Billed monthly', 'Billed monthly'],
     neverShown: ['1,991', '3,508', '10,000', '4,201', '7,402']
+  },
+  {
+    source: 'the catalog grant',
+    plans: TESTCLOUD_CATALOG_WITH_GRANTS,
+    cycle: 'yearly',
+    credits: ['60,000', '96,000', '240,000'],
+    videos: ['5,429', '8,692', '21,782'],
+    billed: ['$192 Billed yearly', '$336 Billed yearly', '$960 Billed yearly'],
+    neverShown: ['50,400', '88,800', '253,200', '23,887', '42,086', '120,000']
+  },
+  {
+    source: 'the catalog grant',
+    plans: TESTCLOUD_CATALOG_WITH_GRANTS,
+    cycle: 'monthly',
+    credits: ['5,000', '8,000', '20,000'],
+    videos: ['452', '724', '1,815'],
+    billed: ['Billed monthly', 'Billed monthly', 'Billed monthly'],
+    neverShown: ['4,200', '7,400', '21,100', '1,991', '3,508', '10,000']
   }
 ] as const
-
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
 
 function renderWithCycleToggle(
   props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
@@ -764,7 +831,6 @@ function renderWithCycleToggle(
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
         CreditSlider: { template: '<div />' }
       }
     }
@@ -784,9 +850,9 @@ describe('UnifiedPricingTable credit allotment copy', () => {
   })
 
   it.for(CATALOG_CARDS)(
-    'shows the $cycle credit grant, not the catalog cents',
-    async ({ cycle, credits, videos, billed, neverShown }) => {
-      mockApiPlans.value = TESTCLOUD_CATALOG
+    'shows the $cycle credit grant from $source',
+    async ({ plans, cycle, credits, videos, billed, neverShown }) => {
+      mockApiPlans.value = plans
       const user = userEvent.setup()
       renderWithCycleToggle()
 
@@ -820,13 +886,16 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
   })
 
-  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+  it('keeps the monthly personal-tier allotment when Monthly is selected again', async () => {
     const user = userEvent.setup()
     renderWithCycleToggle()
 
-    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    const monthly = screen.getByRole('button', { name: 'Monthly' })
+    await user.click(monthly)
+    await user.click(monthly)
     await nextTick()
 
+    expect(monthly).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
     expect(screen.queryAllByText('credits per year')).toHaveLength(0)
     expect(screen.getByText('4,200')).toBeTruthy()

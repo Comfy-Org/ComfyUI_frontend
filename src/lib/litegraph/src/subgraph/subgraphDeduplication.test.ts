@@ -2,9 +2,10 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
@@ -12,6 +13,7 @@ import type { LGraphState } from '../LGraph'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,
+  ISerialisedNode,
   SerialisableLLink,
   SerialisableReroute
 } from '../types/serialisation'
@@ -26,8 +28,12 @@ import {
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
 
-type NestedExportedSubgraph = ExportedSubgraph & {
+type NestedExportedSubgraph = Omit<
+  ExportedSubgraph,
+  'definitions' | 'nodes'
+> & {
   definitions?: { subgraphs?: NestedExportedSubgraph[] }
+  nodes: ISerialisedNode[]
 }
 
 function makeSubgraph(
@@ -76,7 +82,7 @@ describe('normalizeSubgraphDefinitionIds', () => {
 
     expect(result.subgraphs).toHaveLength(2)
     expect(isUuidShapedSubgraphId(normalizedId)).toBe(true)
-    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedId)
+    expect(result.subgraphs[1].nodes[0].type).toBe(normalizedId)
   })
 
   it('recursively normalizes a subgraph-within-subgraph definition and hoists it to the flat result', () => {
@@ -104,7 +110,7 @@ describe('normalizeSubgraphDefinitionIds', () => {
     // The parent's node referencing the nested child by its old id now
     // references the normalized UUID.
     expect(normalizedParent.nodes).toHaveLength(1)
-    expect(normalizedParent.nodes?.[0]?.type).toBe(normalizedChild.id)
+    expect(normalizedParent.nodes[0].type).toBe(normalizedChild.id)
 
     // The now-redundant nested list is cleared: callers read the flat
     // top-level result, not each definition's own nested subgraphs.
@@ -131,9 +137,9 @@ describe('normalizeSubgraphDefinitionIds', () => {
     expect(isUuidShapedSubgraphId(normalizedChild.id)).toBe(true)
     expect(isUuidShapedSubgraphId(normalizedGrandchild.id)).toBe(true)
     expect(normalizedParent.nodes).toHaveLength(1)
-    expect(normalizedParent.nodes?.[0]?.type).toBe(normalizedChild.id)
+    expect(normalizedParent.nodes[0].type).toBe(normalizedChild.id)
     expect(normalizedChild.nodes).toHaveLength(1)
-    expect(normalizedChild.nodes?.[0]?.type).toBe(normalizedGrandchild.id)
+    expect(normalizedChild.nodes[0].type).toBe(normalizedGrandchild.id)
   })
 
   it('handles an explicit empty definitions.subgraphs list without error', () => {
@@ -185,7 +191,7 @@ describe('normalizeSubgraphDefinitionIds', () => {
     expect(siblingIds).not.toContain('legacy-sibling-a')
     expect(siblingIds).not.toContain('legacy-sibling-b')
     expect(siblingIds).not.toContain('legacy-sibling-c')
-    expect(normalizedParent.nodes?.map((node) => node.type)).toEqual(siblingIds)
+    expect(normalizedParent.nodes.map((node) => node.type)).toEqual(siblingIds)
   })
 })
 
@@ -266,19 +272,20 @@ describe('deduplicateSubgraphNodeIds', () => {
 
     const result = deduplicateSubgraphNodeIds([subgraph], new Set([1]), state)
 
-    const remappedNodeId = result.subgraphs[0].nodes?.[0].id
-    expect(result.subgraphs[0].floatingLinks?.[0].origin_id).toBe(
-      remappedNodeId
-    )
+    const normalizedSubgraph = result.subgraphs[0]
+    assert.exists(normalizedSubgraph)
+    assert.exists(normalizedSubgraph.nodes)
+    const remappedNode = normalizedSubgraph.nodes[0]
+    assert.exists(remappedNode)
+    const remappedNodeId = remappedNode.id
+    expect(normalizedSubgraph.floatingLinks?.[0].origin_id).toBe(remappedNodeId)
   })
 })
 
 describe('deduplicateSubgraphLinkIds', () => {
   it('patches every reference to a remapped regular link', () => {
     const subgraph = makeSubgraph('sg', ['dummy'])
-    const node = subgraph.nodes?.[0]
-    expect(node).toBeDefined()
-    if (!node) return
+    const node = subgraph.nodes[0]
     node.inputs = [{ name: 'in', type: 'INT', link: 1 }]
     node.outputs = [{ name: 'out', type: 'INT', links: [1] }]
     subgraph.links = [chainedLink(1)]
@@ -322,7 +329,7 @@ describe('normalizeSubgraphDefinitions', () => {
     const duplicate = makeSubgraph('legacy-id')
     duplicate.name = 'duplicate'
     const parent = makeSubgraph('parent', ['legacy-id'])
-    const rootNode = makeSubgraph('root', ['legacy-id']).nodes![0]
+    const rootNode = makeSubgraph('root', ['legacy-id']).nodes[0]
 
     const result = normalizeSubgraphDefinitions(
       [first, duplicate, parent],
@@ -340,8 +347,10 @@ describe('normalizeSubgraphDefinitions', () => {
     expect(result.subgraphs).toHaveLength(2)
     expect(result.subgraphs[0].name).toBe('first')
     expect(isUuidShapedSubgraphId(normalizedLegacyId)).toBe(true)
-    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedLegacyId)
-    expect(result.rootNodes![0].type).toBe(normalizedLegacyId)
+    assert.exists(result.subgraphs[1].nodes)
+    assert.exists(result.rootNodes)
+    expect(result.subgraphs[1].nodes[0].type).toBe(normalizedLegacyId)
+    expect(result.rootNodes[0].type).toBe(normalizedLegacyId)
   })
 
   it('keeps the first same-owner link across regular and floating links', () => {
@@ -363,9 +372,97 @@ describe('normalizeSubgraphDefinitions', () => {
 
     expect(result.links).toHaveLength(1)
     expect(result.floatingLinks).toHaveLength(0)
-    expect(result.links![0].id).toBe(toLinkId(1))
-    expect(result.inputs![0].linkIds).toEqual([toLinkId(1)])
+    assert.exists(result.links)
+    assert.exists(result.inputs)
+    expect(result.links[0].id).toBe(toLinkId(1))
+    expect(result.inputs[0].linkIds).toEqual([toLinkId(1)])
     expect(subgraph.floatingLinks).toHaveLength(1)
+  })
+
+  it('allocates beyond the former fixed limit', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const state = freshState()
+    state.lastNodeId = 100_000_000
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set([toNodeId(1)]),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      state
+    )
+
+    assert.exists(result.subgraphs[0].nodes)
+    expect(result.subgraphs[0].nodes[0].id).toBe(100_000_001)
+    expect(state.lastNodeId).toBe(100_000_001)
+  })
+
+  it('wraps colliding IDs at the safe-integer boundary', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    subgraph.links = [chainedLink(1)]
+    const state = freshState()
+    state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set([1]),
+        rerouteIds: new Set()
+      },
+      state
+    )
+
+    assert.exists(result.subgraphs[0].links)
+    expect(result.subgraphs[0].links[0].id).toBe(toLinkId(2))
+    expect(state.lastLinkId).toBe(toLinkId(2))
+
+    const next = normalizeSubgraphDefinitions(
+      [{ ...makeSubgraph('next'), links: [chainedLink(1)] }],
+      {
+        nodeIds: new Set(),
+        groupIds: new Set(),
+        linkIds: new Set([1, 2]),
+        rerouteIds: new Set()
+      },
+      state
+    )
+    assert.exists(next.subgraphs[0].links)
+    expect(next.subgraphs[0].links[0].id).toBe(toLinkId(3))
+    expect(state.lastLinkId).toBe(toLinkId(3))
+  })
+
+  it('updates every root-level reference to a remapped interior node', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const rootNode = makeSubgraph('root', ['sg']).nodes[0]
+    rootNode.properties = {
+      proxyWidgets: [['1', 'seed']],
+      previewExposures: [{ sourceNodeId: '1' }]
+    }
+
+    const result = normalizeSubgraphDefinitions(
+      [subgraph],
+      {
+        nodeIds: new Set([toNodeId(1)]),
+        groupIds: new Set(),
+        linkIds: new Set(),
+        rerouteIds: new Set()
+      },
+      freshState(),
+      [rootNode]
+    )
+    assert.exists(result.subgraphs[0].nodes)
+    assert.exists(result.rootNodes)
+    const remappedId = result.subgraphs[0].nodes[0].id
+
+    expect(result.rootNodes[0].properties).toEqual({
+      proxyWidgets: [[String(remappedId), 'seed']],
+      previewExposures: [{ sourceNodeId: String(remappedId) }]
+    })
   })
 })
 

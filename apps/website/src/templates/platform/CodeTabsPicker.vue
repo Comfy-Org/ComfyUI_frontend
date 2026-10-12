@@ -33,7 +33,7 @@ const activeTab = defineModel<string>({ required: true })
     <DropdownMenuTrigger
       class="group inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/15 bg-primary-comfy-ink px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-white uppercase transition-colors outline-none hover:border-white/30 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
     >
-      <span class="ppformula-text-center">{{ tabs[activeTab]?.name }}</span>
+      <span>{{ tabs[activeTab]?.name }}</span>
       <ChevronDown
         class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
         aria-hidden="true"
@@ -53,7 +53,7 @@ const activeTab = defineModel<string>({ required: true })
             :value="tabId"
             class="flex cursor-pointer items-center rounded-xl px-4 py-2 text-xs font-bold tracking-wider text-smoke-700 uppercase outline-none select-none data-highlighted:text-primary-comfy-canvas data-[state=checked]:bg-secondary-mauve data-[state=checked]:text-primary-warm-white"
           >
-            <span class="ppformula-text-center">{{ tab.name }}</span>
+            <span>{{ tab.name }}</span>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
@@ -80,7 +80,7 @@ const activeTab = defineModel<string>({ required: true })
         )
       "
     >
-      <span class="ppformula-text-center inline-block">{{ tab.name }}</span>
+      <span class="inline-block">{{ tab.name }}</span>
     </TabsTrigger>
   </TabsList>
 </template>

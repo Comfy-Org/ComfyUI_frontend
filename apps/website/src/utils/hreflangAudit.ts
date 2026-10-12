@@ -6,12 +6,54 @@
  * rules exist because the first version of the crawler passed a broken cluster.
  */
 import type { Alternate } from './hreflangRoutes'
+import { parse } from 'parse5'
+import type { DefaultTreeAdapterTypes } from 'parse5'
 
-import { isExcludedFromSitemap } from '../config/indexing'
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { redirects } from '../config/redirects'
-import { supportsLocaleRoute } from '../config/routes'
+import { isExcludedFromSitemap } from '@/config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
+import { astroRedirects } from '@/config/redirects'
+import { supportsLocaleRoute } from '@/config/routes'
 import { unprefixed } from './hreflangRoutes'
+
+function languageLinks(node: DefaultTreeAdapterTypes.ParentNode): Alternate[] {
+  return node.childNodes.flatMap((child) => {
+    if (!('tagName' in child)) return []
+    const nested = languageLinks(child)
+    if (child.tagName !== 'a') return nested
+    const attrs = new Map(child.attrs.map(({ name, value }) => [name, value]))
+    const hreflang = attrs.get('hreflang')
+    return hreflang === undefined
+      ? nested
+      : [{ hreflang, href: attrs.get('href') ?? '' }, ...nested]
+  })
+}
+
+export function languageLinksIn(html: string): Alternate[] {
+  return languageLinks(parse(html))
+}
+
+export function auditLanguageLinks(
+  pages: ReadonlyMap<string, readonly Alternate[]>,
+  origin: string
+): string[] {
+  return [...pages].flatMap(([route, links]) =>
+    links.flatMap(({ hreflang, href }) => {
+      const label = `${route}: language link ${hreflang}`
+      if (!href) return [`${label} has no href`]
+      let url: URL
+      try {
+        url = new URL(href, `${origin}${route}`)
+      } catch {
+        return [`${label} has an invalid href (${href})`]
+      }
+      if (url.origin !== origin) return [`${label} points off-origin (${href})`]
+      const target = routeOfHref(`${origin}${url.pathname}`, origin)
+      return pages.has(target)
+        ? []
+        : [`${label} -> ${target} was not built (404)`]
+    })
+  )
+}
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
@@ -31,9 +73,36 @@ export interface BuiltSite {
 }
 
 /**
+ * Locales this path structurally routes to (per `supportsLocaleRoute`, which
+ * already excludes locale-invariant routes like /affiliates or /models) AND
+ * are not themselves noindexed. A routable but noindexed locale is not a
+ * translation the site can point a crawler at, so it does not count toward
+ * the "this route should cluster" threshold below.
+ *
+ * Deliberately stricter than `expectedAlternates`'s `pages.has(...)` fallback:
+ * a locale-invariant route can still have both locale pages built (the zh-CN
+ * copy renders, it is just not meant to be advertised as a translation), and
+ * that fallback existing must not, on its own, turn such a route into one
+ * that is expected to cluster.
+ */
+function clusterEligibleLocales(
+  path: string,
+  origin: string
+): (typeof LOCALE_CODES)[number][] {
+  return LOCALE_CODES.filter((locale) => {
+    if (!supportsLocaleRoute(locale, path)) return false
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    return !isExcludedFromSitemap(`${origin}${localePath}`)
+  })
+}
+
+/**
  * The exact locale-to-URL mapping a clustered route must emit.
  *
- * Required locales come from policy; built pages also expose extra publication.
+ * Required locales come from policy; built pages also expose extra
+ * publication. Once a route is already expected to cluster (see
+ * `isClustered`), a noindexed locale variant still should not join that
+ * cluster, so the same noindex filter applies here too.
  */
 function expectedAlternates(
   route: string,
@@ -41,11 +110,11 @@ function expectedAlternates(
   pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
-  const publishedLocales = LOCALE_CODES.filter(
-    (locale) =>
-      supportsLocaleRoute(locale, path) ||
-      pages.has(`${LOCALES[locale].prefix}${path}`)
-  )
+  const publishedLocales = LOCALE_CODES.filter((locale) => {
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    if (isExcludedFromSitemap(`${origin}${localePath}`)) return false
+    return supportsLocaleRoute(locale, path) || pages.has(localePath)
+  })
   const expected = new Map<string, string>(
     publishedLocales.map((locale): [string, string] => [
       LOCALES[locale].hreflang,
@@ -66,12 +135,13 @@ function isClustered(
 ): boolean {
   const path = unprefixed(route)
   // Observed links still get audited on exempt routes, and crawlable pages
-  // cannot evade the audit by omitting every link.
+  // cannot evade the audit by omitting every link. A lone indexable page with
+  // no indexable twin has nothing to cluster with, same as hreflangAlternates.
   return (
     alternates.length > 0 ||
-    (LOCALE_CODES.some((locale) => supportsLocaleRoute(locale, path)) &&
+    (clusterEligibleLocales(path, origin).length > 1 &&
       !isExcludedFromSitemap(`${origin}${route}`) &&
-      !Object.hasOwn(redirects, route.replace(/\/$/, '')))
+      !Object.hasOwn(astroRedirects, route.replace(/\/$/, '')))
   )
 }
 

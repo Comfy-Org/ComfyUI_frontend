@@ -285,6 +285,66 @@ describe('ChangeTracker', () => {
       }
     )
 
+    describe('modifier release around history shortcuts', () => {
+      let events: EventTarget
+      let frames: FrameRequestCallback[]
+
+      beforeEach(() => {
+        events = new EventTarget()
+        frames = []
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+      })
+
+      it.for([
+        { key: 'y', shiftKey: false, queue: 'redoQueue' },
+        { key: 'z', shiftKey: true, queue: 'redoQueue' },
+        { key: 'z', shiftKey: false, queue: 'undoQueue' }
+      ] as const)(
+        'Ctrl+$key shift=$shiftKey restores history when released before the next frame',
+        async ({ key, shiftKey, queue }) => {
+          const tracker = createTracker(createState(1))
+          const target = createState(2)
+          tracker[queue].push(target)
+          mockCanvasState(createState(3))
+
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+          )
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(
+            new KeyboardEvent('keyup', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+
+          expect(tracker.activeState).toEqual(target)
+        }
+      )
+
+      it('captures changes when a bare modifier is released within one frame', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+        )
+        events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+    })
+
     it.for([
       { editor: 'INPUT', createElement: () => document.createElement('input') },
       {
@@ -1451,7 +1511,6 @@ describe('ChangeTracker', () => {
 
   describe('checkState (deprecated)', () => {
     it('captures each state and warns once across repeated calls', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
       const firstChanged = createState(2)
       mockCanvasState(firstChanged)
@@ -1465,10 +1524,15 @@ describe('ChangeTracker', () => {
       tracker.checkState()
 
       expect(tracker.activeState).toEqual(secondChanged)
-      expect(warn).toHaveBeenCalledOnce()
-      expect(warn).toHaveBeenCalledWith(
-        'checkState() is deprecated — use captureCanvasState() instead.'
-      )
+      expect(
+        vi
+          .mocked(console.warn)
+          .mock.calls.filter(
+            ([message]) =>
+              message ===
+              'checkState() is deprecated — use captureCanvasState() instead.'
+          )
+      ).toHaveLength(1)
     })
   })
 

@@ -27,7 +27,6 @@
  */
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type {
   AgentRunMode,
@@ -57,9 +56,11 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-idcollision01'
 /** The one node the doc starts with — duplicating it triggers the collision. */
@@ -68,14 +69,6 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-idcollision01'
 const MESSAGE_ID = 'id-collision-repro-message-0'
 const SEND_LABEL = enMessages.agent.send
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so this mirrors it over the same
-// locale file exactly as `agentConversationFixture.ts` does.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -219,10 +212,7 @@ export class IdCollisionHarness {
       },
       objectInfo: 'server'
     })
-    await this.page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
-    await expect(this.panel).toBeVisible({ timeout: 30_000 })
+    await new AgentPanel(this.page).open(30_000)
     await this.selectWorkflowTarget()
     // `useAgentSession` only binds the CRDT workflow id (which is what makes
     // the follower's `isTargetActive` watch subscribe) once a turn's POST ack
@@ -243,21 +233,14 @@ export class IdCollisionHarness {
   }
 
   /**
-   * Forces a full catch-up reconcile of the doc's CURRENT state — a real
-   * tab switch away and back, exactly `agentTabSwitchCatchUp.spec.ts`'s
-   * mechanism — rather than relying on the incremental live-update path.
-   * PR #17963 (merged 2026-09-18) fixed the incremental path to patch a
-   * still-live node in place instead of rebuilding it from the doc on
-   * every update, so this repro's wipe/phantom symptom needs the same
-   * whole-document reconcile a tab switch (or reconnect) drives, against a
-   * doc that now disagrees with the still-live orphan at the collided id.
+   * Drives a real tab switch away and back, exactly
+   * `agentTabSwitchCatchUp.spec.ts`'s mechanism, so the host resends the
+   * document and the follower applies whatever it collected for the tab.
    *
    * `waitForSubscribe` only proves the host sent `doc_subscribed` plus
-   * catch-up, not that the client finished reconciling from it, but that is
-   * still safe here: rebinding on tab activation (`ecsFollowerAdapter.ts`'s
-   * `bind()`) always arms `reconcileNextFrame` for the fresh session, so the
-   * very next `doc_update` — this catch-up frame, even an empty one — forces
-   * a full reconcile regardless of the delta's size. Callers still assert
+   * catch-up, not that the client finished applying it. Returning to the tab
+   * runs `AgentCrdtProjection.applyCollected`, which applies exactly the
+   * document changes collected while the tab was away. Callers still assert
    * on the resulting DOM through Playwright's own auto-retrying `expect`,
    * which is what actually waits out any remaining latency.
    */
@@ -271,7 +254,9 @@ export class IdCollisionHarness {
 
   private async sendMinimalPrompt(): Promise<void> {
     const content = 'id-collision repro: bind the doc'
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    const composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     await expect(this.panel.getByText(content).first()).toBeVisible()

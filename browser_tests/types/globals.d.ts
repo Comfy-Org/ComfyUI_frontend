@@ -1,3 +1,5 @@
+import '@/types'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -58,8 +60,18 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __autoShownReads?: number
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
+    __captureHostTelemetry?: (captured: {
+      event: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
+    /**
+     * Pushes a host auth state change through the mocked Desktop bridge.
+     * @see browser_tests/fixtures/hostSessionPartnerNodeFixture.ts
+     */
+    __pushHostAuthState?: (next: { status: 'signed_out' }) => unknown
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -78,6 +90,15 @@ declare global {
      * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
      */
     __tabSwitchLens?: TabSwitchLens
+    /**
+     * Every `data-node-id` the DOM has mounted since the recorder was
+     * installed, so a test can tell "the node was rendered and then removed"
+     * apart from "the node was never rendered".
+     * @see browser_tests/tests/agent/agentClearedWorkflowStaysCleared.spec.ts
+     */
+    __mountedNodeIds?: Set<string>
+
+    __mountedNodeObserver?: MutationObserver
     __agentRecoveryGraph?: LGraph
   }
 

@@ -7,8 +7,8 @@
  */
 import type { HostedTopupCheckoutFailure } from '@comfyorg/account-core/billing'
 
-import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
-import { readBillingSdkTopupEnabled } from '../../config/workshop-features'
+import { workshopTopupCommand } from '@/config/workshop-billing-sdk'
+import { readBillingSdkTopupEnabled } from '@/config/workshop-features'
 import type {
   CreateTopUpCheckoutOptions,
   TopUpCheckoutSession

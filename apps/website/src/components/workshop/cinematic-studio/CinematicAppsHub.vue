@@ -1,18 +1,22 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
-import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { workshopApps } from '@/lib/workshop/apps'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
 import CinematicAppCard from './CinematicAppCard.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { models, locale = 'en' } = defineProps<{
+  models: readonly AppWorkshopModel[]
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
 
 const HUB_PROTOTYPE = 'https://comfy-website-preview-pr-17804.vercel.app/hub/'
-const RESHOOT_PROTOTYPE = `${HUB_PROTOTYPE}workflow/crossview_warp_h3/`
 
 const TAB_LABEL = {
   models: 'cinematic.hub.models',
@@ -23,53 +27,7 @@ type Tab = keyof typeof TAB_LABEL
 const TABS: readonly Tab[] = ['models', 'workflows', 'apps']
 const tab = ref<Tab>('apps')
 
-interface HubApp {
-  readonly key: string
-  readonly name: CinematicCopyKey
-  readonly summary: CinematicCopyKey
-  readonly badge: CinematicCopyKey
-  readonly meta?: CinematicCopyKey
-  readonly image?: string
-  readonly href?: string
-}
-
-const apps = computed<readonly HubApp[]>(() => [
-  {
-    key: 'cinematic-studio',
-    name: 'cinematic.title',
-    summary: 'cinematic.hub.studioSummary',
-    badge: 'cinematic.hub.beta',
-    meta: 'cinematic.hub.studioMeta',
-    image: '/images/cinematic-studio/neon-street.jpg',
-    href: `${getRoutes(locale).cinematicStudio}?ux=e`
-  },
-  {
-    key: 'reshoot',
-    name: 'cinematic.hub.reshoot',
-    summary: 'cinematic.hub.reshootSummary',
-    badge: 'cinematic.hub.prototype',
-    meta: 'cinematic.hub.reshootMeta',
-    href: RESHOOT_PROTOTYPE
-  },
-  {
-    key: 'image-to-3d',
-    name: 'cinematic.hub.to3d',
-    summary: 'cinematic.hub.to3dSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'product-shots',
-    name: 'cinematic.hub.product',
-    summary: 'cinematic.hub.productSummary',
-    badge: 'cinematic.hub.soon'
-  },
-  {
-    key: 'storyboard',
-    name: 'cinematic.hub.storyboard',
-    summary: 'cinematic.hub.storyboardSummary',
-    badge: 'cinematic.hub.soon'
-  }
-])
+const apps = computed(() => workshopApps(locale, models))
 
 const markerOffset = computed(
   () => `translateX(${TABS.indexOf(tab.value) * 100}%)`
@@ -85,20 +43,20 @@ const markerOffset = computed(
       <p
         class="text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ tc('cinematic.hub.eyebrow', locale) }}
+        {{ t('cinematic.hub.eyebrow') }}
       </p>
       <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
-        {{ tc('cinematic.hub.heading', locale) }}
+        {{ t('cinematic.hub.heading') }}
       </h1>
       <p class="max-w-2xl text-base text-content-secondary">
-        {{ tc('cinematic.hub.subtitle', locale) }}
+        {{ t('cinematic.hub.subtitle') }}
       </p>
     </header>
 
     <div
       class="relative mb-8 grid w-fit grid-cols-3 rounded-2xl bg-transparency-white-t8 p-1"
       role="group"
-      :aria-label="tc('cinematic.hub.tabs', locale)"
+      :aria-label="t('cinematic.hub.tabs')"
     >
       <div class="pointer-events-none absolute inset-1 grid grid-cols-3">
         <div
@@ -121,23 +79,23 @@ const markerOffset = computed(
         "
         @click="tab = option"
       >
-        {{ tc(TAB_LABEL[option], locale) }}
+        {{ t(TAB_LABEL[option]) }}
       </button>
     </div>
 
     <template v-if="tab === 'apps'">
       <p class="mb-6 text-sm text-content-secondary">
-        {{ tc('cinematic.hub.appsIntro', locale) }}
+        {{ t('cinematic.hub.appsIntro') }}
       </p>
       <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CinematicAppCard
           v-for="app in apps"
           :key="app.key"
-          :name="tc(app.name, locale)"
-          :summary="tc(app.summary, locale)"
-          :badge="tc(app.badge, locale)"
-          :meta="app.meta && tc(app.meta, locale)"
-          :image="app.image"
+          :name="t(app.name)"
+          :summary="t(app.summary)"
+          :badge="t(app.badge)"
+          :meta="app.meta && t(app.meta)"
+          :thumbnail="app.thumbnail"
           :href="app.href"
         />
       </ul>
@@ -147,7 +105,7 @@ const markerOffset = computed(
       class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
     >
       <p class="text-base text-content-bright">
-        {{ tc('cinematic.hub.elsewhere', locale) }}
+        {{ t('cinematic.hub.elsewhere') }}
       </p>
       <a
         :href="HUB_PROTOTYPE"
@@ -155,7 +113,7 @@ const markerOffset = computed(
         rel="noopener noreferrer"
         class="text-sm text-primary-comfy-yellow underline underline-offset-4"
       >
-        {{ tc('cinematic.hub.openHub', locale) }}
+        {{ t('cinematic.hub.openHub') }}
       </a>
     </div>
   </section>

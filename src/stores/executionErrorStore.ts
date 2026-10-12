@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, toRaw, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
-import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
-import type { MissingResourceAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
+import { classifyPanelErrors } from '@/utils/errorSeverityClassification'
+import { classifyValidationErrorAbsorption } from '@/utils/missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
@@ -19,7 +20,7 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogService } from '@/services/dialogService'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -202,7 +203,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function captureValidationErrorSurfaces(
     nodeErrors: Record<string, NodeError>
   ): void {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return
 
     for (const [rawNodeId, nodeError] of Object.entries(nodeErrors)) {
@@ -226,7 +227,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const cached = validationErrorSurfaces.get(rawError)
     if (cached) return cached
 
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     const surfaces = getValidationErrorSurfaces(
       rootGraph,
       executionId,
@@ -558,7 +559,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     slotName: string
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!surfaced || !rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
@@ -777,7 +778,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const err = lastExecutionError.value
     if (!err) return null
     return executionIdToNodeLocatorId(
-      app.rootGraphOrUndefined,
+      useApp().rootGraphOrUndefined,
       String(err.node_id)
     )
   })
@@ -797,10 +798,43 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
   const surfacedNodeErrors = computed(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     return lastNodeErrors.value && rootGraph
       ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
+  })
+
+  const errorClassification = computed(() =>
+    classifyPanelErrors({
+      promptError: lastPromptError.value,
+      executionError: lastExecutionError.value,
+      nodeErrors: surfacedNodeErrors.value,
+      missingModels: missingModelStore.visibleMissingModelCandidates,
+      missingMedia: missingMediaStore.visibleMissingMediaCandidates,
+      hasMissingNodes: missingNodesStore.hasMissingNodes
+    })
+  )
+
+  const blockingErrorNodeLocatorIds = computed(() => {
+    const classification = errorClassification.value
+    const executionIds = classification.nodeErrors
+      .filter(({ errors }) => errors.some(({ absorption }) => !absorption))
+      .map(({ rawNodeId }) => rawNodeId)
+    if (classification.executionError?.rawNodeId != null) {
+      executionIds.push(classification.executionError.rawNodeId)
+    }
+
+    const locators = new Set<NodeLocatorId>()
+    for (const executionId of executionIds) {
+      for (const ancestorId of getAncestorExecutionIds(executionId)) {
+        const locator = executionIdToNodeLocatorId(
+          useApp().rootGraphOrUndefined,
+          ancestorId
+        )
+        if (locator) locators.add(locator)
+      }
+    }
+    return locators
   })
 
   const hasMissingError = computed(
@@ -835,7 +869,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Graph node IDs (as strings) that have errors in the current graph scope. */
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
@@ -872,7 +906,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         surfacedNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(
-          app.rootGraphOrUndefined,
+          useApp().rootGraphOrUndefined,
           executionId
         )
         if (locatorId) {
@@ -920,7 +954,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return false
     const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
@@ -969,10 +1003,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    errorClassification,
+    blockingErrorNodeLocatorIds,
     hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
     lastExecutionErrorNodeId,
+    lastExecutionErrorNodeLocatorId,
     activeGraphErrorNodeIds,
 
     // Added-node scan coordination
