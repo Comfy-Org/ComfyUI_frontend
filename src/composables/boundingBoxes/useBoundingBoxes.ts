@@ -19,6 +19,7 @@ import type {
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { app } from '@/scripts/app'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
@@ -674,9 +675,19 @@ export function useBoundingBoxes(
   }
 
   const backgroundLoading = ref(false)
+  const backgroundRetry = ref(0)
+  let backgroundFailed = false
   watch(
-    backgroundUrl,
-    (url, _, onCleanup) => {
+    () => useNodeOutputStore().nodeOutputs,
+    () => {
+      if (backgroundFailed) backgroundRetry.value++
+    },
+    { deep: true }
+  )
+  watch(
+    [backgroundUrl, backgroundRetry],
+    ([url], _, onCleanup) => {
+      backgroundFailed = false
       backgroundLoading.value = !!url
       if (!url) {
         bgImage.value = null
@@ -697,7 +708,9 @@ export function useBoundingBoxes(
         requestDraw()
       }
       img.onerror = () => {
-        if (!stale) backgroundLoading.value = false
+        if (stale) return
+        backgroundLoading.value = false
+        backgroundFailed = true
       }
       img.src = url
     },

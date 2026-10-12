@@ -829,18 +829,24 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const img = node.locator('img')
         await waitForImageNaturalSize(img)
 
-        let failExamplePng = false
+        let abortedExamplePng = false
         await comfyPage.page.route('**/api/view**', async (route) => {
-          const u = route.request().url()
-          if (failExamplePng && u.includes('example.png')) {
+          if (route.request().url().includes('example.png')) {
+            abortedExamplePng = true
             await route.abort('failed')
             return
           }
           await route.fallback()
         })
         try {
-          failExamplePng = true
+          // /view URLs are stable now, so an already-loaded image is reused
+          // in-page; a fresh document forces the fetch the route will fail.
+          await comfyPage.page.reload()
+          await comfyPage.page.waitForFunction(
+            () => window.app?.graph !== undefined
+          )
           const runDone = comfyPage.runButton.click()
+          await expect.poll(() => abortedExamplePng).toBe(true)
           await expect(
             node.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'
@@ -853,6 +859,9 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         } finally {
           await comfyPage.page.unroute('**/api/view**')
         }
+
+        await comfyPage.runButton.click()
+        await waitForImageNaturalSize(node.locator('img'), { timeout: 30_000 })
       })
 
       test('Selecting 16:9 ratio adjusts crop height proportionally', async ({

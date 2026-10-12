@@ -31,14 +31,17 @@
     >
       <img
         v-if="afterImage"
+        :key="`after-${imageRetry}`"
         :src="afterImage"
         :alt="$t('imageCompare.afterAlt')"
         draggable="false"
         class="absolute inset-0 size-full object-contain"
+        @error="imageFailed = true"
       />
 
       <img
         v-if="beforeImage"
+        :key="`before-${imageRetry}`"
         :src="beforeImage"
         :alt="$t('imageCompare.beforeAlt')"
         draggable="false"
@@ -48,6 +51,7 @@
             ? { clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }
             : undefined
         "
+        @error="imageFailed = true"
       />
 
       <!-- Circular drag handle -->
@@ -127,6 +131,14 @@ watch(beforeImages, (images) => {
 
 watch(afterImages, (images) => {
   if (afterIndex.value >= images.length) afterIndex.value = 0
+})
+
+const imageFailed = ref(false)
+const imageRetry = ref(0)
+watch([beforeImages, afterImages], () => {
+  if (!imageFailed.value) return
+  imageFailed.value = false
+  imageRetry.value++
 })
 
 const beforeImage = computed(() => beforeImages.value[beforeIndex.value] ?? '')

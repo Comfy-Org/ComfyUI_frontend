@@ -6,6 +6,7 @@ import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const appState = vi.hoisted(() => ({ node: null as MockNode | null }))
 const incomingBoxes = shallowRef<BoundingBox[] | undefined>()
@@ -14,7 +15,9 @@ const backgroundConnected = shallowRef(false)
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: { graph: { getNodeById: () => appState.node } }
+    canvas: { graph: { getNodeById: () => appState.node } },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
@@ -373,6 +376,7 @@ describe('useBoundingBoxes background image', () => {
     naturalWidth = 0
     naturalHeight = 0
     onload: (() => void) | null = null
+    onerror: (() => void) | null = null
     constructor() {
       FakeImage.created.push(this)
     }
@@ -406,6 +410,35 @@ describe('useBoundingBoxes background image', () => {
     backgroundConnected.value = false
     await flush()
     expect([hiddenOf('width'), hiddenOf('height')]).toEqual([false, false])
+  })
+
+  it('retries a failed background when new outputs arrive', async () => {
+    appState.node = makeNode()
+    backgroundUrl.value = '/view?filename=bg.png'
+    setup()
+    FakeImage.created[0].onerror?.()
+    await flush()
+
+    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    await flush()
+
+    expect(FakeImage.created.map((img) => img.src)).toEqual([
+      '/view?filename=bg.png',
+      '/view?filename=bg.png'
+    ])
+  })
+
+  it('does not refetch a loaded background when outputs change', async () => {
+    appState.node = makeNode()
+    backgroundUrl.value = '/view?filename=bg.png'
+    setup()
+    FakeImage.created[0].load(512, 512)
+    await flush()
+
+    useNodeOutputStore().nodeOutputs['9'] = { images: [] }
+    await flush()
+
+    expect(FakeImage.created).toHaveLength(1)
   })
 
   it('sizes the canvas to the loaded background, snapped to the step', async () => {
