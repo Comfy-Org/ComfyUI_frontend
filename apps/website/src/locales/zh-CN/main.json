@@ -2394,8 +2394,8 @@
       "badge1": "合作伙伴节点",
       "badge2": "多角色场景",
       "badge3": "首发半价",
-      "primaryCta": "运行 Drama 3",
-      "secondaryCta": "查看文档"
+      "primaryCta": "打开 Comfy Cloud",
+      "secondaryCta": "Fish Audio 文档"
     },
     "nodes": {
       "heading": "Comfy 上的 Fish Audio"
@@ -2413,8 +2413,8 @@
     "steps": {
       "heading": "如何试用",
       "step": "步骤",
-      "primaryCta": "运行 Drama 3",
-      "secondaryCta": "查看文档"
+      "primaryCta": "打开 Comfy Cloud",
+      "secondaryCta": "Fish Audio 文档"
     },
     "runOptions": {
       "heading": "同一引擎，多种运行方式",

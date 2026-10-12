@@ -32,7 +32,7 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['audioGallery', 'steps', 'gallery', 'pricing', 'faq'],
+  sectionOrder: ['audioGallery', 'steps', 'list', 'pricing', 'faq'],
   audioGallery: {
     cards: [
       {
@@ -115,83 +115,74 @@ export const fishAudioPage: ModelLaunchPage = {
       }
     ]
   },
-  gallery: {
+  list: {
     headingKey: 'fishAudio.nodes.heading',
-    ctaVariant: 'accent',
-    cards: [
+    items: [
       {
         id: 'text-to-speech',
-        name: {
+        title: {
           en: 'Fish Audio Text to Speech',
           'zh-CN': 'Fish Audio Text to Speech'
         },
-        tier: 'premium',
-        note: { en: 'Text to Speech', 'zh-CN': 'Text to Speech' },
         description: {
-          en: 'Write the script, mark the delivery with emotion cues in the text, and run up to five voices in one pass on S2.1 Pro. Models: S2.1 Pro and S1.',
+          en: 'Write the script, mark the delivery with emotion cues in the text, and run up to five voices in one pass on S2.1 Pro.',
           'zh-CN':
-            '写下台词，在文本中用情绪提示标出表演方式，并在 S2.1 Pro 上一次运行最多五个声音。可选模型：S2.1 Pro 与 S1。'
+            '写下台词，在文本中用情绪提示标出表演方式，并在 S2.1 Pro 上一次运行最多五个声音。'
         },
-        media: {
-          kind: 'image',
-          src: '/images/models/fish-audio-placeholder.webp'
-        },
+        meta: [
+          { en: 'S2.1 Pro and S1', 'zh-CN': 'S2.1 Pro 与 S1' },
+          { en: 'Premium', 'zh-CN': '高级' }
+        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
       },
       {
         id: 'instant-voice-clone',
-        name: {
+        title: {
           en: 'Fish Audio Instant Voice Clone',
           'zh-CN': 'Fish Audio Instant Voice Clone'
         },
-        tier: 'free',
-        note: { en: 'Instant Voice Clone', 'zh-CN': 'Instant Voice Clone' },
         description: {
           en: 'Make a private voice from 1 to 20 recordings, ideally 10 to 30 seconds each, and send it straight into Text to Speech with no training wait.',
           'zh-CN':
             '用 1 到 20 段录音生成一个私有声音，每段以 10 到 30 秒为佳，然后直接接入 Text to Speech，无需等待训练。'
         },
-        media: {
-          kind: 'image',
-          src: '/images/models/fish-audio-voice-clone-placeholder.webp'
-        },
+        meta: [
+          { en: '1 to 20 recordings', 'zh-CN': '1 到 20 段录音' },
+          { en: 'Free', 'zh-CN': '免费' }
+        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts'
       },
       {
         id: 'speech-to-text',
-        name: {
+        title: {
           en: 'Fish Audio Speech to Text',
           'zh-CN': 'Fish Audio Speech to Text'
         },
-        tier: 'premium',
-        note: { en: 'Speech to Text', 'zh-CN': 'Speech to Text' },
         description: {
           en: 'Transcribe audio in 80+ languages with automatic language detection and get back the text, a language code, and optional per-word timestamps as JSON.',
           'zh-CN':
             '转写 80 多种语言的音频并自动检测语言，以 JSON 返回文本、语言代码和可选的逐词时间戳。'
         },
-        media: {
-          kind: 'image',
-          src: '/images/models/fish-audio-speech-to-text-placeholder.webp'
-        },
+        meta: [
+          { en: '80+ languages', 'zh-CN': '80 多种语言' },
+          { en: 'Premium', 'zh-CN': '高级' }
+        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text'
       },
       {
         id: 'voice-selector',
-        name: {
+        title: {
           en: 'Fish Audio Voice Selector',
           'zh-CN': 'Fish Audio Voice Selector'
         },
-        tier: 'free',
-        note: { en: 'Voice Selector', 'zh-CN': 'Voice Selector' },
         description: {
           en: 'Pick a curated voice from the Fish Audio library for your script.',
           'zh-CN': '从 Fish Audio 声音库中为你的台词挑选精选声音。'
         },
-        media: {
-          kind: 'image',
-          src: '/images/models/fish-audio-placeholder.webp'
-        },
+        meta: [
+          { en: 'Curated voices', 'zh-CN': '精选声音' },
+          { en: 'Free', 'zh-CN': '免费' }
+        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech'
       }
     ]
