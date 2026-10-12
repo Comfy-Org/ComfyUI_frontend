@@ -59,9 +59,6 @@ export class AgentPanel {
       name: 'Copy full report'
     })
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
-    // Locale-agnostic, like `closeButton` above: a spec that seeds a non-English
-    // `Comfy.Locale` before load still has to reach the picker to set up, and an
-    // English-only name silently turns that into a timeout inside fixture setup.
     this.workflowPicker = this.root
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .or(

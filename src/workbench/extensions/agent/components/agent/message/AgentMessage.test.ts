@@ -80,9 +80,6 @@ describe('AgentMessage paywall reply', () => {
     ).not.toBeInTheDocument()
   })
 
-  // The server's prose is always English. Once capabilities name a
-  // presentation, that presentation's localized body is the better copy, so it
-  // wins over the part's message rather than the other way round.
   it.for([
     {
       paywallPresentation: { kind: 'subscribed' as const, showUpgrade: true },

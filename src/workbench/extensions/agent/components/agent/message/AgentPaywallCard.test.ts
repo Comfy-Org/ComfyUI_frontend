@@ -43,9 +43,6 @@ describe('AgentPaywallCard visual contract', () => {
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
 
-  // The transient read. Rendering the English server prose here and replacing
-  // it on settle would re-announce this `role="alert"` with different content,
-  // so `unresolved` keeps the localized generic body throughout.
   it('keeps localized copy while the capability read is still in flight', () => {
     render(AgentPaywallCard, {
       props: {

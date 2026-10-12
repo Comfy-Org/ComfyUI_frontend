@@ -25,22 +25,10 @@ interface AgentPaywallPresentationInput {
   canSubscribeSelfServe: boolean
 }
 
-/**
- * The capability read settled without an answer we can act on. Degraded, not
- * transient — so a server-supplied diagnostic is the most useful body we have
- * and the card renders it in preference to generic localized copy.
- */
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unavailable'
 } as const satisfies AgentPaywallPresentation
 
-/**
- * The capability read has not produced an answer yet. Distinct from
- * `unavailable` so the card does not render an always-English server
- * diagnostic for the duration of a slow `/api/billing/capabilities`, then swap
- * it for localized copy inside a `role="alert"` region — which re-announces
- * the card with different content and inverts the point of localizing it.
- */
 export const UNRESOLVED_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unresolved'
 } as const satisfies AgentPaywallPresentation

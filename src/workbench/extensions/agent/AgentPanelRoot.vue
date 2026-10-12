@@ -174,9 +174,6 @@ const {
 } = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
-    // Split by whether the read has settled. Both report `unknown` telemetry,
-    // but only the settled one should surface a server diagnostic as the card
-    // body; an in-flight read would show English prose and then replace it.
     return capabilityReadSettled.value
       ? DEFAULT_AGENT_PAYWALL_PRESENTATION
       : UNRESOLVED_AGENT_PAYWALL_PRESENTATION

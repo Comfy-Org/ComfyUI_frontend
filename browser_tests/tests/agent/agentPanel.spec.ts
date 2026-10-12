@@ -180,11 +180,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
-  // Seeded before the first page load rather than switched mid-test. Setting
-  // `Comfy.Locale` on a live page fires the locale watcher in GraphCanvas.vue,
-  // which runs `Comfy.RefreshNodeDefinitions` and then
-  // `reloadCurrentWorkflow()`; `setSetting` only awaits a frame, so that reload
-  // races the send below and can clear the workflow just selected.
   test.describe('localized', () => {
     test.use({ initialSettings: { 'Comfy.Locale': 'fr' } })
 
@@ -232,11 +227,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(paywall).toContainText(
           frMessages.agent.paywall.body.subscribed
         )
-        // Steady state. That the English server literal never renders even
-        // transiently — while `/api/billing/capabilities` is in flight — is a
-        // component-level property and is pinned in
-        // `AgentPaywallCard.test.ts` ('unresolved'), which this assertion
-        // alone could not prove: it retries, so a flash would still pass.
         await expect(paywall).not.toContainText(NO_FUNDS_ERROR.error.message)
       })
     })
