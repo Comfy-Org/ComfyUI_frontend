@@ -112,7 +112,7 @@ await expect(async () => {
 ## Screenshot Baselines
 
 - **Screenshots are Linux-only.** Don't commit local screenshots.
-- **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun when the run is complete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` when one test takes several changed screenshots
+- **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun; the workflow fails if the run is missing or incomplete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` to rerun Playwright when one test takes several changed screenshots
 - **Mask dynamic content:**
   ```typescript
   await expect(comfyPage.canvas).toHaveScreenshot('page.png', {

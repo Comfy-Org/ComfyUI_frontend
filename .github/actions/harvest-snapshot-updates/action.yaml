@@ -1,11 +1,12 @@
 name: Harvest Snapshot Updates
 description: >
-  Decides whether a PR's E2E run already holds the screenshots to commit.
-  Every Playwright job in that run uploads a `<artifact-prefix>*` artifact
-  holding, on its golden path, the actual image of each screenshot assertion
-  that failed its test's final attempt, plus a manifest (see
-  tools/snapshot-updates-reporter). This action waits for the run for the PR
-  head and requires an artifact from every Playwright job that ran.
+  Finds the screenshots a PR's E2E run captured, or reports that the comment
+  asked for a full rerun. Every Playwright job in that run uploads a
+  `<artifact-prefix>*` artifact holding, on its golden path, the actual image
+  of each screenshot assertion that failed its test's final attempt, plus a
+  manifest (see tools/snapshot-updates-reporter). This action waits for the
+  run for the PR head, requires an artifact from every Playwright job that
+  ran, and fails with the reason when the run cannot supply them.
 
 inputs:
   e2e-workflow:
@@ -21,7 +22,7 @@ inputs:
     description: Prefix of the job names that run Playwright in the E2E run
     required: true
   comment-body:
-    description: Triggering comment; `/<command> full` forces the fallback
+    description: Triggering comment; `/<command> full` requests a full rerun
     required: false
     default: ''
   wait-minutes:
@@ -32,8 +33,8 @@ inputs:
 outputs:
   mode:
     description: >
-      `harvest` when the E2E run's artifacts can be committed, `full` when the
-      caller must rerun Playwright with --update-snapshots instead.
+      `harvest` when the E2E run's artifacts can be committed, `full` when
+      the comment asked for a rerun with --update-snapshots.
     value: ${{ steps.plan.outputs.mode }}
   run-id:
     description: The E2E run to download the artifacts from, when harvesting
@@ -56,40 +57,40 @@ runs:
       run: |
         set -euo pipefail
 
-        fallback() {
-          echo "::notice::$1 Falling back to a full --update-snapshots rerun."
-          echo "mode=full" >> "$GITHUB_OUTPUT"
-          exit 0
+        unavailable() {
+          echo "::error::$1 Re-run the E2E workflow and trigger the update again, or comment the update command followed by \`full\` to rerun Playwright with --update-snapshots."
+          exit 1
         }
 
         if grep -qE '^/[^[:space:]]+[[:space:]]+full([[:space:]]|$)' <<< "${COMMENT_BODY%%$'\n'*}"; then
-          fallback "A full regeneration was requested."
+          echo "mode=full" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
 
         run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
           --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
         if [ -z "$run_id" ]; then
-          fallback "No E2E run exists for ${HEAD_SHA}."
+          unavailable "No E2E run exists for ${HEAD_SHA}."
         fi
         run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
 
         if ! timeout "${WAIT_MINUTES}m" gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
-          fallback "The E2E run ${run_url} did not finish within ${WAIT_MINUTES} minutes."
+          unavailable "The E2E run ${run_url} did not finish within ${WAIT_MINUTES} minutes."
         fi
 
         conclusions=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
           --jq '.jobs[] | select(.name | startswith(env.JOB_PREFIX)) | .conclusion')
         if printf '%s' "$conclusions" | grep -qvE '^(success|failure|skipped)$'; then
-          fallback "Some ${JOB_PREFIX} jobs in ${run_url} did not finish."
+          unavailable "Some ${JOB_PREFIX} jobs in ${run_url} did not finish."
         fi
         ran=$(printf '%s' "$conclusions" | grep -cE '^(success|failure)$' || true)
         artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
           --jq '.artifacts[] | select((.name | startswith(env.ARTIFACT_PREFIX)) and (.expired | not)) | .name' | wc -l)
         if [ "$ran" -eq 0 ]; then
-          fallback "No ${JOB_PREFIX} jobs ran in ${run_url}."
+          unavailable "No ${JOB_PREFIX} jobs ran in ${run_url}."
         fi
         if [ "$artifacts" -ne "$ran" ]; then
-          fallback "${artifacts} of ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
+          unavailable "${artifacts} of ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
         fi
 
         {

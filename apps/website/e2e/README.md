@@ -85,7 +85,7 @@ Comment `/update-website-screenshots`, add the `Update Website Screenshots`
 label, or tick the checkbox in the PR report comment: the workflow waits for
 the E2E run and commits those images to the branch without rerunning
 Playwright. A run with no failed screenshot assertions commits nothing.
-`/update-website-screenshots full` reruns the visual project with
-`--update-snapshots` instead. That also happens automatically when there is
-no E2E run for the head commit, the run takes over 30 minutes, or a shard
-did not finish or left no artifact.
+The workflow fails and says why when there is no E2E run for the head
+commit, the run takes over 30 minutes, or a shard did not finish or left no
+artifact. `/update-website-screenshots full` reruns the visual project with
+`--update-snapshots` instead.

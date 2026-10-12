@@ -154,9 +154,10 @@ the first failing assertion.
   named `*-visual-linux.png` and come from the Linux CI container. Never commit
   baselines generated on a Mac. Comment `/update-website-screenshots` on the
   pull request; the workflow commits the images the E2E run took for each
-  failed screenshot assertion (`/update-website-screenshots full` reruns
-  Playwright instead). Pull afterwards, look at each changed image, and list
-  them in the description.
+  failed screenshot assertion. If it fails because the E2E run is missing or
+  unfinished, re-run that run, or comment `/update-website-screenshots full`
+  to rerun Playwright instead. Pull afterwards, look at each changed image,
+  and list them in the description.
 - The same test passes on re-run with no code change: re-run once with
   `gh run rerun <run-id> --failed`. A second flake on the same test is an
   escalation with both run links.
