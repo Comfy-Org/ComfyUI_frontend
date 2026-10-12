@@ -38,6 +38,7 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -557,6 +558,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {
