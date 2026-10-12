@@ -923,6 +923,12 @@ export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
+export interface AgentCreditTransitionNoticeMetadata extends Record<
+  string,
+  unknown
+> {
+  action: 'shown' | 'dismissed'
+}
 export interface AgentStarterPromptClickedMetadata
   extends
     Record<string, unknown>,
@@ -1009,6 +1015,56 @@ export interface AgentAttachButtonClickedMetadata extends Record<
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentGraphProjectionStage =
+  | 'received_no_graph'
+  | 'applied'
+  | 'applied_deferred'
+  | 'discarded'
+  | 'reverted'
+
+/**
+ * Projection telemetry for agent and actorless frames and for reverted human
+ * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
+ * identifier is sent.
+ */
+export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
+  /**
+   * First non-empty op id of the frame, or of the rejected batch on
+   * `reverted`. Not necessarily creator-owned: `reverted` carries the first
+   * rejected HUMAN op id. `null` when the frame carried no op ids.
+   */
+  op_id: string | null
+  /** How many non-empty op ids it carried; `op_id` is the first of them. */
+  op_count: number
+  sequence: number
+  /**
+   * - `received_no_graph` — delivered, nothing applied yet (no graph bound).
+   * - `applied` — this frame applied. If earlier no-graph frames were still
+   *   collected, the counts are the whole batch's, as on `applied_deferred`.
+   * - `applied_deferred` — a batch flush applied this earlier no-graph frame.
+   *   The counts are the WHOLE batch's and are repeated across its frames, so
+   *   they must not be attributed to this `op_id` alone.
+   * - `discarded` — the collected changes were thrown away without applying
+   *   (own-echo discard, `doc_reset`, `schema_error`, scope disposal, follower
+   *   replacement, rebind). All counts are zero: nothing reached the canvas, so
+   *   the size of what was dropped is deliberately not reported under a count a
+   *   dashboard would read as applied work.
+   * - `reverted` — the host rejected a human batch and the document state it
+   *   claimed was put back on the canvas. The counts are that revert's.
+   */
+  stage: AgentGraphProjectionStage
+  added_count: number
+  /**
+   * Newly reported document deletes. Excludes entries already reported on an
+   * earlier pending frame, and replace-mode `removeAbsent` removals.
+   */
+  removed_count: number
+  /**
+   * Apply steps that threw, plus reported degradations that did not throw
+   * (an unresolved link, a subgraph definition that failed to register).
+   */
+  apply_failure_count: number
 }
 export type AgentStopMethod = 'button' | 'escape'
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
@@ -1381,6 +1437,9 @@ export interface TelemetryProvider {
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1480,6 +1539,7 @@ export interface TelemetryProvider {
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentGraphProjection?(metadata: AgentGraphProjectionMetadata): void
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
@@ -1661,9 +1721,11 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
@@ -1792,4 +1854,5 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata

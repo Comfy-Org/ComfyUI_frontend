@@ -20,7 +20,7 @@ functions). The rest:
 
 1. If a complex type definition is inlined in multiple related places, extract and name it for reuse
 2. Implement proper error handling
-3. Do not add or retain redundant comments, clean as you go
+3. Do not add code comments, and delete the comments in code you touch. Only curt JSDoc on an exported API is allowed; see the root `AGENTS.md`
 4. [Refactoring](https://refactoring.com/catalog/) should be used to make complex code simpler
 5. Try to minimize the surface area (exported values) of each module and composable
 6. Don't use barrel files, e.g. `/some/package/index.ts` to re-export within `/src`
@@ -57,7 +57,7 @@ In doing a code review, you should make sure that:
 - Code has appropriate unit tests.
 - Tests are well-designed.
 - The developer used clear names for everything.
-- Comments are clear and useful, and mostly explain why instead of what.
+- The diff adds no comments other than curt JSDoc on exported APIs. Treat every other added comment as a blocking finding, including comments that explain why. Ask for a rename, an extraction, a type, or a test, and move the rationale to the commit message, the PR description, or an ADR.
 - Code is appropriately documented (in `docs/`, or an ADR under `docs/adr/` for an architectural decision).
 - The code conforms to our style guides.
 

@@ -4357,6 +4357,27 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the media URL on the sent user entry', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this', [
+      {
+        ref: 'clip.mp4',
+        name: 'clip.mp4',
+        mediaUrl: '/api/view?filename=clip.mp4&type=input'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ mediaUrl: '/api/view?filename=clip.mp4&type=input' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 

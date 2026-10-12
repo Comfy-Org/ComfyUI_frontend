@@ -13,10 +13,11 @@ import { createAssistantMessage } from './agentMessageParts'
 type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
- * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview. `name` is the label shown to the user;
- * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
- * the persisted asset `display_name`.
+ * A file attached to a user turn. `previewUrl` and `mediaUrl` are captured
+ * when the turn is sent and are not rehydrated; without them, `ref`, the
+ * uploaded input-namespace filename, resolves the file. `name` is the label
+ * shown to the user; it falls back to `ref` for legacy/unresolved rows and
+ * otherwise comes from the persisted asset `display_name`.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
  * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
@@ -27,6 +28,7 @@ type AttachmentKind = 'image' | 'video' | 'audio'
 export interface UserAttachment {
   name: string
   previewUrl?: string
+  mediaUrl?: string
   ref?: string
   id?: string
   kind?: AttachmentKind

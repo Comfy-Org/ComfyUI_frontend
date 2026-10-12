@@ -4,13 +4,26 @@
   "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
   "modules": [
     {
-      "path": "src/workbench/extensions/manager/types/**",
+      "path": "src/workbench/extensions/manager/types/compatibility.types.ts",
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/manager/utils/**",
+      "path": "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
       "role": "domain"
     },
+    {
+      "path": "src/workbench/extensions/manager/types/comfyManagerTypes.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
+      "role": "presentation"
+    },
+    { "path": "src/workbench/extensions/manager/utils/**", "role": "domain" },
     {
       "path": "src/workbench/extensions/manager/composables/**",
       "role": "application"

@@ -1604,7 +1604,8 @@
       {
         "name": "extension-manager/domain",
         "patterns": [
-          "src/workbench/extensions/manager/types/**",
+          "src/workbench/extensions/manager/types/compatibility.types.ts",
+          "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
           "src/workbench/extensions/manager/utils/**",
           "src/utils/mapperUtil.ts",
           "src/utils/packUtils.test.ts",
@@ -1616,6 +1617,7 @@
       {
         "name": "extension-manager/application",
         "patterns": [
+          "src/workbench/extensions/manager/types/comfyManagerTypes.ts",
           "src/workbench/extensions/manager/composables/**",
           "src/workbench/extensions/manager/stores/**"
         ]
@@ -1623,6 +1625,7 @@
       {
         "name": "extension-manager/infrastructure",
         "patterns": [
+          "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
           "src/workbench/extensions/manager/services/**",
           "src/composables/useCachedRequest.test.ts",
           "src/composables/useCachedRequest.ts",
@@ -1632,7 +1635,10 @@
       },
       {
         "name": "extension-manager/presentation",
-        "patterns": ["src/workbench/extensions/manager/components/**"]
+        "patterns": [
+          "src/workbench/extensions/manager/types/importFailedTypes.ts",
+          "src/workbench/extensions/manager/components/**"
+        ]
       },
       {
         "name": "extension-runtime/domain",
