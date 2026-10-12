@@ -4526,6 +4526,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "relight": "重新布光",
+      "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
+      "relightMeta": "图像 · Beeble SwitchX",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
