@@ -2,7 +2,8 @@
 
 Date: 2026-09-19
 
-Revised after the graph-API apply path landed (#18700).
+Revised after the graph-API apply path landed (#18700). The filename slug is
+retained deliberately; the reconcile it names is gone.
 
 ## Status
 
@@ -87,27 +88,34 @@ any change to the apply path.
 
 Exception to requirement 1: the first applied frame after a `doc_reset`
 replaces the live graph with the new lineage. Under CRDT-AUTHORITY-0035 the
-new lineage is the human's own posted draft, so local adds made before the
-draft was posted survive the replace because the draft contains them. What
-the replace drops is an edit made after the draft was posted and before the
-new lineage's first frame; that window is the accepted loss. The follow-up is
+new lineage is the human's own posted draft, which is the whole live canvas,
+so local edits made before the draft was posted survive the replace because
+the draft contains them. What the replace drops is an edit made after the
+draft was posted and before the new lineage's first frame, for the tab whose
+draft triggered the reset; that window is the accepted loss. The follow-up is
 to report what the replace removed, not to protect it.
 
 How well main holds each one:
 
-- **Hold.** Requirement 1 holds by construction in merge mode for any frame
-  that does not name the register the local edit touches. The `doc_reset`
-  replace is the named exception and is tracked outside the requirements, like
-  the blueprint gap below. Requirement 2 holds for reporting and for
-  reverting add, delete, clear, widget and link ops.
-- **Hold only partially.** A rejected `set_node_field` resyncs the whole node
-  from the document, so it also rewinds any other unconfirmed field edit on
-  that node, which is a requirement 1 gap. A rejected widget write on a node
-  whose document stores its widgets as a positional array resyncs every widget
-  on that node, the same kind of gap; there, other unconfirmed widget writes
-  are protected only by the widget hold. A widget hold lifts when its op
-  settles, including when the op timed out, not when the document confirms the
-  value.
+- **Hold.** Requirement 1 holds by construction in merge mode for widgets,
+  links and node add and delete: a frame that does not name the register the
+  local edit touches leaves it alone. The `doc_reset` replace is the named
+  exception and is tracked outside the requirements, like the blueprint gap
+  below. Requirement 2 holds for reporting and for reverting add, delete,
+  clear, widget and link ops, except for a rejection that arrives after the
+  sender gave up (below).
+- **Hold only partially.** Node fields are not separate registers. A frame
+  that changes any synced field of a node (title, mode, flags, properties,
+  appearance) rewrites all of them from the document, and field writes have no
+  hold, so a remote change to one field rewinds an unconfirmed human edit to
+  another on the same node. The own-actor echo of the human's op is then
+  dropped, so the canvas stays diverged silently. A rejected `set_node_field`
+  has the same shape: it resyncs the whole node from the document. A rejected
+  widget write on a node whose document stores its widgets as a positional
+  array resyncs every widget on that node; there, other unconfirmed widget
+  writes are protected only by the widget hold. A widget hold lifts when its
+  op settles, including when the op timed out, not when the document confirms
+  the value.
 - **Do not hold.** Requirement 3 does not hold. No visible outcome exists for
   an edit that ends `unacknowledged`, `unconfirmed` or `undeliverable`, and
   the time bound exists only while the tab is active. A rejection that
@@ -194,13 +202,12 @@ each refused op's node, widget or link register back from the document
 (`rejectedOpChanges.ts`) and applies it under its own revert actor: a refused
 add is removed, a refused delete or clear is restored together with its
 links, a refused widget write resyncs the widget (every widget on the node
-when the document stores its widgets as a positional array, where other
-unconfirmed widget writes are protected only by the widget hold until their
-op settles), a refused connect or disconnect resyncs the link, and a refused
-node field write resyncs the whole node's fields (title, mode, flags,
-properties and appearance) from the document, not only the field named. Edits inside a subgraph interior are
-skipped. Nothing else in the live graph is touched, so a rejection never
-widens into a reconcile.
+when the document stores its widgets as a positional array), a refused
+connect or disconnect resyncs the link, and a refused node field write
+resyncs the whole node's fields (title, mode, flags, properties and
+appearance) from the document, not only the field named. Edits inside a
+subgraph interior are skipped. Nothing else in the live graph is touched, so
+a rejection never widens into a reconcile.
 
 The user sees a toast from `rejectedOpNotice.ts`. Copy is chosen from four
 keys under `agent.editRejected` (widget write or generic, complete or
@@ -260,12 +267,12 @@ from the local graph there.
 
 ## Requirements
 
-| Requirement                 | Holds today | How                                                                       | Remaining                                                                                                                                                          |
-| --------------------------- | ----------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Pending intent is kept      | Mostly      | Merge mode applies only the delta; replace is armed only by `doc_reset`   | A rejected field write rewinds sibling fields, and a rejected widget write on a positional-array node rewinds sibling widgets; widget hold lifts on any settlement |
-| A rejection is reported     | Yes         | Revert from the document plus a throttled toast, for every op kind        | A rejection that arrives after the sender gave up is not seen                                                                                                      |
-| Delivery-unknown is visible | No          | Four sender outcomes; about 20 seconds when active, immediate on unbind   | No user-visible outcome; no late correlation; no bound while the tab is inactive                                                                                   |
-| A collision is reported     | No          | Own-actor echo drop and disjoint id minting avoid most; the document wins | Same-id merge or recreate is silent                                                                                                                                |
+| Requirement                 | Holds today | How                                                                       | Remaining                                                                                                                                                                    |
+| --------------------------- | ----------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pending intent is kept      | Mostly      | Merge mode applies only the delta; replace is armed only by `doc_reset`   | A remote or rejected field write rewinds sibling fields, and a rejected widget write on a positional-array node rewinds sibling widgets; widget hold lifts on any settlement |
+| A rejection is reported     | Mostly      | Revert from the document plus a throttled toast, for every op kind        | A rejection that arrives after the sender gave up is not seen (follow-up 1)                                                                                                  |
+| Delivery-unknown is visible | No          | Four sender outcomes; about 20 seconds when active, immediate on unbind   | No user-visible outcome; no late correlation; no bound while the tab is inactive                                                                                             |
+| A collision is reported     | No          | Own-actor echo drop and disjoint id minting avoid most; the document wins | Same-id merge or recreate is silent                                                                                                                                          |
 
 Known gaps outside the four requirements: the `doc_reset` replace, the named
 exception above, removes local-only nodes and links without a report (follow-up
@@ -309,12 +316,14 @@ blueprint mint is still open.
    behavior is that the draft already carries the human's effect, so the
    accepted loss is an edit made after the draft was posted and before the new
    lineage's first frame.
-5. **Narrow the field-rejection revert.** A rejected `set_node_field` should
-   restore only the field it named instead of resyncing the whole node, so it
-   cannot rewind another unconfirmed field edit (a requirement 1 gap). A
-   rejected widget write on a node whose document stores widgets as a
-   positional array has the same shape: it resyncs every widget, and other
-   unconfirmed widget writes are protected only until their op settles.
+5. **Narrow node-field resyncs and rejection reverts.** A frame that changes
+   a node field, and a rejected `set_node_field`, should touch only the field
+   they name instead of resyncing the whole node, so neither can rewind
+   another unconfirmed field edit (a requirement 1 gap). That means carrying
+   the changed keys from the collector into the applier. A positional widget
+   array cannot be narrowed by name, so a rejected widget write on such a
+   node still resyncs every widget and other unconfirmed widget writes stay
+   protected only until their op settles; that cost is accepted.
 6. **Suspected, unverified.** Each needs a repro before any claim is asserted.
    - A `doc_reset` that reaches a bound but inactive follower appears to arm
      neither the replace nor the sender abort, so a parked batch minted for the
@@ -394,9 +403,12 @@ cited as pointers.
   The local graph can stay different from the document with no signal.
 - A `doc_reset` replace, the named exception to requirement 1, removes
   local-only nodes and links silently.
-- A rejected node field write resyncs the whole node, and a rejected widget
-  write on a positional-array node resyncs every widget, so either can rewind
-  another unconfirmed edit on that node.
+- Node fields resync as a whole: a remote change to one synced field, or a
+  rejected node field write, rewrites them all from the document, and a
+  rejected widget write on a positional-array node resyncs every widget, so
+  any of these can rewind another unconfirmed edit on that node. For the
+  remote case the own-actor echo that follows is dropped, so the canvas can
+  stay diverged silently.
 - A widget value stops being held when its op settles, so after a timeout the
   next remote value overwrites what the user typed.
 - Same-id collisions with another writer are resolved silently in the

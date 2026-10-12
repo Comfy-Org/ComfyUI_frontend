@@ -35,6 +35,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -1665,18 +1666,41 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
-      {
-        method: 'POST',
-        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
-        ...options
-      }
-    )
-    if (resp.status !== 200 && options.throwOnError !== false) {
-      throw new Error(
-        `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
+    const overwrite = options.overwrite ?? true
+    const fullInfo = options.full_info ?? false
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
+    const resp = await this.fetchApi(route, {
+      method: 'POST',
+      body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
+      ...options
+    })
+    if (resp.status !== 200) {
+      const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      // The reported message and route are file-independent: the literal file
+      // name (and `route`, which embeds it) is unbounded cardinality and
+      // would fragment Sentry grouping into one bucket per file instead of
+      // one for this failure mode — exactly what buried PM-1906's alerts.
+      reportError(
+        new Error(
+          `Error storing user data file: ${resp.status} ${resp.statusText}`
+        ),
+        {
+          errorType: 'userdata_store_failure',
+          surface: 'platform',
+          tags: {
+            status: resp.status,
+            overwrite,
+            full_info: fullInfo
+          },
+          context: {
+            file,
+            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+          }
+        }
       )
+      if (options.throwOnError !== false) {
+        throw new Error(message)
+      }
     }
 
     return resp

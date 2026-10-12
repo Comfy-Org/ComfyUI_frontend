@@ -7,7 +7,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { DOMWidgetOptions } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -30,7 +30,7 @@ function addMultilineWidget(
   // binding it returns is initialized.
   const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const widgetState = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
       )
@@ -41,7 +41,7 @@ function addMultilineWidget(
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const id = widgetId(graphId, node.id, name)
       const widgetState = widgetStore.getWidget(id)
       if (widgetState) {

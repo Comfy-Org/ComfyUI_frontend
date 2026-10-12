@@ -78,7 +78,7 @@
     <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
-      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
+      :tooltip="$t('g.resetAllKeybindingsTooltip')"
       class="mt-4 w-full"
       variant="destructive-textonly"
       @click="resetAllKeybindings"

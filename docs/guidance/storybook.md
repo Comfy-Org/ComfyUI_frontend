@@ -142,7 +142,8 @@ render it through `v-bind="args"`; type `meta` as
   `.storybook/main.ts`. Set their state in the story's `beforeEach`, as
   `BillingStatusBanner.stories.ts` does.
 - Cloud-only components render empty unless Storybook runs with
-  `DISTRIBUTION=cloud pnpm storybook`; say so in the file's doc comment.
+  `DISTRIBUTION=cloud pnpm storybook`; say so in a one-line JSDoc on the
+  default export.
 - Use semantic theme tokens (`bg-base-background`) in decorators. Theme is a
   toolbar global; never a story.
 
