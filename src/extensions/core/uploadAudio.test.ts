@@ -1,11 +1,12 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 
 const {
@@ -214,9 +215,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadAlreadyInProgress'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
     expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
@@ -230,7 +229,10 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith('500 - Server Error')
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFailed')
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: '500 - Server Error'
+    })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -247,7 +249,8 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(error.message)
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFailed')
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', { reason: error.message })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -342,7 +345,7 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
     expect(mockMediaRecorderStart).toHaveBeenCalledTimes(1)
     expect(recordWidget.label).toBe('g.stopRecording')
     expect(reportError).not.toHaveBeenCalled()
-    expect(useToastStore().addAlert).not.toHaveBeenCalled()
+    expect(useToast().warning).not.toHaveBeenCalled()
   })
 
   it('reports a recorder start failure after the microphone was granted', async () => {
@@ -385,12 +388,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
       RECORDER_FAILURE_REPORT
     )
     expect(mockStopAllTracks).toHaveBeenCalledWith(stream)
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.recordingFailedToStart'
-    )
-    expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
-      'g.micPermissionDenied'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(useToast().warning).not.toHaveBeenCalledWith('g.micPermissionDenied')
     expect(recordWidget.label).toBe('g.startRecording')
   })
 
@@ -407,9 +406,7 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await pressRecord()
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.micPermissionDenied'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.micPermissionDenied')
     expect(reportError).not.toHaveBeenCalled()
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
@@ -426,12 +423,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
       accessError,
       RECORDER_FAILURE_REPORT
     )
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.recordingFailedToStart'
-    )
-    expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
-      'g.micPermissionDenied'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(useToast().warning).not.toHaveBeenCalledWith('g.micPermissionDenied')
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 })

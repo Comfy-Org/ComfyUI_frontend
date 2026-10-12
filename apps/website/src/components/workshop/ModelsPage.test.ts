@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,16 +43,17 @@ beforeEach(() => {
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
 })
 
+const CATALOGUE_URL = '/models/catalogue.json'
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
 describe('Models page entry', () => {
   it('gates workflow data and mounts the shared controls when enabled', async () => {
     const slug = 'workflows/change-material'
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json(await prepareModelPage(slug)))
-    vi.stubGlobal('fetch', fetchData)
+    const page = await prepareModelPage(slug)
+    respondToFetch('/models/workflows/change-material/page.json', () =>
+      Response.json(page)
+    )
     enabled.value = true
     render(ModelsPage, {
       props: { slug },
@@ -60,12 +62,12 @@ describe('Models page entry', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public Models' })
     ).toBeVisible()
-    expect(fetchData).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     workflowsEnabled.value = true
     expect(
       await screen.findByRole('heading', { name: 'Change a material' })
     ).toBeVisible()
-    expect(fetchData).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       '/models/workflows/change-material/page.json'
     )
     expect(
@@ -128,10 +130,7 @@ describe('Models page entry', () => {
   ] as const)(
     'keeps the $section section and its heading behind its flag',
     async ({ section, catalogue, turnOn }) => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
-      )
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
       enabled.value = true
       render(ModelsPage, {
         props: { section, heading: 'Section heading' },
@@ -159,7 +158,6 @@ describe('Models page entry', () => {
 
   describe('an old ?type= catalogue link', () => {
     let replace: ReturnType<typeof vi.fn<(url: string | URL) => void>>
-    let fetchData: ReturnType<typeof vi.fn<typeof fetch>>
 
     // ModelsPage reads the settled flag once during setup, synchronously inside
     // render(). The forward reads it again only after its chunk loads, right
@@ -177,10 +175,7 @@ describe('Models page entry', () => {
     beforeEach(() => {
       replace = vi.fn()
       vi.spyOn(window.location, 'replace').mockImplementation(replace)
-      fetchData = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(Response.json(workshopModels))
-      vi.stubGlobal('fetch', fetchData)
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopModels))
       enabled.value = true
     })
 
@@ -258,9 +253,7 @@ describe('Models page entry', () => {
       settled.value = false
       render(ModelsPage)
       await vi.waitFor(() =>
-        expect(fetchData).toHaveBeenCalledExactlyOnceWith(
-          '/models/catalogue.json'
-        )
+        expect(fetch).toHaveBeenCalledExactlyOnceWith(CATALOGUE_URL)
       )
       expect(screen.getByTestId('models-loading')).toBeTruthy()
 
@@ -329,7 +322,7 @@ describe('Models page entry', () => {
 
     it('acts on the link the page opened with, not one that replaced it while loading', async () => {
       window.history.replaceState({}, '', '/hub/models/?type=workflows')
-      fetchData.mockImplementation(async () => {
+      respondToFetch(CATALOGUE_URL, () => {
         window.history.replaceState({}, '', '/hub/models/?type=apps')
         return Response.json(workshopModels)
       })
@@ -372,10 +365,7 @@ describe('Models page entry', () => {
 
   it('gives the hub heading and the tabs to a category, and takes them back', async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
-    )
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     enabled.value = true
     workflowsEnabled.value = true
     render(ModelsPage, {
@@ -405,10 +395,7 @@ describe('Models page entry', () => {
   })
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockImplementation(async () => Response.json(workshopPages))
-    vi.stubGlobal('fetch', fetchData)
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     enabled.value = true
     workflowsEnabled.value = true
     appsEnabled.value = true
@@ -433,7 +420,7 @@ describe('Models page entry', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Models heading'
     )
-    expect(fetchData).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(CATALOGUE_URL)
     expect(
       vi
         .mocked(captureWorkshopEvent)
@@ -450,12 +437,10 @@ describe('Models page entry', () => {
     expect(screen.queryByTestId('apps-catalogue')).toBeNull()
     await view.rerender({ section: 'models', heading: 'Models heading' })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
-    expect(fetchData).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
-    const fetchData = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchData)
     workflowsEnabled.value = true
     render(ModelsPage, {
       props: { slug: 'workflows/change-material' },
@@ -464,14 +449,11 @@ describe('Models page entry', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public Models' })
     ).toBeVisible()
-    expect(fetchData).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('adds workflows to a loaded catalogue when their flag answers late', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
-    )
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     render(ModelsPage)
     expect(await screen.findByTestId('workshop-search')).toBeTruthy()
     expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
@@ -489,10 +471,9 @@ describe('Models page entry', () => {
   ] as const)(
     'shows $visible when the flag is $flag',
     async ({ slug, visible, flag }) => {
-      const fetchData = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
-      vi.stubGlobal('fetch', fetchData)
+      respondToFetch(slug ? `/models/${slug}/page.json` : CATALOGUE_URL, () =>
+        Response.json(slug ? modelPage : workshopModels)
+      )
       enabled.value = flag === 'on'
       settled.value = flag !== 'unanswered'
       render(ModelsPage, { props: { slug } })

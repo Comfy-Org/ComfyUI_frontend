@@ -16,6 +16,9 @@ import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
 
 const asset = {
   id: 'source',

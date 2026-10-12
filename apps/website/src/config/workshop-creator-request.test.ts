@@ -123,7 +123,7 @@ describe('creator file failure diagnostics', () => {
     )
     assert.isDefined(example)
     const cause = new TypeError('Private download detail')
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValue(cause))
+    vi.mocked(fetch).mockRejectedValue(cause)
 
     const failure = await prepareWorkshopCreatorRequest(
       creator,
@@ -167,24 +167,21 @@ describe('creator file failure diagnostics', () => {
 describe('creator widgets to native Router requests', () => {
   beforeEach(() => {
     let grants = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (_url, init) => {
-        if (init?.method === 'POST') {
-          grants += 1
-          return Response.json({
-            upload_url: `https://storage.example/upload-${grants}`,
-            download_url: `https://storage.example/image-${grants}.png`
-          })
-        }
-        if (init?.method === 'PUT') {
-          return new Response(null)
-        }
-        return new Response('image bytes', {
-          headers: { 'Content-Type': 'image/png' }
+    vi.mocked(fetch).mockImplementation(async (_url, init) => {
+      if (init?.method === 'POST') {
+        grants += 1
+        return Response.json({
+          upload_url: `https://storage.example/upload-${grants}`,
+          download_url: `https://storage.example/image-${grants}.png`
         })
+      }
+      if (init?.method === 'PUT') {
+        return new Response(null)
+      }
+      return new Response('image bytes', {
+        headers: { 'Content-Type': 'image/png' }
       })
-    )
+    })
   })
 
   afterEach(() => {

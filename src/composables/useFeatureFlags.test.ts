@@ -402,6 +402,34 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('localWebSsoEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      {
+        case: 'missing locally',
+        cloud: false,
+        value: undefined,
+        expected: false
+      },
+      {
+        case: 'malformed locally',
+        cloud: false,
+        value: 'true',
+        expected: false
+      },
+      { case: 'true locally', cloud: false, value: true, expected: true },
+      { case: 'true on cloud', cloud: true, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.localWebSsoEnabled).toBe(expected)
+    })
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false

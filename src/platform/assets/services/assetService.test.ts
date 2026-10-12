@@ -1,4 +1,6 @@
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -84,19 +86,13 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 beforeEach(() => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
-    () => registeredNodeTypes
-  )
-  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
-    (nodeType: string) => nodeTypeCategories[nodeType]
+  useNodeDefStore().nodeDefsByName = Object.fromEntries(
+    [
+      'CheckpointLoaderSimple',
+      'LoraLoader',
+      'LoadLoraModel',
+      'LoadLoraTextEncoder'
+    ].map((name) => [name, fromPartial({ name })])
   )
   vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
     mockInvalidateInputAssets
@@ -136,6 +132,41 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
         'ckpt_name'
       )
     ).toBe(true)
+  })
+
+  it.for([
+    ['LoadLoraModel', 'loras.0.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.19.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.0.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.1.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.19.lora_name']
+  ])('uses the asset picker for %s / %s on cloud', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(true)
+  })
+
+  it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
+    'keeps the combo widget for %s outside cloud',
+    (nodeType) => {
+      mockDistributionState.isCloud = false
+      expect(
+        assetService.shouldUseWidgetAssetPicker(nodeType, 'loras.1.lora_name')
+      ).toBe(false)
+    }
+  )
+
+  it.for([
+    ['LoadLoraModel', 'loras.1.strength'],
+    ['LoadLoraModel', 'loras.-1.lora_name'],
+    ['LoadLoraModel', 'loras.01.lora_name'],
+    ['LoadLoraModel', 'prefix.loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name.suffix'],
+    ['LoraLoader', 'loras.1.lora_name'],
+    ['UnknownNode', 'loras.1.lora_name']
+  ])('does not treat %s / %s as an asset input', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(false)
   })
 
   it('returns false when nodeType is undefined', () => {
@@ -262,9 +293,7 @@ describe(assetService.uploadAssetFromBase64, () => {
   })
 
   it('rejects when the upload response is invalid', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await expect(
@@ -274,13 +303,11 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 
   it('rejects upload responses with a non-boolean created_new', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({
         ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
@@ -295,7 +322,7 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 })
 

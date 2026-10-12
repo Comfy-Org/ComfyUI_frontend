@@ -41,3 +41,9 @@ export const HUG_CONTENT_CLASS =
   'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
 
 export const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+
+export const SELF_STYLED_PANEL_DIALOG_PROPS = {
+  renderer: 'reka',
+  headless: true,
+  contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+} as const
