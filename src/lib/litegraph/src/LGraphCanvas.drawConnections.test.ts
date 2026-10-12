@@ -1139,7 +1139,7 @@ describe('drawConnections hidden links', () => {
       expect(canvas.renderedPaths.has(reroute)).toBe(true)
       expect(canvas.renderedPaths.has(hiding)).toBe(false)
       expect(drawReroute).toHaveBeenCalledOnce()
-      expect(ctx.bezierCurveTo).toHaveBeenCalledTimes(4)
+      expect(ctx.bezierCurveTo).toHaveBeenCalledTimes(6)
       expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(hiding))).toBe(
         hiding.id
       )

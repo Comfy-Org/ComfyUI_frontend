@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { LinkDirection } from '../types/globalEnums'
-import { bezierHead, bezierTail, linkSpline } from './linkSnapGeometry'
+import {
+  bezierHead,
+  bezierTail,
+  chainHead,
+  chainTail,
+  linkSpline,
+  linkSplineChain
+} from './linkSnapGeometry'
 
 const spline = linkSpline(
   [0, 0],
@@ -29,5 +36,27 @@ describe('linkSnapGeometry', () => {
     expect(bezierTail(spline, t)[0]).toEqual(tail)
     expect(bezierHead(spline, t)[0]).toEqual([0, 0])
     expect(bezierTail(spline, t)[3]).toEqual([400, 0])
+  })
+
+  it('trims a routed chain from either end through its reroutes', () => {
+    const chain = linkSplineChain(
+      [
+        [0, 0],
+        [100, 0],
+        [400, 0]
+      ],
+      LinkDirection.RIGHT,
+      LinkDirection.LEFT
+    )
+
+    const head = chainHead(chain, 0.5)
+    const tail = chainTail(chain, 0.5)
+
+    expect(head).toHaveLength(2)
+    expect(head[0]).toEqual(chain[0])
+    expect(tail).toHaveLength(1)
+    expect(tail[0][0][0]).toBeCloseTo(head[1][3][0])
+    expect(tail[0][0][1]).toBeCloseTo(head[1][3][1])
+    expect(tail[0][3]).toEqual([400, 0])
   })
 })

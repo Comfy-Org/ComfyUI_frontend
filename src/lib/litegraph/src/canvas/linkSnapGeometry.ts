@@ -24,6 +24,64 @@ function controlOffset(direction: LinkDirection, distance: number): Point {
   }
 }
 
+/** The splines a link is drawn along from its output, through each reroute, to its input. */
+export function linkSplineChain(
+  points: readonly Point[],
+  startDirection: LinkDirection,
+  endDirection: LinkDirection
+): CubicBezier[] {
+  const last = points.length - 2
+  return points
+    .slice(0, -1)
+    .map((from, index) =>
+      linkSpline(
+        from,
+        points[index + 1],
+        index === 0 ? startDirection : LinkDirection.CENTER,
+        index === last ? endDirection : LinkDirection.CENTER
+      )
+    )
+}
+
+function chordLength([start, , , end]: CubicBezier): number {
+  return Math.hypot(end[0] - start[0], end[1] - start[1])
+}
+
+/** The first `fraction` of a chain of curves, measured along their chords. */
+export function chainHead(
+  chain: readonly CubicBezier[],
+  fraction: number
+): CubicBezier[] {
+  const lengths = chain.map(chordLength)
+  const total = lengths.reduce((sum, length) => sum + length, 0)
+  const head: CubicBezier[] = []
+  let remaining = fraction * total
+  for (const [index, curve] of chain.entries()) {
+    if (remaining <= 0) break
+    const length = lengths[index]
+    if (remaining >= length) {
+      head.push(curve)
+    } else {
+      head.push(bezierHead(curve, remaining / length))
+    }
+    remaining -= length
+  }
+  return head
+}
+
+/** The last `fraction` of a chain of curves, measured along their chords. */
+export function chainTail(
+  chain: readonly CubicBezier[],
+  fraction: number
+): CubicBezier[] {
+  const reversed = chain
+    .map(([p0, p1, p2, p3]): CubicBezier => [p3, p2, p1, p0])
+    .reverse()
+  return chainHead(reversed, fraction)
+    .map(([p0, p1, p2, p3]): CubicBezier => [p3, p2, p1, p0])
+    .reverse()
+}
+
 /** The spline a link is drawn along between two slots. */
 export function linkSpline(
   start: Point,

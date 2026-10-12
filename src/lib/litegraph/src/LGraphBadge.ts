@@ -124,11 +124,11 @@ export class LGraphBadge {
     if (this.text) {
       ctx.fillStyle = this.fgColor
       ctx.textAlign = 'left'
+      ctx.textBaseline = 'alphabetic'
       const capHeight = this.centerOnCapHeight
         ? ctx.measureText('H').actualBoundingBoxAscent
         : Number.NaN
       if (Number.isFinite(capHeight)) {
-        ctx.textBaseline = 'alphabetic'
         ctx.fillText(this.text, drawX, centerY + capHeight / 2)
       } else {
         ctx.textBaseline = 'middle'

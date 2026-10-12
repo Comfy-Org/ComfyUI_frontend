@@ -57,7 +57,11 @@ import {
   linkHideLabelScale,
   linkHideSnap
 } from './canvas/linkHideTransition'
-import { bezierHead, bezierTail, linkSpline } from './canvas/linkSnapGeometry'
+import {
+  chainHead,
+  chainTail,
+  linkSplineChain
+} from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -6102,6 +6106,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       } else if (hiddenLayout) {
         const snap = linkHideSnap(graphScope.rootGraphId, link.id, now)
         if (snap === undefined) return
+        if (this.links_render_mode !== LinkRenderType.SPLINE_LINK) {
+          cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+          return
+        }
 
         snappingLinks.push({
           link,
@@ -6352,21 +6360,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _renderSnappingLink(
     ctx: CanvasRenderingContext2D,
-    {
-      link,
-      snap,
-      startPos,
-      endPos,
-      startDirection = LinkDirection.RIGHT,
-      endDirection = LinkDirection.LEFT
-    }: SnappingLink
+    { link, snap, startPos, endPos, startDirection, endDirection }: SnappingLink
   ): void {
     const remaining = Math.abs(1 - snap) / 2
-    if (remaining === 0) return
-    const spline = linkSpline(startPos, endPos, startDirection, endDirection)
+    if (remaining === 0 || !this.graph) return
+    const chain = linkSplineChain(
+      [
+        startPos,
+        ...LLink.getReroutes(this.graph, link).map((reroute) => reroute.pos),
+        endPos
+      ],
+      startDirection || LinkDirection.RIGHT,
+      endDirection || LinkDirection.LEFT
+    )
     const halves = [
-      bezierHead(spline, remaining),
-      bezierTail(spline, remaining)
+      ...chainHead(chain, remaining),
+      ...chainTail(chain, remaining)
     ]
     const color =
       link.color ||

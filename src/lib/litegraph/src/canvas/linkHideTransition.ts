@@ -76,7 +76,7 @@ function elapsedSinceHide(
 ): number | undefined {
   const startedAt = startedAtByRoot.get(rootGraphId)?.get(linkId)
   if (startedAt === undefined) return
-  const elapsed = now - startedAt
+  const elapsed = Math.max(0, now - startedAt)
   if (elapsed < totalMs()) return elapsed
   cancelLinkHideTransition(rootGraphId, linkId)
 }
