@@ -461,9 +461,6 @@ export class ChangeTracker {
   }
 
   /**
-   * Serialize the canvas into activeState and push undo. Callers must have
-   * checked that this is the active tracker and the canvas is safe to read.
-   *
    * @internal Not part of the public extension API. Use
    * {@link captureCanvasState}, which applies the guards.
    */
@@ -559,15 +556,6 @@ export class ChangeTracker {
     this.changeCount++
   }
 
-  /**
-   * Close a beforeChange() transaction and, once the outermost one closes,
-   * capture the canvas.
-   *
-   * A transaction can outlive its workflow's active status (for example the
-   * layer editor stays open while the user switches workflows). Only the
-   * counter is adjusted in that case: the canvas now shows a different graph,
-   * so the capture is skipped without reporting an invariant violation.
-   */
   afterChange() {
     if (!--this.changeCount && isActiveTracker(this)) {
       this.captureCanvasState()
