@@ -77,6 +77,23 @@ export function deleteLinks(
   })
 }
 
+export function showLinks(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkIds: Iterable<LinkId>
+): void {
+  mutateLink(host, () => {
+    const store = useLinkPresentationStore()
+    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: false })
+  })
+}
+
+export function getLinkStackMenuOptions(): IContextMenuValue<string>[] {
+  return [
+    { content: st('contextMenu.Show Links', 'Show Links'), value: 'Show Links' }
+  ]
+}
+
 export function getVisibleRerouteLink(
   graph: LGraph,
   reroute: Reroute

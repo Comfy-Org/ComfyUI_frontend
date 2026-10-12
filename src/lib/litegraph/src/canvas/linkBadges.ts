@@ -96,16 +96,30 @@ export function toggleLinkBadgeStack(host: object, stackKey: string): void {
   expandedStacksByHost.set(host, expanded)
 }
 
-/** Collapses every expanded stack on the host; returns whether any was open. */
+/** Collapses every expanded stack on the host; returns whether one was on screen. */
 export function collapseLinkBadgeStacks(host: object): boolean {
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
-  return !!expanded?.size
+  return !!endpointsByHost
+    .get(host)
+    ?.some(({ hitArea }) => hitArea.stackKey && expanded?.has(hitArea.stackKey))
 }
 
 function linkTypeText(type: LLink['type']): string {
   if (typeof type === 'number') return '*'
   return String(slotTypeKey(type) || '*')
+}
+
+function stackTypeText(
+  linkIds: readonly LinkId[],
+  hiddenLinks: readonly HiddenLinkBadge[]
+): string {
+  const types = new Set(
+    hiddenLinks
+      .filter(({ link }) => linkIds.includes(link.id))
+      .map(({ link }) => linkTypeText(link.type))
+  )
+  return types.size === 1 ? [...types][0] : '*'
 }
 
 export function linkBadgeText(
@@ -184,7 +198,9 @@ function groupStackedLinks(
   for (const hidden of hiddenLinks.filter(isUnlabelled)) {
     for (const side of ['output', 'input'] as const) {
       const key = stackKeyOf(hidden.link, side)
-      groups.set(key, [...(groups.get(key) ?? []), hidden.link.id])
+      const group = groups.get(key)
+      if (group) group.push(hidden.link.id)
+      else groups.set(key, [hidden.link.id])
     }
   }
   for (const [key, linkIds] of groups) {
@@ -282,7 +298,7 @@ export function layoutHiddenLinkBadges(
     const head = addEndpoint({
       ...spec,
       rank: BADGE_RANK.stackHead,
-      text: `${linkTypeText(spec.link.type)} ×${linkIds.length}`,
+      text: `${stackTypeText(linkIds, hiddenLinks)} ×${linkIds.length}`,
       linkIds,
       stackKey,
       layers: expanded?.has(stackKey)
@@ -376,12 +392,13 @@ function drawStackLayers(
   top: number
 ): void {
   ctx.save()
+  const baseAlpha = ctx.globalAlpha
   ctx.fillStyle = color
   ctx.strokeStyle = textOnColor(color)
   ctx.lineWidth = 1
   for (let layer = layers; layer > 0; layer--) {
     const offset = layer * STACK_LAYER_OFFSET
-    ctx.globalAlpha = 1 - layer * 0.25
+    ctx.globalAlpha = baseAlpha * (1 - layer * 0.25)
     ctx.beginPath()
     ctx.roundRect(left + offset, top + offset, width, BADGE_HEIGHT, [
       BADGE_HEIGHT / 2

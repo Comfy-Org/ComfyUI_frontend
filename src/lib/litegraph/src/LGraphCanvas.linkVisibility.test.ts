@@ -552,6 +552,41 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
+    it('keeps an expanded stack open while panning from empty canvas', () => {
+      const { canvas, relayout } = createStackFixture()
+      clickAt(canvas, 420, 300)
+      relayout()
+
+      const init = { isPrimary: true, pointerId: 1, button: 0 }
+      canvas.processMouseDown(
+        new PointerEvent('pointerdown', {
+          ...init,
+          buttons: 1,
+          clientX: 100,
+          clientY: 100
+        })
+      )
+      canvas.processMouseMove(
+        new PointerEvent('pointermove', {
+          ...init,
+          buttons: 1,
+          clientX: 160,
+          clientY: 160
+        })
+      )
+      canvas.processMouseUp(
+        new PointerEvent('pointerup', {
+          ...init,
+          buttons: 0,
+          clientX: 160,
+          clientY: 160
+        })
+      )
+      relayout()
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeDefined()
+    })
+
     it('collapses an expanded stack when empty canvas is clicked', () => {
       const { canvas, relayout } = createStackFixture()
 

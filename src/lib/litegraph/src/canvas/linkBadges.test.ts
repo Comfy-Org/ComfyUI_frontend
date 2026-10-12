@@ -543,4 +543,28 @@ describe('hidden link badge stacks', () => {
 
     expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(100)
   })
+
+  it('labels a stack of mixed link types with a wildcard', () => {
+    const host = {}
+    const ctx = createContext()
+    layoutHiddenLinkBadges(
+      host,
+      ctx,
+      fanOut([undefined, undefined]).map((hidden, index) => {
+        hidden.link.type = index ? 'CLIP' : 'MODEL'
+        return hidden
+      })
+    )
+    drawHiddenLinkBadges(ctx, host, VISIBLE_AREA)
+
+    expect(ctx.fillText).toHaveBeenCalledWith('* ×2', 120, 101)
+  })
+
+  it('reports no collapse when the expanded stack is not laid out', () => {
+    const host = {}
+    toggleLinkBadgeStack(host, 'output:4:0')
+    layoutFanOut(host, [undefined])
+
+    expect(collapseLinkBadgeStacks(host)).toBe(false)
+  })
 })

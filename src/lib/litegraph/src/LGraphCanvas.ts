@@ -86,11 +86,13 @@ import {
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
+  getLinkStackMenuOptions,
   getVisibleRerouteLink,
   hideLink,
   hideLinks,
   promptRenameLinkBadge,
-  showLink
+  showLink,
+  showLinks
 } from './canvas/linkVisibility'
 import {
   clearLinkSelection,
@@ -2878,7 +2880,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       case 'empty':
         this.selected_group = null
-        if (collapseLinkBadgeStacks(this)) this.dirty_bgcanvas = true
         pointer.onDoubleClick = () => {
           if (this.allow_searchbox) {
             this.showSearchBox(e)
@@ -2902,6 +2903,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.allow_dragcanvas
     ) {
       this.setupCanvasDrag(e, pointer)
+    }
+
+    const { onClick } = pointer
+    if (onClick) {
+      pointer.onClick = (eUp) => {
+        onClick(eUp)
+        if (collapseLinkBadgeStacks(this)) this.dirty_bgcanvas = true
+      }
     }
   }
 
@@ -8728,11 +8737,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, group } = getCanvasContextMenuTarget(
-        this,
-        event.canvasX,
-        event.canvasY
-      )
+      const { reroute, linkSegment, link, stackedLinks, group } =
+        getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
+      if (stackedLinks) {
+        const graphScope = graphScopeOf(this.graph)
+        new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
+          event,
+          callback: () =>
+            showLinks(
+              this,
+              graphScope,
+              stackedLinks.map(({ id }) => id)
+            )
+        })
+        return
+      }
       if (reroute) {
         menu_info.unshift(
           {

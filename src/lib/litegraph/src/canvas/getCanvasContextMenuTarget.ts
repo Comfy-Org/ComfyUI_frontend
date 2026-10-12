@@ -11,13 +11,17 @@ import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
 } from './hitTesting'
-import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
+import {
+  queryHiddenLinkBadgeAtPoint,
+  queryHiddenLinkStackAtPoint
+} from './linkBadgeRenderer'
 import { getVisibleRerouteLink } from './linkVisibility'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
   linkSegment?: LinkSegment
   link?: LLink
+  stackedLinks?: LLink[]
   group?: LGraphGroup
 }
 
@@ -64,6 +68,9 @@ export function getCanvasContextMenuTarget(
     canvas.renderedPaths
   )
   if (reroute) return { reroute, group }
+
+  const stack = queryHiddenLinkStackAtPoint(canvas, graph, x, y)
+  if (stack) return { stackedLinks: stack.links, group }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(canvas, graph, x, y)
   if (badgeLink) return { link: badgeLink, group }
