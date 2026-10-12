@@ -236,7 +236,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage('Complete this workflow without a refusal')
       await expect.poll(() => postedMessages.length).toBe(1)
       pushEvent(ws, THINKING_EVENT)
@@ -249,7 +249,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
@@ -271,7 +271,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage(
         'Complete another workflow without a refusal'
       )
@@ -303,7 +303,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('remove the standing paywall after the final funded refresh', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
         .click()

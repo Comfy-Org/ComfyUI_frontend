@@ -5,18 +5,33 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+type AgentAttachmentOutcome =
+  | 'attached'
+  | 'refused'
+  | 'workflowError'
+  | 'ignored'
+
+const HAND_OVER_TIMEOUT = 5_000
 
 export class AgentPanel {
   public readonly activityRows: Locator
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
   public readonly composer: Locator
+  public readonly composerStack: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
+  public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
@@ -32,9 +47,11 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
+  private readonly toasts: ToastHelper
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
+    this.toasts = new ToastHelper(page)
     this.activityRows = this.root
       .getByTestId(TestIds.agent.activityTrace)
       .getByRole('listitem')
@@ -49,6 +66,7 @@ export class AgentPanel {
         })
       )
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
@@ -58,6 +76,9 @@ export class AgentPanel {
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.creditTransitionNotice = this.root.getByTestId(
+      'agent-credit-transition-notice'
+    )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
@@ -173,6 +194,74 @@ export class AgentPanel {
     )
   }
 
+  private async dropOptions() {
+    const box = await this.root.boundingBox()
+    if (!box) throw new Error('Agent panel is not visible')
+    return {
+      preserveNativePropagation: true,
+      dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }
+  }
+
+  async dropFile(dragDrop: DragDropHelper, fileName: string): Promise<void> {
+    await dragDrop.dragAndDropFile(fileName, await this.dropOptions())
+  }
+
+  async dropGeneratedFile(
+    dragDrop: DragDropHelper,
+    generatedFile: { name: string; type: string; byteLength: number }
+  ): Promise<void> {
+    await dragDrop.dragAndDropGeneratedFile(
+      generatedFile,
+      await this.dropOptions()
+    )
+  }
+
+  async handOverAttachment(
+    fileName: string,
+    route: () => Promise<void>
+  ): Promise<AgentAttachmentOutcome> {
+    await route()
+    const toastReading = (messages: string[]): Locator =>
+      this.toasts.withText(new RegExp(messages.map(escapeRegExp).join('|')))
+    const attachmentRefusals = [
+      enMessages.agent.attachmentTooLarge
+        .replace('{name}', fileName)
+        .split('{limit}')[0]
+        .trimEnd(),
+      enMessages.agent.attachmentUploadFailed.replace('{name}', fileName)
+    ]
+
+    return await Promise.any([
+      this.attachmentChip(fileName)
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'attached' as const),
+      toastReading(attachmentRefusals)
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'refused' as const),
+      toastReading([
+        enMessages.toastMessages.fileLoadError.replace('{fileName}', fileName)
+      ])
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'workflowError' as const)
+    ]).catch(() => 'ignored' as const)
+  }
+
+  async removeAllAttachments(): Promise<void> {
+    const removeName = new RegExp(
+      `^${escapeRegExp(enMessages.agent.removeAsset.replace('{name}', ''))}`
+    )
+    for (let count = await this.attachmentChips.count(); count > 0; count--) {
+      const chip = this.attachmentChips.first()
+      await chip.hover()
+      await chip.getByRole('button', { name: removeName }).click()
+      await expect(this.attachmentChips).toHaveCount(count - 1)
+    }
+    await this.toasts.closeToasts()
+  }
+
   async open(timeout?: number): Promise<Locator> {
     if (await this.root.isVisible()) return this.root
 
@@ -230,6 +319,32 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+    await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
+    await expect(
+      this.page
+        .locator('.p-tooltip, [role="tooltip"]')
+        .filter({ visible: true })
+    ).toHaveCount(0)
+  }
+
+  /** Denies every turn POST with this admission denial for the rest of the test. */
+  async rejectEveryTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') {
+        return route.fallback()
+      }
+      await route.fulfill({
+        ...jsonRoute(body),
+        status,
+        headers: { 'Retry-After': String(retryAfterSeconds) }
+      })
+    })
   }
 
   async openWorkSummary(): Promise<void> {
@@ -269,6 +384,7 @@ export class AgentPanel {
       .getByRole('menuitem', { name: enMessages.agent.nodes })
       .click()
     await expect(this.nodeSelectionBanner).toBeVisible()
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async exitNodeSelectionMode(): Promise<void> {

@@ -69,6 +69,7 @@ const i18n = createI18n({
 })
 
 const challenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',

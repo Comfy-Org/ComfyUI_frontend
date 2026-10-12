@@ -175,6 +175,38 @@ describe('useAgentHandoff', () => {
     expect(brief).toContain('- `inpaint_v26.fooocus.patch`')
   })
 
+  it.for([
+    {
+      format: 'named',
+      nodeType: 'LoadLoraModel',
+      values: {
+        'loras.0.lora_name': 'A.safetensors',
+        'loras.2.lora_name': 'B.safetensors',
+        prompt: 'C.safetensors'
+      }
+    },
+    {
+      format: 'positional',
+      nodeType: 'LoadLoraTextEncoder',
+      values: ['B.safetensors', 0.5, true, 'A.safetensors', 1, false]
+    }
+  ])(
+    'lists repeated LoRA model fields in a $format workflow',
+    ({ nodeType, values }) => {
+      useNodeDefStore().nodeDefsByName = {
+        [nodeType]: fromPartial<ComfyNodeDefImpl>({ name: nodeType })
+      }
+      setActiveWorkflow('loras.json', {
+        nodes: [{ id: 1, type: nodeType, widgets_values: values }]
+      })
+
+      expect(useAgentHandoff().captureInputs().models).toEqual([
+        'A.safetensors',
+        'B.safetensors'
+      ])
+    }
+  )
+
   it('keeps the file when the brief did not reach the clipboard', async () => {
     setActiveWorkflow()
     vi.mocked(useCopyToClipboard().copyToClipboard).mockResolvedValueOnce(false)

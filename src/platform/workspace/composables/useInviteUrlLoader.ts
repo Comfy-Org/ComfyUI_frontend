@@ -10,7 +10,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -44,7 +44,8 @@ export function useInviteUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const { switchWorkspace } = useWorkspaceSwitch()
-  const dialogService = useDialogService()
+  const { showInviteLinkInvalidDialog, showInviteWrongAccountDialog } =
+    useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
@@ -155,11 +156,11 @@ export function useInviteUrlLoader() {
     }
     try {
       if (status === 404) {
-        await dialogService.showInviteLinkInvalidDialog()
+        await showInviteLinkInvalidDialog()
         return
       }
       if (status === 403) {
-        await dialogService.showInviteWrongAccountDialog({ inviteToken })
+        await showInviteWrongAccountDialog({ inviteToken })
         return
       }
     } catch (dialogError) {

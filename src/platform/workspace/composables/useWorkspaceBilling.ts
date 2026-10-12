@@ -18,7 +18,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -241,7 +241,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
-        status.scoped_effective_has_funds?.agent ?? status.has_funds
+        status.scoped_effective_has_funds?.agent ?? status.has_funds,
+      agentScopedHasFunds: status.scoped_has_funds?.agent
     }
   })
 
@@ -373,7 +374,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
         return
@@ -402,7 +403,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance)
+        ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await workspaceApi.getBillingBalance()
       if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
