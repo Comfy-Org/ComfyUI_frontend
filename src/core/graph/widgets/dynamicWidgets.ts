@@ -2,7 +2,8 @@ import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { ISlotType, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -20,8 +21,8 @@ import {
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
   replaceNodeInputs
@@ -32,6 +33,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -110,7 +112,7 @@ function dynamicComboWidget(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
-  const { widget, minWidth, minHeight } = app.widgets['COMBO'](
+  const { widget, minWidth, minHeight } = useApp().widgets['COMBO'](
     node,
     inputName,
     subSpec,
@@ -289,7 +291,10 @@ function dynamicComboWidget(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+export const dynamicWidgets = {
+  COMFY_DYNAMICCOMBO_V3: dynamicComboWidget,
+  COMFY_DYNAMICGROUP_V3: dynamicGroupWidget
+}
 const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void
@@ -362,7 +367,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const input = this.inputs.at(slot)
       const { graph } = this
       if (contype !== LiteGraph.INPUT || !graph || !input) return
-      if (app.configuringGraph) return
+      if (useApp().configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]
@@ -545,7 +550,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     !lastInput ||
     ordinal == undefined ||
     (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
-      !app.configuringGraph)
+      !useApp().configuringGraph)
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
@@ -761,7 +766,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
-      if (app.configuringGraph && input.widget)
+      if (useApp().configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
         if (pendingConnection === slot) pendingConnectionSeen = true

@@ -71,6 +71,7 @@
       "newHere": "Comfyを初めてご利用ですか？",
       "signUpLink": "こちらからサインアップ",
       "signingIn": "サインインしています…",
+      "ssoRedirecting": "組織のサインインページに移動しています…",
       "submit": "ログイン",
       "useEmailInstead": "メールアドレスを使用する"
     },
@@ -93,7 +94,8 @@
       "troubleshooting": "一般的な原因："
     },
     "toast": {
-      "close": "閉じる"
+      "close": "閉じる",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "認証の有効期限が切れました。再度チャレンジを完了してください。",

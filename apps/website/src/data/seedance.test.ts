@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../i18n/translations'
-import en from '../locales/en/main.json' with { type: 'json' }
-import zhCN from '../locales/zh-CN/main.json' with { type: 'json' }
+import type { Locale } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
+import zhCN from '@/locales/zh-CN/main.json' with { type: 'json' }
 import { seedancePage } from './seedance'
 
 const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]

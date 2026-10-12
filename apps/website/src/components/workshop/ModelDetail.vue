@@ -17,85 +17,85 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
-import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
-import { sameFormValues } from '../../lib/workshop/form-values'
-import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
-import { leaveForSignIn } from '../../config/workshop-return'
-import { useSignInHref } from '../../composables/useSignInHref'
-import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
-import { useTablist } from '../../composables/useTablist'
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
+import { useWorkshopFormDraft } from '@/composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
+import { sameFormValues } from '@/lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '@/config/workshop-media-validation'
+import { leaveForSignIn } from '@/config/workshop-return'
+import { useSignInHref } from '@/composables/useSignInHref'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { useTablist } from '@/composables/useTablist'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
 import type {
   FieldErrors,
   FormValues,
   PlaygroundExample
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   exampleAlt,
   isVideoUrl,
   schemaForModel,
   validateForm
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   initialWorkshopPageState,
   workshopExampleState,
   workshopPageSchema
-} from '../../config/workshop-page-state'
-import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
-import { IDLE, transition } from '../../config/workshop-run'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import type { RouterRenderResult } from '../../config/router-render'
-import { router_render } from '../../config/router-render'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
+} from '@/config/workshop-page-state'
+import type { RunOutput, RunRecord, RunState } from '@/config/workshop-run'
+import { IDLE, transition } from '@/config/workshop-run'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '@/config/workshop-account-source'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import type { RouterRenderResult } from '@/config/router-render'
+import { router_render } from '@/config/router-render'
+import { createWorkshopUrlUploader } from '@/config/workshop-url-upload'
 import {
   WorkshopRouterError,
   workshopRunMayStillSettle
-} from '../../config/workshop-router-errors'
-import { releaseRouterOutputs } from '../../config/workshop-response'
-import { retainRunHistory } from '../../config/workshop-run-history'
-import { reportWorkshopRun } from '../../config/workshop-run-state'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { linkLeavingPage } from '../../lib/workshop/leaving-link'
-import { routerSavesAssets } from '../../lib/workshop/asset-saving'
-import type { WorkshopSession } from '../../config/workshop-session-state'
+} from '@/config/workshop-router-errors'
+import { releaseRouterOutputs } from '@/config/workshop-response'
+import { retainRunHistory } from '@/config/workshop-run-history'
+import { reportWorkshopRun } from '@/config/workshop-run-state'
+import { modelDocsHref } from '@/lib/workshop/model-docs'
+import { linkLeavingPage } from '@/lib/workshop/leaving-link'
+import { routerSavesAssets } from '@/lib/workshop/asset-saving'
+import type { WorkshopSession } from '@/config/workshop-session-state'
 import {
   stopWorkshopSession,
   useWorkshopSession
-} from '../../config/workshop-session-state'
-import { workshopIdempotencyKey } from '../../config/workshop-snippets'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-session-state'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
+} from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import {
   workshopFailureAnalytics,
   workshopFieldErrorCodes,
   workshopModelAnalytics
-} from '../../scripts/workshop-analytics'
+} from '@/scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import {
   frameRatioRule,
   refusesRealFaces
-} from '../../config/workshop-model-restrictions'
+} from '@/config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
-import { WORKSHOP_LEAVE_RUNNING } from '../../config/workshop-router-queue'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
+import { WORKSHOP_LEAVE_RUNNING } from '@/config/workshop-router-queue'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 
 const {
   model,

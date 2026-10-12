@@ -1,7 +1,11 @@
 import { createRequire } from 'node:module'
+import path from 'node:path'
 
 import { run } from 'vue-tsc'
 
 const require = createRequire(import.meta.url)
+const bridgeRoot = path.dirname(
+  require.resolve('typescript-native-bridge/package.json')
+)
 
-run(require.resolve('typescript-native-bridge/lib/tsc'))
+run(path.join(bridgeRoot, 'lib/tsc.js'))

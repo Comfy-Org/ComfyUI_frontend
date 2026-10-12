@@ -24,11 +24,8 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import {
-  ComfyWidgets,
-  addValueControlWidgets,
-  isValidWidgetType
-} from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
+import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
 import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'

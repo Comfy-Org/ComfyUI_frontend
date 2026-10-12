@@ -1,6 +1,7 @@
 import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import {
@@ -10,6 +11,7 @@ import {
 } from './billingSdkTestUtils'
 import {
   SettledOperationError,
+  projectCancelOperationResult,
   projectPaymentPortalResult,
   projectSubscribeResult,
   projectSubscriptionResult
@@ -97,6 +99,40 @@ describe('projectSubscriptionResult', () => {
         code: phase,
         billingOpId: 'op-1'
       })
+    }
+  )
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation('subscription'),
+      category: 'provider_decline'
+    },
+    {
+      phase: 'failed',
+      operation: failedOperation('cancel'),
+      category: 'api_rejected'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      category: 'poll_timeout'
+    },
+    {
+      phase: 'reconciliation_needed',
+      operation: settledOperation('reconciliation_needed', 'subscription'),
+      category: 'reconciliation_needed'
+    }
+  ] as const)(
+    'categorizes a $phase $operation.kind settle as $category, as the lifecycle reported it',
+    ({ phase, operation, category }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(categorizeBillingApiError(error)).toBe(category)
     }
   )
 
@@ -275,4 +311,45 @@ describe('projectPaymentPortalResult', () => {
       message: "We couldn't update your subscription. Please try again."
     })
   })
+})
+
+describe('projectCancelOperationResult', () => {
+  it.for(['canceled', 'cancel_requested'] as const)(
+    'reports a cancel the server took (%s) as done',
+    (status) => {
+      expect(projectCancelOperationResult({ status })).toEqual({
+        status: 'ok',
+        value: undefined
+      })
+    }
+  )
+
+  it.for([
+    {
+      result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+      message: "This payment is already processing and can't be canceled."
+    },
+    {
+      result: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+      message: 'This payment can no longer be canceled.'
+    },
+    {
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 502,
+        serverMessage: 'Billing is briefly unavailable.'
+      },
+      message: "We couldn't cancel this payment. Please try again."
+    }
+  ] as const)(
+    'surfaces a cancel that did not happen in our own copy, never the server text ($result.code)',
+    ({ result, message }) => {
+      const outcome = projectCancelOperationResult(result)
+
+      expect(
+        outcome.status === 'error' ? outcome.error.message : undefined
+      ).toBe(message)
+    }
+  )
 })

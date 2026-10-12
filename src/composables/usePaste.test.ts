@@ -15,10 +15,13 @@ import type {
   LGraphCanvas,
   LGraph,
   LGraphGroup,
-  LGraphNode
+  LGraphNode,
+  Positionable
 } from '@/lib/litegraph/src/litegraph'
+import { useCopy } from '@/composables/useCopy'
+import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { app } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -105,8 +108,18 @@ const mockCanvas = {
   } as Partial<LGraph> as LGraph,
   graph_mouse: [100, 200],
   pasteFromClipboard: vi.fn(),
-  _deserializeItems: vi.fn()
+  _deserializeItems: vi.fn(),
+  selectedItems: new Set<Positionable>(),
+  copyToClipboard: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
+
+function copyToCanvasClipboard(data: unknown): () => string {
+  return () => {
+    const serialized = JSON.stringify(data)
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serialized)
+    return serialized
+  }
+}
 
 let mockCanvasStore: ReturnType<typeof useCanvasStore>
 
@@ -684,7 +697,7 @@ describe('usePaste', () => {
     expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
   })
 
-  it('should handle clipboard items with metadata', async () => {
+  it('should paste clipboard items that useCopy wrote', () => {
     const data = {
       nodes: [],
       groups: [],
@@ -692,22 +705,20 @@ describe('usePaste', () => {
       links: [],
       subgraphs: []
     }
-    const html = clipboardHtml(data)
-
+    vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
+      copyToCanvasClipboard(data)
+    )
+    scope.run(useCopy)
     usePaste()
+    const clipboardData = new DataTransfer()
+    document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
 
-    const dataTransfer = new DataTransfer()
-    dataTransfer.setData('text/html', html)
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
 
-    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
-    document.dispatchEvent(event)
-
-    await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
-        data,
-        expect.any(Object)
-      )
-    })
+    expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+      data,
+      expect.any(Object)
+    )
   })
 
   it('accepts validated legacy data-metadata clipboard items', async () => {
@@ -732,8 +743,7 @@ describe('usePaste', () => {
   })
 
   it('does not treat metadata embedded in arbitrary HTML as a Comfy clipboard', async () => {
-    const encoded = btoa(JSON.stringify({ nodes: [] }))
-    const html = `<article><span data-comfy-metadata="${encoded}"></span></article>`
+    const html = `<article>${clipboardHtml({ nodes: [] })}</article>`
 
     usePaste()
     const dataTransfer = new DataTransfer()
@@ -774,8 +784,8 @@ describe('usePaste', () => {
       await vi.waitFor(() => {
         expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
         expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'error' })
         )
       })
     }
@@ -797,8 +807,8 @@ describe('usePaste', () => {
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
   })
@@ -827,38 +837,109 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
 
-  it('should skip node metadata paste when a media node is selected', async () => {
-    const mockNode = createMockLGraphNode({
-      is_selected: true,
-      pasteFile: vi.fn(),
-      pasteFiles: vi.fn()
-    })
-    mockCanvas.current_node = mockNode
-    mockNode.previewMediaType = 'image'
+  describe('media node selected', () => {
+    function setupMediaNodeSelected() {
+      mockCanvas.current_node = createMockLGraphNode({
+        is_selected: true,
+        previewMediaType: 'image'
+      })
+      scope.run(useCopy)
+      usePaste()
+    }
 
-    usePaste()
+    function copyNodes(data: unknown = { nodes: [] }): DataTransfer {
+      vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
+        copyToCanvasClipboard(data)
+      )
+      const clipboardData = new DataTransfer()
+      document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
+      return clipboardData
+    }
 
-    const nodeData = { nodes: [{ type: 'KSampler' }] }
-    const html = clipboardHtml(nodeData)
+    function paste(clipboardData: DataTransfer) {
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
+    }
 
-    const dataTransfer = new DataTransfer()
-    dataTransfer.setData('text/html', html)
-    dataTransfer.setData('text/plain', 'some text')
+    it('skips the default paste for node metadata that is not the canvas clipboard', () => {
+      setupMediaNodeSelected()
+      const clipboardData = new DataTransfer()
+      clipboardData.setData('text/html', clipboardHtml({ nodes: [] }))
 
-    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
-    document.dispatchEvent(event)
+      paste(clipboardData)
 
-    await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
+
+    it('skips the default paste when another app replaced the clipboard', () => {
+      setupMediaNodeSelected()
+      copyNodes()
+      const otherApp = new DataTransfer()
+      otherApp.setData('text/plain', 'hello from another app')
+
+      paste(otherApp)
+
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'info',
+          title: 'Nothing to paste into this node'
+        })
+      ])
+    })
+
+    it('runs the default paste only for the latest copy', () => {
+      setupMediaNodeSelected()
+      const earlier = copyNodes({ nodes: [], groups: [] })
+      const latest = copyNodes({ nodes: [] })
+
+      paste(earlier)
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      paste(latest)
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+    })
+
+    it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
+      setupMediaNodeSelected()
+      const keyboardCopy = copyNodes()
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"groups":[]}')
+
+      paste(keyboardCopy)
+
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        platform: 'Windows',
+        wrap: (html: string) =>
+          `<html>\r\n<body>\r\n<!--StartFragment-->${html}<!--EndFragment-->\r\n</body>\r\n</html>`
+      },
+      {
+        platform: 'macOS',
+        wrap: (html: string) => `<meta charset='utf-8'>${html}`
+      }
+    ])(
+      'runs the default paste for the latest copy as $platform returns it',
+      ({ wrap }) => {
+        setupMediaNodeSelected()
+        const written = copyNodes().getData('text/html')
+        const clipboardData = new DataTransfer()
+        clipboardData.setData('text/html', wrap(written))
+
+        paste(clipboardData)
+
+        expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+        expect(useToast().toasts).toEqual([])
+      }
+    )
   })
 })
 

@@ -1,10 +1,11 @@
 import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import * as fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
-import { chunkWireOps, mintWireOps } from './opEnvelope'
+import type { SizedOp } from './opEnvelope'
+import { chunkWireOps, measureWireOp, mintWireOps } from './opEnvelope'
 
 const MINT = { actor: 'human:pbt-user:tab-1', baseVersion: 7 }
 
@@ -37,12 +38,18 @@ function clear(ids: number[]): GraphOperation {
   return { op: 'clear', removed_nodes: ids }
 }
 
-function isBatchable(op: Op): boolean {
-  return BATCHABLE_OPS.some((kind) => kind === op.op)
+function sizedOf(op: Op): SizedOp {
+  const measured = measureWireOp(op)
+  assert(measured.admitted)
+  return measured.sized
 }
 
-function batchesBelowCaps(ops: Op[]): Op[][] {
-  const batches: Op[][] = []
+function isBatchable(sized: SizedOp): boolean {
+  return BATCHABLE_OPS.some((kind) => kind === sized.op.op)
+}
+
+function batchesBelowCaps(ops: SizedOp[]): SizedOp[][] {
+  const batches: SizedOp[][] = []
   for (const op of ops) {
     const last = batches.at(-1)
     if (last && isBatchable(op) && isBatchable(last[0])) last.push(op)
@@ -75,7 +82,7 @@ describe('chunkWireOps (property)', () => {
   it('below the caps, batches each batchable run and isolates the rest', () => {
     fc.assert(
       fc.property(operationsArb, (operations) => {
-        const ops = mintWireOps(operations, MINT)
+        const ops = mintWireOps(operations, MINT).map(sizedOf)
 
         expect(chunkWireOps(ops)).toEqual(batchesBelowCaps(ops))
       })

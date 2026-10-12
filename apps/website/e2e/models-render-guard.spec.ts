@@ -2,7 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import { getRoutes } from '../src/config/routes'
+import { getRoutes } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { expectIslandHydrated } from './fixtures/islands'
 import { stubWorkshopFlags } from './fixtures/workshopFlags'

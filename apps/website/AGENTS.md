@@ -74,6 +74,11 @@ test to make it pass, and never resolve a human reviewer's comment.
 - `e2e/` holds browser tests; read `e2e/README.md` before writing one. Import
   `test` from `./fixtures/blockExternalMedia`. `e2e/visual-responsive.spec.ts`
   holds the screenshot baselines.
+- Import anything under `src/` as `@/…` and other app files (`scripts/`,
+  `acceptance/`, `paths.ts`) as `@website/…`; only `./` imports stay
+  relative. Build filesystem paths with `join(websiteRoot, …)` or
+  `join(repoRoot, …)` from `@website/paths`, never with `../`. Lint rejects
+  both kinds of `../`.
 - `public/` holds images. Large video and hero media live on
   `media.comfy.org`; this repository holds no way to upload there, so a missing
   media file is a request for the designer to pass to an engineer.

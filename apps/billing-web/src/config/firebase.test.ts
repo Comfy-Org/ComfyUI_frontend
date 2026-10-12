@@ -25,10 +25,6 @@ const testIdentity = createTestIdentity({
   onUserChanged: () => () => undefined
 }) as unknown as FirebaseIdentity
 
-beforeEach(() => {
-  h.resolveFirebaseIdentity.mockReset()
-})
-
 async function freshFirebase() {
   vi.resetModules()
   return import('@/config/firebase')

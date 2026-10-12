@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
 import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
 import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
@@ -28,11 +29,11 @@ const {
   reopening = false,
   outcome,
   consent,
-  purchase = 'plan'
+  purchase = 'subscribe'
 } = defineProps<
   PayContext & {
     /** A top-up buys credits once, so it authorizes no recurring charge. */
-    purchase?: 'plan' | 'credits'
+    purchase?: PlanPurchase | 'credits'
     disabled: boolean
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
@@ -55,8 +56,16 @@ const { t, te } = useI18n()
 
 /** A plan authorizes a charge each period; a top-up authorizes one. */
 const PURCHASE_COPY = {
-  plan: {
+  subscribe: {
     pay: 'checkout.payAndSubscribe',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  upgrade: {
+    pay: 'checkout.fullPage.confirmUpgrade',
+    agreement: 'checkout.fullPage.terms.agreement'
+  },
+  change: {
+    pay: 'checkout.fullPage.confirmChange',
     agreement: 'checkout.fullPage.terms.agreement'
   },
   credits: {

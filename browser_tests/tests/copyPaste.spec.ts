@@ -2,7 +2,9 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -316,3 +318,44 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     }
   )
 })
+
+async function selectNode(comfyPage: ComfyPage, node: NodeReference) {
+  await node.click('title')
+  await expect
+    .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+    .toEqual([node.id])
+}
+
+test.describe(
+  'Pasting onto a selected LoadImage node',
+  { tag: ['@node'] },
+  () => {
+    test.use({ permissions: ['clipboard-write'] })
+
+    test('pastes only the latest copy the clipboard still holds', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+
+      await test.step('Ctrl+V after another app replaced the clipboard adds nothing', async () => {
+        await selectNode(comfyPage, ksampler)
+        await comfyPage.clipboard.copy()
+        await comfyPage.clipboard.writeText('copied in another app')
+        await selectNode(comfyPage, loadImage)
+        await comfyPage.clipboard.paste()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      })
+
+      await test.step('Ctrl+V after a fresh Ctrl+C adds one node', async () => {
+        await selectNode(comfyPage, ksampler)
+        await comfyPage.clipboard.copy()
+        await selectNode(comfyPage, loadImage)
+        await comfyPage.clipboard.paste()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      })
+    })
+  }
+)

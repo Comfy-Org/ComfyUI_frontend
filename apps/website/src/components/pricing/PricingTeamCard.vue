@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { subscribeUrl } from '../../data/pricingPlans'
-import {
-  formatTeamCreditsShort,
-  teamCreditTiers
-} from '../../data/teamCreditTiers'
-import { translationsFor } from '../../i18n/translations'
-import Button from '../ui/button/Button.vue'
-import Slider from '../ui/slider/Slider.vue'
+import { subscribeUrl } from '@/data/pricingPlans'
+import { formatTeamCreditsShort, teamCreditTiers } from '@/data/teamCreditTiers'
+import { translationsFor } from '@/i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import PricingCard from './PricingCard.vue'
 import PricingCredits from './PricingCredits.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
@@ -103,7 +100,7 @@ const ctaHref = computed(() =>
 </script>
 
 <template>
-  <PricingCard class="col-span-full">
+  <PricingCard id="team" class="col-span-full scroll-mt-32">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-20">
       <div class="lg:col-span-2 lg:max-w-xl">
         <div

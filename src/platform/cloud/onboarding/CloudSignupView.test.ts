@@ -1,11 +1,18 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSignupView from '@/platform/cloud/onboarding/CloudSignupView.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(
   import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
@@ -64,6 +71,16 @@ const MESSAGES = {
   }
 }
 
+const SignUpFormStub = defineComponent({
+  emits: ['submit'],
+  setup: () => ({ email: ref(''), resetTurnstile: () => undefined }),
+  template: `
+    <form data-testid="signup-form" @submit.prevent="$emit('submit', { email, password: 'hunter22' }, 'turnstile-token')">
+      <input v-model="email" aria-label="Sign-up email" />
+      <button type="submit">Create account</button>
+    </form>`
+})
+
 async function renderSignupView(url = '/cloud/signup') {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -88,7 +105,7 @@ async function renderSignupView(url = '/cloud/signup') {
         router,
         createI18n({ legacy: false, locale: 'en', messages: { en: MESSAGES } })
       ],
-      stubs: { SignUpForm: { template: '<form data-testid="signup-form" />' } }
+      stubs: { SignUpForm: SignUpFormStub }
     }
   })
 }
@@ -240,5 +257,75 @@ describe('CloudSignupView', () => {
     expect(
       screen.getByRole('button', { name: 'Sign up with GitHub' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('CloudSignupView SSO', () => {
+  let assign: Mock<(url: string | URL) => void>
+
+  beforeEach(() => {
+    assign = vi.fn<(url: string | URL) => void>()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+  })
+
+  const discoverReplies = (body: unknown, status = 200) =>
+    respondToFetch('/api/auth/sso/discover', () =>
+      Response.json(body, { status })
+    )
+
+  async function signUpWithEmail(email: string) {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+    await user.type(await screen.findByLabelText('Sign-up email'), email)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+  }
+
+  it('signs up with Firebase without asking ingest when the flag is off', async () => {
+    discoverReplies({ sso: true })
+    await renderSignupView()
+
+    await signUpWithEmail('ada@acme.com')
+
+    await waitFor(() =>
+      expect(useAuthActions().signUpWithEmail).toHaveBeenCalledWith(
+        'ada@acme.com',
+        'hunter22',
+        'turnstile-token'
+      )
+    )
+    expect(fetch).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('sends an SSO email to SSO instead of creating a Firebase account', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    discoverReplies({ sso: true })
+    await renderSignupView()
+
+    await signUpWithEmail('ada@acme.com')
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const start = new URL(String(assign.mock.calls[0][0]))
+    expect(start.pathname).toBe('/api/auth/sso/start')
+    expect(start.searchParams.get('email')).toBe('ada@acme.com')
+    expect(useAuthActions().signUpWithEmail).not.toHaveBeenCalled()
+  })
+
+  it('signs up with Firebase when SSO discovery is down', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    discoverReplies({ code: 'INTERNAL_ERROR', message: 'down' }, 500)
+    await renderSignupView()
+
+    await signUpWithEmail('ada@example.com')
+
+    await waitFor(() =>
+      expect(useAuthActions().signUpWithEmail).toHaveBeenCalledWith(
+        'ada@example.com',
+        'hunter22',
+        'turnstile-token'
+      )
+    )
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
   })
 })

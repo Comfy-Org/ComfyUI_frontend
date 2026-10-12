@@ -10,19 +10,21 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 import UserPanel from './UserPanel.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,
@@ -85,7 +87,7 @@ describe('UserPanel update password', () => {
       screen.getByRole('button', { name: 'Update Password' })
     )
 
-    expect(useDialogService().showUpdatePasswordDialog).toHaveBeenCalledOnce()
+    expect(useAuthDialogs().showUpdatePasswordDialog).toHaveBeenCalledOnce()
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
   })
@@ -105,7 +107,7 @@ describe('UserPanel update password', () => {
         message: enMessages.auth.reauthRequired.message
       })
     )
-    expect(useDialogService().showUpdatePasswordDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).toHaveBeenCalledWith(
       '/cloud/login?switchAccount=true&previousFullPath=%252F%253Ftab%253Dassets'
     )
@@ -120,7 +122,7 @@ describe('UserPanel update password', () => {
       screen.getByRole('button', { name: 'Update Password' })
     )
 
-    expect(useDialogService().showUpdatePasswordDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
   })
 })
@@ -165,28 +167,14 @@ describe('UserPanel sign out of all devices', () => {
       .mockResolvedValue(revokeAll)
   }
 
-  it.for<{
-    name: string
-    session: WebSessionIdentityState
-    firebaseLogin: boolean
-  }>([
-    {
-      name: 'the web session is off',
-      session: { phase: 'idle' },
-      firebaseLogin: true
-    },
+  it.for<{ name: string; session: WebSessionIdentityState }>([
+    { name: 'the web session is off', session: { phase: 'idle' } },
     {
       name: 'the web session is signed out',
-      session: { phase: 'signed_out', outcome: 'signed_out' },
-      firebaseLogin: true
-    },
-    {
-      name: 'the tab has no Firebase login to prove identity',
-      session: signedInSession,
-      firebaseLogin: false
+      session: { phase: 'signed_out', outcome: 'signed_out' }
     }
-  ])('renders nothing when $name', async ({ session, firebaseLogin }) => {
-    signInAsEmailUser({ hasFirebaseLogin: firebaseLogin })
+  ])('renders nothing when $name', async ({ session }) => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
     useCloudWebSessionStore().state = session
     await renderPanel()
 
@@ -206,31 +194,38 @@ describe('UserPanel sign out of all devices', () => {
     expect(revokeAll.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(useAuthStore().logout).mock.invocationCallOrder[0]
     )
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Signed out of all devices'
+        kind: 'success',
+        title: 'Signed out of all devices'
       })
     )
   })
 
-  it('asks about unsaved work before revoking anything', async () => {
-    signInAsEmailUser({ hasFirebaseLogin: true })
-    withUnsavedWorkflow()
-    vi.mocked(useDialogService().confirm).mockResolvedValue(false)
-    const revokeAll = onWebSession({ status: 'ok' })
-    await renderPanel()
+  it.for([
+    { tab: 'a Firebase login', hasFirebaseLogin: true },
+    { tab: 'a session-only tab', hasFirebaseLogin: false }
+  ])(
+    'asks about unsaved work, then revokes once, on $tab',
+    async ({ hasFirebaseLogin }) => {
+      signInAsEmailUser({ hasFirebaseLogin })
+      withUnsavedWorkflow()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+      const revokeAll = onWebSession({ status: 'ok' })
+      await renderPanel()
 
-    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+      await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
-    expect(useDialogService().confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Unsaved Changes' })
-    )
-    expect(
-      vi.mocked(useDialogService().confirm).mock.invocationCallOrder[0]
-    ).toBeLessThan(revokeAll.mock.invocationCallOrder[0])
-    expect(useAuthStore().logout).toHaveBeenCalledOnce()
-  })
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Unsaved Changes' })
+      )
+      expect(
+        vi.mocked(useDialogService().confirm).mock.invocationCallOrder[0]
+      ).toBeLessThan(revokeAll.mock.invocationCallOrder[0])
+      expect(revokeAll).toHaveBeenCalledOnce()
+      expect(useAuthStore().logout).toHaveBeenCalledOnce()
+    }
+  )
 
   it('sends no revoke and stays signed in when the unsaved-work prompt is cancelled', async () => {
     signInAsEmailUser({ hasFirebaseLogin: true })
@@ -243,7 +238,7 @@ describe('UserPanel sign out of all devices', () => {
 
     expect(revokeAll).not.toHaveBeenCalled()
     expect(useAuthStore().logout).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps the user signed in and shows why when the revoke fails', async () => {
@@ -258,11 +253,11 @@ describe('UserPanel sign out of all devices', () => {
     await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
     expect(useAuthStore().logout).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        summary: "Couldn't sign out of all devices",
-        detail: enMessages.auth.webSession.token.unavailable
+        kind: 'error',
+        title: "Couldn't sign out of all devices",
+        description: enMessages.auth.webSession.token.unavailable
       })
     ])
     expect(screen.getByRole('button', signOutEverywhere)).toBeEnabled()

@@ -4,7 +4,6 @@ import { t } from '@/i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -19,6 +18,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingState,
+  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 
@@ -60,26 +60,32 @@ export function useLegacyBilling(): BillingState & BillingActions {
   // The backend refuses legacy calls for a workspace that moved to workspace
   // billing. Refresh the status so the next click routes correctly and ask the
   // user to retry; the call is not repeated here.
-  async function refreshAndAskToRetry(err: unknown): Promise<void> {
+  async function toPresentableFailure(err: unknown): Promise<unknown> {
+    if (!isWorkspaceBillingRequiredError(err)) return err
     try {
       await legacyFetchStatusDirect()
     } catch {
       // The refusal is the failure to report, not the refresh.
     }
-    authActions.reportError(
-      new Error(t('billingOperation.subscriptionFailedDetail'), { cause: err })
-    )
+    return new Error(t('billingOperation.subscriptionFailedDetail'), {
+      cause: err
+    })
   }
 
   async function reportFailures(action: () => Promise<unknown>): Promise<void> {
     try {
       await action()
     } catch (err) {
-      if (!isWorkspaceBillingRequiredError(err)) {
-        authActions.reportError(err)
-        return
-      }
-      await refreshAndAskToRetry(err)
+      authActions.reportError(await toPresentableFailure(err))
+    }
+  }
+
+  // For actions whose caller shows the outcome, so a failure must not resolve.
+  async function rejectFailures(action: () => Promise<unknown>): Promise<void> {
+    try {
+      await action()
+    } catch (err) {
+      throw await toPresentableFailure(err)
     }
   }
 
@@ -92,7 +98,13 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
   const subscription = computed<SubscriptionInfo | null>(() => {
-    if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
+    // A past-due legacy status has no tier and is inactive, yet must still
+    // reach the payment-recovery banner.
+    if (
+      !legacyCanAccessSubscriptionFeatures.value &&
+      !subscriptionTier.value &&
+      !legacySubscriptionStatus.value?.renewal_invoice
+    ) {
       return null
     }
 
@@ -220,7 +232,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    await reportFailures(() => legacyManageSubscription())
+    await rejectFailures(() =>
+      legacyManageSubscription({ cancelSubscription: true })
+    )
   }
 
   async function resubscribe(options?: {
@@ -231,15 +245,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
     // Tag the attempt as a resubscribe so the pending-checkout recovery in
     // useSubscription.ts can later emit the canonical resubscribe terminal
     // instead of leaving it indistinguishable from a plain subscribe.
-    try {
-      await legacySubscribeDirect({
+    await rejectFailures(() =>
+      legacySubscribeDirect({
         operation: 'resubscribe',
         source: options?.source
       })
-    } catch (err) {
-      if (!isWorkspaceBillingRequiredError(err)) throw err
-      await refreshAndAskToRetry(err)
-    }
+    )
   }
 
   async function topup(amountCents: number): Promise<void> {
@@ -284,7 +295,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
-    renewalInvoice: computed(() => null),
+    renewalInvoice: computed(
+      () => legacySubscriptionStatus.value?.renewal_invoice ?? null
+    ),
 
     // Actions
     initialize,

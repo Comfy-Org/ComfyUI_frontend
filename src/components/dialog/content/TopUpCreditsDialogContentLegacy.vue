@@ -54,7 +54,10 @@
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
+      <div
+        class="flex min-w-0 flex-1 flex-col gap-3"
+        data-testid="top-up-pay-amount"
+      >
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
@@ -79,7 +82,7 @@
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
@@ -163,7 +166,6 @@ import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -173,6 +175,7 @@ import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
@@ -299,10 +302,10 @@ async function handleBuy() {
       payment_intent_source: source,
       ...describeBillingFailure(error)
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+    toast.error(t('credits.topUp.purchaseError'), {
+      description: t('credits.topUp.purchaseErrorDetail', {
+        error: errorMessage
+      })
     })
   } finally {
     loading.value = false

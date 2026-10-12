@@ -4,14 +4,14 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useWorkshopSessionBalance } from '../../config/workshop-session-balance'
+import { useWorkshopSessionBalance } from '@/config/workshop-session-balance'
 import {
   useWorkshopSessionAccount,
   useWorkshopWebSession
-} from '../../config/workshop-web-session-identity'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { initialsOf } from '../../lib/workshop/initials'
+} from '@/config/workshop-web-session-identity'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { initialsOf } from '@/lib/workshop/initials'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale

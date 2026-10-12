@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -15,6 +16,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -32,6 +34,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
@@ -88,11 +91,23 @@ class TestNote extends LGraphNode {
   }
 }
 
+/** A widget-backed input, so a subgraph can promote it onto its instance. */
+class TestPrompt extends LGraphNode {
+  constructor() {
+    super('Test Prompt')
+    const input = this.addInput('text', 'STRING')
+    input.widget = { name: 'text' }
+    this.addWidget('text', 'text', 'an interior default', () => {})
+    this.serialize_widgets = true
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
-    TestAutogrowSink: { widget_order: [] }
+    TestAutogrowSink: { widget_order: [] },
+    TestPrompt: { widget_order: ['text'] }
   }
 }
 
@@ -106,12 +121,16 @@ const zDocInputs = z.array(
   z.object({ name: z.string(), link: z.number().nullable() })
 )
 
-function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+function applyOutcomes(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
   return applyOps(
     doc,
     mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
     CATALOG
-  ).outcomes.map((outcome) => outcome.outcome)
+  ).outcomes
+}
+
+function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+  return applyOutcomes(doc, ops).map((outcome) => outcome.outcome)
 }
 
 function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
@@ -143,6 +162,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
+  LiteGraph.registerNodeType('TestPrompt', TestPrompt)
 })
 
 describe('attachDocOpMinter', () => {
@@ -153,22 +173,24 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
+  let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
 
   beforeEach(() => {
-    vi.mocked(reportError).mockClear()
     graph = new LGraph()
     rootGraphId = toRootGraphId(graph.id)
     minted = []
     enabled = true
     bound = true
     docInputNames = () => null
+    docPromotedWidgets = () => null
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: (nodeId) => docInputNames(nodeId)
+      docInputNames: (nodeId) => docInputNames(nodeId),
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
     })
   })
 
@@ -456,7 +478,8 @@ describe('attachDocOpMinter', () => {
       enqueue,
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: () => null
+      docInputNames: () => null,
+      docPromotedWidgets: () => null
     })
 
     const added = new TestSink()
@@ -666,6 +689,505 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  function seedPromotedHost(hostWidgetValues?: unknown[]) {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'prefix', type: 'STRING' },
+        { name: 'text', type: 'STRING' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      for (const index of [0, 1]) {
+        const interior = LiteGraph.createNode('TestPrompt')
+        assert.exists(interior)
+        subgraph.add(interior)
+        subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+      }
+    })
+    const serialized = graph.serialize() as unknown as WorkflowJSON
+    if (hostWidgetValues) {
+      const hostNode = serialized.nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )
+      assert.exists(hostNode)
+      hostNode.widgets_values = hostWidgetValues
+    }
+    const doc = mint(serialized, CATALOG)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    return { host, doc }
+  }
+
+  it('PM-1995: mints a promoted host write the doc host accepts', async () => {
+    const { host, doc } = seedPromotedHost()
+    expect(host.inputs.map((input) => input.name)).toEqual(['prefix', 'text'])
+
+    host.widgets[1].value = 'a prompt pasted while the agent panel is open'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: host.id,
+        widget: 'text',
+        value: 'a prompt pasted while the agent panel is open',
+        old: 'an interior default',
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: [
+            'an interior default',
+            'a prompt pasted while the agent panel is open'
+          ]
+        }
+      }
+    ])
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    const { promoted: _dropped, ...named } = write
+    expect(applyOutcomes(doc, [named])).toEqual([
+      expect.objectContaining({
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'opaque_widgets' })
+      })
+    ])
+
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual([
+      'an interior default',
+      'a prompt pasted while the agent panel is open'
+    ])
+    doc.destroy()
+  })
+
+  it('builds the array from the host values when the document holds none', async () => {
+    const { host, doc } = seedPromotedHost([])
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: ['an interior default', 'pasted']
+        }
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual(['an interior default', 'pasted'])
+    doc.destroy()
+  })
+
+  it.for([
+    { name: 'outnumbers', stored: ['first', 'second', 'extra'] },
+    { name: 'undercounts', stored: ['only'] }
+  ])(
+    'refuses a document whose stored array $name its matching promoted names',
+    async ({ stored }) => {
+      const { host, doc } = seedPromotedHost(stored)
+      expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+        valueCount: stored.length,
+        promotedNames: ['prefix', 'text']
+      })
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    }
+  )
+
+  it.for([
+    {
+      name: 'sizes its array for a different set of widgets',
+      doc: {
+        valueCount: 3,
+        declaredNames: [],
+        promotedNames: ['prefix', 'text', 'other']
+      }
+    },
+    {
+      name: 'declares the promoted widgets in another order',
+      doc: {
+        valueCount: 2,
+        declaredNames: ['text', 'clip', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      }
+    },
+    {
+      name: 'stores another same-size promoted widget sequence',
+      doc: {
+        valueCount: 2,
+        declaredNames: ['prefix', 'clip', 'text'],
+        promotedNames: ['prefix', 'clip']
+      }
+    },
+    {
+      name: 'cannot read the promoted widget sequence',
+      doc: { valueCount: 2, declaredNames: [], promotedNames: null }
+    },
+    {
+      name: 'cannot read the stored widget array',
+      doc: { valueCount: null, declaredNames: [], promotedNames: null }
+    }
+  ])(
+    'keeps the refusal rather than misplacing a value when the document $name',
+    async ({ doc: docWidgets }) => {
+      const { host, doc } = seedPromotedHost()
+      docPromotedWidgets = () => docWidgets
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    }
+  )
+
+  it('drops a drifted host write without poisoning its same-tick batch', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'misplaced'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('drops an unpromoted host widget without poisoning its same-tick batch', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    const extra = host.addWidget('text', 'extra', 'before', () => {})
+
+    extra.value = 'after'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('seeds an unset sibling exactly as serializing the host would', async () => {
+    const { host, doc } = seedPromotedHost([])
+    host.widgets[0].value = undefined
+    await afterFlush()
+    minted.length = 0
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    expect(write.promoted?.host_widgets_values).toEqual(
+      host.serialize().widgets_values
+    )
+
+    // Over the wire, where an unset sibling becomes the same `null` a saved
+    // workflow carries for it (`widgetValueNullContract`).
+    const overTheWire = JSON.parse(JSON.stringify(minted)) as GraphOperation[]
+    expect(applyMinted(doc, overTheWire)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual([null, 'pasted'])
+    doc.destroy()
+  })
+
+  it('reports a drifted host once, not once per keystroke', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    host.widgets[1].value = 'pas'
+    await afterFlush()
+
+    expect(minted).toHaveLength(0)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(1)
+    doc.destroy()
+  })
+
+  it('reports a drifted host once across interleaved ordinary flushes', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    source.widgets![0].value = 41
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: source.id, value: 41 }),
+      expect.objectContaining({ node_id: source.id, value: 42 })
+    ])
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(1)
+    doc.destroy()
+  })
+
+  it('reports the same drifted node id again in another workflow', async () => {
+    const first = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    first.host.widgets[1].value = 'first workflow'
+    await afterFlush()
+
+    graph = new LGraph()
+    rootGraphId = toRootGraphId(graph.id)
+    const second = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    second.host.widgets[1].value = 'second workflow'
+    await afterFlush()
+
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(2)
+    first.doc.destroy()
+    second.doc.destroy()
+  })
+
+  it('reads a shipped host whose inputs mirror under-reports its values', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const doc = mint(workflow, CATALOG)
+    const host = workflow.nodes.find((node) => String(node.id) === '11')
+
+    // `text` holds a value and is declared by the definition, but the
+    // instance's own `inputs` mirror omits it — which is why the definition,
+    // not the mirror, is what places a write.
+    expect(host?.widgets_values).toEqual(['a photo of a pier', 0])
+    expect(readDocPromotedWidgets(doc, '11')).toEqual({
+      valueCount: 2,
+      declaredNames: [
+        'text',
+        'clip',
+        'model',
+        'positive',
+        'negative',
+        'latent_image',
+        'seed'
+      ],
+      promotedNames: ['text', 'seed']
+    })
+    doc.destroy()
+  })
+
+  it('marks stored values unreadable when their definition is unavailable', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const doc = mint(workflow, CATALOG)
+    const host = workflow.nodes.find((node) => String(node.id) === '11')
+    assert(typeof host?.type === 'string')
+    doc.getMap('definitions').delete(host.type)
+
+    expect(readDocPromotedWidgets(doc, '11')).toEqual({
+      valueCount: 2,
+      declaredNames: [],
+      promotedNames: undefined
+    })
+    doc.destroy()
+  })
+
+  it('mints for a shipped host whose inputs mirror omits a promoted widget', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['prefix', 'clip', 'text'],
+      promotedNames: ['prefix', 'text']
+    })
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 1 })
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it('mints against the live order when the document declares no definition', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 0,
+      declaredNames: [],
+      promotedNames: undefined
+    })
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        promoted: expect.objectContaining({ value_index: 1 })
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'declares another promoted order',
+      promotedNames: ['text', 'prefix']
+    },
+    { name: 'cannot read its declared inputs', promotedNames: null }
+  ])(
+    'refuses to seed an empty document array when the definition $name',
+    async ({ promotedNames }) => {
+      const { host, doc } = seedPromotedHost([])
+      docPromotedWidgets = () => ({
+        valueCount: 0,
+        declaredNames: [],
+        promotedNames
+      })
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      doc.destroy()
+    }
+  )
+
+  it('leaves a promoted widget on a nested host on the interior route', async () => {
+    const outer = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(outer.id, outer)
+    const inner = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(inner.id, inner)
+    const outerHost = createTestSubgraphNode(outer)
+    const nestedHost = createTestSubgraphNode(inner, { parentGraph: outer })
+    withGraphIntentSource('load', () => {
+      graph.add(outerHost)
+      outer.add(nestedHost)
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      inner.add(interior)
+      inner.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+
+    nestedHost.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        path: [String(outerHost.id), String(nestedHost.id)],
+        inner_widget: 'text'
+      })
+    ])
+    expect(minted[0]).not.toHaveProperty('promoted')
+  })
+
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
     // Built the way useNodeProgressText builds it: `serialize: false` and
@@ -850,6 +1372,57 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the store type when the live widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const button = source.widgets![1]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, button.name)
+    )
+    assert.exists(stored)
+    expect(stored.type).toBe('button')
+    // `type` is required on `IBaseWidget`, so only a non-conforming runtime
+    // object reaches this state — which is the point: the guard has to answer
+    // for one anyway. Assigned through `Object.assign` rather than a
+    // suppression, since the subject here is runtime fallback and not a
+    // compiler diagnostic.
+    Object.assign(button, { type: undefined })
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'upload',
+      value: 'clicked',
+      previous: 'button-slot'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -861,6 +1434,31 @@ describe('attachDocOpMinter', () => {
     delete widget.serialize
 
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
+  })
+
+  it('omits doc-internal incarnation storage from an imported missing-node snapshot', () => {
+    const node = new LGraphNode('Missing ImageScaleToTotalPixels')
+    const imported: ISerialisedNode = {
+      id: 41,
+      type: 'ImageScaleToTotalPixels',
+      pos: [10, 20],
+      size: [240, 120],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+    node.last_serialization = Object.assign(imported, {
+      __incarnation: '0',
+      extension_payload: { owner: 'custom-node' }
+    })
+
+    expect(wireNodeSnapshot(node)).toEqual(
+      expect.objectContaining({
+        type: 'ImageScaleToTotalPixels',
+        extension_payload: { owner: 'custom-node' }
+      })
+    )
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('__incarnation')
   })
 
   it('does not mint an active-graph widget write without a live widget', async () => {
@@ -977,6 +1575,40 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_unrepresentable_subgraph_connect',
       'agent_crdt_unrepresentable_subgraph_node_delete'
     ])
+  })
+
+  it('surfaces a subgraph-interior node field write instead of minting it', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+
+    interior.title = 'renamed inside the subgraph'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_unrepresentable_subgraph_set_node_field'])
+  })
+
+  it('drops a subgraph-interior clear with neither a wire op nor telemetry', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+    expect(subgraph.nodes).toContain(interior)
+
+    subgraph.clear()
+    await afterFlush()
+
+    expect(subgraph.nodes).toEqual([])
+    expect(minted).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('refuses to mint a command on a graph other than the bound root, reporting once per tick', async () => {

@@ -1,6 +1,6 @@
 <template>
   <div class="@container flex size-full min-h-0 flex-col">
-    <BillingStatusBanner class="mb-4" />
+    <BillingStatusBanner :section class="mb-4" />
 
     <PlanCreditsPanelContent v-if="section === 'planCredits'" />
     <WorkspaceMembersPanelContent v-else-if="section === 'members'" />

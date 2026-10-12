@@ -16,9 +16,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
-import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -39,7 +36,6 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -396,35 +392,6 @@ describe('useBillingContext', () => {
     await expect(fetchStatus()).resolves.toBeUndefined()
   })
 
-  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
-    mockBillingRail.value = 'stripe'
-    vi.spyOn(
-      useTeamWorkspaceStore(),
-      'activeWorkspaceId',
-      'get'
-    ).mockReturnValue('personal-123')
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
-    const billing = scope.run(useSharedBillingContext)
-    assert.exists(billing)
-    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
-    const error = new Error('Billing status unavailable')
-    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
-    vi.mocked(prepareChurnkey).mockResolvedValue({
-      show: async () => ({ type: 'discount-applied' })
-    })
-    const showFallback = vi.fn()
-
-    await scope.run(() => launchCancellationFlow({ showFallback }))
-
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
-      surface: 'billing',
-      errorType: 'error_refreshing_billing_after_churnkey_discount'
-    })
-    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-  })
-
   it('exposes fetchBalance action', async () => {
     const { fetchBalance } = useBillingContext()
     await expect(fetchBalance()).resolves.toBeUndefined()
@@ -610,6 +577,28 @@ describe('useBillingContext', () => {
     expect(() => showSubscriptionDialog()).not.toThrow()
   })
 
+  it('reports the rail in effect when cancelSubscription was dispatched, not the one after it resolves', async () => {
+    mockBillingRail.value = 'legacy_stripe'
+    let finishPortal!: () => void
+    vi.mocked(useSubscription().manageSubscription).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPortal = resolve
+      })
+    )
+    const context = useBillingContext()
+    expect(context.type.value).toBe('legacy')
+
+    const cancelling = context.cancelSubscription()
+    await vi.waitFor(() =>
+      expect(useSubscription().manageSubscription).toHaveBeenCalled()
+    )
+    mockIsPersonal.value = false
+    expect(context.type.value).toBe('workspace')
+    finishPortal()
+
+    expect(await cancelling).toBe('legacy')
+  })
+
   describe('workspace not loaded yet', () => {
     function holdWorkspaceUnloaded(type: 'personal' | 'team') {
       const loaded = ref(false)
@@ -694,6 +683,41 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
     })
 
+    it.for([
+      {
+        name: 'cancelSubscription',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.resubscribe()
+      }
+    ])(
+      'rejects $name for its caller to show if the workspace never loads',
+      async ({ run }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        holdWorkspaceUnloaded('team')
+        const context = useBillingContext()
+        vi.clearAllMocks()
+
+        const outcome = run(context).then(
+          () => 'resolved',
+          (error: unknown) => error
+        )
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect(await outcome).toMatchObject({
+          message: "We couldn't reach your account. Try again in a moment."
+        })
+        expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
+      }
+    )
+
     it('drops an action silently when the workspace changed during the wait', async () => {
       const current = ref<{ id: string; type?: 'team' }>({ id: 'ws-a' })
       const workspaceStore = useTeamWorkspaceStore()
@@ -715,6 +739,46 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
       expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
     })
+
+    it.for([
+      {
+        name: 'cancelSubscription',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.resubscribe()
+      }
+    ])(
+      'rejects $name for its caller to show if the workspace changed during the wait',
+      async ({ run }) => {
+        const current = ref<{ id: string; type?: 'team' }>({ id: 'ws-a' })
+        const workspaceStore = useTeamWorkspaceStore()
+        Object.assign(workspaceStore, {
+          activeWorkspace: computed(() =>
+            fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>(
+              current.value
+            )
+          )
+        })
+        const context = useBillingContext()
+        vi.clearAllMocks()
+
+        const outcome = run(context).then(
+          () => 'resolved',
+          (error: unknown) => error
+        )
+        await nextTick()
+        current.value = { id: 'ws-b', type: 'team' }
+
+        expect(await outcome).toMatchObject({
+          message: 'Your active workspace changed. Switch back and try again.'
+        })
+        expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
+      }
+    )
 
     it('holds previewSubscribe and requireActiveSubscription until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')

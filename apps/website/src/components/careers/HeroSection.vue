@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
-import GlassCard from '../common/GlassCard.vue'
-import SectionLabel from '../common/SectionLabel.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import { translationsFor } from '@/i18n/translations'
+import GlassCard from '@/components/common/GlassCard.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

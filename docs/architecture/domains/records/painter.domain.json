@@ -1,0 +1,45 @@
+{
+  "id": "painter",
+  "capability": "Painter",
+  "description": "Painter presentation, drawing behavior, Vue-node adaptation, extension registration, and LiteGraph widget integration.",
+  "modules": [
+    {
+      "path": "src/components/painter/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/painter/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/painter.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/PainterWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Painter settings, canvas sizing, input image, and mask serialization preserve widget behavior",
+      "checks": [
+        "src/components/painter/WidgetPainter.test.ts",
+        "src/composables/painter/usePainter.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension, Vue-node adapter, and LiteGraph widget remain integration seams.",
+    "Painter settings and mask serialization remain covered independently of presentation."
+  ],
+  "deepImports": "enforced"
+}

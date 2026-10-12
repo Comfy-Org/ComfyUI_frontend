@@ -422,7 +422,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     const content = await openActivity(await openPlanAndCredits(page))
     await expect(content.getByText('node-on-page-1')).toBeVisible()
 
-    await content.getByRole('button', { name: 'Next Page' }).click()
+    await content.getByRole('button', { name: 'Next', exact: true }).click()
 
     // The reader is scoped and paged: page 2 must not be served page 1's
     // in-flight answer.
