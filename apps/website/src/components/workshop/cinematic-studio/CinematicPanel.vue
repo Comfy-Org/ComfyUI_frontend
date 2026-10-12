@@ -112,8 +112,10 @@ const cardClass =
     <header
       class="flex min-h-13 items-center justify-between gap-3 border-b border-transparency-white-t8 py-2 pr-2 pl-5"
     >
-      <h2 class="text-sm font-semibold text-primary-warm-white">
-        {{ tc('cinematic.panel.newShot') }}
+      <h2
+        class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ tc('workshop.input.title') }}
       </h2>
       <slot name="mode" />
     </header>
