@@ -4726,8 +4726,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param keepSelected If set, this item will not be removed from the selection.
    */
   deselectAll(keepSelected?: Positionable): void {
-    if (clearCanvasSelection(this, keepSelected))
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (!clearCanvasSelection(this, keepSelected)) return
+
+    this.onSelectionChange?.(this.selectionView.selectedNodes)
     this.setDirty(true)
   }
 
