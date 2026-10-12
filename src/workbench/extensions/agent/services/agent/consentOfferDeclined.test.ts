@@ -32,14 +32,14 @@ describe('consentOfferDeclined', () => {
       [SETTING_ID]: true
     } as never)
 
-    expect(await consentOfferDeclined()).toBe(true)
+    expect(await consentOfferDeclined()).toEqual({ ok: true, declined: true })
     expect(api.getSettings).toHaveBeenCalledOnce()
   })
 
   it('answers false for an account that has never refused', async () => {
     vi.mocked(api.getSettings).mockResolvedValue({} as never)
 
-    expect(await consentOfferDeclined()).toBe(false)
+    expect(await consentOfferDeclined()).toEqual({ ok: true, declined: false })
   })
 
   it('waits for the settings load rather than reading an empty store', async () => {
@@ -54,20 +54,17 @@ describe('consentOfferDeclined', () => {
     )
     const declined = consentOfferDeclined()
     settle({ [SETTING_ID]: true })
-    expect(await declined).toBe(true)
+    expect(await declined).toEqual({ ok: true, declined: true })
   })
 
-  it('does not claim a refusal it could not read', async () => {
-    // Fail-open, because the loader is boot-critical: a session that reaches the
-    // agent has already loaded settings, so the surviving failure shape is a
-    // store that never loaded - where no refusal could have been stored either.
-    //
+  it('returns the failed account-settings read', async () => {
     // The loader is stubbed rather than driven through a failing request: a real
     // failure retries with exponential backoff, which would make this a
     // seven-second unit test measuring vueuse rather than this module.
-    vi.spyOn(useSettingStore(), 'load').mockRejectedValue(new Error('offline'))
+    const failure = new Error('offline')
+    vi.spyOn(useSettingStore(), 'load').mockRejectedValue(failure)
 
-    expect(await consentOfferDeclined()).toBe(false)
+    expect(await consentOfferDeclined()).toEqual({ ok: false, cause: failure })
   })
 
   it('persists the refusal through the account-scoped settings domain', async () => {
@@ -79,7 +76,7 @@ describe('consentOfferDeclined', () => {
     expect(api.storeSetting).toHaveBeenCalledExactlyOnceWith(SETTING_ID, true, {
       keepalive: true
     })
-    expect(await consentOfferDeclined()).toBe(true)
+    expect(await consentOfferDeclined()).toEqual({ ok: true, declined: true })
   })
 
   it('raises a failed write so the caller can report it', async () => {

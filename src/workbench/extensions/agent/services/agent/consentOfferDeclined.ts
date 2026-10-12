@@ -4,6 +4,10 @@ import { api } from '@/scripts/api'
 
 class ConsentOfferDeclinedWriteError extends Error {}
 
+export type ConsentOfferDeclinedResult =
+  | { ok: true; declined: boolean }
+  | { ok: false; cause: unknown }
+
 /**
  * Whether the user has pressed the consent card's explicit Reject action, which
  * suppresses every automatic consent offer from then on. Read before the
@@ -16,26 +20,25 @@ class ConsentOfferDeclinedWriteError extends Error {}
  * answering "not declined" from an unloaded store is the one wrong answer here
  * - it shows a card to the user who already refused it, which is PM-1910.
  *
- * A store that cannot be read answers false, so the offer proceeds. This is not
- * fail-open by preference: the loader is boot-critical (GraphCanvas rethrows its
- * error before any core setting registers), so a session that reaches the agent
- * at all has already loaded settings successfully, and the remaining failure
- * shapes are a store that never loaded - where no refusal can be stored either.
+ * A store that cannot be read returns an explicit failure so the caller can
+ * report it without making or consuming an automatic offer.
  */
-export async function consentOfferDeclined(): Promise<boolean> {
+export async function consentOfferDeclined(): Promise<ConsentOfferDeclinedResult> {
   const settingStore = useSettingStore()
   try {
     await settingStore.load()
-  } catch {
-    return false
+  } catch (cause) {
+    return { ok: false, cause }
   }
-  if (settingStore.error !== undefined) return false
+  if (settingStore.error !== undefined) {
+    return { ok: false, cause: settingStore.error }
+  }
   // Hidden settings can be absent before their registration supplies a
   // default, despite the typed getter's boolean return contract.
   const declined: unknown = settingStore.get(
     AGENT_CONSENT_OFFER_DECLINED_SETTING_ID
   )
-  return declined === true
+  return { ok: true, declined: declined === true }
 }
 
 /**
