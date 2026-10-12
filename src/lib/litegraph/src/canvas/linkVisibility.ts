@@ -9,6 +9,10 @@ import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
 import type { Reroute } from '../Reroute'
 import type { CanvasPointerEvent } from '../types/events'
+import {
+  cancelLinkHideTransition,
+  startLinkHideTransitions
+} from './linkHideTransition'
 
 interface LinkMutationHost {
   emitBeforeChange(): void
@@ -40,9 +44,7 @@ export function hideLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
-    useLinkPresentationStore().patch(scope, linkId, { hidden: true })
-  )
+  hideLinks(host, scope, [linkId])
 }
 
 export function hideLinks(
@@ -50,9 +52,11 @@ export function hideLinks(
   scope: GraphScope,
   linkIds: Iterable<LinkId>
 ): void {
+  const ids = [...linkIds]
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+    for (const linkId of ids) store.patch(scope, linkId, { hidden: true })
+    startLinkHideTransitions(scope.rootGraphId, ids, performance.now())
   })
 }
 
@@ -74,9 +78,10 @@ export function showLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
+  mutateLink(host, () => {
+    cancelLinkHideTransition(scope.rootGraphId, linkId)
     useLinkPresentationStore().patch(scope, linkId, { hidden: false })
-  )
+  })
 }
 
 export function renameLink(

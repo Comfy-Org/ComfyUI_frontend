@@ -50,6 +50,12 @@ import {
   isLinkRevealed,
   setRevealedLinks
 } from './canvas/linkRevealState'
+import {
+  cancelLinkHideTransition,
+  hasLinkHideTransitions,
+  linkHideDashPattern,
+  linkHideTransitionAlpha
+} from './canvas/linkHideTransition'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -6066,6 +6072,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.default_link_color
     )
     const renderedRerouteSegments = new Set<Reroute>()
+    const hidingLinkIds = new Set<LinkId>()
 
     const renderConnection = (
       link: LLink,
@@ -6075,8 +6082,34 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       endDirection?: LinkDirection
     ): void => {
       const hiddenLayout = hiddenLinkLayouts.get(link.id)
-      if (hiddenLayout && !isLinkRevealed(graphScope.rootGraphId, link.id))
+      if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
+        cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+      } else if (hiddenLayout) {
+        const alpha = linkHideTransitionAlpha(
+          graphScope.rootGraphId,
+          link.id,
+          now
+        )
+        if (alpha === undefined) return
+
+        hidingLinkIds.add(link.id)
+        ctx.save()
+        ctx.globalAlpha *= alpha
+        ctx.setLineDash(linkHideDashPattern(this.connections_width))
+        this._renderAllLinkSegments(
+          ctx,
+          link,
+          startPos,
+          endPos,
+          visibleReroutes,
+          renderedRerouteSegments,
+          now,
+          startDirection,
+          endDirection
+        )
+        ctx.restore()
         return
+      }
 
       this._renderAllLinkSegments(
         ctx,
@@ -6216,8 +6249,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    for (const layout of hiddenLinkLayouts.values()) {
-      drawHiddenLinkBadges(ctx, layout, margin_area)
+    for (const [linkId, layout] of hiddenLinkLayouts) {
+      if (!hidingLinkIds.has(linkId))
+        drawHiddenLinkBadges(ctx, layout, margin_area)
+    }
+
+    if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
+      this.dirty_bgcanvas = true
     }
 
     ctx.globalAlpha = 1

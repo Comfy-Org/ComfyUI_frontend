@@ -10,8 +10,10 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
+import { linkHideTransitionAlpha } from './linkHideTransition'
 import {
   hideLink,
+  hideLinks,
   promptRenameLinkBadge,
   renameLink,
   showLink
@@ -136,5 +138,25 @@ describe('link visibility mutations', () => {
       useLinkPresentationStore().getPresentation(scope, link.id)?.hidden
     ).toBeFalsy()
     expect(graph.serialize()).toEqual(before)
+  })
+
+  it('starts a hide transition for every hidden link and cancels it on show', () => {
+    const scope = graphScopeOf(new LGraph())
+    const host = createHost()
+    const first = toLinkId(11)
+    const second = toLinkId(12)
+    const now = performance.now()
+
+    hideLinks(host, scope, [first, second])
+
+    expect(linkHideTransitionAlpha(scope.rootGraphId, first, now)).toBe(1)
+    expect(linkHideTransitionAlpha(scope.rootGraphId, second, now)).toBe(1)
+
+    showLink(host, scope, first)
+
+    expect(
+      linkHideTransitionAlpha(scope.rootGraphId, first, now)
+    ).toBeUndefined()
+    expect(linkHideTransitionAlpha(scope.rootGraphId, second, now)).toBe(1)
   })
 })
