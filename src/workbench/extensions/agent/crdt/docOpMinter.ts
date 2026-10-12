@@ -290,10 +290,11 @@ function routedWidgetOperation(
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-    console.error(
-      '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-      nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-    )
+    reportError(new Error('Agent widget write has an unresolvable owner'), {
+      surface: 'agent',
+      errorType: 'agent_crdt_widget_owner_unresolved',
+      context: { graphId: owningGraphId, nodeId: event.nodeId }
+    })
     return null
   }
   const [head, ...rest] = subgraphNodePath
@@ -379,9 +380,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (node.graph !== graph) return null
     const snapshot = wireNodeSnapshot(node)
     if (!snapshot) {
-      console.error(
-        '[agent-crdt] add_node mint dropped: no snapshot for node',
-        node.id
+      reportOnce(
+        `snapshot:${nodeKey(graph.id, node.id)}`,
+        'Agent node add has no snapshot',
+        'agent_crdt_node_snapshot_missing',
+        { graphId: graph.id, nodeId: node.id }
       )
       return null
     }
