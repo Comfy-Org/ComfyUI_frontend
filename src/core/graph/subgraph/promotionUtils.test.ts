@@ -195,12 +195,10 @@ describe('pruneDisconnected', () => {
       hostInput.widgetId = keptWidgetId
     }
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     pruneDisconnected(subgraphNode)
 
     expect(subgraph.inputs.map((input) => input.name)).toEqual(['kept'])
-    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('does not prune preview exposures for PreviewImage nodes', () => {
@@ -803,7 +801,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     return { host, interiorNode, interiorWidget }
   }
 
-  it('drops projection but keeps slot and external link when host slot is externally connected', () => {
+  it('drops projection but keeps slot and external link when host slot is externally connected', async () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
     const hostInput = host.inputs[0]
     const source = new LGraphNode('External Source')
@@ -816,6 +814,10 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(promotedInputId).toBeDefined()
 
     demoteWidget(interiorNode, interiorWidget, [host])
+
+    // Demotion is deferred by a microtask so a same-tick reconnect (a
+    // rewire) can cancel it; this genuine demote completes once it runs.
+    await Promise.resolve()
 
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(externalLink.id)

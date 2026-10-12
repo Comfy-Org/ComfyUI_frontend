@@ -4,8 +4,8 @@
 // blurbs. Entries are plain links to the statically generated category pages;
 // ClientRouter upgrades clicks to history-aware client-side navigations. The
 // active entry is derived from `category`.
-import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { LearningCategory } from '@/data/learningTutorials'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import {
   categoryBlurbKeys,
@@ -13,14 +13,15 @@ import {
   categoryPath,
   filterByCategory,
   populatedCategories
-} from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
-import { t } from '../../i18n/translations'
+} from '@/data/learningTutorials'
+import { localizeHref } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', category } = defineProps<{
   locale?: Locale
   category?: LearningCategory
 }>()
+const { t } = translationsFor(locale)
 
 interface NavOption {
   value?: LearningCategory
@@ -33,7 +34,7 @@ const navOptions: readonly NavOption[] = [
   {
     labelKey: 'learning.categories.all.label',
     blurbKey: 'learning.categories.all.blurb',
-    href: '/learning'
+    href: '/learning/'
   },
   ...populatedCategories.map((value) => ({
     value,
@@ -47,7 +48,7 @@ const navOptions: readonly NavOption[] = [
 <template>
   <nav
     class="mt-8 scrollbar-none flex gap-3 overflow-x-auto lg:flex-col lg:overflow-visible"
-    :aria-label="t('learning.categoryNav', locale)"
+    :aria-label="t('learning.categoryNav')"
   >
     <a
       v-for="option in navOptions"
@@ -63,7 +64,7 @@ const navOptions: readonly NavOption[] = [
     >
       <span class="flex items-baseline justify-between gap-6">
         <span class="text-xs font-semibold tracking-wide uppercase">
-          {{ t(option.labelKey, locale) }}
+          {{ t(option.labelKey) }}
         </span>
         <span
           class="text-xs tabular-nums"
@@ -84,7 +85,7 @@ const navOptions: readonly NavOption[] = [
             : 'text-primary-warm-gray'
         "
       >
-        {{ t(option.blurbKey, locale) }}
+        {{ t(option.blurbKey) }}
       </span>
     </a>
   </nav>

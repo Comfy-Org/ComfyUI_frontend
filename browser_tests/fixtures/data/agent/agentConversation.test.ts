@@ -151,14 +151,9 @@ describe('committed recordings', () => {
     process.cwd(),
     'browser_tests/fixtures/data/agent/conversations'
   )
-  const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
-  const synthesizedDir = join(
-    process.cwd(),
-    'browser_tests/fixtures/data/agent/synthesized'
-  )
-  const synthesizedFiles = readdirSync(synthesizedDir).filter((file) =>
-    file.endsWith('.json')
-  )
+  const files = readdirSync(dir, { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith('.json'))
   const load = (file: string): unknown =>
     JSON.parse(readFileSync(join(dir, file), 'utf8'))
 
@@ -182,18 +177,9 @@ describe('committed recordings', () => {
 
   it('every recording has explicit visible expectations for each turn', () => {
     const turns = Object.fromEntries(
-      [
-        ...files.map((file) => [file, load(file)] as const),
-        ...synthesizedFiles.map(
-          (file) =>
-            [
-              file,
-              JSON.parse(readFileSync(join(synthesizedDir, file), 'utf8'))
-            ] as const
-        )
-      ].map(([file, conversation]) => [
+      files.map((file) => [
         file.slice(0, -'.json'.length),
-        zAgentConversation.parse(conversation).turns.length
+        zAgentConversation.parse(load(file)).turns.length
       ])
     )
     expect(

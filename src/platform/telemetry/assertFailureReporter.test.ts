@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('./reportError'), () => ({
@@ -11,10 +11,6 @@ async function loadReporter() {
 }
 
 describe('reportAssertFailure', () => {
-  beforeEach(() => {
-    mockReportError.mockClear()
-  })
-
   it('reports an assertion failure as an invariant error', async () => {
     const reportAssertFailure = await loadReporter()
 
@@ -27,6 +23,7 @@ describe('reportAssertFailure', () => {
         message: '[Assertion failed]: graph must exist'
       }),
       {
+        surface: 'platform',
         errorType: 'invariant_assert',
         context: { graphId: 'root', occurrenceCount: 1 },
         logToConsole: false

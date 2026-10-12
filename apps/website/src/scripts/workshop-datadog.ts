@@ -12,7 +12,7 @@ export function workshopDatadogEnvironment(hostname: string) {
 }
 
 export function redactWorkshopLog(log: LogsEvent) {
-  log.view = { url: 'https://comfy.org/models/' }
+  log.view = { url: 'https://comfy.org/hub/models/' }
   delete log.http
   delete log.error
   delete log.usr

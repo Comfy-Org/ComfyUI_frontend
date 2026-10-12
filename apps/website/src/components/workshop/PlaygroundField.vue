@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -10,17 +11,17 @@ import type {
   FieldSchema,
   FieldValue,
   FormValues
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   MAX_UPLOAD_BYTES,
   urlUploadField,
   validateForm
-} from '../../config/workshop-playground'
-import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
-import { isHttpImageSource } from '../../config/workshop-image-source'
-import { workshopExampleFile } from '../../config/workshop-example-file'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import { formatWorkshopUploadLimit } from '@/config/workshop-limits'
+import { isHttpImageSource } from '@/config/workshop-image-source'
+import { workshopExampleFile } from '@/config/workshop-example-file'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'
@@ -45,6 +46,7 @@ const {
   disabled?: boolean
   fileUploadsDisabled?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const values = defineModel<FormValues>({ required: true })
 
@@ -87,11 +89,6 @@ const fieldError = computed(() =>
     : errors[field.name]
 )
 
-function localizedError(error: FieldErrorCode): string {
-  if (error === 'incompatible' && field.hint) return field.hint
-  return t(errorKey[error], locale)
-}
-
 function uploadLimit(): number {
   if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
   return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
@@ -110,7 +107,8 @@ function videoWidthMaximum(): string {
 }
 
 function messageForError(error: FieldErrorCode): string {
-  const replacements: Record<string, string> = {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], {
     limit: formatWorkshopUploadLimit(uploadLimit(), locale),
     seconds: videoDurationLimit(),
     minimum: String(
@@ -119,11 +117,7 @@ function messageForError(error: FieldErrorCode): string {
     maximum: String(
       field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
     )
-  }
-  return Object.entries(replacements).reduce(
-    (message, [name, value]) => message.replace(`{${name}}`, value),
-    localizedError(error)
-  )
+  })
 }
 
 const errorMessage = computed(() =>
@@ -144,9 +138,8 @@ function formatValue(value: string | number | boolean): string {
   const optionLabel = field.presentation?.optionLabels?.[String(value)]
   if (optionLabel) return optionLabel
   if (typeof value === 'boolean')
-    return t(value ? 'workshop.field.on' : 'workshop.field.off', locale)
-  if (value === 'auto' || value === 'adaptive')
-    return t('workshop.field.auto', locale)
+    return t(value ? 'workshop.field.on' : 'workshop.field.off')
+  if (value === 'auto' || value === 'adaptive') return t('workshop.field.auto')
   const label =
     typeof value === 'number'
       ? new Intl.NumberFormat(locale).format(value)
@@ -161,8 +154,8 @@ function formatValue(value: string | number | boolean): string {
       ? new Intl.NumberFormat(locale).format(Number(value.slice(0, -1)))
       : label
   return value === -1 || value === '-1'
-    ? t('workshop.field.auto', locale)
-    : t('workshop.field.seconds', locale).replace('{value}', seconds)
+    ? t('workshop.field.auto')
+    : t('workshop.field.seconds', { value: seconds })
 }
 
 const hasEmptyOption = computed(
@@ -186,6 +179,7 @@ const declaredDefault = computed(() =>
   field.kind === 'file' ||
   field.kind === 'select' ||
   field.kind === 'toggle' ||
+  (field.kind === 'text' && field.multiline) ||
   isSlider.value
     ? undefined
     : field.defaultValue
@@ -253,6 +247,42 @@ function stringValue(): string {
   const value = values.value[field.name]
   return typeof value === 'string' ? value : ''
 }
+
+const promptBox = useTemplateRef<HTMLTextAreaElement>('promptBox')
+
+/**
+ * How tall the box may grow. A prompt can run to hundreds of words, and a box
+ * that followed one to the end would bury the rest of the form below the fold,
+ * so it takes at most this share of the window and scrolls whatever is left.
+ */
+const WINDOW_SHARE = 0.6
+
+function promptBoxCeiling() {
+  if (typeof window === 'undefined') return Number.POSITIVE_INFINITY
+  return window.innerHeight * WINDOW_SHARE
+}
+
+function fitPromptBox() {
+  const box = promptBox.value
+  if (!box) return
+  box.style.height = 'auto'
+  // `height` is the border box here; `scrollHeight` leaves the borders out.
+  const borders = box.offsetHeight - box.clientHeight
+  const content = box.scrollHeight + borders
+  box.style.height = `${Math.min(content, promptBoxCeiling())}px`
+}
+
+// Width only: a narrower box wraps the same text onto more lines, while the
+// height this sets must not feed back into the observer.
+const promptBoxWidth = ref(0)
+useResizeObserver(promptBox, ([entry]) => {
+  promptBoxWidth.value = entry.contentRect.width
+})
+useEventListener('resize', fitPromptBox)
+
+watch([promptBox, stringValue, promptBoxWidth], fitPromptBox, {
+  flush: 'post'
+})
 
 // Painting the filled part ourselves keeps the track identical across browsers,
 // which accent-color does not.
@@ -360,12 +390,7 @@ function booleanValue(fallback = false): boolean {
           :step="field.step"
           :value="numberValue() ?? ''"
           :disabled
-          :aria-label="
-            t('workshop.field.exactValue', locale).replace(
-              '{label}',
-              field.label
-            )
-          "
+          :aria-label="t('workshop.field.exactValue', { label: field.label })"
           :aria-required="field.required || undefined"
           :aria-invalid="invalid()"
           :aria-describedby="describedBy"
@@ -389,10 +414,9 @@ function booleanValue(fallback = false): boolean {
         class="text-xs text-primary-warm-gray"
       >
         {{
-          t('workshop.field.defaultValue', locale).replace(
-            '{value}',
-            formatValue(declaredDefault)
-          )
+          t('workshop.field.defaultValue', {
+            value: formatValue(declaredDefault)
+          })
         }}
       </p>
     </div>
@@ -422,6 +446,7 @@ function booleanValue(fallback = false): boolean {
     <textarea
       v-else-if="field.kind === 'text' && field.multiline"
       :id="`field-${field.name}`"
+      ref="promptBox"
       :value="stringValue()"
       :placeholder="field.placeholder"
       :minlength="field.minLength"
@@ -431,7 +456,7 @@ function booleanValue(fallback = false): boolean {
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
       rows="5"
-      :class="cn(inputClass, 'min-h-32 resize-y py-3')"
+      :class="cn(inputClass, 'min-h-32 resize-none py-3')"
       @input="onText"
     />
     <input
@@ -471,12 +496,7 @@ function booleanValue(fallback = false): boolean {
           :selected="selectValue() === ''"
           class="bg-primary-comfy-ink"
         >
-          {{
-            t('workshop.field.chooseValue', locale).replace(
-              '{label}',
-              field.label
-            )
-          }}
+          {{ t('workshop.field.chooseValue', { label: field.label }) }}
         </option>
         <option
           v-for="(option, index) in field.options"
@@ -548,13 +568,13 @@ function booleanValue(fallback = false): boolean {
       @change="onOptionalToggle"
     >
       <option value="" :selected="values[field.name] === undefined">
-        {{ t('workshop.field.providerDefault', locale) }}
+        {{ t('workshop.field.providerDefault') }}
       </option>
       <option value="true" :selected="values[field.name] === true">
-        {{ t('workshop.field.on', locale) }}
+        {{ t('workshop.field.on') }}
       </option>
       <option value="false" :selected="values[field.name] === false">
-        {{ t('workshop.field.off', locale) }}
+        {{ t('workshop.field.off') }}
       </option>
     </select>
 

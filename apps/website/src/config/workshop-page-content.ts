@@ -1,7 +1,4 @@
-import {
-  routerWorkshopModelPaths,
-  workshopModels
-} from './workshop-browse-content'
+import { workshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   workflowDetailsBySlug,
@@ -9,10 +6,7 @@ import {
 } from './workshop-workflow-content'
 
 export const workshopPages = [...workshopModels, ...workflowModels]
-export const workshopPagePaths = [
-  ...routerWorkshopModelPaths,
-  ...workflowModels.map((model) => model.slug)
-]
+export const workshopPagePaths = workflowModels.map((model) => model.slug)
 
 export function getWorkshopPageDetail(slug: string) {
   return workflowDetailsBySlug.get(slug) ?? getRouterWorkshopModelDetail(slug)

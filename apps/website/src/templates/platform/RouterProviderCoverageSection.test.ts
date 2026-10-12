@@ -5,7 +5,7 @@ import {
   ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE
-} from '../../config/router-providers'
+} from '@/config/router-providers'
 import RouterProviderCoverageSection from './RouterProviderCoverageSection.vue'
 
 const remaining =
@@ -86,7 +86,7 @@ describe('RouterProviderCoverageSection', () => {
       screen.getByRole('link', {
         name: `Browse all ${ROUTER_CATALOG_MODEL_COUNT} models`
       })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/hub/models/')
   })
 
   it('translates the chrome and keeps model names as they are', () => {
@@ -106,6 +106,6 @@ describe('RouterProviderCoverageSection', () => {
       screen.getByRole('link', {
         name: new RegExp(String(ROUTER_CATALOG_MODEL_COUNT))
       })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/hub/models/')
   })
 })

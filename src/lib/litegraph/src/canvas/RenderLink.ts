@@ -1,11 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type {
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type {
   INodeInputSlot,
   INodeOutputSlot,

@@ -15,7 +15,7 @@ export interface ExpectedTurn {
 }
 
 export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
-  'agent-load-image-layout': [
+  'repro/agent-load-image-layout': [
     {
       text: 'Done. The five populated image rows are arranged with room for their previews.',
       groups: [
@@ -473,6 +473,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
           {
             label: 'Print workflow',
             count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
+  'repro/pm-1135-asset-grid-fragmentation': [
+    {
+      text: 'Version A: Version B:',
+      groups: [
+        [
+          {
+            label: 'Generate image',
+            count: 2,
             failed: false
           }
         ]

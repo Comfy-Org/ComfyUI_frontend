@@ -7,15 +7,22 @@ import { api } from '@/scripts/api'
 import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import type { ReplyAsset } from './replyAssets'
 
-async function displayFilename(asset: ReplyAsset): Promise<string> {
-  if (!isAssetPreviewSupported()) return asset.filename
-  const record = await findOutputAsset(asset.filename).catch(() => undefined)
-  const name = record?.name.split('/').pop()
-  if (!name) return asset.filename
-  const dot = asset.filename.lastIndexOf('.')
+function preserveExtension(name: string, filename: string): string {
+  const dot = filename.lastIndexOf('.')
   return name.includes('.') || dot === -1
     ? name
-    : `${name}${asset.filename.slice(dot)}`
+    : `${name}${filename.slice(dot)}`
+}
+
+async function displayFilename(asset: ReplyAsset): Promise<string> {
+  const fallback = preserveExtension(
+    asset.label ?? asset.filename,
+    asset.filename
+  )
+  if (!isAssetPreviewSupported()) return fallback
+  const record = await findOutputAsset(asset.filename).catch(() => undefined)
+  const name = record?.name.split('/').pop()
+  return name ? preserveExtension(name, asset.filename) : fallback
 }
 
 export async function resolveReplyAssetDownload(

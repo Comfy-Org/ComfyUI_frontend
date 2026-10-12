@@ -345,6 +345,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
     await vi.waitFor(() => {
       expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+        surface: 'platform',
         errorType: 'billing_pending_checkout_resume_failure'
       })
     })
