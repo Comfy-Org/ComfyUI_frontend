@@ -18,15 +18,9 @@ it('gates real document transport and removes reconnect listeners on revocation'
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          workflowId,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          agentSocket.transport
-        )
+        follower = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         return () => null
       }
     })

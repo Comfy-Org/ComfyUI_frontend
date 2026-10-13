@@ -1,3 +1,12 @@
+export const SERVER_DOC_FRAME_TYPES = [
+  'doc_update',
+  'doc_subscribed',
+  'doc_ops_result',
+  'doc_reset',
+  'doc_reseed_result',
+  'awareness'
+] as const
+
 export const STALE_SCHEMA_RESEED_REQUIRED = 'stale_schema_reseed_required'
 export const RESEED_CONFLICT = 'conflict'
 

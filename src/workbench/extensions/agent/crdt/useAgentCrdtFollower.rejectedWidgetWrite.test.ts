@@ -100,15 +100,9 @@ function mountFollower() {
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          agentSocket.transport
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport
+        })
         return () => null
       }
     })

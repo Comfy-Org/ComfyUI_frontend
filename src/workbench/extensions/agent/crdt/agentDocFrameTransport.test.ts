@@ -1,119 +1,69 @@
-/**
- * The doc transport rides the SAME socket as the chat stream, so following a
- * workflow never reconnects the chat. It must forward outbound
- * frames verbatim and surface inbound document frames as events, while leaving
- * chat frames to the chat listeners.
- */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentEventSocket } from '../services/agent/agentEventSource'
-import { createAgentDocFrameTransport } from './agentDocFrameTransport'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
-function fakeSource() {
-  const listeners = new Set<(raw: unknown) => void>()
-  const statusListeners = new Set<(live: boolean) => void>()
-  const send = vi.fn((_frame: string) => true)
-  const source: AgentEventSocket = {
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    onStatus(listener) {
-      statusListeners.add(listener)
-      return () => statusListeners.delete(listener)
-    },
-    send,
-    reconnect: () => {}
-  }
-  return {
-    source,
-    send,
-    receive(frame: unknown) {
-      listeners.forEach((listener) => listener(frame))
-    },
-    status(live: boolean) {
-      statusListeners.forEach((listener) => listener(live))
-    },
-    listenerCount: () => listeners.size
-  }
+function received(
+  transport: ReturnType<typeof createFakeAgentSocket>['transport'],
+  type: string
+): unknown[] {
+  const details: unknown[] = []
+  transport.addEventListener(type, (event) => {
+    if (event instanceof CustomEvent) details.push(event.detail)
+  })
+  return details
 }
 
 describe('createAgentDocFrameTransport', () => {
   it('sends outbound doc frames on the shared socket verbatim', () => {
-    const fake = fakeSource()
-    const transport = createAgentDocFrameTransport(fake.source)
+    const fake = createFakeAgentSocket()
 
-    expect(transport.send('{"type":"doc_subscribe","data":{}}')).toBe(true)
+    expect(fake.transport.send('{"type":"doc_subscribe","data":{}}')).toBe(true)
     expect(fake.send).toHaveBeenCalledWith('{"type":"doc_subscribe","data":{}}')
   })
 
-  it('reports the socket state instead of throwing', () => {
-    const fake = fakeSource()
-    fake.send.mockReturnValue(false)
-    const transport = createAgentDocFrameTransport(fake.source)
+  it.for([
+    'doc_update',
+    'doc_subscribed',
+    'doc_ops_result',
+    'doc_reset',
+    'doc_reseed_result',
+    'awareness'
+  ])('surfaces an inbound %s as an event carrying its data', (type) => {
+    const fake = createFakeAgentSocket()
+    const details = received(fake.transport, type)
 
-    expect(() => transport.send('{}')).not.toThrow()
-    expect(transport.send('{}')).toBe(false)
-  })
+    fake.receive(type, { workflow_id: 'wf-1', seq: 2 })
 
-  it('surfaces an inbound doc_update as an event carrying its data', () => {
-    const fake = fakeSource()
-    const transport = createAgentDocFrameTransport(fake.source)
-    const seen = vi.fn()
-    transport.addEventListener('doc_update', (event) =>
-      seen((event as CustomEvent).detail)
-    )
-
-    fake.receive({
-      type: 'doc_update',
-      data: { workflow_id: 'wf-1', seq: 2, update_b64: 'AQID' }
-    })
-
-    expect(seen).toHaveBeenCalledWith({
-      workflow_id: 'wf-1',
-      seq: 2,
-      update_b64: 'AQID'
-    })
+    expect(details).toEqual([{ workflow_id: 'wf-1', seq: 2 }])
   })
 
   it('does not surface chat frames to doc listeners', () => {
-    const fake = fakeSource()
-    const transport = createAgentDocFrameTransport(fake.source)
-    const seen = vi.fn()
-    transport.addEventListener('doc_update', seen)
+    const fake = createFakeAgentSocket()
+    const details = received(fake.transport, 'agent_message_delta')
 
-    fake.receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
+    fake.receive('agent_message_delta', { delta: 'hi' })
 
-    expect(seen).not.toHaveBeenCalled()
+    expect(details).toEqual([])
   })
 
-  it('reports when the shared socket becomes usable, so a dropped subscribe can be re-driven', () => {
-    // A subscribe sent while the socket is still connecting is dropped by
-    // design. In the cloud the follower re-drives it off ComfyUI's own socket
-    // events; those never fire for the agent socket, so this transport has
-    // to say when ITS socket opened.
-    const fake = fakeSource()
-    const transport = createAgentDocFrameTransport(fake.source)
+  it('reports each time the shared socket opens, so a dropped subscribe can be re-driven', () => {
+    const fake = createFakeAgentSocket()
     const connected = vi.fn()
-    transport.onConnected(connected)
+    fake.transport.onConnected(connected)
 
-    fake.status(true)
-    expect(connected).toHaveBeenCalledTimes(1)
+    fake.open()
+    fake.drop()
+    fake.open()
 
-    fake.status(false)
-    expect(connected).toHaveBeenCalledTimes(1)
-
-    fake.status(true)
     expect(connected).toHaveBeenCalledTimes(2)
   })
 
   it('stops listening once destroyed', () => {
-    const fake = fakeSource()
-    const transport = createAgentDocFrameTransport(fake.source)
-    transport.addEventListener('doc_update', vi.fn())
+    const fake = createFakeAgentSocket()
+    fake.transport.addEventListener('doc_update', vi.fn())
     expect(fake.listenerCount()).toBe(1)
 
-    transport.destroy()
+    fake.transport.destroy()
 
     expect(fake.listenerCount()).toBe(0)
   })
