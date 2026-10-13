@@ -2559,6 +2559,7 @@
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
     "fishAudio": "Fish Audio",
+    "nvidiaVfx": "Nvidia VFX",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
