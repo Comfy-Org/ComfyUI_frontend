@@ -10,7 +10,7 @@ import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import { RESOLUTIONS, outputSize } from '@/lib/workshop/paparazzi-me/setup'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import PaparazziSceneRow from './PaparazziSceneRow.vue'
-import PaparazziSeedField from './PaparazziSeedField.vue'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 import PaparazziStar from './PaparazziStar.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{
@@ -68,7 +68,7 @@ const resolution = computed({
           aria-hidden="true"
         />
       </CinematicMenu>
-      <PaparazziSeedField
+      <EditorSeedField
         :model-value="setup.seed"
         :label="pc('paparazzi.seed', locale)"
         :shuffle-label="pc('paparazzi.seed.shuffle', locale)"
