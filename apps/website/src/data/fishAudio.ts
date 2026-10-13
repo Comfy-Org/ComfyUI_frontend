@@ -32,7 +32,7 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['list', 'steps', 'pricing', 'faq', 'highlight'],
+  sectionOrder: ['list', 'steps', 'faq', 'pricing', 'highlight'],
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
