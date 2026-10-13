@@ -71,14 +71,17 @@ const emit = defineEmits<{ file: [file: File]; remove: []; trim: [] }>()
     </OpenjutsuVideoInput>
     <p
       v-if="src && partNote"
-      class="flex items-center gap-1.5 rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-2.5 py-2 text-xs text-primary-warm-gray"
+      class="flex items-center gap-2 rounded-lg border border-primary-comfy-yellow/30 bg-primary-comfy-yellow/10 px-3 py-2 text-xs text-primary-warm-white"
       data-testid="openjutsu-part"
     >
-      <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
+      <Scissors
+        class="size-3.5 shrink-0 text-primary-comfy-yellow"
+        aria-hidden="true"
+      />
       <span class="min-w-0 flex-1">{{ partNote }}</span>
       <button
         type="button"
-        class="shrink-0 cursor-pointer text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        class="shrink-0 cursor-pointer font-medium text-primary-comfy-yellow underline underline-offset-2 hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         :aria-label="t('openjutsu.trim.changeLabel')"
         @click="emit('trim')"
       >
