@@ -3,7 +3,7 @@ import type {
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -50,7 +50,8 @@ import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('../../services/agent/agentAuth'))
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -6839,6 +6840,14 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 describe('useAgentSession credential refresh', () => {
   const REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
+  beforeEach(() => {
+    distribution.isCloud = false
+  })
+
+  afterEach(() => {
+    distribution.isCloud = true
+  })
+
   function startSession(
     refreshCredential: AgentRestClient['refreshCredential']
   ) {
@@ -6882,6 +6891,18 @@ describe('useAgentSession credential refresh', () => {
     emit(done('msg-1'))
     await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
     expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('does not refresh in the cloud, where fetchApi authenticates every request', async () => {
+    distribution.isCloud = true
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
     scope.stop()
   })
 

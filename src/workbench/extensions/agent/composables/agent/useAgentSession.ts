@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -493,7 +494,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   )
 
   useIntervalFn(() => {
-    if (conversationStore.liveTurns().length === 0) return
+    if (isCloud || conversationStore.liveTurns().length === 0) return
     rest.refreshCredential().catch((error: unknown) =>
       reportError(error, {
         surface: 'agent',
