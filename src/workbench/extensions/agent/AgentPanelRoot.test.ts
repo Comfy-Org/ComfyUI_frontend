@@ -10272,21 +10272,30 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[1]).not.toHaveProperty('draft')
     })
 
-    it('seeds the draft again once the agent identity lookup is rejected for good', async () => {
-      vi.mocked(resolveAgentIdentity).mockReturnValue({
-        state: ref<AgentIdentityState>({ status: 'rejected' }),
-        reset: vi.fn(),
-        stop: () => {}
-      })
-      const bodies = await bindAndSettle()
+    it.for<{ outcome: string; state: AgentIdentityState }>([
+      { outcome: 'rejected for good', state: { status: 'rejected' } },
+      {
+        outcome: 'unavailable past its backoff cap',
+        state: { status: 'unavailable' }
+      }
+    ])(
+      'seeds the draft again once the agent identity lookup is $outcome',
+      async ({ state }) => {
+        vi.mocked(resolveAgentIdentity).mockReturnValue({
+          state: ref(state),
+          reset: vi.fn(),
+          stop: () => {}
+        })
+        const bodies = await bindAndSettle()
 
-      await sendFromComposer('second message')
+        await sendFromComposer('second message')
 
-      expect(bodies[1]).toMatchObject({
-        workflow_id: 'wf-42',
-        draft: { content: { id: 'wf-42' } }
-      })
-    })
+        expect(bodies[1]).toMatchObject({
+          workflow_id: 'wf-42',
+          draft: { content: { id: 'wf-42' } }
+        })
+      }
+    )
   })
 
   it('keeps the editable target when viewing an unbound tab without current_tab fallback', async () => {

@@ -11,16 +11,24 @@ interface AgentIdentityDeps {
   onFailure(error: unknown): void
 }
 
-/** Outcome of the identity lookup; `rejected` holds until `reset()`. */
+/**
+ * Outcome of the identity lookup. `unavailable` keeps retrying at the capped
+ * backoff; `rejected` holds until `reset()`.
+ */
 export type AgentIdentityState =
   | { status: 'pending' }
   | { status: 'resolved'; userId: string }
+  | { status: 'unavailable' }
   | { status: 'rejected' }
 
 interface ResolvedAgentIdentity {
   reset(): void
   state: Readonly<Ref<AgentIdentityState>>
   stop(): void
+}
+
+function isLookingUp(state: AgentIdentityState): boolean {
+  return state.status === 'pending' || state.status === 'unavailable'
 }
 
 export function resolveAgentIdentity(
@@ -39,17 +47,31 @@ export function resolveAgentIdentity(
     retryTimer = null
   }
 
+  function retryDelay(): number {
+    return Math.min(RETRY_BASE_MS * 2 ** (failures - 1), RETRY_MAX_MS)
+  }
+
   function scheduleRetry(): void {
     if (stopped) return
-    const wait = Math.min(RETRY_BASE_MS * 2 ** (failures - 1), RETRY_MAX_MS)
     retryTimer = setTimeout(() => {
       retryTimer = null
       void attempt()
-    }, wait)
+    }, retryDelay())
+  }
+
+  function settleFailure(error: unknown): void {
+    failures += 1
+    deps.onFailure(error)
+    if (!deps.isRetryable(error)) {
+      state.value = { status: 'rejected' }
+      return
+    }
+    if (retryDelay() === RETRY_MAX_MS) state.value = { status: 'unavailable' }
+    scheduleRetry()
   }
 
   async function attempt(): Promise<void> {
-    if (stopped || inFlight || state.value.status !== 'pending') return
+    if (stopped || inFlight || !isLookingUp(state.value)) return
     cancelRetry()
     inFlight = true
     const started = generation
@@ -58,11 +80,7 @@ export function resolveAgentIdentity(
       if (started === generation)
         state.value = { status: 'resolved', userId: identity.userId }
     } catch (error) {
-      if (started !== generation) return
-      failures += 1
-      deps.onFailure(error)
-      if (deps.isRetryable(error)) scheduleRetry()
-      else state.value = { status: 'rejected' }
+      if (started === generation) settleFailure(error)
     } finally {
       if (started === generation) inFlight = false
     }
