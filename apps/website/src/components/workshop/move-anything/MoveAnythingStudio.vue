@@ -10,6 +10,7 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import MoveAnythingDocks from './MoveAnythingDocks.vue'
 import MoveAnythingHistory from './MoveAnythingHistory.vue'
 import MoveAnythingMain from './MoveAnythingMain.vue'
@@ -24,7 +25,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const move = useMoveAnything(locale)
-const { image, phase } = move
+const { image, removed, phase } = move
 const view = ref<MoveView>('compare')
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
@@ -57,6 +58,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ mc('move.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !image"
+        :label="mc('move.photo.restore', locale)"
+        @undo="move.restoreImage"
+      />
     </template>
     <template #dock>
       <MoveAnythingDocks v-model:view="view" :move :panel :locale />
@@ -64,13 +70,13 @@ const panelLabels = {
     <template v-if="phase.kind !== 'done'" #history>
       <MoveAnythingHistory :move :locale />
     </template>
-    <template v-if="panel && image" #panel>
+    <template v-if="panel" #panel>
       <MoveAnythingPanel :image :move :locale />
     </template>
-    <template v-if="panel && image" #panel-peek>
+    <template v-if="panel" #panel-peek>
       <MoveAnythingSummary :move :locale />
     </template>
-    <template v-if="panel && image" #panel-footer>
+    <template v-if="panel" #panel-footer>
       <MoveAnythingRun :move :locale block />
     </template>
   </AppEditorShell>

@@ -40,7 +40,7 @@ async function mockFlags(
 
 async function openDetectedExample(page: Page) {
   const app = page.getByTestId('move-anything')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Kitten on a desk' }).click()
   await expect(app.getByRole('status')).toContainText('Detecting')
   const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
   await expect(kitten).toBeVisible()
@@ -266,15 +266,13 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   const app = page.getByTestId('move-anything')
   await expect(app.getByTestId('move-empty')).toBeVisible()
   const generate = app.getByTestId('move-generate')
-  await expect(generate).toHaveCount(0)
+  await expect(generate).toBeDisabled()
 
   const kitten = await openDetectedExample(page)
   const panel = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
-  await expect(
-    panel.getByRole('button', { name: 'Change photo: kitten.jpg' })
-  ).toBeVisible()
+  await expect(panel.getByText('kitten.jpg')).toBeVisible()
   await expectPanelWidth(panel)
   await expect(generate).toBeDisabled()
   await kitten.focus()
@@ -352,10 +350,11 @@ test('moves a thing from the Move anything bottom sheet on phones @mobile', asyn
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/move-anything/')
   const app = page.getByTestId('move-anything')
-  const kitten = await openDetectedExample(page)
   const sheet = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  const kitten = await openDetectedExample(page)
   await expect(
     sheet.getByRole('button', { name: '3 objects · 0 moved · Fast' })
   ).toBeVisible()

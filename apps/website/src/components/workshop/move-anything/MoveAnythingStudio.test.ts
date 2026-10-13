@@ -24,7 +24,7 @@ function screenIsWide(wide: boolean) {
 async function openExample(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(MoveAnythingStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.click(screen.getByRole('button', { name: 'Kitten on a desk' }))
   expect(screen.getByRole('status')).toHaveTextContent('Detecting…')
   await vi.advanceTimersByTimeAsync(700)
   return user
@@ -45,7 +45,7 @@ async function openUpload() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(MoveAnythingStudio)
   await user.upload(
-    screen.getByTestId('editor-empty-file'),
+    screen.getByTestId('move-image-file'),
     new File(['x'], 'photo.png', { type: 'image/png' })
   )
   await screen.findByTestId('move-stage')
@@ -71,7 +71,7 @@ describe('MoveAnythingStudio', () => {
     render(MoveAnythingStudio, { props: { layout: 'e' } })
     expect(screen.queryByTestId('move-generate')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Try the example' }))
+    await user.click(screen.getByRole('button', { name: 'Kitten on a desk' }))
     const generate = screen.getByTestId('move-generate')
     expect(generate).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
@@ -153,7 +153,11 @@ describe('MoveAnythingStudio', () => {
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
     async ({ layout, wide, last }) => {
       screenIsWide(wide)
-      await openExample(layout)
+      const user = await openExample(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const tools = within(
         screen.getByRole('toolbar', { name: 'Move anything tools' })
@@ -198,9 +202,7 @@ describe('MoveAnythingStudio', () => {
   it('detects the example things and moves one from the side panel layout, with its tools floating over the photo', async () => {
     screenIsWide(true)
     const user = await openExample()
-    expect(
-      within(panel()).getByRole('button', { name: 'Change photo: kitten.jpg' })
-    ).toBeVisible()
+    expect(within(panel()).getByText('kitten.jpg')).toBeVisible()
     const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
     expect(
       within(tools).getByRole('group', { name: 'History' })
@@ -361,31 +363,44 @@ describe('MoveAnythingStudio', () => {
       new File(['x'], 'desk.png', { type: 'image/png' })
     )
 
-    expect(
-      await within(panel()).findByRole('button', {
-        name: 'Change photo: desk.png'
-      })
-    ).toBeVisible()
+    expect(await within(panel()).findByText('desk.png')).toBeVisible()
   })
 
-  it('opens on phones as a sheet with a one-line summary and the run button', async () => {
+  it('takes the photo out with the X and puts it back from the tray', async () => {
+    screenIsWide(true)
+    const user = await openExample()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Remove photo' })
+    )
+    expect(
+      within(panel()).getByRole('button', { name: /Upload photo/ })
+    ).toBeVisible()
+    expect(screen.getByTestId('move-empty')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Undo remove photo' }))
+    expect(within(panel()).getByText('kitten.jpg')).toBeVisible()
+  })
+
+  it('opens on phones as an open sheet that folds to a one-line summary and the run button', async () => {
     screenIsWide(false)
     const user = await openExample()
-    const summary = within(panel()).getByRole('button', {
-      name: '3 objects · 0 moved · Fast'
-    })
+    expect(
+      within(panel()).getByRole('button', { name: 'Quality: Fast' })
+    ).toBeVisible()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    )
+
+    expect(
+      within(panel()).getByRole('button', {
+        name: '3 objects · 0 moved · Fast'
+      })
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('move-generate')).toBeDisabled()
     expect(
       within(panel()).getByRole('toolbar', { name: 'Move anything tools' })
     ).toBeVisible()
-
-    await user.click(summary)
-
-    expect(
-      within(panel()).getByRole('button', { name: 'Quality: Fast' })
-    ).toBeVisible()
-    expect(
-      within(panel()).getByRole('button', { name: 'Hide settings' })
-    ).toHaveAttribute('aria-expanded', 'true')
   })
 })

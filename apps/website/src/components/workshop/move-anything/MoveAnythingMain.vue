@@ -36,12 +36,16 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="mc('move.empty.title', locale)"
-    :meta="mc('move.empty.meta', locale)"
-    :upload-label="mc('move.empty.upload', locale)"
-    :example-label="mc('move.empty.example', locale)"
-    :example-image="MOVE_EXAMPLE.url"
+    :hint="mc('move.empty.meta', locale)"
+    :upload="mc('move.empty.uploadHint', locale)"
+    :examples="[
+      {
+        id: 'kitten',
+        image: MOVE_EXAMPLE.url,
+        label: mc('move.empty.example', locale)
+      }
+    ]"
     data-testid="move-empty"
-    @file="move.useFile"
     @example="move.useExample"
   />
   <EditorResult

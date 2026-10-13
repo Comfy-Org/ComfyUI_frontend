@@ -46,6 +46,8 @@ const SCAN_MS = 700
 /** Move anything's page state. The run itself is `runMove`, mocked for now. */
 export function useMoveAnything(locale: Locale = 'en') {
   const image = shallowRef<MoveImage>()
+  /** The photo taken out last, with its objects, kept so it can be put back. */
+  const removed = shallowRef<{ image: MoveImage; objects: MoveObject[] }>()
   const objects = ref<MoveObject[]>([])
   const past = shallowRef<MoveObject[][]>([])
   const future = shallowRef<MoveObject[][]>([])
@@ -71,6 +73,7 @@ export function useMoveAnything(locale: Locale = 'en') {
     run?.abort()
     clearTimeout(detect)
     detecting.value = undefined
+    removed.value = undefined
     image.value = next
     objects.value = []
     past.value = []
@@ -104,6 +107,23 @@ export function useMoveAnything(locale: Locale = 'en') {
     releaseOwnUrl()
     ownUrl = url
     reset({ url, name: file.name, ...size })
+  }
+
+  function removeImage() {
+    if (!image.value) return
+    run?.abort()
+    clearTimeout(detect)
+    detecting.value = undefined
+    removed.value = { image: image.value, objects: objects.value }
+    image.value = undefined
+    phase.value = { kind: 'arranging' }
+  }
+
+  function restoreImage() {
+    if (!removed.value) return
+    image.value = removed.value.image
+    objects.value = removed.value.objects
+    removed.value = undefined
   }
 
   /** Call before a change the visitor can undo. */
@@ -278,6 +298,9 @@ export function useMoveAnything(locale: Locale = 'en') {
 
   return {
     image,
+    removed,
+    removeImage,
+    restoreImage,
     objects,
     phase,
     tool,

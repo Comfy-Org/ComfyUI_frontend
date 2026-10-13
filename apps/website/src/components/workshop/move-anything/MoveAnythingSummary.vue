@@ -13,7 +13,8 @@ const { image, objects, moved, quality } = move
 
 <template>
   <img
-    :src="image?.url"
+    v-if="image"
+    :src="image.url"
     alt=""
     class="h-9 w-14 shrink-0 rounded-md object-cover ring-1 ring-transparency-white-t8"
   />

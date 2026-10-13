@@ -5,16 +5,18 @@ import { appCopy } from '@/lib/workshop/app-copy'
 const copy = {
   'move.title': { en: 'Move anything', 'zh-CN': '随意移动' },
   'move.tools': { en: 'Move anything tools', 'zh-CN': '随意移动工具' },
-  'move.empty.title': {
-    en: 'Drop a photo to rearrange',
-    'zh-CN': '拖入一张照片来重新摆放'
-  },
+  'move.empty.title': { en: 'Try an example', 'zh-CN': '试试示例' },
   'move.empty.meta': {
-    en: 'PNG, JPG or WebP. Up to 4 things per photo.',
-    'zh-CN': 'PNG、JPG 或 WebP。每张照片最多 4 个物体。'
+    en: 'Each one loads a photo ready to rearrange. Up to 4 things per photo.',
+    'zh-CN':
+      '每个示例都会载入一张照片，直接就能重新摆放。每张照片最多 4 个物体。'
   },
-  'move.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
-  'move.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
+  'move.empty.uploadHint': {
+    en: 'Or upload your photo in the panel',
+    'zh-CN': '或在面板中上传你的照片'
+  },
+  'move.empty.upload': { en: 'Upload photo', 'zh-CN': '上传照片' },
+  'move.empty.example': { en: 'Kitten on a desk', 'zh-CN': '桌上的小猫' },
   'move.tool.move': { en: 'Move', 'zh-CN': '移动' },
   'move.tool.smart': { en: 'Smart select', 'zh-CN': '智能选择' },
   'move.tool.box': { en: 'Box select', 'zh-CN': '框选' },
@@ -40,6 +42,9 @@ const copy = {
   },
   'move.image': { en: 'Image', 'zh-CN': '图像' },
   'move.change': { en: 'Change photo', 'zh-CN': '更换照片' },
+  'move.photo.hint': { en: 'PNG, JPG or WebP', 'zh-CN': 'PNG、JPG 或 WebP' },
+  'move.photo.remove': { en: 'Remove photo', 'zh-CN': '移除照片' },
+  'move.photo.restore': { en: 'Undo remove photo', 'zh-CN': '撤销移除照片' },
   'move.objects.full': {
     en: 'Up to {max} things per photo',
     'zh-CN': '每张照片最多 {max} 个物体'

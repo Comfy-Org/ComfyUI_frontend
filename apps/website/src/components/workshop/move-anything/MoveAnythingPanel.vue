@@ -15,7 +15,7 @@ const {
   move,
   locale = 'en'
 } = defineProps<{
-  image: MoveImage
+  image?: MoveImage
   move: ReturnType<typeof useMoveAnything>
   locale?: Locale
 }>()
@@ -65,12 +65,14 @@ function shuffleSeed() {
   >
     <EditorSourceTile
       kind="image"
-      :src="image.url"
-      :name="image.name"
+      :src="image?.url"
+      :caption="image?.name"
       :add-label="mc('move.empty.upload', locale)"
-      :change-label="mc('move.change', locale)"
+      :hint="mc('move.photo.hint', locale)"
+      :remove-label="mc('move.photo.remove', locale)"
       input-test-id="move-image-file"
       @file="move.useFile"
+      @remove="move.removeImage"
     />
 
     <section>
