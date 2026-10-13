@@ -70,8 +70,7 @@ export function useAgentDockMount(): AgentDockMount {
       )
       .then((adopted) => {
         if (adopted) adoptTransitionBaseline(identity, epoch)
-      })
-      .catch(reportBillingRefreshError)
+      }, reportBillingRefreshError)
   }
 
   watch(billingIdentity, (identity, previousIdentity) => {
