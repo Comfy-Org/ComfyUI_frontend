@@ -1862,8 +1862,9 @@ describe('CinematicStudio', () => {
         expect(screen.queryByTestId(`cinematic-reference-${kind}`)).toBeNull()
 
         await user.upload(screen.getByTestId(`cinematic-start-${kind}`), file)
+        expect(within(panel).getByText(file.name)).toBeVisible()
         expect(
-          within(panel).getByRole('button', { name: `Change: ${file.name}` })
+          within(panel).getByRole('button', { name: /^Remove reference/ })
         ).toBeVisible()
         await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
         await user.click(generateButton())
@@ -1896,19 +1897,19 @@ describe('CinematicStudio', () => {
       ).toBeVisible()
     })
 
-    it('keeps a required source video replaceable but not removable', async () => {
+    it('takes a required source video out with its X, back to the upload button', async () => {
       const { user, panel } = await renderEditor(sourceModel)
       await user.upload(
         screen.getByTestId('cinematic-start-video'),
         new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
       )
 
-      expect(
-        within(panel).getByRole('button', { name: 'Change: clip.mp4' })
-      ).toBeVisible()
-      expect(
-        within(panel).queryByRole('button', { name: /^Remove reference/ })
-      ).toBeNull()
+      await user.click(
+        within(panel).getByRole('button', { name: /^Remove reference/ })
+      )
+
+      expect(within(panel).queryByText('clip.mp4')).toBeNull()
+      expect(screen.getByTestId('cinematic-start-video')).toBeInTheDocument()
     })
 
     it('shows no starting tile for a still, whose character stays in the scene box', async () => {
