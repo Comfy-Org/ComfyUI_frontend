@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority'
 
 export const buttonVariants = cva(
   [
-    "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-bold tracking-wider whitespace-nowrap transition-all duration-200 outline-none focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:bg-destructive aria-invalid:hover:bg-destructive/90 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+    "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-bold tracking-wider whitespace-nowrap transition-all duration-200 outline-none focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:pointer-events-none disabled:opacity-40 aria-invalid:bg-destructive aria-invalid:hover:bg-destructive/90 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
   ],
   {
     variants: {
@@ -14,15 +14,15 @@ export const buttonVariants = cva(
       },
       variant: {
         default:
-          'bg-primary-comfy-yellow text-primary-comfy-ink uppercase hover:bg-primary-comfy-yellow/90',
+          'bg-primary-comfy-yellow text-primary-comfy-ink uppercase hover:bg-primary-comfy-yellow/90 active:scale-[0.97] active:brightness-90',
         outline:
-          'border text-primary-comfy-yellow uppercase hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
+          'border-[1.5px] border-primary-comfy-yellow text-primary-comfy-yellow uppercase hover:bg-primary-comfy-yellow/10 active:scale-[0.97] active:bg-primary-comfy-yellow/20',
         secondary:
-          'bg-primary-warm-white text-primary-comfy-ink uppercase hover:bg-white active:bg-primary-comfy-canvas',
+          'bg-primary-warm-white text-primary-comfy-ink uppercase hover:bg-white active:scale-[0.97] active:bg-primary-comfy-canvas',
         secondaryOutline:
-          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink active:border-primary-comfy-canvas active:bg-primary-comfy-canvas',
+          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink active:scale-[0.97] active:border-primary-comfy-canvas active:bg-primary-comfy-canvas',
         ghost:
-          'bg-transparency-white-t8 font-medium tracking-normal text-primary-warm-white hover:bg-transparency-white-t20',
+          'bg-transparency-white-t8 text-primary-warm-white uppercase hover:bg-transparency-white-t20 active:scale-[0.97]',
         link: "h-auto justify-start px-0 py-1 text-base text-primary-comfy-yellow uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
         underlineLink:
           "relative h-auto justify-start px-0 py-1 text-primary-comfy-yellow uppercase after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-200 hover:opacity-90 hover:after:scale-x-100 [&_svg:not([class*='size-'])]:size-6",
