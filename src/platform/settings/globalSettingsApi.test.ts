@@ -138,16 +138,12 @@ describe('Global Settings transport', () => {
     ).rejects.toMatchObject({ status: 500 })
   })
 
-  // The endpoint and its credential are chosen together. A workspace token is
-  // minted by the cloud and valid only at ingest; sent to the Comfy API it is
-  // rejected as an invalid auth token, which is what a signed-in local build
-  // with an active workspace used to hit on every consent read and write.
   it.for([
-    { cloud: true, source: 'getWorkspaceAuthHeader' as const },
-    { cloud: false, source: 'getUserAuthHeader' as const }
+    { cloud: true, expected: 'Bearer workspace-token' },
+    { cloud: false, expected: 'Bearer user-token' }
   ])(
-    "authenticates Cloud=$cloud with the store's $source",
-    async ({ cloud, source }) => {
+    'authenticates Cloud=$cloud with $expected',
+    async ({ cloud, expected }) => {
       distribution.isCloud = cloud
       const authStore = useAuthStore()
       vi.mocked(authStore.getWorkspaceAuthHeader).mockResolvedValue({
@@ -158,10 +154,7 @@ describe('Global Settings transport', () => {
       })
 
       await expect(getGlobalSettingsAuthHeader()).resolves.toEqual({
-        Authorization:
-          source === 'getWorkspaceAuthHeader'
-            ? 'Bearer workspace-token'
-            : 'Bearer user-token'
+        Authorization: expected
       })
     }
   )

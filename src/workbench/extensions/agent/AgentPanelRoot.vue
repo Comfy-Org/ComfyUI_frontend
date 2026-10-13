@@ -154,7 +154,7 @@ import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
-import { turnContextFor } from './turnContext'
+import { turnContextFor } from './utils/turnContext'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -211,65 +211,50 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-/**
- * The agent's one socket, `/api/agent/events`, on every backend, carrying the
- * caller's credential as `?token=` (see agentSocketToken). Its path comes from
- * `api.apiURL` like every agent request, so a ComfyUI served under a sub-path
- * reaches the same backend.
- */
 const events = createAgentEventSource({
   endpoint: api.apiURL('/agent/events'),
   getToken: agentSocketToken
 })
 
-/** Document frames ride the same socket, so following never reconnects chat. */
 const docTransport = createAgentDocFrameTransport(events)
 onBeforeUnmount(() => docTransport.destroy())
 
-/**
- * The identity the agent authenticated this client as, which every canvas op
- * must carry or the writer refuses it (see resolveAgentIdentity). Null until
- * the agent answers; the follower below stays inactive until then. The lookup
- * rides the same socket-connected edge the follower resubscribes on, so a
- * transient failure at mount does not read as "canvas never syncs" for the
- * page's life.
- */
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
   onConnected: (listener) => docTransport.onConnected(listener),
-  onFailure: (error) => {
-    // Surfaced, not swallowed: every failed attempt is a broken identity
-    // route until the next connected edge proves otherwise.
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_identity_failed',
-      level: 'warning'
-    })
-  }
-})
-onBeforeUnmount(() => agentIdentity.stop())
-
-// A node from a pack the agent just wrote or installed must not stay a
-// missing-type placeholder until the page is reloaded.
-const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
-  refreshNodeDefinitions: () =>
-    useCommandStore().execute('Comfy.RefreshNodeDefinitions'),
-  reloadCurrentWorkflow: () => useWorkflowService().reloadCurrentWorkflow(),
   onFailure: (error) =>
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_node_catalog_refresh_failed',
+      errorType: 'failure_resolving_agent_identity',
+      level: 'warning'
+    })
+})
+onBeforeUnmount(() => agentIdentity.stop())
+
+const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
+  refreshNodeDefinitions: () =>
+    useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
+      errorHandler: (error) => {
+        throw error
+      }
+    }),
+  reloadCurrentWorkflow: async () => {
+    const workflow = workflowStore.activeWorkflow
+    return workflow === null
+      ? true
+      : useWorkflowService().openWorkflow(workflow, { force: true })
+  },
+  onFailure: (error) =>
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_refreshing_agent_node_catalog',
       level: 'warning'
     })
 })
 onBeforeUnmount(stopNodeCatalogRefresh)
 
-// Signing out or switching accounts must not leave the agent socket
-// authenticated as the previous account, nor canvas ops stamped with its
-// actor: reconnect with a fresh token and look the identity up again. The
-// agent authenticates the signed-in session or, with none, a stored API key
-// (see withAgentAuth), so the account is whichever of those it is: the user
-// id, never the key itself. Replacing the key clears its user first.
+// The account the agent authenticates: the signed-in user, or with none the
+// stored API key's user (never the key itself).
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const agentAccountId = computed(
@@ -771,30 +756,20 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  // A live document is the source of truth for this workflow; the draft is only
-  // its projection. Seeding it from the canvas is not just redundant there, it
-  // is destructive: this snapshot carries no version, which the backend treats
-  // as authoritative and applies unconditionally, so a canvas that has not yet
-  // caught up silently overwrites whatever the agent just built. The guard is
-  // the follower's INTENT (the document it is bound to), not its connection
-  // state: a reconnect drops `connected` for a moment, and a turn sent in that
-  // window must not seed either. Intent alone is not enough, though: once the
-  // follower has given up on that document (the subscribe was refused for
-  // good, or the doc is unreadable) nothing will ever arrive for it, and a
-  // turn that still withholds the seed leaves the canvas stranded until a
-  // reload. A terminal follower therefore seeds again; the snapshot is then
-  // the only state the agent can build on.
-  const documentId = cloudIdFor(target)
-  if (
-    documentId !== undefined &&
-    crdtStatus.value.workflowId === documentId &&
-    crdtStatus.value.terminal === null
-  ) {
-    return undefined
-  }
+  // The backend applies a versionless draft unconditionally, so it would
+  // overwrite a live document the canvas has not caught up with.
+  if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function followerOwnsDocument(documentId: string | undefined): boolean {
+  return (
+    documentId !== undefined &&
+    boundWorkflowId.value === documentId &&
+    crdtStatus.value.terminal === null
+  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
@@ -974,9 +949,8 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-// The follower stamps every canvas op with the actor the agent reported; an
-// op sent before that answer arrives would be attributed "anonymous", which
-// the writer refuses. So the follower waits for identity.
+// Every canvas op carries the actor the agent reported, so the follower waits
+// for the identity.
 const isFollowerActive = computed(
   () => isBoundWorkflowActive.value && agentIdentity.userId.value !== null
 )
@@ -988,7 +962,8 @@ const {
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
-  notifyWidgetWriteRefused
+  notifyWidgetWriteRefused,
+  subscriptionSent
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentIdentity.userId.value,
@@ -1038,14 +1013,14 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
+// A human edit minted before the subscribe left the socket would settle
+// undeliverable, silently.
+function followerCanDeliver(): boolean {
+  return isFollowerActive.value && subscriptionSent()
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
-  // The follower's activity, not merely the tab binding: a mint accepted
-  // while the follower is still waiting on the agent identity has no
-  // subscription to ride and settles undeliverable, silently. Gating on the
-  // same condition the follower subscribes on means a human edit is minted
-  // only once there is a document to deliver it to.
-  isDocBound: () => isFollowerActive.value,
+  isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -1056,7 +1031,7 @@ const docOpMinter = attachDocOpMinter({
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isFollowerActive.value,
+  isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   docInputNames: (nodeId) => {
@@ -1650,10 +1625,8 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
-    // A turn runs as the signed-in Comfy account, so a signed-out user is
-    // asked to sign in rather than sending a turn that cannot run. Checked
-    // synchronously first, like consent, so a signed-in send pins its turn
-    // in the tick it was clicked.
+    // Checked synchronously first, like consent, so a signed-in send pins its
+    // turn in the tick it was clicked.
     if (!hasAgentCredential() && !(await ensureSignedIn())) return false
     const submissionId = composerStore.submission?.id
     if (

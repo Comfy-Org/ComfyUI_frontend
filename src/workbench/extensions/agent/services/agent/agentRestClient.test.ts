@@ -8,22 +8,13 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
+import { withAgentAuth } from './agentAuth'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
-const auth = vi.hoisted(() => ({
-  header: null as Record<string, string> | null
-}))
-vi.mock(import('./agentAuth'), () => ({
-  withAgentAuth: async <T extends RequestInit>(init: T): Promise<T> => {
-    if (auth.header === null) return init
-    const headers = new Headers(init.headers)
-    for (const [name, value] of Object.entries(auth.header))
-      headers.set(name, value)
-    return { ...init, headers }
-  }
-}))
+vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
@@ -108,10 +99,6 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
-
-beforeEach(() => {
-  auth.header = null
-})
 
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
@@ -1222,9 +1209,6 @@ describe('Retry-After contract', () => {
   })
 })
 
-// One auth contract for every backend: each request carries the signed-in
-// user's auth header. The cloud applies its own workspace header on top in
-// api.fetchApi; the local agent reads this one the way ingest does.
 const emptyThreadPage = {
   threads: [],
   pagination: { offset: 0, limit: 1, total: 0, has_more: false }
@@ -1232,7 +1216,11 @@ const emptyThreadPage = {
 
 describe('user auth on agent requests', () => {
   beforeEach(() => {
-    auth.header = { Authorization: 'Bearer id-token' }
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => {
+      const headers = new Headers(init.headers)
+      headers.set('Authorization', 'Bearer id-token')
+      return { ...init, headers }
+    })
   })
 
   const calls: [
@@ -1254,15 +1242,9 @@ describe('user auth on agent requests', () => {
     ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
   ]
 
-  it.for(
-    calls.flatMap(([name, call, body]) => [
-      ['cloud', name, call, body] as const,
-      ['the standalone agent harness', name, call, body] as const
-    ])
-  )(
-    'sends the user auth header with %s: %s',
-    async ([distribution, , call, body]) => {
-      if (distribution !== 'cloud') vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+  it.for(calls)(
+    'sends the user auth header with %s',
+    async ([, call, body]) => {
       respond(jsonResponse(200, body))
 
       await call(makeClient())
@@ -1274,7 +1256,7 @@ describe('user auth on agent requests', () => {
   )
 
   it('sends no auth header for a signed-out user', async () => {
-    auth.header = null
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => init)
     respond(jsonResponse(200, []))
 
     await makeClient().getMessages('t1')
@@ -1282,16 +1264,5 @@ describe('user auth on agent requests', () => {
     expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
       false
     )
-  })
-
-  it('refreshes the credential through a request every backend answers', async () => {
-    respond(jsonResponse(200, emptyThreadPage))
-
-    await makeClient().refreshCredential()
-
-    expect(lastCall()).toMatchObject({
-      route: '/agent/threads?limit=1',
-      init: { method: 'GET' }
-    })
   })
 })

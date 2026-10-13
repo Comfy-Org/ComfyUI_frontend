@@ -31,14 +31,7 @@ function globalSettingsUrl(key?: GlobalSettingKey): string {
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
-/**
- * The credential the Global Settings endpoint above accepts, chosen with it:
- * in the cloud the endpoint is ingest, which scopes a setting to the active
- * workspace; everywhere else it is the Comfy API, which authenticates the user
- * — their session token or API key — and rejects a workspace token the cloud
- * minted. Callers take the header from here rather than pick one, so the URL
- * and its credential can never disagree.
- */
+/** Ingest takes a workspace token; the Comfy API rejects one. */
 export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
   const authStore = useAuthStore()
   return isCloud

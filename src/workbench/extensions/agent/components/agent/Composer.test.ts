@@ -33,12 +33,7 @@ setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
-// The real auth store cannot load against the mocked api; the transport's
-// auth header is not what these tests are about.
-vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async <T extends RequestInit>(init: T) => init,
-  ensureSignedIn: async () => true
-}))
+vi.mock(import('../../services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)

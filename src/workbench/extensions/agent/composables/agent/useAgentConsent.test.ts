@@ -129,8 +129,6 @@ describe('useAgentConsent', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    // A non-cloud build reads Global Settings from the Comfy API, which takes
-    // the user's own credential (see getGlobalSettingsAuthHeader).
     vi.mocked(useAuthStore().getUserAuthHeader).mockReset()
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'

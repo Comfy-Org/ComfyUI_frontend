@@ -649,15 +649,7 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
   })
 })
 
-/**
- * The subscribe-retry budget as the follower observes it: whether a refusal
- * still has a retry behind it, or was the last word.
- */
 describe('AgentCrdtDocLifecycle refusalIsFinal', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   it('is not final while a retry is scheduled', () => {
     const { lifecycle } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
