@@ -61,14 +61,10 @@ describe('showTopUpCreditsDialog', () => {
     expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
   })
 
-  it("sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
+  it('opens headless', async () => {
     await useBillingDialogs().showTopUpCreditsDialog()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.headless).toBe(true)
-    expect(args.dialogComponentProps?.pt).toBeUndefined()
-    expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
-    expect(args.dialogComponentProps?.contentClass).toContain('bg-transparent')
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
@@ -83,7 +79,6 @@ describe('showTopUpCreditsDialog', () => {
     // The member notice draws its own header + close button, so it must open
     // headless or Reka wraps it in duplicate chrome.
     expect(args.dialogComponentProps?.headless).toBe(true)
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
 
     const props = args.props
     assert(props && 'onClose' in props && typeof props.onClose === 'function')

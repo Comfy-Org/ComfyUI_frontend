@@ -1,115 +1,112 @@
 <template>
-  <FocusScope as-child loop>
-    <div
-      ref="dialogRef"
-      class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
-    >
-      <!-- Search input row -->
-      <NodeSearchInput
-        ref="searchInputRef"
-        v-model:search-query="searchQuery"
+  <div
+    ref="dialogRef"
+    class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+  >
+    <!-- Search input row -->
+    <NodeSearchInput
+      ref="searchInputRef"
+      v-model:search-query="searchQuery"
+      :filters="filters"
+      @remove-filter="emit('removeFilter', $event)"
+      @navigate-down="navigateResults(1)"
+      @navigate-up="navigateResults(-1)"
+      @select-current="selectCurrentResult"
+      @focusin="onSearchFocus"
+    />
+
+    <!-- Filter header row -->
+    <div class="flex items-center">
+      <NodeSearchFilterBar
+        v-model:is-sidebar-open="isSidebarOpen"
+        class="flex-1"
         :filters="filters"
-        @remove-filter="emit('removeFilter', $event)"
-        @navigate-down="navigateResults(1)"
-        @navigate-up="navigateResults(-1)"
-        @select-current="selectCurrentResult"
-        @focusin="onSearchFocus"
+        :active-category="rootFilter"
+        :has-favorites="nodeBookmarkStore.bookmarks.length > 0"
+        :has-essential-nodes="nodeAvailability.essential"
+        :has-blueprint-nodes="nodeAvailability.blueprint"
+        :has-partner-nodes="nodeAvailability.partner"
+        :has-custom-nodes="nodeAvailability.custom"
+        @toggle-filter="onToggleFilter"
+        @clear-filter-group="onClearFilterGroup"
+        @focus-search="nextTick(() => searchInputRef?.focus())"
+        @select-category="onSelectCategory"
+      />
+    </div>
+
+    <!-- Content area -->
+    <div class="relative flex min-h-0 flex-1 overflow-hidden">
+      <NodeSearchCategorySidebar
+        v-show="isSidebarOpen"
+        id="node-search-category-sidebar"
+        v-model:selected-category="sidebarCategory"
+        :aria-label="isMobile ? t('g.categories') : undefined"
+        class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-base-background max-md:shadow-interface"
+        :hide-chevrons="!anyTreeCategoryHasChildren"
+        :hide-presets="rootFilter !== null"
+        :node-defs="rootFilteredNodeDefs"
+        :root-label="rootFilterLabel"
+        :root-key="rootFilter ?? undefined"
+        @auto-expand="selectedCategory = $event"
       />
 
-      <!-- Filter header row -->
-      <div class="flex items-center">
-        <NodeSearchFilterBar
-          v-model:is-sidebar-open="isSidebarOpen"
-          class="flex-1"
-          :filters="filters"
-          :active-category="rootFilter"
-          :has-favorites="nodeBookmarkStore.bookmarks.length > 0"
-          :has-essential-nodes="nodeAvailability.essential"
-          :has-blueprint-nodes="nodeAvailability.blueprint"
-          :has-partner-nodes="nodeAvailability.partner"
-          :has-custom-nodes="nodeAvailability.custom"
-          @toggle-filter="onToggleFilter"
-          @clear-filter-group="onClearFilterGroup"
-          @focus-search="nextTick(() => searchInputRef?.focus())"
-          @select-category="onSelectCategory"
-        />
-      </div>
+      <!-- Mobile overlay backdrop to close sidebar on outside click -->
+      <div
+        v-if="isMobile && isSidebarOpen"
+        data-testid="sidebar-backdrop"
+        class="absolute inset-0 z-10 md:hidden"
+        @click="isSidebarOpen = false"
+      />
 
-      <!-- Content area -->
-      <div class="relative flex min-h-0 flex-1 overflow-hidden">
-        <NodeSearchCategorySidebar
-          v-show="isSidebarOpen"
-          id="node-search-category-sidebar"
-          v-model:selected-category="sidebarCategory"
-          :aria-label="isMobile ? t('g.categories') : undefined"
-          class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-base-background max-md:shadow-interface"
-          :hide-chevrons="!anyTreeCategoryHasChildren"
-          :hide-presets="rootFilter !== null"
-          :node-defs="rootFilteredNodeDefs"
-          :root-label="rootFilterLabel"
-          :root-key="rootFilter ?? undefined"
-          @auto-expand="selectedCategory = $event"
-        />
-
-        <!-- Mobile overlay backdrop to close sidebar on outside click -->
+      <!-- Results list -->
+      <div
+        id="results-list"
+        role="listbox"
+        tabindex="-1"
+        class="flex-1 overflow-y-auto py-2 pr-3 pl-1 select-none"
+        @pointermove="onPointerMove"
+      >
         <div
-          v-if="isMobile && isSidebarOpen"
-          data-testid="sidebar-backdrop"
-          class="absolute inset-0 z-10 md:hidden"
-          @click="isSidebarOpen = false"
-        />
-
-        <!-- Results list -->
-        <div
-          id="results-list"
-          role="listbox"
-          tabindex="-1"
-          class="flex-1 overflow-y-auto py-2 pr-3 pl-1 select-none"
-          @pointermove="onPointerMove"
+          v-for="(node, index) in displayedResults"
+          :id="`result-item-${index}`"
+          :key="node.name"
+          role="option"
+          data-testid="result-item"
+          :tabindex="index === selectedIndex ? 0 : -1"
+          :aria-selected="index === selectedIndex"
+          :class="
+            cn(
+              'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              index === selectedIndex && 'bg-secondary-background'
+            )
+          "
+          @click="emit('addNode', node, $event)"
+          @keydown.down.prevent="navigateResults(1, true)"
+          @keydown.up.prevent="navigateResults(-1, true)"
+          @keydown.enter.prevent="selectCurrentResult"
         >
-          <div
-            v-for="(node, index) in displayedResults"
-            :id="`result-item-${index}`"
-            :key="node.name"
-            role="option"
-            data-testid="result-item"
-            :tabindex="index === selectedIndex ? 0 : -1"
-            :aria-selected="index === selectedIndex"
-            :class="
-              cn(
-                'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                index === selectedIndex && 'bg-secondary-background'
-              )
-            "
-            @click="emit('addNode', node, $event)"
-            @keydown.down.prevent="navigateResults(1, true)"
-            @keydown.up.prevent="navigateResults(-1, true)"
-            @keydown.enter.prevent="selectCurrentResult"
-          >
-            <NodeSearchListItem
-              :node-def="node"
-              :current-query="searchQuery"
-              show-description
-              :show-source-badge="rootFilter !== RootCategory.Essentials"
-              :hide-bookmark-icon="selectedCategory === RootCategory.Favorites"
-            />
-          </div>
-          <div
-            v-if="displayedResults.length === 0"
-            data-testid="no-results"
-            class="px-4 py-8 text-center text-muted-foreground"
-          >
-            {{ $t('g.noResults') }}
-          </div>
+          <NodeSearchListItem
+            :node-def="node"
+            :current-query="searchQuery"
+            show-description
+            :show-source-badge="rootFilter !== RootCategory.Essentials"
+            :hide-bookmark-icon="selectedCategory === RootCategory.Favorites"
+          />
+        </div>
+        <div
+          v-if="displayedResults.length === 0"
+          data-testid="no-results"
+          class="px-4 py-8 text-center text-muted-foreground"
+        >
+          {{ $t('g.noResults') }}
         </div>
       </div>
     </div>
-  </FocusScope>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

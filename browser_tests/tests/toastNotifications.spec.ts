@@ -3,6 +3,18 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
+
+type Box = NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>
+
+function overlaps(a: Box, b: Box): boolean {
+  return (
+    a.x < b.x + b.width &&
+    b.x < a.x + a.width &&
+    a.y < b.y + b.height &&
+    b.y < a.y + a.height
+  )
+}
 
 test.describe('Toast Notifications', { tag: '@ui' }, () => {
   async function triggerErrorToast(comfyPage: ComfyPage) {
@@ -66,6 +78,60 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
       panelBounds!.x
     )
   })
+
+  test('A toast raised before a dialog opens stays above it', async ({
+    comfyPage
+  }) => {
+    await triggerErrorToast(comfyPage)
+    await comfyPage.settingDialog.open()
+    const errorToast = comfyPage.toast.withText('Test execution error')
+
+    await comfyPage.toast.dismiss(errorToast)
+
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+    await expect(comfyPage.settingDialog.root).toBeVisible()
+  })
+
+  for (const { dialog, open, closeButton } of [
+    {
+      dialog: 'Settings',
+      open: (comfyPage: ComfyPage) => comfyPage.settingDialog.open(),
+      closeButton: (comfyPage: ComfyPage) =>
+        comfyPage.settingDialog.root.getByRole('button', { name: 'Close' })
+    },
+    {
+      dialog: 'a maximized dialog',
+      open: (comfyPage: ComfyPage) =>
+        comfyPage.page.evaluate(() => {
+          window.app!.extensionManager.dialog.showExtensionDialog({
+            key: 'maximized-toast-test',
+            title: 'Maximized',
+            component: { render: () => null },
+            dialogComponentProps: { maximizable: true, maximized: true }
+          })
+        }),
+      closeButton: (comfyPage: ComfyPage) =>
+        comfyPage.page
+          .getByRole('dialog', { name: 'Maximized' })
+          .getByRole('button', { name: 'Close' })
+    }
+  ]) {
+    test(`Toasts stay clear of the close button of ${dialog}`, async ({
+      comfyPage
+    }) => {
+      await open(comfyPage)
+      await triggerErrorToast(comfyPage)
+      const errorToast = comfyPage.toast.withText('Test execution error')
+      await expect(errorToast).toBeVisible()
+
+      const toastBounds = await errorToast.boundingBox()
+      const closeBounds = await closeButton(comfyPage).boundingBox()
+
+      expect(toastBounds).not.toBeNull()
+      expect(closeBounds).not.toBeNull()
+      expect(overlaps(toastBounds!, closeBounds!)).toBe(false)
+    })
+  }
 
   test('Toast can be dismissed via close button', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)

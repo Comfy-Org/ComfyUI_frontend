@@ -24,7 +24,6 @@ const { t } = useI18n()
 onBeforeUnmount(toast.dismissAll)
 
 const shownToasts = computed(() => (held.value ? [] : toasts.value))
-const latestToastId = computed(() => shownToasts.value.at(-1)?.id)
 const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
 
 const isAssertive = (item: Toast) =>
@@ -127,7 +126,6 @@ const icons = {
         (hotkey: string) =>
           t('toastMessages.notificationsViewportLabel', { hotkey })
       "
-      :z-index-version="latestToastId"
       data-testid="toast-viewport"
     />
   </ToastProvider>

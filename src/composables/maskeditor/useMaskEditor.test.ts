@@ -70,7 +70,6 @@ describe('useMaskEditor', () => {
       expect(mockDialogStore.showDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           dialogComponentProps: expect.objectContaining({
-            modal: true,
             maximizable: true,
             closable: true
           })

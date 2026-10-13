@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:open="visible" :modal="false">
+  <Dialog v-model:open="visible">
     <DialogPortal>
       <DialogOverlay />
       <DialogContent size="md" :aria-labelledby="titleId">

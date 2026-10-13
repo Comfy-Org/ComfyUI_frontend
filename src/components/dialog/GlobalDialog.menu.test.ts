@@ -56,9 +56,7 @@ describe('Menu inside a modal Reka dialog', () => {
       title: 'Host dialog',
       component: DialogBodyWithMenu,
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
-        modal: true,
         closable: true
       }
     })

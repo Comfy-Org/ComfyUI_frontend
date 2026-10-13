@@ -1,6 +1,11 @@
 <template>
   <div
-    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
+    :class="
+      cn(
+        'relative overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg',
+        sizeClasses
+      )
+    "
     @keydown.esc.capture="handleEscape"
   >
     <div
@@ -148,11 +153,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 
 const SIZE_CLASSES = {
-  sm: 'h-[80vh] w-[90vw] max-w-[960px]',
   md: 'h-[80vh] w-[90vw] max-w-[1400px]',
-  lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
-  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]',
-  panel: 'size-full'
+  lg: 'h-[80vh] max-h-[1026px] w-[90vw] max-w-[1280px] min-[1450px]:max-w-[1724px] min-[3000px]:max-h-[1320px] min-[3000px]:max-w-[2200px]'
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"

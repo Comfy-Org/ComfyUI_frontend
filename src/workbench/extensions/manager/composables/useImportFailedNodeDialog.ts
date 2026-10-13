@@ -19,7 +19,7 @@ export function useImportFailedNodeDialog() {
   function show(
     options: {
       conflictedPackages?: ConflictDetectionResult[]
-      dialogComponentProps?: Omit<DialogComponentProps, 'pt'>
+      dialogComponentProps?: DialogComponentProps
     } = {}
   ) {
     const { dialogComponentProps, conflictedPackages = [] } = options

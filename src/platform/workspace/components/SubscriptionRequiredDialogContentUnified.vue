@@ -3,7 +3,7 @@
     ref="contentRoot"
     :class="
       cn(
-        'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
+        'relative flex h-full max-h-[90vh] max-w-[min(1280px,95vw)] flex-col gap-4 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-6 shadow-[0_25px_80px_rgba(5,6,12,0.45)]',
         (checkoutStep === 'pricing' || isEmbeddedPaymentStep) &&
           'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]',
         // Pin the embedded step to the pricing table's exact height (min-h

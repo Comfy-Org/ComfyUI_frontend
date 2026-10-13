@@ -26,6 +26,14 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       .toBe(initialCount + 1)
   })
 
+  test('Opens fully inside the viewport', async ({ comfyPage }) => {
+    const { searchBoxV2 } = comfyPage
+
+    await searchBoxV2.open()
+
+    await expect(searchBoxV2.dialog).toBeInViewport({ ratio: 1 })
+  })
+
   test('Can add first default result with Enter', async ({ comfyPage }) => {
     const { searchBoxV2 } = comfyPage
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
