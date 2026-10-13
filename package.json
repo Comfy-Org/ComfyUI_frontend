@@ -48,6 +48,7 @@
     "lint": "pnpm stylelint && pnpm oxlint && pnpm architecture:check && eslint --cache --concurrency auto",
     "locale": "tsx scripts/i18n/update-locales.ts",
     "locale:check": "tsx scripts/i18n/update-locales.ts --check",
+    "locale:delivery": "tsx scripts/cicd/catalog-delivery-gate.ts",
     "oxlint": "oxlint . --type-aware",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",

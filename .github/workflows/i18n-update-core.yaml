@@ -75,8 +75,13 @@ jobs:
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update locales'
           git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+      - name: Verify generated catalog completeness
+        id: validate
+        if: always() && steps.translate.outcome != 'skipped'
+        continue-on-error: true
+        run: pnpm locale:check --complete
       - name: Fail if translation did not complete
-        if: steps.translate.outcome == 'failure'
+        if: always() && (steps.translate.outcome == 'failure' || steps.validate.outcome == 'failure')
         run: |
-          echo "::error::pnpm locale failed; completed entry files were committed, the rest retry on the next run"
+          echo "::error::Catalog generation or validation failed; completed entry files were committed, the rest retry on the next run"
           exit 1
