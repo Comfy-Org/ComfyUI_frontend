@@ -115,11 +115,20 @@ describe('isValidAgentAttachment', () => {
     ).resolves.toBe(true)
   })
 
-  it.for(['moov', 'mdat', 'wide', 'free', 'skip', 'pnot'])(
-    'accepts a classic MOV beginning with %s without ftyp',
-    async (atom) => {
+  it.for([
+    { extension: 'mp4', atom: 'moov' },
+    { extension: 'm4v', atom: 'mdat' },
+    { extension: 'mov', atom: 'wide' },
+    { extension: 'mov', atom: 'free' },
+    { extension: 'mov', atom: 'skip' },
+    { extension: 'mov', atom: 'pnot' }
+  ])(
+    'accepts a classic $extension beginning with $atom without ftyp',
+    async ({ extension, atom }) => {
       await expect(
-        isValidAgentAttachment(new File(['\0\0\0\x08', atom], 'classic.mov'))
+        isValidAgentAttachment(
+          new File(['\0\0\0\x08', atom], `classic.${extension}`)
+        )
       ).resolves.toBe(true)
     }
   )
