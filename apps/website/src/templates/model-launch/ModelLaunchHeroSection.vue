@@ -48,6 +48,8 @@ const isOverlay = hero.layout === 'overlay'
 const isLogoMask = isOverlay && !hero.videoSrc && Boolean(hero.logoMaskImageSrc)
 const OVERLAY_CELL = 'col-start-1 row-start-1'
 const isContentFirst = hero.layout === 'content-first'
+const mediaOutlineClass =
+  hero.mediaOutline === 'gray' ? 'border-primary-warm-gray' : undefined
 </script>
 
 <template>
@@ -241,7 +243,12 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1280"
         height="720"
-        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
       />
       <VideoPlayer
         v-else-if="showVideo"
@@ -251,6 +258,7 @@ const isContentFirst = hero.layout === 'content-first'
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <VideoPlayer
         v-else-if="showMobileVideo"
@@ -260,6 +268,7 @@ const isContentFirst = hero.layout === 'content-first'
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <img
         v-else-if="hero.mobileFallbackImageSrc"
@@ -268,7 +277,12 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1280"
         height="720"
-        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
       />
       <div
         v-if="hero.logoSrc"

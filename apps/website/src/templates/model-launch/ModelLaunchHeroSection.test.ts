@@ -49,6 +49,22 @@ describe('ModelLaunchHeroSection', () => {
     }
   )
 
+  it.for([
+    { mediaOutline: undefined, outlined: false },
+    { mediaOutline: 'gray' as const, outlined: true }
+  ])(
+    'outlines the hero media in gray when mediaOutline=$mediaOutline',
+    ({ mediaOutline, outlined }) => {
+      render(ModelLaunchHeroSection, {
+        props: { hero: { ...hero, mediaOutline } }
+      })
+
+      expect(
+        screen.getByAltText('').classList.contains('border-primary-warm-gray')
+      ).toBe(outlined)
+    }
+  )
+
   it('shows the placeholder still above the content when a media-first hero has no video', () => {
     render(ModelLaunchHeroSection, {
       props: {

@@ -61,6 +61,69 @@ describe('ModelLaunchGallerySection', () => {
     }
   )
 
+  it.for([
+    { columns: undefined, gridClass: 'md:grid-cols-2' },
+    { columns: 3 as const, gridClass: 'md:grid-cols-3' }
+  ])('lays the cards out in columns=$columns', ({ columns, gridClass }) => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { ...gallery, columns } }
+    })
+
+    expect(screen.getByTestId('model-launch-gallery-grid')).toHaveClass(
+      gridClass
+    )
+  })
+
+  it('stretches a full-span card across the row at a 3:1 ratio on desktop', () => {
+    const [first, second] = gallery.cards
+    render(ModelLaunchGallerySection, {
+      props: {
+        gallery: { ...gallery, cards: [first, { ...second, span: 'full' }] }
+      }
+    })
+    const [plain, featured] = screen.getAllByRole('article')
+
+    const [plainMedia, featuredMedia] =
+      screen.getAllByTestId('gallery-card-media')
+
+    expect(plain).not.toHaveClass('md:col-span-full')
+    expect(featured).toHaveClass('md:col-span-full')
+    expect(plainMedia).toHaveClass('aspect-19/10')
+    expect(featuredMedia).toHaveClass('md:aspect-3/1')
+  })
+
+  it('overlays the caption on a square tile when captionPlacement is overlay', () => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { ...gallery, captionPlacement: 'overlay' } }
+    })
+    const [media] = screen.getAllByTestId('gallery-card-media')
+
+    expect(media).toHaveClass('aspect-square')
+    expect(screen.getByTestId('model-launch-gallery-grid')).toHaveClass('gap-2')
+    expect(screen.getAllByText('One.')).toHaveLength(1)
+    expect(screen.getByText('One.')).toHaveClass('absolute')
+  })
+
+  it('opens an expandable image full screen when its tile is clicked', async () => {
+    const [first, second] = gallery.cards
+    render(ModelLaunchGallerySection, {
+      props: {
+        gallery: { ...gallery, cards: [first, { ...second, expandable: true }] }
+      }
+    })
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Fullscreen' })).toHaveLength(
+      1
+    )
+    expect(screen.getAllByTestId('gallery-card-expand')).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Fullscreen' }))
+
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getAllByAltText('Second render')).toHaveLength(2)
+  })
+
   it('collapses cards past the mobile limit until Load more is pressed', async () => {
     const user = userEvent.setup()
     render(ModelLaunchGallerySection, {

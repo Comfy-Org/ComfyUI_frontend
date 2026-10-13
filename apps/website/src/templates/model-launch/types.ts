@@ -52,6 +52,7 @@ export interface ModelLaunchHero {
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
   // a scrim, which is how the announcement pages are designed.
   layout?: 'media-first' | 'content-first' | 'overlay'
+  mediaOutline?: 'gray'
   promptBar?: ModelLaunchPromptBar
   // Small label above the heading on announcement pages, e.g. COMING SOON.
   eyebrowKey?: TranslationKey
@@ -92,6 +93,8 @@ interface ModelLaunchGalleryCard {
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
   prompt?: LocalizedText
+  span?: 'full'
+  expandable?: boolean
   media: ModelLaunchMedia
   // Brand mark drawn over the card, for pages whose gallery mixes models.
   logoSrc?: string
@@ -110,6 +113,8 @@ export interface ModelLaunchGallery {
   // Below the md breakpoint, show only this many cards until the visitor
   // taps Load more. Wider viewports always show every card.
   mobileVisibleCards?: number
+  columns?: 2 | 3
+  captionPlacement?: 'below' | 'overlay'
   cards: readonly ModelLaunchGalleryCard[]
 }
 
