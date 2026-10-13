@@ -35,17 +35,17 @@ const mocks = vi.hoisted<{
 }))
 
 const sharedComposable = vi.hoisted(() => {
-  let reset = () => {}
+  const resets: (() => void)[] = []
 
   function create<T>(composable: () => T): () => T {
     let result: T | undefined
-    reset = () => {
+    resets.push(() => {
       result = undefined
-    }
+    })
     return () => (result ??= composable())
   }
 
-  return { create, reset: () => reset() }
+  return { create, reset: () => resets.forEach((reset) => reset()) }
 })
 
 const OWNER_ID = 'account-a'
@@ -69,9 +69,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({
     beginTour: mocks.beginTour,

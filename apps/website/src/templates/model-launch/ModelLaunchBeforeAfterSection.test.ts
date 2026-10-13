@@ -8,8 +8,7 @@ import ModelLaunchBeforeAfterSection from './ModelLaunchBeforeAfterSection.vue'
 
 function beforeAfterWith(chinese: boolean): ModelLaunchBeforeAfter {
   return {
-    headingKey: 'nvidiaRtx.beforeAfter.heading',
-    bodyKey: 'nvidiaRtx.beforeAfter.body',
+    headingKey: 'modelLaunch.beforeAfter.tabsLabel',
     tabs: [
       {
         id: 'sharpen',

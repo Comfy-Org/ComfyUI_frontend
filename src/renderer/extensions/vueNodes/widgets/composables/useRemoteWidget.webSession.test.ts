@@ -61,9 +61,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const USER = fromPartial<User>({
   uid: 'user-a',
@@ -87,7 +85,8 @@ const sessionBody = () => ({
   user: { id: 'user-a', email: 'user-a@example.com', email_verified: true },
   csrf_token: 'csrf-1',
   expires_at: new Date(Date.now() + 86_400_000).toISOString(),
-  absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString()
+  absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString(),
+  has_personal_workspace: true
 })
 
 const workspaceBody = (id: string | null) => ({
@@ -119,16 +118,13 @@ const RESPONSES: Record<string, (workspaceId: string | null) => unknown> = {
 
 function installIngest() {
   const requests: IngestRequest[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const path = new URL(String(input), location.href).pathname
-      if (path !== '/api/features') requests.push(recordRequest(path, init))
-      const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
-      const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
-      return jsonResponse(body)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const path = new URL(String(input), location.href).pathname
+    if (path !== '/api/features') requests.push(recordRequest(path, init))
+    const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
+    const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
+    return jsonResponse(body)
+  })
   return requests
 }
 

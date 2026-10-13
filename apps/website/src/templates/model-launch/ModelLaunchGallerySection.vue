@@ -1,25 +1,37 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ChevronRight } from '@lucide/vue'
+import { ChevronRight, Maximize2 } from '@lucide/vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 import type { ModelLaunchGallery } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
-import Badge from '../../components/ui/badge/Badge.vue'
-import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import IconButton from '../../components/ui/icon-button/IconButton.vue'
-import { t } from '../../i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const showCardMeta = gallery.cardMeta !== 'none'
 const showCardLink = gallery.ctaVariant !== 'none'
+const overlayCaptions = gallery.captionPlacement === 'overlay'
+
+const expandedImage = ref<{ src: string; name: LocalizedText } | null>(null)
+const expandImage = (card: ModelLaunchGallery['cards'][number]) => {
+  if (card.expandable && card.media.kind === 'image') {
+    expandedImage.value = { src: card.media.src, name: card.name }
+  }
+}
 
 const mobileExpanded = ref(false)
 const hasMobileOverflow =
@@ -54,20 +66,48 @@ const { stop } = useIntersectionObserver(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(gallery.headingKey, locale) }}
+        {{ t(gallery.headingKey) }}
       </h2>
     </div>
 
     <div
-      class="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
+      data-testid="model-launch-gallery-grid"
+      :class="
+        cn(
+          'mx-auto mt-16 grid max-w-7xl grid-cols-1',
+          overlayCaptions ? 'gap-2' : 'gap-x-6 gap-y-10',
+          gallery.columns === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'
+        )
+      "
     >
       <article
         v-for="(card, index) in gallery.cards"
         :key="card.id"
-        :class="cn(collapsedOnMobile(index) && 'hidden md:block')"
+        :class="
+          cn(
+            collapsedOnMobile(index) && 'hidden md:block',
+            card.span === 'full' && 'md:col-span-full'
+          )
+        "
       >
-        <div
-          class="group relative block aspect-19/10 overflow-hidden rounded-4.5xl bg-black/40"
+        <component
+          :is="card.expandable ? 'button' : 'div'"
+          data-testid="gallery-card-media"
+          :type="card.expandable ? 'button' : undefined"
+          :aria-label="card.expandable ? t('player.fullscreen') : undefined"
+          :class="
+            cn(
+              'group relative block w-full overflow-hidden bg-black/40',
+              card.expandable && 'cursor-pointer text-left',
+              overlayCaptions ? 'rounded-3xl' : 'rounded-4.5xl',
+              card.span === 'full'
+                ? 'aspect-video md:aspect-3/1'
+                : overlayCaptions
+                  ? 'aspect-square'
+                  : 'aspect-19/10'
+            )
+          "
+          @click="expandImage(card)"
         >
           <video
             v-if="card.media.kind === 'video'"
@@ -91,8 +131,36 @@ const { stop } = useIntersectionObserver(
           />
 
           <div
-            class="absolute inset-0 bg-linear-to-b from-black/25 to-transparent"
+            :class="
+              cn(
+                'absolute inset-0',
+                overlayCaptions
+                  ? 'bg-linear-to-t from-black/60 via-transparent to-transparent'
+                  : 'bg-linear-to-b from-black/25 to-transparent'
+              )
+            "
           />
+
+          <p
+            v-if="overlayCaptions"
+            :class="
+              cn(
+                'absolute inset-x-4 bottom-3 text-base/tight font-medium text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:bottom-4 lg:text-lg',
+                card.expandable && 'pr-12 lg:pr-16'
+              )
+            "
+          >
+            {{ card.description[locale] || card.description.en }}
+          </p>
+
+          <span
+            v-if="card.expandable"
+            data-testid="gallery-card-expand"
+            aria-hidden="true"
+            class="absolute right-3 bottom-3 flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity group-hover:opacity-90 lg:right-4 lg:bottom-4 lg:size-10"
+          >
+            <Maximize2 class="size-3.5 lg:size-4" :stroke-width="2.5" />
+          </span>
 
           <div
             v-if="card.logoSrc"
@@ -113,7 +181,7 @@ const { stop } = useIntersectionObserver(
               />
             </div>
           </div>
-        </div>
+        </component>
 
         <div
           v-if="showCardMeta || showCardLink"
@@ -123,8 +191,8 @@ const { stop } = useIntersectionObserver(
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
-                  ? t('modelLaunch.tagFree', locale)
-                  : t('modelLaunch.tagPremium', locale)
+                  ? t('modelLaunch.tagFree')
+                  : t('modelLaunch.tagPremium')
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
@@ -153,7 +221,10 @@ const { stop } = useIntersectionObserver(
           </IconButton>
         </div>
 
-        <p class="mt-3 text-sm font-light text-primary-comfy-canvas">
+        <p
+          v-if="!overlayCaptions"
+          class="mt-3 text-sm font-light text-primary-comfy-canvas"
+        >
           {{ card.description[locale] || card.description.en }}
         </p>
 
@@ -170,12 +241,32 @@ const { stop } = useIntersectionObserver(
           <CopyTextButton
             class="-mr-2 -mb-2"
             :value="card.prompt[locale] || card.prompt.en"
-            :label="t('modelLaunch.copyPrompt', locale)"
-            :copied-label="t('ui.copied', locale)"
+            :label="t('modelLaunch.copyPrompt')"
+            :copied-label="t('ui.copied')"
           />
         </div>
       </article>
     </div>
+
+    <Dialog
+      :open="expandedImage !== null"
+      @update:open="(open) => !open && (expandedImage = null)"
+    >
+      <DialogContent
+        v-if="expandedImage"
+        :close-label="t('gallery.detail.close')"
+        class="max-h-[95vh] w-[calc(100%-1rem)] max-w-none overflow-visible border-0 bg-transparent p-0 sm:max-w-none sm:p-0 lg:p-0"
+      >
+        <DialogTitle class="sr-only">
+          {{ expandedImage.name[locale] || expandedImage.name.en }}
+        </DialogTitle>
+        <img
+          :src="expandedImage.src"
+          :alt="expandedImage.name[locale] || expandedImage.name.en"
+          class="max-h-[92vh] w-full rounded-3xl object-contain"
+        />
+      </DialogContent>
+    </Dialog>
 
     <div
       v-if="hasMobileOverflow && !mobileExpanded"
@@ -188,7 +279,7 @@ const { stop } = useIntersectionObserver(
         class="uppercase"
         @click="mobileExpanded = true"
       >
-        {{ t('modelLaunch.loadMore', locale) }}
+        {{ t('modelLaunch.loadMore') }}
       </BrandButton>
     </div>
   </section>

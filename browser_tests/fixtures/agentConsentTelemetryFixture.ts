@@ -1,12 +1,11 @@
+import { mergeTests } from '@playwright/test'
+
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { agentConsentTest } from '@e2e/fixtures/agentConsentFixture'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-
-export interface CapturedTelemetryEvent {
-  event: string
-  properties: Record<string, unknown>
-}
 
 /**
  * Reads the consent surface's telemetry from inside a real browser.
@@ -30,38 +29,13 @@ export interface CapturedTelemetryEvent {
  * through it; its ingest host is routed so nothing leaves the browser and the
  * network-isolation fixture stays satisfied.
  */
-export const agentConsentTelemetryTest = agentConsentTest.extend<{
+const test = mergeTests(agentConsentTest, hostTelemetryFixture)
+
+export const agentConsentTelemetryTest = test.extend<{
   consentTelemetry: CapturedTelemetryEvent[]
 }>({
-  consentTelemetry: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
-    await use([])
-  },
-  page: async ({ page, consentTelemetry }, use) => {
-    await page.exposeFunction(
-      '__captureHostTelemetry',
-      (captured: CapturedTelemetryEvent) => {
-        consentTelemetry.push(captured)
-      }
-    )
-    await page.addInitScript(() => {
-      // Declared before the app boots so `hasHostTelemetryBridge` sees it.
-      Object.assign(window, {
-        __comfyDesktop2: {
-          isRemote: () => false,
-          Telemetry: {
-            capture: (event: string, properties: Record<string, unknown>) => {
-              void (
-                window as unknown as {
-                  __captureHostTelemetry: (
-                    captured: CapturedTelemetryEvent
-                  ) => Promise<void>
-                }
-              ).__captureHostTelemetry({ event, properties })
-            }
-          }
-        }
-      })
-    })
+  consentTelemetry: async ({ hostTelemetry }, use) => use(hostTelemetry),
+  page: async ({ page }, use) => {
     // Layered over the fixture's own `/api/features`, which the later route
     // wins. Keep the authenticated allowlist grant from the base fixture: that
     // grant is read directly from remote config once auth has loaded, not from

@@ -8,10 +8,10 @@ import {
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
-import { useCarouselAutoplay } from '../../../composables/useCarouselAutoplay'
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
-import { t } from '../../../i18n/translations'
-import type { Locale } from '../../../i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   locale = 'en',
@@ -21,11 +21,10 @@ const {
 } = defineProps<{
   locale?: Locale
   gapClass?: string
-  // Advances one viewport every `autoplayMs`, wrapping to the start; paused
-  // while hovered, off-screen, or for reduced-motion visitors. Off by default.
   autoplayMs?: number
   class?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 const trackRef = ref<HTMLElement>()
 const { x } = useScroll(trackRef)
@@ -99,7 +98,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('carousel.previous', locale)"
+        :aria-label="t('carousel.previous')"
         @click="scroll(-1)"
       >
         <img
@@ -112,7 +111,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
-        :aria-label="t('carousel.next', locale)"
+        :aria-label="t('carousel.next')"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

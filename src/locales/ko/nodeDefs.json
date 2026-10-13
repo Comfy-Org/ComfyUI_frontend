@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+        "tooltip": "ISO 639-1 언어 코드(예: 'en', 'es', 'ja')입니다. 자동 감지를 사용하려면 비워 두세요."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+        "tooltip": "ISO 639-1 언어 코드(예: 'en', 'es', 'ja')입니다. 자동 감지를 사용하려면 비워 두세요."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "프롬프트를 사용해 FLUX 3로 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 이미지 1, 이미지 2 등의 방식으로 지칭하세요.",
+    "display_name": "Flux 3 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto'는 첫 번째 참조 이미지를 따르거나 프롬프트에서 종횡비를 선택합니다."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "출력에서 객체 또는 텍스트를 배치하는 Create Bounding Boxes의 선택 사항인 상자입니다. 위치는 캔버스를 기준으로 하므로 출력의 종횡비를 지정하세요."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "생성 전에 모델이 웹 및 이미지 검색으로 프롬프트를 조사하도록 합니다."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "선택 사항인 참조 이미지입니다. 총 최대 10개까지 가능하며, 각각 최소 256x256픽셀이어야 합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "생성할 내용 또는 수행할 편집입니다. 프롬프트는 생성 전에 해석되고 확장됩니다."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "선택한 종횡비에서의 출력 크기입니다. 0.75K는 약 0.6메가픽셀, 1K는 1MP, 1.5K는 2.4MP, 2K는 4.2MP, 4K는 16.8MP입니다."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검열 허용 수준이며, 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX 3는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "종횡비",
-        "tooltip": "출력 비디오의 종횡비입니다."
+        "tooltip": "출력 비디오의 종횡비입니다. 입력 이미지가 제공되면 무시되며, 비디오는 이미지의 종횡비를 따릅니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "원하는 비디오의 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5에서는 선택 사항입니다."
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5 모델에서는 선택 사항입니다."
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 동영상의 해상도입니다. 1080p는 grok-imagine-video-1.5에서만 사용할 수 있습니다."
+        "tooltip": "출력 비디오의 해상도입니다. grok-imagine-video에서는 1080p를 사용할 수 없습니다."
       },
       "seed": {
         "name": "시드",
@@ -7759,6 +7796,67 @@
       },
       "1": {
         "name": "미리보기",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 이미지에 동기화된 대화와 사운드를 적용해 비디오로 애니메이션화합니다. 이미지는 첫 번째 프레임으로 사용됩니다.",
+    "display_name": "HeyGen Video 1.0 이미지-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0을 사용하여 텍스트 프롬프트로부터 동기화된 대화와 사운드가 포함된 비디오를 생성합니다. 선택적으로 최대 12개의 참조 이미지, 비디오 및 오디오 클립을 연결하고 프롬프트에서 {'@'}Image1, {'@'}Video1, {'@'}Audio1로 언급할 수 있습니다.",
+    "display_name": "HeyGen Video 1.0 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기나 가로세로비를 변경할 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit을 사용하세요.",
+    "display_name": "Ideogram 4.5 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Ideogram의 빠른 텍스트-투-이미지 모델인 P-Image를 사용하여 이미지를 생성합니다. 강력한 타이포그래피와 포토리얼리즘을 제공하며, 정확한 텍스트, 색상 및 레이아웃을 위한 Ideogram 4.0 구조화 JSON 캡션을 지원합니다.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "실제로 이미지가 생성된 프롬프트(프롬프트 업샘플링이 실행된 경우 재작성된 구조화 캡션, 아니면 입력한 프롬프트). prompt_upsampling을 OFF로 하고 동일한 시드로 다시 입력하면 이 이미지를 재현할 수 있습니다."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고, 수정하지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 허용합니다.",
+    "display_name": "Ideogram 4.5 정밀 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Ideogram 4.5 텍스트-이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_size": {
+        "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "최종 프롬프트",
+        "tooltip": "이미지가 생성된 기반이 되는 구조화된 캡션입니다. magic_prompt를 'off'로 설정하고 동일한 시드와 함께 다시 입력하면 이미지를 재현할 수 있습니다."
       }
     }
   },
@@ -18320,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "정수",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "생성 후 제어"
       },
       "value": {
@@ -22211,8 +22409,8 @@
   "SeedNode": {
     "display_name": "시드",
     "inputs": {
-      "fixed": {
-        "name": "생성 후 고정"
+      "control_after_generate": {
+        "name": "생성 후 제어"
       },
       "seed": {
         "name": "시드"

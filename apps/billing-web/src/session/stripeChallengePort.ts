@@ -27,7 +27,17 @@ export function createStripeChallengePort(
     handleNextAction: async (clientSecret) => {
       const provider = await stripe
       if (!provider) return { error: 'provider_unavailable' }
-      return provider.handleNextAction({ clientSecret })
+      try {
+        return await provider.handleNextAction({ clientSecret })
+      } catch (error) {
+        // Stripe throws for an intent that no longer requires action, e.g. a
+        // redirect payment finished before the server's status caught up.
+        // The intent's own status decides whether that counts as completed.
+        const { paymentIntent } =
+          await provider.retrievePaymentIntent(clientSecret)
+        if (paymentIntent) return { paymentIntent }
+        throw error
+      }
     },
     leavesPage: async (clientSecret) => {
       const provider = await stripe

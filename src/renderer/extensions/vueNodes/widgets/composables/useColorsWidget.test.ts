@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { useColorsWidget } from './useColorsWidget'
 
@@ -18,7 +17,7 @@ describe('useColorsWidget', () => {
       type: 'COLORS',
       name: 'palette',
       default: ['#fff']
-    } as InputSpec)
+    })
     expect(node.addWidget).toHaveBeenCalledWith(
       'colors',
       'palette',
@@ -29,7 +28,7 @@ describe('useColorsWidget', () => {
 
   it('defaults to an empty palette', () => {
     const node = mockNode()
-    useColorsWidget()(node, { type: 'COLORS', name: 'palette' } as InputSpec)
+    useColorsWidget()(node, { type: 'COLORS', name: 'palette' })
     expect(node.addWidget).toHaveBeenCalledWith('colors', 'palette', [], null)
   })
 
@@ -40,7 +39,7 @@ describe('useColorsWidget', () => {
       type: 'COLORS',
       name: 'palette',
       default: shared
-    } as InputSpec)
+    })
     expect(node.addWidget.mock.calls[0][2]).not.toBe(shared)
   })
 })

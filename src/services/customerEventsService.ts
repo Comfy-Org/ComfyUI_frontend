@@ -162,18 +162,6 @@ export const useCustomerEventsService = () => {
     return Object.keys(otherParams).length > 0
   }
 
-  function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
-
-    return Object.entries(params)
-      .map(([key, value]) => {
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
-      })
-      .join('<br>')
-  }
-
   function formatAmount(amountMicros?: number) {
     if (!amountMicros) return '0.00'
     return (amountMicros / 100).toFixed(2)
@@ -192,6 +180,11 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 
@@ -252,7 +245,6 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue,
-    getTooltipContent
+    formatJsonValue
   }
 }

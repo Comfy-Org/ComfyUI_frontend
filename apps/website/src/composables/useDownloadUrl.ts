@@ -1,15 +1,43 @@
 import { computed, onMounted, ref } from 'vue'
 
-import { externalLinks } from '@/config/routes'
-
-export const downloadUrls = {
-  windows: 'https://comfy.org/download/windows/nsis/x64',
-  windowsArm: 'https://comfy.org/download/windows/nsis/arm64',
-  macArm: 'https://download.comfy.org/mac/dmg/arm64',
-  linux: 'https://download.comfy.org/linux/appimage/x64'
-} as const
+import type { TranslationKey } from '@/i18n/translations'
 
 export type Platform = 'windows' | 'mac' | 'linux'
+
+export const platformIcons: Record<Platform, string> = {
+  windows: '/icons/os/windows.svg',
+  mac: '/icons/os/apple.svg',
+  linux: '/icons/os/linux.svg'
+}
+
+interface DesktopInstaller {
+  platform: Platform
+  url: string
+  label: TranslationKey
+}
+
+export const installers = {
+  windows: {
+    platform: 'windows',
+    url: 'https://comfy.org/download/windows/nsis/x64',
+    label: 'download.hero.installers.windowsX64'
+  },
+  windowsArm: {
+    platform: 'windows',
+    url: 'https://comfy.org/download/windows/nsis/arm64',
+    label: 'download.hero.installers.windowsArm64'
+  },
+  macArm: {
+    platform: 'mac',
+    url: 'https://download.comfy.org/mac/dmg/arm64',
+    label: 'download.hero.installers.macArm64'
+  },
+  linux: {
+    platform: 'linux',
+    url: 'https://download.comfy.org/linux/appimage/x64',
+    label: 'download.hero.installers.linuxX64'
+  }
+} as const satisfies Record<string, DesktopInstaller>
 
 export interface DetectedDevice {
   platform: Platform | null
@@ -78,13 +106,13 @@ export function useDownloadUrl() {
   const isMobileUa = ref(false)
   const armInstaller = ref(false)
 
-  const downloadUrl = computed(() => {
+  const installer = computed<DesktopInstaller | null>(() => {
     if (platform.value === 'windows') {
-      return armInstaller.value ? downloadUrls.windowsArm : downloadUrls.windows
+      return armInstaller.value ? installers.windowsArm : installers.windows
     }
-    if (platform.value === 'mac') return downloadUrls.macArm
-    if (platform.value === 'linux') return downloadUrls.linux
-    return externalLinks.github
+    if (platform.value === 'mac') return installers.macArm
+    if (platform.value === 'linux') return installers.linux
+    return null
   })
 
   const showFallback = computed(
@@ -101,5 +129,5 @@ export function useDownloadUrl() {
     detected.value = true
   })
 
-  return { downloadUrl, platform, showFallback, isMobileUa }
+  return { installer, showFallback, isMobileUa }
 }

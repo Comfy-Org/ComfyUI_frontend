@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import type { SavedWorkflow } from '../../config/workshop-workflow-storage'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import type { SavedWorkflow } from '@/config/workshop-workflow-storage'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 
 const record: SavedWorkflow = {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -7,26 +7,25 @@ import type {
   AppWorkshopModel,
   WorkflowWorkshopModel,
   WorkshopModel
-} from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import SplitReveal from './SplitReveal.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
-import type { WorkshopPageType } from '../../scripts/workshop-analytics'
+import type { WorkshopPageType } from '@/scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled
-} from '../../scripts/posthog'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
+} from '@/scripts/posthog'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
 import {
   loadAppCatalogue,
   loadWorkflowCatalogue
-} from '../../lib/workshop/catalogue-components'
-import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
+} from '@/lib/workshop/catalogue-components'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
@@ -42,8 +41,13 @@ const {
   locale?: Locale
   section?: CatalogueTab
 }>()
+const { t } = translationsFor(locale)
 
 const inSection = ref(false)
+// A category replaces the page's own heading and the switch between
+// catalogues, so the state has to reach the page that renders them.
+const emit = defineEmits<{ section: [boolean] }>()
+watch(inSection, (value) => emit('section', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
@@ -71,7 +75,7 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     name: app.name,
     task: ac(app.appId === 'studio' ? 'studioTask' : 'reshootTask', locale),
     href: app.href,
-    image: app.thumbnail?.url ?? app.thumbnailUrl
+    thumbnail: app.thumbnail
   }))
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
@@ -121,16 +125,15 @@ whenever(
       <p
         v-for="(subtitle, tab) in SUBTITLE_KEY"
         :key="tab"
-        :class="cn('col-start-1 row-start-1', tab !== section && 'invisible')"
+        :class="
+          cn(
+            'col-start-1 row-start-1',
+            tab === section ? 'animate-soft-in' : 'invisible'
+          )
+        "
         :aria-hidden="tab !== section"
       >
-        <SplitReveal
-          v-if="tab === section"
-          :text="t(subtitle, locale)"
-          :delay="260"
-          :stagger="50"
-        />
-        <template v-else>{{ t(subtitle, locale) }}</template>
+        {{ t(subtitle) }}
       </p>
     </div>
   </div>
@@ -144,7 +147,7 @@ whenever(
   >
     <template #tabs>
       <CatalogueTabs
-        v-if="availableTabs.length > 1"
+        v-if="availableTabs.length > 1 && !inSection"
         :tabs="availableTabs"
         :model-value="section"
         :locale
@@ -162,6 +165,7 @@ whenever(
   >
     <template #tabs>
       <CatalogueTabs
+        v-if="!inSection"
         :tabs="availableTabs"
         :model-value="section"
         :locale
@@ -178,6 +182,7 @@ whenever(
   >
     <template #tabs>
       <CatalogueTabs
+        v-if="!inSection"
         :tabs="availableTabs"
         :model-value="section"
         :locale

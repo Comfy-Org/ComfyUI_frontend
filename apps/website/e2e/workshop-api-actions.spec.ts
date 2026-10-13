@@ -47,6 +47,25 @@ test('the model API tab opens with the key action and what it needs beside the c
   expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
 })
 
+test('the model API tab copies the endpoint it shows', async ({
+  page,
+  context
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto(MODEL_PATH)
+  await page.getByTestId('tab-api').click()
+
+  const facts = page.getByTestId('api-facts')
+  await facts.getByRole('button', { name: 'Copy endpoint' }).click()
+
+  await expect(
+    facts.getByRole('button', { name: 'Copy endpoint' })
+  ).toContainText('Copied')
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    'POST /v2/models/bfl/flux-2-max'
+  )
+})
+
 test('@mobile the model API tab puts the key action above the code', async ({
   page
 }) => {
@@ -67,7 +86,7 @@ test('the workflow API tab opens with the key action and what it needs beside th
   await page.getByRole('tab', { name: 'API', exact: true }).click()
 
   const facts = page.getByTestId('api-facts')
-  await expect(facts).toContainText('run(workflow, api_key=…)')
+  await expect(facts).toContainText('COMFY_API_KEY')
   await expect(facts).not.toContainText('/api/prompt')
   await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   await expect(facts).toContainText('POST')

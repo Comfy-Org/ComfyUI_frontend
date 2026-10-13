@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -16,6 +16,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -25,7 +31,25 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
+    }
 
 export type AgentPanelView =
   | { screen: 'chat' }
@@ -60,6 +84,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -74,6 +103,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const targetUnavailable = computed(
     () =>
       targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
       targetTracking.value.unavailable === true
   )
   const canRestoreWorkflow = computed(
@@ -110,7 +140,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    targetTracking.value = { mode: 'retained', workflow }
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
   }
 
   function markWorkflowTargetUnavailable(): void {
@@ -121,20 +154,66 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
   }
 
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
+  }
+
   // Only a retained target can become detached. A following target belongs to
   // the editor, including its replacement when the visible tab closes.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
       const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        target.workflow !== null &&
-        !workflowStore.openWorkflows.includes(target.workflow)
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
       )
         setWorkflowTarget(null)
     }
   )
+
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
+
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
+  }
+
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary)
+        after(() => {
+          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+        })
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
+  })
 
   let openedAt: number | null = null
   // Guards the pagehide teardown report below: true once this open epoch has
@@ -142,6 +221,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // (background/resume/close) can't emit a second overlapping duration for
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
+
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
+  }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
 
@@ -152,8 +238,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
     hasEverOpened.value = true
     if (openedAt !== null) return
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -177,6 +262,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
     )
   )
+  const requestedWidth = computed(() =>
+    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+  )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
 
   const isMaximized = computed(() => maximized.value)
 
@@ -185,8 +277,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   ): void {
     if (isOpen.value) return
     isOpen.value = true
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -251,6 +342,36 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): void {
+    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -262,7 +383,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
+    creditTransitionNotice: readonly(creditTransitionNotice),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
     width,
+    requestedWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,

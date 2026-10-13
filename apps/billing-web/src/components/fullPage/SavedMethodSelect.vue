@@ -58,7 +58,7 @@ function partsOf(method: SavedPaymentMethod) {
     class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-base-background px-4 text-sm"
   >
     <i
-      :class="cn(partsOf(chosen).icon, 'size-4 shrink-0')"
+      :class="cn(partsOf(chosen).icon, 'size-4 shrink-0 text-muted-foreground')"
       aria-hidden="true"
     />
     <span class="text-base-foreground capitalize">
@@ -83,7 +83,9 @@ function partsOf(method: SavedPaymentMethod) {
     >
       <template v-if="chosen">
         <i
-          :class="cn(partsOf(chosen).icon, 'size-4 shrink-0')"
+          :class="
+            cn(partsOf(chosen).icon, 'size-4 shrink-0 text-muted-foreground')
+          "
           aria-hidden="true"
         />
         <span class="text-base-foreground capitalize">

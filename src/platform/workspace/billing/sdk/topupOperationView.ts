@@ -7,6 +7,8 @@
 import type {
   BillingDeclineReason,
   BillingOperationState,
+  BillingOperationTerminal,
+  BillingTelemetryFailure,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -16,10 +18,6 @@ import {
 } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
-import type {
-  BillingFailure,
-  BillingOperationTerminal
-} from '@/platform/telemetry/types'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
@@ -108,7 +106,7 @@ function topupFailureError(failure: TopupFailure): WorkspaceApiError {
 
 function topupFailureCategory(
   failure: TopupFailure
-): BillingFailure['failure_category'] {
+): BillingTelemetryFailure['failure_category'] {
   switch (failure.code) {
     case 'REQUEST_FAILED':
       return failure.httpStatus === undefined ? 'network' : 'api_rejected'

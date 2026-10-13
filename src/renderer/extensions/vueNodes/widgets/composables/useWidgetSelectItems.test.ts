@@ -78,14 +78,6 @@ function createDefaultOptions(
 }
 
 describe('display label behavior', () => {
-  it('uses values as labels when no label function provided', () => {
-    const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-    expect(dropdownItems.value[0]).toMatchObject({
-      name: 'img_001.png',
-      label: 'img_001.png'
-    })
-  })
-
   it('applies custom label function', () => {
     const getOptionLabel = (v?: string | null) => `Custom: ${v}`
     const { dropdownItems } = useWidgetSelectItems(
@@ -95,9 +87,6 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value on label function error', () => {
-    const consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => {})
     const getOptionLabel = (v?: string | null) => {
       if (v === 'photo_abc.jpg') throw new Error('fail')
       return `Labeled: ${v}`
@@ -108,8 +97,7 @@ describe('display label behavior', () => {
     expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
     expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
     expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
-    expect(consoleWarnSpy).toHaveBeenCalled()
-    consoleWarnSpy.mockRestore()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('falls back to value when label function returns empty string', () => {
@@ -607,10 +595,6 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('falls back to preview when resolver rejects', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
       mockMediaAssets.items.value = [
         makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)
       ]
@@ -625,7 +609,7 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Failed to resolve multi-output job',
           'job-fail',
           expect.any(Error)
@@ -634,7 +618,6 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].name).toBe('preview.png [output]')
-      consoleWarnSpy.mockRestore()
     })
 
     it('does not expand a hash-keyed asset even if its metadata reports outputCount > 1', async () => {

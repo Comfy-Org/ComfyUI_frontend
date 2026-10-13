@@ -2,16 +2,17 @@
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchBeforeAfter } from './types'
 
-import VideoCompareSlider from '../../components/common/VideoCompareSlider.vue'
-import { t } from '../../i18n/translations'
+import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', beforeAfter } = defineProps<{
   beforeAfter: ModelLaunchBeforeAfter
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const activeId = ref(beforeAfter.tabs[0]?.id ?? '')
 const activeTab = computed(
@@ -30,19 +31,19 @@ const activeTab = computed(
       <div class="flex min-w-0 flex-1 flex-col justify-between p-6">
         <div>
           <h2 class="text-3xl font-light text-primary-comfy-canvas lg:text-4xl">
-            {{ t(beforeAfter.headingKey, locale) }}
+            {{ t(beforeAfter.headingKey) }}
           </h2>
           <p
             v-if="beforeAfter.bodyKey"
             class="mt-6 text-sm text-primary-comfy-canvas/70"
           >
-            {{ t(beforeAfter.bodyKey, locale) }}
+            {{ t(beforeAfter.bodyKey) }}
           </p>
         </div>
 
         <div class="mt-10 flex flex-col gap-4">
           <TabsList
-            :aria-label="t('modelLaunch.beforeAfter.tabsLabel', locale)"
+            :aria-label="t('modelLaunch.beforeAfter.tabsLabel')"
             class="flex w-full max-w-full rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto sm:self-start"
           >
             <TabsTrigger
@@ -74,9 +75,9 @@ const activeTab = computed(
           <VideoCompareSlider
             :before-src="tab.beforeSrc"
             :after-src="tab.afterSrc"
-            :before-label="t('modelLaunch.beforeAfter.before', locale)"
-            :after-label="t('modelLaunch.beforeAfter.after', locale)"
-            :slider-label="t('modelLaunch.beforeAfter.sliderLabel', locale)"
+            :before-label="t('modelLaunch.beforeAfter.before')"
+            :after-label="t('modelLaunch.beforeAfter.after')"
+            :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
             class="rounded-4.5xl"
           />
         </TabsContent>

@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyEvent } from '../../data/events'
+import type { ComfyEvent } from '@/data/events'
 
-import { directoryRows } from '../../utils/eventsDirectory'
+import { directoryRows } from '@/utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
 const localized = (en: string) => ({ en, 'zh-CN': en })

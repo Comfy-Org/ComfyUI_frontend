@@ -6,10 +6,10 @@ import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SheetRest } from '../../composables/useBottomSheet'
-import { heightAt, restAt } from '../../composables/useBottomSheet'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { useVisualViewport } from '../../composables/useVisualViewport'
+import type { SheetRest } from '@/composables/useBottomSheet'
+import { heightAt, restAt } from '@/composables/useBottomSheet'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { useVisualViewport } from '@/composables/useVisualViewport'
 
 interface FacetSheetOption {
   readonly value: string

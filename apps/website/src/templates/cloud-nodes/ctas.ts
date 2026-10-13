@@ -1,6 +1,6 @@
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export interface CloudNodesCta {
   label: string
@@ -13,18 +13,19 @@ export function cloudNodesCtas(locale: Locale): {
   docs: CloudNodesCta
   update: CloudNodesCta
 } {
+  const { t } = translationsFor(locale)
   return {
     getStarted: {
-      label: t('cloudNodesLaunch.cta.getStarted', locale),
+      label: t('cloudNodesLaunch.cta.getStarted'),
       href: getRoutes(locale).download
     },
     docs: {
-      label: t('cloudNodesLaunch.cta.docs', locale),
+      label: t('cloudNodesLaunch.cta.docs'),
       href: externalLinks.docsCloudNodes,
       target: '_blank'
     },
     update: {
-      label: t('cloudNodesLaunch.cta.update', locale),
+      label: t('cloudNodesLaunch.cta.update'),
       href: externalLinks.docsUpdateComfyUI,
       target: '_blank'
     }

@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "dil_kodu",
-        "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
+        "tooltip": "ISO 639-1 dil kodu (örn. 'en', 'es', 'ja'). Otomatik algılama için boş bırakın."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "dil_kodu",
-        "tooltip": "ISO-639-1 veya ISO-639-3 dil kodu (örn. 'en', 'es', 'fra'). Otomatik algılama için boş bırakın."
+        "tooltip": "ISO 639-1 dil kodu (örn. 'en', 'es', 'ja'). Otomatik algılama için boş bırakın."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "benzerlik_arttırıcı"
-      },
-      "model_speed": {
-        "name": "hız"
-      },
-      "model_style": {
-        "name": "stil"
-      },
-      "model_use_speaker_boost": {
-        "name": "konuşmacı_arttırıcıyı_kullan"
       },
       "output_format": {
         "name": "çıktı_formatı",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Bir istemden FLUX 3 ile bir görsel üretir veya en fazla 10 referans görseli düzenler ve birleştirir. İstem içinde referanslara görsel 1, görsel 2 ve benzeri olarak başvurun.",
+    "display_name": "Flux 3 Görsel",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto', ilk referans görseli izler veya istemden bir oran seçer."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Çıktıya nesne veya metin yerleştiren Create Bounding Boxes'tan isteğe bağlı kutular. Konumlar tuvale göre belirlenir; bu nedenle çıktı ile aynı en-boy oranını verin."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Modelin, üretimden önce istemi web ve görsel aramasıyla araştırmasına izin verin."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İsteğe bağlı referans görselleri; toplamda en fazla 10 adet, her biri en az 256x256 piksel."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ne üretileceği veya yapılacak düzenleme. İstem, üretimden önce yorumlanır ve genişletilir."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Seçilen en-boy oranındaki çıktı boyutu: 0.75K yaklaşık 0,6 megapikseldir, 1K 1 MP, 1.5K 2,4 MP, 2K 4,2 MP, 4K 16,8 MP'dir."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderasyon toleransı; 0 en katı ayardır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün yeniden çalıştırılıp çalıştırılmayacağını belirleyen tohum; FLUX 3 kendi tohumunu seçer, bu nedenle gerçek sonuçlar bu değerden bağımsız olarak deterministik değildir."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "en boy oranı",
-        "tooltip": "Çıktı videonun en boy oranı."
+        "tooltip": "Çıktı videosunun en-boy oranı. Bir giriş görseli sağlandığında yok sayılır; video görselin en-boy oranını izler."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "istem",
-        "tooltip": "İstenen videonun metin açıklaması. Bir giriş görseli sağlandığında grok-imagine-video-1.5 için isteğe bağlıdır."
+        "tooltip": "İstenen videonun metin açıklaması. Bir giriş görseli sağlandığında grok-imagine-video-1.5 modelleri için isteğe bağlıdır."
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı videosunun çözünürlüğü. 1080p yalnızca grok-imagine-video-1.5 için kullanılabilir."
+        "tooltip": "Çıktı videosunun çözünürlüğü. 1080p, grok-imagine-video için kullanılamaz."
       },
       "seed": {
         "name": "tohum",
@@ -7759,6 +7796,67 @@
       },
       "1": {
         "name": "önizleme",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0 kullanarak senkronize diyalog ve ses içeren bir görüntüyü videoya dönüştürün. Görüntü ilk kare olarak kullanılır.",
+    "display_name": "HeyGen Video 1.0 Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0 kullanarak bir metin isteminden senkronize diyalog ve ses içeren bir video oluşturun. İsteğe bağlı olarak en fazla 12 referans görüntü, video ve ses klibi bağlayabilir ve istemde bunlardan {'@'}Image1, {'@'}Video1, {'@'}Audio1 olarak bahsedebilirsiniz.",
+    "display_name": "HeyGen Video 1.0 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5 kullanarak bir metin istemiyle yönlendirilen en fazla 5 görüntüyü düzenler veya birleştirir. Görüntünün tamamını yeniden işler ve boyutunu veya en-boy oranını değiştirebilir; dokunulmamış pikselleri değiştirmemek için Ideogram 4.5 Hassas Düzenleme'yi kullanın.",
+    "display_name": "Ideogram 4.5 Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_height": {
+        "name": "yükseklik"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "model_width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "P-Image, Ideogram'un hızlı metinden-görüntüye modeli ile görseller üretir. Güçlü tipografi ve foto-gerçekçilik; tam metin, renkler ve yerleşim için Ideogram 4.0 yapılandırılmış JSON başlıklarını destekler.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Görselin gerçekten üretildiği istem (prompt_upsampling çalıştıysa yeniden yazılmış yapılandırılmış başlık, aksi halde kendi isteminiz). Bunu prompt_upsampling KAPALI ve aynı tohum ile tekrar kullanarak bu görseli yeniden üretebilirsiniz."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 hassas düzenlemeyi kullanarak bir metin istemiyle yönlendirilen görüntüyü düzenler: yalnızca istemin talep ettiği şey değişir, dokunulmamış pikseller aynı kalır ve çıktı görüntü 1'in boyutunu korur (yaklaşık 4 MP üzerindeki görüntüler önce küçültülür). En fazla 4 referans görüntüyü kabul eder.",
+    "display_name": "Ideogram 4.5 Hassas Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5 kullanarak bir metin isteminden görüntüler oluşturur.",
+    "display_name": "Ideogram 4.5 Metinden Görüntüye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "boyut"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Görüntünün oluşturulduğu yapılandırılmış açıklama. Görüntüyü yeniden oluşturmak için magic_prompt ayarını 'off' olarak belirleyip aynı seed ile geri besleyin."
       }
     }
   },
@@ -18320,8 +18518,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
-        "name": "oluşturduktan sonra kontrol et"
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
       },
       "value": {
         "name": "değer"
@@ -22211,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Tohum",
     "inputs": {
-      "fixed": {
-        "name": "oluşturduktan sonra kontrol et"
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
       },
       "seed": {
         "name": "tohum"

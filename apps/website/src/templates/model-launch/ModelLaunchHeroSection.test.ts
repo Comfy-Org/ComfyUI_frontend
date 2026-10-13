@@ -4,10 +4,10 @@ import { ref } from 'vue'
 
 import type { ModelLaunchHero } from './types'
 
-import { useHeroLogo } from '../../composables/useHeroLogo'
+import { useHeroLogo } from '@/composables/useHeroLogo'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 
-vi.mock(import('../../composables/useHeroLogo'), { spy: true })
+vi.mock(import('@/composables/useHeroLogo'), { spy: true })
 vi.mocked(useHeroLogo).mockReturnValue({ loaded: ref(false) })
 
 const hero: ModelLaunchHero = {
@@ -46,6 +46,22 @@ describe('ModelLaunchHeroSection', () => {
       expect(screen.getByRole('heading', { level: 1 })).toHaveClass(
         desktopClass
       )
+    }
+  )
+
+  it.for([
+    { mediaOutline: undefined, outlined: false },
+    { mediaOutline: 'gray' as const, outlined: true }
+  ])(
+    'outlines the hero media in gray when mediaOutline=$mediaOutline',
+    ({ mediaOutline, outlined }) => {
+      render(ModelLaunchHeroSection, {
+        props: { hero: { ...hero, mediaOutline } }
+      })
+
+      expect(
+        screen.getByAltText('').classList.contains('border-primary-warm-gray')
+      ).toBe(outlined)
     }
   )
 

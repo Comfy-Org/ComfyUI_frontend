@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+import { isEslintFile } from './scripts/eslintScope.ts'
+
 // lint-staged calls this config once per concurrent chunk in one process.
 // Claim each fixed-scope command once so only its first matching chunk runs it.
 const claimed = new Set<string>()
@@ -45,6 +47,9 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...(codeFiles.length > 0
+      ? repoWide('pnpm lint:server-facts --staged')
+      : []),
     ...commandsWithFiles(
       astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
       'pnpm --dir apps/website exec prettier --write'
@@ -68,7 +73,7 @@ function lintCommands(
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
-      [...codeFiles, ...astroFiles],
+      [...codeFiles, ...astroFiles].filter(isEslintFile),
       `pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]

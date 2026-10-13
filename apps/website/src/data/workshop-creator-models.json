@@ -51,21 +51,6 @@
     "byteplus/seed-audio-1.0-multilingual": {
       "family": "flat"
     },
-    "byteplus/seedance-1-0-lite-i2v-250428": {
-      "family": "seedance",
-      "options": {
-        "mode": "image"
-      }
-    },
-    "byteplus/seedance-1-0-lite-t2v-250428": {
-      "family": "seedance",
-      "options": {
-        "mode": "text"
-      }
-    },
-    "byteplus/seedream-3-0-t2i-250415": {
-      "family": "seedream"
-    },
     "byteplus/seedream-4-0-250828": {
       "family": "seedream"
     },
@@ -95,12 +80,6 @@
     },
     "kling/kling-3.0-turbo": {
       "family": "nested-settings"
-    },
-    "kling/kling-v1": {
-      "family": "flat"
-    },
-    "kling/kling-v1-5": {
-      "family": "flat"
     },
     "kling/kling-v2-5-turbo": {
       "family": "flat"
