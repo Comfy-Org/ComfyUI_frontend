@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import AgentConsentCard from './AgentConsentCard.vue'
 
@@ -23,6 +24,23 @@ function renderCard(
 }
 
 describe('AgentConsentCard', () => {
+  it.for([
+    { paletteId: 'light', forcesDarkTheme: true },
+    { paletteId: 'dark', forcesDarkTheme: false },
+    { paletteId: 'solarized', forcesDarkTheme: false },
+    { paletteId: 'nord', forcesDarkTheme: false }
+  ])(
+    'with the $paletteId palette active, forces its own dark theme: $forcesDarkTheme',
+    ({ paletteId, forcesDarkTheme }) => {
+      useColorPaletteStore().activePaletteId = paletteId
+      renderCard()
+
+      const themeScope = screen.getByTestId('agent-consent-theme-scope')
+      if (forcesDarkTheme) expect(themeScope).toHaveClass('dark-theme')
+      else expect(themeScope).not.toHaveClass('dark-theme')
+    }
+  )
+
   it('labels the supplied copy for its parent dialog', () => {
     renderCard()
 

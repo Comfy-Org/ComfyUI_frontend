@@ -3,8 +3,11 @@ import { createReusableTemplate, useResizeObserver } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const {
   title,
@@ -30,6 +33,11 @@ const emit = defineEmits<{
   reject: []
   accept: []
 }>()
+
+const colorPaletteStore = useColorPaletteStore()
+const isLightPalette = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme === true
+)
 
 const CONTAINER_XL_MIN_WIDTH = 576
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
@@ -68,7 +76,13 @@ function choose(action: 'accept' | 'reject'): void {
     </Button>
   </DefineDocsLink>
 
-  <div ref="containerRef" class="dark-theme @container w-full max-w-[640px]">
+  <div
+    ref="containerRef"
+    data-testid="agent-consent-theme-scope"
+    :class="
+      cn('@container w-full max-w-[640px]', isLightPalette && 'dark-theme')
+    "
+  >
     <div
       data-testid="agent-consent-card"
       class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
