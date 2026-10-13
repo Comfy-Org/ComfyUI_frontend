@@ -17,6 +17,7 @@ export const NOINDEX_ROUTES = [
   '/agency-led/vfx',
   '/vfx/v2',
   '/agency-led/vfx/v2',
+  '/agency-led/vfx/black-math',
   '/agency-led/advertising',
   '/agency-led/film-animation',
   '/agency-led/architectural-visualization',

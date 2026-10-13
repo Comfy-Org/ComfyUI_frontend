@@ -5431,5 +5431,36 @@
       "enterprise": "查看企业方案详情",
       "licensing": "MINIMAX 许可"
     }
+  },
+  "blackMathVfx": {
+    "metaTitle": "Black Math 视觉特效 – Comfy",
+    "badge": "COMFY 视觉特效",
+    "heroTitle": "告诉我们你的特效项目需求。\n探索 Black Math 的创作方式。",
+    "heroDescription": "Black Math 的艺术家和技术总监使用 ComfyUI 构建可灵活调整的创作系统。了解他们的创作方式，再与 Comfy 讨论你的项目及与 Black Math 合作的意向。",
+    "primaryCta": "讨论项目需求",
+    "secondaryCta": "探索特效工作流",
+    "intakeNote": "咨询将先发送给 Comfy。请说明特效项目需求及你与 Black Math 合作的意向。团队参与方式、工作范围和责任会在正式合作前讨论确定。",
+    "processHeading": "从项目需求到创作计划。",
+    "steps": {
+      "1": {
+        "title": "项目需求",
+        "description": "分享创作目标、参考画面、原始素材和交付要求。"
+      },
+      "2": {
+        "title": "BLACK MATH",
+        "description": "与 Comfy 讨论你对 Black Math 创作方式的兴趣。"
+      },
+      "3": {
+        "title": "工作范围",
+        "description": "讨论团队参与方式、责任分工、时间安排和商务条款。"
+      },
+      "4": {
+        "title": "下一步",
+        "description": "为项目和制作流程确定切实可行的下一步。"
+      }
+    },
+    "workflowsHeading": "探索 ComfyUI 特效工作流。",
+    "workflowsDescription": "打开、查看并调整已发布的 ComfyUI 工作流示例。",
+    "contactHeading": "与 Comfy 讨论\n你的特效项目需求。"
   }
 }

@@ -31,6 +31,7 @@ const baseRoutes = {
   vfx: '/vfx/',
   vfxV2: '/vfx/v2/',
   agencyVfxV2: '/agency-led/vfx/v2/',
+  agencyVfxBlackMath: '/agency-led/vfx/black-math/',
   advertising: '/advertising/',
   filmAnimation: '/film-animation/',
   architecturalVisualization: '/architectural-visualization/',

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import VfxProofHero from '@/components/campaign/VfxProofHero.vue'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import AgencyEngagementTimeline from '@/components/campaign/AgencyEngagementTimeline.vue'
 import VfxProductionPanel from '@/templates/campaign/VfxProductionPanel.astro'
 import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
@@ -19,8 +20,10 @@ import { pageContext } from '@/utils/jsonLd'
 
 interface Props {
   agency?: boolean
+  partner?: 'black-math'
 }
-const { agency = false } = Astro.props
+const { agency = false, partner } = Astro.props
+const blackMath = partner === 'black-math'
 const { locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
@@ -28,8 +31,12 @@ const { locale } = pageContext(
 )
 const { t } = Astro.locals
 const routes = getRoutes(locale)
-const prefix = agency ? 'vfxV2.agency' : 'vfxV2.comfy'
-const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2`
+const prefix = blackMath
+  ? 'blackMathVfx'
+  : agency
+    ? 'vfxV2.agency'
+    : 'vfxV2.comfy'
+const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2${blackMath ? '&agency_partner=black-math' : ''}`
 const { examples } = vfxContent(locale)
 const previewExamples = examples.map((row) => ({
   ...row,
@@ -45,38 +52,87 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
 ---
 
 <BaseLayout
-  title={t(agency ? 'agency.vfx.metaTitle' : 'vfx.meta.title')}
+  title={t(
+    blackMath
+      ? 'blackMathVfx.metaTitle'
+      : agency
+        ? 'agency.vfx.metaTitle'
+        : 'vfx.meta.title'
+  )}
   description={t(`${prefix}.heroDescription`)}
-  ogImage={vfxWorkflows[5].template.thumbnails[0]}
+  ogImage={blackMath ? story.poster : vfxWorkflows[5].template.thumbnails[0]}
   hideAnnouncementBanner
 >
-  <div data-vfx-v2 data-agency-v2={agency ? 'vfx' : undefined}>
-    <VfxProofHero
-      locale={locale}
-      agency={agency}
-      primaryHref={agency ? contactHref : '#workflows'}
-      data-campaign-hero
-      client:load
-    />
+  <div
+    data-vfx-v2
+    data-agency-v2={agency ? 'vfx' : undefined}
+    data-agency-partner={partner}
+  >
+    {blackMath ? (
+      <HeroSplit01
+        locale={locale}
+        badgeLogoSrc="/images/agency-partners/black-math-stacked.png"
+        badgeLogoAlt={story.company}
+        badgeText={t('blackMathVfx.badge')}
+        title={t('blackMathVfx.heroTitle')}
+        subtitle={t('blackMathVfx.heroDescription')}
+        primaryCta={{ label: t('blackMathVfx.primaryCta'), href: contactHref }}
+        secondaryCta={{
+          label: t('blackMathVfx.secondaryCta'),
+          href: '#workflows'
+        }}
+        videoSrc={story.videoSrc}
+        videoPoster={story.poster}
+        videoTracks={[...story.captions]}
+        videoAriaLabel={t('vfx.proof.title')}
+        videoPreview
+        mediaWrapperClass="order-none lg:flex-[1.2]"
+        titleClass="text-3xl tracking-tight md:text-4xl lg:text-4xl"
+        subtitleClass="max-w-lg text-base"
+        class="lg:gap-12 lg:[&>div:first-child]:flex-[0.8]"
+        data-campaign-hero
+        client:load
+      />
+    ) : (
+      <VfxProofHero
+        locale={locale}
+        agency={agency}
+        primaryHref={agency ? contactHref : '#workflows'}
+        data-campaign-hero
+        client:load
+      />
+    )}
     {agency && <p
       class="mx-auto max-w-9xl px-6 pb-6 text-sm text-primary-comfy-canvas/70 lg:px-16"
     >
-      {t('vfxV2.agency.intakeNote')}
+      {t(blackMath ? 'blackMathVfx.intakeNote' : 'vfxV2.agency.intakeNote')}
     </p>}
-    <SocialProofBarSection agencyPartners={agency} />
+    {!blackMath && <SocialProofBarSection agencyPartners={agency} />}
     {agency && <div id="approach" class="scroll-mt-28">
-      <SectionIntro01
-        heading={t('vfxV2.agency.examplesHeading')}
-        subtitle={t('vfxV2.agency.examplesDescription')}
-        class="pb-0 lg:pb-0"
-      />
-      <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
-      <AgencyEngagementTimeline locale={locale} />
+      {!blackMath && (
+        <SectionIntro01
+          heading={t('vfxV2.agency.examplesHeading')}
+          subtitle={t('vfxV2.agency.examplesDescription')}
+          class="pb-0 lg:pb-0"
+        />
+      )}
+      {!blackMath && (
+        <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
+      )}
+      <AgencyEngagementTimeline locale={locale} partner={partner} />
     </div>}
     <div id="workflows" class="scroll-mt-28">
       <SectionIntro01
-        heading={t('vfxV2.workflows.heading')}
-        subtitle={t('vfxV2.workflows.description')}
+        heading={t(
+          blackMath
+            ? 'blackMathVfx.workflowsHeading'
+            : 'vfxV2.workflows.heading'
+        )}
+        subtitle={t(
+          blackMath
+            ? 'blackMathVfx.workflowsDescription'
+            : 'vfxV2.workflows.description'
+        )}
         class="pb-0 lg:pb-0"
       />
       <FeaturedWorkflowsSection
@@ -210,7 +266,11 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         locale={locale}
         headingKey={`${prefix}.contactHeading`}
         primaryLabelKey={
-          agency ? 'vfxV2.agency.primaryCta' : 'vfxV2.comfy.contactButton'
+          blackMath
+            ? 'blackMathVfx.primaryCta'
+            : agency
+              ? 'vfxV2.agency.primaryCta'
+              : 'vfxV2.comfy.contactButton'
         }
         primaryHref={contactHref}
       />
@@ -227,7 +287,13 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
     const root = document.querySelector<HTMLElement>('[data-vfx-v2]')
     cleanup = root
       ? root.dataset.agencyV2
-        ? mountAgencyCampaign(root, 'vfx')
+        ? mountAgencyCampaign(
+            root,
+            'vfx',
+            root.dataset.agencyPartner === 'black-math'
+              ? 'black-math'
+              : undefined
+          )
         : mountVfxCampaign(root)
       : undefined
   })

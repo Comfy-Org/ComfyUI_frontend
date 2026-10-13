@@ -91,6 +91,8 @@ describe('indexing policy', () => {
     '/checkout-return',
     '/zh-CN/checkout-return/',
     '/zh-CN/login',
+    '/agency-led/vfx/black-math/',
+    '/zh-CN/agency-led/vfx/black-math/',
     '/platform/serverless-animation/'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)

@@ -32,13 +32,15 @@ export function mountIndustryCampaign(
 
 export function mountAgencyCampaign(
   root: HTMLElement,
-  vertical: CampaignVertical
+  vertical: CampaignVertical,
+  partner?: 'black-math'
 ): () => void {
   return mountCampaign(root, (properties) =>
     captureAgencyLinkClick({
       ...properties,
       vertical,
-      campaign_type: 'agency-led'
+      campaign_type: 'agency-led',
+      ...(partner && { agency_partner: partner })
     })
   )
 }

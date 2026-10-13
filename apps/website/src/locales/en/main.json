@@ -6038,5 +6038,36 @@
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
     }
+  },
+  "blackMathVfx": {
+    "metaTitle": "VFX with Black Math – Comfy",
+    "badge": "VFX WITH COMFY",
+    "heroTitle": "Bring your VFX brief.\nExplore Black Math’s approach.",
+    "heroDescription": "Black Math’s artists and technical directors build adaptable creative systems with ComfyUI. See their approach, then talk with Comfy about your project and interest in Black Math.",
+    "primaryCta": "DISCUSS YOUR PROJECT",
+    "secondaryCta": "EXPLORE VFX WORKFLOWS",
+    "intakeNote": "Your inquiry goes to Comfy first. Tell us about the VFX work and your interest in Black Math. Team involvement, scope, and responsibilities are discussed before any engagement.",
+    "processHeading": "From your brief to a creative plan.",
+    "steps": {
+      "1": {
+        "title": "BRIEF",
+        "description": "Share the creative goal, reference frames, source footage, and deliverables."
+      },
+      "2": {
+        "title": "BLACK MATH",
+        "description": "Discuss your interest in Black Math’s creative approach with Comfy."
+      },
+      "3": {
+        "title": "SCOPE",
+        "description": "Review the team’s involvement, responsibilities, timeline, and commercial terms."
+      },
+      "4": {
+        "title": "NEXT STEP",
+        "description": "Agree on a practical next step for the project and the production pipeline."
+      }
+    },
+    "workflowsHeading": "Explore ComfyUI VFX workflows.",
+    "workflowsDescription": "Published ComfyUI workflow examples you can open, inspect, and adapt.",
+    "contactHeading": "Discuss your VFX brief\nwith Comfy."
   }
 }

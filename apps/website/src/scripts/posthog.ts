@@ -154,6 +154,7 @@ interface VerticalLinkProperties extends VfxLinkProperties {
 interface AgencyLinkProperties extends VfxLinkProperties {
   vertical: CampaignVertical
   campaign_type: 'agency-led'
+  agency_partner?: 'black-math'
 }
 
 interface VfxLinkProperties {

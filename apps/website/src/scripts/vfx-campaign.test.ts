@@ -1,3 +1,4 @@
+import { within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { CampaignVertical } from '@/scripts/posthog'
@@ -25,7 +26,8 @@ afterEach(() => {
 function mount(
   markup: string,
   vertical: CampaignVertical = 'vfx',
-  campaignType: 'industry' | 'agency' = 'industry'
+  campaignType: 'industry' | 'agency' = 'industry',
+  partner?: 'black-math'
 ) {
   window.history.replaceState(null, '', `/${vertical}/?utm_source=linkedin`)
   const root = document.createElement('div')
@@ -33,7 +35,7 @@ function mount(
   document.body.append(root)
   cleanup =
     campaignType === 'agency'
-      ? mountAgencyCampaign(root, vertical)
+      ? mountAgencyCampaign(root, vertical, partner)
       : vertical === 'vfx'
         ? mountVfxCampaign(root)
         : mountIndustryCampaign(root, vertical)
@@ -44,9 +46,8 @@ describe('industry campaign journey', () => {
   it.for<CampaignVertical>(['vfx', 'advertising'])(
     'pauses other %s videos, including later mounts, until cleanup',
     async (vertical) => {
-      const root = mount('<video></video>', vertical)
-      const hero = root.querySelector('video')
-      if (!hero) throw new Error('Missing hero video')
+      const root = mount('<video aria-label="Hero"></video>', vertical)
+      const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
       await hero.play()
       const walkthrough = document.createElement('video')
       root.append(walkthrough)
@@ -75,11 +76,11 @@ describe('industry campaign journey', () => {
       `<section ${heroAttribute}><a href="/contact/?interest=${vertical}">Talk to our team</a></section>`,
       vertical
     )
-    const link = root.querySelector('a')
-    expect(link?.getAttribute('href')).toBe(
+    const link = within(root).getByRole('link')
+    expect(link.getAttribute('href')).toBe(
       `/contact/?interest=${vertical}&utm_source=linkedin`
     )
-    link?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     const properties = { destination: '/contact/', placement: 'hero' }
     if (vertical === 'vfx') {
       expect(captureVfxLinkClick).toHaveBeenCalledExactlyOnceWith(properties)
@@ -99,9 +100,9 @@ describe('industry campaign journey', () => {
       '<section id="workflows"><div data-testid="hub-card"><img alt="Workflow"><a data-testid="hub-card-link" href="https://comfy.org/workflows/storyboard/">Storyboard</a><div role="slider"></div></div></section>',
       'advertising'
     )
-    root
-      .querySelector('img')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    within(root)
+      .getByRole('img', { name: 'Workflow' })
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(open).toHaveBeenCalledExactlyOnceWith(
       'https://comfy.org/workflows/storyboard/?utm_source=linkedin',
       '_blank',
@@ -112,9 +113,9 @@ describe('industry campaign journey', () => {
       destination: '/workflows/storyboard/',
       placement: 'workflows'
     })
-    root
-      .querySelector('[role="slider"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    within(root)
+      .getByRole('slider')
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(open).toHaveBeenCalledTimes(1)
   })
 
@@ -126,9 +127,9 @@ describe('industry campaign journey', () => {
     ['<a href="/contact/">Contact</a>', 'page']
   ])('tracks the placement of %s', ([markup, placement]) => {
     const root = mount(markup, 'architectural-visualization')
-    root
-      .querySelector('a')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    within(root)
+      .getByRole('link', { name: 'Contact' })
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(captureVerticalLinkClick).toHaveBeenCalledExactlyOnceWith({
       vertical: 'architectural-visualization',
       destination: '/contact/',
@@ -151,6 +152,30 @@ describe('industry campaign journey', () => {
 })
 
 describe('agency campaign journey', () => {
+  it('keeps Black Math inquiry attribution through the contact click', () => {
+    const root = mount(
+      '<section data-campaign-hero><a href="/contact/?interest=vfx&campaign_type=agency-led&agency_partner=black-math">Discuss your project</a></section>',
+      'vfx',
+      'agency',
+      'black-math'
+    )
+    const link = within(root).getByRole('link', {
+      name: 'Discuss your project'
+    })
+    expect(link).toHaveAttribute(
+      'href',
+      '/contact/?interest=vfx&campaign_type=agency-led&agency_partner=black-math&utm_source=linkedin'
+    )
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(captureAgencyLinkClick).toHaveBeenCalledExactlyOnceWith({
+      vertical: 'vfx',
+      campaign_type: 'agency-led',
+      agency_partner: 'black-math',
+      destination: '/contact/',
+      placement: 'hero'
+    })
+  })
+
   it.for<CampaignVertical>([
     'vfx',
     'advertising',
@@ -164,11 +189,11 @@ describe('agency campaign journey', () => {
         vertical,
         'agency'
       )
-      const link = root.querySelector('a')
-      expect(link?.getAttribute('href')).toBe(
+      const link = within(root).getByRole('link')
+      expect(link.getAttribute('href')).toBe(
         `/contact/?interest=${vertical}&campaign_type=agency-led&utm_source=linkedin`
       )
-      link?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      link.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       expect(captureAgencyLinkClick).toHaveBeenCalledExactlyOnceWith({
         vertical,
         campaign_type: 'agency-led',
@@ -192,9 +217,9 @@ describe('agency campaign journey', () => {
         'advertising',
         'agency'
       )
-      root
-        .querySelector('a')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      within(root)
+        .getByRole('link', { name: 'Contact' })
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
       expect(captureAgencyLinkClick).toHaveBeenCalledExactlyOnceWith({
         vertical: 'advertising',
         campaign_type: 'agency-led',
@@ -226,8 +251,7 @@ describe('agency campaign journey', () => {
 
   it('pauses the agency hero when a case study starts playing', async () => {
     const root = mount('<video aria-label="Hero"></video>', 'vfx', 'agency')
-    const hero = root.querySelector('video')
-    if (!hero) throw new Error('Missing hero video')
+    const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
     await hero.play()
     const caseStudy = document.createElement('video')
     root.append(caseStudy)

@@ -6,13 +6,19 @@ import SectionHeader from '@/components/common/SectionHeader.vue'
 import type { Locale } from '@/config/locales'
 import { translationsFor } from '@/i18n/translations'
 
-const { locale } = defineProps<{ locale: Locale }>()
+const { locale, partner } = defineProps<{
+  locale: Locale
+  partner?: 'black-math'
+}>()
+const prefix = computed(() =>
+  partner === 'black-math' ? 'blackMathVfx' : 'vfxV2.agency'
+)
 const translations = computed(() => translationsFor(locale))
 const steps = computed(() =>
   ([1, 2, 3, 4] as const).map((id) => ({
     id,
-    title: translations.value.t(`vfxV2.agency.steps.${id}.title`),
-    description: translations.value.t(`vfxV2.agency.steps.${id}.description`)
+    title: translations.value.t(`${prefix.value}.steps.${id}.title`),
+    description: translations.value.t(`${prefix.value}.steps.${id}.description`)
   }))
 )
 </script>
@@ -20,7 +26,7 @@ const steps = computed(() =>
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:px-12 lg:py-24">
     <SectionHeader align="start" max-width="xl">
-      {{ translations.t('vfxV2.agency.processHeading') }}
+      {{ translations.t(`${prefix}.processHeading`) }}
     </SectionHeader>
 
     <ol class="mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-4">
