@@ -1,18 +1,29 @@
 import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
+interface UploadResponse extends UploadImageResponse {
+  asset?: { preview_id?: string }
+}
 
 function buildUploadErrorMessage(resp: Response) {
   if (resp.status === 413) {
@@ -31,18 +42,58 @@ function buildUploadErrorMessage(resp: Response) {
   })
 }
 
+function toUploadedPath({ subfolder, name }: UploadResponse) {
+  return subfolder ? `${subfolder}/${name}` : name
+}
+
+function addMissingOptionValues(
+  widget: SimplifiedWidget<string | undefined>,
+  paths: (string | undefined)[]
+) {
+  const values = widget.options?.values
+  if (!Array.isArray(values)) return
+  for (const path of paths) if (!values.includes(path)) values.push(path)
+}
+
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: ComputedRef<FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
+  locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
+  function setPreviewImage(image: ResultItem) {
+    const locatorId = toValue(options.locatorId)
+    if (locatorId)
+      useNodeOutputStore().nodeOutputs[locatorId] = { images: [image] }
+  }
+
+  const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
+    async (widgetValue: string | undefined) => {
+      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+
+      const asset = await resolveWidgetValueAsset(widgetValue)
+      if (!asset?.preview_id || modelValue.value !== widgetValue) return
+
+      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
+      const separatorIndex = filepath.lastIndexOf('/')
+      setPreviewImage({
+        filename: filepath.slice(separatorIndex + 1),
+        preview_id: asset.preview_id,
+        subfolder: filepath.slice(0, Math.max(separatorIndex, 0)),
+        type: isResultItemType(rootFolder) ? rootFolder : undefined
+      })
+    }
+  )
+
+  void showHdrPreviewIfApplicable(modelValue.value)
 
   function updateSelectedItems(selectedItems: Set<string>) {
     const id =
@@ -53,6 +104,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         : dropdownItems.value.find((item) => item.id === id)?.name
 
     modelValue.value = name
+    void showHdrPreviewIfApplicable(name)
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -80,29 +132,39 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       return null
     }
 
-    const data = await resp.json()
+    const data: UploadResponse = await resp.json()
 
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
       await useAssetsStore().inputAssets.invalidate()
     }
 
-    return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+    return data
   }
 
-  async function uploadFiles(files: File[]): Promise<string[]> {
+  async function uploadFiles(files: File[]): Promise<UploadResponse[]> {
     const folder = toValue(options.uploadFolder) ?? 'input'
     const uploadPromises = files.map((file) =>
       uploadFile(file, false, { type: folder })
     )
-    const results = await Promise.all(uploadPromises)
-    return results.filter((path): path is string => path !== null)
+    return (await Promise.all(uploadPromises)).filter((data) => !!data)
+  }
+
+  function showUploadPreview(upload: UploadResponse) {
+    if (!upload.asset?.preview_id) return
+    setPreviewImage({
+      filename: upload.name,
+      preview_id: upload.asset.preview_id,
+      subfolder: upload.subfolder,
+      type: isResultItemType(upload.type) ? upload.type : undefined
+    })
   }
 
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
 
-      const uploadedPaths = await uploadFiles(files)
+      const uploadedResponses = await uploadFiles(files)
+      const uploadedPaths = uploadedResponses.map(toUploadedPath)
 
       if (uploadedPaths.length === 0) {
         toastStore.addAlert('File upload failed')
@@ -110,20 +172,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       }
 
       const widget = toValue(options.widget)
-      const values = widget.options?.values
-      if (Array.isArray(values)) {
-        uploadedPaths.forEach((path) => {
-          if (!values.includes(path)) {
-            values.push(path)
-          }
-        })
-      }
-
+      addMissingOptionValues(widget, uploadedPaths)
       modelValue.value = uploadedPaths[0]
-
-      if (widget.callback) {
-        widget.callback(uploadedPaths[0])
-      }
+      widget.callback?.(uploadedPaths[0])
+      showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }

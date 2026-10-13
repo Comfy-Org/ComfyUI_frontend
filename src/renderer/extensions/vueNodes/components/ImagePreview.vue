@@ -37,10 +37,6 @@
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
           />
-          <i
-            v-if="isHdrImageUrl(imageUrls[index])"
-            class="absolute top-1 left-1 icon-[lucide--sun] size-4 text-base-foreground drop-shadow-sm"
-          />
         </div>
         <div
           v-else
@@ -115,8 +111,10 @@
       <!-- Main Image -->
       <img
         v-if="!imageError && !isHdrPlaceholder(currentImageUrl)"
+        :key="currentImageUrl"
         data-testid="main-image"
         :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
@@ -335,20 +333,19 @@ const gridCols = computed(() => {
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
-    // Only reset state if URLs actually changed (not just array reference)
+    const key = (url: string) =>
+      imageError.value ? url : (getHdrPreviewUrl(url) ?? url)
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => url !== oldUrls[i])
+      newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
     if (!urlsChanged) return
 
-    // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
 
     viewMode.value = defaultViewMode(newUrls)
