@@ -1,13 +1,12 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { DocResetFrame } from '@comfyorg/ingest-types'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
@@ -19,7 +18,6 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 /**
  * The backend mints a workflow's CRDT doc lazily on the first agent turn that
@@ -79,46 +77,6 @@ const TEMPLATE_GRAPH: ComfyWorkflowJSON = {
 const EMPTY_HOST_SEED: WorkflowJSON = { nodes: [], links: [] }
 const EMPTY_CATALOG: WidgetCatalog = { types: {} }
 
-/** `true` for a `doc_subscribe` frame addressed to `WORKFLOW_ID`; never throws inside the socket mock. */
-function parseDocSubscribeForWorkflow(raw: Buffer | string): boolean {
-  let frame: unknown
-  try {
-    frame = JSON.parse(raw.toString())
-  } catch {
-    return false
-  }
-  if (typeof frame !== 'object' || frame === null) return false
-  const { type, data } = frame as { type?: unknown; data?: unknown }
-  if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-    return false
-  const { workflow_id } = data as { workflow_id?: unknown }
-  return workflow_id === WORKFLOW_ID
-}
-
-/** Awaits the Nth `doc_subscribe` for `WORKFLOW_ID`: 1 is the turn's binding, 2 the post-reset resubscribe. */
-function createSubscribeTracker(): {
-  recordSubscribe: () => void
-  waitForCount: (target: number) => Promise<void>
-} {
-  let count = 0
-  const waiters: { target: number; resolve: () => void }[] = []
-  return {
-    recordSubscribe: () => {
-      count++
-      for (let i = waiters.length - 1; i >= 0; i--) {
-        if (count >= waiters[i].target) {
-          waiters[i].resolve()
-          waiters.splice(i, 1)
-        }
-      }
-    },
-    waitForCount: (target) => {
-      if (count >= target) return Promise.resolve()
-      return new Promise((resolve) => waiters.push({ target, resolve }))
-    }
-  }
-}
-
 test.describe(
   'Agent first turn on a template that has never had a CRDT doc',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -131,27 +89,11 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, EMPTY_HOST_SEED, EMPTY_CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
-      let socket: WebSocketRoute | null = null
-      const subscribeTracker = createSubscribeTracker()
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket)
-          throw new Error('the panel has not opened the agent socket yet')
-        socket.send(JSON.stringify(frame))
-      }
-
-      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
-        socket = ws
-        ws.onMessage((raw) => {
-          if (!parseDocSubscribeForWorkflow(raw)) return
-          subscribeTracker.recordSubscribe()
-          send(host.subscribed())
-        })
-      })
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      hostSocket.answerSubscribesWith(() => [host.subscribed()])
+      await hostSocket.install()
+      const send = (frame: AgentWsEvent | HostFrame): void =>
+        hostSocket.send(frame)
 
       await bootAgentApp(page, true, {
         settings: {
@@ -183,7 +125,9 @@ test.describe(
 
       // A reset sent before the follower subscribed to WORKFLOW_ID is dropped
       // by the bridge, which would make the assertions below vacuous.
-      await subscribeTracker.waitForCount(1)
+      await expect
+        .poll(() => hostSocket.subscribeCount())
+        .toBeGreaterThanOrEqual(1)
 
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
@@ -217,7 +161,9 @@ test.describe(
 
       // The bridge resubscribes once it has dispatched the reset, so the
       // second subscribe proves the reset was processed.
-      await subscribeTracker.waitForCount(2)
+      await expect
+        .poll(() => hostSocket.subscribeCount())
+        .toBeGreaterThanOrEqual(2)
 
       await page.screenshot({
         path: test.info().outputPath('template-after-mint-reset.png')
