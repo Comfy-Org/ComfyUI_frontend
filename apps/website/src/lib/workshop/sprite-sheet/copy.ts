@@ -13,7 +13,10 @@ const copy = {
     'zh-CN': '从示例开始'
   },
   'sprite.empty.upload': { en: 'Upload character', 'zh-CN': '上传角色' },
-  'sprite.empty.example': { en: 'Explorer', 'zh-CN': '探险家' },
+  'sprite.examples.explorer': { en: 'Explorer', 'zh-CN': '探险家' },
+  'sprite.examples.knight': { en: 'Knight', 'zh-CN': '骑士' },
+  'sprite.examples.robot': { en: 'Robot', 'zh-CN': '机器人' },
+  'sprite.examples.wizard': { en: 'Wizard', 'zh-CN': '巫师' },
   'sprite.character.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'

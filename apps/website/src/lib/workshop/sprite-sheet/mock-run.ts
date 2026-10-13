@@ -28,6 +28,21 @@ export const SPRITE_EXAMPLE = {
   height: 640
 } as const
 
+const character = (id: string) => ({
+  url: `/images/apps/sprite-sheet/examples/${id}.webp`,
+  name: `${id}.webp`,
+  width: 512,
+  height: 636
+})
+
+/** The characters offered to start from; only the explorer has prepared walks. */
+export const SPRITE_EXAMPLES = [
+  { id: 'explorer', image: SPRITE_EXAMPLE },
+  { id: 'knight', image: character('knight') },
+  { id: 'robot', image: character('robot') },
+  { id: 'wizard', image: character('wizard') }
+] as const
+
 const EXAMPLE_WALKS: Record<SpriteStyle, string> = {
   pixel: '/images/apps/sprite-sheet/explorer-walk-pixel.webp',
   toon: '/images/apps/sprite-sheet/explorer-walk-toon.webp',

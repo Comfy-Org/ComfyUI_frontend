@@ -8,7 +8,7 @@ import type {
 } from '@/lib/workshop/sprite-sheet/contract'
 import { spriteSheetRequest } from '@/lib/workshop/sprite-sheet/contract'
 import {
-  SPRITE_EXAMPLE,
+  SPRITE_EXAMPLES,
   runSpriteSheet
 } from '@/lib/workshop/sprite-sheet/mock-run'
 import type { SpriteSetup } from '@/lib/workshop/sprite-sheet/options'
@@ -86,8 +86,9 @@ export function useSpriteSheet() {
     ownUrl = own
   }
 
-  function useExample() {
-    adopt(SPRITE_EXAMPLE)
+  function useExample(id: string = SPRITE_EXAMPLES[0].id) {
+    const example = SPRITE_EXAMPLES.find((option) => option.id === id)
+    if (example) adopt(example.image)
   }
 
   async function useFile(file: File) {

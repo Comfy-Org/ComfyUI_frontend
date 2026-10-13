@@ -239,4 +239,15 @@ describe('SpriteSheetStudio', () => {
       within(panel()).getByRole('radiogroup', { name: 'Style' })
     ).toBeInTheDocument()
   })
+
+  it('offers four characters to start from', async () => {
+    const user = userEvent.setup()
+    render(SpriteSheetStudio)
+    const empty = within(screen.getByTestId('sprite-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'Robot' }))
+
+    expect(within(panel()).getByText('robot.webp')).toBeVisible()
+  })
 })
