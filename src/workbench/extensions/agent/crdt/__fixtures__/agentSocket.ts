@@ -3,7 +3,6 @@ import { vi } from 'vitest'
 import type { AgentEventSocket } from '../../services/agent/agentEventSource'
 import { createAgentDocFrameTransport } from '../agentDocFrameTransport'
 
-/** The agent's socket faked at its seam, with the production document transport riding it. */
 export function createFakeAgentSocket() {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
