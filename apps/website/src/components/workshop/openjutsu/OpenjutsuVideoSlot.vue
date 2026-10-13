@@ -71,7 +71,7 @@ const emit = defineEmits<{ file: [file: File]; remove: []; trim: [] }>()
     </OpenjutsuVideoInput>
     <p
       v-if="src && partNote"
-      class="flex items-center gap-1.5 text-xs text-primary-warm-gray"
+      class="flex items-center gap-1.5 rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-2.5 py-2 text-xs text-primary-warm-gray"
       data-testid="openjutsu-part"
     >
       <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
