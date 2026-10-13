@@ -15,7 +15,7 @@ export async function resolveWidgetValueAsset(
 ): Promise<AssetItem | null | undefined> {
   const { filepath: name } = parseAnnotatedPath(widgetValue)
   const assetMatches = (asset: AssetItem) =>
-    name === asset.hash || name === (asset.loader_path ?? asset.name)
+    name === (asset.hash || asset.name) || name === asset.loader_path
   const assetsStore = useAssetsStore()
   const storedAsset =
     toValue(assetsStore.inputAssets.items).find(assetMatches) ??
