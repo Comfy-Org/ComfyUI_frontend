@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, LoaderCircle } from '@lucide/vue'
+import { ArrowLeft, LoaderCircle } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -11,24 +11,36 @@ interface EditorExample {
   readonly thumb?: string
 }
 
-/** The stage before anything is chosen: the frame the result will fill, holding examples to start from. */
-const { title, hint, examples, loading } = defineProps<{
+/** The stage before anything is chosen: a card of examples to start from; uploading lives in the panel. */
+const { title, hint, upload, examples, loading } = defineProps<{
   title: string
   hint: string
+  upload: string
   examples: readonly EditorExample[]
   loading?: string
 }>()
 const emit = defineEmits<{ example: [id: string] }>()
+
+const exampleName = (example: EditorExample) =>
+  example.result ? `${example.label} → ${example.result}` : example.label
 </script>
 
 <template>
   <section
-    class="m-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-dashed border-transparency-white-t20 p-4 sm:p-6"
+    class="m-auto flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-6 sm:p-7"
   >
-    <p class="text-sm text-primary-warm-white">
-      {{ title }}
-      <span class="text-primary-warm-gray">· {{ hint }}</span>
-    </p>
+    <div class="flex flex-col gap-2">
+      <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
+        {{ title }}
+      </h2>
+      <p class="text-sm text-primary-warm-gray">{{ hint }}</p>
+      <p
+        class="flex items-center gap-2 text-sm text-primary-warm-white max-md:hidden"
+      >
+        <ArrowLeft class="size-4 text-primary-warm-gray" aria-hidden="true" />
+        {{ upload }}
+      </p>
+    </div>
     <ul
       :class="cn('grid gap-2 sm:gap-3', examples.length > 1 && 'grid-cols-2')"
     >
@@ -37,8 +49,8 @@ const emit = defineEmits<{ example: [id: string] }>()
           type="button"
           :disabled="!!loading"
           :aria-busy="loading === example.id"
-          :aria-label="example.label"
-          class="group relative block aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-transparency-white-t8 text-left transition hover:border-primary-warm-white/50 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:cursor-default"
+          :aria-label="exampleName(example)"
+          class="group relative block aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-transparency-white-t8 transition hover:border-primary-warm-white/50 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:cursor-default"
           @click="emit('example', example.id)"
         >
           <img
@@ -52,20 +64,8 @@ const emit = defineEmits<{ example: [id: string] }>()
             :src="example.thumb"
             alt=""
             loading="lazy"
-            class="absolute top-2.5 right-2.5 aspect-3/4 w-1/6 rounded-md border border-primary-warm-white/70 object-cover shadow-lg"
+            class="absolute top-2 right-2 aspect-3/4 w-1/5 rounded-md border border-primary-warm-white/70 object-cover shadow-lg"
           />
-          <span
-            class="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-2.5 pt-6 pb-2 text-xs text-primary-warm-white sm:px-3.5 sm:pt-8 sm:pb-3 sm:text-sm"
-          >
-            {{ example.label }}
-            <template v-if="example.result">
-              <ArrowRight
-                class="size-3.5 text-primary-warm-gray"
-                aria-hidden="true"
-              />
-              {{ example.result }}
-            </template>
-          </span>
           <span
             v-if="loading === example.id"
             class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
