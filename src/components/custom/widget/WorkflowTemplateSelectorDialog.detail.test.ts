@@ -164,7 +164,9 @@ const mocks = vi.hoisted(() => ({
   trackTemplateLibraryClosed: vi.fn(),
   reportError: vi.fn(),
   modelDownloadNeedsFolderPaths: vi.fn(() => true),
-  loadFolderPathsOnce: vi.fn(async () => ({
+  loadFolderPathsOnce: vi.fn<
+    () => Promise<Record<string, string[]> | undefined>
+  >(async () => ({
     checkpoints: ['/models/checkpoints']
   }))
 }))
@@ -823,7 +825,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   })
 
   it('opens Detail with empty paths when the folder lookup fails', async () => {
-    mocks.loadFolderPathsOnce.mockRejectedValueOnce(new Error('offline'))
+    mocks.loadFolderPathsOnce.mockResolvedValueOnce(undefined)
 
     renderDialog()
     await clickTemplateCard()

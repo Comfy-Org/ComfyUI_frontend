@@ -4,7 +4,10 @@ import {
   loadFolderPathsOnce,
   resetFolderPathCache
 } from '@/platform/missingModel/folderPathCache'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('loadFolderPathsOnce', () => {
   beforeEach(() => {
@@ -23,23 +26,32 @@ describe('loadFolderPathsOnce', () => {
     await expect(loadFolderPathsOnce()).resolves.toBe(paths)
 
     expect(getFolderPaths).toHaveBeenCalledOnce()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('does not cache a failure', async () => {
+  it('resolves undefined on failure, reports it once, and retries next time', async () => {
+    const failure = new Error('offline')
     const getFolderPaths = vi
       .spyOn(api, 'getFolderPaths')
-      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(failure)
       .mockResolvedValue({ vae: ['/models/vae'] })
 
-    await expect(loadFolderPathsOnce()).rejects.toThrow('offline')
+    await expect(
+      Promise.all([loadFolderPathsOnce(), loadFolderPathsOnce()])
+    ).resolves.toEqual([undefined, undefined])
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'failure_loading_folder_paths',
+      surface: 'platform'
+    })
+
     await expect(loadFolderPathsOnce()).resolves.toEqual({
       vae: ['/models/vae']
     })
-
     expect(getFolderPaths).toHaveBeenCalledTimes(2)
   })
 
-  it('lets a rejection from before a reconnect leave the newer request alone', async () => {
+  it('lets a failure from before a reconnect leave the newer request alone', async () => {
     let rejectStale!: (reason: Error) => void
     const stale = new Promise<Record<string, string[]>>((_, reject) => {
       rejectStale = reject
@@ -54,7 +66,7 @@ describe('loadFolderPathsOnce', () => {
     const second = loadFolderPathsOnce()
 
     rejectStale(new Error('socket closed'))
-    await expect(first).rejects.toThrow('socket closed')
+    await expect(first).resolves.toBeUndefined()
     await expect(second).resolves.toEqual({ loras: ['/models/loras'] })
 
     await expect(loadFolderPathsOnce()).resolves.toEqual({
@@ -72,7 +84,6 @@ describe('loadFolderPathsOnce', () => {
     api.dispatchCustomEvent('reconnected')
     await loadFolderPathsOnce()
 
-    // A restarted backend may resolve different directories.
     expect(getFolderPaths).toHaveBeenCalledTimes(2)
   })
 })

@@ -6,6 +6,14 @@ if (__DISTRIBUTION__ === 'cloud') {
     .catch(() => {})
 }
 
-await import('./main')
+try {
+  await import('./main')
+} catch (error) {
+  const { reportError } = await import('@/platform/telemetry/reportError')
+  reportError(error, {
+    errorType: 'failure_initializing_app',
+    surface: 'platform'
+  })
+}
 
 export {}
