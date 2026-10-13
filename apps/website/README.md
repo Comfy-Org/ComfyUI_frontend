@@ -110,21 +110,27 @@ copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
 The `i18n: Update Website` workflow runs after English catalogs or locale
 configuration change on `main`, with a daily retry. It opens a draft PR from
 `bl/website-locale-updates` and skips generation while that PR is awaiting
-review. Runs with no catalog changes do not open a PR. Review and merge the
-translated copy to resume automatic updates.
+review. The PR is assigned to `benceruleanlu` and labeled `area:i18n`; waiting
+runs link to it in their summary. Runs with no catalog changes do not open a
+PR. Review and merge the translated copy to resume automatic updates.
 
 Manual dispatch on `main` uses the same PR flow. Dispatch on another branch
-commits generated catalogs back to that branch. Automatic runs reject output
+commits generated catalogs back to that branch. Runs on `main` reject output
 if catalog or translation inputs changed during generation.
+
+Generation must pass `pnpm locale:check --complete` before publication. This
+requires safe, compilable messages, complete eligible copy, and current source
+provenance. Ordinary English-only changes may keep English fallback while the
+translation PR is reviewed. Review changed translations alongside their English
+source for meaning, terminology, and context; deterministic validation cannot
+establish translation accuracy.
 
 The website uses the app's pipeline and manifest format, described in
 [`src/locales/CONTRIBUTING.md`](../../src/locales/CONTRIBUTING.md#what-happens-in-ci).
 `apps/website/src/locales/.source-manifest.json` maps each English file to the Git blob ID
-of the English last generated. Its `knownViolations` field lists accepted
-protected-token violations as JSON-encoded key paths, such as
-`["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
-blob is missing, `locale:check` warns and skips change detection and token
-validation for that file, and `pnpm locale` fails. When translation of an entry file fails,
+of the English last generated. Legacy `knownViolations` fields do not exempt
+corruption from validation. Use a clone with full history: if the recorded
+blob is missing, both `locale:check` and `pnpm locale` fail. When translation of an entry file fails,
 its English, locale catalogs and manifest entry keep their previous contents.
 
 Commit the generated English catalog, locale catalogs and manifest together. If

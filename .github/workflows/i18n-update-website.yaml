@@ -51,7 +51,9 @@ jobs:
             --jq '[.[] | select(.isCrossRepository == false)][0].url // empty')
           if [ -n "$pending_pr" ]; then
             echo 'skip=true' >> "$GITHUB_OUTPUT"
-            echo "::notice::Website translations are awaiting review: $pending_pr"
+            echo "::notice title=Translation review pending::Website translations are awaiting review: $pending_pr"
+            printf 'Website translations are awaiting copy review: %s\nGeneration resumes after this PR is merged or closed.\n' \
+              "$pending_pr" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Checkout repository
@@ -78,6 +80,7 @@ jobs:
         if: steps.pending.outputs.skip != 'true'
         run: |
           set -euo pipefail
+          pnpm --filter @comfyorg/website locale:check --complete
           git add apps/website/src/locales/
           if git diff --cached --quiet; then exit 0; fi
           bash ./scripts/cicd/check-json.sh
@@ -108,6 +111,8 @@ jobs:
           commit-message: 'fix(website): update locale catalogs'
           title: 'fix(website): update locale catalogs'
           draft: true
+          assignees: benceruleanlu
+          labels: area:i18n
           body: |
             ## Summary
 
@@ -116,7 +121,8 @@ jobs:
             ## Verification
 
             Generated and validated in [this workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-            Review the translated copy before merging.
+            Catalog integrity, completeness and source provenance passed the shared delivery validator.
+            Review changed translations with their English sources for meaning, terminology and context before merging.
 
       - name: Commit updated branch locales
         if: steps.locales.outputs.changed == 'true' && steps.route.outputs.create_pr == 'false'

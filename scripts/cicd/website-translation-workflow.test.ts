@@ -55,6 +55,7 @@ function translationFixture() {
   const origin = join(root, 'origin.git')
   const bin = join(root, 'bin')
   const output = join(root, 'output')
+  const summary = join(root, 'summary')
   const gitEnv = {
     ...process.env,
     GIT_CONFIG_GLOBAL: '/dev/null',
@@ -119,6 +120,15 @@ printf '%s' "$FAKE_PRS" | jq -r "$query"
 `,
     { mode: 0o755 }
   )
+  writeFileSync(
+    join(bin, 'pnpm'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+test "$*" = '--filter @comfyorg/website locale:check --complete'
+exit "$FAKE_VALIDATION_STATUS"
+`,
+    { mode: 0o755 }
+  )
 
   return {
     advance(path: string, value: string) {
@@ -132,6 +142,7 @@ printf '%s' "$FAKE_PRS" | jq -r "$query"
     },
     run(id: string, env: Record<string, string> = {}) {
       writeFileSync(output, '')
+      writeFileSync(summary, '')
       const result = spawnSync('bash', ['-c', workflowScript(id)], {
         cwd: checkout,
         encoding: 'utf8',
@@ -139,6 +150,7 @@ printf '%s' "$FAKE_PRS" | jq -r "$query"
           ...gitEnv,
           PATH: `${bin}:${process.env.PATH ?? ''}`,
           GITHUB_OUTPUT: output,
+          GITHUB_STEP_SUMMARY: summary,
           GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
           GITHUB_REF: 'refs/heads/main',
           TARGET_BRANCH: 'main',
@@ -146,10 +158,15 @@ printf '%s' "$FAKE_PRS" | jq -r "$query"
           GH_TOKEN: 'test-token',
           FAKE_PRS: '[]',
           FAKE_API_FAILURE: 'false',
+          FAKE_VALIDATION_STATUS: '0',
           ...env
         }
       })
-      return { ...result, output: readFileSync(output, 'utf8') }
+      return {
+        ...result,
+        output: readFileSync(output, 'utf8'),
+        summary: readFileSync(summary, 'utf8')
+      }
     },
     [Symbol.dispose]() {
       rmSync(root, { recursive: true, force: true })
@@ -159,19 +176,15 @@ printf '%s' "$FAKE_PRS" | jq -r "$query"
 
 describe('website translation automation', () => {
   it.for([
-    { event: 'schedule', ref: 'refs/heads/main', expected: 'true' },
-    { event: 'push', ref: 'refs/heads/main', expected: 'true' },
-    { event: 'workflow_dispatch', ref: 'refs/heads/main', expected: 'true' },
+    { ref: 'refs/heads/main', expected: 'true' },
     {
-      event: 'workflow_dispatch',
       ref: 'refs/heads/feature',
       expected: 'false'
     }
-  ])('routes $event on $ref to a PR: $expected', ({ event, ref, expected }) => {
+  ])('routes $ref to a PR: $expected', ({ ref, expected }) => {
     using fixture = translationFixture()
 
     const result = fixture.run('route', {
-      GITHUB_EVENT_NAME: event,
       GITHUB_REF: ref
     })
 
@@ -219,6 +232,8 @@ describe('website translation automation', () => {
 
     expect(result.status).toBe(0)
     expect(result.output).toBe(output)
+    if (output)
+      expect(result.summary).toContain('https://github.com/example/repo/pull/1')
   })
 
   it('stops before generation when the PR lookup fails', () => {
@@ -227,6 +242,16 @@ describe('website translation automation', () => {
     const result = fixture.run('pending', { FAKE_API_FAILURE: 'true' })
 
     expect(result.status).not.toBe(0)
+    expect(result.output).toBe('')
+  })
+
+  it('does not publish catalogs that fail the strict delivery validator', () => {
+    using fixture = translationFixture()
+    fixture.writeCatalog('{"hello":"ようこそ"}\n')
+
+    const result = fixture.run('locales', { FAKE_VALIDATION_STATUS: '1' })
+
+    expect(result.status).toBe(1)
     expect(result.output).toBe('')
   })
 
