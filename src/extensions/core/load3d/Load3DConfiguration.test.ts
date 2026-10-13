@@ -187,7 +187,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     return {
       loadModel: loadModelSpy,
       clearModel: vi.fn(),
@@ -314,11 +314,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 
   it('does not publish effects for a load superseded by clear', async () => {
-    let resolveLoad!: (accepted: boolean) => void
+    let resolveLoad!: (outcome: 'cancelled') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel).mockImplementation(
       () =>
-        new Promise<boolean>((resolve) => {
+        new Promise<'cancelled'>((resolve) => {
           resolveLoad = resolve
         })
     )
@@ -327,7 +327,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
 
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
-    resolveLoad(false)
+    resolveLoad('cancelled')
     await flush()
 
     expect(load3d.setUpDirection).not.toHaveBeenCalled()
@@ -336,19 +336,19 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 
   it('publishes effects only for the replacement after clear', async () => {
-    let resolveFirst!: (accepted: boolean) => void
-    let resolveSecond!: (accepted: boolean) => void
+    let resolveFirst!: (outcome: 'cancelled') => void
+    let resolveSecond!: (outcome: 'loaded') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel)
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'cancelled'>((resolve) => {
             resolveFirst = resolve
           })
       )
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'loaded'>((resolve) => {
             resolveSecond = resolve
           })
       )
@@ -358,8 +358,8 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
     modelWidget.value = 'b.glb'
-    resolveFirst(false)
-    resolveSecond(true)
+    resolveFirst('cancelled')
+    resolveSecond('loaded')
     await flush()
 
     expect(load3d.setUpDirection).toHaveBeenCalledTimes(1)
@@ -531,7 +531,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
   function makeLoad3dMock(): Load3d {
     return fromPartial<Load3d>({
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -623,7 +623,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   function makeLoad3dMock(): Load3d {
     let cleanup: (() => void) | undefined
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     clearModelSpy = vi.fn()
     return fromPartial<Load3d>({
       loadModel: loadModelSpy,
@@ -791,7 +791,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
