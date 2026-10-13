@@ -263,15 +263,6 @@ export const useAgentConversationStore = defineStore(
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
-    // The map itself is not reactive; this mirrors how many stashed turns are
-    // still running, for anything that must outlive a thread switch.
-    const unsettledBackgroundTurns = ref(0)
-    function syncBackgroundTurns(): void {
-      let unsettled = 0
-      for (const entry of backgroundTurns.values())
-        if (!entry.settled) unsettled++
-      unsettledBackgroundTurns.value = unsettled
-    }
     let hydratedMessageIds = new Set<string>()
     let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
@@ -659,7 +650,6 @@ export const useAgentConversationStore = defineStore(
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
         entry.settled = true
-        syncBackgroundTurns()
         return
       }
       entry.transport.ingest(event)
@@ -720,7 +710,6 @@ export const useAgentConversationStore = defineStore(
         skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false
       })
-      syncBackgroundTurns()
       clearActive()
     }
 
@@ -729,7 +718,6 @@ export const useAgentConversationStore = defineStore(
       if (!resumable) return
       const { entry, resumedThreadId } = resumable
       backgroundTurns.delete(entry.messageId)
-      syncBackgroundTurns()
       replaceSnapshotWithBackgroundTurn(entry, resumedThreadId)
     }
 
@@ -938,7 +926,6 @@ export const useAgentConversationStore = defineStore(
         // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
         backgroundTurns.delete(entry.messageId)
-        syncBackgroundTurns()
         return entry.messageId
       }
       return null
@@ -955,7 +942,6 @@ export const useAgentConversationStore = defineStore(
         entry.transport.dispose()
       }
       backgroundTurns.clear()
-      syncBackgroundTurns()
     }
 
     function liveTurns(): LiveTurn[] {
@@ -1019,7 +1005,6 @@ export const useAgentConversationStore = defineStore(
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
       entry.settled = true
-      syncBackgroundTurns()
     }
 
     function departedTurnKey(threadId: string, messageId: string): string {
@@ -1278,10 +1263,6 @@ export const useAgentConversationStore = defineStore(
 
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
-    // The displayed turn, or one stashed by a thread switch that still runs.
-    const hasUnfinishedTurn = computed(
-      () => isStreaming.value || unsettledBackgroundTurns.value > 0
-    )
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -1295,7 +1276,6 @@ export const useAgentConversationStore = defineStore(
       activeMessageId,
       threadId,
       isStreaming,
-      hasUnfinishedTurn,
       status,
       latestWorkflowId,
       recordApprovalShown,

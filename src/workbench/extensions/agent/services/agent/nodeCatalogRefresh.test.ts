@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { refreshNodeCatalogOnRestart } from './nodeCatalogRefresh'
 
@@ -36,7 +36,7 @@ function toolCall(
 }
 
 async function flush() {
-  await new Promise((resolve) => setTimeout(resolve, 0))
+  await vi.advanceTimersByTimeAsync(0)
 }
 
 function setup() {
@@ -48,12 +48,17 @@ function setup() {
     }),
     reloadCurrentWorkflow: vi.fn(async () => {
       order.push('reload')
+      return true
     }),
     onFailure: vi.fn()
   }
   const stop = refreshNodeCatalogOnRestart(events, deps)
   return { events, deps, order, stop }
 }
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: false })
+})
 
 describe('refreshNodeCatalogOnRestart', () => {
   it('re-registers node types, then rebuilds the open workflow, after a restart succeeds', async () => {
@@ -76,6 +81,7 @@ describe('refreshNodeCatalogOnRestart', () => {
   it('refreshes once per restart even when the event is delivered again', async () => {
     const { events, deps } = setup()
     events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await flush()
     events.emit(toolCall('restart_comfyui', 'success', 'a'))
     events.emit(toolCall('restart_comfyui', 'success', 'b'))
     await flush()
@@ -94,8 +100,6 @@ describe('refreshNodeCatalogOnRestart', () => {
     expect(deps.reloadCurrentWorkflow).toHaveBeenCalledTimes(1)
   })
 
-  // The new node types stay missing until the next restart or a page reload
-  // if a refresh that failed during backend recovery is never retried.
   it('refreshes again when a restart whose refresh failed is delivered again', async () => {
     const { events, deps } = setup()
     deps.refreshNodeDefinitions.mockRejectedValueOnce(new Error('offline'))
@@ -108,6 +112,18 @@ describe('refreshNodeCatalogOnRestart', () => {
 
     expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(2)
     expect(deps.reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('rebuilds again when a restart whose workflow reload failed is delivered again', async () => {
+    const { events, deps } = setup()
+    deps.reloadCurrentWorkflow.mockResolvedValueOnce(false)
+    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await flush()
+
+    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await flush()
+
+    expect(deps.reloadCurrentWorkflow).toHaveBeenCalledTimes(2)
   })
 
   it('stops listening when unsubscribed', () => {

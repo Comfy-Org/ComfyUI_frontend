@@ -5,12 +5,7 @@ import { api } from '@/scripts/api'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
-// The real auth store cannot load against the mocked api; the transport's
-// auth header is not what these tests are about.
-vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async <T extends RequestInit>(init: T) => init,
-  ensureSignedIn: async () => true
-}))
+vi.mock(import('../../services/agent/agentAuth'))
 
 import { useAgentComposerStore } from './agentComposerStore'
 import { useAgentRunModeStore } from './agentRunModeStore'
@@ -173,7 +168,6 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
-    // A request is dispatched once its auth header resolves, not synchronously.
     await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
     resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
     await second

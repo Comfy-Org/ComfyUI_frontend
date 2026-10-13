@@ -94,16 +94,7 @@ interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
-/**
- * Why the follower can no longer deliver the document it intends to follow.
- * `refused`: the host refused the subscribe and the FE-1901 retry budget is
- * spent. `timeout`: every subscribe in the silent budget went unanswered.
- * `schema_error`: the KA-11 read gate closed on an unreadable doc. Either way
- * `workflowId` (intent) is still set, but nothing will ever arrive for it
- * until a confirmed subscribe, a reconnect or a retarget clears this.
- * Distinct from a plain `connected: false`, which a reconnect produces for a
- * moment and which the subscribe machinery repairs on its own.
- */
+/** Why nothing will arrive for the followed document until a confirm, reconnect or retarget. */
 type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 interface ProjectionFrameId {
@@ -258,7 +249,7 @@ function opsResultDropReason(
   return workflowId === subscribedWorkflowId ? null : 'workflow_mismatch'
 }
 
-export interface AgentCrdtFollowerEvents {
+interface AgentCrdtFollowerEvents {
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -298,7 +289,7 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
-export type AgentCrdtApplierDeps = Omit<
+type AgentCrdtApplierDeps = Omit<
   LiveGraphApplierDeps,
   'getGraph' | 'holdsLocalWrite'
 >
@@ -419,7 +410,8 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
-    notifyWidgetWriteRefused: () => follower.value?.notifyWidgetWriteRefused()
+    notifyWidgetWriteRefused: () => follower.value?.notifyWidgetWriteRefused(),
+    subscriptionSent: () => follower.value?.subscriptionSent() ?? false
   }
 }
 
@@ -678,8 +670,6 @@ function startAgentCrdtFollower(
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
     else lifecycle.stopProbing()
-    // A failed reseed with no retry left is a refusal nothing will answer:
-    // the panel must seed the draft again rather than wait on this document.
     if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
   }
 
@@ -695,13 +685,7 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    // Only the refusal nothing will retry is terminal: while a retry or a
-    // reseed is in flight the subscribe machinery still owns the outcome, and
-    // the panel must keep withholding the draft seed exactly as on a reconnect.
     if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
-    // FE #16637 residual: a refusal is the earliest signal the sender can
-    // get that its in-flight batch's doc is gone — don't make it wait out
-    // the 10 s result-silence window to notice on its own.
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -1103,6 +1087,9 @@ function startAgentCrdtFollower(
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
     notifyWidgetWriteRefused: () =>
-      rejectedOpNotifier.notifyWidgetWriteRefused()
+      rejectedOpNotifier.notifyWidgetWriteRefused(),
+    subscriptionSent: () =>
+      bridge.subscribedWorkflowId !== null &&
+      bridge.subscribedWorkflowId === subscribedWorkflowId.value
   }
 }

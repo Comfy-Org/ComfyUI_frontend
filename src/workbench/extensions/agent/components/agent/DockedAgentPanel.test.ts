@@ -20,12 +20,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
-// The transport's auth header is not what these tests are about, and the real
-// auth store's module graph is slow to load in a test.
-vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async <T extends RequestInit>(init: T) => init,
-  ensureSignedIn: async () => true
-}))
+vi.mock(import('../../services/agent/agentAuth'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>

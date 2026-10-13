@@ -555,13 +555,8 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
-  // Two harnesses force the panel on regardless of the flag: development, and
-  // the standalone (local agent) build. The standalone panel has no cloud
-  // identity for the flag to evaluate against, so gating it on the flag left
-  // it permanently off in a production bundle. The harness itself is the
-  // opt-in, since the panel is tree-shaken out of every other non-cloud build
-  // (see extensions/core/index.ts). vite.config.mts refuses a cloud bundle
-  // that carries VITE_AGENT_STANDALONE, which is what keeps this safe.
+  // The standalone build has no cloud identity for the flag to evaluate;
+  // build/devAgentConfig.ts refuses VITE_AGENT_STANDALONE in a cloud bundle.
   const forcedOn =
     import.meta.env.MODE === 'development' ||
     import.meta.env.VITE_AGENT_STANDALONE === 'true'

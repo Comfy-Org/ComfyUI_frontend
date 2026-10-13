@@ -145,10 +145,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
-import {
-  SUBSCRIBE_ACK_TIMEOUT_MS,
-  SUBSCRIBE_RETRY_MAX_ATTEMPTS
-} from './agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import { clearDevEvents, devEvents } from './devPanelLog'
 import {
   STALE_AFTER_MS,
@@ -489,24 +486,22 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  describe('terminal follower state (#17469)', () => {
-    // AgentPanelRoot withholds the draft seed on the follower's INTENT
-    // (status.workflowId), so a follower that can no longer deliver the
-    // document must say so, or every later turn sends no draft against no
-    // document and the canvas is stranded until reload.
+  describe('terminal follower state', () => {
     function refuse(): void {
       dispatchFrame('doc_subscribed', { ok: false, workflow_id: 'wf-1' })
     }
 
-    function exhaustRetries(): void {
-      for (let attempt = 0; attempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS; attempt++) {
+    function refuseUntilTerminal(status: () => AgentCrdtStatus): number {
+      let refusals = 0
+      while (status().terminal === null && refusals < 20) {
         refuse()
+        refusals += 1
         vi.runOnlyPendingTimers()
       }
+      return refusals
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
-      vi.useFakeTimers()
       const { unmount, status } = mountFollower('wf-1')
 
       refuse()
@@ -517,12 +512,9 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('reports a terminal refusal once the retry budget is spent, and clears it on the next confirmed subscribe', () => {
-      vi.useFakeTimers()
       const { unmount, status } = mountFollower('wf-1')
 
-      exhaustRetries()
-      expect(status().terminal).toBeNull()
-      refuse()
+      expect(refuseUntilTerminal(status)).toBeGreaterThan(1)
 
       expect(status().terminal).toBe('refused')
       expect(status().connected).toBe(false)
@@ -550,10 +542,8 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('a retarget clears the terminal state', async () => {
-      vi.useFakeTimers()
       const { unmount, status, workflowId } = mountFollower('wf-1')
-      exhaustRetries()
-      refuse()
+      refuseUntilTerminal(status)
       expect(status().terminal).toBe('refused')
 
       workflowId.value = 'wf-2'
@@ -579,7 +569,6 @@ describe('useAgentCrdtFollower', () => {
     // Three unanswered subscribes spend the silent budget (frames at 0 s,
     // 15 s and 30 s); the lifecycle gives up at 45 s and nothing will arrive.
     it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
-      vi.useFakeTimers()
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
       vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)

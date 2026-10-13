@@ -37,12 +37,8 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 // delivered, so intent already equals reality. Retry the subscribe itself
 // with bounded exponential backoff while the desired doc is unchanged.
 const SUBSCRIBE_RETRY_BASE_MS = 500
-export const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
-/**
- * Why the lifecycle stopped trying: the host refused the document for good,
- * or every subscribe in the silent budget went unanswered.
- */
 export type SubscribeGiveUpReason = 'refused' | 'timeout'
 
 // PM-1604 / BE-11437: the doc-host's terminal classifications for a

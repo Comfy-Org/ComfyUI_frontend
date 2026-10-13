@@ -1593,10 +1593,6 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('forces the panel on for the standalone agent harness even while the flag is false', async () => {
-    // A standalone panel has no cloud identity for the flag to evaluate
-    // against, so gating it on the flag leaves it permanently off in a
-    // production bundle. The harness itself is the opt-in (the panel is
-    // tree-shaken out of every other non-cloud build).
     vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
     agentFlagEnabled.value = false
 

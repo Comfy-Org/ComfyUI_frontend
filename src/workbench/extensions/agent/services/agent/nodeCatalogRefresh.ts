@@ -2,21 +2,11 @@ import { z } from 'zod'
 
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
-/**
- * Keeps the canvas's node types in step with a ComfyUI the agent restarted.
- *
- * The agent restarts ComfyUI (`restart_comfyui`) after it writes or installs a
- * custom node pack. The page registered its node types when it loaded, so a
- * node from the new pack rendered as a missing-type placeholder, and the
- * workflow would not run, until the user reloaded the page. After each
- * successful restart this does what ComfyUI Manager's "apply changes" does
- * after its own: register the node definitions again, then rebuild the open
- * workflow from its in-memory state, so placeholders become the real nodes
- * and unsaved edits survive.
- */
 export interface NodeCatalogRefreshDeps {
+  /** Rejects when the node definitions could not be loaded. */
   refreshNodeDefinitions(): Promise<unknown>
-  reloadCurrentWorkflow(): Promise<unknown>
+  /** `false` when the open workflow could not be rebuilt. */
+  reloadCurrentWorkflow(): Promise<boolean>
   onFailure(error: unknown): void
 }
 
@@ -29,38 +19,39 @@ const zRestartSucceeded = z.object({
   })
 })
 
-/** Subscribes to `events`; returns the unsubscribe. */
+/**
+ * After the agent restarts ComfyUI (it does so after installing or writing a
+ * node pack), registers the node definitions again and rebuilds the open
+ * workflow, so the new pack's nodes stop rendering as missing types.
+ */
 export function refreshNodeCatalogOnRestart(
   events: AgentEventSource,
   deps: NodeCatalogRefreshDeps
 ): () => void {
-  // A reconnect can deliver the same call again; one restart, one refresh.
-  // Only a refresh that succeeded is final: a failed one forgets its call, so
-  // a redelivery of that same call gets another attempt.
-  const refreshed = new Set<string>()
-  const inFlight = new Set<string>()
-  // Two restarts in quick succession refresh in order, never interleaved.
+  // A reconnect can redeliver a call; only a refresh that succeeded is final.
+  const calls = new Map<string, 'pending' | 'done'>()
   let queue = Promise.resolve()
 
   async function refreshFor(callId: string): Promise<void> {
+    let reloaded: boolean
     try {
       await deps.refreshNodeDefinitions()
-      await deps.reloadCurrentWorkflow()
+      reloaded = await deps.reloadCurrentWorkflow()
     } catch (error) {
-      inFlight.delete(callId)
+      calls.delete(callId)
       deps.onFailure(error)
       return
     }
-    inFlight.delete(callId)
-    refreshed.add(callId)
+    if (reloaded) calls.set(callId, 'done')
+    else calls.delete(callId)
   }
 
   return events.subscribe((raw) => {
     const parsed = zRestartSucceeded.safeParse(raw)
     if (!parsed.success) return
     const callId = parsed.data.data.tool_call_id
-    if (refreshed.has(callId) || inFlight.has(callId)) return
-    inFlight.add(callId)
+    if (calls.has(callId)) return
+    calls.set(callId, 'pending')
     queue = queue.then(() => refreshFor(callId))
   })
 }

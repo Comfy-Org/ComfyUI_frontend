@@ -681,8 +681,6 @@ describe('historical workflow restoration', () => {
 })
 
 describe('Agent workflow target selection', () => {
-  beforeEach(() => localStorage.clear())
-
   it('refuses an unresolved saved tab until the saved-workflow index names it', async () => {
     const {
       selection,

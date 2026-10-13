@@ -22,10 +22,6 @@ function traceableFrame(frame: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * Wraps `base` with the dev-panel tap (poc-4): every outbound frame is logged
- * with its delivery result.
- */
 export function createLoggedTransport(
   base: DocFrameTransport
 ): DocFrameTransport {
