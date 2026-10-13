@@ -753,18 +753,9 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
-}
-
-function followerOwnsDocument(documentId: string | undefined): boolean {
-  return (
-    documentId !== undefined &&
-    boundWorkflowId.value === documentId &&
-    crdtStatus.value.terminal === null
-  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {

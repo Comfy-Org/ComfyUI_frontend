@@ -8258,8 +8258,11 @@ describe('AgentPanelRoot workflow binding', () => {
     workflowStore.activeWorkflow = scratch
     await sendFromComposer('second message')
 
-    expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+
+      draft: { content: { id: 'wf-42' } }
+    })
   })
 
   it('keeps an explicitly detached workflow after a remount', async () => {
@@ -10130,65 +10133,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
-  describe('draft seed against the follower', () => {
-    async function bindAndSettle(): Promise<unknown[]> {
-      makeTab('wf-42')
-      const bodies = mockMessagesEndpoint('wf-42')
-      await renderAndSend('first message')
-      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-      await screen.findByRole('button', { name: 'Send' })
-      return bodies
-    }
-
-    it('seeds the draft again once the follower has given up on a refused document', async () => {
-      const bodies = await bindAndSettle()
-      ws.emit('doc_subscribed', {
-        v: 1,
-        workflow_id: 'wf-42',
-        ok: false,
-        code: 'schema_version_mismatch'
-      })
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toMatchObject({
-        workflow_id: 'wf-42',
-        draft: { content: { id: 'wf-42' } }
-      })
-    })
-
-    it('keeps withholding the draft across an ordinary reconnect', async () => {
-      const bodies = await bindAndSettle()
-      ws.emit('doc_subscribed', {
-        v: 1,
-        workflow_id: 'wf-42',
-        ok: true,
-        seq: 1
-      })
-
-      agentSocket.open()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
-    })
-
-    it('withholds the draft for a bound document while the agent identity is still pending', async () => {
-      vi.mocked(resolveAgentIdentity).mockReturnValue({
-        userId: ref(null),
-        reset: vi.fn(),
-        stop: () => {}
-      })
-      const bodies = await bindAndSettle()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
-    })
-  })
-
   it('keeps the editable target when viewing an unbound tab without current_tab fallback', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -10224,8 +10168,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('second message')
 
-    expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+
+      draft: { content: { id: 'wf-42' } }
+    })
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       origin.path
     )

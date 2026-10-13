@@ -35,7 +35,6 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
-  terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,
   lastFrameType: 'doc_update',
