@@ -14,8 +14,6 @@ export function useCloudNotificationDialog() {
         props: {},
         dialogComponentProps: {
           closable: false,
-          contentClass:
-            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] rounded-2xl overflow-hidden',
           onRemoved: () => resolve()
         }
       })

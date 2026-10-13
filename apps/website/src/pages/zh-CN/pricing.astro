@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import CloudPricingSection from '@/components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '@/components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '@/components/pricing/PricingFaq.astro'
+import ComfyAgentPricingSection from '@/components/pricing/ComfyAgentPricingSection.vue'
 import ComfyApiPricingSection from '@/components/pricing/ComfyApiPricingSection.vue'
 import MinimaxLicensePricingSection from '@/components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '@/components/common/MinimaxLicenseHeroSection.vue'
@@ -51,7 +52,12 @@ const description =
 >
   <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
-  <ComfyApiPricingSection locale="zh-CN" show-learn-more-cta />
+  <ComfyAgentPricingSection locale="zh-CN" />
+  <ComfyApiPricingSection
+    locale="zh-CN"
+    show-learn-more-cta
+    show-plan-limits={false}
+  />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <MinimaxLicensePricingSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />

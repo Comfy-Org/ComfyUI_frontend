@@ -227,7 +227,7 @@ async function recordTotalCreditStates(page: Page) {
       }
       const tile = label?.parentElement
       if (!tile) return
-      const state = tile.querySelector('[data-pc-name="skeleton"]')
+      const state = tile.querySelector('[data-slot="skeleton"]')
         ? 'loading'
         : tile.textContent
             .replace('Total credits', '')
