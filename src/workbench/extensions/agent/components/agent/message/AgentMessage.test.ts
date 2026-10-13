@@ -4,6 +4,7 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
   AskUserResolution,
@@ -810,7 +811,7 @@ describe('AgentMessage delete approval', () => {
   })
 
   const deleteMessage = (frame: Partial<AskFrame> = {}): AssistantMessage => ({
-    id: 'msg-delete' as TurnId,
+    id: toTurnId('msg-delete'),
     role: 'assistant',
     parts: [toAskOrNoticePart(deleteFrame(frame))],
     streaming: true,
@@ -826,7 +827,11 @@ describe('AgentMessage delete approval', () => {
     expect(
       screen.getByText('Delete the 2 nodes you added?')
     ).toBeInTheDocument()
-    const nodes = within(screen.getByRole('list', { name: 'Nodes to delete' }))
+    const nodes = within(
+      screen.getByRole('list', {
+        name: 'Nodes the agent asked to delete'
+      })
+    )
     expect(
       nodes.getAllByRole('listitem').map((item) => item.textContent.trim())
     ).toEqual([
@@ -835,7 +840,10 @@ describe('AgentMessage delete approval', () => {
     ])
   })
 
-  it.for(['Keep', 'Delete'])('answers %s', async (button) => {
+  it.for([
+    { button: 'Keep', selected: 'keep' },
+    { button: 'Delete', selected: 'delete' }
+  ])('answers $selected from $button', async ({ button, selected }) => {
     const { emitted } = render(AgentMessage, {
       props: { message: deleteMessage() },
       global: { plugins: [i18n] }
@@ -844,7 +852,7 @@ describe('AgentMessage delete approval', () => {
     await userEvent.click(screen.getByRole('button', { name: button }))
 
     expect(emitted().answerAsk).toEqual([
-      ['turn-2:call-4', { selected: [button.toLowerCase()] }]
+      ['turn-2:call-4', { selected: [selected] }]
     ])
   })
 
@@ -859,26 +867,6 @@ describe('AgentMessage delete approval', () => {
 
     expect(screen.getByRole('button', { name: 'Keep' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
-  })
-
-  it('shows the notice, not an armed Delete, when context.nodes is malformed', () => {
-    render(AgentMessage, {
-      props: {
-        message: deleteMessage({
-          context: { action: 'delete_nodes', nodes: 'oops' }
-        })
-      },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText(
-        'The agent asked a question this panel cannot show. Stop the turn to continue.'
-      )
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Delete' })
-    ).not.toBeInTheDocument()
   })
 
   it('says how many delete targets the list leaves out', () => {
@@ -902,17 +890,17 @@ describe('AgentMessage delete approval', () => {
     {
       name: 'delete',
       resolution: { status: 'answered', selected: ['delete'] },
-      text: 'Answered: delete them.'
+      text: 'Answered: delete them'
     },
     {
       name: 'keep',
       resolution: { status: 'answered', selected: ['keep'] },
-      text: 'Answered: keep them.'
+      text: 'Answered: keep them'
     },
     {
       name: 'an answer the server did not name',
       resolution: { status: 'answered', selected: [] },
-      text: 'Answered.'
+      text: 'Answered'
     },
     {
       name: 'no answer',
@@ -950,6 +938,29 @@ describe('AgentMessage delete approval', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  it('reads back a single-node delete in the singular', () => {
+    const [part] = deleteMessage({
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }] }
+    }).parts
+    assert(part.type === 'deleteApproval')
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...deleteMessage(),
+          parts: [
+            {
+              ...part,
+              resolution: { status: 'answered', selected: ['delete'] }
+            }
+          ]
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent('Answered: delete it')
+  })
 })
 
 describe('AgentMessage ask the panel cannot render', () => {

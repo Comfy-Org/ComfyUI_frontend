@@ -4,8 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import type { DeleteApprovalPart } from '../../../services/agent/agentMessageParts'
-import AskNodeList from './AskNodeList.vue'
+import type {
+  AskUserResolution,
+  DeleteApprovalPart
+} from '../../../services/agent/agentMessageParts'
 
 const { part, answering = false } = defineProps<{
   part: DeleteApprovalPart
@@ -17,18 +19,24 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
+  answered: 'agent.deleteApproval.answered',
+  closed: 'agent.deleteApproval.closed',
+  retired: 'agent.deleteApproval.retired',
+  unknown: 'agent.deleteApproval.unconfirmed'
+}
+
 const decision = computed(() => {
   const resolution = part.resolution
   if (!resolution) return undefined
-  if (resolution.status === 'closed') return t('agent.deleteApproval.closed')
-  if (resolution.status === 'retired') return t('agent.deleteApproval.retired')
-  if (resolution.status === 'unknown')
-    return t('agent.deleteApproval.unconfirmed')
-  if (resolution.selected.includes('delete'))
-    return t('agent.deleteApproval.deleted')
-  if (resolution.selected.includes('keep'))
-    return t('agent.deleteApproval.kept')
-  return t('agent.deleteApproval.answered')
+  if (resolution.status === 'answered') {
+    const count = part.nodes.length + part.hiddenNodeCount
+    if (resolution.selected.includes('delete'))
+      return t('agent.deleteApproval.deleted', count)
+    if (resolution.selected.includes('keep'))
+      return t('agent.deleteApproval.kept', count)
+  }
+  return t(STATUS_TEXT[resolution.status])
 })
 </script>
 
@@ -42,7 +50,30 @@ const decision = computed(() => {
       {{ part.prompt }}
     </p>
 
-    <AskNodeList :nodes="part.nodes" :hidden-count="part.hiddenNodeCount" />
+    <div
+      class="flex flex-col gap-1 rounded-md bg-component-node-background p-2 text-xs/5"
+    >
+      <ul
+        :aria-label="t('agent.deleteApproval.nodes')"
+        class="m-0 flex max-h-40 list-none flex-col gap-0.5 overflow-y-auto p-0"
+      >
+        <li
+          v-for="node in part.nodes"
+          :key="node.id"
+          class="flex min-w-0 items-baseline gap-2"
+        >
+          <span v-if="node.name" class="truncate text-base-foreground">
+            {{ node.name }}
+          </span>
+          <span class="max-w-1/2 shrink-0 truncate text-muted-foreground">
+            #{{ node.id }}
+          </span>
+        </li>
+      </ul>
+      <p v-if="part.hiddenNodeCount > 0" class="m-0 text-muted-foreground">
+        {{ t('agent.deleteApproval.moreNodes', part.hiddenNodeCount) }}
+      </p>
+    </div>
 
     <p
       v-if="decision"

@@ -1966,11 +1966,16 @@ describe('useAgentConversationStore', () => {
             ],
             context: {
               action: 'delete_nodes',
-              nodes: [{ id: 12, type: 'KSampler' }]
+              nodes: [{ id: '12', type: 'KSampler' }]
             }
           }
         })
       )
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+        'askUser',
+        'askUnavailable',
+        'deleteApproval'
+      ])
 
       store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
 

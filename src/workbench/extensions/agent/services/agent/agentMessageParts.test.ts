@@ -4,7 +4,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
-  ASK_USER_LIMITS,
+  ASK_LIMITS,
   askIdOf,
   isAskPart,
   isRenderedAskKind,
@@ -134,24 +134,22 @@ describe('toAskPart ask_user', () => {
   it('bounds the option count and text lengths of an untrusted ask', () => {
     const part = toAskPart(
       askUser({
-        prompt: 'p'.repeat(ASK_USER_LIMITS.prompt + 10),
+        prompt: 'p'.repeat(ASK_LIMITS.prompt + 10),
         options: Array.from(
-          { length: ASK_USER_LIMITS.options + 25 },
+          { length: ASK_LIMITS.options + 25 },
           (_, index) => ({
             id: `o${index}`,
-            label: 'l'.repeat(ASK_USER_LIMITS.label + 10),
-            description: 'd'.repeat(ASK_USER_LIMITS.description + 10)
+            label: 'l'.repeat(ASK_LIMITS.label + 10),
+            description: 'd'.repeat(ASK_LIMITS.description + 10)
           })
         )
       })
     )
     assert(part?.type === 'askUser')
-    expect(part.options).toHaveLength(ASK_USER_LIMITS.options)
-    expect(part.prompt).toHaveLength(ASK_USER_LIMITS.prompt)
-    expect(part.options[0].label).toHaveLength(ASK_USER_LIMITS.label)
-    expect(part.options[0].description).toHaveLength(
-      ASK_USER_LIMITS.description
-    )
+    expect(part.options).toHaveLength(ASK_LIMITS.options)
+    expect(part.prompt).toHaveLength(ASK_LIMITS.prompt)
+    expect(part.options[0].label).toHaveLength(ASK_LIMITS.label)
+    expect(part.options[0].description).toHaveLength(ASK_LIMITS.description)
   })
 
   it('still maps run approvals, and no kind outside the contract', () => {
@@ -276,7 +274,7 @@ describe('toAskPart delete_approval', () => {
   })
 
   it('clips a long node name but never its id', () => {
-    const prefix = 'n'.repeat(ASK_USER_LIMITS.label)
+    const prefix = 'n'.repeat(ASK_LIMITS.label)
     const part = toAskPart(
       deleteApproval({
         context: {
@@ -284,7 +282,7 @@ describe('toAskPart delete_approval', () => {
           nodes: [
             {
               id: `${prefix}-a`,
-              title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
+              title: 'x'.repeat(ASK_LIMITS.label + 10)
             },
             { id: `${prefix}-b` }
           ]
@@ -296,7 +294,7 @@ describe('toAskPart delete_approval', () => {
       `${prefix}-a`,
       `${prefix}-b`
     ])
-    expect(part.nodes[0].name).toHaveLength(ASK_USER_LIMITS.label)
+    expect(part.nodes[0].name).toHaveLength(ASK_LIMITS.label)
   })
 
   it.for([

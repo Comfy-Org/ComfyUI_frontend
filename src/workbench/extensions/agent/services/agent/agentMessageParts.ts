@@ -3,7 +3,7 @@ import {
   zAgentDeleteApprovalContext,
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
-import { uniqBy } from 'es-toolkit'
+import { isEqual, uniqBy } from 'es-toolkit'
 
 import type {
   AgentMessages,
@@ -164,11 +164,7 @@ export interface AskUserPart {
   resolution?: AskUserResolution
 }
 
-/**
- * A canvas node a `delete_approval` would remove, as the host listed it.
- * `name` is the node's title, falling back to its type.
- */
-export interface AskNodeRef {
+interface DeleteTarget {
   id: string
   name?: string
 }
@@ -178,14 +174,8 @@ export interface DeleteApprovalPart {
   type: 'deleteApproval'
   askId: string
   prompt: string
-  nodes: AskNodeRef[]
-  /**
-   * Delete targets the card does not list (past the display cap, or
-   * unreadable), so a Delete answer never covers nodes the user was not told
-   * about.
-   */
+  nodes: DeleteTarget[]
   hiddenNodeCount: number
-  /** Set once the ask is resolved; the card then reads back the decision. */
   resolution?: AskUserResolution
 }
 
@@ -199,7 +189,6 @@ export function isAskPart(part: MessagePart): part is AskPart {
   )
 }
 
-/** An ask card still waiting on the user (a resolved card is not). */
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
@@ -237,7 +226,7 @@ export function retireAskParts(
   if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (part.type !== 'askUser' && part.type !== 'deleteApproval') return []
+    if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -263,7 +252,7 @@ type AskInput = Pick<
  * Bounds on what an `ask_user` frame may render. The frame is untrusted input,
  * so a runaway option list or text cannot freeze the panel.
  */
-export const ASK_USER_LIMITS = {
+export const ASK_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
@@ -283,12 +272,11 @@ function toAskUserOptions(options: AskInput['options']): AskUserOption[] {
     seen.add(id)
     choices.push({
       id,
-      label: clip(label, ASK_USER_LIMITS.label),
+      label: clip(label, ASK_LIMITS.label),
       description:
-        clip(description?.trim() ?? '', ASK_USER_LIMITS.description) ||
-        undefined
+        clip(description?.trim() ?? '', ASK_LIMITS.description) || undefined
     })
-    if (choices.length === ASK_USER_LIMITS.options) break
+    if (choices.length === ASK_LIMITS.options) break
   }
   return choices
 }
@@ -302,7 +290,7 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   return {
     type: 'askUser',
     askId: ask.ask_id,
-    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
     options,
     minSelections: Math.min(Math.max(0, ask.min_selections), maxSelections),
     maxSelections,
@@ -310,7 +298,7 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
-function toAskNodeRefs(
+function toDeleteTargets(
   context: AskInput['context']
 ): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> | undefined {
   const parsed = zAgentDeleteApprovalContext.safeParse(context)
@@ -320,33 +308,24 @@ function toAskNodeRefs(
   return {
     nodes: uniqBy(nodes, ({ id }) => id).map(({ id, title, type }) => {
       const name = title?.trim() || type?.trim()
-      return { id, name: name ? clip(name, ASK_USER_LIMITS.label) : undefined }
+      return { id, name: name ? clip(name, ASK_LIMITS.label) : undefined }
     }),
     hiddenNodeCount
   }
 }
 
-const DELETE_APPROVAL_OPTIONS = ['delete', 'keep']
-
-/**
- * The delete decision card. It renders its own Delete and Keep buttons, so it
- * needs the host to offer exactly those two options as one required choice,
- * and a readable list of the nodes a Delete would remove.
- */
 function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
-  const optionIds = ask.options.map(({ id }) => id)
   const offersDeleteOrKeep =
-    optionIds.length === DELETE_APPROVAL_OPTIONS.length &&
-    DELETE_APPROVAL_OPTIONS.every((id) => optionIds.includes(id)) &&
+    isEqual(ask.options.map(({ id }) => id).sort(), ['delete', 'keep']) &&
     ask.min_selections === 1 &&
     ask.max_selections === 1 &&
     !ask.allow_other
-  const targets = toAskNodeRefs(ask.context)
+  const targets = toDeleteTargets(ask.context)
   if (!offersDeleteOrKeep || !targets) return undefined
   return {
     type: 'deleteApproval',
     askId: ask.ask_id,
-    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
     ...targets
   }
 }
