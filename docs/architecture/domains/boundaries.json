@@ -4,6 +4,7 @@
       {
         "name": "agent/domain",
         "patterns": [
+          "src/workbench/extensions/agent/crdt/opEnvelope.property.test.ts",
           "src/workbench/extensions/agent/schemas/**",
           "src/workbench/extensions/agent/types/**",
           "src/workbench/extensions/agent/services/agent/agentActivityRows.ts",
@@ -65,6 +66,7 @@
       {
         "name": "agent/application",
         "patterns": [
+          "src/workbench/extensions/agent/composables/useBillingIdentity.ts",
           "src/workbench/extensions/agent/stores/agent/**",
           "src/workbench/extensions/agent/experiments/**",
           "src/workbench/extensions/agent/feedback.ts",
@@ -141,6 +143,7 @@
       {
         "name": "agent/presentation",
         "patterns": [
+          "src/workbench/extensions/agent/agentDocs.ts",
           "src/workbench/extensions/agent/components/**",
           "src/workbench/extensions/agent/composables/agent/mentionPickerState.ts",
           "src/workbench/extensions/agent/composables/agent/mentionPickerState.test.ts",
@@ -163,6 +166,7 @@
       {
         "name": "agent/integration",
         "patterns": [
+          "src/workbench/extensions/agent/crdt/__fixtures__/docHostMintedSink.ts",
           "src/workbench/extensions/agent/AgentPanelRoot.vue",
           "src/workbench/extensions/agent/AgentPanelRoot.test.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
@@ -347,7 +351,8 @@
           "src/platform/assets/utils/marqueeSelectionUtil.ts",
           "src/platform/assets/utils/outputAssetCountUtil.ts",
           "src/platform/assets/utils/outputKeyUtil.ts",
-          "src/utils/loaderNodeUtil.ts"
+          "src/utils/loaderNodeUtil.ts",
+          "src/utils/loaderNodeUtil.test.ts"
         ]
       },
       {
@@ -514,6 +519,7 @@
       {
         "name": "authentication/domain",
         "patterns": [
+          "src/platform/auth/localWeb/accessTokenIdentity.ts",
           "src/platform/auth/apiAuthProvider.ts",
           "src/platform/auth/authCredential.test.ts",
           "src/platform/auth/authCredential.ts",
@@ -566,6 +572,13 @@
       {
         "name": "authentication/infrastructure",
         "patterns": [
+          "src/platform/auth/localWeb/localWebAuthBridge.ts",
+          "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
+          "src/platform/auth/localWeb/localWebSession.ts",
+          "src/platform/auth/localWeb/localWebSession.test.ts",
+          "src/platform/auth/localWeb/localWebTokenStore.ts",
+          "src/platform/auth/localWeb/pendingSignIn.ts",
+          "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
           "src/platform/auth/desktopHost/**",
           "src/platform/auth/firebaseIdentity.test.ts",
           "src/platform/auth/firebaseIdentity.ts",
@@ -591,6 +604,7 @@
       {
         "name": "authentication/presentation",
         "patterns": [
+          "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
           "src/platform/auth/session/components/**",
           "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
           "src/platform/auth/sso/SsoRequiredDialogContent.vue",
@@ -1451,6 +1465,7 @@
       {
         "name": "dialog-host/application",
         "patterns": [
+          "src/services/dialogServiceTypes.ts",
           "src/stores/dialogStore.ts",
           "src/stores/dialogStore.test.ts",
           "src/services/dialogService.ts",
@@ -1505,6 +1520,8 @@
       {
         "name": "error-reporting/domain",
         "patterns": [
+          "src/platform/telemetry/redactTelemetryUrls.ts",
+          "src/platform/telemetry/redactTelemetryUrls.test.ts",
           "src/platform/telemetry/datadogRumBeforeSend.ts",
           "src/platform/telemetry/datadogRumBeforeSend.test.ts",
           "src/platform/telemetry/sentryBeforeSend.ts",
@@ -1682,6 +1699,7 @@
           "src/scripts/api.sessionOverride.test.ts",
           "src/scripts/api.socketReset.test.ts",
           "src/scripts/api.ts",
+          "src/scripts/api.storeUserData.test.ts",
           "src/scripts/apiTimeouts.ts"
         ]
       },
@@ -2384,6 +2402,7 @@
           "src/utils/queueUtil.ts",
           "src/utils/resultItem.ts",
           "src/utils/resultItemUrl.ts",
+          "src/utils/resultItemUrl.test.ts",
           "src/types/queue.ts"
         ]
       },
@@ -2739,7 +2758,8 @@
           "src/stores/maskEditorDataStore.ts",
           "src/stores/maskEditorStore.test.ts",
           "src/stores/maskEditorDataStore.test.ts",
-          "src/scripts/clipspace.ts"
+          "src/scripts/clipspace.ts",
+          "src/scripts/clipspace.test.ts"
         ]
       },
       {
@@ -4767,6 +4787,7 @@
       {
         "name": "workflow-management/application",
         "patterns": [
+          "src/platform/workflow/management/stores/workflowStoreTypes.ts",
           "src/platform/workflow/core/services/__mocks__/workflowService.ts",
           "src/platform/workflow/core/services/workflowActionsService.test.ts",
           "src/platform/workflow/core/services/workflowActionsService.ts",

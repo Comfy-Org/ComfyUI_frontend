@@ -468,6 +468,10 @@
       "role": "domain"
     },
     {
+      "path": "src/utils/loaderNodeUtil.test.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/utils/requestUtil.test.ts",
       "role": "infrastructure"
     },

@@ -56,6 +56,10 @@
       "role": "application"
     },
     {
+      "path": "src/scripts/clipspace.test.ts",
+      "role": "application"
+    },
+    {
       "path": "src/extensions/core/clipspace.ts",
       "role": "integration"
     }

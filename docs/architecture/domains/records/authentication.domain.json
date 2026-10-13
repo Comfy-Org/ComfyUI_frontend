@@ -4,6 +4,42 @@
   "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
   "modules": [
     {
+      "path": "src/platform/auth/localWeb/accessTokenIdentity.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebTokenStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/pendingSignIn.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/composables/auth/**",
       "role": "application"
     },

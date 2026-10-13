@@ -112,6 +112,10 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/scripts/api.storeUserData.test.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/scripts/apiTimeouts.ts",
       "role": "infrastructure"
     },

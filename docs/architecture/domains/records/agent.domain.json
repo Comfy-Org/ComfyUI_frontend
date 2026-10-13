@@ -4,6 +4,22 @@
   "description": "The In-App Agent right-dock panel and its host registration: consent and first-use tour, panel visibility and workflow-target state, composer prompt and attachment state, the agent REST client and /ws event sources, chat sessions, transcripts and history, reply rendering and feedback, topbar entry and target indicator, and the CRDT document follower that projects agent graph edits onto the live LiteGraph graph and sends human doc_ops back. The agent consent setting id (classified by settings) and the agent-panel telemetry helper are not claimed here; workflow, auth, workspace, billing, assets, skills, onboarding, and LiteGraph remain external.",
   "modules": [
     {
+      "path": "src/workbench/extensions/agent/agentDocs.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/workbench/extensions/agent/composables/useBillingIdentity.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/docHostMintedSink.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/opEnvelope.property.test.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/workbench/extensions/agent/schemas/**",
       "role": "domain"
     },

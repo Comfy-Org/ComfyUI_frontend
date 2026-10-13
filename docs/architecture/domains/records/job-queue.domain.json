@@ -348,6 +348,10 @@
       "role": "domain"
     },
     {
+      "path": "src/utils/resultItemUrl.test.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/types/queue.ts",
       "role": "domain"
     },

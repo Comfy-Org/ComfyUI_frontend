@@ -4,6 +4,10 @@
   "description": "Global dialog state, stacking, focus, renderer selection, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
   "modules": [
     {
+      "path": "src/services/dialogServiceTypes.ts",
+      "role": "application"
+    },
+    {
       "path": "src/components/dialog/bodyPointerEventsRestore.test.ts",
       "role": "presentation"
     },
