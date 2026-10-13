@@ -10,15 +10,13 @@ import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 // submitted by clicking Send rather than pressing Enter."
 // Sources: regr-26 (PM-1525, PM-1526, PRs 18296 ...), slack-51.
 //
-// Why the submit path matters, in the product's own words
-// (Composer.vue, `handleEscapeOverride`): the prompt editor only forwards
-// keydown while the ProseMirror contenteditable itself has focus, so the
-// Enter path is caught by the editor-scoped handler. A pointer click on Send
-// does not reliably leave focus anywhere that handler can see -- Chrome moves
-// it onto the button, Safari and Firefox leave it on <body>. The override in
-// `keybindingService` exists for exactly that case.
+// Why the submit path matters: a pointer click on Send does not reliably
+// leave focus in the prompt editor -- Chrome moves it onto the button,
+// Safari and Firefox leave it on <body>. Composer.vue's
+// `Comfy.Agent.StopTurn` binding answers Escape from the editor, the rest of
+// the composer, and <body> for exactly that case.
 //
-// That override is covered at component level (Composer.test.ts). This is the
+// That binding is covered at component level (Composer.test.ts). This is the
 // browser-level case the harness-first rule asks for: a real pointer click on
 // a real button, real focus behaviour, and the stop judged the way the user
 // judges it -- the Stop button is gone and the composer takes a prompt again.

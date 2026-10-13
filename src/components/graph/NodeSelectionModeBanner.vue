@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import CanvasBanner from '@/components/graph/CanvasBanner.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
-const dialogStore = useDialogStore()
 
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && dialogStore.dialogStack.length === 0)
-    canvasStore.stopNodePicking()
+useKeybinding({
+  id: 'Comfy.Agent.ExitNodeSelection',
+  label: () => t('keybindings.exitNodeSelection'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () => canvasStore.isPickingNodes,
+  run: () => canvasStore.stopNodePicking()
 })
 </script>
 

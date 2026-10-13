@@ -1,6 +1,10 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  bindUnreservedShortcut,
+  installKeybindingDispatcher
+} from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
@@ -66,16 +70,20 @@ describe('useMarkdownWidget', () => {
     expect(widget.element.querySelector('table')?.textContent).toContain('Name')
   })
 
-  it('toggles editing on dblclick/blur and stops keydown propagation', () => {
-    const { inputEl, textarea, parentKeydown } = setup()
+  it('toggles editing on dblclick/blur and keeps app shortcuts out of the editor', () => {
+    installKeybindingDispatcher()
+    const shortcut = bindUnreservedShortcut()
+    const { inputEl, textarea } = setup()
     inputEl.dispatchEvent(new Event('dblclick', { bubbles: true }))
     expect(inputEl.classList.contains('editing')).toBe(true)
 
     textarea.dispatchEvent(new Event('blur'))
     expect(inputEl.classList.contains('editing')).toBe(false)
 
-    inputEl.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-    expect(parentKeydown).not.toHaveBeenCalled()
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true })
+    )
+    expect(shortcut).not.toHaveBeenCalled()
   })
 
   it('forwards middle-click pointer events to the canvas while alive', () => {

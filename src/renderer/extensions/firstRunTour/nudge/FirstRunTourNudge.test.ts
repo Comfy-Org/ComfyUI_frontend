@@ -11,6 +11,7 @@ import {
   registerCoachmark,
   unregisterCoachmark
 } from '@/platform/onboarding/coachmarkRegistry'
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { laidOut } from '@/platform/onboarding/fixtures/coachmarkTargets'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import {
@@ -378,6 +379,7 @@ describe('FirstRunTourNudge', () => {
         user.keyboard('{Escape}')
     }
   ])('stays gone once the user $gesture', async ({ act }) => {
+    installKeybindingDispatcher()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     mocks.nudgeArmed.value = true
     renderNudge()

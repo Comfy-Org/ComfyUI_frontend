@@ -1,3 +1,4 @@
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
@@ -211,6 +212,7 @@ describe('GettingStartedScreen', () => {
     })
 
     it('exits on Escape', async () => {
+      installKeybindingDispatcher()
       await renderScreen()
 
       await userEvent.keyboard('{Escape}')

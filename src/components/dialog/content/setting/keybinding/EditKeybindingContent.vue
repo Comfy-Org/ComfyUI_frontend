@@ -14,7 +14,8 @@
       :aria-label="$t('g.enterYourKeybind')"
       autocomplete="off"
       autofocus
-      @keydown.stop.prevent="captureKeybinding"
+      data-comfy-keybinding-ignore
+      @keydown="captureKeybinding"
     />
     <div class="min-h-12">
       <p
@@ -56,10 +57,17 @@ const {
   existingKeybindingSource?: string | null
 }>()
 
+/** Tab and Shift+Tab move focus; an unmodified Escape dismisses the dialog. */
+function leavesToBrowser(combo: KeyComboImpl): boolean {
+  if (combo.key === 'Tab') return !combo.ctrl && !combo.alt
+  return combo.key === 'Escape' && !combo.hasModifier
+}
+
 function captureKeybinding(event: KeyboardEvent) {
-  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    if (event.key === 'Escape') return
-  }
-  onUpdateCombo(KeyComboImpl.fromEvent(event))
+  if (event.isComposing) return
+  const combo = KeyComboImpl.fromEvent(event)
+  if (leavesToBrowser(combo)) return
+  event.preventDefault()
+  if (!combo.isModifier) onUpdateCombo(combo)
 }
 </script>

@@ -87,7 +87,6 @@ import {
   breakpointsTailwind,
   useBreakpoints,
   onClickOutside,
-  useEventListener,
   useTimeoutFn
 } from '@vueuse/core'
 import { computed, ref, useId, watch } from 'vue'
@@ -95,6 +94,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
@@ -183,8 +183,12 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
 
 onClickOutside(cardRef, dismissNudge)
 
-useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (onScreen.value && event.key === 'Escape') dismissNudge()
+useKeybinding({
+  id: 'Comfy.Onboarding.DismissNudge',
+  label: () => t('keybindings.dismissNudge'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () => onScreen.value,
+  run: dismissNudge
 })
 
 /** The nudge sits below the modal stack, so it waits for a clear screen. */

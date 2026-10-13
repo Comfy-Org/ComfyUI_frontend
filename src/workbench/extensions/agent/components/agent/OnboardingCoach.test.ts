@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -108,6 +109,8 @@ beforeEach(() => {
 })
 
 describe('OnboardingCoach', () => {
+  beforeEach(installKeybindingDispatcher)
+
   it('presents all four cards in order, keeps Skip available and finishes with Done', async () => {
     const user = userEvent.setup()
     const { unmount } = mount()
@@ -165,22 +168,24 @@ describe('OnboardingCoach', () => {
     expect(localStorage.getItem(KEY)).toBe('false')
   })
 
-  it('dismisses on Escape without forwarding it to the graph or blocking later keys', async () => {
+  it('dismisses on Escape, claiming it from the graph without blocking later keys', async () => {
     const user = userEvent.setup()
-    const escaped = vi.fn()
-    window.addEventListener('keydown', escaped)
+    const claimed: boolean[] = []
+    const record = (event: KeyboardEvent) =>
+      claimed.push(event.defaultPrevented)
+    window.addEventListener('keydown', record)
+    onTestFinished(() => window.removeEventListener('keydown', record))
     const { unmount } = mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('true')
-    expect(escaped).not.toHaveBeenCalled()
+    expect(claimed).toEqual([true])
     await user.keyboard('{Escape}')
-    expect(escaped).toHaveBeenCalledTimes(1)
+    expect(claimed).toEqual([true, false])
     unmount()
     await user.keyboard('{Escape}')
-    expect(escaped).toHaveBeenCalledTimes(2)
-    window.removeEventListener('keydown', escaped)
+    expect(claimed).toEqual([true, false, false])
   })
 
   it('keeps keyboard focus inside the tour', async () => {
