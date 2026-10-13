@@ -17,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isAuthRejectionStatus } from '@/platform/auth/authRejection'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -117,7 +118,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  AgentApiError,
+  createAgentRestClient
+} from './services/agent/agentRestClient'
 import {
   agentSocketParams,
   ensureSignedIn,
@@ -218,7 +222,9 @@ onBeforeUnmount(() => docTransport.destroy())
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
-  onConnected: (listener) => docTransport.onConnected(listener),
+  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
+  isRetryable: (error) =>
+    !(error instanceof AgentApiError && isAuthRejectionStatus(error.status)),
   onFailure: (error) =>
     reportError(error, {
       surface: 'agent',

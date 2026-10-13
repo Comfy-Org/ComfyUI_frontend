@@ -6839,14 +6839,22 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 describe('useAgentSession credential refresh', () => {
   const REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
-  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
-    const refreshCredential = vi.fn(async () => {})
+  function startSession(
+    refreshCredential: AgentRestClient['refreshCredential']
+  ) {
     const { source, emit } = fakeEvents()
     const scope = effectScope()
     const session = scope.run(() =>
       useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
-    )!
+    )
+    assert.exists(session)
     session.start()
+    return { scope, session, emit }
+  }
+
+  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session, emit } = startSession(refreshCredential)
 
     await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
     expect(refreshCredential).not.toHaveBeenCalled()
@@ -6863,12 +6871,7 @@ describe('useAgentSession credential refresh', () => {
 
   it('keeps refreshing for a turn a thread switch moved to the background', async () => {
     const refreshCredential = vi.fn(async () => {})
-    const { source, emit } = fakeEvents()
-    const scope = effectScope()
-    const session = scope.run(() =>
-      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
-    )!
-    session.start()
+    const { scope, session, emit } = startSession(refreshCredential)
 
     await session.sendMessage('build it')
     session.newChat()
@@ -6882,14 +6885,28 @@ describe('useAgentSession credential refresh', () => {
     scope.stop()
   })
 
+  it('reports a credential refresh that fails', async () => {
+    const failure = new Error('refresh failed')
+    const refreshCredential = vi.fn(async () => {
+      throw failure
+    })
+    const { scope, session } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'failure_refreshing_agent_credential'
+      })
+    )
+    scope.stop()
+  })
+
   it('stops refreshing when the panel scope is disposed mid-turn', async () => {
     const refreshCredential = vi.fn(async () => {})
-    const { source } = fakeEvents()
-    const scope = effectScope()
-    const session = scope.run(() =>
-      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
-    )!
-    session.start()
+    const { scope, session } = startSession(refreshCredential)
     await session.sendMessage('build it')
 
     scope.stop()
