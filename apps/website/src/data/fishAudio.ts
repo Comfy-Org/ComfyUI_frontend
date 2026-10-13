@@ -15,6 +15,11 @@ export const fishAudioPage: ModelLaunchPage = {
   hero: {
     videoSrc: 'https://media.comfy.org/website/fish-audio/fish-audio-hero2.mp4',
     posterSrc: HERO_POSTER_SRC,
+    // The hero clip is ~5.4 MB; below the 768px breakpoint (and during SSR)
+    // the poster still is served instead, so phones never fetch the video.
+    // This guard existed in #20898 and was dropped by an unrelated rewrite
+    // of this file mid-PR (#20932).
+    mobileFallbackImageSrc: HERO_POSTER_SRC,
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
