@@ -75,6 +75,8 @@ const activeTab = computed(
           <VideoCompareSlider
             :before-src="tab.beforeSrc"
             :after-src="tab.afterSrc"
+            :before-poster-src="tab.beforePosterSrc"
+            :after-poster-src="tab.afterPosterSrc"
             :before-label="t('modelLaunch.beforeAfter.before')"
             :after-label="t('modelLaunch.beforeAfter.after')"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
+
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 import {
   COMPARE_MAX,
@@ -16,6 +18,8 @@ const SYNC_TOLERANCE_S = 0.15
 const {
   beforeSrc,
   afterSrc,
+  beforePosterSrc,
+  afterPosterSrc,
   beforeLabel,
   afterLabel,
   sliderLabel,
@@ -23,6 +27,8 @@ const {
 } = defineProps<{
   beforeSrc: string
   afterSrc: string
+  beforePosterSrc?: string
+  afterPosterSrc?: string
   beforeLabel: string
   afterLabel: string
   sliderLabel: string
@@ -36,6 +42,9 @@ const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
 const isMounted = useMounted()
+const shouldAutoplay = computed(
+  () => isMounted.value && !prefersReducedMotion()
+)
 
 function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
@@ -96,7 +105,9 @@ function syncAfterToBefore() {
       :key="beforeSrc"
       data-testid="video-compare-before"
       :src="isMounted ? beforeSrc : undefined"
-      autoplay
+      :poster="beforePosterSrc"
+      preload="none"
+      :autoplay="shouldAutoplay"
       loop
       muted
       playsinline
@@ -109,7 +120,9 @@ function syncAfterToBefore() {
       :key="afterSrc"
       data-testid="video-compare-after"
       :src="isMounted ? afterSrc : undefined"
-      autoplay
+      :poster="afterPosterSrc"
+      preload="none"
+      :autoplay="shouldAutoplay"
       loop
       muted
       playsinline

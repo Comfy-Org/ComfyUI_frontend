@@ -1,10 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import VideoCompareSlider from './VideoCompareSlider.vue'
+
+const motion = vi.hoisted(() => ({ reduced: false }))
+
+vi.mock(import('@/composables/useReducedMotion'), () => ({
+  prefersReducedMotion: () => motion.reduced
+}))
 
 const props = {
   beforeSrc: 'before.webm',
@@ -14,8 +20,8 @@ const props = {
   sliderLabel: 'Comparison slider'
 }
 
-async function renderSlider() {
-  render(VideoCompareSlider, { props })
+async function renderSlider(extraProps = {}) {
+  render(VideoCompareSlider, { props: { ...props, ...extraProps } })
   const slider = screen.getByRole('slider', { name: 'Comparison slider' })
   const surface = screen.getByTestId('video-compare-surface')
   const beforeVideo = screen.getByTestId<HTMLVideoElement>(
@@ -39,6 +45,10 @@ async function pressAt(
 }
 
 describe('VideoCompareSlider', () => {
+  beforeEach(() => {
+    motion.reduced = false
+  })
+
   it('renders no clip sources on the server', async () => {
     const html = await renderToString(
       createSSRApp({ render: () => h(VideoCompareSlider, props) })
@@ -57,6 +67,30 @@ describe('VideoCompareSlider', () => {
     expect(afterVideo.style.clipPath).toBe('inset(0 0 0 50%)')
     expect(screen.getByText('Before')).toBeVisible()
     expect(screen.getByText('After')).toBeVisible()
+  })
+
+  it.for([
+    { preference: 'no preference', reduced: false, autoplays: true },
+    { preference: 'reduced motion', reduced: true, autoplays: false }
+  ])(
+    'autoplays both clips: $autoplays, with $preference',
+    async ({ reduced, autoplays }) => {
+      motion.reduced = reduced
+      const { beforeVideo, afterVideo } = await renderSlider()
+
+      expect(beforeVideo.autoplay).toBe(autoplays)
+      expect(afterVideo.autoplay).toBe(autoplays)
+    }
+  )
+
+  it('shows each clip poster before the clips load', async () => {
+    const { beforeVideo, afterVideo } = await renderSlider({
+      beforePosterSrc: 'before.jpg',
+      afterPosterSrc: 'after.jpg'
+    })
+
+    expect(beforeVideo).toHaveAttribute('poster', 'before.jpg')
+    expect(afterVideo).toHaveAttribute('poster', 'after.jpg')
   })
 
   it('moves with the keyboard and clips the after clip to match', async () => {
