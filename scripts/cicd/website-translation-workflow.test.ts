@@ -94,13 +94,28 @@ function translationFixture() {
   git(upstream, 'remote', 'add', 'origin', origin)
   writeFileSync(
     join(bin, 'gh'),
-    `#!/bin/sh
-set -eu
+    `#!/usr/bin/env bash
+set -euo pipefail
 if [ "$FAKE_API_FAILURE" = 'true' ]; then
   echo 'service unavailable' >&2
   exit 1
 fi
-printf '%s' "$FAKE_PR_URL"
+test "$1 $2" = 'pr list'
+shift 2
+query=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --repo) test "$2" = "$GITHUB_REPOSITORY" ;;
+    --base) test "$2" = "$TARGET_BRANCH" ;;
+    --head) test "$2" = "$TRANSLATION_BRANCH" ;;
+    --state) test "$2" = 'open' ;;
+    --json) test "$2" = 'url,isCrossRepository' ;;
+    --jq) query="$2" ;;
+    *) exit 64 ;;
+  esac
+  shift 2
+done
+printf '%s' "$FAKE_PRS" | jq -r "$query"
 `,
     { mode: 0o755 }
   )
@@ -125,10 +140,11 @@ printf '%s' "$FAKE_PR_URL"
           PATH: `${bin}:${process.env.PATH ?? ''}`,
           GITHUB_OUTPUT: output,
           GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
+          GITHUB_REF: 'refs/heads/main',
           TARGET_BRANCH: 'main',
           TRANSLATION_BRANCH: 'bl/website-locale-updates',
           GH_TOKEN: 'test-token',
-          FAKE_PR_URL: '',
+          FAKE_PRS: '[]',
           FAKE_API_FAILURE: 'false',
           ...env
         }
@@ -143,6 +159,27 @@ printf '%s' "$FAKE_PR_URL"
 
 describe('website translation automation', () => {
   it.for([
+    { event: 'schedule', ref: 'refs/heads/main', expected: 'true' },
+    { event: 'push', ref: 'refs/heads/main', expected: 'true' },
+    { event: 'workflow_dispatch', ref: 'refs/heads/main', expected: 'true' },
+    {
+      event: 'workflow_dispatch',
+      ref: 'refs/heads/feature',
+      expected: 'false'
+    }
+  ])('routes $event on $ref to a PR: $expected', ({ event, ref, expected }) => {
+    using fixture = translationFixture()
+
+    const result = fixture.run('route', {
+      GITHUB_EVENT_NAME: event,
+      GITHUB_REF: ref
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.output).toBe(`create_pr=${expected}\n`)
+  })
+
+  it.for([
     { path: englishCatalog, expected: true },
     { path: translationConfig, expected: true },
     { path: japaneseCatalog, expected: false },
@@ -154,12 +191,31 @@ describe('website translation automation', () => {
   })
 
   it.for([
-    { url: '', output: '' },
-    { url: 'https://github.com/example/repo/pull/1', output: 'skip=true\n' }
-  ])('skips generation only for an open PR: $url', ({ url, output }) => {
+    { label: 'no PR', prs: [], output: '' },
+    {
+      label: 'a same-repository PR',
+      prs: [
+        {
+          url: 'https://github.com/example/repo/pull/1',
+          isCrossRepository: false
+        }
+      ],
+      output: 'skip=true\n'
+    },
+    {
+      label: 'a fork PR with the same branch name',
+      prs: [
+        {
+          url: 'https://github.com/example/repo/pull/2',
+          isCrossRepository: true
+        }
+      ],
+      output: ''
+    }
+  ])('skips generation only for $label', ({ prs, output }) => {
     using fixture = translationFixture()
 
-    const result = fixture.run('pending', { FAKE_PR_URL: url })
+    const result = fixture.run('pending', { FAKE_PRS: JSON.stringify(prs) })
 
     expect(result.status).toBe(0)
     expect(result.output).toBe(output)

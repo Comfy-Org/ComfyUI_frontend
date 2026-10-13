@@ -26,13 +26,23 @@ jobs:
     timeout-minutes: 30
     env:
       TRANSLATION_BRANCH: bl/website-locale-updates
+      TARGET_BRANCH: main
     steps:
+      - name: Choose the publication route
+        id: route
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" = 'refs/heads/main' ]; then
+            echo 'create_pr=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'create_pr=false' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check for a translation PR awaiting review
         id: pending
-        if: github.ref_name == github.event.repository.default_branch
+        if: steps.route.outputs.create_pr == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           pending_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" \
@@ -75,9 +85,7 @@ jobs:
 
       - name: Verify the translation inputs are current
         id: source
-        if: steps.locales.outputs.changed == 'true' && github.ref_name == github.event.repository.default_branch
-        env:
-          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+        if: steps.locales.outputs.changed == 'true' && steps.route.outputs.create_pr == 'true'
         run: |
           set -euo pipefail
           git fetch --quiet --no-tags origin "$TARGET_BRANCH"
@@ -90,12 +98,12 @@ jobs:
           fi
 
       - name: Create the translation PR
-        if: steps.locales.outputs.changed == 'true' && github.ref_name == github.event.repository.default_branch
+        if: steps.locales.outputs.changed == 'true' && steps.route.outputs.create_pr == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           branch: ${{ env.TRANSLATION_BRANCH }}
-          base: ${{ github.event.repository.default_branch }}
+          base: ${{ env.TARGET_BRANCH }}
           add-paths: apps/website/src/locales/
           commit-message: 'fix(website): update locale catalogs'
           title: 'fix(website): update locale catalogs'
@@ -111,13 +119,13 @@ jobs:
             Review the translated copy before merging.
 
       - name: Commit updated branch locales
-        if: steps.locales.outputs.changed == 'true' && github.ref_name != github.event.repository.default_branch
+        if: steps.locales.outputs.changed == 'true' && steps.route.outputs.create_pr == 'false'
         run: |
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update website locales'
 
       - name: Push updated locales
-        if: steps.locales.outputs.changed == 'true' && github.ref_name != github.event.repository.default_branch
+        if: steps.locales.outputs.changed == 'true' && steps.route.outputs.create_pr == 'false'
         env:
           TARGET_BRANCH: ${{ github.ref_name }}
           PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
