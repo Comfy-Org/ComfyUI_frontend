@@ -15,11 +15,11 @@ import { doorArt } from '@/lib/workshop/explore-art'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
 import { exploreRow, searchExplore } from '@/lib/workshop/explore-search'
 import { useWorkshopFlag } from '@/scripts/posthog'
+import ExploreCategories from './ExploreCategories.vue'
 import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
-import ExploreUseCases from './ExploreUseCases.vue'
 
 const RESULTS = 12
 const HUB_HOME_COMMUNITY_FLAG = 'hub-home-community'
@@ -122,7 +122,7 @@ function clear() {
       @clear="clear"
     />
 
-    <ExploreUseCases v-if="!needle" :models :workflows :locale />
+    <ExploreCategories v-if="!needle" :workflows :locale />
 
     <ExploreCommunity v-if="!needle && communityShown" :locale />
   </div>

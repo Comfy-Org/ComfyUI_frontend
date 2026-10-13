@@ -228,11 +228,35 @@ describe('ModelsCatalogue', () => {
             capabilities: [],
             useCases
           }
+    const inCategory = (
+      model: WorkshopModel,
+      category: string,
+      categoryOrder: number,
+      en: string
+    ): WorkshopModel =>
+      model.type === 'CLOUD'
+        ? {
+            ...model,
+            category,
+            categoryOrder,
+            categoryLabel: { en, 'zh-CN': en }
+          }
+        : model
     const catalogue = [
-      entry('relight', 'workflow', ['edit-images']),
+      inCategory(
+        entry('relight', 'workflow', ['edit-images']),
+        'image-to-image',
+        0,
+        'Image to image'
+      ),
       entry('painter', 'model', ['generate-images']),
       entry('animator', 'model', ['animate-images']),
-      entry('animate-still', 'workflow', ['animate-images'])
+      inCategory(
+        entry('animate-still', 'workflow', ['animate-images']),
+        'image-to-video',
+        1,
+        'Image to video'
+      )
     ]
     const renderExplore = (models = catalogue) =>
       render(ModelsCatalogue, { props: { models, section: 'explore' } })
@@ -372,13 +396,13 @@ describe('ModelsCatalogue', () => {
       await user.type(await screen.findByTestId('explore-search'), 'zzz')
       expect(screen.getByTestId('explore-empty')).toBeVisible()
       expect(screen.queryByTestId('explore-doors')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('explore-use-cases')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('explore-categories')).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
       expect(screen.getByTestId('explore-search')).toHaveValue('')
       expect(screen.getByTestId('explore-doors')).toBeVisible()
-      expect(screen.getByTestId('explore-use-cases')).toBeVisible()
+      expect(screen.getByTestId('explore-categories')).toBeVisible()
       expect(screen.getByRole('heading', { name: 'Popular' })).toBeVisible()
     })
 
@@ -416,21 +440,21 @@ describe('ModelsCatalogue', () => {
     )
 
     it.for([
-      { flag: false, sections: ['explore-use-cases'] },
-      { flag: true, sections: ['explore-use-cases', 'explore-community'] }
+      { flag: false, sections: ['explore-categories'] },
+      { flag: true, sections: ['explore-categories', 'explore-community'] }
     ])(
       'shows the community below the use cases only behind its flag: $flag',
       async ({ flag, sections }) => {
         communityFlag.value = flag
         renderExplore()
-        await screen.findByTestId('explore-use-cases')
+        await screen.findByTestId('explore-categories')
 
         expect(
           screen
             .getAllByRole('region')
             .map((region) => region.dataset.testid)
             .filter(
-              (id) => id === 'explore-use-cases' || id === 'explore-community'
+              (id) => id === 'explore-categories' || id === 'explore-community'
             )
         ).toEqual(sections)
         if (flag)
@@ -442,10 +466,10 @@ describe('ModelsCatalogue', () => {
       }
     )
 
-    it('closes on a tile per use case, each leading to its filtered catalogue', async () => {
+    it('closes on a tile per Workflows category, each leading to that category', async () => {
       renderExplore()
 
-      const section = within(await screen.findByTestId('explore-use-cases'))
+      const section = within(await screen.findByTestId('explore-categories'))
       expect(
         section.getByRole('heading', {
           level: 2,
@@ -454,27 +478,22 @@ describe('ModelsCatalogue', () => {
       ).toBeVisible()
       expect(
         section
-          .getAllByTestId('explore-use-case')
+          .getAllByTestId('explore-category')
           .map((tile) => [
-            tile.dataset.useCase,
+            tile.dataset.category,
             tile.getAttribute('href'),
             tile.textContent.replace(/\s+/g, ' ').trim()
           ])
       ).toEqual([
         [
-          'generate-images',
-          '/hub/models/?useCase=generate-images',
-          'Generate images1 model'
+          'image-to-image',
+          '/hub/workflows/?category=image-to-image',
+          'Image to image1 workflow'
         ],
         [
-          'edit-images',
-          '/hub/workflows/?useCase=edit-images',
-          'Edit images1 workflow'
-        ],
-        [
-          'animate-images',
-          '/hub/models/?useCase=animate-images',
-          'Animate images1 model'
+          'image-to-video',
+          '/hub/workflows/?category=image-to-video',
+          'Image to video1 workflow'
         ]
       ])
     })
