@@ -8,8 +8,13 @@ const copy = {
   'relight.panel': { en: 'Relight settings', 'zh-CN': '重新布光设置' },
   'relight.empty.title': { en: 'Try an example', 'zh-CN': '试试示例' },
   'relight.empty.meta': {
-    en: 'Or upload your own photo in the panel. Up to 4 lights per photo.',
-    'zh-CN': '也可以在面板中上传你自己的照片。每张照片最多 4 盏灯。'
+    en: 'Each one loads a photo with its lights, ready to try. Up to 4 lights per photo.',
+    'zh-CN':
+      '每个示例都会载入一张照片和它的灯光，直接就能试。每张照片最多 4 盏灯。'
+  },
+  'relight.empty.uploadHint': {
+    en: 'Or upload your photo in the panel',
+    'zh-CN': '或在面板中上传你的照片'
   },
   'relight.empty.upload': { en: 'Upload photo', 'zh-CN': '上传照片' },
   'relight.photo.hint': { en: 'PNG, JPG or WebP', 'zh-CN': 'PNG、JPG 或 WebP' },

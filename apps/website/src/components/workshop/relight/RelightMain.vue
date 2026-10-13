@@ -38,6 +38,7 @@ const resultLabels = computed(() => ({
     v-if="!image"
     :title="lc('relight.empty.title', locale)"
     :hint="lc('relight.empty.meta', locale)"
+    :upload="lc('relight.empty.uploadHint', locale)"
     :examples="[
       {
         id: 'motel',
