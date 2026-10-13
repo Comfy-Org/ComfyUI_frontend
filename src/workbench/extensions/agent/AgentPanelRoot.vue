@@ -771,7 +771,8 @@ function followerOwnsDocument(documentId: string | undefined): boolean {
   return (
     documentId !== undefined &&
     boundWorkflowId.value === documentId &&
-    crdtStatus.value.terminal === null
+    crdtStatus.value.terminal === null &&
+    agentIdentity.state.value.status !== 'rejected'
   )
 }
 
@@ -948,12 +949,13 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
-// The CRDT follower is the inbound content channel: subscribes to the
-// session's bound workflow while its tab is active. Suspending the background
-// subscription makes reopening pull state-vector catch-up only after the
-// workflow's serialized activeState has hydrated the transient stores.
+const agentUserId = computed(() => {
+  const identity = agentIdentity.state.value
+  return identity.status === 'resolved' ? identity.userId : null
+})
+
 const isFollowerActive = computed(
-  () => isBoundWorkflowActive.value && agentIdentity.userId.value !== null
+  () => isBoundWorkflowActive.value && agentUserId.value !== null
 )
 
 const {
@@ -967,7 +969,7 @@ const {
   subscriptionSent
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
-  userId: () => agentIdentity.userId.value,
+  userId: () => agentUserId.value,
   isTargetActive: isFollowerActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
