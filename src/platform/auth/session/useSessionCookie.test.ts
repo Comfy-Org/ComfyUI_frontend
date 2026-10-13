@@ -1,8 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-const originalFetch = globalThis.fetch
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -23,13 +21,6 @@ describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
     useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
-    globalThis.fetch = vi.fn()
-  })
-
-  afterEach(() => {
-    // Restore the global fetch so a leaked mock doesn't bleed into later
-    // tests that depend on real fetch semantics.
-    globalThis.fetch = originalFetch
   })
 
   it('createSessionOrThrow posts the Firebase token and awaits success', async () => {
@@ -361,6 +352,49 @@ describe('useSessionCookie', () => {
       await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
         'refused by ingest'
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'a 401 SESSION_REVOKED',
+      status: 401,
+      code: 'SESSION_REVOKED',
+      revoked: true
+    },
+    {
+      name: 'a 401 UNAUTHORIZED',
+      status: 401,
+      code: 'UNAUTHORIZED',
+      revoked: false
+    },
+    {
+      name: 'a 403 SESSION_REVOKED',
+      status: 403,
+      code: 'SESSION_REVOKED',
+      revoked: false
+    }
+  ])(
+    'ensureSessionCookie rejects with SessionRevokedError: $revoked for $name',
+    async ({ status, code, revoked }) => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-id-token'
+      )
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json(
+          { code, message: 'This session was signed out; sign in again' },
+          { status }
+        )
+      )
+      const { useSessionCookie, SessionRevokedError } =
+        await loadUseSessionCookie()
+
+      const failure = await useSessionCookie()
+        .ensureSessionCookie()
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(Error)
+      expect(failure instanceof SessionRevokedError).toBe(revoked)
     }
   )
 

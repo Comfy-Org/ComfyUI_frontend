@@ -41,7 +41,7 @@
 
       <Button
         v-if="download.status === 'in_progress'"
-        v-tooltip.top="t('electronFileDownload.pause')"
+        :tooltip="t('electronFileDownload.pause')"
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
@@ -53,7 +53,7 @@
 
       <Button
         v-if="download.status === 'paused'"
-        v-tooltip.top="t('electronFileDownload.resume')"
+        :tooltip="t('electronFileDownload.resume')"
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
@@ -65,7 +65,7 @@
 
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
-        v-tooltip.top="t('electronFileDownload.cancel')"
+        :tooltip="t('electronFileDownload.cancel')"
         class="size-[22px] rounded-full"
         variant="destructive"
         size="icon-sm"
