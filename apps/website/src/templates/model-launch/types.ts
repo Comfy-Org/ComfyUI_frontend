@@ -215,6 +215,8 @@ interface ModelLaunchBeforeAfterTab {
   caption: LocalizedText
   beforeSrc: string
   afterSrc: string
+  beforePosterSrc?: string
+  afterPosterSrc?: string
 }
 
 export interface ModelLaunchBeforeAfter {

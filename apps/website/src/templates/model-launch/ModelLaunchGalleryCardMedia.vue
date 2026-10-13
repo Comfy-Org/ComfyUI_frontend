@@ -25,6 +25,7 @@ const name = card.name[locale] || card.name.en
 const caption = card.description[locale] || card.description.en
 const isExpandable = card.expandable === true && card.media.kind === 'image'
 const radiusClass = overlayCaption ? 'rounded-3xl' : 'rounded-4.5xl'
+const isFullSpanImage = card.span === 'full' && card.media.kind === 'image'
 const scrimClass = overlayCaption
   ? 'bg-linear-to-t from-black/60 via-transparent to-transparent'
   : 'bg-linear-to-b from-black/25 to-transparent'
@@ -62,7 +63,14 @@ function shapeClass() {
       v-else
       :src="card.media.src"
       :alt="name"
-      class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+      :class="
+        cn(
+          'size-full transition-transform duration-300 group-hover:scale-105',
+          isFullSpanImage
+            ? 'object-contain object-top md:object-cover md:object-center'
+            : 'object-cover'
+        )
+      "
       loading="lazy"
       decoding="async"
     />
