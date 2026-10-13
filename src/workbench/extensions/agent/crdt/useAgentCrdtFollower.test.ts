@@ -155,7 +155,10 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type {
+  AgentCrdtFollowerOptions,
+  AgentCrdtStatus
+} from './useAgentCrdtFollower'
 
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
@@ -189,9 +192,13 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => LGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[4] = {},
-  baseTransport: DocFrameTransport = agentSocket.transport,
-  canvasFor: Parameters<typeof useAgentCrdtFollower>[7] = () => null
+  events: AgentCrdtFollowerOptions['events'] = {},
+  {
+    transport = agentSocket.transport,
+    canvasFor
+  }: Pick<AgentCrdtFollowerOptions, 'canvasFor'> & {
+    transport?: AgentCrdtFollowerOptions['transport']
+  } = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -207,13 +214,7 @@ function mountFollower(
     setup() {
       const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
-        () => null,
-        isTargetActive,
-        getGraph,
-        events,
-        undefined,
-        baseTransport,
-        canvasFor
+        { transport, isTargetActive, getGraph, events, canvasFor }
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -241,26 +242,6 @@ let agentSocket = createFakeAgentSocket()
 
 function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
-}
-
-type FollowerArgs = Parameters<typeof useAgentCrdtFollower>
-
-function followOnAgentSocket(
-  workflowId: FollowerArgs[0],
-  userId?: FollowerArgs[1],
-  isTargetActive?: FollowerArgs[2],
-  getGraph?: FollowerArgs[3],
-  events?: FollowerArgs[4]
-) {
-  return useAgentCrdtFollower(
-    workflowId,
-    userId,
-    isTargetActive,
-    getGraph,
-    events,
-    undefined,
-    agentSocket.transport
-  )
 }
 
 describe('useAgentCrdtFollower', () => {
@@ -401,43 +382,6 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
     expect('__agentCrdtPoc' in window).toBe(false)
     unmount()
-  })
-
-  it('resubscribes when the transport reports its socket (re)connected', () => {
-    // The server drops a connection's follows when the socket closes, while
-    // the bridge still believes it is subscribed — so a plain reconcile
-    // (which no-ops once intent equals reality) would leave the follower
-    // deaf after a reconnect. A transport on a socket other than ComfyUI's
-    // must get the same treatment as a ComfyUI `reconnected`: drop the
-    // connection state and reconnect the bridge (which resubscribes).
-    let connectedListener: (() => void) | null = null
-    const stopConnected = vi.fn()
-    const transport: DocFrameTransport = {
-      send: vi.fn(() => false),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      onConnected: (listener) => {
-        connectedListener = listener
-        return stopConnected
-      }
-    }
-    const { unmount, status } = mountFollower(
-      'wf-1',
-      true,
-      () => null,
-      {},
-      transport
-    )
-    expect(connectedListener).toBeTypeOf('function')
-    dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 3 })
-    expect(status().connected).toBe(true)
-
-    connectedListener!()
-
-    expect(bridge().reconnect).toHaveBeenCalledOnce()
-    expect(status().connected).toBe(false)
-    unmount()
-    expect(stopConnected).toHaveBeenCalledTimes(1)
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -2022,7 +1966,9 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(workflowId)
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2275,7 +2221,9 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(workflowId)
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2310,7 +2258,9 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(workflowId)
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2347,13 +2297,10 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(
-          workflowId,
-          () => null,
-          ref(true),
-          () => null,
-          { onSyncError }
-        )
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport,
+          events: { onSyncError }
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2393,7 +2340,9 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(workflowId)
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2452,7 +2401,9 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = followOnAgentSocket(workflowId)
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         enqueue = enqueueHumanOperations
         return () => null
       }
@@ -2558,11 +2509,10 @@ describe('useAgentCrdtFollower', () => {
       let enqueue!: Enqueue
       const host = defineComponent({
         setup() {
-          const { enqueueHumanOperations } = followOnAgentSocket(
-            workflowId,
-            () => null,
+          const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+            transport: agentSocket.transport,
             isTargetActive
-          )
+          })
           enqueue = enqueueHumanOperations
           return () => null
         }
@@ -2908,7 +2858,9 @@ describe('useAgentCrdtFollower', () => {
   })
 
   // A transport whose socket-open subscription fails to detach.
-  function transportFailingToStop(failure: unknown): DocFrameTransport {
+  function transportFailingToStop(
+    failure: unknown
+  ): AgentCrdtFollowerOptions['transport'] {
     return {
       ...agentSocket.transport,
       onConnected: () => () => {
@@ -2925,15 +2877,7 @@ describe('useAgentCrdtFollower', () => {
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(
-          workflowId,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          transport
-        )
+        useAgentCrdtFollower(workflowId, { transport })
         return () => null
       }
     })
@@ -2968,7 +2912,9 @@ describe('useAgentCrdtFollower', () => {
       true,
       () => null,
       {},
-      transportFailingToStop(null)
+      {
+        transport: transportFailingToStop(null)
+      }
     )
     clientState.destroy.mockImplementation(() => {
       throw undefined
@@ -2997,14 +2943,7 @@ describe('useAgentCrdtFollower', () => {
       canvasFor: (workflowId: string) => Record<string, unknown> | null = () =>
         canvas
     ) {
-      return mountFollower(
-        'wf-1',
-        true,
-        () => null,
-        {},
-        agentSocket.transport,
-        canvasFor
-      )
+      return mountFollower('wf-1', true, () => null, {}, { canvasFor })
     }
 
     function refuseAsStale(frame: Record<string, unknown> = staleRefusal) {

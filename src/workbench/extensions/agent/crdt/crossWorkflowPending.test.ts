@@ -146,12 +146,9 @@ function mountFollower(initial: string): {
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        agentSocket.transport
+        {
+          transport: agentSocket.transport
+        }
       )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
