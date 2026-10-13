@@ -29,10 +29,10 @@ import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
+import type { AgentDocFrameTransport } from './agentDocFrameTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocFrameTransport } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
@@ -328,24 +328,32 @@ function reportRejectedHumanOps(
   )
 }
 
-export function useAgentCrdtFollower(
-  workflowId: Ref<string | null>,
-  userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true),
+export interface AgentCrdtFollowerOptions {
+  transport: AgentDocFrameTransport
+  userId?: () => string | null
+  isTargetActive?: Ref<boolean>
   /**
    * Live graph the document is applied to. Reactive reads inside the getter
    * are tracked, so a `null` → graph flip syncs the graph from the document
    * without waiting for the next remote frame.
    */
-  getGraph: () => LGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {},
-  applierDeps: AgentCrdtApplierDeps = {},
-  /**
-   * Where document frames travel: the agent's one socket on every backend
-   * (see agentDocFrameTransport). Its opens drive resubscription.
-   */
-  baseTransport: DocFrameTransport,
-  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
+  getGraph?: () => LGraph | null
+  events?: AgentCrdtFollowerEvents
+  applierDeps?: AgentCrdtApplierDeps
+  canvasFor?: (workflowId: string) => Record<string, unknown> | null
+}
+
+export function useAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  {
+    transport,
+    userId = () => null,
+    isTargetActive = ref(true),
+    getGraph = () => null,
+    events = {},
+    applierDeps = {},
+    canvasFor = () => null
+  }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -379,16 +387,15 @@ export function useAgentCrdtFollower(
         scope.stop()
       })
       follower.value = scope.run(() =>
-        startAgentCrdtFollower(
-          workflowId,
+        startAgentCrdtFollower(workflowId, {
+          transport,
           userId,
           isTargetActive,
           getGraph,
           events,
           applierDeps,
-          baseTransport,
           canvasFor
-        )
+        })
       )
     },
     { immediate: true, flush: 'sync' }
@@ -418,13 +425,15 @@ export function useAgentCrdtFollower(
 
 function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  userId: () => string | null,
-  isTargetActive: Ref<boolean>,
-  getGraph: () => LGraph | null,
-  events: AgentCrdtFollowerEvents,
-  applierDeps: AgentCrdtApplierDeps,
-  baseTransport: DocFrameTransport,
-  canvasFor: (workflowId: string) => Record<string, unknown> | null
+  {
+    transport,
+    userId,
+    isTargetActive,
+    getGraph,
+    events,
+    applierDeps,
+    canvasFor
+  }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
   const terminal = ref<AgentCrdtTerminalState>(null)
@@ -442,7 +451,7 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(baseTransport))
+  const client = new DocFrameClient(createLoggedTransport(transport))
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -856,11 +865,8 @@ function startAgentCrdtFollower(
     if (typeof detail?.workflowId !== 'string') return
     lifecycle.onSubscribeSent(detail.workflowId)
   }
-  const handleReconnected = (): void => {
+  function onSocketOpen(): void {
     connected.value = false
-    // A new socket starts a new subscription attempt with a fresh budget, so
-    // the document is being recovered again: the panel must withhold the
-    // draft seed until that attempt confirms or gives up in turn.
     terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
@@ -876,15 +882,10 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
-  // Every open of the agent's socket is treated as a reconnect: the server
-  // drops a connection's follows when its socket closes while the bridge
-  // still believes it is subscribed, so a reconcile (a no-op once intent
-  // equals reality) would leave the follower deaf. On a first open the
-  // resubscribe is one redundant frame the server answers as a resync. It is
-  // also the only repair for a subscribe dropped while the socket was still
-  // connecting (`send` returned false).
   bridge.addEventListener('doc_reseed_result', onReseedResult)
-  const stopTransportConnected = baseTransport.onConnected?.(handleReconnected)
+  // Every open resubscribes: the server drops a closed socket's follows, and a
+  // subscribe sent while connecting was dropped.
+  const stopTransportConnected = transport.onConnected(onSocketOpen)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
@@ -1040,7 +1041,7 @@ function startAgentCrdtFollower(
     // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
-      () => stopTransportConnected?.(),
+      () => stopTransportConnected(),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),
       () => bridge.removeEventListener('doc_update', onUpdate),
       () => bridge.removeEventListener('doc_ops_result', onOpsResult),

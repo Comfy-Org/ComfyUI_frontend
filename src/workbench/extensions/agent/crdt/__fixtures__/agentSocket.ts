@@ -3,17 +3,21 @@ import { vi } from 'vitest'
 import type { AgentEventSocket } from '../../services/agent/agentEventSource'
 import { createAgentDocFrameTransport } from '../agentDocFrameTransport'
 
-/**
- * The agent's one socket, faked at its seam, with the production document
- * transport riding it — so a follower under test sends and receives frames
- * exactly the way it does against `/api/agent/events`.
- */
+/** The agent's socket faked at its seam, with the production document transport riding it. */
 export function createFakeAgentSocket() {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   const send = vi.fn<(frame: string) => boolean>(() => true)
+  const reconnect = vi.fn()
+  let live = false
+
+  function setLive(next: boolean): void {
+    live = next
+    statusListeners.forEach((listener) => listener(next))
+  }
+
   const socket: AgentEventSocket = {
-    reconnect: () => {},
+    reconnect,
     send: (frame) => send(frame),
     subscribe(listener) {
       listeners.add(listener)
@@ -21,19 +25,24 @@ export function createFakeAgentSocket() {
     },
     onStatus(listener) {
       statusListeners.add(listener)
+      listener(live)
       return () => statusListeners.delete(listener)
     }
   }
   return {
+    socket,
     send,
+    reconnect,
     transport: createAgentDocFrameTransport(socket),
-    /** The socket's open edge — a first connect or a reconnect. */
     open(): void {
-      statusListeners.forEach((listener) => listener(true))
+      setLive(true)
     },
-    /** An inbound frame from the agent. */
+    drop(): void {
+      setLive(false)
+    },
     receive(type: string, data: unknown): void {
       listeners.forEach((listener) => listener({ type, data }))
-    }
+    },
+    listenerCount: () => listeners.size
   }
 }

@@ -1,18 +1,23 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createAgentEventSource } from './agentEventSource'
 
 class FakeSocket extends EventTarget {
-  readyState: number = WebSocket.CONNECTING
-  readonly url: string
+  static readonly CONNECTING = 0
+  static readonly OPEN = 1
+  static readonly CLOSED = 3
+  static instances: FakeSocket[] = []
 
-  constructor(url: string) {
+  readyState = FakeSocket.CONNECTING
+  send = vi.fn()
+
+  constructor(readonly url: string) {
     super()
-    this.url = url
+    FakeSocket.instances.push(this)
   }
 
   open(): void {
-    this.readyState = WebSocket.OPEN
+    this.readyState = FakeSocket.OPEN
     this.dispatchEvent(new Event('open'))
   }
 
@@ -31,36 +36,47 @@ class FakeSocket extends EventTarget {
   }
 
   close(): void {
-    if (this.readyState === WebSocket.CLOSED) return
-    this.readyState = WebSocket.CLOSED
+    if (this.readyState === FakeSocket.CLOSED) return
+    this.readyState = FakeSocket.CLOSED
     this.dispatchEvent(new Event('close'))
   }
 }
 
-// Every connect reads the token first, so the socket opens a few microtasks
-// after subscribe (or after the reconnect timer fires).
 async function connected(): Promise<void> {
-  for (let i = 0; i < 5; i++) await Promise.resolve()
+  await vi.advanceTimersByTimeAsync(0)
 }
 
-function sourceHarness(
-  endpoint = '/api/agent/events',
-  getToken?: () => Promise<string | undefined>
-) {
-  const sockets: FakeSocket[] = []
-  const source = createAgentEventSource({
-    endpoint,
-    getToken,
-    // No jitter: every reconnect waits its full delay.
-    random: () => 1,
-    createSocket(url) {
-      const socket = new FakeSocket(url)
-      sockets.push(socket)
-      return socket as unknown as WebSocket
-    }
-  })
-  return { source, sockets }
+function sockets(): FakeSocket[] {
+  return FakeSocket.instances
 }
+
+function lastSocket(): FakeSocket {
+  const socket = FakeSocket.instances.at(-1)
+  if (!socket) throw new Error('no socket was opened')
+  return socket
+}
+
+function createSource(
+  options: {
+    endpoint?: string
+    getToken?: () => Promise<string | undefined>
+    random?: () => number
+    maxReconnectDelayMs?: number
+  } = {}
+) {
+  return createAgentEventSource({
+    endpoint: '/api/agent/events',
+    getToken: async () => undefined,
+    random: () => 1,
+    ...options
+  })
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: false })
+  FakeSocket.instances = []
+  vi.stubGlobal('WebSocket', FakeSocket)
+})
 
 describe('createAgentEventSource', () => {
   it.for([
@@ -69,127 +85,123 @@ describe('createAgentEventSource', () => {
   ])(
     'transforms %s into a %s socket endpoint',
     async ([endpoint, protocol]) => {
-      const { source, sockets } = sourceHarness(endpoint)
+      const source = createSource({ endpoint })
 
       source.subscribe(vi.fn())
-
       await connected()
 
-      const socketUrl = new URL(sockets[0].url)
+      const socketUrl = new URL(lastSocket().url)
       expect(socketUrl.protocol).toBe(protocol)
       expect(socketUrl.host).toBe('agent.test')
       expect(socketUrl.pathname).toBe('/api/agent/events')
     }
   )
 
-  it('delivers JSON frames from the same-origin agent proxy', async () => {
-    const { source, sockets } = sourceHarness()
+  it('delivers JSON frames and reports the socket live', async () => {
+    const source = createSource()
     const seen = vi.fn()
     const status = vi.fn()
 
     source.subscribe(seen)
-
     await connected()
-    source.onStatus?.(status)
-    sockets[0].open()
-    sockets[0].receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
+    source.onStatus(status)
+    lastSocket().open()
+    lastSocket().receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
 
-    expect(status).toHaveBeenCalledWith(true)
+    expect(status.mock.calls).toEqual([[false], [true]])
     expect(seen).toHaveBeenCalledWith({
       type: 'agent_message_delta',
       data: { delta: 'hi' }
     })
   })
 
+  it('reports the current state to a status listener that joins an open socket', async () => {
+    const source = createSource()
+    const status = vi.fn()
+
+    source.subscribe(vi.fn())
+    await connected()
+    lastSocket().open()
+    source.onStatus(status)
+
+    expect(status.mock.calls).toEqual([[true]])
+  })
+
   it('forwards an empty text frame instead of dropping it', async () => {
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     const seen = vi.fn()
 
     source.subscribe(seen)
-
     await connected()
-    sockets[0].open()
-    sockets[0].receiveRaw('')
+    lastSocket().open()
+    lastSocket().receiveRaw('')
 
     expect(seen).toHaveBeenCalledWith('')
   })
 
-  it('reconnects after a backend reload', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
-    const status = vi.fn()
-
-    source.subscribe(vi.fn())
-
-    await connected()
-    source.onStatus?.(status)
-    sockets[0].open()
-    sockets[0].close()
-    await vi.advanceTimersByTimeAsync(1000)
-
-    expect(status).toHaveBeenLastCalledWith(false)
-    expect(sockets).toHaveLength(2)
-  })
-
   it('reconnects exactly once when the upgrade fails before open', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     const status = vi.fn()
 
     source.subscribe(vi.fn())
-
     await connected()
-    source.onStatus?.(status)
-    sockets[0].error()
+    source.onStatus(status)
+    lastSocket().error()
     await vi.advanceTimersByTimeAsync(999)
 
-    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
-    expect(status).toHaveBeenCalledTimes(1)
-    expect(status).toHaveBeenLastCalledWith(false)
-    expect(sockets).toHaveLength(1)
+    expect(sockets()[0].readyState).toBe(FakeSocket.CLOSED)
+    expect(status.mock.calls).toEqual([[false], [false]])
+    expect(sockets()).toHaveLength(1)
 
     await vi.advanceTimersByTimeAsync(1)
-    expect(sockets).toHaveLength(2)
+    expect(sockets()).toHaveLength(2)
 
     await vi.advanceTimersByTimeAsync(5000)
-    expect(sockets).toHaveLength(2)
+    expect(sockets()).toHaveLength(2)
   })
 
   it('reports live again once the replacement socket opens', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     const status = vi.fn()
 
     source.subscribe(vi.fn())
-
     await connected()
-    source.onStatus?.(status)
-    sockets[0].open()
-    sockets[0].close()
+    source.onStatus(status)
+    sockets()[0].open()
+    sockets()[0].close()
     await vi.advanceTimersByTimeAsync(1000)
-    sockets[1].open()
+    sockets()[1].open()
 
-    expect(status.mock.calls.map(([live]) => live)).toEqual([true, false, true])
+    expect(status.mock.calls.map(([live]) => live)).toEqual([
+      false,
+      true,
+      false,
+      true
+    ])
   })
 
   it('drops frames from a superseded socket after resubscribing', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     const first = vi.fn()
     const second = vi.fn()
 
     const unsubscribe = source.subscribe(first)
-
     await connected()
-    sockets[0].open()
+    sockets()[0].open()
     unsubscribe()
     source.subscribe(second)
     await connected()
-    sockets[1].open()
-    sockets[0].receive({ type: 'agent_message_delta', data: { delta: 'old' } })
-    sockets[1].receive({ type: 'agent_message_delta', data: { delta: 'new' } })
+    sockets()[1].open()
+    sockets()[0].receive({
+      type: 'agent_message_delta',
+      data: { delta: 'old' }
+    })
+    sockets()[1].receive({
+      type: 'agent_message_delta',
+      data: { delta: 'new' }
+    })
 
-    expect(sockets).toHaveLength(2)
+    expect(sockets()).toHaveLength(2)
     expect(first).not.toHaveBeenCalled()
     expect(second).toHaveBeenCalledTimes(1)
     expect(second).toHaveBeenCalledWith({
@@ -199,192 +211,199 @@ describe('createAgentEventSource', () => {
   })
 
   it('stops the socket and pending reconnect on unsubscribe', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
 
     const unsubscribe = source.subscribe(vi.fn())
-
     await connected()
-    sockets[0].open()
-    sockets[0].close()
+    sockets()[0].open()
+    sockets()[0].close()
     unsubscribe()
     await vi.advanceTimersByTimeAsync(1000)
 
-    expect(sockets).toHaveLength(1)
+    expect(sockets()).toHaveLength(1)
   })
 
   it('reports the stream down when the last subscriber leaves', async () => {
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     const status = vi.fn()
-    source.onStatus?.(status)
+    source.onStatus(status)
 
     const unsubscribe = source.subscribe(vi.fn())
-
     await connected()
-    sockets[0].open()
+    sockets()[0].open()
     unsubscribe()
 
-    expect(status.mock.calls).toEqual([[true], [false]])
-    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
+    expect(status.mock.calls).toEqual([[false], [true], [false]])
+    expect(sockets()[0].readyState).toBe(FakeSocket.CLOSED)
   })
 })
 
 describe('createAgentEventSource reconnect backoff', () => {
-  it('doubles the delay per refused connect and resets once a socket opens', async () => {
-    vi.useFakeTimers()
-    const { source, sockets } = sourceHarness()
+  it('doubles the delay per refused connect and resets once a socket delivers a frame', async () => {
+    const source = createSource()
 
     source.subscribe(vi.fn())
     await connected()
-    sockets[0].error()
+    sockets()[0].error()
     await vi.advanceTimersByTimeAsync(1000)
-    await connected()
-    sockets[1].error()
+    sockets()[1].error()
     await vi.advanceTimersByTimeAsync(1999)
-    expect(sockets).toHaveLength(2)
+    expect(sockets()).toHaveLength(2)
     await vi.advanceTimersByTimeAsync(1)
-    await connected()
-    expect(sockets).toHaveLength(3)
+    expect(sockets()).toHaveLength(3)
 
-    sockets[2].open()
-    sockets[2].close()
+    sockets()[2].open()
+    sockets()[2].receive({ type: 'agent_message_delta', data: {} })
+    sockets()[2].close()
     await vi.advanceTimersByTimeAsync(1000)
+    expect(sockets()).toHaveLength(4)
+  })
+
+  it('keeps backing off when the server accepts the upgrade and then closes', async () => {
+    const source = createSource()
+
+    source.subscribe(vi.fn())
     await connected()
-    expect(sockets).toHaveLength(4)
+    for (const wait of [1000, 2000, 4000]) {
+      lastSocket().open()
+      lastSocket().close()
+      const opened = sockets().length
+      await vi.advanceTimersByTimeAsync(wait - 1)
+      expect(sockets()).toHaveLength(opened)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(sockets()).toHaveLength(opened + 1)
+    }
   })
 
   it('caps the delay and spreads it with jitter', async () => {
-    vi.useFakeTimers()
-    const sockets: FakeSocket[] = []
-    const source = createAgentEventSource({
-      reconnectDelayMs: 1000,
-      maxReconnectDelayMs: 4000,
-      random: () => 0,
-      createSocket(url) {
-        const socket = new FakeSocket(url)
-        sockets.push(socket)
-        return socket as unknown as WebSocket
-      }
-    })
+    const source = createSource({ maxReconnectDelayMs: 4000, random: () => 0 })
 
     source.subscribe(vi.fn())
     await connected()
     for (const wait of [500, 1000, 2000, 2000]) {
-      sockets.at(-1)!.error()
+      lastSocket().error()
       await vi.advanceTimersByTimeAsync(wait)
-      await connected()
     }
 
-    expect(sockets).toHaveLength(5)
+    expect(sockets()).toHaveLength(5)
   })
 })
 
 describe('createAgentEventSource reconnect', () => {
   it('drops the open socket and connects again with a freshly read token', async () => {
     const tokens = ['account-a', 'account-b']
-    const { source, sockets } = sourceHarness(undefined, async () =>
-      tokens.shift()
-    )
+    const source = createSource({ getToken: async () => tokens.shift() })
     source.subscribe(vi.fn())
     await connected()
-    sockets[0].open()
+    sockets()[0].open()
 
     source.reconnect()
     await connected()
 
-    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
-    expect(sockets).toHaveLength(2)
-    expect(new URL(sockets[1].url).searchParams.get('token')).toBe('account-b')
+    expect(sockets()[0].readyState).toBe(FakeSocket.CLOSED)
+    expect(sockets()).toHaveLength(2)
+    expect(new URL(sockets()[1].url).searchParams.get('token')).toBe(
+      'account-b'
+    )
+  })
+
+  it('opens the socket with the newer token when a reconnect lands while the first token is read', async () => {
+    const pending: ((token: string) => void)[] = []
+    const source = createSource({
+      getToken: () => new Promise((resolve) => pending.push(resolve))
+    })
+
+    source.subscribe(vi.fn())
+    source.reconnect()
+    pending[0]('account-a')
+    await connected()
+    pending[1]('account-b')
+    await connected()
+
+    expect(
+      sockets().map((socket) => new URL(socket.url).searchParams.get('token'))
+    ).toEqual(['account-b'])
   })
 
   it('opens nothing when no one is listening', async () => {
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
 
     source.reconnect()
     await connected()
 
-    expect(sockets).toHaveLength(0)
+    expect(sockets()).toHaveLength(0)
   })
 })
 
 describe('createAgentEventSource token', () => {
   it('presents the caller credential as ?token=, read afresh on every connect', async () => {
-    vi.useFakeTimers()
     const tokens = ['first', 'second']
-    const { source, sockets } = sourceHarness(undefined, async () =>
-      tokens.shift()
-    )
+    const source = createSource({ getToken: async () => tokens.shift() })
 
     source.subscribe(vi.fn())
     await connected()
-    sockets[0].open()
-    sockets[0].close()
+    sockets()[0].open()
+    sockets()[0].close()
     await vi.advanceTimersByTimeAsync(1000)
-    await connected()
 
-    expect(new URL(sockets[0].url).searchParams.get('token')).toBe('first')
-    expect(new URL(sockets[1].url).searchParams.get('token')).toBe('second')
+    expect(new URL(sockets()[0].url).searchParams.get('token')).toBe('first')
+    expect(new URL(sockets()[1].url).searchParams.get('token')).toBe('second')
   })
 
-  it('connects without a token when there is no credential or the read fails', async () => {
-    const empty = sourceHarness(undefined, async () => undefined)
-    const failing = sourceHarness(undefined, async () => {
-      throw new Error('token refresh failed')
-    })
+  it.for([
+    { label: 'there is no credential', getToken: async () => undefined },
+    {
+      label: 'the read fails',
+      getToken: async (): Promise<string | undefined> => {
+        throw new Error('token refresh failed')
+      }
+    }
+  ])('connects without a token when $label', async ({ getToken }) => {
+    const source = createSource({ getToken })
 
-    empty.source.subscribe(vi.fn())
-    failing.source.subscribe(vi.fn())
+    source.subscribe(vi.fn())
     await connected()
 
-    expect(new URL(empty.sockets[0].url).searchParams.has('token')).toBe(false)
-    expect(new URL(failing.sockets[0].url).searchParams.has('token')).toBe(
-      false
-    )
+    expect(new URL(lastSocket().url).searchParams.has('token')).toBe(false)
   })
 
   it('opens nothing when the last listener leaves while the token is read', async () => {
-    const { source, sockets } = sourceHarness(undefined, async () => 't')
+    const source = createSource({ getToken: async () => 't' })
 
     source.subscribe(vi.fn())()
     await connected()
 
-    expect(sockets).toHaveLength(0)
+    expect(sockets()).toHaveLength(0)
   })
 
   it('opens exactly one socket when a listener returns while the token is read', async () => {
-    const { source, sockets } = sourceHarness(undefined, async () => 't')
+    const source = createSource({ getToken: async () => 't' })
 
     source.subscribe(vi.fn())()
     source.subscribe(vi.fn())
     await connected()
 
-    expect(sockets).toHaveLength(1)
+    expect(sockets()).toHaveLength(1)
   })
 })
 
 describe('createAgentEventSource send', () => {
   it('reports false before the socket is open and writes nothing', async () => {
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     source.subscribe(vi.fn())
     await connected()
-    const socket = sockets[0]
-    const send = vi.fn()
-    Object.assign(socket, { send })
 
     expect(source.send('{"type":"doc_subscribe"}')).toBe(false)
-    expect(send).not.toHaveBeenCalled()
+    expect(lastSocket().send).not.toHaveBeenCalled()
   })
 
   it('writes the frame verbatim on the open socket and reports true', async () => {
-    const { source, sockets } = sourceHarness()
+    const source = createSource()
     source.subscribe(vi.fn())
     await connected()
-    const socket = sockets[0]
-    const send = vi.fn()
-    Object.assign(socket, { send })
-    socket.open()
+    lastSocket().open()
 
     expect(source.send('{"type":"doc_subscribe"}')).toBe(true)
-    expect(send).toHaveBeenCalledWith('{"type":"doc_subscribe"}')
+    expect(lastSocket().send).toHaveBeenCalledWith('{"type":"doc_subscribe"}')
   })
 })

@@ -58,15 +58,10 @@ describe('useAgentCrdtFollower over a live graph', () => {
     const view = render(
       defineComponent({
         setup() {
-          useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
-            ref(true),
-            () => graph.value,
-            undefined,
-            undefined,
-            agentSocket.transport
-          )
+          useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
+            getGraph: () => graph.value
+          })
           return () => null
         }
       }),
@@ -112,15 +107,10 @@ describe('useAgentCrdtFollower over a live graph', () => {
     const view = render(
       defineComponent({
         setup() {
-          useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
-            ref(true),
-            () => graph.value,
-            undefined,
-            undefined,
-            agentSocket.transport
-          )
+          useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
+            getGraph: () => graph.value
+          })
           return () => null
         }
       }),

@@ -108,15 +108,11 @@ describe('a human-added node across a tab switch', () => {
     const view = render(
       defineComponent({
         setup() {
-          followerApi = useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
+          followerApi = useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
             isTargetActive,
-            () => graph,
-            undefined,
-            undefined,
-            agentSocket.transport
-          )
+            getGraph: () => graph
+          })
           return () => null
         }
       }),

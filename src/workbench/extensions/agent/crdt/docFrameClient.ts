@@ -2,6 +2,8 @@ import type { DocResetData } from '@comfyorg/ingest-types'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
+
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
@@ -114,14 +116,6 @@ export interface DocFrameTransport {
   send(frame: string): boolean
   addEventListener(type: string, listener: EventListener): void
   removeEventListener(type: string, listener: EventListener): void
-  /**
-   * Notify when the transport's socket has (re)opened and can carry a frame.
-   * A subscribe sent while the socket was still connecting is dropped by
-   * design (`send` returned false), and the follower re-drives its intent on
-   * this signal. Optional only for transports that never follow (unit fakes);
-   * a following transport without it waits forever on a dropped subscribe.
-   */
-  onConnected?(listener: () => void): () => void
 }
 
 interface WireData {
@@ -483,14 +477,7 @@ export class DocFrameClient extends EventTarget {
   constructor(private readonly transport: DocFrameTransport) {
     super()
     const reportedTypes = new Set<string>()
-    for (const type of [
-      'doc_update',
-      'doc_subscribed',
-      'doc_ops_result',
-      'doc_reset',
-      'doc_reseed_result',
-      'awareness'
-    ]) {
+    for (const type of SERVER_DOC_FRAME_TYPES) {
       const listener: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })

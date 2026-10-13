@@ -989,17 +989,16 @@ const {
   docPromotedWidgets,
   mayWritePromotedHost,
   notifyWidgetWriteRefused
-} = useAgentCrdtFollower(
-  boundWorkflowId,
-  // The agent's identity, so canvas edits are stamped with the actor the
-  // server derives rather than one the panel guessed, which it refuses.
-  () => agentIdentity.userId.value,
-  isFollowerActive,
+} = useAgentCrdtFollower(boundWorkflowId, {
+  transport: docTransport,
+  userId: () => agentIdentity.userId.value,
+  isTargetActive: isFollowerActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
-  {
+  getGraph: () =>
+    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+  events: {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -1016,7 +1015,7 @@ const {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
-  {
+  applierDeps: {
     getCanvas: () => app.canvas,
     withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
     viewportBounds() {
@@ -1026,9 +1025,8 @@ const {
       return { x, y, width, height }
     }
   },
-  docTransport,
-  canvasForWorkflow
-)
+  canvasFor: canvasForWorkflow
+})
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
 // workflow's `activeState` before the shared renderer graph is rewritten, so
