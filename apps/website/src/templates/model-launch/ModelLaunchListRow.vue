@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
+import { ArrowRight, Link } from '@lucide/vue'
 import { useEventListener, useMediaControls } from '@vueuse/core'
 import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
 
@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchListItem } from './types'
 
 import PlayPauseButton from '@/components/common/PlayPauseButton.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', item } = defineProps<{
@@ -67,6 +68,7 @@ const trailingLabels = computed(() => [
     <PlayPauseButton
       v-if="item.audioSources"
       :playing
+      variant="muted"
       :aria-label="playing ? t('player.pause') : t('player.play')"
       @click="playing = !playing"
     />
@@ -76,7 +78,7 @@ const trailingLabels = computed(() => [
       target="_blank"
       rel="noopener noreferrer"
       :aria-label="title"
-      class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90"
+      class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-transparency-white-t8 text-primary-warm-white transition-colors hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
     >
       <ArrowRight class="size-5" :stroke-width="2.5" />
     </a>
@@ -115,5 +117,13 @@ const trailingLabels = computed(() => [
         {{ label }}
       </span>
     </div>
+
+    <CopyTextButton
+      :value="item.href"
+      :icon="Link"
+      :label="t('modelLaunch.copyLink')"
+      :copied-label="t('ui.copied')"
+      class="-mt-0.5 -mr-3"
+    />
   </li>
 </template>

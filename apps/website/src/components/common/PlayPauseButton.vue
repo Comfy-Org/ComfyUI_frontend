@@ -8,10 +8,11 @@ const {
 } = defineProps<{
   playing?: boolean
   size?: 'sm' | 'md'
-  /** `solid` is the yellow control-bar button; `overlay` is the design
-   * system's Btn-Play-Master squircle for floating over video posters.
-   * `size` only applies to `solid`. */
-  variant?: 'solid' | 'overlay'
+  /** `solid` is the yellow control-bar button, `muted` rests dark and turns
+   * yellow on hover or while playing, and `overlay` is the design system's
+   * Btn-Play-Master squircle for floating over video posters. `size` does not
+   * apply to `overlay`. */
+  variant?: 'solid' | 'overlay' | 'muted'
 }>()
 </script>
 
@@ -38,19 +39,17 @@ const {
     type="button"
     :class="
       cn(
-        'flex shrink-0 cursor-pointer items-center justify-center bg-primary-comfy-yellow',
-        size === 'sm' ? 'size-8 rounded-lg lg:size-10' : 'size-12 rounded-xl'
+        'flex shrink-0 cursor-pointer items-center justify-center transition-colors',
+        size === 'sm' ? 'size-8 rounded-lg lg:size-10' : 'size-12 rounded-xl',
+        variant === 'muted' && !playing
+          ? 'bg-transparency-white-t8 text-primary-warm-white hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink'
+          : 'bg-primary-comfy-yellow text-primary-comfy-ink'
       )
     "
   >
     <svg
       v-if="playing"
-      :class="
-        cn(
-          'text-primary-comfy-ink',
-          size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
-        )
-      "
+      :class="cn(size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"
@@ -60,12 +59,7 @@ const {
     </svg>
     <svg
       v-else
-      :class="
-        cn(
-          'ml-0.5 text-primary-comfy-ink',
-          size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
-        )
-      "
+      :class="cn('ml-0.5', size === 'sm' ? 'size-3 lg:size-4' : 'size-4')"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden="true"

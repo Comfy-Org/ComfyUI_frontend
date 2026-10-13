@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import type { Component, HTMLAttributes } from 'vue'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -12,12 +12,14 @@ const {
   value,
   label,
   copiedLabel,
+  icon = Copy,
   class: className,
   iconClass
 } = defineProps<{
   value: string
   label: string
   copiedLabel: string
+  icon?: Component
   class?: HTMLAttributes['class']
   iconClass?: HTMLAttributes['class']
 }>()
@@ -41,7 +43,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
     "
     @click="void copy(value)"
   >
-    <component :is="copied ? Check : Copy" :class="cn('size-5', iconClass)" />
+    <component :is="copied ? Check : icon" :class="cn('size-5', iconClass)" />
     <span v-if="copied" class="text-sm whitespace-nowrap">
       {{ copiedLabel }}
     </span>
