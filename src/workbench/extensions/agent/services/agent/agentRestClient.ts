@@ -613,11 +613,6 @@ export function createAgentRestClient() {
     return page.threads
   }
 
-  /**
-   * The identity the agent authenticated this client as. Standalone bootstraps
-   * a fixed local user the panel cannot otherwise see, and every canvas op
-   * must carry that actor or the writer refuses it.
-   */
   async function getIdentity(): Promise<{ userId: string }> {
     const identity = await request(
       'get_agent_identity',
@@ -713,12 +708,6 @@ export function createAgentRestClient() {
     )
   }
 
-  /**
-   * Re-presents the user's auth header during a long turn. The local agent
-   * makes its model and CLI calls as the user and reads the credential off
-   * requests, so a turn that outlives the token it started with needs a fresh
-   * one. A one-thread page is the cheapest request every backend answers.
-   */
   async function refreshCredential(): Promise<void> {
     await request(
       'refresh_credential',

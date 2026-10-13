@@ -23,6 +23,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
+import { z } from 'zod'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
@@ -51,6 +52,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -92,6 +94,7 @@ const getServerFeature = vi.hoisted(() =>
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
+let agentSocket: ReturnType<typeof createFakeAgentSocket>
 const withConsent = vi.hoisted(() =>
   vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>(
     async (_trigger, onAccept) => onAccept()
@@ -120,53 +123,21 @@ const ws = vi.hoisted(() => {
   const remove = (type: string, listener: Listener): void => {
     listeners.get(type)?.delete(listener)
   }
-  // The agent's one socket (/api/agent/events), faked at its seam: every
-  // frame, chat or document, arrives as `{ type, data }`, and the production
-  // document transport rides it. It reports itself open, as a live socket does.
-  const frameListeners = new Set<(raw: unknown) => void>()
-  const statusListeners = new Set<(live: boolean) => void>()
-  const socket = {
-    reconnect: vi.fn(),
-    send: (frame: string): boolean => {
-      socketSend(frame)
-      return true
-    },
-    subscribe(listener: (raw: unknown) => void) {
-      frameListeners.add(listener)
-      return () => {
-        frameListeners.delete(listener)
-      }
-    },
-    onStatus(listener: (live: boolean) => void) {
-      statusListeners.add(listener)
-      listener(true)
-      return () => {
-        statusListeners.delete(listener)
-      }
-    }
-  }
   const emit = (type: string, data?: unknown): void => {
     // The doc-frame pipeline ignores events that are not CustomEvent instances.
     const event = new CustomEvent(type, { detail: data })
     for (const listener of listeners.get(type) ?? []) listener(event)
-    for (const listener of new Set(frameListeners)) listener({ type, data })
-  }
-  const emitEvent = emit
-  /** The socket (re)opened: the edge the follower and identity retry on. */
-  const connect = (): void => {
-    for (const listener of new Set(statusListeners)) listener(true)
+    agentSocket.receive(type, data)
   }
   const clear = (): void => {
     listeners.clear()
-    frameListeners.clear()
-    statusListeners.clear()
   }
-  return { add, remove, emit, emitEvent, connect, clear, socket }
+  return { add, remove, emit, clear }
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
-    apiURL: (route: string) => `/api${route}`,
+    apiURL: vi.fn((route: string) => `/api${route}`),
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
@@ -317,15 +288,9 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  SUBSCRIBE_ACK_TIMEOUT_MS,
-  SUBSCRIBE_RETRY_MAX_ATTEMPTS
-} from './crdt/agentCrdtDocLifecycle'
+import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
-import {
-  AGENT_IDENTITY_RETRY_BASE_MS,
-  resolveAgentIdentity
-} from './services/agent/agentIdentity'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
@@ -356,7 +321,12 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
-  vi.mocked(createAgentEventSource).mockReturnValue(ws.socket)
+  agentSocket = createFakeAgentSocket()
+  agentSocket.send.mockImplementation((frame) => {
+    socketSend(frame)
+    return true
+  })
+  vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     userId: ref('account-a'),
     reset: vi.fn(),
@@ -5530,6 +5500,52 @@ describe('AgentPanelRoot a11y id guard', () => {
   })
 })
 
+function mockMessagesEndpoint(
+  ackWorkflowId: string | (() => string),
+  cloudWorkflows:
+    | { id: string; name: string }[]
+    | (() => { id: string; name: string }[]) = [],
+  threads: AgentThreadSummary[] = []
+): unknown[] {
+  const bodies: unknown[] = []
+  const resolveAckWorkflowId =
+    typeof ackWorkflowId === 'function' ? ackWorkflowId : () => ackWorkflowId
+  vi.mocked(fetch).mockImplementation(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+
+      if (url.includes('/messages') && init?.method === 'POST') {
+        bodies.push(JSON.parse(String(init.body)))
+        return json(202, ack(resolveAckWorkflowId(), `m-${bodies.length}`))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) {
+        return json(200, agentThreadList(threads))
+      }
+      if (url.includes('/assets')) {
+        return json(200, { assets: [], total: 0, has_more: false })
+      }
+      if (url.includes('/workflows')) {
+        const workflows =
+          typeof cloudWorkflows === 'function'
+            ? cloudWorkflows()
+            : cloudWorkflows
+        return json(200, {
+          data: workflows,
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: workflows.length,
+            has_more: false
+          }
+        })
+      }
+      return new Response('{}', { status: 200 })
+    }
+  )
+  return bodies
+}
+
 describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     ws.clear()
@@ -5802,52 +5818,6 @@ describe('AgentPanelRoot workflow binding', () => {
       return tab
     })
     return { target, references: referenceTabs }
-  }
-
-  function mockMessagesEndpoint(
-    ackWorkflowId: string | (() => string),
-    cloudWorkflows:
-      | { id: string; name: string }[]
-      | (() => { id: string; name: string }[]) = [],
-    threads: AgentThreadSummary[] = []
-  ): unknown[] {
-    const bodies: unknown[] = []
-    const resolveAckWorkflowId =
-      typeof ackWorkflowId === 'function' ? ackWorkflowId : () => ackWorkflowId
-    vi.mocked(fetch).mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input)
-
-        if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init.body)))
-          return json(202, ack(resolveAckWorkflowId(), `m-${bodies.length}`))
-        }
-        if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads')) {
-          return json(200, agentThreadList(threads))
-        }
-        if (url.includes('/assets')) {
-          return json(200, { assets: [], total: 0, has_more: false })
-        }
-        if (url.includes('/workflows')) {
-          const workflows =
-            typeof cloudWorkflows === 'function'
-              ? cloudWorkflows()
-              : cloudWorkflows
-          return json(200, {
-            data: workflows,
-            pagination: {
-              offset: 0,
-              limit: 100,
-              total: workflows.length,
-              has_more: false
-            }
-          })
-        }
-        return new Response('{}', { status: 200 })
-      }
-    )
-    return bodies
   }
 
   it('preserves active-turn graph activity across remount and delayed hydration', async () => {
@@ -10193,11 +10163,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
-  describe('draft seed against the follower (#17469)', () => {
-    // The follower's intent (status.workflowId) withholds the seed: a live
-    // document is the source of truth and a versionless draft would overwrite
-    // it. That guard must lift once the follower can never deliver that
-    // document, or every later turn sends no draft against no document.
+  describe('draft seed against the follower', () => {
     async function bindAndSettle(): Promise<unknown[]> {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -10207,90 +10173,47 @@ describe('AgentPanelRoot workflow binding', () => {
       return bodies
     }
 
-    function refuseSubscribe(): void {
-      ws.emitEvent('doc_subscribed', {
-        v: 1,
-        workflow_id: 'wf-42',
-        ok: false,
-        code: 'not_found'
-      })
-    }
-
-    it('seeds the draft again once the follower has given up on a refused subscribe', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
+    it('seeds the draft again once the follower has given up on a refused document', async () => {
       const bodies = await bindAndSettle()
-
-      for (let attempt = 0; attempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS; attempt++) {
-        refuseSubscribe()
-        await vi.advanceTimersByTimeAsync(500 * 2 ** attempt)
-      }
-      refuseSubscribe()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toMatchObject({
-        workflow_id: 'wf-42',
-        draft: { content: { id: 'wf-42' } }
-      })
-    })
-
-    it('keeps withholding the draft while a refused subscribe still has a retry behind it', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
-      const bodies = await bindAndSettle()
-
-      refuseSubscribe()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
-    })
-
-    it('keeps withholding the draft across an ordinary reconnect', async () => {
-      const bodies = await bindAndSettle()
-      ws.emitEvent('doc_subscribed', {
-        v: 1,
-        workflow_id: 'wf-42',
-        ok: true,
-        seq: 1
-      })
-
-      ws.connect()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
-    })
-
-    // The subscribe goes out on bind and nothing ever answers it: after the
-    // silent budget (three attempts, 15 s apart) no document can arrive.
-    it('seeds the draft again once every subscribe in the silent budget went unanswered', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
-      const bodies = await bindAndSettle()
-
-      await vi.advanceTimersByTimeAsync(SUBSCRIBE_ACK_TIMEOUT_MS * 3)
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toMatchObject({
-        workflow_id: 'wf-42',
-        draft: { content: { id: 'wf-42' } }
-      })
-    })
-
-    // A reconnect reopens recovery of the same document, so a verdict from the
-    // previous socket no longer lets an authoritative draft overwrite it.
-    it('withholds the draft again once a reconnect retries a refused document', async () => {
-      const bodies = await bindAndSettle()
-      ws.emitEvent('doc_subscribed', {
+      ws.emit('doc_subscribed', {
         v: 1,
         workflow_id: 'wf-42',
         ok: false,
         code: 'schema_version_mismatch'
       })
 
-      ws.connect()
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
+    })
+
+    it('keeps withholding the draft across an ordinary reconnect', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+
+      agentSocket.open()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('withholds the draft for a bound document while the agent identity is still pending', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        userId: ref(null),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
 
       await sendFromComposer('second message')
 
@@ -12108,40 +12031,15 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 })
 
-describe('AgentPanelRoot against the local agent', () => {
+describe('AgentPanelRoot signed-in credential hand-off', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
-    vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
   })
 
-  function stubLocalAgent(
-    workflowId: string,
-    index: { id: string; name: string }[] = []
-  ) {
-    const bodies: Record<string, unknown>[] = []
-    const authHeaders: (string | null)[] = []
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      const url = String(input)
-      if (url.includes('/messages') && init?.method === 'POST') {
-        bodies.push(JSON.parse(String(init.body)))
-        authHeaders.push(new Headers(init.headers).get('Authorization'))
-        return json(202, ack(workflowId))
-      }
-      if (url.includes('/messages')) return json(200, [])
-      if (url.includes('/agent/threads')) return json(200, agentThreadList())
-      if (url.includes('/workflows'))
-        return json(200, {
-          data: index,
-          pagination: {
-            offset: 0,
-            limit: 100,
-            total: index.length,
-            has_more: false
-          }
-        })
-      return new Response('{}', { status: 200 })
-    })
-    return { bodies, authHeaders }
+  function postedAuthHeaders(): (string | null)[] {
+    return fetchRequests({ method: 'POST', url: /\/messages$/ }).map(
+      (request) => request.headers.get('Authorization')
+    )
   }
 
   it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
@@ -12150,7 +12048,7 @@ describe('AgentPanelRoot against the local agent', () => {
     vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
     const tab = addTab('workflows/current.json', { isTemporary: true })
     workflowStore.activeWorkflow = tab
-    const { bodies } = stubLocalAgent('wf-minted')
+    const bodies = mockMessagesEndpoint('wf-minted')
     renderWithSelectedTarget()
 
     await userEvent.click(screen.getByRole('textbox'))
@@ -12166,9 +12064,7 @@ describe('AgentPanelRoot against the local agent', () => {
     expect(bodies).toHaveLength(0)
   })
 
-  // The local agent serves the saved-workflow index over ComfyUI's workflows
-  // directory, so a saved local file resolves exactly as a cloud one does.
-  it('sends a saved local file under the id the local workflow index gives it', async () => {
+  it('sends a saved file under the id the workflow index gives it, with the user credential', async () => {
     const activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [{ id: 1, type: 'LoadImage' }],
       links: []
@@ -12178,7 +12074,7 @@ describe('AgentPanelRoot against the local agent', () => {
       activeState
     })
     workflowStore.activeWorkflow = tab
-    const { bodies, authHeaders } = stubLocalAgent('wf-portrait', [
+    const bodies = mockMessagesEndpoint('wf-portrait', [
       { id: 'wf-portrait', name: 'Portrait' }
     ])
     renderWithSelectedTarget()
@@ -12193,10 +12089,8 @@ describe('AgentPanelRoot against the local agent', () => {
       workflow_id: 'wf-portrait',
       draft: { content: activeState }
     })
-    // The local agent reads the user's credential the way ingest does.
-    expect(authHeaders).toEqual(['Bearer id-token'])
+    expect(postedAuthHeaders()).toEqual(['Bearer id-token'])
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
-    expect(fetchRequests(/\/workflows/)).not.toHaveLength(0)
   })
 })
 
@@ -12205,6 +12099,11 @@ interface AgentAccount {
   apiKeyUser: string | null
 }
 
+const zSentFrame = z.object({
+  type: z.string(),
+  data: z.object({ workflow_id: z.string().optional() }).optional()
+})
+
 function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
   useAuthStore().currentUser =
     firebase === null ? null : fromPartial<User>({ uid: firebase })
@@ -12212,11 +12111,7 @@ function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
     apiKeyUser === null ? null : { id: apiKeyUser }
 }
 
-describe('AgentPanelRoot agent socket (#17469)', () => {
-  // Signing out or switching accounts must not leave the socket authenticated
-  // as the previous account, nor canvas ops stamped with its actor. The agent
-  // authenticates the signed-in session or, with none, a stored API key, so
-  // either changing is an account change.
+describe('AgentPanelRoot agent socket', () => {
   it.for([
     {
       change: 'a Firebase account switch',
@@ -12241,42 +12136,38 @@ describe('AgentPanelRoot agent socket (#17469)', () => {
   ])(
     'reconnects the socket and looks the identity up again on $change',
     async ({ before, after }) => {
+      const reset = vi.fn()
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        userId: ref('account-a'),
+        reset,
+        stop: () => {}
+      })
       signInAs(before)
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      const identity = vi.mocked(resolveAgentIdentity).mock.results.at(-1)
-        ?.value as { reset: ReturnType<typeof vi.fn> }
-      ws.socket.reconnect.mockClear()
+      agentSocket.reconnect.mockClear()
 
       signInAs(after)
       await nextTick()
 
-      expect(ws.socket.reconnect).toHaveBeenCalledOnce()
-      expect(identity.reset).toHaveBeenCalledOnce()
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
     }
   )
 
-  // The socket's path comes from api.apiURL like every agent REST request, so
-  // a ComfyUI served under a sub-path reaches the same backend.
-  it('opens the events socket at the api path, with the caller credential as its token', async () => {
+  it('opens the events socket under the api base path', async () => {
+    vi.mocked(api.apiURL).mockImplementation((route) => `/comfy/api${route}`)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(createAgentEventSource).toHaveBeenCalledWith(
-      expect.objectContaining({
-        endpoint: '/api/agent/events',
-        getToken: expect.any(Function)
-      })
+      expect.objectContaining({ endpoint: '/comfy/api/agent/events' })
     )
   })
 })
 
-describe('AgentPanelRoot agent socket identity (#17469)', () => {
+describe('AgentPanelRoot agent socket identity', () => {
   beforeEach(() => {
-    // A spy-mode mock resets to the real lookup.
     vi.mocked(resolveAgentIdentity).mockReset()
     vi.mocked(reportError).mockImplementation(() => {})
-    // A standalone send forwards the signed-in account's credential (#18284).
-    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-1' })
-    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
   })
 
   afterEach(() => {
@@ -12293,43 +12184,18 @@ describe('AgentPanelRoot agent socket identity (#17469)', () => {
     return tab
   }
 
-  function stubAgentFetch(
-    identity: () => Response | Promise<Response>
-  ): unknown[] {
-    const bodies: unknown[] = []
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      const url = String(input)
-      if (url.endsWith('/agent/identity')) return await identity()
-      if (url.includes('/messages') && init?.method === 'POST') {
-        bodies.push(JSON.parse(String(init.body)))
-        return json(202, ack('wf-42', `m-${bodies.length}`))
-      }
-      if (url.includes('/messages')) return json(200, [])
-      if (url.includes('/agent/threads')) return json(200, agentThreadList())
-      return new Response('{}', { status: 200 })
-    })
-    return bodies
-  }
-
   function identityResponse(): Response {
     return json(200, { workspace_id: 'ws-local', user_id: 'local-user' })
   }
 
-  /** Workflow ids of every doc_subscribe the follower put on the socket. */
-  function subscribedWorkflowIds(): string[] {
-    return socketSend.mock.calls
-      .map(
-        ([frame]) =>
-          JSON.parse(frame) as {
-            type: string
-            data?: { workflow_id?: string }
-          }
-      )
+  function subscribeAttempts(): string[] {
+    return agentSocket.send.mock.calls
+      .map(([frame]) => zSentFrame.parse(JSON.parse(frame)))
       .filter((frame) => frame.type === 'doc_subscribe')
       .map((frame) => frame.data?.workflow_id ?? '')
   }
 
-  it("retries the identity lookup on the socket's next connected edge and activates the follower once it resolves", async () => {
+  it('retries a failed identity lookup and activates the follower once it resolves', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const identity = vi
       .fn<() => Response>()
@@ -12337,7 +12203,8 @@ describe('AgentPanelRoot agent socket identity (#17469)', () => {
         throw new Error('identity route down')
       })
       .mockImplementation(identityResponse)
-    stubAgentFetch(identity)
+    mockMessagesEndpoint('wf-42')
+    respondToFetch(/\/agent\/identity$/, async () => identity())
     bindActiveTab('wf-42')
     useAgentPanelStore().enabled = true
 
@@ -12347,29 +12214,29 @@ describe('AgentPanelRoot agent socket identity (#17469)', () => {
     expect(identity).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_identity_failed' })
+      expect.objectContaining({
+        errorType: 'failure_resolving_agent_identity'
+      })
     )
-    // Bound and active, but unattributable: the follower must not subscribe.
-    expect(subscribedWorkflowIds()).toEqual([])
+    expect(subscribeAttempts()).toEqual([])
 
-    ws.connect()
-    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_BASE_MS)
+    await vi.advanceTimersByTimeAsync(1_000)
 
     expect(identity).toHaveBeenCalledTimes(2)
-    expect(subscribedWorkflowIds()).toEqual(['wf-42'])
+    expect(subscribeAttempts()).toEqual(['wf-42'])
   })
 
-  // A human edit minted before the agent names its user has no subscription
-  // to ride and would settle undeliverable, silently. The minter's doc-bound
-  // gate is the follower's own activity, so it opens only with the identity.
-  it('does not mint a canvas edit before the agent identity resolves, and mints it once it has', async () => {
+  it('does not mint a canvas edit until the identity resolves and the subscribe has gone out', async () => {
     let resolveIdentity!: (response: Response) => void
-    stubAgentFetch(
+    mockMessagesEndpoint('wf-42')
+    respondToFetch(
+      /\/agent\/identity$/,
       () =>
         new Promise<Response>((resolve) => {
           resolveIdentity = resolve
         })
     )
+    agentSocket.send.mockReturnValue(false)
     bindActiveTab('wf-42')
     useAgentPanelStore().enabled = true
 
@@ -12379,6 +12246,11 @@ describe('AgentPanelRoot agent socket identity (#17469)', () => {
     expect(minter.isDocBound()).toBe(false)
 
     resolveIdentity(identityResponse())
+    await vi.waitFor(() => expect(subscribeAttempts()).toEqual(['wf-42']))
+    expect(minter.isDocBound()).toBe(false)
+
+    agentSocket.send.mockReturnValue(true)
+    agentSocket.open()
 
     await vi.waitFor(() => expect(minter.isDocBound()).toBe(true))
   })

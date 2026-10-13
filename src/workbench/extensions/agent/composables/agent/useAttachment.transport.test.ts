@@ -4,12 +4,7 @@ import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 
-// The real auth store's module graph cannot load here; the upload's auth
-// header is not what this test is about.
-vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async <T extends RequestInit>(init: T) => init,
-  ensureSignedIn: async () => true
-}))
+vi.mock(import('../../services/agent/agentAuth'))
 
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
   vi.useFakeTimers()

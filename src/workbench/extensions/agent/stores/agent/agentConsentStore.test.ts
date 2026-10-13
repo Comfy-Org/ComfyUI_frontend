@@ -48,7 +48,6 @@ describe('agentConsentStore', () => {
     useTeamWorkspaceStore().isSwitching = false
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    accountApi.header.mockReset()
     accountApi.header.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
