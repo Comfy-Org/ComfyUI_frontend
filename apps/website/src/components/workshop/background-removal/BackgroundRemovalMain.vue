@@ -4,7 +4,10 @@ import { computed } from 'vue'
 import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
 import type { Locale } from '@/i18n/translations'
 import { brc } from '@/lib/workshop/background-removal/copy'
-import { CUTOUT_EXAMPLE } from '@/lib/workshop/background-removal/mask'
+import {
+  CUTOUT_EXAMPLE,
+  CUTOUT_EXAMPLES
+} from '@/lib/workshop/background-removal/mask'
 import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import type { EditorView } from '@/components/workshop/app-editor/view'
@@ -37,13 +40,13 @@ const resultLabels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="brc('cutout.empty.title', locale)"
-    :examples="[
-      {
-        id: 'plant',
-        image: CUTOUT_EXAMPLE.url,
-        label: brc('cutout.empty.example', locale)
-      }
-    ]"
+    :examples="
+      CUTOUT_EXAMPLES.map(({ id, image }) => ({
+        id,
+        image: image.url,
+        label: brc(`cutout.examples.${id}` as const, locale)
+      }))
+    "
     data-testid="background-removal-empty"
     @example="cutout.useExample"
   />

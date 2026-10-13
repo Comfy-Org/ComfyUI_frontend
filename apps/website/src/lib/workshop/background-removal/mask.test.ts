@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { CUTOUT_EXAMPLE, subjectMaskImage, subjectMatte } from './mask'
+import {
+  CUTOUT_EXAMPLE,
+  CUTOUT_EXAMPLES,
+  subjectMaskImage,
+  subjectMatte
+} from './mask'
 
 describe('subject matte', () => {
   it('uses the prepared cut-out as the example matte', () => {
@@ -8,6 +13,11 @@ describe('subject matte', () => {
     expect(subjectMaskImage(CUTOUT_EXAMPLE.url)).toBe(
       `url("${CUTOUT_EXAMPLE.cutout}")`
     )
+  })
+
+  it('uses each example photo’s own prepared cut-out', () => {
+    for (const { image } of CUTOUT_EXAMPLES)
+      expect(subjectMatte(image.url)).toBe(image.cutout)
   })
 
   it('falls back to a soft centred oval for an upload', () => {

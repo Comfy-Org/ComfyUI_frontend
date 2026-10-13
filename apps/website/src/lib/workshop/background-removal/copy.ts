@@ -19,7 +19,10 @@ const copy = {
   'cutout.image.hint': { en: 'PNG, JPG or WebP', 'zh-CN': 'PNG、JPG 或 WebP' },
   'cutout.image.remove': { en: 'Remove photo', 'zh-CN': '移除照片' },
   'cutout.image.restore': { en: 'Undo remove photo', 'zh-CN': '撤销移除照片' },
-  'cutout.empty.example': { en: 'Potted plant', 'zh-CN': '盆栽' },
+  'cutout.examples.plant': { en: 'Potted plant', 'zh-CN': '盆栽' },
+  'cutout.examples.sneakers': { en: 'White sneakers', 'zh-CN': '白色运动鞋' },
+  'cutout.examples.mug': { en: 'Coffee mug', 'zh-CN': '咖啡杯' },
+  'cutout.examples.puppy': { en: 'Puppy on grass', 'zh-CN': '草地上的小狗' },
   'cutout.hint': {
     en: 'Pick a background, then run',
     'zh-CN': '选择背景，然后运行'

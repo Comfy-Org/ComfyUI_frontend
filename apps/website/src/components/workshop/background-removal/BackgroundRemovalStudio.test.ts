@@ -272,6 +272,17 @@ describe('BackgroundRemovalStudio', () => {
     expect(within(panel()).getByTestId('background-removal-run')).toBeEnabled()
   })
 
+  it('offers four photos to start from', async () => {
+    const user = userEvent.setup()
+    render(BackgroundRemovalStudio)
+    const empty = within(screen.getByTestId('background-removal-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'Coffee mug' }))
+
+    expect(within(panel()).getByText('coffee-mug.jpg')).toBeVisible()
+  })
+
   it('takes the photo out with the X and puts it back from the tray', async () => {
     const user = await openExample()
 

@@ -12,7 +12,7 @@ import {
   cutoutRequest,
   missingInput
 } from '@/lib/workshop/background-removal/contract'
-import { CUTOUT_EXAMPLE } from '@/lib/workshop/background-removal/mask'
+import { CUTOUT_EXAMPLES } from '@/lib/workshop/background-removal/mask'
 import { runCutout } from '@/lib/workshop/background-removal/mock-run'
 import { useEditorImage } from './useEditorImage'
 import { useSnapshotHistory } from './useSnapshotHistory'
@@ -141,7 +141,10 @@ export function useBackgroundRemoval() {
     canRun,
     canUndo: history.canUndo,
     canRedo: history.canRedo,
-    useExample: () => useExample(CUTOUT_EXAMPLE),
+    useExample: (id: string = CUTOUT_EXAMPLES[0].id) => {
+      const example = CUTOUT_EXAMPLES.find((option) => option.id === id)
+      if (example) useExample(example.image)
+    },
     useFile,
     update,
     updateReplace,
