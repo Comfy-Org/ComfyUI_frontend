@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, LoaderCircle } from '@lucide/vue'
+import { LoaderCircle } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -11,11 +11,9 @@ interface EditorExample {
   readonly thumb?: string
 }
 
-/** The stage before anything is chosen: a card of examples to start from; uploading lives in the panel. */
-const { title, hint, upload, examples, loading } = defineProps<{
+/** The stage before anything is chosen: a card of examples to start from. */
+const { title, examples, loading } = defineProps<{
   title: string
-  hint: string
-  upload: string
   examples: readonly EditorExample[]
   loading?: string
 }>()
@@ -27,20 +25,11 @@ const exampleName = (example: EditorExample) =>
 
 <template>
   <section
-    class="m-auto flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-6 sm:p-7"
+    class="m-auto flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-5 sm:p-7"
   >
-    <div class="flex flex-col gap-2">
-      <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
-        {{ title }}
-      </h2>
-      <p class="text-sm text-primary-warm-gray">{{ hint }}</p>
-      <p
-        class="flex items-center gap-2 text-sm text-primary-warm-white max-md:hidden"
-      >
-        <ArrowLeft class="size-4 text-primary-warm-gray" aria-hidden="true" />
-        {{ upload }}
-      </p>
-    </div>
+    <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
+      {{ title }}
+    </h2>
     <ul
       :class="cn('grid gap-2 sm:gap-3', examples.length > 1 && 'grid-cols-2')"
     >
