@@ -7843,8 +7843,8 @@ Enterprise`
     'zh-CN': 'NVIDIA VFX'
   },
   'nvidiaRtx.breadcrumb.updated': {
-    en: 'Updated September 2026',
-    'zh-CN': '更新于 2026 年 9 月'
+    en: 'Updated October 2026',
+    'zh-CN': '更新于 2026 年 10 月'
   },
   'nvidiaRtx.hero.title': {
     en: 'Nvidia VFX Nodes',
@@ -7872,8 +7872,16 @@ Enterprise`
     'zh-CN': '在 Comfy Cloud 试用'
   },
   'nvidiaRtx.hero.secondaryCta': {
-    en: 'VIEW ON GITHUB',
-    'zh-CN': '在 GitHub 查看'
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
+  'nvidiaRtx.beforeAfter.heading': {
+    en: 'One clip, two states.',
+    'zh-CN': '一段视频，两种状态。'
+  },
+  'nvidiaRtx.beforeAfter.body': {
+    en: 'Source on one side, output on the other. Drag the line to compare them frame by frame.',
+    'zh-CN': '一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。'
   },
   'nvidiaRtx.gallery.heading': {
     en: 'Made on NVIDIA RTX',

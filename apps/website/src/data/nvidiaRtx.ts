@@ -1,33 +1,59 @@
 import type {
+  ModelLaunchBeforeAfter,
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
-
 const nvidiaRtxLinks = {
   download: 'https://comfy.org/download/',
   github: 'https://github.com/Comfy-Org/ComfyUI_Nvidia_VFX_Nodes',
-  // Swap for the Comfy Cloud workflow that chains all three nodes once it
-  // exists; until then the CTA lands on the generic cloud entry point.
-  cloud: externalLinks.cloudCta('nvidia_rtx')
+  cloud: 'https://cloud.comfy.org/?template=utility_nvidia_rtx_video_enhance'
 } as const
 
-// Stand-in gallery images until the supplied files reach media.comfy.org;
-// swap these before this page ships.
-const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
-
 const media = {
-  vaporwave: { kind: 'image', src: `${placeholderMediaBase}/vaporwave.webp` },
-  aliens: {
-    kind: 'image',
-    src: `${placeholderMediaBase}/alien-convenience-store.webp`
-  },
-  goldfish: { kind: 'image', src: `${placeholderMediaBase}/goldfish.webp` },
-  engine: { kind: 'image', src: `${placeholderMediaBase}/flame-engine.webp` }
+  pipeline: { kind: 'image', src: '/images/models/nvidia-vfx-pipeline.jpg' }
 } as const satisfies Record<string, ModelLaunchMedia>
 
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
+
+const clipBase = 'https://media.comfy.org/website/nvidia-rtx'
+
+const beforeAfter: ModelLaunchBeforeAfter = {
+  headingKey: 'nvidiaRtx.beforeAfter.heading',
+  bodyKey: 'nvidiaRtx.beforeAfter.body',
+  tabs: [
+    {
+      id: 'super-resolution',
+      label: { en: 'Super Resolution', 'zh-CN': '超分辨率' },
+      caption: {
+        en: 'Upscale low-resolution footage up to 4× with Super Resolution.',
+        'zh-CN': '使用超分辨率将低分辨率素材放大最高 4 倍。'
+      },
+      beforeSrc: `${clipBase}/super-resolution-before.mp4`,
+      afterSrc: `${clipBase}/super-resolution-after.mp4`
+    },
+    {
+      id: 'frame-generation',
+      label: { en: 'Frame Generation', 'zh-CN': '帧生成' },
+      caption: {
+        en: 'Multiply frame rate up to 16× with Frame Generation for smooth slow motion.',
+        'zh-CN': '使用帧生成将帧率提升最高 16 倍，获得流畅的慢动作。'
+      },
+      beforeSrc: `${clipBase}/frame-generation-before.mp4`,
+      afterSrc: `${clipBase}/frame-generation-after.mp4`
+    },
+    {
+      id: 'sdr-to-hdr',
+      label: { en: 'SDR-to-HDR', 'zh-CN': 'SDR 转 HDR' },
+      caption: {
+        en: 'SDR in, HDR out. Best viewed on an HDR display.',
+        'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
+      },
+      beforeSrc: `${clipBase}/sdr-to-hdr-before.mp4`,
+      afterSrc: `${clipBase}/sdr-to-hdr-after.mp4`
+    }
+  ]
+}
 
 export const nvidiaRtxPage: ModelLaunchPage = {
   metaTitleKey: 'nvidiaRtx.meta.title',
@@ -36,10 +62,9 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'nvidiaRtx.breadcrumb.updated',
   hero: {
     layout: 'media-first',
+    mediaOutline: 'gray',
     videoSrc:
       'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
-    mobileVideoSrc:
-      'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-mobile.mp4',
     posterSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
     mobileFallbackImageSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
     titleKey: 'nvidiaRtx.hero.title',
@@ -60,61 +85,21 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       target: '_blank'
     }
   },
+  beforeAfter,
   gallery: {
     headingKey: 'nvidiaRtx.gallery.heading',
     ctaVariant: 'none',
     cardMeta: 'none',
+    captionPlacement: 'overlay',
     cards: [
       {
-        id: 'vaporwave-atmosphere',
+        id: 'full-pipeline',
+        span: 'full',
+        expandable: true,
         name: {
-          en: 'Vaporwave architecture generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的蒸汽波建筑场景'
-        },
-        tier: 'free',
-        note: localNote,
-        description: {
-          en: 'Upscale low-resolution footage up to 4× with Super Resolution.',
-          'zh-CN': '使用超分辨率将低分辨率素材放大最高 4 倍。'
-        },
-        media: media.vaporwave,
-        href: nvidiaRtxLinks.download
-      },
-      {
-        id: 'alien-convenience-store',
-        name: {
-          en: 'Aliens in a convenience store generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的便利店外星人场景'
-        },
-        tier: 'free',
-        note: localNote,
-        description: {
-          en: 'Multiply frame rate up to 16× with Frame Generation for smooth slow motion.',
-          'zh-CN': '使用帧生成将帧率提升最高 16 倍，获得流畅的慢动作。'
-        },
-        media: media.aliens,
-        href: nvidiaRtxLinks.download
-      },
-      {
-        id: 'goldfish-fisheye',
-        name: {
-          en: 'Goldfish in a glass bowl generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的玻璃鱼缸金鱼场景'
-        },
-        tier: 'free',
-        note: localNote,
-        description: {
-          en: 'Convert SDR footage to HDR.',
-          'zh-CN': '将 SDR 素材转换为 HDR。'
-        },
-        media: media.goldfish,
-        href: nvidiaRtxLinks.download
-      },
-      {
-        id: 'flame-engine',
-        name: {
-          en: 'Flaming engine watercolor generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的火焰引擎水彩画'
+          en: 'Super Resolution, Frame Generation and Video HDR nodes chained in one ComfyUI workflow',
+          'zh-CN':
+            '在同一 ComfyUI 工作流中串联超分辨率、帧生成与 Video HDR 节点'
         },
         tier: 'free',
         note: localNote,
@@ -122,7 +107,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
           en: 'Chain all three nodes in one workflow and run it on your RTX GPU.',
           'zh-CN': '在同一工作流中串联三个节点，并在你的 RTX GPU 上运行。'
         },
-        media: media.engine,
+        media: media.pipeline,
         href: nvidiaRtxLinks.download
       }
     ]
@@ -207,7 +192,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       }
     ]
   },
-  sectionOrder: ['gallery', 'steps', 'faq'],
+  sectionOrder: ['beforeAfter', 'gallery', 'steps', 'faq'],
   runOptions: {
     headingKey: 'nvidiaRtx.runOptions.heading',
     subtitleKey: 'nvidiaRtx.runOptions.subtitle',
