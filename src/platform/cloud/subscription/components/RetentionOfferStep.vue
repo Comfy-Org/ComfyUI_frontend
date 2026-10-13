@@ -54,7 +54,9 @@
         <p class="m-0 text-sm text-muted-foreground">{{ keepMessage }}</p>
       </div>
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('subscription.retentionOffer.finePrint') }}
+        {{
+          $t('subscription.retentionOffer.finePrint', { regular: regularPrice })
+        }}
       </p>
     </div>
 
@@ -93,7 +95,11 @@
         </div>
       </div>
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('subscription.retentionOffer.finePrint') }}
+        {{
+          $t('subscription.retentionOffer.afterDiscount', {
+            regular: regularAmount
+          })
+        }}
       </p>
     </div>
 

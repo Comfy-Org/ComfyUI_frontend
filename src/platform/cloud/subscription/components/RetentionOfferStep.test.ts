@@ -124,7 +124,9 @@ describe('RetentionOfferStep', () => {
     expect(screen.getByText('30% off')).toBeInTheDocument()
     expect(screen.getByText('$70')).toBeInTheDocument()
     expect(screen.getByText('$100')).toBeInTheDocument()
-    expect(screen.getByText('30% off for 3 months')).toBeInTheDocument()
+    expect(
+      screen.getByText('30% off for 3 calendar months')
+    ).toBeInTheDocument()
     expect(
       screen.getByText(
         'Keep your 21,100 monthly credits, custom LoRAs, and everything else in Pro.'
@@ -132,7 +134,7 @@ describe('RetentionOfferStep', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'One-time offer for your current plan. Your discount period starts when you accept. After it ends, your plan returns to its regular monthly price. Changing plans may end your discount. Cancel anytime.'
+        'One-time offer for your current plan. Your discount period starts when you accept. After it ends, your plan returns to $100/mo. Changing plans may end your discount. Cancel anytime.'
       )
     ).toBeInTheDocument()
     expect(
@@ -147,16 +149,18 @@ describe('RetentionOfferStep', () => {
     {
       percent: 25,
       months: 1,
-      term: '25% off for one month',
-      applied: 'Your 25% discount is applied for one month from acceptance.',
-      period: 'One-month discount',
+      term: '25% off for 1 calendar month',
+      applied:
+        'Your 25% discount is applied for 1 calendar month from acceptance.',
+      period: '1-month discount',
       price: '$75.00/mo'
     },
     {
       percent: 40,
       months: 2,
-      term: '40% off for 2 months',
-      applied: 'Your 40% discount is applied for 2 months from acceptance.',
+      term: '40% off for 2 calendar months',
+      applied:
+        'Your 40% discount is applied for 2 calendar months from acceptance.',
       period: '2-month discount',
       price: '$60.00/mo'
     }
@@ -222,7 +226,6 @@ describe('RetentionOfferStep', () => {
   ])(
     'confirms $name without predicting payments or expiry',
     async ({ acceptedAt, periodEnd }) => {
-      vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(acceptedAt))
       settlesAs('succeeded')
       const { onDecide, user } = renderOffer({ periodEnd })
@@ -236,15 +239,20 @@ describe('RetentionOfferStep', () => {
       ).toBeInTheDocument()
       expect(
         screen.getByText(
-          'Your 30% discount is applied for 3 months from acceptance.'
+          'Your 30% discount is applied for 3 calendar months from acceptance.'
         )
       ).toBeInTheDocument()
       expect(screen.getByText('$70.00/mo')).toBeInTheDocument()
       expect(screen.getByText('3-month discount')).toBeInTheDocument()
       expect(screen.getByText('$100.00')).toBeInTheDocument()
       expect(
+        screen.getByText(
+          'Your discount period started when you accepted. After it ends, your plan returns to $100.00/mo. Changing plans may end your discount. Cancel anytime.'
+        )
+      ).toBeInTheDocument()
+      expect(
         screen.queryByText(
-          /payments|renewals|Renews at|starting|until|November|February|May|June|\$90/
+          /payments|renewals|Renews at|until|January|February|March|April|May|June|July|August|September|October|November|December|\$90/
         )
       ).not.toBeInTheDocument()
 
