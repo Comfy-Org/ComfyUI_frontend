@@ -1,0 +1,131 @@
+---
+name: 'Website: Production Rollback'
+
+run-name: 'Website production ${{ inputs.operation }} to ${{ inputs.target_deployment }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Rollback to an older deployment or restore the new deployment'
+        required: true
+        type: choice
+        options:
+          - rollback
+          - restore
+      target_deployment:
+        description: 'Exact Vercel production deployment ID or https://*.vercel.app URL'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type ROLLBACK WEBSITE PRODUCTION or RESTORE WEBSITE PRODUCTION'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-production-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: website-production
+      url: https://comfy.org
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+      VERCEL_SCOPE: comfyui
+      OPERATION: ${{ inputs.operation }}
+      TARGET_DEPLOYMENT: ${{ inputs.target_deployment }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Validate the requested production mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$OPERATION" in
+            rollback)
+              expected='ROLLBACK WEBSITE PRODUCTION'
+              ;;
+            restore)
+              expected='RESTORE WEBSITE PRODUCTION'
+              ;;
+            *)
+              echo "::error title=Unsupported operation::$OPERATION"
+              exit 1
+              ;;
+          esac
+
+          if [[ "$CONFIRMATION" != "$expected" ]]; then
+            echo "::error title=Confirmation mismatch::Type $expected exactly."
+            exit 1
+          fi
+
+          if [[ ! "$TARGET_DEPLOYMENT" =~ ^(dpl_[A-Za-z0-9]+|https://[A-Za-z0-9.-]+\.vercel\.app)$ ]]; then
+            echo '::error title=Invalid deployment target::Use an exact Vercel deployment ID or https://*.vercel.app URL.'
+            exit 1
+          fi
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Inspect the exact deployment
+        run: vercel inspect "$TARGET_DEPLOYMENT" --scope="$VERCEL_SCOPE" --token="$VERCEL_TOKEN"
+
+      - name: Change the production deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$OPERATION" == 'rollback' ]]; then
+            vercel rollback "$TARGET_DEPLOYMENT" \
+              --scope="$VERCEL_SCOPE" \
+              --token="$VERCEL_TOKEN" \
+              --timeout=3m
+            vercel rollback status \
+              --scope="$VERCEL_SCOPE" \
+              --token="$VERCEL_TOKEN" \
+              --timeout=30s
+          else
+            vercel promote "$TARGET_DEPLOYMENT" \
+              --yes \
+              --scope="$VERCEL_SCOPE" \
+              --token="$VERCEL_TOKEN" \
+              --timeout=3m
+            vercel promote status \
+              --scope="$VERCEL_SCOPE" \
+              --token="$VERCEL_TOKEN" \
+              --timeout=30s
+          fi
+
+      - name: Verify the canonical website responds
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          status=$(curl --silent --show-error --location \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --max-time 30 \
+            https://comfy.org)
+          if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
+            echo "::error title=Canonical verification failed::https://comfy.org returned HTTP $status"
+            exit 1
+          fi
+
+          {
+            echo '## Website production recovery'
+            echo
+            echo "- Operation: \`$OPERATION\`"
+            echo "- Target: \`$TARGET_DEPLOYMENT\`"
+            echo "- Actor: \`$GITHUB_ACTOR\`"
+            echo "- Canonical response: HTTP $status"
+          } >> "$GITHUB_STEP_SUMMARY"
