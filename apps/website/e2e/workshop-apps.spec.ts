@@ -251,7 +251,7 @@ test('closes Relight while its flag is off', async ({ page, context }) => {
 async function relightFromPanel(page: Page) {
   const app = page.getByTestId('relight')
   await expect(app.getByTestId('relight-empty')).toBeVisible()
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const panel = app.getByRole('complementary', { name: 'Relight settings' })
   const lights = panel.getByRole('region', { name: 'Lights' })
 
@@ -325,7 +325,7 @@ for (const { width, panel } of [
     await mockFlags(context, { apps: true, workflows: false })
     await page.goto('/hub/apps/relight/')
     const app = page.getByTestId('relight')
-    await app.getByRole('button', { name: 'Try the example' }).click()
+    await app.getByRole('button', { name: 'Motel portrait' }).click()
     const settings = app.getByRole('complementary', {
       name: 'Relight settings'
     })
@@ -367,7 +367,7 @@ test('zooms the Relight photo from the control, ctrl+wheel and the keys, and sti
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const stage = app.getByTestId('relight-stage')
   const percent = app.getByTestId('editor-zoom-fit')
   await expect(percent).toHaveText('100%')
@@ -445,7 +445,7 @@ test('turns and raises a Relight light from the light map, and hides the map', a
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const map = app.getByRole('group', { name: 'Light map' })
   await expect(map).toHaveAttribute('data-corner', 'top-right')
   await settled(map)
@@ -507,7 +507,7 @@ test('moves the Relight light map off the Sunset warm key, and back once the key
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const map = app.getByRole('group', { name: 'Light map' })
   const key = app.getByRole('button', { name: /^Warm key\./ })
   const stage = app.getByTestId('relight-stage')
@@ -531,7 +531,7 @@ test('shows only the Relight light, apart from the light map, and not in Compare
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const tools = app.getByRole('toolbar', { name: 'Relight tools' })
   const lightOnly = tools.getByRole('button', { name: 'Light only' })
   const preview = app
@@ -569,7 +569,11 @@ test('folds the Relight light map to a chip on phones @mobile', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app
+    .getByRole('complementary', { name: 'Relight settings' })
+    .getByRole('button', { name: 'Hide settings' })
+    .click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const map = app.getByRole('group', { name: 'Light map' })
   const chip = map.getByRole('button', { name: 'Light map' })
   await expect(chip).toHaveAttribute('aria-expanded', 'false')
@@ -592,7 +596,7 @@ test('relights the Relight example from the bottom composer', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/?ux=e')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   await expect(app.getByRole('complementary')).toHaveCount(0)
   const key = app.getByRole('button', { name: /^Warm key\./ })
   await key.focus()
@@ -619,7 +623,11 @@ test('relights from the Relight bottom sheet on phones @mobile', async ({
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/relight/')
   const app = page.getByTestId('relight')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app
+    .getByRole('complementary', { name: 'Relight settings' })
+    .getByRole('button', { name: 'Hide settings' })
+    .click()
+  await app.getByRole('button', { name: 'Motel portrait' }).click()
   const sheet = app.getByRole('complementary', { name: 'Relight settings' })
   await expect(sheet.getByRole('region', { name: 'Lights' })).toHaveCount(0)
 

@@ -44,11 +44,13 @@ function onPrompt(event: Event) {
     <EditorSourceTile
       kind="image"
       :src="image?.url"
-      :name="image?.name"
+      :caption="image?.name"
       :add-label="lc('relight.empty.upload', locale)"
-      :change-label="lc('relight.photo.change', locale)"
+      :hint="lc('relight.photo.hint', locale)"
+      :remove-label="lc('relight.photo.remove', locale)"
       input-test-id="relight-photo-file"
       @file="relight.useFile"
+      @remove="relight.removeImage"
     />
 
     <div

@@ -33,7 +33,7 @@ beforeEach(() => {
 async function openExample(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(RelightStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.click(screen.getByRole('button', { name: 'Motel portrait' }))
   return user
 }
 
@@ -363,7 +363,11 @@ describe('RelightStudio', () => {
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
     async ({ layout, wide, last }) => {
       screenIsWide(wide)
-      await openExample(layout)
+      const user = await openExample(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const tools = toolNames(
         screen.getByRole('toolbar', { name: 'Relight tools' })
@@ -372,7 +376,22 @@ describe('RelightStudio', () => {
     }
   )
 
-  it('replaces the photo from the tile at the top of the panel, without a way to empty it', async () => {
+  it('takes the photo out with the X and puts it back from the tray', async () => {
+    const user = await openExample()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Remove photo' })
+    )
+    expect(
+      within(panel()).getByRole('button', { name: /Upload photo/ })
+    ).toBeVisible()
+    expect(screen.getByTestId('relight-empty')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Undo remove photo' }))
+    expect(within(panel()).getByText('motel-portrait.jpg')).toBeVisible()
+  })
+
+  it('replaces the photo from the tile at the top of the panel', async () => {
     vi.stubGlobal(
       'Image',
       class {
@@ -389,15 +408,8 @@ describe('RelightStudio', () => {
 
     await user.upload(screen.getByTestId('relight-photo-file'), photo)
 
-    expect(
-      await within(panel()).findByRole('button', {
-        name: 'Change photo: portrait.png'
-      })
-    ).toBeVisible()
+    expect(await within(panel()).findByText('portrait.png')).toBeVisible()
     expect(within(panel()).getByRole('radio', { name: 'Studio' })).toBeChecked()
-    expect(
-      within(panel()).queryByRole('button', { name: /^Remove/ })
-    ).toBeNull()
     await user.click(
       within(panel()).getByRole('button', {
         name: 'Where to generate: Whole image'
@@ -694,23 +706,20 @@ describe('RelightStudio', () => {
     expect(screen.queryByText(hint)).toBeNull()
   })
 
-  it('opens on phones as a sheet with a one-line summary and the run button, and expands', async () => {
+  it('opens on phones as an open sheet that folds to a one-line summary and the run button', async () => {
     screenIsWide(false)
     const user = await openExample()
+    expect(section('Lights')).toBeVisible()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    )
+
     expect(
       within(panel()).getByRole('button', { name: 'Sunset · 2 lights · Long' })
     ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('relight-run')).toBeEnabled()
     expect(within(panel()).queryByRole('region', { name: 'Lights' })).toBeNull()
-
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Show all settings' })
-    )
-
-    expect(section('Lights')).toBeVisible()
-    expect(
-      within(panel()).getByRole('button', { name: 'Hide settings' })
-    ).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('keeps the bottom dock and its trays in the bottom composer layout', async () => {

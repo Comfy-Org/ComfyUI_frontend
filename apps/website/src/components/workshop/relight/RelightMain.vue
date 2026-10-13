@@ -37,12 +37,15 @@ const resultLabels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="lc('relight.empty.title', locale)"
-    :meta="lc('relight.empty.meta', locale)"
-    :upload-label="lc('relight.empty.upload', locale)"
-    :example-label="lc('relight.empty.example', locale)"
-    :example-image="RELIGHT_EXAMPLE.url"
+    :hint="lc('relight.empty.meta', locale)"
+    :examples="[
+      {
+        id: 'motel',
+        image: RELIGHT_EXAMPLE.url,
+        label: lc('relight.empty.example', locale)
+      }
+    ]"
     data-testid="relight-empty"
-    @file="relight.useFile"
     @example="relight.useExample"
   />
   <EditorResult

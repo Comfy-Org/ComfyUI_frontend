@@ -9,6 +9,7 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import { lc } from '@/lib/workshop/relight/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import type { EditorView } from '@/components/workshop/app-editor/view'
 import RelightDocks from './RelightDocks.vue'
 import RelightHistory from './RelightHistory.vue'
@@ -25,7 +26,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const relight = useRelight(locale)
-const { image, phase } = relight
+const { image, removed, phase } = relight
 const result = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
@@ -59,6 +60,11 @@ const panelLabels = {
         {{ lc('relight.failed', locale) }}
       </EditorAlert>
       <RelightTrays v-if="!panel" :relight :locale />
+      <EditorUndoRemove
+        v-if="removed && !image"
+        :label="lc('relight.photo.restore', locale)"
+        @undo="relight.restoreImage"
+      />
     </template>
     <template #dock>
       <RelightDocks v-model:view="result" :relight :panel :locale />
@@ -66,13 +72,13 @@ const panelLabels = {
     <template v-if="phase.kind !== 'done'" #history>
       <RelightHistory :relight :locale />
     </template>
-    <template v-if="panel && image" #panel>
+    <template v-if="panel" #panel>
       <RelightPanel :relight :locale />
     </template>
-    <template v-if="panel && image" #panel-peek>
+    <template v-if="panel" #panel-peek>
       <RelightSummary :relight :locale />
     </template>
-    <template v-if="panel && image" #panel-footer>
+    <template v-if="panel" #panel-footer>
       <RelightRun :relight :locale block />
     </template>
   </AppEditorShell>

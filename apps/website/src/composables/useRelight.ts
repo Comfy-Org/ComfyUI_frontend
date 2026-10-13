@@ -82,6 +82,8 @@ export function useRelight(locale: Locale = 'en') {
   }
 
   const image = shallowRef<RelightImage>()
+  /** The photo taken out last, kept so it can be put back. */
+  const removed = shallowRef<RelightImage>()
   const history = useSnapshotHistory<RelightSetup>(setupFor('sunset', false))
   const setup = history.state
   const phase = shallowRef<RelightPhase>({ kind: 'editing' })
@@ -117,6 +119,7 @@ export function useRelight(locale: Locale = 'en') {
   function reset(next: RelightImage, mood: MoodId) {
     run?.abort()
     leaveResult({ kind: 'editing' })
+    removed.value = undefined
     image.value = next
     history.reset(setupFor(mood, next.url === RELIGHT_EXAMPLE.url))
     selected.value = setup.value.lights[0]?.id
@@ -147,6 +150,19 @@ export function useRelight(locale: Locale = 'en') {
     reset({ url, name: file.name, ...size }, 'studio')
     releaseOwnUrl()
     ownUrl = url
+  }
+
+  function removeImage() {
+    run?.abort()
+    leaveResult({ kind: 'editing' })
+    removed.value = image.value
+    image.value = undefined
+  }
+
+  function restoreImage() {
+    if (!removed.value) return
+    image.value = removed.value
+    removed.value = undefined
   }
 
   /**
@@ -341,8 +357,11 @@ export function useRelight(locale: Locale = 'en') {
     shadows: computed(() => shadowStyle(lights.value)),
     canUndo: history.canUndo,
     canRedo: history.canRedo,
+    removed,
     useExample,
     useFile,
+    removeImage,
+    restoreImage,
     checkpoint,
     place,
     updateLight,
