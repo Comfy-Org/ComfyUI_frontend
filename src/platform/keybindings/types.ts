@@ -1,17 +1,45 @@
 import { z } from 'zod'
 
+import { parseWhenClause } from './whenClause'
+
+const zOptionalBoolean = z
+  .boolean()
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional()
+
 const zKeyCombo = z.object({
   key: z.string(),
-  ctrl: z.boolean().optional(),
-  alt: z.boolean().optional(),
-  shift: z.boolean().optional(),
-  meta: z.boolean().optional()
+  ctrl: zOptionalBoolean,
+  alt: zOptionalBoolean,
+  shift: zOptionalBoolean,
+  meta: zOptionalBoolean
 })
 
-const zKeybinding = z.object({
+const zOptionalString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? undefined)
+  .optional()
+
+const zWhenClause = z
+  .string()
+  .nullish()
+  .transform((value) => value?.trim() || undefined)
+  .superRefine((value, ctx) => {
+    if (value === undefined) return
+    const parsed = parseWhenClause(value)
+    if (!parsed.success) ctx.addIssue({ code: 'custom', message: parsed.error })
+  })
+  .optional()
+
+export const zKeybinding = z.object({
   commandId: z.string(),
   combo: zKeyCombo,
-  targetElementId: z.string().optional()
+  targetElementId: zOptionalString,
+  /** Fires only while the dialog opened with this key is the active one. */
+  dialogKey: zOptionalString,
+  when: zWhenClause
 })
 
 export const zKeybindingPreset = z.object({

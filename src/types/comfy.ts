@@ -295,6 +295,7 @@ export interface ComfyExtension {
    * The keybindings defined by the extension
    */
   keybindings?: Keybinding[]
+  contextKeys?: string[]
   /**
    * Menu commands to add to the menu bar
    */
