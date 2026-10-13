@@ -48,15 +48,15 @@ function queryOf(celebrity: string): string {
 }
 
 /**
- * Paparazzi me's page state, opened on the worked example so it demos at
- * once: the example face, the example star looked up, her red-carpet photo
- * picked. The look-up and the run are mocked for now.
+ * Paparazzi me's page state: the example star looked up and her red-carpet
+ * photo picked, waiting for a face. The look-up and the run are mocked.
  */
 export function usePaparazziMe() {
   const found = new Map<string, PaparazziSearch>([
     [queryOf(DEFAULT_SETUP.celebrity), lookUp(DEFAULT_SETUP.celebrity)]
   ])
-  const face = shallowRef<PaparazziImage>(PAPARAZZI_EXAMPLE)
+  const face = shallowRef<PaparazziImage>()
+  const removed = shallowRef<PaparazziImage>()
   const ownScene = shallowRef<PaparazziImage>()
   const history = useSnapshotHistory<PaparazziSetup>(DEFAULT_SETUP)
   const setup = history.state
@@ -99,7 +99,10 @@ export function usePaparazziMe() {
     () => !usingOwnScene.value && !hasCelebrity(setup.value.celebrity)
   )
   const canRun = computed(
-    () => phase.value.kind !== 'running' && !missingStar.value
+    () =>
+      Boolean(face.value) &&
+      phase.value.kind !== 'running' &&
+      !missingStar.value
   )
 
   function leaveResult(next: PaparazziPhase) {
@@ -187,13 +190,35 @@ export function usePaparazziMe() {
     return undefined
   }
 
+  function showFace(image: PaparazziImage) {
+    stopRun()
+    release(face.value ?? removed.value)
+    removed.value = undefined
+    face.value = image
+  }
+
+  function useExample() {
+    showFace(PAPARAZZI_EXAMPLE)
+  }
+
   async function useFaceFile(file: File) {
     const image = await readImage(file)
     if (!image) return
-    stopRun()
-    release(face.value)
-    face.value = image
+    showFace(image)
     touched.value = true
+  }
+
+  function removeFace() {
+    if (!face.value) return
+    stopRun()
+    removed.value = face.value
+    face.value = undefined
+  }
+
+  function restoreFace() {
+    if (!removed.value) return
+    face.value = removed.value
+    removed.value = undefined
   }
 
   async function useSceneFile(file: File) {
@@ -224,7 +249,8 @@ export function usePaparazziMe() {
   }
 
   async function snap() {
-    if (!canRun.value) return
+    const current = face.value
+    if (!current || !canRun.value) return
     tray.value = undefined
     picker.close()
     const controller = new AbortController()
@@ -234,7 +260,7 @@ export function usePaparazziMe() {
       const target = await sceneForRun()
       if (run !== controller) return
       const result = await runPaparazzi(
-        paparazziRequest(face.value.url, setup.value, target),
+        paparazziRequest(current.url, setup.value, target),
         controller.signal
       )
       if (run === controller) {
@@ -280,6 +306,10 @@ export function usePaparazziMe() {
 
   return {
     face,
+    removed,
+    useExample,
+    removeFace,
+    restoreFace,
     ownScene,
     setup,
     phase,

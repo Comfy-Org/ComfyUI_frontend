@@ -41,12 +41,14 @@ const resolution = computed({
   >
     <EditorSourceTile
       kind="image"
-      :src="face.url"
-      :name="face.name"
-      :add-label="pc('paparazzi.face.tip', locale)"
-      :change-label="pc('paparazzi.face.changeLabel', locale)"
+      :src="face?.url"
+      :caption="face?.name"
+      :add-label="pc('paparazzi.face.upload', locale)"
+      :hint="pc('paparazzi.face.tip', locale)"
+      :remove-label="pc('paparazzi.face.remove', locale)"
       input-test-id="paparazzi-face-input"
       @file="paparazzi.useFaceFile"
+      @remove="paparazzi.removeFace"
     />
     <PaparazziStar :paparazzi :locale />
     <PaparazziSceneRow :paparazzi :locale />

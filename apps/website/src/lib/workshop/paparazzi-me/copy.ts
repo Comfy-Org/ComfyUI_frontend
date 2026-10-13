@@ -12,14 +12,23 @@ const copy = {
   },
   'paparazzi.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
   'paparazzi.face': { en: 'Your face', 'zh-CN': '你的脸' },
-  'paparazzi.face.change': { en: 'Change', 'zh-CN': '更换' },
-  'paparazzi.face.changeLabel': {
-    en: 'Change your face photo',
-    'zh-CN': '更换你的照片'
-  },
+  'paparazzi.face.upload': { en: 'Upload your face', 'zh-CN': '上传你的脸' },
   'paparazzi.face.tip': {
-    en: 'A clear, front-on photo. Drop or paste one here.',
-    'zh-CN': '一张清晰的正脸照片。可拖放或粘贴到这里。'
+    en: 'A clear, front-on photo',
+    'zh-CN': '一张清晰的正脸照片'
+  },
+  'paparazzi.face.remove': { en: 'Remove face photo', 'zh-CN': '移除照片' },
+  'paparazzi.face.restore': {
+    en: 'Undo remove face photo',
+    'zh-CN': '撤销移除照片'
+  },
+  'paparazzi.empty.title': {
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
+  },
+  'paparazzi.empty.example': {
+    en: 'Me on the red carpet',
+    'zh-CN': '我走红毯'
   },
   'paparazzi.star': { en: 'Star', 'zh-CN': '明星' },
   'paparazzi.star.label': { en: 'Star’s name', 'zh-CN': '明星姓名' },

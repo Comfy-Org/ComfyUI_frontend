@@ -5,6 +5,8 @@ import type { PaparazziMe } from '@/composables/usePaparazziMe'
 import type { Locale } from '@/i18n/translations'
 import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import { outputSize } from '@/lib/workshop/paparazzi-me/setup'
+import { PAPARAZZI_EXAMPLE } from '@/lib/workshop/paparazzi-me/mock-run'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import PaparazziWorkspace from './PaparazziWorkspace.vue'
 import { sceneName } from './sections'
@@ -14,7 +16,7 @@ const { paparazzi, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const { setup, phase, scene, compare } = paparazzi
+const { face, setup, phase, scene, compare } = paparazzi
 const size = computed(() => outputSize(setup.value.resolution))
 const before = computed(() => {
   const current = scene.value
@@ -38,8 +40,21 @@ const labels = computed(() => ({
 </script>
 
 <template>
+  <EditorEmpty
+    v-if="!face"
+    :title="pc('paparazzi.empty.title', locale)"
+    :examples="[
+      {
+        id: 'red-carpet',
+        image: PAPARAZZI_EXAMPLE.url,
+        label: pc('paparazzi.empty.example', locale)
+      }
+    ]"
+    data-testid="paparazzi-empty"
+    @example="paparazzi.useExample"
+  />
   <EditorResult
-    v-if="phase.kind === 'done'"
+    v-else-if="phase.kind === 'done'"
     :before="before ?? phase.result.url"
     :after="phase.result.url"
     :view="compare && before ? 'compare' : 'result'"

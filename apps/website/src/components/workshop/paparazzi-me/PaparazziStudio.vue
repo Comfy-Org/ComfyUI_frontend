@@ -10,6 +10,7 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import EditorPicker from '@/components/workshop/app-editor/EditorPicker.vue'
 import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import PaparazziDocks from './PaparazziDocks.vue'
@@ -29,7 +30,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 const { t } = translationsFor(locale)
 
 const paparazzi = usePaparazziMe()
-const { phase, pickerOpen } = paparazzi
+const { face, removed, phase, pickerOpen } = paparazzi
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
   phase,
@@ -62,6 +63,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ pc('paparazzi.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !face"
+        :label="pc('paparazzi.face.restore', locale)"
+        @undo="paparazzi.restoreFace"
+      />
       <PaparazziTrays v-if="!panel" :paparazzi :locale />
       <EditorPicker
         v-if="panel && pickerOpen"

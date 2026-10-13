@@ -33,9 +33,10 @@ beforeEach(() => {
   screenIsWide(true)
 })
 
-function open(layout?: string) {
+async function open(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(PaparazziStudio, { props: { layout } })
+  await user.click(screen.getByRole('button', { name: 'Me on the red carpet' }))
   return user
 }
 
@@ -47,8 +48,8 @@ const picker = () => screen.getByRole('dialog', { name: 'Pick a scene' })
 const photo = (name: string) => new File(['x'], name, { type: 'image/jpeg' })
 
 describe('PaparazziStudio', () => {
-  it('opens on the example, picks a scene from the grid and inserts the face', async () => {
-    const user = open()
+  it('opens the example, picks a scene from the grid and inserts the face', async () => {
+    const user = await open()
     expect(
       screen.getByRole('img', {
         name: 'A paparazzi photo of Nova Reyes: Red carpet'
@@ -109,9 +110,13 @@ describe('PaparazziStudio', () => {
     { layout: 'e', wide: true, tools: ['Insert me 10 credits', 'Undo', 'Redo'] }
   ])(
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
-    ({ layout, wide, tools: expected }) => {
+    async ({ layout, wide, tools: expected }) => {
       screenIsWide(wide)
-      open(layout)
+      const user = await open(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const names = within(tools())
         .getAllByRole('button')
@@ -123,7 +128,7 @@ describe('PaparazziStudio', () => {
   )
 
   it('looks up a typed star and says what is missing without one', async () => {
-    const user = open()
+    const user = await open()
     const name = within(panel()).getByRole('combobox', { name: 'Star’s name' })
 
     await user.clear(name)
@@ -144,16 +149,12 @@ describe('PaparazziStudio', () => {
   })
 
   it('swaps the face and uses an uploaded scene over the look-up', async () => {
-    const user = open()
+    const user = await open()
     await user.upload(
       within(panel()).getByTestId('paparazzi-face-input'),
       photo('me.jpg')
     )
-    expect(
-      within(panel()).getByRole('button', {
-        name: 'Change your face photo: me.jpg'
-      })
-    ).toBeVisible()
+    expect(within(panel()).getByText('me.jpg')).toBeVisible()
 
     await user.click(sceneRow())
     await user.upload(
@@ -168,22 +169,18 @@ describe('PaparazziStudio', () => {
   })
 
   it('takes a pasted image as the face', async () => {
-    open()
+    await open()
     const paste = new Event('paste')
     Object.defineProperty(paste, 'clipboardData', {
       value: { files: [photo('pasted.png')] }
     })
     window.dispatchEvent(paste)
     await vi.advanceTimersByTimeAsync(0)
-    expect(
-      within(panel()).getByRole('button', {
-        name: 'Change your face photo: pasted.png'
-      })
-    ).toBeVisible()
+    expect(within(panel()).getByText('pasted.png')).toBeVisible()
   })
 
   it('picks the resolution, types a seed and shuffles a new one from the format bar', async () => {
-    const user = open()
+    const user = await open()
     await user.click(
       within(panel()).getByRole('button', { name: 'Resolution: 2K' })
     )
@@ -208,7 +205,7 @@ describe('PaparazziStudio', () => {
   })
 
   it('picks a scene from the bottom composer’s tray', async () => {
-    const user = open('e')
+    const user = await open('e')
     expect(screen.queryByRole('complementary')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: /^Scene/ }))
@@ -223,14 +220,38 @@ describe('PaparazziStudio', () => {
     expect(await screen.findByRole('link', { name: 'Download' })).toBeVisible()
   })
 
-  it('sums the setup up in the phone sheet', async () => {
+  it('opens the phone sheet and sums the setup up once folded', async () => {
     screenIsWide(false)
-    const user = open()
+    const user = await open()
+    expect(sceneRow()).toBeVisible()
+
     await user.click(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    )
+
+    expect(
       within(panel()).getByRole('button', {
         name: 'Nova Reyes · Red carpet · 2K'
       })
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('waits for a face, and takes it out with the X and back from the tray', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(PaparazziStudio)
+    expect(screen.getByTestId('paparazzi-empty')).toBeVisible()
+    expect(within(panel()).getByTestId('paparazzi-run')).toBeDisabled()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Me on the red carpet' })
     )
-    expect(sceneRow()).toBeVisible()
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Remove face photo' })
+    )
+    expect(screen.getByTestId('paparazzi-empty')).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: 'Undo remove face photo' })
+    )
+    expect(within(panel()).getByText('my-face.jpg')).toBeVisible()
   })
 })

@@ -17,9 +17,15 @@ vi.mock(import('@/lib/workshop/image-size'), () => ({
 
 let scope: EffectScope
 
-function start() {
+function open() {
   const paparazzi = scope.run(() => usePaparazziMe())
   if (!paparazzi) throw new Error('no scope')
+  return paparazzi
+}
+
+function start() {
+  const paparazzi = open()
+  paparazzi.useExample()
   return paparazzi
 }
 
@@ -44,8 +50,12 @@ afterEach(() => {
 })
 
 describe('usePaparazziMe', () => {
-  it('opens on the worked example: the star looked up, her first photo picked', () => {
-    const paparazzi = start()
+  it('opens waiting for a face, with the star looked up and her first photo picked', () => {
+    const paparazzi = open()
+    expect(paparazzi.face.value).toBeUndefined()
+    expect(paparazzi.canRun.value).toBe(false)
+
+    paparazzi.useExample()
     expect(paparazzi.face.value).toBe(PAPARAZZI_EXAMPLE)
     expect(paparazzi.setup.value).toEqual(DEFAULT_SETUP)
     expect(paparazzi.candidates.value).toHaveLength(SCENE_PLACES.length)
@@ -54,6 +64,21 @@ describe('usePaparazziMe', () => {
       candidate: { place: SCENE_PLACES[0] }
     })
     expect(paparazzi.canRun.value).toBe(true)
+  })
+
+  it('takes the face out and puts it back until another one is picked', async () => {
+    const paparazzi = start()
+
+    paparazzi.removeFace()
+    expect(paparazzi.face.value).toBeUndefined()
+    expect(paparazzi.canRun.value).toBe(false)
+    paparazzi.restoreFace()
+    expect(paparazzi.face.value).toBe(PAPARAZZI_EXAMPLE)
+
+    paparazzi.removeFace()
+    await settle(paparazzi.useFaceFile(photo('me.jpg')))
+    paparazzi.restoreFace()
+    expect(paparazzi.face.value?.name).toBe('me.jpg')
   })
 
   it('looks a new star up, and finds the earlier one again on undo', async () => {
@@ -176,6 +201,6 @@ describe('usePaparazziMe', () => {
     await settle(paparazzi.snap())
     await paparazzi.useFaceFile(photo('me.jpg'))
     expect(paparazzi.phase.value.kind).toBe('editing')
-    expect(paparazzi.face.value.name).toBe('me.jpg')
+    expect(paparazzi.face.value?.name).toBe('me.jpg')
   })
 })

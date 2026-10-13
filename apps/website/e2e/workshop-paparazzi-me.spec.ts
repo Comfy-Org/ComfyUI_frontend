@@ -38,6 +38,7 @@ test('inserts the Paparazzi me example into a picked scene from the panel', asyn
   const app = page.getByTestId('paparazzi-me')
   const panel = app.getByRole('complementary', { name: 'Paparazzi settings' })
   expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  await app.getByRole('button', { name: 'Me on the red carpet' }).click()
   await expect(
     app.getByRole('img', {
       name: 'A paparazzi photo of Nova Reyes: Red carpet'
@@ -91,6 +92,8 @@ test('inserts the example from the Paparazzi me bottom sheet on phones @mobile',
   await page.goto('/hub/apps/paparazzi-me/')
   const app = page.getByTestId('paparazzi-me')
   const sheet = app.getByRole('complementary', { name: 'Paparazzi settings' })
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await app.getByRole('button', { name: 'Me on the red carpet' }).click()
   await sheet
     .getByRole('button', { name: 'Nova Reyes · Red carpet · 2K' })
     .click()

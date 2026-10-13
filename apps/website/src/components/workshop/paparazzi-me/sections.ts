@@ -63,7 +63,7 @@ export function sectionMeta(
   locale: Locale
 ): string {
   const notes = {
-    face: () => paparazzi.face.value.name,
+    face: () => paparazzi.face.value?.name ?? '',
     star: () => paparazzi.setup.value.celebrity.trim(),
     scene: () => sceneName(paparazzi, locale),
     seed: () => String(paparazzi.setup.value.seed)
