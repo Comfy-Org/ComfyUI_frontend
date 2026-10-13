@@ -408,7 +408,7 @@ test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
     })
 
     await test.step('the click posts once, to that ask, and locks the card', async () => {
-      let release = (): void => {}
+      let release = () => {}
       const held = new Promise<void>((resolve) => {
         release = resolve
       })

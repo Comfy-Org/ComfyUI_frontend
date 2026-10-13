@@ -51,7 +51,7 @@ const decision = computed(() => {
     </p>
 
     <div
-      class="flex flex-col gap-1 rounded-md bg-component-node-background p-2 text-xs/5"
+      class="flex flex-col gap-1 rounded-md bg-base-background p-2 text-xs/5"
     >
       <ul
         :aria-label="t('agent.deleteApproval.nodes')"

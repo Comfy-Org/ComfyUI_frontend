@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
@@ -9,6 +9,7 @@ import { createAgentEventTransport } from '../../../services/agent/agentEventTra
 import type {
   AskUserResolution,
   AssistantMessage,
+  DeleteApprovalPart,
   RunApprovalPart
 } from '../../../services/agent/agentMessageParts'
 import {
@@ -876,15 +877,32 @@ describe('AgentMessage delete approval', () => {
           context: {
             action: 'delete_nodes',
             nodes: [{ id: '12', type: 'KSampler' }],
-            hidden_node_count: 1
+            hidden_node_count: 3
           }
         })
       },
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('1 more node not listed')).toBeVisible()
+    expect(screen.getByText('3 more nodes not listed')).toBeVisible()
   })
+
+  const deleteCard: DeleteApprovalPart = {
+    type: 'deleteApproval',
+    askId: 'turn-2:call-4',
+    prompt: 'Delete the 2 nodes you added?',
+    nodes: [
+      { id: '12', name: 'Hero sampler' },
+      { id: '13', name: 'VAEDecode' }
+    ],
+    hiddenNodeCount: 0
+  }
+
+  const renderResolved = (part: DeleteApprovalPart) =>
+    render(AgentMessage, {
+      props: { message: { ...deleteMessage(), parts: [part] } },
+      global: { plugins: [i18n] }
+    })
 
   it.for<{ name: string; resolution: AskUserResolution; text: string }>([
     {
@@ -920,16 +938,9 @@ describe('AgentMessage delete approval', () => {
   ])(
     'reads back $name once resolved, with no buttons left',
     ({ resolution, text }) => {
-      const [part] = deleteMessage().parts
-      assert(part.type === 'deleteApproval')
-      render(AgentMessage, {
-        props: {
-          message: { ...deleteMessage(), parts: [{ ...part, resolution }] }
-        },
-        global: { plugins: [i18n] }
-      })
+      renderResolved({ ...deleteCard, resolution })
 
-      expect(screen.getByRole('status')).toHaveTextContent(text)
+      expect(screen.getByRole('status').textContent.trim()).toBe(text)
       expect(
         screen.queryByRole('button', { name: 'Delete' })
       ).not.toBeInTheDocument()
@@ -939,27 +950,26 @@ describe('AgentMessage delete approval', () => {
     }
   )
 
-  it('reads back a single-node delete in the singular', () => {
-    const [part] = deleteMessage({
-      context: { action: 'delete_nodes', nodes: [{ id: '12' }] }
-    }).parts
-    assert(part.type === 'deleteApproval')
-    render(AgentMessage, {
-      props: {
-        message: {
-          ...deleteMessage(),
-          parts: [
-            {
-              ...part,
-              resolution: { status: 'answered', selected: ['delete'] }
-            }
-          ]
-        }
-      },
-      global: { plugins: [i18n] }
+  it.for([
+    {
+      name: 'one listed node',
+      hiddenNodeCount: 0,
+      text: 'Answered: delete it'
+    },
+    {
+      name: 'one listed and two unlisted nodes',
+      hiddenNodeCount: 2,
+      text: 'Answered: delete them'
+    }
+  ])('reads back a delete of $name', ({ hiddenNodeCount, text }) => {
+    renderResolved({
+      ...deleteCard,
+      nodes: [{ id: '12' }],
+      hiddenNodeCount,
+      resolution: { status: 'answered', selected: ['delete'] }
     })
 
-    expect(screen.getByRole('status')).toHaveTextContent('Answered: delete it')
+    expect(screen.getByRole('status').textContent.trim()).toBe(text)
   })
 })
 

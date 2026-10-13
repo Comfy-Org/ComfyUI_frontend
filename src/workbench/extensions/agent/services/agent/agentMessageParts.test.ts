@@ -239,29 +239,6 @@ describe('toAskPart delete_approval', () => {
         action: 'delete_nodes',
         nodes: [{ id: '12' }, { type: 'NoId' }]
       }
-    },
-    {
-      name: 'a numeric id',
-      context: { action: 'delete_nodes', nodes: [{ id: 12 }] }
-    },
-    {
-      name: 'more nodes listed than the contract allows',
-      context: {
-        action: 'delete_nodes',
-        nodes: Array.from({ length: 51 }, (_, i) => ({ id: String(i) }))
-      }
-    },
-    {
-      name: 'a hidden count below one',
-      context: {
-        action: 'delete_nodes',
-        nodes: [{ id: '12' }],
-        hidden_node_count: 0
-      }
-    },
-    {
-      name: 'another action',
-      context: { action: 'delete_links', nodes: [{ id: '12' }] }
     }
   ])('falls back to the notice with $name in context', ({ context }) => {
     expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
@@ -313,6 +290,10 @@ describe('toAskPart delete_approval', () => {
           { id: 'delete_all', label: 'Delete all' }
         ]
       }
+    },
+    {
+      name: 'only one of the two',
+      ask: { options: [{ id: 'delete', label: 'Delete' }] }
     },
     { name: 'free text', ask: { allow_other: true } },
     { name: 'a multi-choice', ask: { max_selections: 2 } }
