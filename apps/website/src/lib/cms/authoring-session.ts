@@ -129,7 +129,7 @@ export function validAuthoringMutation(context: APIContext) {
 export function isAuthoringRoute(path: string) {
   return (
     path.replace(/\/$/, '') === '/admin/catalog-preview' ||
-    /^\/admin\/content\/(?:new|[0-9a-f-]{36}\/edit)\/?$/.test(path) ||
+    /^\/admin\/content\/(?:new|[0-9a-f-]{36}\/(?:edit|view))\/?$/.test(path) ||
     /^\/admin\/content-api\/(?:state|item|save|upload)\/?$/.test(path) ||
     /^\/admin\/catalog(?:\/final-review)?\/?$/.test(path) ||
     /^\/admin\/catalog-api\/(?:staging|final-review|exit|discard-changes|publish)\/?$/.test(

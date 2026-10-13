@@ -122,6 +122,7 @@ function installCmsRoutes(
     ['/admin/actions', 'actions.ts'],
     ['/admin/content/new', 'content-editor.astro'],
     ['/admin/content/[uid]/edit', 'content-editor.astro'],
+    ['/admin/content/[uid]/view', 'content-view.astro'],
     ['/admin/content-api/[operation]', 'content-api.ts'],
     ['/admin/content-session', 'content-session.ts'],
     ['/admin/catalog', 'catalog.astro'],

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import {
   DialogRoot,
   DialogPortal,
@@ -367,27 +368,26 @@ function discardDetails(raw: unknown) {
     :locale="locale"
     @open-live="exit"
   >
-    <header class="flex flex-wrap items-start justify-between gap-4">
-      <div>
+    <PageHeader :title="t('cccStaging.title')">
+      <template #eyebrow>
         <p class="text-xs text-admin-muted">
           {{
             t('cccStaging.revision', { revision: flow.review.state.draft_rev })
           }}
         </p>
-        <h1 class="mt-1 text-2xl font-medium">{{ t('cccStaging.title') }}</h1>
-        <p
-          class="mt-4 inline-block rounded-md border border-admin-field px-2 py-1 text-xs font-semibold tracking-wide"
-        >
-          {{ t('cccStaging.phase1') }}
-        </p>
-        <p class="mt-2 text-base font-medium">
-          {{ t('cccStaging.phaseInstruction') }}
-        </p>
-        <p class="mt-1 max-w-3xl text-sm text-admin-muted">
-          {{ t('cccStaging.phaseHelp') }}
-        </p>
-      </div>
-      <div class="flex gap-2">
+      </template>
+      <p
+        class="mt-4 inline-block rounded-md border border-admin-field px-2 py-1 text-xs font-semibold tracking-wide"
+      >
+        {{ t('cccStaging.phase1') }}
+      </p>
+      <p class="mt-2 text-base font-medium">
+        {{ t('cccStaging.phaseInstruction') }}
+      </p>
+      <p class="mt-1 max-w-3xl text-sm text-admin-muted">
+        {{ t('cccStaging.phaseHelp') }}
+      </p>
+      <template #actions>
         <div v-if="canApply" class="flex flex-col items-end gap-2">
           <AdminButton
             variant="primary"
@@ -410,8 +410,8 @@ function discardDetails(raw: unknown) {
             }}
           </p>
         </div>
-      </div>
-    </header>
+      </template>
+    </PageHeader>
     <form
       class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-6"
       @submit.prevent="load"
@@ -570,6 +570,7 @@ function discardDetails(raw: unknown) {
         :selected="selected.has(item.content.uid)"
         :disabled="blocked"
         :locale="locale"
+        :draft-rev="flow.review.state.draft_rev"
         @decision="requestSingle"
         @selection="selectItem"
         @discard="(uid) => requestDiscard([uid])"

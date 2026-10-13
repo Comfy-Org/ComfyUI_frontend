@@ -44,7 +44,39 @@ const item = z.object({
   before: resource.optional(),
   status: z.enum(editorialStates),
   decision: z.enum(decisions),
-  summary: z.string().max(2000)
+  summary: z.string().max(2000),
+  presentation: z
+    .object({
+      media_name: z.string().max(1000).optional(),
+      uses: z
+        .array(
+          z.object({
+            uid: z.uuid(),
+            type: z.enum(reviewTypes).exclude(['media']),
+            title: z.string().max(1000),
+            slug: z.string().max(1000).optional(),
+            origin: z.boolean(),
+            is_deleted: z.boolean().optional()
+          })
+        )
+        .max(5000)
+        .optional(),
+      preview: z
+        .object({
+          kind: z.enum(['image', 'video']),
+          src: z
+            .string()
+            .refine(
+              (value) =>
+                value.trim() === value &&
+                /^\/preview-media\/[1-9]\d*\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/.test(
+                  value
+                )
+            )
+        })
+        .optional()
+    })
+    .optional()
 })
 export type ReviewFilter = NonNullable<GetCccStagingData['query']>
 export const reviewFilter = z.custom<ReviewFilter>(

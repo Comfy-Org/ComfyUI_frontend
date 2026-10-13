@@ -3,7 +3,6 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import { isLocalAccess } from './local-access'
 import { DEMO_COOKIE, createDemoInvitation, demoEnabled, listDemoInvitations, revokeDemoInvitation } from '@/lib/cms/catalog-demo'
 import { AUTHORING_CSRF_COOKIE, validAuthoringOrigin } from '@/lib/cms/authoring-session'
-import { editorFailure } from '@/lib/cms/editor-server'
 const session = Astro.locals.catalogAuthoring
 if (!demoEnabled() || !isLocalAccess(Astro) || Astro.cookies.has(DEMO_COOKIE) || !session?.can_apply || Astro.url.search) return editorFailure(404)
 let created: { code: string; expires: number } | undefined

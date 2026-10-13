@@ -11,7 +11,8 @@ export const GET: APIRoute = async (context) => {
     !z.uuid().safeParse(uid).success ||
     !z.uuid().safeParse(version).success ||
     context.url.search ||
-    context.request.headers.has('Range')
+    (context.request.headers.has('Range') &&
+      (!preview || context.request.headers.get('Range') !== 'bytes=0-'))
   )
     return deny()
   if (
@@ -45,7 +46,8 @@ export const GET: APIRoute = async (context) => {
     const type = response.headers.get('Content-Type')
     if (
       !type ||
-      !/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type)
+      (!/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type) &&
+        !(preview && /^video\/mp4(;|$)/.test(type)))
     ) {
       await response.body?.cancel()
       return deny()

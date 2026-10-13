@@ -27,9 +27,9 @@ const locale = resolveLocale(Astro.currentLocale)
     <h1 class="mt-5 text-2xl font-medium">{t('cccStaging.finalReview')}</h1>
     {!final ? <p role="alert" class="mt-4 text-sm text-admin-danger-text">{unresolvedCount !== undefined && unresolvedCount > 0 ? t('cccStaging.unresolved', { count: unresolvedCount }) : t('cccStaging.finalBlocked')}</p> : <>
       <p class="mt-4 text-sm text-admin-muted">{t('cccStaging.matches', { count: final.changes.length })}</p>
-      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.changes.map((item) => <CatalogChangeRow item={item} locale={locale} client:load />)}</ul>
+      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.changes.map((item) => <CatalogChangeRow item={item} locale={locale} draftRev={final.state.draft_rev} client:load />)}</ul>
       <h2 class="mt-6 text-lg">{t('cccStaging.deferred')}</h2>
-      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.deferred.map((item) => <CatalogChangeRow item={item} locale={locale} client:load />)}</ul>
+      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.deferred.map((item) => <CatalogChangeRow item={item} locale={locale} draftRev={final.state.draft_rev} client:load />)}</ul>
     </>}
     {final ? <CatalogPublish review={final} csrf={session.csrf} locale={locale} client:load /> : <button type="button" disabled class="mt-6 rounded-lg bg-admin-fg px-4 py-2 text-sm text-admin-card opacity-40">{t('cccStaging.publish')}</button>}
   </section>

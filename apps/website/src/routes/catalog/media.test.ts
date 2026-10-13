@@ -36,6 +36,53 @@ function context(preview = true, staff = true, suffix = '', range = false) {
   return ctx
 }
 describe('same-origin catalog byte proxy', () => {
+  it('serves a verified Preview video as a full authorized GET, not an unchecked partial response', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(
+        new Response('verified private video', {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const ctx = context()
+    ctx.request.headers.set('Range', 'bytes=0-')
+    const response = await GET(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('verified private video')
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(response.headers.get('Content-Range')).toBeNull()
+    expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
+      Authorization: 'Bearer verified-server-only-fixture'
+    })
+  })
+  it.each([
+    { preview: true, staff: false },
+    { preview: false, staff: true }
+  ])(
+    'refuses a video browser range without verified Preview authority: %j',
+    async ({ preview, staff }) => {
+      const fetch = vi.fn<typeof globalThis.fetch>()
+      vi.stubGlobal('fetch', fetch)
+      const ctx = context(preview, staff)
+      ctx.request.headers.set('Range', 'bytes=0-')
+      expect((await GET(ctx)).status).toBe(404)
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+  it('never enables public video delivery by adding Preview support', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValue(
+          new Response('video', { headers: { 'Content-Type': 'video/mp4' } })
+        )
+    )
+    expect((await GET(context(false))).status).toBe(404)
+  })
   it('streams authorized exact Preview bytes without redirect or public caching', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(

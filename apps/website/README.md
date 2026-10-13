@@ -16,6 +16,14 @@ existing phase instructions and server-backed Next guard. Her button/sidebar
 palette remains in use; her sandbox publication/authentication transports are
 not merged into the real catalog, nor is the required yellow Preview warning
 replaced by a graphite bar.
+Staff review rows may include a small protected image/video-frame preview and a
+read-only exact-version record link. Media context lists actual extracted
+references and upload provenance, including shared parents; names are not
+inferred from filenames. Missing/stale context is labeled unavailable, never
+treated as approval evidence. The private video proxy accepts a browser's
+initial `Range: bytes=0-` request only after staff verification, does not forward
+it, and returns a freshly authorized complete 200 response. Other ranges,
+HEAD, raw-origin redirects and public video requests remain denied.
 The local CCC review console has two phases: decide every pending change
 (including previously deferred work), then inspect the complete Final review.
 `Next` stays disabled while the authoritative, unfiltered unresolved count is

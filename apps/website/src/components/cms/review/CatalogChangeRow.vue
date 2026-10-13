@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Check, Pause, CircleAlert, Trash2 } from '@lucide/vue'
+import { Check, Pause, CircleAlert, Trash2, ArrowUpRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   DialogRoot,
@@ -21,6 +21,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { Decision, ReviewItem } from '@/lib/cms/staging-review'
 import { fieldDifferences, itemTitle } from '@/lib/cms/staging-review'
+import CatalogChangeMedia from './CatalogChangeMedia.vue'
 
 const {
   item,
@@ -28,7 +29,8 @@ const {
   canEdit = false,
   selected = false,
   disabled = false,
-  locale = 'en'
+  locale = 'en',
+  draftRev
 } = defineProps<{
   item: ReviewItem
   canApply?: boolean
@@ -36,6 +38,7 @@ const {
   selected?: boolean
   disabled?: boolean
   locale?: Locale
+  draftRev?: number
 }>()
 const emit = defineEmits<{
   decision: [uid: string, status: Decision]
@@ -44,9 +47,21 @@ const emit = defineEmits<{
 }>()
 const t = computed(() => translationsFor(locale).t)
 const differences = computed(() => fieldDifferences(item))
+const parentNames = computed(() =>
+  item.presentation?.uses
+    ?.slice(0, 2)
+    .map((use) => use.title)
+    .join(', ')
+)
+const recordHref = computed(() => {
+  const path = `/admin/content/${item.content.uid}/view`
+  return draftRev && Number.isSafeInteger(draftRev) && draftRev > 0
+    ? `${path}?rev=${draftRev}&version=${item.content.revision_uid}`
+    : path
+})
 const badgeClass = computed(() =>
   cn(
-    'inline-flex h-8 w-32 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-admin-fg disabled:opacity-40',
+    'inline-flex h-8 w-full items-center justify-center gap-1 rounded-lg border px-1 text-[.625rem] font-medium focus-visible:outline-2 focus-visible:outline-admin-fg disabled:opacity-40 sm:gap-2 sm:px-2 sm:text-xs',
     item.decision === 'APPROVED'
       ? 'border-admin-success/40 bg-admin-success/12 text-admin-success'
       : item.decision === 'DEFERRED'
@@ -71,7 +86,7 @@ function changeSelection(event: Event) {
     :data-review-state="item.decision"
     :class="
       cn(
-        'grid grid-cols-[1.25rem_minmax(0,1fr)_8rem_1.5rem] items-center gap-3 border-b border-admin-line px-4 py-3 last:border-b-0',
+        'grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_6rem_1.5rem_1.5rem] items-center gap-2 border-b border-admin-line px-3 py-3 last:border-b-0 sm:grid-cols-[1.25rem_3rem_minmax(0,1fr)_8rem_1.5rem_1.5rem] sm:gap-3 sm:px-4',
         item.decision === 'APPROVED' && 'bg-admin-success/5',
         item.decision === 'DEFERRED' && 'bg-admin-page text-admin-muted'
       )
@@ -96,6 +111,13 @@ function changeSelection(event: Event) {
       @change="changeSelection"
     />
     <span v-else aria-hidden="true" />
+    <CatalogChangeMedia
+      :key="item.presentation?.preview?.src ?? item.content.revision_uid"
+      :preview="item.presentation?.preview"
+      :label="t('cccChangeDetails.previewFor', { title: itemTitle(item) })"
+      :unavailable="t('cccChangeDetails.unavailable')"
+      :class="item.decision === 'DEFERRED' ? 'opacity-40 grayscale' : undefined"
+    />
     <DialogRoot>
       <DialogTrigger
         :class="
@@ -119,6 +141,11 @@ function changeSelection(event: Event) {
             >{{ t('cccStaging.states.DELETED') }} · </span
           >{{ item.summary }}</span
         >
+        <span
+          v-if="parentNames"
+          class="block truncate text-xs text-admin-muted"
+          >{{ t('cccChangeDetails.parentNames', { names: parentNames }) }}</span
+        >
       </DialogTrigger>
       <DialogPortal>
         <DialogOverlay class="fixed inset-0 z-60 bg-primary-comfy-ink/60" />
@@ -132,6 +159,65 @@ function changeSelection(event: Event) {
             item.summary
           }}</DialogDescription>
           <code class="block text-xs break-all">{{ item.content.uid }}</code>
+          <div v-if="item.presentation?.preview" class="mt-4">
+            <CatalogChangeMedia
+              :key="item.presentation.preview.src"
+              :preview="item.presentation.preview"
+              :label="
+                t('cccChangeDetails.previewFor', { title: itemTitle(item) })
+              "
+              :unavailable="t('cccChangeDetails.unavailable')"
+              expanded
+            />
+          </div>
+          <p
+            v-if="item.presentation?.media_name"
+            class="mt-3 text-sm break-all text-admin-muted"
+          >
+            {{ item.presentation.media_name }}
+          </p>
+          <section v-if="item.content.type === 'media'" class="mt-4">
+            <h3 class="text-sm font-medium">
+              {{ t('cccChangeDetails.usedBy') }}
+            </h3>
+            <ul v-if="item.presentation?.uses?.length" class="mt-2 grid gap-2">
+              <li
+                v-for="use in item.presentation.uses"
+                :key="use.uid"
+                class="text-sm"
+              >
+                <a :href="`/admin/content/${use.uid}/view`" class="underline">{{
+                  use.title
+                }}</a>
+                <span v-if="use.origin" class="ml-2 text-xs text-admin-muted">{{
+                  t('cccChangeDetails.uploadSource')
+                }}</span>
+                <span
+                  v-if="use.is_deleted"
+                  class="ml-2 text-xs text-admin-muted"
+                  >{{ t('cccChangeDetails.deleted') }}</span
+                >
+                <code class="block text-xs break-all text-admin-muted">{{
+                  use.uid
+                }}</code>
+              </li>
+            </ul>
+            <p v-else class="mt-2 text-xs text-admin-muted">
+              {{
+                t(
+                  item.presentation?.uses
+                    ? 'cccChangeDetails.noUses'
+                    : 'cccChangeDetails.contextUnavailable'
+                )
+              }}
+            </p>
+          </section>
+          <a
+            :href="recordHref"
+            class="mt-4 inline-flex items-center gap-1 text-sm underline"
+            >{{ t('cccChangeDetails.openRecord')
+            }}<ArrowUpRight class="size-4" aria-hidden="true"
+          /></a>
           <p class="mt-2 text-xs text-admin-muted">
             {{ t('cccStaging.originalAuthor') }}: {{ item.content.author_uid }}
           </p>
@@ -222,6 +308,13 @@ function changeSelection(event: Event) {
         aria-hidden="true"
       />{{ t(`cccStaging.states.${item.decision}`) }}</span
     >
+    <a
+      :href="recordHref"
+      :aria-label="t('cccChangeDetails.openFor', { title: itemTitle(item) })"
+      :title="t('cccChangeDetails.openFor', { title: itemTitle(item) })"
+      class="flex size-6 items-center justify-center rounded-sm text-admin-muted hover:bg-admin-hover hover:text-admin-fg focus-visible:outline-2 focus-visible:outline-admin-fg"
+      ><ArrowUpRight class="size-4" aria-hidden="true"
+    /></a>
     <button
       v-if="canEdit"
       type="button"
