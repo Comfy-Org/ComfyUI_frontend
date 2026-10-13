@@ -65,6 +65,15 @@ describe('KeyComboImpl', () => {
     })
   })
 
+  describe('isReservedByTextInput', () => {
+    it.for([
+      { label: 'Ctrl+Y', combo: { key: 'y', ctrl: true } },
+      { label: 'Ctrl+Shift+Z', combo: { key: 'z', ctrl: true, shift: true } }
+    ])('leaves $label to a focused text input', ({ combo }) => {
+      expect(new KeyComboImpl(combo).isReservedByTextInput).toBe(true)
+    })
+  })
+
   describe('isBrowserReserved', () => {
     it.for([
       { key: 't', ctrl: true, label: 'Ctrl + t' },

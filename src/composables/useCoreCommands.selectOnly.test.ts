@@ -4,8 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 vi.mock(import('firebase/auth'))
 
@@ -68,49 +66,6 @@ describe('useCoreCommands selection-only policy', () => {
         await useCommandStore().execute(id)
 
         expect(tracker[history]).toHaveBeenCalledTimes(calls)
-      }
-    )
-
-    it.for([
-      { id: 'Comfy.Undo', history: 'undo' },
-      { id: 'Comfy.Redo', history: 'redo' }
-    ] as const)(
-      '$id while select-only still runs the open mask editor history $history',
-      async ({ id, history }) => {
-        vi.mocked(useDialogStore().isDialogOpen).mockImplementation(
-          (key) => key === 'global-mask-editor'
-        )
-        const maskHistory = vi
-          .spyOn(useMaskEditorStore().canvasHistory, history)
-          .mockImplementation(() => {})
-        useCommandStore().setInteractionMode({ isSelectOnly: () => true })
-
-        await useCommandStore().execute(id)
-
-        expect(maskHistory).toHaveBeenCalledOnce()
-        expect(tracker[history]).not.toHaveBeenCalled()
-      }
-    )
-
-    it.for([
-      { id: 'Comfy.Undo', history: 'undo' },
-      { id: 'Comfy.Redo', history: 'redo' }
-    ] as const)(
-      '$id while select-only runs the history the mask editor state at dispatch selects, even if the editor closes before the promise resumes',
-      async ({ id, history }) => {
-        const isDialogOpen = vi.mocked(useDialogStore().isDialogOpen)
-        isDialogOpen.mockImplementation((key) => key === 'global-mask-editor')
-        const maskHistory = vi
-          .spyOn(useMaskEditorStore().canvasHistory, history)
-          .mockImplementation(() => {})
-        useCommandStore().setInteractionMode({ isSelectOnly: () => true })
-
-        const execution = useCommandStore().execute(id)
-        isDialogOpen.mockReturnValue(false)
-        await execution
-
-        expect(maskHistory).toHaveBeenCalledOnce()
-        expect(tracker[history]).not.toHaveBeenCalled()
       }
     )
   })

@@ -5,7 +5,7 @@
     class="maskEditor-dialog-root flex size-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
-    @keydown.stop
+    @keydown.escape.stop
   >
     <div
       id="maskEditorCanvasContainer"

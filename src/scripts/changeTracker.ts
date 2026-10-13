@@ -22,12 +22,10 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
-import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
 import { useApp } from '@/scripts/appInstance'
-import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -73,13 +71,6 @@ function matchesRestoredTarget(
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
-}
-
-function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
-  if (!(e.ctrlKey || e.metaKey) || e.altKey) return
-  const key = e.key.toUpperCase()
-  if (key === 'Y' && !e.shiftKey) return 'redo'
-  if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
 }
 
 function isAutoQueueOnChange(): boolean {
@@ -567,15 +558,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(useApp().canvas)) {
-    const shortcut = historyShortcut(e)
-    if (!shortcut) return
-    if (!selectOnly) {
-      await (shortcut === 'redo' ? this.redo() : this.undo())
-    }
-    return true
-  }
-
   beforeChange() {
     this.changeCount++
   }
@@ -596,12 +578,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
-        // Do not trigger on repeat events (Holding down a key)
-        // This can happen when user is holding down "Space" to pan the canvas.
         if (e.repeat) return
-
-        // If the mask editor is opened, we don't want to trigger on key events
-        if (clipspace.maskEditorIsOpened?.()) return
 
         const activeEl = document.activeElement
         if (
@@ -610,13 +587,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
             activeEl?.tagName === 'TEXTAREA' ||
             (activeEl instanceof HTMLElement && activeEl.isContentEditable))
         ) {
-          // Text editors own their history. Bail out before the document-wide
-          // modal probes, whose cost otherwise scales with transcript size.
           return
         }
         if (isModalOpen(dialogStore.dialogStack.length)) return
-
-        // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         keyIgnored =
@@ -626,21 +599,14 @@ export class ChangeTracker implements WorkflowChangeTracker {
           e.key === 'Meta'
         if (keyIgnored) return
 
-        const selectOnlyAtKeydown = isSelectOnly(useApp().canvas)
-        requestAnimationFrame(async () => {
+        requestAnimationFrame(() => {
           let bindInputEl: Element | null = null
-          // If we are auto queue in change mode then we do want to trigger on inputs
           if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return
-
-          // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
-
-          // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
           changeTracker.captureCanvasState()
         })
@@ -654,13 +620,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
         captureState()
       }
     })
-
-    // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
       captureState()
     })
-
-    // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
       captureState()
     })
@@ -668,16 +630,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
     api.addEventListener('graphCleared', () => {
       captureState()
     })
-
-    // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
       captureState()
       return v
     }
-
-    // Handle litegraph dialog popup for number/string widgets
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
       title: string,
@@ -691,16 +649,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
-
-    // Handle litegraph context menu for COMBO widgets
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
       captureState()
       return v
     }
-
-    // Handle multiple commands as a single transaction
     document.addEventListener('litegraph:canvas', (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (detail.subType === 'before-change') {
@@ -709,8 +663,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
         getCurrentChangeTracker()?.afterChange()
       }
     })
-
-    // Store node outputs
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
       const workflow =
