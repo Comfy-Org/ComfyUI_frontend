@@ -2,6 +2,8 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
+import type { AccountCredential } from '@comfyorg/account-core/session'
+
 import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
@@ -17,6 +19,7 @@ import {
 import type { ReshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { RESHOOT_LIMITS } from '@/lib/workshop/cinematic-studio/reshoot-limits'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useReshoot } from './useReshoot'
 
@@ -58,6 +61,7 @@ async function readScene(reshoot: ReturnType<typeof useReshoot>) {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.useFakeTimers()
   transport = fakeTransport()
   vi.mocked(reshootTransport).mockReturnValue(transport)
@@ -190,6 +194,7 @@ describe('useReshoot', () => {
       'source',
       '4:3'
     ] as const) {
+      await vi.advanceTimersByTimeAsync(RESHOOT_LIMITS.depth.windowMs)
       reshoot.aspect.value = aspect
       await vi.advanceTimersByTimeAsync(2_500)
     }
@@ -354,6 +359,20 @@ describe('useReshoot', () => {
     if (gate) expect(reshoot.gate.value).toBe(gate)
   })
 
+  it('reads the picked clip once the app becomes available again', async () => {
+    vi.mocked(transport.quote).mockRejectedValueOnce(
+      new ReshootError('app_unavailable')
+    )
+    const reshoot = start()
+    await vi.advanceTimersByTimeAsync(0)
+    await readScene(reshoot)
+    expect(reshoot.depth.value).toBe('none')
+
+    await vi.advanceTimersByTimeAsync(7_500)
+
+    expect(reshoot.depth.value).toBe('ready')
+  })
+
   it('runs again after a take the app could not serve', async () => {
     const reshoot = start()
     await readScene(reshoot)
@@ -369,6 +388,36 @@ describe('useReshoot', () => {
 
     expect(transport.submit).toHaveBeenCalledTimes(submits + 1)
     expect(reshoot.current.value?.status).toBe('done')
+  })
+
+  it('counts an admitted take for the user who submitted it, after sign-out', async () => {
+    const credential = ref<AccountCredential | undefined>(RESHOOT_CREDENTIAL)
+    useWorkshopSession().session = computed(() => credential.value)
+    const reshoot = start()
+    await readScene(reshoot)
+    const submitNow = vi.mocked(transport.submit).getMockImplementation()
+    if (!submitNow) throw new Error('the fake transport cannot submit')
+    const admission = Promise.withResolvers<void>()
+    vi.mocked(transport.submit).mockImplementationOnce(async (...args) => {
+      await admission.promise
+      return submitNow(...args)
+    })
+    const { runs } = RESHOOT_LIMITS.generate
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+    credential.value = undefined
+    admission.resolve()
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(reshoot.limitNote.value).toBe(
+      `${runs} of ${runs} takes left this hour`
+    )
+    credential.value = RESHOOT_CREDENTIAL
+    await nextTick()
+    expect(reshoot.limitNote.value).toBe(
+      `${runs - 1} of ${runs} takes left this hour`
+    )
   })
 })
 

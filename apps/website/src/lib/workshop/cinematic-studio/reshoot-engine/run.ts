@@ -87,14 +87,17 @@ async function pollUntilSucceeded(
 /**
  * Submits, then polls until the job succeeds. Outputs are only served once
  * it has, so nothing is downloaded before this returns. Stopping cancels it.
+ * `onAdmitted` runs once the server has accepted the job.
  */
 export async function runJob(
   transport: ReshootTransport,
   workflow: object,
   onPhase: (phase: ReshootRunPhase) => void,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onAdmitted?: () => void
 ): Promise<ReshootJob> {
   const job = await submitWhenReady(transport, workflow, onPhase, signal)
+  onAdmitted?.()
   try {
     return await pollUntilSucceeded(transport, job, onPhase, signal)
   } catch (error) {

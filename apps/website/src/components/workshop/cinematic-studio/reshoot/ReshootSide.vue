@@ -16,10 +16,9 @@ import { clipFits } from '@/lib/workshop/cinematic-studio/reshoot'
 import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import type { Locale } from '@/i18n/translations'
 import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
-import ReshootAimRig from './ReshootAimRig.vue'
+import ReshootAimArea from './ReshootAimArea.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
-import ReshootMoveControls from './ReshootMoveControls.vue'
 
 const {
   clip,
@@ -31,9 +30,11 @@ const {
   frames,
   clipError,
   error,
+  blocked,
   gate,
   canGenerate,
   priceNote,
+  limitNote,
   workspaceName,
   locale = 'en'
 } = defineProps<{
@@ -49,9 +50,13 @@ const {
   clipError?: string
   /** The last failed depth read, said above its Try again button. */
   error?: string
+  /** What stops the depth read from starting, when nothing is running. */
+  blocked?: string
   gate: StudioGate
   canGenerate: boolean
   priceNote?: string
+  /** Takes left this hour, or when the next one frees up. */
+  limitNote?: string
   workspaceName?: string
   locale?: Locale
 }>()
@@ -85,7 +90,6 @@ const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
 const analyzing = computed(() => depth === 'analyzing')
-const failed = computed(() => !!error && !ready.value && !analyzing.value)
 const framesText = computed(() =>
   frames === undefined
     ? ''
@@ -94,6 +98,12 @@ const framesText = computed(() =>
         seconds: (frames / 24).toFixed(1)
       })
 )
+
+const clipStatus = computed(() => {
+  if (clipError) return clipError
+  if (ready.value) return `${t('reshoot.clip.ready')} · ${framesText.value}`
+  return analyzing.value ? t('reshoot.aim.reading') : framesText.value
+})
 
 // A replacement is checked before it takes the current clip's place, as on
 // the first pick: one outside 5 to 15 seconds is turned away and the clip
@@ -141,14 +151,7 @@ async function choose(event: Event) {
             {{ isExample ? t('reshoot.pick.exampleTitle') : clipName }}
           </span>
           <span class="truncate text-[11px] text-primary-warm-gray">
-            {{
-              clipError ??
-              (ready
-                ? `${t('reshoot.clip.ready')} · ${framesText}`
-                : analyzing
-                  ? t('reshoot.aim.reading')
-                  : framesText)
-            }}
+            {{ clipStatus }}
           </span>
         </span>
         <label
@@ -171,27 +174,20 @@ async function choose(event: Event) {
       >
         {{ rejected }}
       </p>
-      <ReshootAimRig
+      <ReshootAimArea
         v-model:keep-aim="keepAim"
+        v-model:frame="frame"
         :clip
         :camera
-        :disabled="!ready"
+        :keys
+        :depth
+        :reason="depth === 'failed' ? error : blocked"
         :locale
         @aim="emit('aim', $event)"
+        @remove-key="emit('removeKey', $event)"
+        @analyze="emit('analyze')"
       />
       <div class="flex flex-col gap-2">
-        <ReshootDisclosure
-          :label="t('reshoot.section.move')"
-          :disabled="!ready"
-        >
-          <ReshootMoveControls
-            v-model:frame="frame"
-            :keys
-            :disabled="!ready"
-            :locale
-            @remove="emit('removeKey', $event)"
-          />
-        </ReshootDisclosure>
         <ReshootDisclosure :label="t('reshoot.advanced.label')">
           <div class="flex flex-col gap-3">
             <div class="flex flex-col gap-1.5">
@@ -257,33 +253,18 @@ async function choose(event: Event) {
     <footer
       class="flex flex-col gap-3 rounded-b-2xl border-t border-transparency-white-t8 p-4"
     >
-      <!-- The scene is read on its own when a clip is picked; a failed
-           read waits here to be tried again. -->
-      <div
-        v-if="failed"
-        role="alert"
-        class="flex items-center gap-3 rounded-xl bg-transparency-white-t8 py-2 pr-2 pl-3"
-      >
-        <p
-          class="min-w-0 flex-1 text-[11px] wrap-break-word text-primary-warm-white"
-        >
-          {{ t('reshoot.failed') }}: {{ error }}
-        </p>
-        <Button
-          size="sm"
-          variant="outline"
-          class="shrink-0 rounded-full"
-          data-testid="reshoot-analyze"
-          @click="emit('analyze')"
-        >
-          {{ t('reshoot.tryAgain') }}
-        </Button>
-      </div>
       <p
-        v-else-if="ready || analyzing"
+        v-if="ready || analyzing"
         class="text-center text-[11px] text-primary-warm-gray"
       >
         {{ t(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait') }}
+      </p>
+      <p
+        v-if="ready && limitNote"
+        class="text-center text-xs text-primary-comfy-canvas"
+        data-testid="reshoot-limit"
+      >
+        {{ limitNote }}
       </p>
       <p
         v-if="priceNote"

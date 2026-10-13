@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { h, ref } from 'vue'
 
 import {
@@ -106,5 +106,43 @@ describe('ReshootSide', () => {
         name: `${rc('reshoot.aspect.label')}: ${chosen}`
       })
     ).toBeInTheDocument()
+  })
+
+  function renderPending(extra: Record<string, unknown>) {
+    const analyze = vi.fn()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          ...extra,
+          size: RESHOOT_SIZES[0],
+          onAnalyze: analyze
+        })
+    })
+    return analyze
+  }
+
+  it('says what failed in a depth read and offers to try again', async () => {
+    const analyze = renderPending({
+      depth: 'failed',
+      error: 'The deployment is not ready.'
+    })
+    const step = screen.getByTestId('reshoot-depth-step')
+
+    expect(step).toHaveTextContent(rc('reshoot.pending.depthFailed'))
+    expect(step).toHaveTextContent('The deployment is not ready.')
+    expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute('inert')
+    await userEvent.click(screen.getByTestId('reshoot-analyze'))
+    expect(analyze).toHaveBeenCalledOnce()
+  })
+
+  it('says why a depth read has not started, without a retry', () => {
+    renderPending({ depth: 'none', blocked: rc('reshoot.signIn') })
+    const step = screen.getByTestId('reshoot-depth-step')
+
+    expect(step).toHaveTextContent(rc('reshoot.pending.depthWaiting'))
+    expect(step).toHaveTextContent(rc('reshoot.signIn'))
+    expect(screen.getByTestId('reshoot-aim-controls')).toHaveAttribute('inert')
+    expect(screen.queryByTestId('reshoot-analyze')).toBeNull()
   })
 })
