@@ -158,13 +158,18 @@ export const SourceTile: Story = {
     components: { EditorSourceTile },
     template: `
       <div class="flex w-72 flex-col gap-4">
-        <EditorSourceTile kind="video" add-label="Add the video to edit" change-label="Change" />
+        <EditorSourceTile
+          kind="video"
+          add-label="Upload video"
+          hint="MP4 or MOV"
+          remove-label="Remove video"
+        />
         <EditorSourceTile
           kind="image"
           src="/images/apps/move-anything/example.jpg"
-          name="example.jpg"
-          add-label="Add a photo"
-          change-label="Change"
+          caption="example.jpg"
+          add-label="Upload photo"
+          remove-label="Remove photo"
         />
       </div>
     `

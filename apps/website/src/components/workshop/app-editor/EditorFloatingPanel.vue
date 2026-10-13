@@ -17,7 +17,7 @@ const {
 }>()
 
 const wide = useMediaQuery('(min-width: 768px)')
-const expanded = ref(false)
+const expanded = ref(true)
 let swipeFrom: number | undefined
 let swiped = false
 
@@ -47,6 +47,7 @@ function toggle() {
     :class="
       cn(
         'pointer-events-auto absolute inset-x-0 bottom-0 z-20 flex max-h-[80%] flex-col rounded-t-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 shadow-2xl shadow-black/50 backdrop-blur-xl transition-opacity md:inset-x-auto md:top-15 md:bottom-auto md:left-3 md:max-h-[calc(100%-4.5rem)] md:w-editor-panel md:rounded-2xl',
+        expanded && 'max-md:top-14 max-md:max-h-none',
         dimmed && 'pointer-events-none opacity-40 max-md:hidden'
       )
     "

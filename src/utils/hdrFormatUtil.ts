@@ -35,6 +35,13 @@ export function getHdrPreviewUrl(url: string | undefined): string | undefined {
   return previewId ? hdrPreviewAssetUrl(previewId) : undefined
 }
 
+/** The file an image shows, rather than the stored preview it may display. */
+export function getImageFileUrl(img: HTMLImageElement): URL {
+  const url = new URL(img.dataset.fileUrl ?? img.src, img.baseURI)
+  url.searchParams.delete('preview')
+  return url
+}
+
 export function hdrPreviewAssetUrl(previewId: string): string {
   return api.apiURL(`/assets/${previewId}/content?disposition=inline`)
 }
