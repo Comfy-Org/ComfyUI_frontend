@@ -865,6 +865,14 @@ const policyMessage = computed(() =>
   refusesRealFaces(model.slug) ? t('workshop.error.policyRealFaces') : undefined
 )
 
+function onLeaveDialogOpen(open: boolean) {
+  if (!open) leavingTo.value = undefined
+}
+
+function onReplaceDialogOpen(open: boolean) {
+  if (!open) replacing.value = undefined
+}
+
 function retry() {
   if (gate.value === 'ready') void run()
   else reset()
@@ -1035,7 +1043,7 @@ function retry() {
       :action="leaveAction"
       :assets-href="assetsHref"
       :locale
-      @update:open="(value: boolean) => !value && (leavingTo = undefined)"
+      @update:open="onLeaveDialogOpen"
       @leave="leaveForLink"
       @keep="keepAndLeave"
     />
@@ -1043,7 +1051,7 @@ function retry() {
     <ExampleReplaceDialog
       :open="replacing !== undefined"
       :locale
-      @update:open="(value: boolean) => !value && (replacing = undefined)"
+      @update:open="onReplaceDialogOpen"
       @replace="replaceWithExample"
     />
   </div>
