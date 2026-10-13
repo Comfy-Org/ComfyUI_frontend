@@ -39,8 +39,25 @@ async function flush() {
   await vi.advanceTimersByTimeAsync(0)
 }
 
+function fakeSocketOpen() {
+  const listeners = new Set<() => void>()
+  return {
+    onSocketOpen(listener: () => void) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    open() {
+      listeners.forEach((listener) => listener())
+    },
+    get listenerCount() {
+      return listeners.size
+    }
+  }
+}
+
 function setup() {
   const events = fakeEvents()
+  const socket = fakeSocketOpen()
   const order: string[] = []
   const deps = {
     refreshNodeDefinitions: vi.fn(async () => {
@@ -51,10 +68,11 @@ function setup() {
       order.push('reload')
       return true
     }),
+    onSocketOpen: socket.onSocketOpen,
     onError: vi.fn()
   }
   const stop = refreshNodeCatalogOnRestart(events, deps)
-  return { events, deps, order, stop }
+  return { events, socket, deps, order, stop }
 }
 
 beforeEach(() => {
@@ -117,19 +135,73 @@ describe('refreshNodeCatalogOnRestart', () => {
     { step: 'refresh', failing: 'refreshNodeDefinitions' },
     { step: 'reload', failing: 'reloadCurrentWorkflow' }
   ])(
-    'tries again when a restart whose $step failed is delivered again',
+    'retries a failed $step after a backoff without the restart being delivered again',
     async ({ failing }) => {
       const { events, deps } = setup()
       deps[failing].mockResolvedValueOnce(false)
       events.emit(toolCall('restart_comfyui', 'success', 'a'))
-      await flush()
+      await vi.advanceTimersByTimeAsync(999)
+      expect(deps[failing]).toHaveBeenCalledOnce()
 
-      events.emit(toolCall('restart_comfyui', 'success', 'a'))
-      await flush()
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(deps[failing]).toHaveBeenCalledTimes(2)
     }
   )
+
+  it('retries a failed refresh at once when the agent socket opens again', async () => {
+    const { events, socket, order, deps } = setup()
+    deps.refreshNodeDefinitions.mockImplementationOnce(async () => {
+      order.push('refresh')
+      return false
+    })
+    events.emit(toolCall('restart_comfyui', 'success'))
+    await flush()
+
+    socket.open()
+    await flush()
+
+    expect(order).toEqual(['refresh', 'refresh', 'reload'])
+  })
+
+  it('does not refresh on a socket open when the last refresh succeeded', async () => {
+    const { events, socket, deps } = setup()
+    events.emit(toolCall('restart_comfyui', 'success'))
+    await flush()
+
+    socket.open()
+    await flush()
+
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledOnce()
+  })
+
+  it('stops the backoff after its attempt budget and still retries on a socket open', async () => {
+    const { events, socket, deps } = setup()
+    deps.refreshNodeDefinitions.mockResolvedValue(false)
+    events.emit(toolCall('restart_comfyui', 'success'))
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(6)
+
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(6)
+
+    socket.open()
+    await flush()
+
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(7)
+  })
+
+  it('gives a later restart a fresh backoff budget', async () => {
+    const { events, deps } = setup()
+    deps.refreshNodeDefinitions.mockResolvedValue(false)
+    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await vi.advanceTimersByTimeAsync(31_000)
+
+    events.emit(toolCall('restart_comfyui', 'success', 'b'))
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(8)
+  })
 
   it.for<{
     step: string
@@ -148,10 +220,9 @@ describe('refreshNodeCatalogOnRestart', () => {
       expect(deps.onError).toHaveBeenCalledExactlyOnceWith(failure)
 
       events.emit(toolCall('restart_comfyui', 'success', 'b'))
-      events.emit(toolCall('restart_comfyui', 'success', 'a'))
       await flush()
 
-      expect(deps[failing]).toHaveBeenCalledTimes(3)
+      expect(deps[failing]).toHaveBeenCalledTimes(2)
     }
   )
 
@@ -163,9 +234,17 @@ describe('refreshNodeCatalogOnRestart', () => {
     expect(deps.reloadCurrentWorkflow).not.toHaveBeenCalled()
   })
 
-  it('stops listening when unsubscribed', () => {
-    const { events, stop } = setup()
+  it('stops listening and drops a pending retry when unsubscribed', async () => {
+    const { events, socket, deps, stop } = setup()
+    deps.refreshNodeDefinitions.mockResolvedValueOnce(false)
+    events.emit(toolCall('restart_comfyui', 'success'))
+    await flush()
+
     stop()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledOnce()
     expect(events.listenerCount).toBe(0)
+    expect(socket.listenerCount).toBe(0)
   })
 })

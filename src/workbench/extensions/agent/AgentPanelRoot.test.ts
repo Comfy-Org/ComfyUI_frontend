@@ -5482,7 +5482,7 @@ describe('AgentPanelRoot node catalog refresh', () => {
     )
   })
 
-  it('refreshes again when a restart whose refresh failed is delivered again', async () => {
+  it('retries a failed refresh when the agent socket opens again, without the restart being delivered again', async () => {
     const failure = new Error('object_info unavailable')
     const refreshNodeDefinitions = vi
       .fn<() => Promise<void>>()
@@ -5506,12 +5506,13 @@ describe('AgentPanelRoot node catalog refresh', () => {
     )
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
 
-    ws.emit('agent_tool_call', restartSucceeded)
+    agentSocket.open()
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refreshNodeDefinitions).toHaveBeenCalledTimes(2)
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
   })
+
   it('reports a refresh command that cannot run and refreshes on the next restart', async () => {
     workflowStore.activeWorkflow = addTab('workflows/current.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
