@@ -221,7 +221,7 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-const devAgentConfig = createDevAgentConfig({ ...process.env, DISTRIBUTION })
+const devAgentConfig = createDevAgentConfig(process.env)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}

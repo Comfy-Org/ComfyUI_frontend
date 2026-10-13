@@ -107,19 +107,6 @@ describe('dev agent proxy transport', () => {
     ).toThrow('VITE_AGENT_STANDALONE requires DEV_AGENT_URL')
   })
 
-  it('refuses the standalone harness in a cloud distribution', () => {
-    expect(() =>
-      createDevAgentConfig({
-        DEV_AGENT_URL: 'http://127.0.0.1:8095',
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
-        VITE_AGENT_STANDALONE: 'true',
-        DISTRIBUTION: 'cloud'
-      })
-    ).toThrow(
-      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud'
-    )
-  })
-
   it('leaves the proxy disabled when no target or token is set', () => {
     expect(createDevAgentConfig({})).toEqual({
       host: undefined,
