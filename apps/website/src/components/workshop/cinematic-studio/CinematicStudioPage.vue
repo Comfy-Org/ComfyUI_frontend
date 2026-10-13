@@ -111,8 +111,17 @@ const appEditorShown = computed(
     layout.value !== 'hub' &&
     editorApp.value !== undefined
 )
-watch(appEditorShown, (shown) =>
-  document.documentElement.toggleAttribute('data-workshop-editor', shown)
+// Cleared before a switch renders and set after it, so a page that marks
+// itself full screen while mounted is never undone by the switch.
+watch(appEditorShown, (shown) => {
+  if (!shown) document.documentElement.removeAttribute('data-workshop-editor')
+})
+watch(
+  appEditorShown,
+  (shown) => {
+    if (shown) document.documentElement.setAttribute('data-workshop-editor', '')
+  },
+  { flush: 'post' }
 )
 onBeforeUnmount(() =>
   document.documentElement.removeAttribute('data-workshop-editor')
