@@ -22,8 +22,6 @@ const clipBase = 'https://media.comfy.org/website/nvidia-rtx'
 const beforeAfter: ModelLaunchBeforeAfter = {
   headingKey: 'nvidiaRtx.beforeAfter.heading',
   bodyKey: 'nvidiaRtx.beforeAfter.body',
-  // TODO: set beforePosterSrc/afterPosterSrc once the first-frame posters
-  // are on media.comfy.org.
   tabs: [
     {
       id: 'super-resolution',
@@ -33,7 +31,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '使用超分辨率将低分辨率素材放大最高 4 倍。'
       },
       beforeSrc: `${clipBase}/super-resolution-before.mp4`,
-      afterSrc: `${clipBase}/super-resolution-after.mp4`
+      afterSrc: `${clipBase}/super-resolution-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-super-resolution-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-super-resolution-after.jpg`
     },
     {
       id: 'frame-generation',
@@ -43,7 +43,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '使用帧生成将帧率提升最高 16 倍，获得流畅的慢动作。'
       },
       beforeSrc: `${clipBase}/frame-generation-before.mp4`,
-      afterSrc: `${clipBase}/frame-generation-after.mp4`
+      afterSrc: `${clipBase}/frame-generation-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-frame-generation-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-frame-generation-after.jpg`
     },
     {
       id: 'sdr-to-hdr',
@@ -53,7 +55,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
       },
       beforeSrc: `${clipBase}/sdr-to-hdr-before.mp4`,
-      afterSrc: `${clipBase}/sdr-to-hdr-after.mp4`
+      afterSrc: `${clipBase}/sdr-to-hdr-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-sdr-to-hdr-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-sdr-to-hdr-after.jpg`
     }
   ]
 }
