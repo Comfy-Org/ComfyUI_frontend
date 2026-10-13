@@ -179,6 +179,7 @@ export function newFromTemplate(
     slug: '',
     translation: { name: '', summary: '' },
     enabled: true,
+    visibility: 'PUBLIC',
     visibleFrom: '',
     deleted: false
   }

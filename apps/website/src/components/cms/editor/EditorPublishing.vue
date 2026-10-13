@@ -33,17 +33,22 @@ const { t } = translationsFor(locale)
 
 <template>
   <aside class="grid gap-5">
-    <EditorSection :title="t('cmsAdmin.editor.visibility')">
-      <label class="flex items-center justify-between gap-3 text-sm">
-        {{ t('cmsAdmin.editor.shown') }}
-        <Switch v-model="state.enabled" />
-      </label>
-      <EditorField :label="t('cmsAdmin.editor.audience')">
-        <select v-model="state.visibility" :class="fieldClass">
-          <option value="PUBLIC">{{ t('cmsAdmin.editor.everyone') }}</option>
-          <option value="STAFF">{{ t('cmsAdmin.editor.staff') }}</option>
-        </select>
-      </EditorField>
+    <EditorSection
+      :title="t('cmsAdmin.editor.visibility')"
+      :description="isNew ? t('cmsAdmin.editor.newReview') : undefined"
+    >
+      <template v-if="!isNew">
+        <label class="flex items-center justify-between gap-3 text-sm">
+          {{ t('cmsAdmin.editor.shown') }}
+          <Switch v-model="state.enabled" />
+        </label>
+        <EditorField :label="t('cmsAdmin.editor.audience')">
+          <select v-model="state.visibility" :class="fieldClass">
+            <option value="PUBLIC">{{ t('cmsAdmin.editor.everyone') }}</option>
+            <option value="STAFF">{{ t('cmsAdmin.editor.staff') }}</option>
+          </select>
+        </EditorField>
+      </template>
       <EditorField
         :label="t('cmsAdmin.editor.appearsFrom')"
         :hint="t('cmsAdmin.editor.appearsHelp')"

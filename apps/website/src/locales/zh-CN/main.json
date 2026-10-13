@@ -314,7 +314,9 @@
         "untitled": "未命名",
         "noCover": "还没有封面",
         "open": "查看卡片"
-      }
+      },
+      "newReview": "新页面会先进入草稿，由团队审核。审核通过并发布后才会在 Hub 上显示。",
+      "previewSaved": "预览页面"
     },
     "readiness": {
       "title": "发布前检查",

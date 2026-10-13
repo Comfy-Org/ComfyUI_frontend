@@ -115,6 +115,14 @@ describe('content editor', () => {
     })
   })
 
+  it('starts a new page shown to everyone, whatever the template was', () => {
+    const state = newFromTemplate(
+      { ...model, enabled: false, visibility: 'STAFF' },
+      'new-uid'
+    )
+    expect(state).toMatchObject({ enabled: true, visibility: 'PUBLIC' })
+  })
+
   it('names what still needs filling in', () => {
     const state = newFromTemplate(model, 'new-uid')
     state.cover.url = ' '

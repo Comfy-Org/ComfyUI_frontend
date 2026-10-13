@@ -314,7 +314,9 @@
         "untitled": "Untitled",
         "noCover": "No cover yet",
         "open": "View card"
-      }
+      },
+      "newReview": "New pages go to the Draft for staff review. They appear on the Hub once approved and published.",
+      "previewSaved": "Preview page"
     },
     "readiness": {
       "title": "Before publishing",

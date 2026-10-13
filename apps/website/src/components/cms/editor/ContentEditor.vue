@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import EditorCover from '@/components/cms/editor/EditorCover.vue'
 import EditorDetails from '@/components/cms/editor/EditorDetails.vue'
 import EditorExamples from '@/components/cms/editor/EditorExamples.vue'
 import EditorCardDialog from '@/components/cms/editor/EditorCardDialog.vue'
 import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
+import EditorNotices from '@/components/cms/editor/EditorNotices.vue'
 import EditorParameters from '@/components/cms/editor/EditorParameters.vue'
 import EditorPublishing from '@/components/cms/editor/EditorPublishing.vue'
 import EditorVersions from '@/components/cms/editor/EditorVersions.vue'
@@ -58,8 +59,24 @@ const saving = ref(false)
 const showCard = ref(false)
 const error = ref<SaveError>()
 const showProblems = ref(false)
+// A field shows its problem once it has been typed in, and every field does after a save attempt.
+const touched = ref(new Set<string>())
+watch(
+  () => [state.value.name, state.value.slug, state.value.cover.url] as const,
+  ([name, slug, cover], [oldName, oldSlug, oldCover]) => {
+    if (name !== oldName) touched.value.add('name')
+    if (slug !== oldSlug) touched.value.add('slug')
+    if (cover !== oldCover) touched.value.add('cover')
+  }
+)
+// A new page's address follows its name, so an empty name is the one problem to show.
+const waiting = (field: string) =>
+  field === 'slug' && state.value.isNew && !state.value.name.trim()
 const problems = computed(() =>
-  showProblems.value ? editorProblems(state.value) : []
+  editorProblems(state.value).filter(
+    (field) =>
+      showProblems.value || (touched.value.has(field) && !waiting(field))
+  )
 )
 const kindLabel = t(`cmsAdmin.kind.${initial.kind}`)
 const title = computed(() =>
@@ -95,6 +112,7 @@ async function save(deleted?: boolean) {
 function discard() {
   state.value = structuredClone(initial)
   showProblems.value = false
+  touched.value = new Set()
 }
 </script>
 
@@ -116,29 +134,15 @@ function discard() {
     />
     <EditorCardDialog v-model:open="showCard" :state :locale />
 
-    <p
-      v-if="notice"
-      role="status"
-      class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-admin-success/25 bg-admin-success/10 px-3 py-2 text-xs"
-    >
-      <span class="mr-auto">{{ t(`cmsAdmin.editor.notice.${notice}`) }}</span>
-      <a href="/admin/" class="font-medium underline-offset-2 hover:underline">
-        {{ t('cmsAdmin.editor.goToDraft') }}
-      </a>
-    </p>
-    <p
-      v-if="!canEdit"
-      class="rounded-lg border border-admin-info/25 bg-admin-info/10 px-3 py-2 text-xs"
-    >
-      {{ t('cmsAdmin.editor.readOnly') }}
-    </p>
-    <p
-      v-if="error"
-      role="alert"
-      class="rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
-    >
-      {{ t(`cmsAdmin.editor.error.${error}`) }}
-    </p>
+    <EditorNotices
+      :notice
+      :preview-href="
+        initial.deleted ? undefined : `${initial.slug}/?preview=DRAFT`
+      "
+      :read-only="!canEdit"
+      :error
+      :locale
+    />
 
     <div
       class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]"
