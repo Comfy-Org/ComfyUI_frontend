@@ -396,6 +396,7 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
+      await page.setViewportSize({ width: 1920, height: 1280 })
       const { panel, send, answers } = await startTurn(page, 'Tidy up.', 'auto')
       const nodes = panel.getByRole('list', {
         name: t('agent.deleteApproval.nodes')
