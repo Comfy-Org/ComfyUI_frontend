@@ -33,7 +33,7 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['list', 'steps', 'faq', 'pricing', 'highlight'],
+  sectionOrder: ['steps', 'faq', 'pricing', 'highlight'],
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
@@ -71,87 +71,6 @@ export const fishAudioPage: ModelLaunchPage = {
           en: 'Add your voices, write the dialogue, and run it',
           'zh-CN': '添加声音，写下对白，运行即可'
         }
-      }
-    ]
-  },
-  list: {
-    headingKey: 'fishAudio.nodes.heading',
-    ctaKey: 'fishAudio.nodes.cta',
-    items: [
-      {
-        id: 'text-to-speech',
-        title: {
-          en: 'Fish Audio Text to Speech',
-          'zh-CN': 'Fish Audio Text to Speech'
-        },
-        description: {
-          en: 'Write the script, mark the delivery with emotion cues in the text, and run up to five voices in one pass on S2.1 Pro.',
-          'zh-CN':
-            '写下台词，在文本中用情绪提示标出表演方式，并在 S2.1 Pro 上一次运行最多五个声音。'
-        },
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ]
-      },
-      {
-        id: 'instant-voice-clone',
-        title: {
-          en: 'Fish Audio Instant Voice Clone',
-          'zh-CN': 'Fish Audio Instant Voice Clone'
-        },
-        description: {
-          en: 'Make a private voice from 1 to 20 recordings, ideally 10 to 30 seconds each, and send it straight into Text to Speech with no training wait.',
-          'zh-CN':
-            '用 1 到 20 段录音生成一个私有声音，每段以 10 到 30 秒为佳，然后直接接入 Text to Speech，无需等待训练。'
-        },
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts',
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ]
-      },
-      {
-        id: 'speech-to-text',
-        title: {
-          en: 'Fish Audio Speech to Text',
-          'zh-CN': 'Fish Audio Speech to Text'
-        },
-        description: {
-          en: 'Transcribe audio in 80+ languages with automatic language detection and get back the text, a language code, and optional per-word timestamps as JSON.',
-          'zh-CN':
-            '转写 80 多种语言的音频并自动检测语言，以 JSON 返回文本、语言代码和可选的逐词时间戳。'
-        },
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text',
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ]
-      },
-      {
-        id: 'voice-selector',
-        title: {
-          en: 'Fish Audio Voice Selector',
-          'zh-CN': 'Fish Audio Voice Selector'
-        },
-        description: {
-          en: 'Pick a curated voice from the Fish Audio library for your script.',
-          'zh-CN': '从 Fish Audio 声音库中为你的台词挑选精选声音。'
-        },
-        href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
-        audioSources: [
-          {
-            src: 'https://media.comfy.org/website/workshop/fishaudio/text-to-speech/sigh-yes-voice-generated-excited.mp3',
-            type: 'audio/mpeg'
-          }
-        ]
       }
     ]
   },
