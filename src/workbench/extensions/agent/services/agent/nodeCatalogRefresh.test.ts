@@ -50,7 +50,8 @@ function setup() {
     reloadCurrentWorkflow: vi.fn(async () => {
       order.push('reload')
       return true
-    })
+    }),
+    onError: vi.fn()
   }
   const stop = refreshNodeCatalogOnRestart(events, deps)
   return { events, deps, order, stop }
@@ -127,6 +128,30 @@ describe('refreshNodeCatalogOnRestart', () => {
       await flush()
 
       expect(deps[failing]).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it.for<{
+    step: string
+    failing: 'refreshNodeDefinitions' | 'reloadCurrentWorkflow'
+  }>([
+    { step: 'refresh', failing: 'refreshNodeDefinitions' },
+    { step: 'reload', failing: 'reloadCurrentWorkflow' }
+  ])(
+    'reports a $step that throws and keeps refreshing later restarts',
+    async ({ failing }) => {
+      const { events, deps } = setup()
+      const failure = new Error('command unavailable')
+      deps[failing].mockRejectedValueOnce(failure)
+      events.emit(toolCall('restart_comfyui', 'success', 'a'))
+      await flush()
+      expect(deps.onError).toHaveBeenCalledExactlyOnceWith(failure)
+
+      events.emit(toolCall('restart_comfyui', 'success', 'b'))
+      events.emit(toolCall('restart_comfyui', 'success', 'a'))
+      await flush()
+
+      expect(deps[failing]).toHaveBeenCalledTimes(3)
     }
   )
 
