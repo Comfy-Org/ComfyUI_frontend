@@ -23,7 +23,9 @@ const emit = defineEmits<{ example: [id: string] }>()
 </script>
 
 <template>
-  <section class="my-auto flex w-full max-w-4xl flex-col gap-4 self-center">
+  <section
+    class="my-auto flex w-full max-w-4xl flex-col gap-5 self-center rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:p-8"
+  >
     <div class="flex flex-col gap-1">
       <h2 class="text-base font-medium text-primary-warm-white">
         {{ title }}
