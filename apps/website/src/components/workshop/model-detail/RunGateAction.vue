@@ -62,7 +62,10 @@ function runOrCancel() {
     data-gate="signedOut"
     @click="leaveForSignIn($event, signInHref)"
   >
-    {{ t('workshop.run.signIn') }}
+    <template #prepend>
+      <Play class="size-5 fill-current" aria-hidden="true" />
+    </template>
+    {{ t('workshop.run.run') }}
   </Button>
   <!-- The MVP rail (DES-1015): buying happens on platform, in a new
      tab, so this page and its inputs stay alive and the return is a

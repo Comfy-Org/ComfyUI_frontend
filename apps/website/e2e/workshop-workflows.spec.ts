@@ -507,7 +507,9 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
   await page.goto('/hub/workflows/extend-image-borders/')
 
   const run = page.getByTestId('workflow-run-footer')
-  await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
+  await expect(
+    run.getByRole('link', { name: 'Run', exact: true })
+  ).toBeVisible()
   await page
     .getByRole('heading', { name: 'Input', exact: true })
     .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))
@@ -793,11 +795,7 @@ test('keeps each workflow path on one line and offers more like it', async ({
   await page.goto('/hub/workflows/remove-background/')
 
   const paths = page.getByTestId('workflow-paths').getByRole('link')
-  await expect(paths).toHaveText([
-    /Try in Comfy Cloud/,
-    'Download workflow',
-    'API'
-  ])
+  await expect(paths).toHaveText(['Download workflow', /Try in Cloud/, 'API'])
   for (const path of await paths.all()) {
     const box = await path.boundingBox()
     expect(box?.height).toBeLessThan(50)

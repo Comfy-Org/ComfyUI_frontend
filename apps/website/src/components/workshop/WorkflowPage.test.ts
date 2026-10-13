@@ -68,7 +68,7 @@ describe('WorkflowPage header', () => {
     )
   })
 
-  it('leads with Comfy Cloud, then the download and the API, with no Run here up top', () => {
+  it('leads with the download, then Try in Cloud and the API, with no Run here up top', () => {
     mount()
 
     const paths = screen.getByRole('navigation', {
@@ -79,16 +79,16 @@ describe('WorkflowPage header', () => {
         .getAllByRole('link')
         .map((link) => [link.textContent.trim(), link.getAttribute('href')])
     ).toEqual([
+      ['Download workflow', template.downloadUrl],
       [
-        'Try in Comfy Cloud (opens in a new tab)',
+        'Try in Cloud (opens in a new tab)',
         expect.stringContaining(`?template=${template.id}`)
       ],
-      ['Download workflow', template.downloadUrl],
       ['API', '#api']
     ])
     expect(
-      within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
-    ).toHaveAttribute('data-variant', 'outline')
+      within(paths).getByRole('link', { name: /Try in Cloud/ })
+    ).toHaveAttribute('data-variant', 'ghost')
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
     ).toHaveAttribute('data-variant', 'outline')
@@ -97,7 +97,7 @@ describe('WorkflowPage header', () => {
       within(paths).getByRole('link', { name: 'Download workflow' })
     ).toHaveAttribute('download')
     expect(
-      within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
+      within(paths).getByRole('link', { name: /Try in Cloud/ })
     ).toHaveAttribute('target', '_blank')
   })
 
@@ -123,13 +123,10 @@ describe('WorkflowPage header', () => {
         within(paths)
           .getAllByRole('link')
           .map((link) => link.textContent.trim())
-      ).toEqual([
-        'Try in Comfy Cloud (opens in a new tab)',
-        'Download workflow'
-      ])
+      ).toEqual(['Download workflow', 'Try in Cloud (opens in a new tab)'])
       expect(
-        within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
-      ).toHaveAttribute('data-variant', 'outline')
+        within(paths).getByRole('link', { name: /Try in Cloud/ })
+      ).toHaveAttribute('data-variant', 'ghost')
       expect(screen.queryByTestId('workflow-playground')).toBeNull()
       expect(screen.getByTestId('workflow-inside')).toBeTruthy()
       expect(screen.queryByTestId('workflow-actions')).toBeNull()
@@ -163,7 +160,7 @@ describe('WorkflowPage header', () => {
 
   it.for([
     { name: 'Download workflow', event: 'workflow_download_clicked' },
-    { name: /Try in Comfy Cloud/, event: 'try_in_cloud_clicked' }
+    { name: /Try in Cloud/, event: 'try_in_cloud_clicked' }
   ])(
     'reports $event from the hero once access is enabled',
     async ({ name, event }) => {
@@ -195,7 +192,7 @@ describe('WorkflowPage header', () => {
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
     mount()
     const visitor = userEvent.setup()
-    for (const name of ['Download workflow', /Try in Comfy Cloud/]) {
+    for (const name of ['Download workflow', /Try in Cloud/]) {
       const link = screen.getByRole('link', { name })
       link.addEventListener('click', (click) => click.preventDefault(), {
         once: true

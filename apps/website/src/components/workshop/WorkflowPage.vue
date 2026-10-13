@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Code, Download } from '@lucide/vue'
+import { ArrowUpRight, Code, Download } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -91,25 +91,6 @@ function captureDownload() {
         data-testid="workflow-paths"
       >
         <Button
-          v-if="cloudHref"
-          as="a"
-          :href="cloudHref"
-          target="_blank"
-          rel="noopener"
-          variant="outline"
-          class="px-5"
-          data-testid="workflow-path-cloud"
-          @click="captureTryInCloud"
-        >
-          <template #prepend>
-            <Cloud class="size-4" aria-hidden="true" />
-          </template>
-          {{ t('workshop.workflow.runInCloud') }}
-          <span class="sr-only">{{
-            t('workshop.workflow.opensInNewTab')
-          }}</span>
-        </Button>
-        <Button
           v-if="template?.downloadUrl"
           as="a"
           :href="template.downloadUrl"
@@ -123,6 +104,25 @@ function captureDownload() {
             <Download class="size-4" aria-hidden="true" />
           </template>
           {{ t('workshop.workflow.downloadWorkflow') }}
+        </Button>
+        <Button
+          v-if="cloudHref"
+          as="a"
+          :href="cloudHref"
+          target="_blank"
+          rel="noopener"
+          variant="ghost"
+          class="font-bold tracking-wider uppercase"
+          data-testid="workflow-path-cloud"
+          @click="captureTryInCloud"
+        >
+          {{ t('workshop.workflow.tryCloud') }}
+          <span class="sr-only">{{
+            t('workshop.workflow.opensInNewTab')
+          }}</span>
+          <template #append>
+            <ArrowUpRight aria-hidden="true" />
+          </template>
         </Button>
         <Button
           v-if="paths.api"

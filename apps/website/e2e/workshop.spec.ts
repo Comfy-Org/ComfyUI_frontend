@@ -898,16 +898,13 @@ test.describe('Model playground', () => {
     modelsAccount
   }) => {
     await page.goto(MODEL_PATH)
-    const signIn = page.getByRole('link', {
-      name: 'Sign in to run',
-      exact: true
-    })
-    await expect(signIn).toHaveAttribute('href', /\/login\/\?returnTo=/)
+    const run = page.getByRole('link', { name: 'Run', exact: true })
+    await expect(run).toHaveAttribute('href', /\/login\/\?returnTo=/)
     const prompt = 'a capybara in a trench coat'
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill(prompt)
-    await signIn.click()
+    await run.click()
     await expect(page).toHaveURL(/\/login\/\?returnTo=/)
     await page.getByRole('button', { name: 'Use email instead' }).click()
     await page.getByLabel('Email').fill(modelsAccount.email)

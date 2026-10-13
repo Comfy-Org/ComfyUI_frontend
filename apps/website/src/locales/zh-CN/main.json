@@ -4218,7 +4218,6 @@
       "priceNoteLabel": "此估算的计算方式",
       "related": "更多模型",
       "relatedProvider": "{provider} 的更多模型",
-      "runNext": "运行模型 — 登录功能即将推出",
       "select": "选择一个选项",
       "tabs": {
         "api": "API",
@@ -4544,7 +4543,6 @@
       "tryIt": "试用",
       "paths": "使用此工作流的方式",
       "downloadWorkflow": "下载工作流",
-      "runInCloud": "在 Comfy Cloud 中试用",
       "apiPath": "API",
       "filesNeeded": "所需文件",
       "filesNote": "将每个文件放入所示文件夹，该文件夹位于你的 ComfyUI 目录中。",
@@ -4566,7 +4564,8 @@
         "audioEncoder": "音频编码器",
         "backgroundRemoval": "背景移除"
       },
-      "opensInNewTab": "（在新标签页中打开）"
+      "opensInNewTab": "（在新标签页中打开）",
+      "tryCloud": "在 Cloud 中试用"
     },
     "catalogue": {
       "apps": "应用",
