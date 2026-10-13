@@ -19,7 +19,7 @@ import {
 import type { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import type { AgentWsEvent } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import {
-  AGENT_WS_EVENT_TYPES,
+  isAgentEvent,
   zAgentTurnAccepted,
   zAgentWsEvent
 } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
@@ -266,7 +266,7 @@ function keepTurnFrames(
           ? 'seed_turn'
           : 'foreign'
       )
-    else if ((AGENT_WS_EVENT_TYPES as ReadonlySet<string>).has(type))
+    else if (isAgentEvent(type))
       kept[turn].push({
         event: parseOrRefuse(
           zAgentWsEvent,

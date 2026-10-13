@@ -1,7 +1,6 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  AGENT_WS_EVENT_TYPES,
   isAgentEvent,
   parseAgentWsEvent,
   zAgentCancelAccepted,
@@ -347,20 +346,25 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
-  it('exposes the Agent event types, including the ask lifecycle', () => {
-    expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
-      [
-        'agent_active_tab',
-        'agent_ask',
-        'agent_ask_resolved',
-        'agent_message_delta',
-        'agent_message_done',
-        'agent_message_draft',
-        'agent_thinking',
-        'agent_tool_call'
-      ].sort()
-    )
+  it.for([
+    'agent_active_tab',
+    'agent_ask',
+    'agent_ask_resolved',
+    'agent_message_delta',
+    'agent_message_done',
+    'agent_message_draft',
+    'agent_thinking',
+    'agent_tool_call'
+  ])('recognizes %s as an Agent event', (type) => {
+    expect(isAgentEvent(type)).toBe(true)
   })
+
+  it.for(['doc_update', 'doc_subscribed', 'status', 'executing', 'agent_'])(
+    'does not recognize %s as an Agent event',
+    (type) => {
+      expect(isAgentEvent(type)).toBe(false)
+    }
+  )
 
   it('parses an agent_message_draft frame, including the empty draft that withdraws one', () => {
     for (const text of ['Here is your video', '']) {
