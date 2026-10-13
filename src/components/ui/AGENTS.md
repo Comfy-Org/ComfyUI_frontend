@@ -6,7 +6,7 @@
 pnpm dlx shadcn-vue@latest add <component-name> --yes
 ```
 
-After adding, create `ComponentName.stories.ts` with Default, Disabled, and variant stories.
+After adding, create `ComponentName.stories.ts` with a `Default` story, an `argTypes` control for every enum prop, and a story per scenario listed under "One Story Per Scenario" in `docs/guidance/storybook.md` (a state that sets one prop, such as `Disabled`, is a control, not a story).
 
 ## Reka UI Wrapper Components
 
@@ -20,3 +20,7 @@ After adding, create `ComponentName.stories.ts` with Default, Disabled, and vari
 - Before adding a token, search `packages/design-system/src/css/style.css` for an existing semantic role
 - Add a token only for a reusable role that the core theme cannot express. Do not add a token family for each component
 - Tailwind 4 CSS variables use parentheses: `h-(--my-var)` not `h-[--my-var]`
+
+## Tooltips
+
+- Read `tooltip/README.md` before adding a tooltip: one app-level provider, `Button` `tooltip`/`tooltip-side` props, and the fragment-root and `as-child` nesting rules

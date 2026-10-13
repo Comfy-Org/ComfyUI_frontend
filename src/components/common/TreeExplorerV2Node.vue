@@ -1,6 +1,6 @@
 <template>
   <TreeItem
-    v-slot="{ isExpanded, isSelected, handleToggle, handleSelect }"
+    v-slot="{ isExpanded, handleToggle, handleSelect }"
     :value="item.value"
     :level="item.level"
     as-child
@@ -9,8 +9,8 @@
     <div
       v-if="item.value.type === 'node'"
       v-bind="$attrs"
-      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
-      :style="rowStyle"
+      :class="cn(treeItemClass, 'overflow-hidden')"
+      :style="treeItemIndent(item.level)"
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="handleContextMenu"
@@ -21,7 +21,7 @@
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+      <span class="min-w-0 flex-1 truncate">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -63,8 +63,8 @@
     <div
       v-else
       v-bind="$attrs"
-      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
-      :style="rowStyle"
+      :class="cn(treeItemClass, 'overflow-hidden')"
+      :style="treeItemIndent(item.level)"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="clearContextMenuNode"
       @pointerdown="clearContextMenuNode"
@@ -81,7 +81,7 @@
       <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
-      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+      <span class="min-w-0 flex-1 truncate">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -107,6 +107,7 @@ import { computed, inject, useTemplateRef } from 'vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import Button from '@/components/ui/button/Button.vue'
+import { treeItemClass, treeItemIndent } from '@/components/ui/tree/treeStyles'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -117,9 +118,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 defineOptions({
   inheritAttrs: false
 })
-
-const ROW_CLASS =
-  'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
@@ -175,10 +173,6 @@ const {
   handleDragStart: baseHandleDragStart,
   handleDragEnd
 } = useNodePreviewAndDrag(nodeDef, previewRef)
-
-const rowStyle = computed(() => ({
-  paddingLeft: `${8 + (item.level - 1) * 24}px`
-}))
 
 function handleClick(
   e: MouseEvent,

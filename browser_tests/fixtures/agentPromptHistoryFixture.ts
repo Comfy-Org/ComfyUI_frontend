@@ -8,7 +8,10 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentWsEvent,
+  PersistedToolCallSummary
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
@@ -18,13 +21,26 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
+// A mocked history row models what the server actually persists, which is
+// the relaxed `PersistedToolCallSummary` shape (see agentApiSchema.ts), not
+// the stricter wire `ToolCallSummary` generated type.
+type MockAgentMessageContent = Omit<
+  NonNullable<AgentMessage['content']>,
+  'tool_calls'
+> & {
+  tool_calls?: PersistedToolCallSummary[]
+}
+type MockAgentMessage = Omit<AgentMessage, 'content'> & {
+  content?: MockAgentMessageContent
+}
+
 export const promptHistoryTest = base.extend<{
   agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
     historyRequestThreadIds: string[]
-    completeLatestTurn: (content: AgentMessage['content']) => void
+    completeLatestTurn: (content: MockAgentMessageContent) => void
   }
 }>({
   agentPanel: async ({ page }, use) => {
@@ -34,7 +50,7 @@ export const promptHistoryTest = base.extend<{
     // Workflow selection boots the app before these agent-specific routes.
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
-    const messages: AgentMessage[] = []
+    const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0

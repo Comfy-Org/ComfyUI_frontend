@@ -1,12 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
+import type { OptionalProps, Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  OptionalProps,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'

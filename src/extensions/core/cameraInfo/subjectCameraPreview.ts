@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+
 export const PREVIEW_WIDTH = 200
 export const PREVIEW_HEIGHT = 150
 const PREVIEW_PADDING = 8
@@ -11,10 +13,14 @@ interface Hideable {
   setVisible(visible: boolean): void
 }
 
-type PreviewRenderer = Pick<
-  THREE.WebGLRenderer,
-  'setViewport' | 'setScissor' | 'setScissorTest' | 'setClearColor' | 'clear'
-> & { render(scene: THREE.Object3D, camera: THREE.Camera): void }
+type PreviewRenderer = Pick<THREE.WebGLRenderer, 'setClearColor' | 'clear'> & {
+  render(scene: THREE.Object3D, camera: THREE.Camera): void
+}
+
+type PreviewViewport = Pick<
+  RendererView,
+  'setViewport' | 'setScissor' | 'setScissorTest'
+>
 
 interface InsetPreviewLayout {
   width: number
@@ -32,6 +38,7 @@ const DEFAULT_LAYOUT: InsetPreviewLayout = {
 
 export interface InsetPreviewTarget {
   renderer: PreviewRenderer
+  view: PreviewViewport
   canvas: { width: number; height: number }
   scene: THREE.Scene
   camera: THREE.Camera
@@ -108,6 +115,7 @@ function fitsCanvas(
 
 export function renderInsetPreview({
   renderer,
+  view,
   canvas,
   scene,
   camera,
@@ -128,14 +136,14 @@ export function renderInsetPreview({
   const y = marginBottom
 
   withPreviewAspect(camera, width / height, () => {
-    renderer.setViewport(x - 1, y - 1, width + 2, height + 2)
-    renderer.setScissor(x - 1, y - 1, width + 2, height + 2)
-    renderer.setScissorTest(true)
+    view.setViewport(x - 1, y - 1, width + 2, height + 2)
+    view.setScissor(x - 1, y - 1, width + 2, height + 2)
+    view.setScissorTest(true)
     renderer.setClearColor(borderColor)
     renderer.clear()
 
-    renderer.setViewport(x, y, width, height)
-    renderer.setScissor(x, y, width, height)
+    view.setViewport(x, y, width, height)
+    view.setScissor(x, y, width, height)
     renderer.setClearColor(backgroundColor)
     renderer.clear()
     renderer.render(scene, camera)

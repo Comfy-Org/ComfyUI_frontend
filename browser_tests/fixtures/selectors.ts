@@ -15,6 +15,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     nodePreviewInputs: 'node-preview-inputs',
@@ -26,9 +27,8 @@ export const TestIds = {
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',
@@ -118,8 +118,10 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
     closeWorkflowButton: 'close-workflow-button',
+    workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -149,6 +151,9 @@ export const TestIds = {
     browserModal: 'asset-browser-modal',
     card: 'asset-card',
     videoPreview: 'media-asset-video'
+  },
+  toast: {
+    panel: 'toast-panel'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',

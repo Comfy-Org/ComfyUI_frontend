@@ -4,10 +4,8 @@ import { computed, reactive } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
-import {
-  filterWorkshopModels,
-  sortWorkshopModels
-} from '@/config/models-catalogue'
+import { sortWorkshopModels } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import {
   isAudioUrl,
   isVideoUrl,
@@ -39,7 +37,7 @@ const emit = defineEmits<{
 
 const SUGGESTIONS = 4
 
-const matching = computed(() => filterWorkshopModels(models, { query }))
+const matching = computed(() => searchWorkshopModels(models, { query }))
 
 const suggestions = computed(() =>
   query.trim()

@@ -62,6 +62,18 @@ describe('activeBannerFor', () => {
       expected: bannerConfig
     },
     {
+      name: '/events shows the challenge banner while it runs',
+      page: challengeBannerConfig,
+      now: '2026-10-19T08:59:00-07:00',
+      expected: challengeBannerConfig
+    },
+    {
+      name: '/events shows the sitewide banner once the challenge ends',
+      page: challengeBannerConfig,
+      now: '2026-10-19T09:01:00-07:00',
+      expected: bannerConfig
+    },
+    {
       name: 'a page without its own banner shows the sitewide banner',
       page: undefined,
       now: '2026-10-19T08:59:00-07:00',

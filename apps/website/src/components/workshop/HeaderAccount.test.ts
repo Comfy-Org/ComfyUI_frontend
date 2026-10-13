@@ -425,13 +425,8 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('lists the account workspaces with the current one checked', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount, { props: { locale: 'zh-CN' } })
@@ -445,14 +440,11 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       screen.getByTestId('account-workspace-team-1').textContent
     ).toContain('成员')
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledWith(
-      undefined,
-      {
-        workspaceId: 'ws',
-        signal: expect.any(AbortSignal),
-        timeoutMs: 15_000
-      }
-    )
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'ws',
+      signal: expect.any(AbortSignal),
+      timeoutMs: 15_000
+    })
   })
 
   // A run belongs to the workspace paying for it. The playground guards every
@@ -462,13 +454,8 @@ describe('HeaderAccount workspace switcher', () => {
     const cancel = vi.fn()
     reportWorkshopRun(cancel)
     onTestFinished(() => reportWorkshopRun(undefined))
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -477,12 +464,12 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
 
     await user.click(screen.getByTestId('run-leave-stay'))
 
     expect(cancel).not.toHaveBeenCalled()
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
   })
 
   it('cancels the run and switches once the reader accepts', async () => {
@@ -490,13 +477,8 @@ describe('HeaderAccount workspace switcher', () => {
     const cancel = vi.fn()
     reportWorkshopRun(cancel)
     onTestFinished(() => reportWorkshopRun(undefined))
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const team = {
       ...credential,
@@ -518,13 +500,10 @@ describe('HeaderAccount workspace switcher', () => {
 
     expect(cancel).toHaveBeenCalledOnce()
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
   })
 
@@ -533,13 +512,8 @@ describe('HeaderAccount workspace switcher', () => {
     const cancel = vi.fn()
     reportWorkshopRun(cancel)
     onTestFinished(() => reportWorkshopRun(undefined))
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -551,13 +525,10 @@ describe('HeaderAccount workspace switcher', () => {
     reportWorkshopRun(undefined)
 
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
     expect(cancel).not.toHaveBeenCalled()
     await waitFor(() =>
@@ -570,13 +541,8 @@ describe('HeaderAccount workspace switcher', () => {
     const cancel = vi.fn()
     reportWorkshopRun(cancel)
     onTestFinished(() => reportWorkshopRun(undefined))
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -603,7 +569,7 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
     )
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
     expect(cancel).not.toHaveBeenCalled()
     expect(session.value).toEqual(replacement)
   })
@@ -617,13 +583,8 @@ describe('HeaderAccount workspace switcher', () => {
     const cancel = vi.fn()
     reportWorkshopRun(cancel)
     onTestFinished(() => reportWorkshopRun(undefined))
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -645,20 +606,15 @@ describe('HeaderAccount workspace switcher', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
     )
-    expect(vi.mocked(useWorkshopSession().remint)).not.toHaveBeenCalled()
+    expect(useWorkshopSession().remint).not.toHaveBeenCalled()
     expect(cancel).not.toHaveBeenCalled()
     expect(session.value).toEqual(moved)
   })
 
   it('switches by reminting for the picked workspace', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const team = {
       ...credential,
@@ -678,13 +634,10 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     await waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-        undefined,
-        {
-          workspaceId: 'team-1',
-          preserveCredentialOnTransientFailure: true
-        }
-      )
+      expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     await user.click(screen.getByTestId('header-account'))
@@ -695,13 +648,8 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('keeps the switch pending until its remint settles', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     vi.mocked(useWorkshopSession().remint).mockImplementationOnce(
       () => new Promise(() => {})
@@ -714,7 +662,7 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(target)
 
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
     )
     expect(target.getAttribute('data-disabled')).not.toBeNull()
     expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
@@ -722,13 +670,8 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('contains a rejected switch and shows its recovery error', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     vi.mocked(useWorkshopSession().remint).mockRejectedValueOnce(
       new Error('offline')
@@ -742,14 +685,13 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
   })
 
   it('shows the failure line when the list cannot load', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response('', { status: 500 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -761,13 +703,9 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('shows an intentional empty state', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ workspaces: [] }), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ workspaces: [] }), { status: 200 })
     )
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -779,13 +717,11 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('retries a failed workspace list without closing the submenu', async () => {
     signIn()
-    const fetchWorkspaces = vi
-      .fn()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(new Response('', { status: 500 }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify(listing), { status: 200 })
       )
-    vi.stubGlobal('fetch', fetchWorkspaces)
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -799,7 +735,7 @@ describe('HeaderAccount workspace switcher', () => {
     await user.keyboard('{Enter}')
 
     expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
-    expect(fetchWorkspaces).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('reloads the workspace list when the session scope changes', async () => {
@@ -817,8 +753,7 @@ describe('HeaderAccount workspace switcher', () => {
         }
       ]
     }
-    const fetchWorkspaces = vi
-      .fn()
+    vi.mocked(fetch)
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) => {
@@ -828,13 +763,12 @@ describe('HeaderAccount workspace switcher', () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify(replacement), { status: 200 })
       )
-    vi.stubGlobal('fetch', fetchWorkspaces)
     const user = userEvent.setup()
     render(HeaderAccount)
 
     await openSwitcher(user)
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     )
     session.value = {
       token: 'other-jwt',
@@ -847,7 +781,7 @@ describe('HeaderAccount workspace switcher', () => {
       email: 'other@b.co',
       displayName: 'Other'
     }
-    await vi.waitFor(() => expect(fetchWorkspaces).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
     resolveList(new Response(JSON.stringify(listing), { status: 200 }))
 
     expect(await screen.findByTestId('account-workspace-other')).toBeTruthy()
@@ -856,13 +790,8 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('does not roll a superseded switch back over the newer workspace', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const newer = {
       ...credential,
@@ -882,19 +811,14 @@ describe('HeaderAccount workspace switcher', () => {
     await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     await vi.waitFor(() => expect(session.value).toEqual(newer))
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
     expect(screen.queryByTestId('account-workspace-switch-error')).toBeNull()
   })
 
   it('reports a superseded switch that leaves the previous workspace active', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     vi.mocked(useWorkshopSession().remint).mockResolvedValueOnce(undefined)
     const user = userEvent.setup()
@@ -906,18 +830,13 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledOnce()
+    expect(useWorkshopSession().remint).toHaveBeenCalledOnce()
   })
 
   it('restores the previous workspace after a failed switch', async () => {
     signIn()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify(listing), { status: 200 })
-        )
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(JSON.stringify(listing), { status: 200 })
     )
     const previous = session.value
     vi.mocked(useWorkshopSession().remint)
@@ -938,22 +857,14 @@ describe('HeaderAccount workspace switcher', () => {
     expect(
       await screen.findByTestId('account-workspace-switch-error')
     ).toBeTruthy()
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenNthCalledWith(
-      1,
-      undefined,
-      {
-        workspaceId: 'team-1',
-        preserveCredentialOnTransientFailure: true
-      }
-    )
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenNthCalledWith(
-      2,
-      undefined,
-      {
-        workspaceId: 'ws',
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(useWorkshopSession().remint).toHaveBeenNthCalledWith(1, undefined, {
+      workspaceId: 'team-1',
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(useWorkshopSession().remint).toHaveBeenNthCalledWith(2, undefined, {
+      workspaceId: 'ws',
+      preserveCredentialOnTransientFailure: true
+    })
     expect(session.value).toBe(previous)
   })
 })

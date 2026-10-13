@@ -1,12 +1,20 @@
 // @vitest-environment node
 import { execFile } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
-import { createDevAgentConfig } from '../build/devAgentConfig'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from '../build/devAgentConfig'
 
 const execFileAsync = promisify(execFile)
+const agentDataDir = mkdtempSync(join(tmpdir(), 'vite-agent-config-'))
+afterAll(() => rmSync(agentDataDir, { force: true, recursive: true }))
 const printAgentConfig =
   "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host })))"
 
@@ -17,17 +25,14 @@ describe('dev agent proxy transport', () => {
     'http://127.0.0.1:8095',
     'http://[::1]:8095'
   ])('accepts a protected target at %s', (url) => {
-    expect(
-      createDevAgentConfig({
-        DEV_AGENT_URL: url,
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token'
-      })
-    ).toEqual({
-      host: undefined,
-      proxy: {
-        target: url,
-        headers: { 'X-Comfy-Agent-Session': 'test-session-token' }
-      }
+    const { host, proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: url,
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+    })
+    expect(host).toBeUndefined()
+    expect(proxy).toMatchObject({
+      target: url,
+      headers: { 'X-Comfy-Agent-Session': 'test-session-token' }
     })
   })
 
@@ -46,12 +51,55 @@ describe('dev agent proxy transport', () => {
 
   it.for([
     { DEV_AGENT_URL: 'https://agent.example.com' },
-    { DEV_AGENT_SESSION_TOKEN: 'test-session-token' }
-  ])('requires both target and session token: %j', (env) => {
+    { DEV_AGENT_SESSION_TOKEN: 'test-session-token' },
+    { DEV_AGENT_DATA_DIR: '/tmp/comfy-agent' }
+  ])('requires both target and a token source: %j', (env) => {
     expect(() => createDevAgentConfig(env)).toThrow(
-      'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together'
+      'DEV_AGENT_URL needs exactly one token source, and a token source needs DEV_AGENT_URL'
     )
   })
+
+  it('refuses two sources for the same credential', () => {
+    expect(() =>
+      createDevAgentConfig({
+        DEV_AGENT_URL: 'http://127.0.0.1:6286',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+        DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+      })
+    ).toThrow('two sources for the same credential')
+  })
+
+  it('treats an empty data directory as no discovery source at all', () => {
+    const { proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: 'http://127.0.0.1:6286',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+      DEV_AGENT_DATA_DIR: ''
+    })
+    expect(proxy).toMatchObject({
+      headers: { 'X-Comfy-Agent-Session': 'test-session-token' }
+    })
+  })
+
+  it('rejects an unavailable discovery directory at configuration time', () => {
+    expect(() =>
+      createDevAgentConfig({
+        DEV_AGENT_URL: 'http://127.0.0.1:6286',
+        DEV_AGENT_DATA_DIR: join(agentDataDir, 'missing')
+      })
+    ).toThrow('DEV_AGENT_DATA_DIR must be an existing readable directory')
+  })
+
+  it.for(['http://agent.example.com', 'http://localhost.example.com'])(
+    'rejects forwarding a discovery credential to %s',
+    (url) => {
+      expect(() =>
+        createDevAgentConfig({
+          DEV_AGENT_URL: url,
+          DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+        })
+      ).toThrow('DEV_AGENT_URL must use https unless it targets loopback')
+    }
+  )
 
   it('requires an agent proxy in standalone mode', () => {
     expect(() =>
@@ -59,8 +107,6 @@ describe('dev agent proxy transport', () => {
     ).toThrow('VITE_AGENT_STANDALONE requires DEV_AGENT_URL')
   })
 
-  // The standalone harness forces the panel on for every user of its bundle,
-  // so a cloud bundle carrying it would ship the panel to everyone.
   it('refuses the standalone harness in a cloud distribution', () => {
     expect(() =>
       createDevAgentConfig({
@@ -84,21 +130,18 @@ describe('dev agent proxy transport', () => {
 
 describe('dev agent comfy credential', () => {
   it('forwards the token while keeping the dev server local', () => {
-    expect(
-      createDevAgentConfig({
-        DEV_AGENT_URL: 'http://127.0.0.1:8095',
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
-        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
-        VITE_REMOTE_DEV: 'true'
-      })
-    ).toEqual({
-      host: undefined,
-      proxy: {
-        target: 'http://127.0.0.1:8095',
-        headers: {
-          'X-Comfy-Agent-Session': 'test-session-token',
-          'X-API-KEY': 'comfyui-test-key'
-        }
+    const { host, proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: 'http://127.0.0.1:8095',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+      DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
+      VITE_REMOTE_DEV: 'true'
+    })
+    expect(host).toBeUndefined()
+    expect(proxy).toMatchObject({
+      target: 'http://127.0.0.1:8095',
+      headers: {
+        'X-Comfy-Agent-Session': 'test-session-token',
+        'X-API-KEY': 'comfyui-test-key'
       }
     })
   })
@@ -143,8 +186,6 @@ describe('dev agent comfy credential', () => {
           }
         }
       )
-      // Both agent routes, /api/agent and the saved-workflow index at
-      // /api/workflows, carry the same session and credential headers.
       const headers = {
         'X-Comfy-Agent-Session': 'test-session-token',
         'X-API-KEY': 'comfyui-test-key'
@@ -154,64 +195,21 @@ describe('dev agent comfy credential', () => {
   )
 })
 
-// The events socket must be proxied as a WebSocket in every dev setup: the
-// catch-all /api route proxies plain HTTP only. With a local agent the
-// /api/agent route (which also upgrades) must match first.
-const printProxyRoutes =
-  "import('./vite.config.mts').then(({ default: config }) => { const proxy = config.server?.proxy ?? {}; process.stdout.write(JSON.stringify({ order: Object.keys(proxy), eventsWs: proxy['/api/agent/events']?.ws ?? null, agentWs: proxy['/api/agent']?.ws ?? null })) })"
+describe('dev server agent routes', () => {
+  const agentProxy = { target: 'http://127.0.0.1:8095', ws: true }
+  const backend = { target: 'https://cloud.example.com' }
 
-async function proxyRoutes(overrides: NodeJS.ProcessEnv) {
-  const { stdout } = await execFileAsync(
-    process.execPath,
-    ['--import', 'tsx', '--eval', printProxyRoutes],
-    {
-      cwd: process.cwd(),
-      timeout: 25_000,
-      env: {
-        ...process.env,
-        VITE_AGENT_STANDALONE: undefined,
-        VITE_REMOTE_DEV: undefined,
-        DISTRIBUTION: undefined,
-        DEV_AGENT_URL: undefined,
-        DEV_AGENT_SESSION_TOKEN: undefined,
-        ...overrides
-      }
-    }
-  )
-  return JSON.parse(stdout) as {
-    order: string[]
-    eventsWs: boolean | null
-    agentWs: boolean | null
-  }
-}
+  it('upgrades the events socket on the backend without a local agent', () => {
+    expect(devServerAgentRoutes(undefined, backend)).toEqual({
+      '/api/agent/events': { target: 'https://cloud.example.com', ws: true }
+    })
+  })
 
-describe('agent events socket dev proxy', () => {
-  it(
-    'upgrades /api/agent/events ahead of the plain /api route without a local agent',
-    { timeout: 30_000 },
-    async () => {
-      const routes = await proxyRoutes({ DISTRIBUTION: 'cloud' })
-
-      expect(routes.eventsWs).toBe(true)
-      expect(routes.order.indexOf('/api/agent/events')).toBeLessThan(
-        routes.order.indexOf('/api')
-      )
-    }
-  )
-
-  it(
-    'lets the local agent route, which also upgrades, match first',
-    { timeout: 30_000 },
-    async () => {
-      const routes = await proxyRoutes({
-        DEV_AGENT_URL: 'http://127.0.0.1:8095',
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token'
-      })
-
-      expect(routes.agentWs).toBe(true)
-      expect(routes.order.indexOf('/api/agent')).toBeLessThan(
-        routes.order.indexOf('/api/agent/events')
-      )
-    }
-  )
+  it('routes the agent and the saved-workflow index to a local agent first', () => {
+    expect(Object.entries(devServerAgentRoutes(agentProxy, backend))).toEqual([
+      ['/api/workflows', agentProxy],
+      ['/api/agent', agentProxy],
+      ['/api/agent/events', { target: 'https://cloud.example.com', ws: true }]
+    ])
+  })
 })
