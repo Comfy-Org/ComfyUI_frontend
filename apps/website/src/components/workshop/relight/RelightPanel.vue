@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed } from 'vue'
 
 import type { Relight } from '@/composables/useRelight'
 import type { Locale } from '@/i18n/translations'
 import { lc } from '@/lib/workshop/relight/copy'
 import EditorCollapsible from '@/components/workshop/app-editor/EditorCollapsible.vue'
+import EditorPromptBox from '@/components/workshop/app-editor/EditorPromptBox.vue'
 import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import RelightFormatBar from './RelightFormatBar.vue'
@@ -18,7 +19,6 @@ const { relight, locale = 'en' } = defineProps<{
 }>()
 
 const { image, phase, setup } = relight
-const promptId = useId()
 const PANEL_SECTIONS: readonly string[] = [
   'lights',
   'shadows',
@@ -29,10 +29,10 @@ const sections = RELIGHT_SECTIONS.filter((section) =>
   PANEL_SECTIONS.includes(section.id)
 )
 
-function onPrompt(event: Event) {
-  if (event.target instanceof HTMLTextAreaElement)
-    relight.updateGeneration({ prompt: event.target.value }, 'prompt')
-}
+const prompt = computed({
+  get: () => setup.value.generation.prompt,
+  set: (value: string) => relight.updateGeneration({ prompt: value }, 'prompt')
+})
 </script>
 
 <template>
@@ -53,21 +53,11 @@ function onPrompt(event: Event) {
       @remove="relight.removeImage"
     />
 
-    <div
-      class="flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 focus-within:border-primary-warm-white/60"
-    >
-      <label :for="promptId" class="sr-only">
-        {{ lc('relight.generation.prompt', locale) }}
-      </label>
-      <textarea
-        :id="promptId"
-        :value="setup.generation.prompt"
-        rows="4"
-        :placeholder="lc('relight.generation.promptPlaceholder', locale)"
-        class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
-        @input="onPrompt"
-      />
-    </div>
+    <EditorPromptBox
+      v-model="prompt"
+      :label="lc('relight.generation.prompt', locale)"
+      :placeholder="lc('relight.generation.promptPlaceholder', locale)"
+    />
 
     <RelightMood :relight :locale />
 
