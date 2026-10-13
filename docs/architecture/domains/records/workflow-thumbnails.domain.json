@@ -30,7 +30,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Existing workflow store, workflow service, and workflow tab callers may continue importing thumbnail internals during inventory.",
+    "Existing workflow store, workflow service, and workflow tab imports of thumbnail internals remain visible as cross-domain coupling debt; classification does not grant dependency exceptions.",
     "Thumbnail rendering depends on minimap rendering internals without owning them."
   ],
   "deepImports": "inventory"
