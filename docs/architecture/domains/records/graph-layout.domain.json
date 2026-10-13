@@ -1,0 +1,195 @@
+{
+  "id": "graph-layout",
+  "capability": "Graph layout store and spatial index (shared technical module)",
+  "description": "Shared technical module, not a business domain. The Yjs-backed layout store that owns durable node, group, reroute, link, and slot geometry under ADR-CRDT-LAYOUT-0003, its LayoutOperation mutations and actor attribution, hit-target authority, pure geometry and layout math, Yjs mappers, the QuadTree spatial index used for hit testing and culling, the TransformPane and transform-state helpers that map canvas space to DOM space, and adapters that attach LiteGraph graphs, node sizes, and slot offsets to the store. Graph topology and entity stores remain with the graph core.",
+  "modules": [
+    {
+      "path": "src/renderer/core/layout/constants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/slots/slotIdentifier.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/geometry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/layoutMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/layoutMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/layoutUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/layoutUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/spatial/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/layoutMutations.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/layoutMutations.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/store/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/__mocks__/useTransformState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/useTransformSettling.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/useTransformSettling.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/useTransformState.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/useTransformState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/mappers.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/mappers.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/layout/__tests__/TransformPane.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/TransformPane.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/TransformPane.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.perf.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/graphLayoutAttachment.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/slots/syncSlotOffsets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/transform/graphRenderTransform.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/layout/utils/nodeSizeUtil.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/positionBounds.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/positionBounds.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/spatialIndex.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Layout store preserves geometry, actors, holders, and hit targets",
+      "checks": [
+        "src/renderer/core/layout/store/layoutStore.test.ts",
+        "src/renderer/core/layout/store/layoutStore.withActor.test.ts",
+        "src/renderer/core/layout/store/layoutStore.multiHolder.test.ts",
+        "src/renderer/core/layout/store/hitTargetAuthority.test.ts",
+        "src/renderer/core/layout/store/batchUpdateNodeBounds.test.ts"
+      ]
+    },
+    {
+      "name": "Graph attachment and layout mutations keep LiteGraph and the layout store in sync",
+      "checks": [
+        "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
+        "src/renderer/core/layout/operations/layoutMutations.test.ts",
+        "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
+        "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
+        "browser_tests/tests/vueNodes/layout/subgraphLayoutSync.spec.ts",
+        "browser_tests/tests/vueNodes/layout/rendererToggleGeometry.spec.ts"
+      ]
+    },
+    {
+      "name": "Transforms, geometry math, Yjs mapping, and spatial queries stay consistent",
+      "checks": [
+        "src/renderer/core/layout/transform/useTransformState.test.ts",
+        "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
+        "src/renderer/core/layout/transform/TransformPane.test.ts",
+        "src/renderer/core/layout/utils/layoutMath.test.ts",
+        "src/renderer/core/layout/utils/mappers.test.ts",
+        "src/renderer/core/spatial/QuadTree.test.ts"
+      ]
+    },
+    {
+      "name": "Position extents and bounds are computed from node rects",
+      "checks": ["src/utils/positionBounds.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md",
+    "docs/adr/ECS-0008-entity-component-system.md",
+    "docs/adr/ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md",
+    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md"
+  ],
+  "compatibilityPromises": [
+    "Existing callers in the canvas renderer, Vue node renderer, minimap, onboarding, agent CRDT, workflow, and graph core may continue importing layout internals during inventory; this record grants no new cross-domain permissions.",
+    "Serialized node, group, and reroute positions and sizes, and LiteGraph pos/size accessors seen by extensions, remain unchanged."
+  ],
+  "deepImports": "inventory"
+}
