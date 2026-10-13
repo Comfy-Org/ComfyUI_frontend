@@ -18,6 +18,34 @@ const mount = (selected = model) =>
   })
 
 describe('WorkflowPage header', () => {
+  it('passes an actual Cloud share link without inventing a share ID from the catalog UID', () => {
+    const { getByTestId } = render(WorkflowPage, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            cloudShareURL: 'https://cloud.comfy.org/?share=abcdef123456'
+          }
+        }
+      },
+      global: {
+        stubs: {
+          WorkflowPlayground: {
+            props: ['cloudHref'],
+            template:
+              '<a data-testid="share-fixture" :href="cloudHref">Open</a>'
+          }
+        }
+      }
+    })
+    expect(getByTestId('share-fixture')).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?share=abcdef123456'
+    )
+  })
   it('renders multi-paragraph body and expandable Q&A using authored copy, not HTML', async () => {
     mount({
       ...model,

@@ -1,4 +1,7 @@
 import { chromium, expect } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { websiteRoot } from '@website/paths'
 
 const website = 'http://127.0.0.1:4353'
 const browser = await chromium.launch({ headless: true })
@@ -6,8 +9,15 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 }
   })
+  const graph = await readFile(
+    join(websiteRoot, 'public/workflow-graphs/remove-background.json')
+  )
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
+    if (url.origin === website && url.pathname.startsWith('/preview-media/')) {
+      await route.fulfill({ contentType: 'application/json', body: graph })
+      return
+    }
     if (url.href === `${website}/__ccc_readonly_component_check__`) {
       await route.fulfill({
         contentType: 'text/html',
@@ -36,6 +46,7 @@ try {
     const workflowPage = (await import(path)).default
     const state = reactive({
       locale: 'en',
+      cloud: false,
       empty: false
     })
     const model = {
@@ -83,6 +94,20 @@ try {
             ? {}
             : {
                 worksOnCloud: false,
+                cloudShareURL: 'https://cloud.comfy.org/?share=abcdef123456',
+                documentationURL: 'https://docs.comfy.org/api-reference/',
+                workflowFiles: [
+                  {
+                    name: 'Version one',
+                    uid: '00000000-0000-4000-8000-000000000080',
+                    href: '/preview-media/7/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000081'
+                  },
+                  {
+                    name: 'Version two',
+                    uid: '00000000-0000-4000-8000-000000000080',
+                    href: '/preview-media/7/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000082'
+                  }
+                ],
                 runs: 0,
                 downloads: 12,
                 outputType: 'video',
@@ -99,8 +124,18 @@ try {
                 }
               ]
         }
+        if (!state.empty) catalogDetails.worksOnCloud = state.cloud
         const selected = { ...model, catalogDetails }
         return h('div', {}, [
+          h(
+            'button',
+            {
+              onClick: () => {
+                state.cloud = true
+              }
+            },
+            'Check Cloud link'
+          ),
           h(
             'button',
             {
@@ -135,6 +170,27 @@ try {
   await expect(
     page.getByRole('link', { name: 'Referenced model' })
   ).toHaveAttribute('href', '/hub/models/local-fixture/')
+  await expect(
+    page.getByRole('link', { name: 'Download workflow JSON' })
+  ).toHaveAttribute('href', /000000000082$/)
+  await expect(
+    page.getByRole('link', { name: 'API documentation', exact: true })
+  ).toHaveAttribute('href', 'https://docs.comfy.org/api-reference/')
+  await page
+    .getByRole('combobox', { name: 'Workflow version' })
+    .selectOption({ label: 'Version one' })
+  await expect(
+    page.getByRole('link', { name: 'Download workflow JSON' })
+  ).toHaveAttribute('href', /000000000081$/)
+  const downloaded = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'Download workflow JSON' }).click()
+  expect((await downloaded).suggestedFilename()).toBe(
+    'local-readonly-fixture.json'
+  )
+  await page.getByRole('button', { name: 'Check Cloud link' }).click()
+  await expect(
+    page.getByRole('link', { name: 'Try in Cloud' })
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?share=abcdef123456')
   await page.getByRole('button', { name: 'Can I customize it?' }).click()
   await expect(page.getByText('Yes. Edit the workflow JSON.')).toBeVisible()
   await page.screenshot({

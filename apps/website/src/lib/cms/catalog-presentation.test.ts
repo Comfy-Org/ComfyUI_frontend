@@ -1,6 +1,7 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 import { detailSchema } from '@/config/models-page-data'
+import { modelSchema } from '@/config/models-catalogue-data'
 import {
   catalogLanguageFallback,
   catalogPresentation
@@ -42,6 +43,66 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('maps only server-resolved file downloads and valid Cloud/doc links into detail metadata', () => {
+    const uid = '00000000-0000-4000-8000-000000000080'
+    const version = '00000000-0000-4000-8000-000000000081'
+    const href = `/preview-media/2/${uid}/${version}`
+    const data = {
+      ...record.data,
+      workflow_files: [
+        {
+          name: 'Version one',
+          file: { src: 'r2', id: uid, file_version_uid: version }
+        }
+      ],
+      cloud_share_url: 'https://cloud.comfy.org/?share=abcdef123456',
+      documentation_url: 'https://docs.comfy.org/api-reference/',
+      website_media: { '$.workflow_files[0].file': href }
+    }
+    expect(
+      detailSchema.parse(catalogPresentation({ ...record, data }))
+    ).toMatchObject({
+      catalogDetails: {
+        cloudShareURL: data.cloud_share_url,
+        documentationURL: data.documentation_url,
+        workflowFiles: [{ name: 'Version one', uid, version, href }]
+      }
+    })
+    expect(
+      detailSchema.parse(
+        catalogPresentation({
+          ...record,
+          data: {
+            ...data,
+            website_media: {},
+            cloud_share_url: 'https://evil.test/',
+            documentation_url: 'javascript:alert(1)'
+          }
+        })
+      )
+    ).toMatchObject({
+      catalogDetails: {
+        workflowFiles: [],
+        cloudShareURL: undefined,
+        documentationURL: undefined
+      }
+    })
+  })
+  it('keeps body/FAQ and detail facts out of bounded list cards', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        long_description: 'Long detail body',
+        faq: [{ question: 'Question', answer: 'Answer' }]
+      }
+    })
+    expect(modelSchema.parse(view)).not.toHaveProperty('catalogDetails')
+    expect(detailSchema.parse(view)).toHaveProperty(
+      'catalogDetails.longDescription',
+      'Long detail body'
+    )
+  })
   it('carries authored workflow facts, descriptions and FAQ through the page decoder without changing identity', () => {
     const modelUID = '00000000-0000-4000-8000-000000000099'
     const authored = {

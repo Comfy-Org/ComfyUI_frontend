@@ -5,6 +5,7 @@
     "runs": "运行次数",
     "downloads": "下载次数",
     "cloud": "Comfy Cloud",
+    "version": "工作流版本",
     "yes": "是",
     "no": "否",
     "output": { "image": "图像", "video": "视频", "audio": "音频", "3d": "3D", "text": "文本", "mixed": "混合输出" }

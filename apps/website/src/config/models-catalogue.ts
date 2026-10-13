@@ -154,7 +154,6 @@ export type RouterWorkshopModel = WorkshopPresentation & {
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
-  readonly catalogDetails?: WorkflowCatalogDetails
   readonly href: string
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number
@@ -197,6 +196,7 @@ export type RouterWorkshopModelDetail = WorkshopDetailPresentation &
 
 export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
   WorkflowWorkshopModel & {
+    readonly catalogDetails?: WorkflowCatalogDetails
     readonly execution?: never
     readonly workflow: WorkshopWorkflowDefinition
   }

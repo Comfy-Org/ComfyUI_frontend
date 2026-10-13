@@ -53,10 +53,13 @@ const shelf = computed(() => {
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
-const template = model.workflow.template
-const cloudHref = template
-  ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
-  : undefined
+const cloudHref = computed(
+  () =>
+    model.catalogDetails?.cloudShareURL ??
+    (model.workflow.template
+      ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(model.workflow.template.id)}`
+      : undefined)
+)
 </script>
 
 <template>

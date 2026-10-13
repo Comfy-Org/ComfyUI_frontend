@@ -1,4 +1,5 @@
 import { z } from 'astro/zod'
+import { workflowCatalogDetailsSchema } from './workflow-catalog-details'
 
 import {
   modelSchema,
@@ -26,7 +27,10 @@ const routerDetailSchema = generatedModelSchema
 
 const workflowDetailSchema = generatedModelSchema
   .extend(workflowModelSchema.shape)
-  .extend({ workflow: workshopWorkflowDefinitionSchema })
+  .extend({
+    workflow: workshopWorkflowDefinitionSchema,
+    catalogDetails: workflowCatalogDetailsSchema.optional()
+  })
   .refine((model) => model.workflowId === model.workflow.id)
   .transform((model) => ({
     ...model,

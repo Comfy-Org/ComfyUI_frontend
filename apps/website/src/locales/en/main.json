@@ -5,6 +5,7 @@
     "runs": "Runs",
     "downloads": "Downloads",
     "cloud": "Comfy Cloud",
+    "version": "Workflow version",
     "yes": "Yes",
     "no": "No",
     "output": { "image": "Image", "video": "Video", "audio": "Audio", "3d": "3D", "text": "Text", "mixed": "Mixed outputs" }

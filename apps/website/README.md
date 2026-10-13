@@ -10,6 +10,14 @@ catalog, not filenames or slugs; unresolved models display their UID without a
 guessed link. Public translations must be reviewed; Draft may preview machine
 translations. These optional CCC facts do not alter legacy workflow pages or
 enable the catalog in production.
+Workflow actions use authored `cloud_share_url` (an existing, real Comfy Cloud
+share), optional HTTPS `documentation_url`, and named `workflow_files` resolved
+by the backend into exact protected media URLs. The last available declared
+file is the default; a version selector offers other available files. Declared
+but unavailable files never revive a stale legacy template link. The API tab's
+generated examples still require a real executable API graph plus input bindings;
+writing prose or adding a documentation link does not manufacture that graph.
+Body/FAQ/action metadata is decoded only in the detail view, not list cards.
 The review header reuses Mar's presentational `PageHeader` from PR #20640
 (source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`), with slots for the
 existing phase instructions and server-backed Next guard. Her button/sidebar

@@ -1,6 +1,11 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { jsonObject } from './editor-document'
-import { workflowCatalogDetailsSchema } from '@/config/workflow-catalog-details'
+import {
+  workflowCatalogDetailsSchema,
+  validCloudShareURL,
+  validDocumentationURL,
+  validWorkflowDownloadURL
+} from '@/config/workflow-catalog-details'
 
 export function catalogLanguageFallback(
   record: ContentCatalogRecord,
@@ -77,9 +82,44 @@ export function catalogPresentation(
     additionalProperties: false
   }
   const title = text('title', record.uid)
+  const urls = jsonObject.safeParse(d.website_media)
   const faq = Array.isArray(local.faq) ? local.faq : d.faq
   const catalogDetails = workflowCatalogDetailsSchema.safeParse({
     locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
+    cloudShareURL:
+      typeof d.cloud_share_url === 'string' &&
+      validCloudShareURL(d.cloud_share_url)
+        ? d.cloud_share_url
+        : undefined,
+    documentationURL:
+      typeof d.documentation_url === 'string' &&
+      validDocumentationURL(d.documentation_url)
+        ? d.documentation_url
+        : undefined,
+    workflowFiles: Array.isArray(d.workflow_files)
+      ? d.workflow_files.flatMap((raw, index) => {
+          const entry = objectPresentation(raw)
+          const file = objectPresentation(entry.file)
+          const href = urls.success
+            ? urls.data[`$.workflow_files[${index}].file`]
+            : undefined
+          if (
+            typeof entry.name !== 'string' ||
+            !entry.name.trim() ||
+            typeof href !== 'string' ||
+            !validWorkflowDownloadURL(href)
+          )
+            return []
+          return [
+            {
+              name: entry.name.trim(),
+              uid: file.id,
+              version: file.file_version_uid,
+              href
+            }
+          ]
+        })
+      : undefined,
     longDescription: text('long_description', '').trim() || undefined,
     faqs: Array.isArray(faq)
       ? faq.flatMap((raw, index) => {
@@ -152,7 +192,6 @@ export function catalogPresentation(
         ? d.downloads
         : undefined
   })
-  const urls = jsonObject.safeParse(d.website_media)
   const hero = urls.success
     ? (urls.data['$.hero'] ?? urls.data['$.thumbnail'])
     : undefined

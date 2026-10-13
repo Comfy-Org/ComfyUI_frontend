@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, fireEvent } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
@@ -43,6 +43,65 @@ beforeEach(() => {
 })
 
 describe('WorkflowPreview', () => {
+  it('downloads the latest authorized exact file and permits choosing another declared file', async () => {
+    const uid = '00000000-0000-4000-8000-000000000080'
+    const first = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000081`
+    const second = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000082`
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            documentationURL: 'https://docs.comfy.org/api-reference/',
+            workflowFiles: [
+              { name: 'Version one', uid, href: first },
+              { name: 'Version two', uid, href: second }
+            ]
+          }
+        }
+      }
+    })
+    expect(
+      screen.getByRole('link', { name: 'Download workflow JSON' })
+    ).toHaveAttribute('href', second)
+    await fireEvent.update(
+      screen.getByRole('combobox', { name: 'Workflow version' }),
+      first
+    )
+    expect(
+      screen.getByRole('link', { name: 'Download workflow JSON' })
+    ).toHaveAttribute('href', first)
+    expect(screen.getByTestId('workflow-graph-full')).toHaveAttribute(
+      'href',
+      first
+    )
+    expect(
+      screen.getByRole('link', { name: 'API documentation' })
+    ).toHaveAttribute('href', 'https://docs.comfy.org/api-reference/')
+  })
+
+  it('does not resurrect a legacy download when declared CCC files are unavailable', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            workflowFiles: []
+          }
+        }
+      }
+    })
+    expect(
+      screen.queryByRole('link', { name: 'Download workflow JSON' })
+    ).toBeNull()
+    expect(screen.queryByTestId('workflow-graph')).toBeNull()
+  })
   it('shows CCC facts and linked models without inheriting stale template facts', () => {
     render(WorkflowPreview, {
       props: {

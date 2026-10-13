@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Box } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
@@ -53,6 +53,26 @@ function captureWorkflowDownload() {
 }
 
 const template = computed(() => model.workflow.template)
+const files = computed(() => model.catalogDetails?.workflowFiles)
+const selectedFile = ref<string>()
+const downloadHref = computed(() =>
+  files.value
+    ? (files.value.find((file) => file.href === selectedFile.value)?.href ??
+      files.value.at(-1)?.href)
+    : template.value?.downloadUrl
+)
+watch(
+  () => model.slug,
+  () => {
+    selectedFile.value = undefined
+  }
+)
+function selectFile(event: Event) {
+  if (!(event.target instanceof HTMLSelectElement)) return
+  const value = event.target.value
+  const file = files.value?.find((item) => item.href === value)
+  selectedFile.value = file?.href
+}
 // What the workflow makes, hung in the node that hands it back. The samples
 // beneath it are results too, so there is no before to hang at the way in, and
 // a node cannot play a video.
@@ -148,16 +168,16 @@ const facts = computed(() => {
     <div class="grid gap-10 lg:grid-cols-12">
       <div class="lg:col-span-8">
         <WorkflowGraph
-          v-if="template?.downloadUrl"
+          v-if="downloadHref"
           :key="model.slug"
-          :source="template.downloadUrl"
+          :source="downloadHref"
           :samples
-          :fallback="template.previewUrl"
-          :full-href="template.previewUrl"
+          :fallback="files ? undefined : template?.previewUrl"
+          :full-href="files ? downloadHref : template?.previewUrl"
           :active
         />
         <a
-          v-else-if="template?.previewUrl"
+          v-else-if="!files && template?.previewUrl"
           :href="template.previewUrl"
           target="_blank"
           rel="noopener"
@@ -187,14 +207,43 @@ const facts = computed(() => {
               >{{ t('workshop.workflow.tryCloud') }}</Button
             >
             <Button
-              v-if="template?.downloadUrl"
+              v-if="downloadHref"
               as="a"
-              :href="template.downloadUrl"
-              download
+              :href="downloadHref"
+              :download="`${model.slug.split('/').pop()}.json`"
               variant="outline"
               class="h-auto min-h-11 max-w-full whitespace-normal"
               @click="captureWorkflowDownload"
               >{{ t('workshop.workflow.download') }}</Button
+            >
+            <label
+              v-if="files && files.length > 1"
+              class="grid gap-2 text-sm text-primary-warm-gray"
+            >
+              {{ t('cccWorkflow.version') }}
+              <select
+                :value="downloadHref"
+                class="min-h-11 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-primary-comfy-canvas"
+                @change="selectFile"
+              >
+                <option
+                  v-for="file in files"
+                  :key="file.href"
+                  :value="file.href"
+                >
+                  {{ file.name }}
+                </option>
+              </select>
+            </label>
+            <Button
+              v-if="model.catalogDetails?.documentationURL"
+              as="a"
+              :href="model.catalogDetails.documentationURL"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outline"
+              class="h-auto min-h-11 max-w-full whitespace-normal"
+              >{{ t('workshop.workflow.apiDocs') }}</Button
             >
           </div>
 

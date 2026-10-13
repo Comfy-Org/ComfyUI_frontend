@@ -261,7 +261,9 @@ const facts = computed(() => {
         </details>
 
         <a
-          :href="externalLinks.docsApi"
+          :href="
+            model.catalogDetails?.documentationURL ?? externalLinks.docsApi
+          "
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
