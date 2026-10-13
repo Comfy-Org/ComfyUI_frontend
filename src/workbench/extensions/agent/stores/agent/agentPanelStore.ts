@@ -95,7 +95,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     ready: boolean
   } | null>(null)
   const billingRefreshes = new Map<string, Promise<boolean>>()
-  const billingRefreshCount = ref(0)
   const panelOpenEpoch = ref(0)
   let latestBillingRefresh: Promise<boolean> | undefined
   let creditTransitionRefreshEpoch = 0
@@ -431,12 +430,24 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
           .then(
             (adopted) => {
               if (timedOut) {
-                if (adopted) onLateSuccess?.()
+                if (adopted) {
+                  try {
+                    onLateSuccess?.()
+                  } catch {
+                    // Reporting callbacks must not reject the detached request.
+                  }
+                }
               } else resolve(adopted)
             },
             (error: unknown) => {
-              if (timedOut) onLateError?.(error)
-              else reject(error)
+              if (!timedOut) reject(error)
+              else {
+                try {
+                  onLateError?.(error)
+                } catch {
+                  // Reporting callbacks must not reject the detached request.
+                }
+              }
             }
           )
           .finally(() => clearTimeout(timeoutId))
@@ -447,10 +458,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         billingRefreshes.delete(key)
       }
       if (latestBillingRefresh === refresh) latestBillingRefresh = undefined
-      billingRefreshCount.value -= 1
     })
     billingRefreshes.set(key, refresh)
-    billingRefreshCount.value += 1
     latestBillingRefresh = refresh
     return refresh
   }
@@ -478,7 +487,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       ready: boolean
     }> | null>(() => creditTransitionRefresh.value),
     panelOpenEpoch: computed(() => panelOpenEpoch.value),
-    billingRefreshPending: computed(() => billingRefreshCount.value > 0),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
