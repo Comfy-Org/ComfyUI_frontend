@@ -5,7 +5,6 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 
 import {
@@ -16,7 +15,6 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
@@ -81,8 +79,6 @@ test.describe(
           ? []
           : [host.subscribed(), host.catchUp(stateVector)]
       )
-      const send = (frame: AgentWsEvent | HostFrame): void =>
-        hostSocket.send(frame)
 
       await page.route('**/api/agent/threads', (route) =>
         route.fulfill(jsonRoute({ threads: [] }))
@@ -176,7 +172,7 @@ test.describe(
         panel.getByText('Add a note to the canvas.').first()
       ).toBeVisible()
 
-      send({
+      hostSocket.send({
         type: 'agent_active_tab',
         data: {
           workflow_id: WORKFLOW_ID,
@@ -185,7 +181,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_tool_call',
         data: {
           tool_call_id: 'call-1',
@@ -236,7 +232,7 @@ test.describe(
         'doc_subscribe'
       ])
 
-      send({
+      hostSocket.send({
         type: 'agent_message_delta',
         data: {
           delta: 'Added a note to the canvas.',
@@ -244,7 +240,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_message_done',
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })

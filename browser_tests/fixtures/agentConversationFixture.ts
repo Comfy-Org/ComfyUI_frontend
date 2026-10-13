@@ -1211,13 +1211,14 @@ export class AgentConversationHarness {
       ({ receipt, workflowId, seq, handledEvent }) => {
         const attribute = 'data-agent-crdt-update-receipt'
         const cleanupType = `agent-crdt-update-cleanup-${receipt}`
-        const removeReceiptListener = () => {
+        function removeReceiptListener() {
           document.removeEventListener(handledEvent, recordReceipt)
           document.removeEventListener(cleanupType, removeReceiptListener)
         }
-        const isRecord = (value: unknown): value is Record<string, unknown> =>
-          typeof value === 'object' && value !== null
-        const isThisUpdate = (detail: unknown): boolean => {
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function isThisUpdate(detail: unknown): boolean {
           if (typeof detail !== 'string') return false
           const frame: unknown = JSON.parse(detail)
           if (!isRecord(frame) || frame.type !== 'doc_update') return false
@@ -1227,7 +1228,7 @@ export class AgentConversationHarness {
             frame.data.seq === seq
           )
         }
-        const recordReceipt = (event: Event) => {
+        function recordReceipt(event: Event) {
           if (!(event instanceof CustomEvent) || !isThisUpdate(event.detail))
             return
           document.documentElement.setAttribute(attribute, receipt)

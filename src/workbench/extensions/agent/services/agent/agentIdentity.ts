@@ -4,21 +4,19 @@ import type { Ref } from 'vue'
 const RETRY_BASE_MS = 1_000
 const RETRY_MAX_MS = 30_000
 
-export interface AgentIdentityDeps {
+interface AgentIdentityDeps {
   getIdentity(): Promise<{ userId: string }>
-  /** The agent socket's connected edges. Returns the unsubscribe. */
-  onConnected(listener: () => void): () => void
+  onSocketOpen(listener: () => void): () => void
+  isRetryable(error: unknown): boolean
   onFailure(error: unknown): void
 }
 
-export interface ResolvedAgentIdentity {
-  /** Forgets the identity and looks it up again, discarding a lookup in flight. */
+interface ResolvedAgentIdentity {
   reset(): void
   userId: Readonly<Ref<string | null>>
   stop(): void
 }
 
-/** The user id the agent authenticated this client as; a failed lookup retries with backoff. */
 export function resolveAgentIdentity(
   deps: AgentIdentityDeps
 ): ResolvedAgentIdentity {
@@ -56,17 +54,17 @@ export function resolveAgentIdentity(
       if (started !== generation) return
       failures += 1
       deps.onFailure(error)
-      scheduleRetry()
+      if (deps.isRetryable(error)) scheduleRetry()
     } finally {
       if (started === generation) inFlight = false
     }
   }
 
-  function onConnected(): void {
+  function retryNow(): void {
     if (retryTimer !== null) void attempt()
   }
 
-  const stopConnected = deps.onConnected(onConnected)
+  const stopListening = deps.onSocketOpen(retryNow)
   void attempt()
 
   return {
@@ -81,7 +79,8 @@ export function resolveAgentIdentity(
     },
     stop() {
       stopped = true
-      stopConnected()
+      generation += 1
+      stopListening()
       cancelRetry()
     }
   }

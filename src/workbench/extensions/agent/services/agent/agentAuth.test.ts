@@ -51,7 +51,7 @@ describe('withAgentAuth', () => {
       const init = await withAgentAuth({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        onAuthCredential: (kind: AuthCredential) => reported.push(kind)
+        onAuthCredential: (kind) => reported.push(kind)
       })
       init.onAuthCredential('none')
 

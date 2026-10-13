@@ -2845,7 +2845,7 @@ describe('useAgentCrdtFollower', () => {
   ): AgentCrdtFollowerOptions['transport'] {
     return {
       ...agentSocket.transport,
-      onConnected: () => () => {
+      onSocketOpen: () => () => {
         throw failure
       }
     }

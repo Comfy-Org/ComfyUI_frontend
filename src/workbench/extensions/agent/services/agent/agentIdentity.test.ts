@@ -2,15 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveAgentIdentity } from './agentIdentity'
 
-function harness(getIdentity: () => Promise<{ userId: string }>) {
+function harness(
+  getIdentity: () => Promise<{ userId: string }>,
+  isRetryable: (error: unknown) => boolean = () => true
+) {
   const connected = new Set<() => void>()
   const onFailure = vi.fn()
   const identity = resolveAgentIdentity({
     getIdentity,
-    onConnected(listener) {
+    onSocketOpen(listener) {
       connected.add(listener)
       return () => connected.delete(listener)
     },
+    isRetryable,
     onFailure
   })
   return {
@@ -130,6 +134,44 @@ describe('resolveAgentIdentity', () => {
 
     expect(getIdentity).toHaveBeenCalledOnce()
     expect(identity.userId.value).toBe('local-user')
+  })
+
+  it('restarts the backoff on reset', async () => {
+    const getIdentity = failing()
+    const identity = harness(getIdentity)
+    await vi.advanceTimersByTimeAsync(1_000 + 2_000)
+    expect(getIdentity).toHaveBeenCalledTimes(3)
+
+    identity.reset()
+    await flush()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(getIdentity).toHaveBeenCalledTimes(5)
+  })
+
+  it('does not retry a failure that is not retryable', async () => {
+    const getIdentity = failing()
+    harness(getIdentity, () => false)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(getIdentity).toHaveBeenCalledOnce()
+  })
+
+  it('reports nothing for a lookup that fails after stop()', async () => {
+    let failLookup!: (error: Error) => void
+    const identity = harness(
+      () =>
+        new Promise((_, reject) => {
+          failLookup = reject
+        })
+    )
+
+    identity.stop()
+    failLookup(new Error('down'))
+    await flush()
+
+    expect(identity.onFailure).not.toHaveBeenCalled()
   })
 
   it('starts no lookup after stop()', async () => {
