@@ -57,6 +57,7 @@ import { app } from '@/scripts/app'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -5443,6 +5444,87 @@ describe('AgentPanelRoot lifecycle', () => {
 
     expect(activity.$state.editingTabPath).toBeNull()
     expect(activity.$state.creatingTab).toBe(false)
+  })
+})
+
+describe('AgentPanelRoot node catalog refresh', () => {
+  const restartSucceeded = {
+    tool_call_id: 'call-restart',
+    tool_name: 'restart_comfyui',
+    status: 'success',
+    duration_ms: 900,
+    thread_id: 'th-1',
+    message_id: 'm-1'
+  }
+
+  beforeEach(() => {
+    ws.clear()
+    vi.useFakeTimers()
+  })
+
+  it('re-registers node definitions and rebuilds the open workflow after the agent restarts ComfyUI', async () => {
+    const refreshNodeDefinitions = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    const open = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = open
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledExactlyOnceWith(
+      open,
+      { force: true }
+    )
+  })
+
+  it('refreshes again when a restart whose refresh failed is delivered again', async () => {
+    const failure = new Error('object_info unavailable')
+    const refreshNodeDefinitions = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValue(undefined)
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'failure_refreshing_agent_node_catalog'
+      })
+    )
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).toHaveBeenCalledTimes(2)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+  it('stops refreshing once the panel unmounts', async () => {
+    const refreshNodeDefinitions = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    unmount()
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).not.toHaveBeenCalled()
   })
 })
 
