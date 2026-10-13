@@ -2,6 +2,7 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useBillingIdentity } from './useBillingIdentity'
@@ -27,7 +28,7 @@ export function useAgentDockMount(): AgentDockMount {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
-  const { subscription, fetchStatus, isLoading, type } = useBillingContext()
+  const { subscription, fetchStatusFresh, type } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -42,28 +43,47 @@ export function useAgentDockMount(): AgentDockMount {
   )
 
   const billingIdentity = useBillingIdentity()
+
+  function refreshTransitionBaseline(identity: string, epoch: number): void {
+    if (fetchStatusFresh === undefined || type.value === 'unknown') return
+    const key = `${type.value}:${identity}:${epoch}`
+    void agentPanelStore
+      .refreshBillingStatus(key, fetchStatusFresh)
+      .then((adopted) => {
+        if (!adopted || billingIdentity.value !== identity) return
+        agentPanelStore.completeCreditTransitionRefresh(identity, epoch)
+        observeFreshScopedFunds(identity)
+      })
+      .catch((error: unknown) => {
+        reportError(error, {
+          errorType: 'error_refreshing_agent_billing_status',
+          surface: 'agent'
+        })
+      })
+  }
+
   watch(billingIdentity, (identity, previousIdentity) => {
     if (identity === previousIdentity) return
     const refreshEpoch = agentPanelStore.beginCreditTransitionRefresh(identity)
-    void agentPanelStore
-      .refreshBillingStatus(identity, fetchStatus)
-      .catch(() => undefined)
-      .finally(() => {
-        agentPanelStore.completeCreditTransitionRefresh(identity, refreshEpoch)
-        observeFreshScopedFunds()
-      })
+    refreshTransitionBaseline(identity, refreshEpoch)
   })
 
-  function observeFreshScopedFunds(): void {
-    const identity = billingIdentity.value
-    const refresh = agentPanelStore.creditTransitionRefresh
-    if (refresh?.identity === identity) {
-      if (!refresh.ready || isLoading.value) return
-      if (!agentPanelStore.claimCompletedCreditTransitionRefresh(identity))
-        return
-    }
+  function observeFreshScopedFunds(
+    expectedIdentity = billingIdentity.value
+  ): void {
+    if (billingIdentity.value !== expectedIdentity) return
+    const identity = expectedIdentity
     const scopedHasFunds = subscription.value?.agentScopedHasFunds
-    if (scopedHasFunds !== undefined)
+    if (scopedHasFunds === undefined) return
+    const refresh = agentPanelStore.creditTransitionRefresh
+    if (refresh?.identity !== identity) {
+      agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
+      return
+    }
+    if (
+      refresh.ready &&
+      agentPanelStore.claimCompletedCreditTransitionRefresh(identity)
+    )
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
   }
 
@@ -71,20 +91,42 @@ export function useAgentDockMount(): AgentDockMount {
     [
       billingIdentity,
       () => subscription.value?.agentScopedHasFunds,
-      isLoading,
       () => agentPanelStore.creditTransitionRefresh
     ],
-    observeFreshScopedFunds,
+    () => observeFreshScopedFunds(),
     { immediate: true }
   )
+
+  watch(type, (billingType, previousType) => {
+    if (billingType === 'unknown' || billingType === previousType) return
+    const refresh = agentPanelStore.creditTransitionRefresh
+    if (refresh?.identity === billingIdentity.value && !refresh.ready) {
+      refreshTransitionBaseline(refresh.identity, refresh.epoch)
+    }
+  })
 
   watch(
     () => agentPanelStore.isOpen,
     (isOpen, wasOpen) => {
       if (!isOpen || wasOpen || type.value !== 'workspace') return
+      const identity = billingIdentity.value
+      const refresh = agentPanelStore.creditTransitionRefresh
+      if (refresh?.identity === identity && !refresh.ready) {
+        refreshTransitionBaseline(identity, refresh.epoch)
+        return
+      }
+      if (fetchStatusFresh === undefined) return
       void agentPanelStore
-        .refreshBillingStatus(billingIdentity.value, fetchStatus)
-        .catch(() => undefined)
+        .refreshBillingStatus(
+          `${type.value}:${identity}:reopen`,
+          fetchStatusFresh
+        )
+        .catch((error: unknown) => {
+          reportError(error, {
+            errorType: 'error_refreshing_agent_billing_status',
+            surface: 'agent'
+          })
+        })
     }
   )
 
