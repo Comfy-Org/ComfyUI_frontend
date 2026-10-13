@@ -43,6 +43,19 @@ function buildUploadErrorMessage(resp: Response) {
   })
 }
 
+function toUploadedPath({ subfolder, name }: UploadResponse) {
+  return subfolder ? `${subfolder}/${name}` : name
+}
+
+function addMissingOptionValues(
+  widget: SimplifiedWidget<string | undefined>,
+  paths: (string | undefined)[]
+) {
+  const values = widget.options?.values
+  if (!Array.isArray(values)) return
+  for (const path of paths) if (!values.includes(path)) values.push(path)
+}
+
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: ComputedRef<FormDropdownItem[]>
@@ -137,6 +150,16 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     return (await Promise.all(uploadPromises)).filter((data) => !!data)
   }
 
+  function showUploadPreview(upload: UploadResponse) {
+    if (!upload.asset?.preview_id) return
+    setPreviewImage({
+      filename: upload.name,
+      preview_id: upload.asset.preview_id,
+      subfolder: upload.subfolder,
+      type: isResultItemType(upload.type) ? upload.type : undefined
+    })
+  }
+
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
@@ -146,9 +169,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       }
 
       const uploadedResponses = await uploadFiles(files)
-      const uploadedPaths = uploadedResponses.map((data) =>
-        data.subfolder ? `${data.subfolder}/${data.name}` : data.name
-      )
+      const uploadedPaths = uploadedResponses.map(toUploadedPath)
 
       if (uploadedPaths.length === 0) {
         toast.warning(t('toastMessages.fileUploadFailed'))
@@ -156,32 +177,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       }
 
       const widget = toValue(options.widget)
-      const values = widget.options?.values
-      if (Array.isArray(values)) {
-        uploadedPaths.forEach((path) => {
-          if (!values.includes(path)) {
-            values.push(path)
-          }
-        })
-      }
-
+      addMissingOptionValues(widget, uploadedPaths)
       modelValue.value = uploadedPaths[0]
-
-      if (widget.callback) {
-        widget.callback(uploadedPaths[0])
-      }
-
-      const [firstUpload] = uploadedResponses
-      if (firstUpload.asset?.preview_id) {
-        setPreviewImage({
-          filename: firstUpload.name,
-          preview_id: firstUpload.asset.preview_id,
-          subfolder: firstUpload.subfolder,
-          type: isResultItemType(firstUpload.type)
-            ? firstUpload.type
-            : undefined
-        })
-      }
+      widget.callback?.(uploadedPaths[0])
+      showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
