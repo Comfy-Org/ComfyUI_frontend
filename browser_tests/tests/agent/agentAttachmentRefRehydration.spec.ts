@@ -147,8 +147,8 @@ test(
   { tag: ['@cloud', '@agent', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     const serverTurnId = 'e2e-server-turn'
+    const persistedAssistantRowId = 'e2e-server-assistant-row'
     const otherThreadId = 'e2e-other-thread'
-    let liveTurnId = ''
     let attachmentThreadId = ''
 
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
@@ -204,6 +204,15 @@ test(
           turn_id: serverTurnId,
           seq: 2,
           role: 'assistant',
+          status: 'complete',
+          content: {}
+        },
+        {
+          id: persistedAssistantRowId,
+          thread_id: threadId,
+          turn_id: serverTurnId,
+          seq: 3,
+          role: 'assistant',
           status: 'streaming',
           content: {}
         }
@@ -226,7 +235,7 @@ test(
     )
     await sendTurn(panel, 'upscale this')
     const accepted = zAgentTurnAccepted.parse(await (await turnAccepted).json())
-    liveTurnId = accepted.message_id
+    const liveTurnId = accepted.message_id
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
     await expect
@@ -276,5 +285,19 @@ test(
     await expect(
       panel.getByRole('button', { name: enMessages.agent.send, exact: true })
     ).toHaveCount(0)
+    const cancelRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        /\/api\/agent\/threads\/[^/]+\/messages\/[^/]+\/cancel$/.test(
+          new URL(request.url()).pathname
+        )
+    )
+    await panel
+      .getByRole('button', { name: enMessages.agent.stop, exact: true })
+      .click()
+    const canceled = await cancelRequest
+    expect(new URL(canceled.url()).pathname).toBe(
+      `/api/agent/threads/${accepted.thread_id}/messages/${liveTurnId}/cancel`
+    )
   }
 )

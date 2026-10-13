@@ -2774,6 +2774,10 @@
         "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in.",
         "dismiss": "Not now"
       },
+      "outsideOrganization": {
+        "title": "This workspace is managed by single sign-on",
+        "body": "Your account isn't part of the organization that manages this workspace, so it can't open it. Switch to another workspace, or ask the organization's admin for access."
+      },
       "emailLabel": "Work email",
       "emailPlaceholder": "Enter your work email",
       "submit": "Continue",
