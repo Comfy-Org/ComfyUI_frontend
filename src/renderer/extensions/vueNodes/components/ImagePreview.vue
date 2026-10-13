@@ -345,12 +345,10 @@ watch(
 
     if (!urlsChanged) return
 
-    // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
 
     viewMode.value = defaultViewMode(newUrls)

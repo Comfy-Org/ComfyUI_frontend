@@ -717,13 +717,10 @@ export const useLitegraphService = () => {
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
-        // If this node has images then we add an open in new tab item
         let img
         if (this.imageIndex != null) {
-          // An image is selected so select that
           img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
         }
         if (img) {
@@ -756,7 +753,6 @@ export const useLitegraphService = () => {
         }
       })
 
-      // prevent conflict of clipspace content
       if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
