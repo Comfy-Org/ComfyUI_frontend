@@ -24,48 +24,83 @@ function workflow(
   }
 }
 
-const workflows = [
-  workflow('restore', 'upscale', 4, {
-    recommendedRank: 2,
-    thumbnail: { url: '/restore.webp', kind: 'image' }
-  }),
-  workflow('sharpen', 'upscale', 4, {
-    recommendedRank: 1,
-    thumbnail: { url: '/sharpen.mp4', kind: 'video', poster: '/sharpen.jpg' }
-  }),
-  workflow('inpaint', 'image-to-image', 0, {
-    thumbnail: { url: '/inpaint.mp4', kind: 'video' }
-  }),
-  workflow('turnaround', 'characters', 6, {
-    thumbnail: { url: '/turnaround.webp', kind: 'image' }
+const still = (url: string) => ({ url, kind: 'image' as const })
+
+const upscaling = [5, 4, 3, 2, 1].map((rank) =>
+  workflow(`upscale-${rank}`, 'upscale', 4, {
+    recommendedRank: rank,
+    thumbnail: still(`/upscale-${rank}.webp`)
   })
+)
+
+const workflows = [
+  ...upscaling,
+  workflow('inpaint', 'image-to-image', 0, {
+    recommendedRank: 1,
+    thumbnail: { url: '/inpaint.mp4', kind: 'video', poster: '/inpaint.jpg' }
+  }),
+  workflow('outpaint', 'image-to-image', 0, {
+    recommendedRank: 2,
+    thumbnail: { url: '/outpaint.mp4', kind: 'video' }
+  }),
+  workflow('relight', 'image-to-image', 0, {
+    recommendedRank: 3,
+    thumbnail: still('/inpaint.jpg')
+  }),
+  workflow('turnaround', 'characters', 6)
 ]
 
 describe('categoryTiles', () => {
-  it('lists each category with a workflow, in sidebar order, linking to it with a still of its leading workflow', () => {
-    expect(categoryTiles(workflows)).toEqual([
+  it('lists each category with a workflow, in sidebar order, linking to it', () => {
+    expect(
+      categoryTiles(workflows).map(({ id, label, count, href }) => ({
+        id,
+        label,
+        count,
+        href
+      }))
+    ).toEqual([
       {
         id: 'image-to-image',
         label: 'image-to-image label',
-        count: 1,
+        count: 3,
         href: '/hub/workflows/?category=image-to-image'
       },
       {
         id: 'upscale',
         label: 'upscale label',
-        count: 2,
-        href: '/hub/workflows/?category=upscale',
-        still: '/sharpen.jpg'
+        count: 5,
+        href: '/hub/workflows/?category=upscale'
       },
       {
         id: 'characters',
         label: 'characters label',
         count: 1,
-        href: '/hub/workflows/?category=characters',
-        still: '/turnaround.webp'
+        href: '/hub/workflows/?category=characters'
       }
     ])
   })
+
+  it.for([
+    {
+      category: 'upscale',
+      stills: [
+        '/upscale-1.webp',
+        '/upscale-2.webp',
+        '/upscale-3.webp',
+        '/upscale-4.webp'
+      ]
+    },
+    { category: 'image-to-image', stills: ['/inpaint.jpg'] },
+    { category: 'characters', stills: [] }
+  ])(
+    'shows up to four stills of $category, most recommended first, never repeated or invented',
+    ({ category, stills }) => {
+      expect(
+        categoryTiles(workflows).find((tile) => tile.id === category)?.stills
+      ).toEqual(stills)
+    }
+  )
 
   it('names the categories in Chinese on the Chinese page', () => {
     expect(categoryTiles(workflows, 'zh-CN').map((tile) => tile.label)).toEqual(

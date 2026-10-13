@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
@@ -14,6 +17,13 @@ const { workflows, locale = 'en' } = defineProps<{
 const { t } = translationsFor(locale)
 
 const tiles = computed(() => categoryTiles(workflows, locale))
+
+const MOSAIC_LAYOUT: Readonly<Record<number, string>> = {
+  1: 'grid-cols-1 grid-rows-1',
+  2: 'grid-cols-2 grid-rows-1',
+  3: 'grid-cols-2 grid-rows-2 [&>*:last-child]:col-span-2',
+  4: 'grid-cols-2 grid-rows-2'
+}
 </script>
 
 <template>
@@ -28,7 +38,7 @@ const tiles = computed(() => categoryTiles(workflows, locale))
     >
       {{ t('workshop.explore.useCasesTitle') }}
     </h2>
-    <ul class="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
+    <ul class="grid grid-cols-2 gap-5 lg:grid-cols-4">
       <li v-for="tile in tiles" :key="tile.id">
         <a
           :href="tile.href"
@@ -37,13 +47,20 @@ const tiles = computed(() => categoryTiles(workflows, locale))
           data-testid="explore-category"
         >
           <span
-            class="relative block aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface-hover"
+            :class="
+              cn(
+                'grid aspect-4/3 gap-1 overflow-hidden rounded-2xl',
+                MOSAIC_LAYOUT[tile.stills.length] ?? 'bg-hub-surface-hover'
+              )
+            "
+            data-testid="explore-category-mosaic"
           >
             <img
-              v-if="tile.still"
-              :src="tile.still"
+              v-for="still in tile.stills"
+              :key="still"
+              :src="still"
               alt=""
-              class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+              class="size-full min-h-0 rounded-lg object-cover select-none"
               loading="lazy"
               decoding="async"
               draggable="false"
@@ -59,7 +76,9 @@ const tiles = computed(() => categoryTiles(workflows, locale))
               <span class="truncate text-sm font-medium text-content-bright">
                 {{ tile.label }}
               </span>
-              <span class="text-xs text-primary-warm-gray tabular-nums">
+              <span
+                class="inline-flex items-center gap-1 text-xs text-primary-warm-gray tabular-nums transition-colors group-hover:text-primary-comfy-yellow"
+              >
                 {{
                   t(
                     'hubPages.explore.workflows',
@@ -67,6 +86,7 @@ const tiles = computed(() => categoryTiles(workflows, locale))
                     { plural: tile.count }
                   )
                 }}
+                <ArrowRight class="size-3" aria-hidden="true" />
               </span>
             </span>
           </span>

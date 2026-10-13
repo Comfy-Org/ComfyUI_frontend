@@ -9,8 +9,10 @@ export interface CategoryTile {
   readonly label: string
   readonly count: number
   readonly href: string
-  readonly still?: string
+  readonly stills: readonly string[]
 }
+
+const MOSAIC_STILLS = 4
 
 function byRecommendation(a: WorkflowWorkshopModel, b: WorkflowWorkshopModel) {
   return (
@@ -21,7 +23,7 @@ function byRecommendation(a: WorkflowWorkshopModel, b: WorkflowWorkshopModel) {
 
 /**
  * One tile per Workflows category that lists something, in the sidebar's
- * order, fronted by a still from its most recommended workflow.
+ * order, with the stills of up to four of its most recommended workflows.
  */
 export function categoryTiles(
   workflows: readonly WorkflowWorkshopModel[],
@@ -30,17 +32,20 @@ export function categoryTiles(
   const catalogue = getRoutes(locale).hubWorkflows
   return workflowCategories(workflows, locale === 'zh-CN' ? locale : 'en').map(
     ({ id, label, count }) => {
-      const still = workflows
-        .filter((workflow) => workflow.category === id)
-        .toSorted(byRecommendation)
-        .map((workflow) => stillOf(workflow.thumbnail))
-        .find((src) => src !== undefined)
+      const stills = [
+        ...new Set(
+          workflows
+            .filter((workflow) => workflow.category === id)
+            .toSorted(byRecommendation)
+            .flatMap((workflow) => stillOf(workflow.thumbnail) ?? [])
+        )
+      ].slice(0, MOSAIC_STILLS)
       return {
         id,
         label,
         count,
         href: `${catalogue}?${new URLSearchParams({ category: id })}`,
-        ...(still && { still })
+        stills
       }
     }
   )
