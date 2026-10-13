@@ -287,6 +287,17 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
   })
 
+  it('stops retrying when the renderer queue stays busy', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'busy' })
+    renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await vi.runAllTimersAsync()
+
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(30)
+  })
+
   it('generates thumbnails only for model URLs that name a filename query', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     const pathStyleModel: ReplyAsset = {

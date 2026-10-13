@@ -75,6 +75,7 @@ const assetNames = ref<Record<string, string>>({})
 const thumbnailAbortController = new AbortController()
 const thumbnailRetryTimers = new Set<ReturnType<typeof setTimeout>>()
 const THUMBNAIL_RETRY_DELAY_MS = 2000
+const THUMBNAIL_MAX_ATTEMPTS = 30
 
 onBeforeUnmount(() => {
   thumbnailAbortController.abort()
@@ -84,7 +85,8 @@ onBeforeUnmount(() => {
 
 async function generateOffscreenModelThumbnail(
   url: string,
-  filename: string
+  filename: string,
+  attempt = 1
 ): Promise<void> {
   const { generateModelThumbnail } =
     await import('@/components/load3d/modelThumbnail')
@@ -97,12 +99,18 @@ async function generateOffscreenModelThumbnail(
     modelThumbnails.value[url] = generated.dataUrl
     return
   }
-  if (generated.status !== 'busy' || thumbnailAbortController.signal.aborted) {
+  if (
+    generated.status !== 'busy' ||
+    thumbnailAbortController.signal.aborted ||
+    attempt >= THUMBNAIL_MAX_ATTEMPTS
+  ) {
     return
   }
   const timer = setTimeout(() => {
     thumbnailRetryTimers.delete(timer)
-    void generateOffscreenModelThumbnail(url, filename).catch(() => {})
+    void generateOffscreenModelThumbnail(url, filename, attempt + 1).catch(
+      () => {}
+    )
   }, THUMBNAIL_RETRY_DELAY_MS)
   thumbnailRetryTimers.add(timer)
 }
