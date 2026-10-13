@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
@@ -57,8 +58,7 @@ export function useImageMenuOptions() {
     if (!images?.length) return
     const img = images.at(node.imageIndex ?? 0)
     if (!img) return
-    const url = new URL(img.src)
-    url.searchParams.delete('preview')
+    const url = getImageFileUrl(img)
     void openFileInNewTab(url.toString())
   }
 
@@ -101,8 +101,7 @@ export function useImageMenuOptions() {
     if (!img) return
 
     try {
-      const url = new URL(img.src)
-      url.searchParams.delete('preview')
+      const url = getImageFileUrl(img)
       downloadFile(url.toString())
     } catch (error) {
       console.error('Failed to save image:', error)
