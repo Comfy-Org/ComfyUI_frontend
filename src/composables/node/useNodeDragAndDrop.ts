@@ -2,6 +2,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { withHdrImageType } from '@/utils/eventUtils'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -27,7 +28,7 @@ export const useNodeDragAndDrop = <T>(
     !!Array.from(items).find((f) => f.kind === 'file')
 
   const filterFiles = (files: FileList | File[]) =>
-    Array.from(files).filter(fileFilter)
+    Array.from(files, withHdrImageType).filter(fileFilter)
 
   const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
 
