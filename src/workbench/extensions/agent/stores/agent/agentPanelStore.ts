@@ -51,6 +51,12 @@ type TargetTracking =
       unavailable: true
     }
 
+interface BillingRefreshEntry {
+  result: Promise<boolean>
+  lateErrors: Set<(error: unknown) => void>
+  lateSuccesses: Set<() => void>
+}
+
 export type AgentPanelView =
   | { screen: 'chat' }
   | {
@@ -92,9 +98,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     epoch: number
     ready: boolean
   } | null>(null)
-  const billingRefreshes = new Map<string, Promise<boolean>>()
+  const billingRefreshes = new Map<string, BillingRefreshEntry>()
   const panelOpenEpoch = ref(0)
-  let latestBillingRefresh: Promise<boolean> | undefined
+  let latestBillingRefresh: Promise<void> | undefined
   let creditTransitionRefreshEpoch = 0
   watch(isOpen, (open, wasOpen) => {
     if (open && !wasOpen) panelOpenEpoch.value += 1
@@ -388,10 +394,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function completeCreditTransitionRefresh(
     identity: string,
     epoch: number
-  ): void {
+  ): boolean {
     const current = creditTransitionRefresh.value
-    if (current?.identity !== identity || current.epoch !== epoch) return
+    if (current?.identity !== identity || current.epoch !== epoch) return false
     creditTransitionRefresh.value = { ...current, ready: true }
+    return true
   }
 
   function claimCompletedCreditTransitionRefresh(identity: string): boolean {
@@ -409,52 +416,68 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     onLateSuccess?: () => void
   ): Promise<boolean> {
     const existing = billingRefreshes.get(key)
-    if (existing) return existing
+    if (existing) {
+      if (onLateError) existing.lateErrors.add(onLateError)
+      if (onLateSuccess) existing.lateSuccesses.add(onLateSuccess)
+      return existing.result
+    }
     const previous = afterCurrent ? latestBillingRefresh : undefined
-    const start = () =>
-      new Promise<boolean>((resolve, reject) => {
-        let timedOut = false
-        const timeoutId = setTimeout(() => {
-          timedOut = true
-          resolve(false)
-        }, 15_000)
-        Promise.resolve()
-          .then(fetchStatus)
-          .then(
-            (adopted) => {
-              if (timedOut) {
-                if (adopted) {
-                  try {
-                    onLateSuccess?.()
-                  } catch {
-                    // Reporting callbacks must not reject the detached request.
-                  }
-                }
-              } else resolve(adopted)
-            },
-            (error: unknown) => {
-              if (!timedOut) reject(error)
-              else {
-                try {
-                  onLateError?.(error)
-                } catch {
-                  // Reporting callbacks must not reject the detached request.
-                }
+    const lateErrors = new Set<(error: unknown) => void>()
+    const lateSuccesses = new Set<() => void>()
+    if (onLateError) lateErrors.add(onLateError)
+    if (onLateSuccess) lateSuccesses.add(onLateSuccess)
+    const notifyLateErrors = (error: unknown) => {
+      for (const report of lateErrors) {
+        try {
+          report(error)
+        } catch {
+          // Error reporters must not reject the detached request.
+        }
+      }
+    }
+    const fetchPromise = (previous ?? Promise.resolve()).then(fetchStatus)
+    let timedOut = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const result = new Promise<boolean>((resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        timedOut = true
+        resolve(false)
+      }, 15_000)
+      fetchPromise.then(
+        (adopted) => {
+          if (!timedOut) resolve(adopted)
+          else if (adopted) {
+            for (const callback of lateSuccesses) {
+              try {
+                callback()
+              } catch (error) {
+                notifyLateErrors(error)
               }
             }
-          )
-          .finally(() => clearTimeout(timeoutId))
-      })
-    const pending = previous ? previous.catch(() => false).then(start) : start()
-    const refresh = pending.finally(() => {
-      if (billingRefreshes.get(key) === refresh) {
-        billingRefreshes.delete(key)
-      }
-      if (latestBillingRefresh === refresh) latestBillingRefresh = undefined
+          }
+        },
+        (error: unknown) => {
+          if (!timedOut) reject(error)
+          else notifyLateErrors(error)
+        }
+      )
     })
-    billingRefreshes.set(key, refresh)
-    latestBillingRefresh = refresh
-    return refresh
+    const entry = { result, lateErrors, lateSuccesses }
+    const settled = fetchPromise
+      .then(
+        () => undefined,
+        () => undefined
+      )
+      .finally(() => {
+        if (timeoutId !== undefined) clearTimeout(timeoutId)
+        if (billingRefreshes.get(key) === entry) {
+          billingRefreshes.delete(key)
+        }
+        if (latestBillingRefresh === settled) latestBillingRefresh = undefined
+      })
+    billingRefreshes.set(key, entry)
+    latestBillingRefresh = settled
+    return result
   }
 
   return {
