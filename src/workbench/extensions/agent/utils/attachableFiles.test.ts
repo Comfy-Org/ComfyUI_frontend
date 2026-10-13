@@ -128,6 +128,7 @@ describe('isValidAgentAttachment', () => {
     { name: 'renamed.mp4', contents: 'not a video' },
     { name: 'renamed.m4v', contents: 'not a video' },
     { name: 'renamed.mov', contents: 'not a video' },
+    { name: 'IMG_0001.MOV', contents: 'not a video' },
     { name: 'renamed.webm', contents: 'not a video' },
     { name: 'renamed.mkv', contents: 'not a video' },
     { name: 'sound.avi', contents: 'RIFF\0\0\0\0WAVE' },

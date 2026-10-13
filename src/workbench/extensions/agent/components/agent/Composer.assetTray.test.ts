@@ -33,7 +33,7 @@ type MediaSurfaces = {
   menuItem: HTMLElement
 }
 
-function setup() {
+function setup({ streaming = false }: { streaming?: boolean } = {}) {
   const store = useAgentComposerStore()
   store.setNodeScope('workflow-a')
   const send = vi.fn()
@@ -42,6 +42,7 @@ function setup() {
       h(Composer, {
         hasWorkflowTarget: true,
         selectionTags: store.nodes,
+        streaming,
         onSend: send
       })
   })
@@ -284,6 +285,9 @@ describe('composer asset tray', () => {
     await user.type(editor, 'Keep my draft')
     const sendButton = screen.getByRole('button', { name: 'Send' })
     expect(sendButton).toHaveAttribute('aria-disabled', 'true')
+    expect(sendButton).toHaveAccessibleDescription(
+      'bad.mov isn’t a valid video. Remove it to send.'
+    )
     await user.hover(sendButton)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'bad.mov isn’t a valid video. Remove it to send.'
@@ -312,6 +316,23 @@ describe('composer asset tray', () => {
     expect(sendButton).toBeEnabled()
     await user.click(sendButton)
     expect(send).toHaveBeenCalledExactlyOnceWith('Keep my draft', [])
+  })
+
+  it('keeps Stop usable without the blocked-Send explanation while the agent runs', async () => {
+    const user = userEvent.setup()
+    const { store } = setup({ streaming: true })
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    const stopButton = await screen.findByRole('button', { name: 'Stop' })
+    expect(stopButton).toBeEnabled()
+    expect(stopButton).not.toHaveAttribute('aria-disabled')
+    expect(stopButton).not.toHaveAttribute('aria-description')
+    await user.hover(stopButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
 
   it('offers bounded page scrolling without changing the draft or included assets', async () => {

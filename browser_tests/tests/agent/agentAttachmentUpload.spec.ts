@@ -102,7 +102,7 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
     await agentPanel.composer.press('Enter')
     await expect(agentPanel.composer).toHaveText('Describe this video')
-    await agentPanel.closeButton.click()
+    await agentPanel.close()
     await agentPanel.open()
     await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
     await expect(
