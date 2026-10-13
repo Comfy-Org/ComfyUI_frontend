@@ -20,6 +20,7 @@ import {
   nextSeed
 } from '@/lib/workshop/paparazzi-me/setup'
 import { useCinematicPopover } from './useCinematicPopover'
+import { useSnapshotHistory } from './useSnapshotHistory'
 
 interface PaparazziImage {
   readonly url: string
@@ -57,9 +58,8 @@ export function usePaparazziMe() {
   ])
   const face = shallowRef<PaparazziImage>(PAPARAZZI_EXAMPLE)
   const ownScene = shallowRef<PaparazziImage>()
-  const setup = shallowRef<PaparazziSetup>(DEFAULT_SETUP)
-  const past = shallowRef<PaparazziSetup[]>([])
-  const future = shallowRef<PaparazziSetup[]>([])
+  const history = useSnapshotHistory<PaparazziSetup>(DEFAULT_SETUP)
+  const setup = history.state
   const phase = shallowRef<PaparazziPhase>({ kind: 'editing' })
   const search = shallowRef<SceneSearch>({
     kind: 'found',
@@ -71,7 +71,6 @@ export function usePaparazziMe() {
   const compare = ref(false)
   const touched = ref(false)
   const ownUrls = new Set<string>()
-  let lastEdit: string | undefined
   let picks = 0
   let run: AbortController | undefined
   let looking: AbortController | undefined
@@ -126,20 +125,11 @@ export function usePaparazziMe() {
     search.value = known ? { kind: 'found', query, ...known } : { kind: 'idle' }
   }
 
-  function apply(next: PaparazziSetup) {
-    setup.value = next
-    syncSearch()
-  }
-
   /** Changes the setup; edits that share a `key` in a row undo as one. */
   function change(patch: Partial<PaparazziSetup>, key?: string) {
     touched.value = true
-    if (!key || key !== lastEdit) {
-      past.value = [...past.value, setup.value]
-      future.value = []
-    }
-    lastEdit = key
-    apply({ ...setup.value, ...patch })
+    history.change({ ...setup.value, ...patch }, key)
+    syncSearch()
   }
 
   async function lookUpStar(celebrity: string, query: string) {
@@ -216,21 +206,13 @@ export function usePaparazziMe() {
   }
 
   function undo() {
-    const previous = past.value.at(-1)
-    if (!previous) return
-    future.value = [setup.value, ...future.value]
-    past.value = past.value.slice(0, -1)
-    apply(previous)
-    lastEdit = undefined
+    history.undo()
+    syncSearch()
   }
 
   function redo() {
-    const next = future.value.at(0)
-    if (!next) return
-    past.value = [...past.value, setup.value]
-    future.value = future.value.slice(1)
-    apply(next)
-    lastEdit = undefined
+    history.redo()
+    syncSearch()
   }
 
   /** The scene for the request, looking the star up first when needed. */
@@ -310,8 +292,8 @@ export function usePaparazziMe() {
     touched,
     canRun,
     missingStar,
-    canUndo: computed(() => past.value.length > 0),
-    canRedo: computed(() => future.value.length > 0),
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
     change,
     findScenes,
     pickScene,
