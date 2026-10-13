@@ -243,6 +243,7 @@ export function useMaskEditorLoader() {
         type: img.type || 'output',
         subfolder: img.subfolder || ''
       })
+      if (img.version) params.set('version', img.version)
       return api.apiURL(`/view?${params.toString()}`)
     }
 
@@ -257,6 +258,7 @@ export function useMaskEditorLoader() {
       params.set('filename', img.filename)
       params.set('type', img.type || 'output')
       params.set('subfolder', img.subfolder || '')
+      if (img.version) params.set('version', img.version)
       return api.apiURL(`/view?${params.toString()}`)
     }
 
