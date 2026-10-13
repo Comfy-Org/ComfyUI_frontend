@@ -7879,10 +7879,6 @@ Enterprise`
     en: 'One clip, two states.',
     'zh-CN': '一段视频，两种状态。'
   },
-  'nvidiaRtx.beforeAfter.body': {
-    en: 'Source on one side, output on the other.',
-    'zh-CN': '一侧是原始素材，另一侧是输出结果。'
-  },
   'nvidiaRtx.gallery.heading': {
     en: 'Made on NVIDIA RTX',
     'zh-CN': '在 NVIDIA RTX 上创作'

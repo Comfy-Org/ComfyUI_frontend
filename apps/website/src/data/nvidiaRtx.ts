@@ -35,7 +35,6 @@ const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 
 const beforeAfter: ModelLaunchBeforeAfter = {
   headingKey: 'nvidiaRtx.beforeAfter.heading',
-  bodyKey: 'nvidiaRtx.beforeAfter.body',
   src: 'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
   features: [
     {

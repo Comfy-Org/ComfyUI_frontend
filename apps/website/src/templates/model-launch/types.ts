@@ -212,13 +212,13 @@ interface ModelLaunchBeforeAfterBase {
 
 // A tabbed before/after video slider. Each tab swaps in its own clip pair and
 // caption.
-export interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
+interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
   tabs: readonly ModelLaunchBeforeAfterTab[]
 }
 
 // One clip that already shows both states side by side, e.g. the RTX Video
 // effects on /nvidia-rtx, with the effects it covers listed under the intro.
-export interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
+interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
   src: string
   features: readonly LocalizedText[]
 }
