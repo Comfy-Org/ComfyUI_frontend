@@ -116,7 +116,7 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-/** Maximum entries retained in each job-id lookup map; oldest evicted first. */
+/** Cap on `jobIdToSessionWorkflowPath` and `jobIdToWorkflowId`; oldest evicted first. */
 export const MAX_JOB_LOOKUP_ENTRIES = 4000
 
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
@@ -1112,7 +1112,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function setJobWorkflowId(jobId: JobId, workflowId: WorkflowId) {
     const map = jobIdToWorkflowId.value
-    // Re-insert so jobs still re-registered by queue polls are evicted last
     map.delete(jobId)
     map.set(jobId, workflowId)
     while (map.size > MAX_JOB_LOOKUP_ENTRIES) {
