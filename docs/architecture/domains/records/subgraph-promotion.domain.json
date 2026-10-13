@@ -122,6 +122,42 @@
     {
       "path": "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
       "role": "application"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphNodeWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/previewExposureStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/previewExposureStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/subgraphPseudoWidgetCache.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/subgraphPseudoWidgetCache.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePromotedPreviews.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePromotedPreviews.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -152,6 +188,23 @@
         "browser_tests/tests/subgraph/subgraphPromotion.spec.ts",
         "browser_tests/tests/subgraphPromotedWidgetPanel.spec.ts"
       ]
+    },
+    {
+      "name": "Subgraph editor lists, reorders, and toggles promoted widgets and previews",
+      "checks": [
+        "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts"
+      ]
+    },
+    {
+      "name": "Preview exposures and promoted preview pseudo-widgets resolve to their inner host nodes",
+      "checks": [
+        "src/stores/previewExposureStore.test.ts",
+        "src/services/subgraphPseudoWidgetCache.test.ts"
+      ]
+    },
+    {
+      "name": "Subgraph nodes expose promoted inner previews",
+      "checks": ["src/composables/node/usePromotedPreviews.test.ts"]
     }
   ],
   "adrs": [

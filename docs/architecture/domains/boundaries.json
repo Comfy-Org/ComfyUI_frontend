@@ -4,6 +4,7 @@
       {
         "name": "agent/domain",
         "patterns": [
+          "src/workbench/extensions/agent/crdt/opEnvelope.property.test.ts",
           "src/workbench/extensions/agent/schemas/**",
           "src/workbench/extensions/agent/types/**",
           "src/workbench/extensions/agent/services/agent/agentActivityRows.ts",
@@ -65,6 +66,7 @@
       {
         "name": "agent/application",
         "patterns": [
+          "src/workbench/extensions/agent/composables/useBillingIdentity.ts",
           "src/workbench/extensions/agent/stores/agent/**",
           "src/workbench/extensions/agent/experiments/**",
           "src/workbench/extensions/agent/feedback.ts",
@@ -141,6 +143,7 @@
       {
         "name": "agent/presentation",
         "patterns": [
+          "src/workbench/extensions/agent/agentDocs.ts",
           "src/workbench/extensions/agent/components/**",
           "src/workbench/extensions/agent/composables/agent/mentionPickerState.ts",
           "src/workbench/extensions/agent/composables/agent/mentionPickerState.test.ts",
@@ -163,6 +166,7 @@
       {
         "name": "agent/integration",
         "patterns": [
+          "src/workbench/extensions/agent/crdt/__fixtures__/docHostMintedSink.ts",
           "src/workbench/extensions/agent/AgentPanelRoot.vue",
           "src/workbench/extensions/agent/AgentPanelRoot.test.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
@@ -214,6 +218,114 @@
         ]
       },
       {
+        "name": "app-builder/domain",
+        "patterns": ["src/components/builder/types.ts"]
+      },
+      {
+        "name": "app-builder/application",
+        "patterns": [
+          "src/components/builder/builderViewOptions.test.ts",
+          "src/components/builder/builderViewOptions.ts",
+          "src/components/builder/useAppModeWidgetResizing.test.ts",
+          "src/components/builder/useAppModeWidgetResizing.ts",
+          "src/components/builder/useBuilderSave.test.ts",
+          "src/components/builder/useBuilderSave.ts",
+          "src/components/builder/useBuilderSteps.ts",
+          "src/components/builder/useEnterBuilder.test.ts",
+          "src/components/builder/useEnterBuilder.ts",
+          "src/components/builder/useLoaderDropIndicator.test.ts",
+          "src/components/builder/useLoaderDropIndicator.ts",
+          "src/components/builder/useResolvedSelectedInputs.test.ts",
+          "src/components/builder/useResolvedSelectedInputs.ts"
+        ]
+      },
+      {
+        "name": "app-builder/presentation",
+        "patterns": [
+          "src/components/builder/AppBuilder.test.ts",
+          "src/components/builder/AppBuilder.vue",
+          "src/components/builder/AppModeWidgetList.vue",
+          "src/components/builder/BuilderDialog.vue",
+          "src/components/builder/BuilderFooterToolbar.test.ts",
+          "src/components/builder/BuilderFooterToolbar.vue",
+          "src/components/builder/BuilderMenu.test.ts",
+          "src/components/builder/BuilderMenu.vue",
+          "src/components/builder/BuilderOpensAsPopover.vue",
+          "src/components/builder/BuilderSaveDialogContent.vue",
+          "src/components/builder/BuilderToolbar.vue",
+          "src/components/builder/ConnectOutputPopover.vue",
+          "src/components/builder/EmptyWorkflowDialogContent.vue",
+          "src/components/builder/IoItem.vue",
+          "src/components/builder/StepBadge.vue",
+          "src/components/builder/StepLabel.vue",
+          "src/components/builder/useEmptyWorkflowDialog.test.ts",
+          "src/components/builder/useEmptyWorkflowDialog.ts",
+          "src/components/builder/ViewTypeRadioGroup.vue",
+          "src/components/builder/VueNodeSwitchPopup.vue",
+          "src/components/builder/WidgetDescription.vue"
+        ]
+      },
+      {
+        "name": "app-host/domain",
+        "patterns": [
+          "src/config.ts",
+          "src/constants/coreMenuCommands.ts",
+          "src/constants/splitterConstants.ts",
+          "src/constants/uvMirrors.ts",
+          "src/locales/localeConfig.ts",
+          "src/vite-env.d.ts"
+        ]
+      },
+      {
+        "name": "app-host/application",
+        "patterns": [
+          "src/stores/bootstrapStore.ts",
+          "src/stores/bootstrapStore.test.ts",
+          "src/__mocks__/i18n.ts",
+          "src/i18n.catalog.test.ts",
+          "src/i18n.safeTranslation.test.ts",
+          "src/i18n.test.ts",
+          "src/i18n.ts"
+        ]
+      },
+      {
+        "name": "app-host/infrastructure",
+        "patterns": [
+          "src/config/comfyApi.test.ts",
+          "src/config/comfyApi.ts",
+          "src/config/viteSeo.test.ts",
+          "src/platform/distribution/types.ts",
+          "src/utils/envUtil.ts",
+          "src/utils/electronMirrorCheck.ts",
+          "src/composables/useExternalLink.ts",
+          "src/composables/useExternalLink.test.ts"
+        ]
+      },
+      {
+        "name": "app-host/presentation",
+        "patterns": [
+          "src/App.test.ts",
+          "src/App.vue",
+          "src/views/GraphView.test.ts",
+          "src/views/GraphView.vue",
+          "src/views/layouts/LayoutDefault.vue",
+          "src/views/templates/BaseViewTemplate.vue"
+        ]
+      },
+      {
+        "name": "app-host/integration",
+        "patterns": [
+          "src/bootstrap.ts",
+          "src/extensions/core/electronAdapter.ts",
+          "src/main.ts",
+          "src/router.ts",
+          "src/components/graph/GraphCanvas.vue",
+          "src/components/graph/GraphCanvas.test.ts",
+          "src/composables/useUrlActionLoaders.ts",
+          "src/composables/useUrlActionLoaders.test.ts"
+        ]
+      },
+      {
         "name": "assets/domain",
         "patterns": [
           "src/platform/assets/constants/**",
@@ -238,7 +350,9 @@
           "src/platform/assets/utils/marqueeSelectionUtil.test.ts",
           "src/platform/assets/utils/marqueeSelectionUtil.ts",
           "src/platform/assets/utils/outputAssetCountUtil.ts",
-          "src/platform/assets/utils/outputKeyUtil.ts"
+          "src/platform/assets/utils/outputKeyUtil.ts",
+          "src/utils/loaderNodeUtil.ts",
+          "src/utils/loaderNodeUtil.test.ts"
         ]
       },
       {
@@ -317,7 +431,12 @@
           "src/platform/assets/utils/outputAssetUtil.ts",
           "src/platform/assets/utils/outputExportUtil.test.ts",
           "src/platform/assets/utils/outputExportUtil.ts",
-          "src/platform/assets/utils/__mocks__/**"
+          "src/platform/assets/utils/__mocks__/**",
+          "src/utils/__tests__/eventUtils.test.ts",
+          "src/utils/eventUtils.test.ts",
+          "src/utils/eventUtils.ts",
+          "src/utils/requestUtil.test.ts",
+          "src/utils/requestUtil.ts"
         ]
       },
       {
@@ -332,7 +451,11 @@
           "src/components/sidebar/tabs/AssetsSidebarGridView.vue",
           "src/components/sidebar/tabs/AssetsSidebarListView.stories.ts",
           "src/components/sidebar/tabs/AssetsSidebarListView.test.ts",
-          "src/components/sidebar/tabs/AssetsSidebarListView.vue"
+          "src/components/sidebar/tabs/AssetsSidebarListView.vue",
+          "src/components/toast/ProgressToastItem.stories.ts",
+          "src/components/toast/ProgressToastItem.test.ts",
+          "src/components/toast/ProgressToastItem.vue",
+          "src/composables/useProgressBarBackground.ts"
         ]
       },
       {
@@ -341,7 +464,21 @@
           "src/platform/assets/utils/createAssetWidget.test.ts",
           "src/platform/assets/utils/createAssetWidget.ts",
           "src/composables/sidebarTabs/useAssetsSidebarTab.test.ts",
-          "src/composables/sidebarTabs/useAssetsSidebarTab.ts"
+          "src/composables/sidebarTabs/useAssetsSidebarTab.ts",
+          "src/composables/sidebarTabs/useModelLibrarySidebarTab.test.ts",
+          "src/composables/sidebarTabs/useModelLibrarySidebarTab.ts",
+          "src/lib/litegraph/src/widgets/AssetWidget.ts"
+        ]
+      },
+      {
+        "name": "async-control/application",
+        "patterns": [
+          "src/utils/pagedList.ts",
+          "src/utils/pagedList.test.ts",
+          "src/utils/createCancelToken.ts",
+          "src/utils/rafBatch.ts",
+          "src/utils/rafBatch.test.ts",
+          "src/base/common/async.ts"
         ]
       },
       {
@@ -382,6 +519,7 @@
       {
         "name": "authentication/domain",
         "patterns": [
+          "src/platform/auth/localWeb/accessTokenIdentity.ts",
           "src/platform/auth/apiAuthProvider.ts",
           "src/platform/auth/authCredential.test.ts",
           "src/platform/auth/authCredential.ts",
@@ -391,7 +529,11 @@
           "src/platform/auth/sso/ssoRequiredDialogKey.ts",
           "src/platform/auth/sso/ssoReturnPath.test.ts",
           "src/platform/auth/sso/ssoReturnPath.ts",
-          "src/platform/workspace/stores/workspaceAuthError.ts"
+          "src/platform/workspace/stores/workspaceAuthError.ts",
+          "src/utils/hostWhitelist.test.ts",
+          "src/utils/hostWhitelist.ts",
+          "src/schemas/signInSchema.ts",
+          "src/types/authTypes.ts"
         ]
       },
       {
@@ -420,12 +562,23 @@
           "src/stores/authStore.test.ts",
           "src/stores/authStore.ts",
           "src/stores/userStore.test.ts",
-          "src/stores/userStore.ts"
+          "src/stores/userStore.ts",
+          "src/stores/__tests__/authTokenPriority.test.ts",
+          "src/composables/node/usePartnerNodesInGraph.test.ts",
+          "src/composables/node/usePartnerNodesInGraph.ts",
+          "src/storybook/mocks/useCurrentUser.ts"
         ]
       },
       {
         "name": "authentication/infrastructure",
         "patterns": [
+          "src/platform/auth/localWeb/localWebAuthBridge.ts",
+          "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
+          "src/platform/auth/localWeb/localWebSession.ts",
+          "src/platform/auth/localWeb/localWebSession.test.ts",
+          "src/platform/auth/localWeb/localWebTokenStore.ts",
+          "src/platform/auth/localWeb/pendingSignIn.ts",
+          "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
           "src/platform/auth/desktopHost/**",
           "src/platform/auth/firebaseIdentity.test.ts",
           "src/platform/auth/firebaseIdentity.ts",
@@ -440,16 +593,50 @@
           "src/platform/auth/unified/**",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
-          "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts"
+          "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
+          "src/config/firebase.ts",
+          "src/config/firebase.test.ts",
+          "src/config/turnstile.ts",
+          "src/config/turnstile.test.ts",
+          "src/types/axios-augmentation.d.ts"
         ]
       },
       {
         "name": "authentication/presentation",
         "patterns": [
+          "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
           "src/platform/auth/session/components/**",
           "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
           "src/platform/auth/sso/SsoRequiredDialogContent.vue",
-          "src/platform/workspace/auth/**"
+          "src/platform/workspace/auth/**",
+          "src/components/actionbar/PartnerNodesRunCaption.vue",
+          "src/components/dialog/content/ApiNodesSignInContent.test.ts",
+          "src/components/dialog/content/ApiNodesSignInContent.vue",
+          "src/components/dialog/content/setting/CurrentUserMessage.vue",
+          "src/components/dialog/content/setting/UserPanel.test.ts",
+          "src/components/dialog/content/setting/UserPanel.vue",
+          "src/components/dialog/content/signin/ApiKeyForm.test.ts",
+          "src/components/dialog/content/signin/ApiKeyForm.vue",
+          "src/components/dialog/content/signin/PasswordFields.vue",
+          "src/components/dialog/content/signin/SignInForm.test.ts",
+          "src/components/dialog/content/signin/SignInForm.vue",
+          "src/components/dialog/content/signin/SignUpForm.test.ts",
+          "src/components/dialog/content/signin/SignUpForm.vue",
+          "src/components/dialog/content/signin/TurnstileWidget.render.test.ts",
+          "src/components/dialog/content/signin/TurnstileWidget.test.ts",
+          "src/components/dialog/content/signin/TurnstileWidget.vue",
+          "src/components/dialog/content/SignInContent.test.ts",
+          "src/components/dialog/content/SignInContent.vue",
+          "src/components/dialog/content/UpdatePasswordContent.vue",
+          "src/components/dialog/header/ComfyOrgHeader.vue",
+          "src/components/sidebar/SidebarLogoutIcon.vue",
+          "src/components/topbar/CurrentUserButton.test.ts",
+          "src/components/topbar/CurrentUserButton.vue",
+          "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+          "src/components/topbar/CurrentUserPopoverLegacy.vue",
+          "src/components/topbar/LoginButton.vue",
+          "src/views/UserSelectView.vue",
+          "src/views/UserSelectView.test.ts"
         ]
       },
       {
@@ -457,7 +644,8 @@
         "patterns": [
           "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
           "src/platform/auth/webSessionFlagOff.test.ts",
-          "src/platform/auth/webSessionFlagOn.test.ts"
+          "src/platform/auth/webSessionFlagOn.test.ts",
+          "src/utils/__tests__/stubAccountIdentityPort.ts"
         ]
       },
       {
@@ -534,7 +722,9 @@
           "src/platform/workspace/composables/useWorkspaceBilling.ts",
           "src/platform/workspace/composables/useWorkspacePlanPricing.ts",
           "src/platform/workspace/stores/billingOperationStore.test.ts",
-          "src/platform/workspace/stores/billingOperationStore.ts"
+          "src/platform/workspace/stores/billingOperationStore.ts",
+          "src/storybook/mocks/useBillingContext.ts",
+          "src/storybook/mocks/useBillingCapabilities.ts"
         ]
       },
       {
@@ -568,7 +758,12 @@
           "src/platform/workspace/utils/checkoutJourneyTelemetry.ts",
           "src/platform/workspace/utils/pendingSubscriptionCheckout.test.ts",
           "src/platform/workspace/utils/pendingSubscriptionCheckout.ts",
-          "src/platform/workspace/utils/workspaceCheckoutTelemetry.ts"
+          "src/platform/workspace/utils/workspaceCheckoutTelemetry.ts",
+          "src/services/customerEventsService.ts",
+          "src/services/customerEventsService.test.ts",
+          "src/services/__mocks__/customerEventsService.ts",
+          "src/config/billingWeb.ts",
+          "src/config/billingWeb.test.ts"
         ]
       },
       {
@@ -617,7 +812,66 @@
           "src/platform/workspace/components/UnifiedPricingTable.vue",
           "src/platform/workspace/composables/useCheckoutCopy.ts",
           "src/platform/workspace/composables/useWorkspaceTierLabel.test.ts",
-          "src/platform/workspace/composables/useWorkspaceTierLabel.ts"
+          "src/platform/workspace/composables/useWorkspaceTierLabel.ts",
+          "src/components/common/UserCredit.test.ts",
+          "src/components/common/UserCredit.vue",
+          "src/components/dialog/content/credit/CreditTopUpOption.test.ts",
+          "src/components/dialog/content/credit/CreditTopUpOption.vue",
+          "src/components/dialog/content/setting/CreditsPanel.test.ts",
+          "src/components/dialog/content/setting/CreditsPanel.vue",
+          "src/components/dialog/content/setting/UsageLogsTable.test.ts",
+          "src/components/dialog/content/setting/UsageLogsTable.vue",
+          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+          "src/components/topbar/TopbarSubscribeButton.test.ts",
+          "src/components/topbar/TopbarSubscribeButton.vue",
+          "src/components/ui/credit-slider/CreditSlider.stories.ts",
+          "src/components/ui/credit-slider/CreditSlider.test.ts",
+          "src/components/ui/credit-slider/CreditSlider.vue"
+        ]
+      },
+      {
+        "name": "billing/integration",
+        "patterns": ["src/utils/__tests__/mockBillingContext.ts"]
+      },
+      {
+        "name": "bottom-panel/application",
+        "patterns": [
+          "src/composables/bottomPanelTabs/useCommandSubcategories.ts"
+        ]
+      },
+      {
+        "name": "bottom-panel/infrastructure",
+        "patterns": [
+          "src/composables/bottomPanelTabs/useLogsTerminal.ts",
+          "src/composables/bottomPanelTabs/useTerminal.ts"
+        ]
+      },
+      {
+        "name": "bottom-panel/presentation",
+        "patterns": [
+          "src/components/bottomPanel/BottomPanel.vue",
+          "src/components/bottomPanel/tabs/shortcuts/EssentialsPanel.test.ts",
+          "src/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue",
+          "src/components/bottomPanel/tabs/shortcuts/ShortcutsList.test.ts",
+          "src/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue",
+          "src/components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue",
+          "src/components/bottomPanel/tabs/terminal/BaseTerminal.test.ts",
+          "src/components/bottomPanel/tabs/terminal/BaseTerminal.vue",
+          "src/components/bottomPanel/tabs/terminal/CommandTerminal.vue",
+          "src/components/bottomPanel/tabs/terminal/LogsTerminal.test.ts",
+          "src/components/bottomPanel/tabs/terminal/LogsTerminal.vue",
+          "src/components/sidebar/SidebarBottomPanelToggleButton.vue",
+          "src/components/sidebar/SidebarShortcutsToggleButton.vue"
+        ]
+      },
+      {
+        "name": "bottom-panel/integration",
+        "patterns": [
+          "src/composables/bottomPanelTabs/registerCoreBottomPanelTabs.test.ts",
+          "src/composables/bottomPanelTabs/registerCoreBottomPanelTabs.ts",
+          "src/composables/bottomPanelTabs/useShortcutsTab.ts",
+          "src/composables/bottomPanelTabs/useTerminalTabs.ts"
         ]
       },
       {
@@ -651,6 +905,36 @@
           "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts",
           "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts"
         ]
+      },
+      {
+        "name": "browser-export/infrastructure",
+        "patterns": [
+          "src/base/common/downloadUtil.test.ts",
+          "src/base/common/downloadUtil.ts",
+          "src/composables/useCopyToClipboard.test.ts",
+          "src/composables/useCopyToClipboard.ts"
+        ]
+      },
+      {
+        "name": "browser-interaction/domain",
+        "patterns": [
+          "src/base/pointerUtils.test.ts",
+          "src/base/pointerUtils.ts",
+          "src/base/wheelGestures.ts"
+        ]
+      },
+      {
+        "name": "browser-interaction/application",
+        "patterns": [
+          "src/composables/useClickDragGuard.test.ts",
+          "src/composables/useClickDragGuard.ts",
+          "src/composables/useDismissableOverlay.test.ts",
+          "src/composables/useDismissableOverlay.ts"
+        ]
+      },
+      {
+        "name": "browser-interaction/infrastructure",
+        "patterns": ["src/composables/usePragmaticDragAndDrop.ts"]
       },
       {
         "name": "camera-authoring/domain",
@@ -750,7 +1034,10 @@
           "src/renderer/core/canvas/useAutoPan.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasInteractions.ts",
-          "src/renderer/core/canvas/useCanvasScheduler.ts"
+          "src/renderer/core/canvas/useCanvasScheduler.ts",
+          "src/composables/canvas/useFocusNode.test.ts",
+          "src/composables/canvas/useFocusNode.ts",
+          "src/composables/useZoomControls.ts"
         ]
       },
       {
@@ -759,7 +1046,31 @@
           "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
           "src/renderer/core/canvas/canvasViewport.ts",
           "src/renderer/core/canvas/pathRenderer.test.ts",
-          "src/renderer/core/canvas/pathRenderer.ts"
+          "src/renderer/core/canvas/pathRenderer.ts",
+          "src/composables/canvas/visibleCanvasViewport.test.ts",
+          "src/composables/canvas/visibleCanvasViewport.ts",
+          "src/composables/element/useAbsolutePosition.ts",
+          "src/composables/element/useCanvasPositionConversion.ts"
+        ]
+      },
+      {
+        "name": "canvas-renderer/presentation",
+        "patterns": [
+          "src/components/graph/CanvasBanner.vue",
+          "src/components/graph/CanvasModeSelector.test.ts",
+          "src/components/graph/CanvasModeSelector.vue",
+          "src/components/graph/GraphCanvasMenu.vue",
+          "src/components/graph/LinkOverlayCanvas.vue",
+          "src/components/graph/modals/ZoomControlsModal.test.ts",
+          "src/components/graph/modals/ZoomControlsModal.vue",
+          "src/components/graph/NodeSelectionModeBanner.test.ts",
+          "src/components/graph/NodeSelectionModeBanner.vue",
+          "src/components/graph/NodeTooltip.test.ts",
+          "src/components/graph/NodeTooltip.vue",
+          "src/components/graph/SelectionRectangle.test.ts",
+          "src/components/graph/SelectionRectangle.vue",
+          "src/components/graph/TitleEditor.test.ts",
+          "src/components/graph/TitleEditor.vue"
         ]
       },
       {
@@ -769,7 +1080,9 @@
           "src/renderer/core/canvas/links/linkConnectorAdapter.ts",
           "src/renderer/core/canvas/links/linkDropOrchestrator.test.ts",
           "src/renderer/core/canvas/links/linkDropOrchestrator.ts",
-          "src/renderer/core/canvas/litegraph/**"
+          "src/renderer/core/canvas/litegraph/**",
+          "src/components/graph/nodeProgressCanvasSync.test.ts",
+          "src/components/graph/nodeProgressCanvasSync.ts"
         ]
       },
       {
@@ -800,7 +1113,9 @@
           "src/platform/cloud/subscription/utils/tierBenefits.test.ts",
           "src/platform/distribution/cloudPreviewUtil.ts",
           "src/platform/distribution/cloudPreviewUtil.test.ts",
-          "src/config/subscriptionPricesConfig.ts"
+          "src/config/subscriptionPricesConfig.ts",
+          "src/utils/textCaseUtil.test.ts",
+          "src/utils/textCaseUtil.ts"
         ]
       },
       {
@@ -901,13 +1216,63 @@
         ]
       },
       {
+        "name": "color-conversion/domain",
+        "patterns": ["src/utils/colorUtil.ts", "src/utils/colorUtil.test.ts"]
+      },
+      {
+        "name": "color-palettes/domain",
+        "patterns": [
+          "src/constants/coreColorPalettes.ts",
+          "src/schemas/colorPaletteSchema.ts"
+        ]
+      },
+      {
+        "name": "color-palettes/application",
+        "patterns": [
+          "src/services/colorPaletteService.ts",
+          "src/services/colorPaletteService.test.ts",
+          "src/stores/workspace/colorPaletteStore.ts"
+        ]
+      },
+      {
+        "name": "comfy-registry/domain",
+        "patterns": [
+          "src/types/comfyRegistryTypes.ts",
+          "src/types/algoliaTypes.ts",
+          "src/types/algoliasearch-lite.d.ts"
+        ]
+      },
+      {
+        "name": "comfy-registry/application",
+        "patterns": [
+          "src/stores/comfyRegistryStore.ts",
+          "src/stores/comfyRegistryStore.test.ts",
+          "src/services/gateway/registrySearchGateway.ts",
+          "src/services/gateway/registrySearchGateway.test.ts"
+        ]
+      },
+      {
+        "name": "comfy-registry/infrastructure",
+        "patterns": [
+          "src/services/comfyRegistryService.ts",
+          "src/services/comfyRegistryService.test.ts",
+          "src/services/providers/algoliaSearchProvider.ts",
+          "src/services/providers/algoliaSearchProvider.test.ts",
+          "src/services/providers/registrySearchProvider.ts",
+          "src/services/providers/registrySearchProvider.test.ts"
+        ]
+      },
+      {
         "name": "comfyui-api/domain",
         "patterns": [
           "src/platform/remote/comfyui/errors.test.ts",
           "src/platform/remote/comfyui/errors.ts",
           "src/platform/remote/comfyui/execution/types.test.ts",
           "src/platform/remote/comfyui/execution/types.ts",
-          "src/platform/remote/comfyui/types.ts"
+          "src/platform/remote/comfyui/types.ts",
+          "src/utils/createAnnotatedPath.test.ts",
+          "src/utils/createAnnotatedPath.ts",
+          "src/schemas/resultItemTypeSchema.ts"
         ]
       },
       {
@@ -918,14 +1283,49 @@
           "src/components/curve/types.ts",
           "src/components/range/rangeUtils.ts",
           "src/components/range/rangeUtils.test.ts",
-          "src/components/gradientslider/gradients.ts"
+          "src/components/gradientslider/gradients.ts",
+          "src/utils/histogramUtil.test.ts",
+          "src/utils/histogramUtil.ts",
+          "src/utils/textTickerUtils.test.ts",
+          "src/utils/textTickerUtils.ts",
+          "src/utils/treeUtil.test.ts",
+          "src/utils/treeUtil.ts",
+          "src/utils/validationUtil.ts",
+          "src/types/toastId.ts",
+          "src/types/toastOptions.ts",
+          "src/types/navTypes.ts"
         ]
       },
       {
         "name": "design-system/application",
         "patterns": [
           "src/components/ui/toast/toastStore.test.ts",
-          "src/components/ui/toast/toastStore.ts"
+          "src/components/ui/toast/toastStore.ts",
+          "src/composables/palette/usePaletteSwatchRow.test.ts",
+          "src/composables/palette/usePaletteSwatchRow.ts",
+          "src/composables/tree/useTreeFolderOperations.ts",
+          "src/composables/useAttrsClass.ts",
+          "src/composables/useCurveEditor.test.ts",
+          "src/composables/useCurveEditor.ts",
+          "src/composables/useImageQuiet.ts",
+          "src/composables/useIntersectionObserver.ts",
+          "src/composables/useModalLiftedZIndex.test.ts",
+          "src/composables/useModalLiftedZIndex.ts",
+          "src/composables/usePopoverSizing.test.ts",
+          "src/composables/usePopoverSizing.ts",
+          "src/composables/useRangeEditor.test.ts",
+          "src/composables/useRangeEditor.ts",
+          "src/composables/useTreeExpansion.ts"
+        ]
+      },
+      {
+        "name": "design-system/infrastructure",
+        "patterns": [
+          "src/services/mediaCacheService.ts",
+          "src/services/mediaCacheService.test.ts",
+          "src/composables/element/useOverflowObserver.ts",
+          "src/utils/zodTypedSchema.ts",
+          "src/utils/zodTypedSchema.test.ts"
         ]
       },
       {
@@ -1039,16 +1439,89 @@
           "src/components/palette/PaletteSwatchRow.vue",
           "src/components/palette/PaletteSwatchRow.test.ts",
           "src/components/gradientslider/GradientSlider.vue",
-          "src/components/gradientslider/GradientSlider.test.ts"
+          "src/components/gradientslider/GradientSlider.test.ts",
+          "src/components/actionbar/TinyChevronIcon.vue",
+          "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts",
+          "src/components/rightSidePanel/layout/PropertiesAccordionItem.vue",
+          "src/components/rightSidePanel/layout/TransitionCollapse.vue",
+          "src/components/widget/layout/BaseModalLayout.stories.ts",
+          "src/components/widget/layout/BaseModalLayout.test.ts",
+          "src/components/widget/layout/BaseModalLayout.vue",
+          "src/components/widget/nav/NavIcon.vue",
+          "src/components/widget/nav/NavItem.stories.ts",
+          "src/components/widget/nav/NavItem.test.ts",
+          "src/components/widget/nav/NavItem.vue",
+          "src/components/widget/nav/NavTitle.vue",
+          "src/components/widget/panel/LeftSidePanel.stories.ts",
+          "src/components/widget/panel/LeftSidePanel.vue",
+          "src/utils/gridUtil.ts",
+          "src/utils/mouseDownUtil.ts"
         ]
+      },
+      {
+        "name": "dialog-host/domain",
+        "patterns": ["src/components/dialog/content/confirmationDialogTypes.ts"]
+      },
+      {
+        "name": "dialog-host/application",
+        "patterns": [
+          "src/services/dialogServiceTypes.ts",
+          "src/stores/dialogStore.ts",
+          "src/stores/dialogStore.test.ts",
+          "src/services/dialogService.ts",
+          "src/services/dialogService.concurrency.test.ts",
+          "src/services/dialogService.errorCatalog.test.ts",
+          "src/services/dialogService.renderer.test.ts",
+          "src/services/__mocks__/dialogService.ts"
+        ]
+      },
+      {
+        "name": "dialog-host/presentation",
+        "patterns": [
+          "src/components/dialog/bodyPointerEventsRestore.test.ts",
+          "src/components/dialog/confirm/ConfirmBody.vue",
+          "src/components/dialog/confirm/confirmDialog.test.ts",
+          "src/components/dialog/confirm/confirmDialog.ts",
+          "src/components/dialog/confirm/ConfirmFooter.vue",
+          "src/components/dialog/confirm/ConfirmHeader.vue",
+          "src/components/dialog/content/ConfirmationDialogContent.test.ts",
+          "src/components/dialog/content/ConfirmationDialogContent.vue",
+          "src/components/dialog/content/error/FindIssueButton.vue",
+          "src/components/dialog/content/ErrorDialogContent.vue",
+          "src/components/dialog/content/PromptDialogContent.test.ts",
+          "src/components/dialog/content/PromptDialogContent.vue",
+          "src/components/dialog/GlobalDialog.menu.test.ts",
+          "src/components/dialog/GlobalDialog.test.ts",
+          "src/components/dialog/GlobalDialog.vue",
+          "src/components/dialog/rekaPrimeVueBridge.ts",
+          "src/components/dialog/vRekaZIndex.ts"
+        ]
+      },
+      {
+        "name": "dialog-host/integration",
+        "patterns": ["src/services/extensionDialogService.ts"]
       },
       {
         "name": "error-catalog/domain",
         "patterns": ["src/platform/errorCatalog/**"]
       },
       {
+        "name": "error-handling/domain",
+        "patterns": ["src/utils/errorUtil.ts", "src/utils/errorUtil.test.ts"]
+      },
+      {
+        "name": "error-handling/application",
+        "patterns": [
+          "src/composables/useErrorHandling.ts",
+          "src/composables/useErrorHandling.test.ts",
+          "src/composables/__mocks__/useErrorHandling.ts"
+        ]
+      },
+      {
         "name": "error-reporting/domain",
         "patterns": [
+          "src/platform/telemetry/redactTelemetryUrls.ts",
+          "src/platform/telemetry/redactTelemetryUrls.test.ts",
           "src/platform/telemetry/datadogRumBeforeSend.ts",
           "src/platform/telemetry/datadogRumBeforeSend.test.ts",
           "src/platform/telemetry/sentryBeforeSend.ts",
@@ -1056,7 +1529,11 @@
           "src/platform/telemetry/thirdPartyErrorNoise.ts",
           "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
           "src/platform/telemetry/vueDirectiveErrorDiagnostics.ts",
-          "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts"
+          "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts",
+          "src/base/assert.test.ts",
+          "src/base/assert.ts",
+          "src/utils/preloadErrorUtil.test.ts",
+          "src/utils/preloadErrorUtil.ts"
         ]
       },
       {
@@ -1086,6 +1563,19 @@
         ]
       },
       {
+        "name": "execution/domain",
+        "patterns": [
+          "src/utils/errorSeverityClassification.test.ts",
+          "src/utils/errorSeverityClassification.ts",
+          "src/utils/executionErrorUtil.test.ts",
+          "src/utils/executionErrorUtil.ts",
+          "src/utils/missingResourceAbsorption.test.ts",
+          "src/utils/missingResourceAbsorption.ts",
+          "src/utils/nodeOutputUtil.test.ts",
+          "src/utils/nodeOutputUtil.ts"
+        ]
+      },
+      {
         "name": "execution/application",
         "patterns": [
           "src/stores/executionErrorStore.test.ts",
@@ -1097,7 +1587,35 @@
           "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
           "src/stores/nodeOutputStore.test.ts",
           "src/stores/nodeOutputStore.ts",
-          "src/stores/nodeOutputStore.workflowSwitch.test.ts"
+          "src/stores/nodeOutputStore.workflowSwitch.test.ts",
+          "src/composables/graph/useNodeErrorFlagSync.test.ts",
+          "src/composables/graph/useNodeErrorFlagSync.ts",
+          "src/composables/useViewErrorsInGraph.test.ts",
+          "src/composables/useViewErrorsInGraph.ts",
+          "src/composables/useWorkflowStatusDismissal.test.ts",
+          "src/composables/useWorkflowStatusDismissal.ts"
+        ]
+      },
+      {
+        "name": "execution/infrastructure",
+        "patterns": ["src/utils/objectUrlUtil.ts"]
+      },
+      {
+        "name": "execution/presentation",
+        "patterns": [
+          "src/composables/useBrowserTabTitle.test.ts",
+          "src/composables/useBrowserTabTitle.ts",
+          "src/composables/useProgressFavicon.ts"
+        ]
+      },
+      {
+        "name": "execution/integration",
+        "patterns": [
+          "src/composables/graph/useErrorClearingHooks.promotion.test.ts",
+          "src/composables/graph/useErrorClearingHooks.test.ts",
+          "src/composables/graph/useErrorClearingHooks.ts",
+          "src/utils/__tests__/executionErrorTestUtils.ts",
+          "src/utils/__tests__/nodeErrorHelpers.ts"
         ]
       },
       {
@@ -1105,7 +1623,12 @@
         "patterns": [
           "src/workbench/extensions/manager/types/compatibility.types.ts",
           "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
-          "src/workbench/extensions/manager/utils/**"
+          "src/workbench/extensions/manager/utils/**",
+          "src/utils/mapperUtil.ts",
+          "src/utils/packUtils.test.ts",
+          "src/utils/packUtils.ts",
+          "src/types/searchServiceTypes.ts",
+          "src/constants/searchConstants.ts"
         ]
       },
       {
@@ -1120,7 +1643,11 @@
         "name": "extension-manager/infrastructure",
         "patterns": [
           "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
-          "src/workbench/extensions/manager/services/**"
+          "src/workbench/extensions/manager/services/**",
+          "src/composables/useCachedRequest.test.ts",
+          "src/composables/useCachedRequest.ts",
+          "src/composables/useServerLogs.test.ts",
+          "src/composables/useServerLogs.ts"
         ]
       },
       {
@@ -1128,6 +1655,89 @@
         "patterns": [
           "src/workbench/extensions/manager/types/importFailedTypes.ts",
           "src/workbench/extensions/manager/components/**"
+        ]
+      },
+      {
+        "name": "extension-runtime/domain",
+        "patterns": [
+          "src/types/comfy.ts",
+          "src/types/extensionTypes.ts",
+          "src/types/litegraph-augmentation.d.ts"
+        ]
+      },
+      {
+        "name": "extension-runtime/application",
+        "patterns": [
+          "src/stores/extensionStore.ts",
+          "src/stores/extensionStore.test.ts",
+          "src/services/extensionService.ts",
+          "src/services/extensionService.test.ts",
+          "src/scripts/appInstance.ts",
+          "src/scripts/appRegistry.test.ts",
+          "src/scripts/appRegistry.ts",
+          "src/composables/useReconnectingNotification.ts",
+          "src/composables/useReconnectingNotification.test.ts"
+        ]
+      },
+      {
+        "name": "extension-runtime/infrastructure",
+        "patterns": [
+          "src/services/extensionLoader.ts",
+          "src/services/extensionLoader.test.ts",
+          "src/scripts/__mocks__/api.ts",
+          "src/scripts/api.cancel.test.ts",
+          "src/scripts/api.eventListeners.test.ts",
+          "src/scripts/api.featureFlags.test.ts",
+          "src/scripts/api.fetchApi.test.ts",
+          "src/scripts/api.folderPaths.test.ts",
+          "src/scripts/api.getEmbeddings.test.ts",
+          "src/scripts/api.getExtensions.test.ts",
+          "src/scripts/api.getSettings.test.ts",
+          "src/scripts/api.getShareableAssets.test.ts",
+          "src/scripts/api.logs.test.ts",
+          "src/scripts/api.responses.test.ts",
+          "src/scripts/api.sessionOverride.test.ts",
+          "src/scripts/api.socketReset.test.ts",
+          "src/scripts/api.ts",
+          "src/scripts/api.storeUserData.test.ts",
+          "src/scripts/apiTimeouts.ts"
+        ]
+      },
+      {
+        "name": "extension-runtime/presentation",
+        "patterns": [
+          "src/scripts/ui.setStatus.test.ts",
+          "src/scripts/ui.storageResilience.test.ts",
+          "src/scripts/ui.test.ts",
+          "src/scripts/ui.ts",
+          "src/scripts/ui/components/asyncDialog.ts",
+          "src/scripts/ui/components/button.ts",
+          "src/scripts/ui/components/buttonGroup.ts",
+          "src/scripts/ui/components/index.ts",
+          "src/scripts/ui/components/popup.ts",
+          "src/scripts/ui/components/splitButton.ts",
+          "src/scripts/ui/dialog.ts",
+          "src/scripts/ui/draggableList.ts",
+          "src/scripts/ui/imagePreview.ts",
+          "src/scripts/ui/menu/index.ts",
+          "src/scripts/ui/toggleSwitch.test.ts",
+          "src/scripts/ui/toggleSwitch.ts",
+          "src/scripts/ui/utils.ts"
+        ]
+      },
+      {
+        "name": "extension-runtime/integration",
+        "patterns": [
+          "src/extensions/core/index.ts",
+          "src/scripts/__mocks__/app.ts",
+          "src/scripts/app.getNodeDefs.test.ts",
+          "src/scripts/app.graphReadiness.test.ts",
+          "src/scripts/app.test.ts",
+          "src/scripts/app.ts",
+          "src/scripts/utils.ts",
+          "src/types/index.ts",
+          "src/composables/functional/useChainCallback.ts",
+          "src/composables/functional/useChainCallback.test.ts"
         ]
       },
       {
@@ -1147,7 +1757,9 @@
           "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.test.ts",
           "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
           "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
-          "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts"
+          "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
+          "src/services/useNewUserService.ts",
+          "src/services/useNewUserService.test.ts"
         ]
       },
       {
@@ -1206,7 +1818,10 @@
           "src/lib/litegraph/src/infrastructure/LGraphCanvasEventMap.ts",
           "src/lib/litegraph/src/types/contextMenu.ts",
           "src/lib/litegraph/src/types/events.ts",
-          "src/lib/litegraph/src/types/panel.ts"
+          "src/lib/litegraph/src/types/panel.ts",
+          "src/utils/vintageClipboard.ts",
+          "src/types/badgeData.ts",
+          "src/base/common/selectionBounds.ts"
         ]
       },
       {
@@ -1219,7 +1834,13 @@
           "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts",
           "src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.ts",
           "src/lib/litegraph/src/canvas/hitTesting.ts",
-          "src/lib/litegraph/src/canvas/resolvePointerTarget.ts"
+          "src/lib/litegraph/src/canvas/resolvePointerTarget.ts",
+          "src/systems/badgeSystem.ts",
+          "src/systems/badgeSystem.test.ts",
+          "src/systems/badgeSystem.pricing.test.ts",
+          "src/systems/badgeSystem.subgraph.test.ts",
+          "src/workbench/eventHelpers.ts",
+          "src/workbench/eventHelpers.test.ts"
         ]
       },
       {
@@ -1280,7 +1901,20 @@
         "patterns": [
           "src/lib/litegraph/src/__fixtures__/canvasHarness.ts",
           "src/lib/litegraph/src/contextMenuCompat.test.ts",
-          "src/lib/litegraph/src/contextMenuCompat.ts"
+          "src/lib/litegraph/src/contextMenuCompat.ts",
+          "src/composables/useCopy.test.ts",
+          "src/composables/useCopy.ts",
+          "src/composables/usePaste.test.ts",
+          "src/composables/usePaste.ts",
+          "src/extensions/core/contextMenuFilter.ts",
+          "src/extensions/core/contextMenuFilter.test.ts",
+          "src/extensions/core/contextMenuFilter.name.test.ts",
+          "src/extensions/core/contextMenuFilter.wrap.test.ts",
+          "src/extensions/core/groupOptions.ts",
+          "src/extensions/core/groupOptions.test.ts",
+          "src/extensions/core/selectionBorder.ts",
+          "src/extensions/core/simpleTouchSupport.ts",
+          "src/extensions/core/simpleTouchSupport.test.ts"
         ]
       },
       {
@@ -1295,6 +1929,14 @@
         "patterns": ["src/lib/litegraph/src/docBoundGraphs.ts"]
       },
       {
+        "name": "graph-compatibility/integration",
+        "patterns": [
+          "src/utils/litegraphUtil.ts",
+          "src/utils/litegraphUtil.test.ts",
+          "src/utils/__mocks__/litegraphUtil.ts"
+        ]
+      },
+      {
         "name": "graph-layout/domain",
         "patterns": [
           "src/renderer/core/layout/constants.ts",
@@ -1305,7 +1947,10 @@
           "src/renderer/core/layout/utils/layoutMath.ts",
           "src/renderer/core/layout/utils/layoutUtils.test.ts",
           "src/renderer/core/layout/utils/layoutUtils.ts",
-          "src/renderer/core/spatial/**"
+          "src/renderer/core/spatial/**",
+          "src/utils/positionBounds.test.ts",
+          "src/utils/positionBounds.ts",
+          "src/types/spatialIndex.ts"
         ]
       },
       {
@@ -1437,7 +2082,23 @@
           "src/lib/litegraph/src/utils/collections.ts",
           "src/lib/litegraph/src/utils/spaceDistribution.test.ts",
           "src/lib/litegraph/src/utils/spaceDistribution.ts",
-          "src/lib/litegraph/src/utils/type.ts"
+          "src/lib/litegraph/src/utils/type.ts",
+          "src/types/nodeId.ts",
+          "src/types/nodeId.test.ts",
+          "src/types/linkId.ts",
+          "src/types/linkId.test.ts",
+          "src/types/rerouteId.ts",
+          "src/types/rerouteId.test.ts",
+          "src/types/slotId.ts",
+          "src/types/slotId.test.ts",
+          "src/types/groupId.ts",
+          "src/types/graphScopeId.ts",
+          "src/types/nodeIdentification.ts",
+          "src/types/nodeIdentification.test.ts",
+          "src/types/linkTopology.ts",
+          "src/types/rerouteChain.ts",
+          "src/types/nodeState.ts",
+          "src/constants/slotColors.ts"
         ]
       },
       {
@@ -1452,7 +2113,20 @@
           "src/lib/litegraph/src/linkDeduplication.ts",
           "src/lib/litegraph/src/node/slotLinks.test.ts",
           "src/lib/litegraph/src/node/slotLinks.ts",
-          "src/lib/litegraph/src/remintLinkRemap.ts"
+          "src/lib/litegraph/src/remintLinkRemap.ts",
+          "src/stores/linkStore.ts",
+          "src/stores/linkStore.test.ts",
+          "src/stores/rerouteStore.ts",
+          "src/stores/rerouteStore.test.ts",
+          "src/stores/nodeDataStore.ts",
+          "src/stores/nodeDataStore.test.ts",
+          "src/stores/entityIdStore.ts",
+          "src/stores/entityIdStore.test.ts",
+          "src/stores/graphMetadataStore.ts",
+          "src/stores/graphMetadataStore.test.ts",
+          "src/stores/rekeyGraphId.ts",
+          "src/stores/clearNodeOwnedStoreState.ts",
+          "src/stores/storeCollisionContracts.test.ts"
         ]
       },
       {
@@ -1463,7 +2137,9 @@
           "src/lib/litegraph/src/infrastructure/createMutationView.test.ts",
           "src/lib/litegraph/src/infrastructure/createMutationView.ts",
           "src/lib/litegraph/src/node/slotDescriptorView.test.ts",
-          "src/lib/litegraph/src/node/slotDescriptorView.ts"
+          "src/lib/litegraph/src/node/slotDescriptorView.ts",
+          "src/utils/uuid.ts",
+          "src/utils/uuid.test.ts"
         ]
       },
       {
@@ -1478,7 +2154,8 @@
           "src/lib/litegraph/src/__fixtures__/testExtensions.ts",
           "src/lib/litegraph/src/__fixtures__/uniqueSubgraphNodeIds.ts",
           "src/lib/litegraph/test/fixtures/cleanExtensionCompatFixture.ts",
-          "src/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture.ts"
+          "src/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture.ts",
+          "src/extensions/core/rerouteNode.ts"
         ]
       },
       {
@@ -1498,6 +2175,14 @@
       {
         "name": "graph-selection/integration",
         "patterns": ["src/lib/litegraph/src/canvas/SelectedItemsView.ts"]
+      },
+      {
+        "name": "graph-traversal/application",
+        "patterns": [
+          "src/utils/graphTraversalUtil.ts",
+          "src/utils/graphTraversalUtil.test.ts",
+          "src/utils/__mocks__/graphTraversalUtil.ts"
+        ]
       },
       {
         "name": "hdr-viewer/domain",
@@ -1532,6 +2217,24 @@
         ]
       },
       {
+        "name": "help-center/application",
+        "patterns": [
+          "src/stores/helpCenterStore.ts",
+          "src/composables/useHelpCenter.ts"
+        ]
+      },
+      {
+        "name": "help-center/presentation",
+        "patterns": [
+          "src/components/helpcenter/HelpCenterMenuContent.test.ts",
+          "src/components/helpcenter/HelpCenterMenuContent.vue",
+          "src/components/helpcenter/HelpCenterPopups.test.ts",
+          "src/components/helpcenter/HelpCenterPopups.vue",
+          "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
+          "src/components/sidebar/SidebarHelpCenterIcon.vue"
+        ]
+      },
+      {
         "name": "image-compare/application",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
@@ -1554,17 +2257,108 @@
         ]
       },
       {
+        "name": "image-compositor/domain",
+        "patterns": [
+          "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
+          "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/bakeContent.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/prop.test.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/prop.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/selection.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/setTransform.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/structure.test.ts",
+          "src/renderer/extensions/layerEditor/engine/commands/structure.ts",
+          "src/renderer/extensions/layerEditor/engine/compositor.ts",
+          "src/renderer/extensions/layerEditor/engine/compositor/modeCodes.test.ts",
+          "src/renderer/extensions/layerEditor/engine/compositor/modeCodes.ts",
+          "src/renderer/extensions/layerEditor/engine/content.ts",
+          "src/renderer/extensions/layerEditor/engine/document.test.ts",
+          "src/renderer/extensions/layerEditor/engine/document.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/overlayList.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/pickOps.test.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/pickOps.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/selectionMath.test.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/selectionMath.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/selectionOps.ts",
+          "src/renderer/extensions/layerEditor/engine/fill.test.ts",
+          "src/renderer/extensions/layerEditor/engine/fill.ts",
+          "src/renderer/extensions/layerEditor/engine/history.test.ts",
+          "src/renderer/extensions/layerEditor/engine/history.ts",
+          "src/renderer/extensions/layerEditor/engine/id.ts",
+          "src/renderer/extensions/layerEditor/engine/impl/contentStore.test.ts",
+          "src/renderer/extensions/layerEditor/engine/impl/contentStore.ts",
+          "src/renderer/extensions/layerEditor/engine/kinds/fill.ts",
+          "src/renderer/extensions/layerEditor/engine/kinds/group.ts",
+          "src/renderer/extensions/layerEditor/engine/kinds/index.ts",
+          "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts",
+          "src/renderer/extensions/layerEditor/engine/kinds/raster.ts",
+          "src/renderer/extensions/layerEditor/engine/mode.ts",
+          "src/renderer/extensions/layerEditor/engine/node.test.ts",
+          "src/renderer/extensions/layerEditor/engine/node.ts",
+          "src/renderer/extensions/layerEditor/engine/nodeKind.ts",
+          "src/renderer/extensions/layerEditor/engine/snapping.test.ts",
+          "src/renderer/extensions/layerEditor/engine/snapping.ts",
+          "src/renderer/extensions/layerEditor/engine/tool.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/index.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/overlayBox.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/selectTool.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/tools.test.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/transformMath.test.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/transformMath.ts",
+          "src/renderer/extensions/layerEditor/engine/tools/transformTool.ts",
+          "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
+          "src/renderer/extensions/layerEditor/panZoom.test.ts",
+          "src/renderer/extensions/layerEditor/panZoom.ts"
+        ]
+      },
+      {
         "name": "image-compositor/application",
         "patterns": [
           "src/renderer/extensions/compositor/components/types.ts",
-          "src/renderer/extensions/compositor/composables/**"
+          "src/renderer/extensions/compositor/composables/**",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
+          "src/renderer/extensions/layerEditor/engine/editor/editor.ts"
+        ]
+      },
+      {
+        "name": "image-compositor/infrastructure",
+        "patterns": [
+          "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
+          "src/renderer/extensions/layerEditor/engine/render/bake.ts",
+          "src/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview.test.ts",
+          "src/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview.ts",
+          "src/renderer/extensions/layerEditor/engine/render/place.test.ts",
+          "src/renderer/extensions/layerEditor/engine/render/place.ts",
+          "src/renderer/extensions/layerEditor/engine/render/renderStack.test.ts",
+          "src/renderer/extensions/layerEditor/engine/render/renderStack.ts",
+          "src/renderer/extensions/layerEditor/psdExport.test.ts",
+          "src/renderer/extensions/layerEditor/psdExport.ts",
+          "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+          "src/renderer/extensions/layerEditor/psdMapping.ts"
         ]
       },
       {
         "name": "image-compositor/presentation",
         "patterns": [
           "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
-          "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts"
+          "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+          "src/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue",
+          "src/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue",
+          "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts",
+          "src/renderer/extensions/layerEditor/components/LayerEditorContent.vue",
+          "src/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue",
+          "src/renderer/extensions/layerEditor/components/LayerPanel.vue",
+          "src/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue",
+          "src/renderer/extensions/layerEditor/components/PropertyNumberField.test.ts",
+          "src/renderer/extensions/layerEditor/components/PropertyNumberField.vue",
+          "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts"
         ]
       },
       {
@@ -1573,7 +2367,8 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
           "src/extensions/core/imageCompositor.ts",
           "src/extensions/core/imageCompositor.test.ts",
-          "src/lib/litegraph/src/widgets/CompositorWidget.ts"
+          "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+          "src/extensions/core/layerEditor.ts"
         ]
       },
       {
@@ -1601,7 +2396,14 @@
           "src/composables/queue/jobTabs.ts",
           "src/platform/remote/comfyui/jobs/jobTypes.ts",
           "src/stores/resultItemParsing.test.ts",
-          "src/stores/resultItemParsing.ts"
+          "src/stores/resultItemParsing.ts",
+          "src/utils/queueDisplay.test.ts",
+          "src/utils/queueDisplay.ts",
+          "src/utils/queueUtil.ts",
+          "src/utils/resultItem.ts",
+          "src/utils/resultItemUrl.ts",
+          "src/utils/resultItemUrl.test.ts",
+          "src/types/queue.ts"
         ]
       },
       {
@@ -1629,7 +2431,13 @@
           "src/stores/queueSettingsStore.ts",
           "src/stores/queueStore.loadWorkflow.test.ts",
           "src/stores/queueStore.test.ts",
-          "src/stores/queueStore.ts"
+          "src/stores/queueStore.ts",
+          "src/services/autoQueueService.ts",
+          "src/services/autoQueueService.test.ts",
+          "src/composables/useReconnectQueueRefresh.test.ts",
+          "src/composables/useReconnectQueueRefresh.ts",
+          "src/storybook/mocks/useJobActions.ts",
+          "src/storybook/mocks/useJobList.ts"
         ]
       },
       {
@@ -1637,7 +2445,10 @@
         "patterns": [
           "src/platform/remote/comfyui/jobs/__mocks__/fetchJobs.ts",
           "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
-          "src/platform/remote/comfyui/jobs/fetchJobs.ts"
+          "src/platform/remote/comfyui/jobs/fetchJobs.ts",
+          "src/services/jobOutputCache.ts",
+          "src/services/jobOutputCache.test.ts",
+          "src/platform/workflow/cloud/getWorkflowFromHistory.test.ts"
         ]
       },
       {
@@ -1673,7 +2484,24 @@
           "src/components/queue/job/JobFiltersBar.vue",
           "src/components/queue/job/buildVirtualJobRows.test.ts",
           "src/components/queue/job/buildVirtualJobRows.ts",
-          "src/components/queue/job/testUtils/mockTanstackVirtualizer.ts"
+          "src/components/queue/job/testUtils/mockTanstackVirtualizer.ts",
+          "src/components/actionbar/BatchCountEdit.test.ts",
+          "src/components/actionbar/BatchCountEdit.vue",
+          "src/components/actionbar/ComfyActionbar.test.ts",
+          "src/components/actionbar/ComfyActionbar.vue",
+          "src/components/actionbar/ComfyRunButton/ComfyQueueButton.test.ts",
+          "src/components/actionbar/ComfyRunButton/ComfyQueueButton.vue",
+          "src/components/actionbar/ComfyRunButton/index.ts",
+          "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.test.ts",
+          "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.vue",
+          "src/components/sidebar/tabs/JobHistorySidebarTab.vue"
+        ]
+      },
+      {
+        "name": "job-queue/integration",
+        "patterns": [
+          "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+          "src/composables/sidebarTabs/useJobHistorySidebarTab.ts"
         ]
       },
       {
@@ -1684,7 +2512,8 @@
           "src/platform/keybindings/defaults.ts",
           "src/platform/keybindings/keyCombo.ts",
           "src/platform/keybindings/keyCombo.test.ts",
-          "src/platform/keybindings/keybinding.ts"
+          "src/platform/keybindings/keybinding.ts",
+          "src/utils/modalUtil.ts"
         ]
       },
       {
@@ -1766,7 +2595,8 @@
           "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
           "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
           "src/renderer/extensions/linearMode/linearModeTypes.ts",
-          "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts"
+          "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts",
+          "src/utils/appMode.ts"
         ]
       },
       {
@@ -1778,7 +2608,11 @@
           "src/renderer/extensions/linearMode/linearOutputStore.ts",
           "src/renderer/extensions/linearMode/useExecutionStatus.ts",
           "src/renderer/extensions/linearMode/useOutputHistory.test.ts",
-          "src/renderer/extensions/linearMode/useOutputHistory.ts"
+          "src/renderer/extensions/linearMode/useOutputHistory.ts",
+          "src/stores/appModeStore.ts",
+          "src/stores/appModeStore.test.ts",
+          "src/composables/useAppMode.ts",
+          "src/composables/__mocks__/useAppMode.ts"
         ]
       },
       {
@@ -1817,14 +2651,21 @@
           "src/renderer/extensions/linearMode/PartnerNodesList.vue",
           "src/renderer/extensions/linearMode/Preview3d.test.ts",
           "src/renderer/extensions/linearMode/Preview3d.vue",
-          "src/renderer/extensions/linearMode/VideoPreview.vue"
+          "src/renderer/extensions/linearMode/VideoPreview.vue",
+          "src/components/appMode/AppModeToolbar.test.ts",
+          "src/components/appMode/AppModeToolbar.vue",
+          "src/views/LinearView.vue",
+          "src/views/LinearView.test.ts"
         ]
       },
       {
         "name": "link-connection/domain",
         "patterns": [
           "src/lib/litegraph/src/canvas/RenderLink.ts",
-          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts"
+          "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
+          "src/extensions/core/slotDefaultTypes.ts",
+          "src/extensions/core/slotDefaultTypes.test.ts",
+          "src/types/searchBoxTypes.ts"
         ]
       },
       {
@@ -1850,11 +2691,16 @@
         ]
       },
       {
+        "name": "link-connection/integration",
+        "patterns": ["src/extensions/core/slotDefaults.ts"]
+      },
+      {
         "name": "link-presentation/domain",
         "patterns": [
           "src/lib/litegraph/src/canvas/linkGeometry.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
-          "src/lib/litegraph/src/canvas/linkRevealState.ts"
+          "src/lib/litegraph/src/canvas/linkRevealState.ts",
+          "src/types/linkPresentation.ts"
         ]
       },
       {
@@ -1862,7 +2708,9 @@
         "patterns": [
           "src/core/graph/transferLinkPresentation.ts",
           "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
-          "src/lib/litegraph/src/canvas/linkVisibility.ts"
+          "src/lib/litegraph/src/canvas/linkVisibility.ts",
+          "src/stores/linkPresentationStore.ts",
+          "src/stores/linkPresentationStore.test.ts"
         ]
       },
       {
@@ -1887,7 +2735,15 @@
           "src/lib/litegraph/src/LiteGraphGlobal.ts",
           "src/lib/litegraph/src/litegraph.publicApi.test.ts",
           "src/lib/litegraph/src/litegraph.test.ts",
-          "src/lib/litegraph/src/litegraph.ts"
+          "src/lib/litegraph/src/litegraph.ts",
+          "src/composables/useGlobalLitegraph.ts"
+        ]
+      },
+      {
+        "name": "markdown-rendering/infrastructure",
+        "patterns": [
+          "src/utils/markdownRendererUtil.test.ts",
+          "src/utils/markdownRendererUtil.ts"
         ]
       },
       {
@@ -1901,7 +2757,17 @@
           "src/stores/maskEditorStore.ts",
           "src/stores/maskEditorDataStore.ts",
           "src/stores/maskEditorStore.test.ts",
-          "src/stores/maskEditorDataStore.test.ts"
+          "src/stores/maskEditorDataStore.test.ts",
+          "src/scripts/clipspace.ts",
+          "src/scripts/clipspace.test.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/infrastructure",
+        "patterns": [
+          "src/utils/__fixtures__/decodePng.ts",
+          "src/utils/pngEncodeUtil.test.ts",
+          "src/utils/pngEncodeUtil.ts"
         ]
       },
       {
@@ -1912,8 +2778,69 @@
         "name": "mask-editor/integration",
         "patterns": [
           "src/extensions/core/maskeditor.ts",
-          "src/extensions/core/maskeditor.test.ts"
+          "src/extensions/core/maskeditor.test.ts",
+          "src/extensions/core/clipspace.ts"
         ]
+      },
+      {
+        "name": "media-lightbox/presentation",
+        "patterns": [
+          "src/components/sidebar/tabs/queue/MediaLightbox.test.ts",
+          "src/components/sidebar/tabs/queue/MediaLightbox.vue",
+          "src/components/sidebar/tabs/queue/ResultAudio.vue",
+          "src/components/sidebar/tabs/queue/ResultText.vue",
+          "src/components/sidebar/tabs/queue/ResultVideo.vue"
+        ]
+      },
+      {
+        "name": "media-loading/application",
+        "patterns": [
+          "src/services/uploadTempFile.ts",
+          "src/composables/media/useRetryableMediaSrc.ts",
+          "src/composables/media/useRetryableMediaSrc.test.ts",
+          "src/composables/useTextFileContent.ts",
+          "src/composables/useTextFileContent.test.ts"
+        ]
+      },
+      {
+        "name": "media-metadata/domain",
+        "patterns": ["src/types/metadataTypes.ts"]
+      },
+      {
+        "name": "media-metadata/application",
+        "patterns": ["src/scripts/metadata/parser.ts"]
+      },
+      {
+        "name": "media-metadata/infrastructure",
+        "patterns": [
+          "src/scripts/metadata/__fixtures__/helpers.ts",
+          "src/scripts/metadata/avif.test.ts",
+          "src/scripts/metadata/avif.ts",
+          "src/scripts/metadata/ebml.test.ts",
+          "src/scripts/metadata/ebml.ts",
+          "src/scripts/metadata/flac.test.ts",
+          "src/scripts/metadata/flac.ts",
+          "src/scripts/metadata/gltf.test.ts",
+          "src/scripts/metadata/gltf.ts",
+          "src/scripts/metadata/isobmff.test.ts",
+          "src/scripts/metadata/isobmff.ts",
+          "src/scripts/metadata/json.test.ts",
+          "src/scripts/metadata/json.ts",
+          "src/scripts/metadata/mp3.test.ts",
+          "src/scripts/metadata/mp3.ts",
+          "src/scripts/metadata/ogg.test.ts",
+          "src/scripts/metadata/ogg.ts",
+          "src/scripts/metadata/ply.test.ts",
+          "src/scripts/metadata/ply.ts",
+          "src/scripts/metadata/png.test.ts",
+          "src/scripts/metadata/png.ts",
+          "src/scripts/metadata/svg.test.ts",
+          "src/scripts/metadata/svg.ts"
+        ]
+      },
+      {
+        "name": "media-metadata/integration",
+        "patterns": ["src/scripts/pnginfo.test.ts", "src/scripts/pnginfo.ts"]
       },
       {
         "name": "minimap/domain",
@@ -1929,7 +2856,8 @@
           "src/renderer/extensions/minimap/data/**",
           "src/renderer/extensions/minimap/minimapCanvasRenderer.ts",
           "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
-          "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts"
+          "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts",
+          "src/platform/canvas/minimapDecorationRegistry.ts"
         ]
       },
       {
@@ -1956,7 +2884,8 @@
           "src/platform/missingMedia/missingMediaPipeline.test.ts",
           "src/platform/missingMedia/missingMediaStore.ts",
           "src/platform/missingMedia/missingMediaStore.test.ts",
-          "src/platform/missingMedia/__fixtures__/**"
+          "src/platform/missingMedia/__fixtures__/**",
+          "src/stores/missingMediaPreviewRegression.test.ts"
         ]
       },
       {
@@ -2123,6 +3052,35 @@
         ]
       },
       {
+        "name": "model-library/application",
+        "patterns": [
+          "src/stores/modelStore.ts",
+          "src/stores/modelStore.test.ts",
+          "src/stores/modelToNodeStore.ts",
+          "src/stores/modelToNodeStore.test.ts",
+          "src/composables/useModelSelectorDialog.ts"
+        ]
+      },
+      {
+        "name": "model-library/presentation",
+        "patterns": [
+          "src/components/sidebar/tabs/modelLibrary/DownloadItem.test.ts",
+          "src/components/sidebar/tabs/modelLibrary/DownloadItem.vue",
+          "src/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue",
+          "src/components/sidebar/tabs/modelLibrary/ModelPreview.vue",
+          "src/components/sidebar/tabs/ModelLibrarySidebarTab.test.ts",
+          "src/components/sidebar/tabs/ModelLibrarySidebarTab.vue",
+          "src/components/widget/SampleModelSelector.vue"
+        ]
+      },
+      {
+        "name": "model-library/integration",
+        "patterns": [
+          "src/stores/electronDownloadStore.ts",
+          "src/stores/electronDownloadStore.test.ts"
+        ]
+      },
+      {
         "name": "navigation/domain",
         "patterns": [
           "src/platform/navigation/preservedQueryNamespaces.ts",
@@ -2149,6 +3107,164 @@
         "patterns": [
           "src/platform/navigation/preservedQueryTracker.ts",
           "src/platform/navigation/preservedQueryTracker.test.ts"
+        ]
+      },
+      {
+        "name": "node-badges/application",
+        "patterns": [
+          "src/composables/node/useNodePricing.test.ts",
+          "src/composables/node/useNodePricing.ts"
+        ]
+      },
+      {
+        "name": "node-badges/integration",
+        "patterns": [
+          "src/composables/node/badgeRendererParity.test.ts",
+          "src/composables/node/useNodeBadge.test.ts",
+          "src/composables/node/useNodeBadge.ts"
+        ]
+      },
+      {
+        "name": "node-definition/domain",
+        "patterns": [
+          "src/constants/essentialsNodes.ts",
+          "src/schemas/nodeDef/inputSpecTree.cap.test.ts",
+          "src/schemas/nodeDef/inputSpecTree.test.ts",
+          "src/schemas/nodeDef/inputSpecTree.ts",
+          "src/schemas/nodeDef/inputSpecUtil.test.ts",
+          "src/schemas/nodeDef/inputSpecUtil.ts",
+          "src/schemas/nodeDef/migration.test.ts",
+          "src/schemas/nodeDef/migration.ts",
+          "src/schemas/nodeDef/nodeDefSchemaV2.ts",
+          "src/schemas/nodeDef/searchableSlotTypes.test.ts",
+          "src/schemas/nodeDef/searchableSlotTypes.ts",
+          "src/schemas/nodeDefSchema.ts",
+          "src/types/nodeDefAugmentation.ts",
+          "src/types/nodeSource.ts",
+          "src/workbench/utils/nodeDefOrderingUtil.test.ts",
+          "src/workbench/utils/nodeDefOrderingUtil.ts",
+          "src/workbench/utils/nodeHelpUtil.ts"
+        ]
+      },
+      {
+        "name": "node-library/domain",
+        "patterns": [
+          "src/components/searchbox/v2/rootCategories.ts",
+          "src/utils/categoryUtil.test.ts",
+          "src/utils/categoryUtil.ts",
+          "src/utils/fuseUtil.test.ts",
+          "src/utils/fuseUtil.ts",
+          "src/types/treeExplorerTypes.ts",
+          "src/types/nodeOrganizationTypes.ts"
+        ]
+      },
+      {
+        "name": "node-library/application",
+        "patterns": [
+          "src/stores/nodeDefStore.ts",
+          "src/stores/nodeDefStore.test.ts",
+          "src/stores/nodeDefStore.frequency.test.ts",
+          "src/stores/nodeDefStore.nodeText.test.ts",
+          "src/services/nodeSearchService.ts",
+          "src/services/nodeSearchService.test.ts",
+          "src/services/nodeOrganizationService.ts",
+          "src/services/nodeOrganizationService.test.ts",
+          "src/stores/nodeBookmarkStore.ts",
+          "src/stores/nodeBookmarkStore.test.ts",
+          "src/stores/workspace/nodeHelpStore.ts",
+          "src/stores/workspace/nodeHelpStore.test.ts",
+          "src/stores/workspace/searchBoxStore.ts",
+          "src/stores/workspace/searchBoxStore.test.ts",
+          "src/composables/useEssentialTileNodeDef.ts",
+          "src/composables/useNodeHelpContent.test.ts",
+          "src/composables/useNodeHelpContent.ts",
+          "src/composables/usePerTabState.test.ts",
+          "src/composables/usePerTabState.ts"
+        ]
+      },
+      {
+        "name": "node-library/infrastructure",
+        "patterns": ["src/services/nodeHelpService.ts"]
+      },
+      {
+        "name": "node-library/presentation",
+        "patterns": [
+          "src/components/common/ColorCustomizationSelector.test.ts",
+          "src/components/common/ColorCustomizationSelector.vue",
+          "src/components/common/CustomizationDialog.test.ts",
+          "src/components/common/CustomizationDialog.vue",
+          "src/components/common/TreeExplorer.test.ts",
+          "src/components/common/TreeExplorer.vue",
+          "src/components/common/TreeExplorerTreeNode.test.ts",
+          "src/components/common/TreeExplorerTreeNode.vue",
+          "src/components/common/TreeExplorerV2.test.ts",
+          "src/components/common/TreeExplorerV2.vue",
+          "src/components/common/TreeExplorerV2Node.test.ts",
+          "src/components/common/TreeExplorerV2Node.vue",
+          "src/components/graph/NodeDragPreview.test.ts",
+          "src/components/graph/NodeDragPreview.vue",
+          "src/components/node/CreditBadge.vue",
+          "src/components/node/NodeHelpContent.test.ts",
+          "src/components/node/NodeHelpContent.vue",
+          "src/components/node/NodePreview.stories.ts",
+          "src/components/node/NodePreview.test.ts",
+          "src/components/node/NodePreview.vue",
+          "src/components/node/NodePreviewCard.test.ts",
+          "src/components/node/NodePreviewCard.vue",
+          "src/components/node/NodePricingBadge.vue",
+          "src/components/node/NodeProviderBadge.vue",
+          "src/components/node/renderNodePreview.ts",
+          "src/components/sidebar/tabs/nodeLibrary/AllNodesPanel.vue",
+          "src/components/sidebar/tabs/nodeLibrary/EssentialNodeCard.test.ts",
+          "src/components/sidebar/tabs/nodeLibrary/EssentialNodeCard.vue",
+          "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.test.ts",
+          "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue",
+          "src/components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.test.ts",
+          "src/components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.vue",
+          "src/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue",
+          "src/components/sidebar/tabs/NodeLibrarySidebarTab.test.ts",
+          "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue",
+          "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.test.ts",
+          "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.vue",
+          "src/components/common/SearchFilterChip.test.ts",
+          "src/components/common/SearchFilterChip.vue",
+          "src/components/searchbox/HighlightedText.vue",
+          "src/components/searchbox/NodeSearchBox.test.ts",
+          "src/components/searchbox/NodeSearchBox.vue",
+          "src/components/searchbox/NodeSearchBoxPopover.test.ts",
+          "src/components/searchbox/NodeSearchBoxPopover.vue",
+          "src/components/searchbox/NodeSearchFilter.vue",
+          "src/components/searchbox/NodeSearchItem.vue",
+          "src/components/searchbox/v2/__test__/testUtils.ts",
+          "src/components/searchbox/v2/NodeSearchCategorySidebar.test.ts",
+          "src/components/searchbox/v2/NodeSearchCategorySidebar.vue",
+          "src/components/searchbox/v2/NodeSearchCategoryTreeNode.vue",
+          "src/components/searchbox/v2/NodeSearchContent.test.ts",
+          "src/components/searchbox/v2/NodeSearchContent.vue",
+          "src/components/searchbox/v2/NodeSearchFilterBar.test.ts",
+          "src/components/searchbox/v2/NodeSearchFilterBar.vue",
+          "src/components/searchbox/v2/NodeSearchInput.test.ts",
+          "src/components/searchbox/v2/NodeSearchInput.vue",
+          "src/components/searchbox/v2/NodeSearchListItem.test.ts",
+          "src/components/searchbox/v2/NodeSearchListItem.vue",
+          "src/components/searchbox/v2/NodeSearchTypeFilterPopover.test.ts",
+          "src/components/searchbox/v2/NodeSearchTypeFilterPopover.vue",
+          "src/utils/nodeTitleUtil.ts"
+        ]
+      },
+      {
+        "name": "node-library/integration",
+        "patterns": [
+          "src/composables/node/__mocks__/useNodeDragToCanvas.ts",
+          "src/composables/node/startModelNodeDragFromAsset.test.ts",
+          "src/composables/node/startModelNodeDragFromAsset.ts",
+          "src/composables/node/useNodeDragToCanvas.test.ts",
+          "src/composables/node/useNodeDragToCanvas.ts",
+          "src/composables/node/useNodePreviewAndDrag.test.ts",
+          "src/composables/node/useNodePreviewAndDrag.ts",
+          "src/composables/sidebarTabs/useNodeLibrarySidebarTab.ts",
+          "src/composables/useCanvasDrop.test.ts",
+          "src/composables/useCanvasDrop.ts"
         ]
       },
       {
@@ -2188,6 +3304,16 @@
         ]
       },
       {
+        "name": "node-type-registration/integration",
+        "patterns": [
+          "src/services/litegraphService.ts",
+          "src/services/litegraphService.test.ts",
+          "src/services/litegraphService.lateRegistration.test.ts",
+          "src/services/__mocks__/litegraphService.ts",
+          "src/services/subgraphService.ts"
+        ]
+      },
+      {
         "name": "node-widgets/domain",
         "patterns": [
           "src/core/graph/widgets/comboWidgetInventory.ts",
@@ -2204,7 +3330,17 @@
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
-          "src/lib/litegraph/src/widgetValueNullContract.test.ts"
+          "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+          "src/types/widgetId.ts",
+          "src/types/widgetId.test.ts",
+          "src/types/widgetState.ts",
+          "src/types/widgetVisibility.ts",
+          "src/types/widgetVisibility.test.ts",
+          "src/utils/nodeDefUtil.ts",
+          "src/utils/nodeDefUtil.test.ts",
+          "src/utils/widgetBinding.ts",
+          "src/utils/searchAndReplace.ts",
+          "src/utils/searchAndReplace.test.ts"
         ]
       },
       {
@@ -2221,7 +3357,16 @@
           "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts",
           "src/core/graph/widgets/valueControlWidgets.ts",
           "src/lib/litegraph/src/utils/widget.test.ts",
-          "src/lib/litegraph/src/utils/widget.ts"
+          "src/lib/litegraph/src/utils/widget.ts",
+          "src/stores/widgetValueStore.ts",
+          "src/stores/widgetValueStore.test.ts",
+          "src/stores/widgetValueStore.graphReactivity.test.ts",
+          "src/utils/widgetUtil.test.ts",
+          "src/utils/widgetUtil.ts",
+          "src/extensions/core/widgetValuePropagation.ts",
+          "src/extensions/core/widgetValuePropagation.test.ts",
+          "src/composables/node/useWatchWidget.ts",
+          "src/composables/node/useWatchWidget.test.ts"
         ]
       },
       {
@@ -2276,7 +3421,17 @@
         "patterns": [
           "src/core/graph/widgets/__fixtures__/dynamicInputHelpers.ts",
           "src/lib/litegraph/src/widgets/widgetMap.test.ts",
-          "src/lib/litegraph/src/widgets/widgetMap.ts"
+          "src/lib/litegraph/src/widgets/widgetMap.ts",
+          "src/extensions/core/widgetInputs.ts",
+          "src/extensions/core/widgetInputs.test.ts",
+          "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+          "src/extensions/core/customWidgets.ts",
+          "src/extensions/core/customWidgets.test.ts",
+          "src/extensions/core/customWidgets.clone.test.ts",
+          "src/extensions/core/customWidgets.numericOptions.test.ts",
+          "src/extensions/core/customWidgets.subgraphPromotion.test.ts",
+          "src/extensions/core/saveImageExtraOutput.ts",
+          "src/extensions/core/saveImageExtraOutput.test.ts"
         ]
       },
       {
@@ -2294,6 +3449,10 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts"
         ]
+      },
+      {
+        "name": "numeric-geometry/domain",
+        "patterns": ["src/utils/mathUtil.ts", "src/utils/mathUtil.test.ts"]
       },
       {
         "name": "onboarding-tours/domain",
@@ -2376,6 +3535,54 @@
         ]
       },
       {
+        "name": "properties-panel/application",
+        "patterns": [
+          "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts",
+          "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
+          "src/components/rightSidePanel/shared.test.ts",
+          "src/components/rightSidePanel/shared.ts",
+          "src/stores/workspace/rightSidePanelStore.ts",
+          "src/stores/workspace/favoritedWidgetsStore.ts",
+          "src/composables/graph/useGraphHierarchy.ts",
+          "src/composables/graph/useGraphHierarchy.test.ts"
+        ]
+      },
+      {
+        "name": "properties-panel/presentation",
+        "patterns": [
+          "src/components/rightSidePanel/info/TabInfo.vue",
+          "src/components/rightSidePanel/layout/CollapseToggleButton.vue",
+          "src/components/rightSidePanel/parameters/PanelSearchHeader.test.ts",
+          "src/components/rightSidePanel/parameters/PanelSearchHeader.vue",
+          "src/components/rightSidePanel/parameters/SectionWidgets.test.ts",
+          "src/components/rightSidePanel/parameters/SectionWidgets.vue",
+          "src/components/rightSidePanel/parameters/TabGlobalParameters.test.ts",
+          "src/components/rightSidePanel/parameters/TabGlobalParameters.vue",
+          "src/components/rightSidePanel/parameters/TabNodes.test.ts",
+          "src/components/rightSidePanel/parameters/TabNodes.vue",
+          "src/components/rightSidePanel/parameters/TabNormalInputs.test.ts",
+          "src/components/rightSidePanel/parameters/TabNormalInputs.vue",
+          "src/components/rightSidePanel/parameters/TabSubgraphInputs.test.ts",
+          "src/components/rightSidePanel/parameters/TabSubgraphInputs.vue",
+          "src/components/rightSidePanel/parameters/WidgetActions.test.ts",
+          "src/components/rightSidePanel/parameters/WidgetActions.vue",
+          "src/components/rightSidePanel/parameters/WidgetItem.test.ts",
+          "src/components/rightSidePanel/parameters/WidgetItem.vue",
+          "src/components/rightSidePanel/RightSidePanel.test.ts",
+          "src/components/rightSidePanel/RightSidePanel.vue",
+          "src/components/rightSidePanel/settings/FieldSwitch.test.ts",
+          "src/components/rightSidePanel/settings/FieldSwitch.vue",
+          "src/components/rightSidePanel/settings/LayoutField.vue",
+          "src/components/rightSidePanel/settings/NodeSettings.vue",
+          "src/components/rightSidePanel/settings/SetNodeColor.test.ts",
+          "src/components/rightSidePanel/settings/SetNodeColor.vue",
+          "src/components/rightSidePanel/settings/SetNodeState.vue",
+          "src/components/rightSidePanel/settings/SetPinned.vue",
+          "src/components/rightSidePanel/settings/TabGlobalSettings.vue",
+          "src/components/rightSidePanel/settings/TabSettings.vue"
+        ]
+      },
+      {
         "name": "release-notes/application",
         "patterns": [
           "src/platform/updates/common/releaseStore.ts",
@@ -2404,14 +3611,29 @@
         "name": "remote-config/application",
         "patterns": [
           "src/platform/remoteConfig/remoteConfig.ts",
-          "src/platform/remoteConfig/__mocks__/remoteConfig.ts"
+          "src/platform/remoteConfig/__mocks__/remoteConfig.ts",
+          "src/composables/__mocks__/useFeatureFlags.ts",
+          "src/composables/useFeatureFlags.test.ts",
+          "src/composables/useFeatureFlags.ts",
+          "src/storybook/mocks/useFeatureFlags.ts"
         ]
       },
       {
         "name": "remote-config/infrastructure",
         "patterns": [
           "src/platform/remoteConfig/refreshRemoteConfig.ts",
-          "src/platform/remoteConfig/refreshRemoteConfig.test.ts"
+          "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
+          "src/utils/devFeatureFlagOverride.test.ts",
+          "src/utils/devFeatureFlagOverride.ts",
+          "src/utils/sessionFeatureFlagOverride.test.ts",
+          "src/utils/sessionFeatureFlagOverride.ts"
+        ]
+      },
+      {
+        "name": "runtime-guards/domain",
+        "patterns": [
+          "src/utils/typeGuardUtil.ts",
+          "src/utils/typeGuardUtil.test.ts"
         ]
       },
       {
@@ -2435,8 +3657,90 @@
         "patterns": ["src/platform/secrets/components/**"]
       },
       {
+        "name": "selection-toolbox/domain",
+        "patterns": [
+          "src/composables/graph/contextMenuConverter.test.ts",
+          "src/composables/graph/contextMenuConverter.ts",
+          "src/utils/coreMediaMenuActionUtils.test.ts",
+          "src/utils/coreMediaMenuActionUtils.ts",
+          "src/utils/nodeFilterUtil.test.ts",
+          "src/utils/nodeFilterUtil.ts"
+        ]
+      },
+      {
+        "name": "selection-toolbox/presentation",
+        "patterns": [
+          "src/components/graph/NodeContextMenu.test.ts",
+          "src/components/graph/NodeContextMenu.vue",
+          "src/components/graph/SelectionToolbox.test.ts",
+          "src/components/graph/SelectionToolbox.vue",
+          "src/components/graph/selectionToolbox/ArrangeButton.vue",
+          "src/components/graph/selectionToolbox/BypassButton.test.ts",
+          "src/components/graph/selectionToolbox/BypassButton.vue",
+          "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
+          "src/components/graph/selectionToolbox/ColorPickerButton.vue",
+          "src/components/graph/selectionToolbox/ConfigureSubgraph.vue",
+          "src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue",
+          "src/components/graph/selectionToolbox/DeleteButton.vue",
+          "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
+          "src/components/graph/selectionToolbox/ExecuteButton.vue",
+          "src/components/graph/selectionToolbox/ExtensionCommandButton.vue",
+          "src/components/graph/selectionToolbox/FrameNodes.vue",
+          "src/components/graph/selectionToolbox/InfoButton.test.ts",
+          "src/components/graph/selectionToolbox/InfoButton.vue",
+          "src/components/graph/selectionToolbox/Load3DViewerButton.vue",
+          "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
+          "src/components/graph/selectionToolbox/MaskEditorButton.vue",
+          "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
+          "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
+          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
+          "src/components/graph/selectionToolbox/VerticalDivider.vue"
+        ]
+      },
+      {
+        "name": "selection-toolbox/integration",
+        "patterns": [
+          "src/composables/canvas/useSelectedLiteGraphItems.test.ts",
+          "src/composables/canvas/useSelectedLiteGraphItems.ts",
+          "src/composables/canvas/useSelectionToolboxPosition.test.ts",
+          "src/composables/canvas/useSelectionToolboxPosition.ts",
+          "src/composables/graph/useArrangeNodes.test.ts",
+          "src/composables/graph/useArrangeNodes.ts",
+          "src/composables/graph/useArrangeSession.test.ts",
+          "src/composables/graph/useArrangeSession.ts",
+          "src/composables/graph/useCanvasRefresh.ts",
+          "src/composables/graph/useFrameNodes.ts",
+          "src/composables/graph/useGroupContextMenu.test.ts",
+          "src/composables/graph/useGroupContextMenu.ts",
+          "src/composables/graph/useGroupMenuOptions.test.ts",
+          "src/composables/graph/useGroupMenuOptions.ts",
+          "src/composables/graph/useImageMenuOptions.test.ts",
+          "src/composables/graph/useImageMenuOptions.ts",
+          "src/composables/graph/useMoreOptionsMenu.ts",
+          "src/composables/graph/useNodeArrangement.ts",
+          "src/composables/graph/useNodeCustomization.ts",
+          "src/composables/graph/useNodeMenuOptions.test.ts",
+          "src/composables/graph/useNodeMenuOptions.ts",
+          "src/composables/graph/useSelectedNodeActions.ts",
+          "src/composables/graph/useSelectionMenuOptions.test.ts",
+          "src/composables/graph/useSelectionMenuOptions.ts",
+          "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
+          "src/composables/graph/useSelectionOperations.ts",
+          "src/composables/graph/useSelectionState.test.ts",
+          "src/composables/graph/useSelectionState.ts",
+          "src/composables/graph/useSubgraphOperations.test.ts",
+          "src/composables/graph/useSubgraphOperations.ts",
+          "src/composables/useContextMenuTranslation.test.ts",
+          "src/composables/useContextMenuTranslation.ts",
+          "src/composables/useRefreshableSelection.ts"
+        ]
+      },
+      {
         "name": "server-facts/domain",
-        "patterns": ["src/platform/serverFacts/**"]
+        "patterns": [
+          "src/platform/serverFacts/**",
+          "src/utils/__tests__/serverFactGate.ts"
+        ]
       },
       {
         "name": "settings/domain",
@@ -2444,7 +3748,9 @@
           "src/platform/settings/types.ts",
           "src/platform/settings/constants/agent.ts",
           "src/platform/settings/constants/canvasNavigation.ts",
-          "src/platform/settings/constants/canvasNavigation.test.ts"
+          "src/platform/settings/constants/canvasNavigation.test.ts",
+          "src/constants/serverConfig.ts",
+          "src/types/serverArgs.ts"
         ]
       },
       {
@@ -2461,7 +3767,9 @@
           "src/platform/settings/composables/useSettingsDialog.ts",
           "src/platform/settings/composables/useSettingsDialog.test.ts",
           "src/platform/settings/composables/useSettingsDialog.unregistered.test.ts",
-          "src/platform/settings/composables/__mocks__/useSettingsDialog.ts"
+          "src/platform/settings/composables/__mocks__/useSettingsDialog.ts",
+          "src/stores/serverConfigStore.ts",
+          "src/stores/serverConfigStore.test.ts"
         ]
       },
       {
@@ -2478,7 +3786,18 @@
           "src/platform/settings/composables/useSettingUI.test.ts",
           "src/platform/settings/composables/useSettingsHeaderCollapse.ts",
           "src/platform/settings/components/**",
-          "src/components/dialog/content/setting/SettingItem.test.ts"
+          "src/components/dialog/content/setting/SettingItem.test.ts",
+          "src/components/common/BackgroundImageUpload.vue",
+          "src/components/common/CustomFormValue.vue",
+          "src/components/common/FormColorPicker.test.ts",
+          "src/components/common/FormColorPicker.vue",
+          "src/components/common/FormImageUpload.vue",
+          "src/components/common/FormItem.test.ts",
+          "src/components/common/FormItem.vue",
+          "src/components/common/FormNumberField.vue",
+          "src/components/common/FormRadioGroup.test.ts",
+          "src/components/common/FormRadioGroup.vue",
+          "src/components/sidebar/SidebarSettingsButton.vue"
         ]
       },
       {
@@ -2528,6 +3847,13 @@
         ]
       },
       {
+        "name": "subgraph-blueprints/application",
+        "patterns": [
+          "src/stores/subgraphStore.ts",
+          "src/stores/subgraphStore.test.ts"
+        ]
+      },
+      {
         "name": "subgraph-promotion/domain",
         "patterns": [
           "src/core/graph/subgraph/createPromotionErrorReconciler.ts",
@@ -2564,7 +3890,21 @@
           "src/core/graph/subgraph/promotionAfterReplacement.test.ts",
           "src/core/graph/subgraph/promotionUtils.test.ts",
           "src/core/graph/subgraph/promotionUtils.ts",
-          "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts"
+          "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
+          "src/stores/previewExposureStore.ts",
+          "src/stores/previewExposureStore.test.ts",
+          "src/services/subgraphPseudoWidgetCache.ts",
+          "src/services/subgraphPseudoWidgetCache.test.ts",
+          "src/composables/node/usePromotedPreviews.test.ts",
+          "src/composables/node/usePromotedPreviews.ts"
+        ]
+      },
+      {
+        "name": "subgraph-promotion/presentation",
+        "patterns": [
+          "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts",
+          "src/components/rightSidePanel/subgraph/SubgraphEditor.vue",
+          "src/components/rightSidePanel/subgraph/SubgraphNodeWidget.vue"
         ]
       },
       {
@@ -2605,7 +3945,11 @@
           "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts",
           "src/lib/litegraph/src/subgraph/subgraphUtils.test.ts",
           "src/lib/litegraph/src/subgraph/subgraphUtils.ts",
-          "src/lib/litegraph/src/subgraph/unpackSubgraph.ts"
+          "src/lib/litegraph/src/subgraph/unpackSubgraph.ts",
+          "src/utils/blueprintUtils.ts",
+          "src/schemas/subgraphIdSchema.ts",
+          "src/schemas/subgraphIdSchema.test.ts",
+          "src/constants/groupNodeConstants.ts"
         ]
       },
       {
@@ -2614,14 +3958,21 @@
           "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
           "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
           "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
-          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts"
+          "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts",
+          "src/stores/subgraphNavigationStore.ts",
+          "src/stores/subgraphNavigationStore.test.ts",
+          "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+          "src/stores/subgraphNavigationStore.viewport.test.ts"
         ]
       },
       {
         "name": "subgraphs/presentation",
         "patterns": [
           "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
-          "src/lib/litegraph/src/subgraph/svgBitmapCache.ts"
+          "src/lib/litegraph/src/subgraph/svgBitmapCache.ts",
+          "src/components/breadcrumb/SubgraphBreadcrumb.test.ts",
+          "src/components/breadcrumb/SubgraphBreadcrumb.vue",
+          "src/components/breadcrumb/SubgraphBreadcrumbItem.vue"
         ]
       },
       {
@@ -2630,7 +3981,9 @@
           "src/lib/litegraph/src/subgraph/__fixtures__/subgraphComplexPromotion1.ts",
           "src/lib/litegraph/src/subgraph/__fixtures__/subgraphFixtures.ts",
           "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.test.ts",
-          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts"
+          "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts",
+          "src/extensions/core/groupNode.ts",
+          "src/extensions/core/groupNode.test.ts"
         ]
       },
       {
@@ -2688,6 +4041,30 @@
         ]
       },
       {
+        "name": "system-info/domain",
+        "patterns": ["src/components/common/systemStatsColumns.ts"]
+      },
+      {
+        "name": "system-info/application",
+        "patterns": [
+          "src/stores/systemStatsStore.ts",
+          "src/stores/systemStatsStore.test.ts",
+          "src/stores/aboutPanelStore.ts",
+          "src/composables/useCopySystemInfo.ts",
+          "src/composables/useCopySystemInfo.test.ts"
+        ]
+      },
+      {
+        "name": "system-info/presentation",
+        "patterns": [
+          "src/components/common/DeviceInfo.test.ts",
+          "src/components/common/DeviceInfo.vue",
+          "src/components/common/SystemStatsPanel.test.ts",
+          "src/components/common/SystemStatsPanel.vue",
+          "src/components/dialog/content/setting/AboutPanel.vue"
+        ]
+      },
+      {
         "name": "tasks/infrastructure",
         "patterns": ["src/platform/tasks/**"]
       },
@@ -2726,7 +4103,9 @@
           "src/platform/telemetry/utils/getExecutionContext.ts",
           "src/platform/telemetry/utils/getExecutionContext.test.ts",
           "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
-          "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts"
+          "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
+          "src/composables/useRunButtonTelemetry.test.ts",
+          "src/composables/useRunButtonTelemetry.ts"
         ]
       },
       {
@@ -2753,6 +4132,26 @@
         ]
       },
       {
+        "name": "test-support/integration",
+        "patterns": [
+          "src/testing/pinia.ts",
+          "src/testing/pinia.test.ts",
+          "src/vitestSetup.test.ts",
+          "src/types/vitest.d.ts",
+          "src/utils/__tests__/canvasSelectionTestUtils.ts",
+          "src/utils/__tests__/canvasTestUtils.ts",
+          "src/utils/__tests__/extensionTestUtils.ts",
+          "src/utils/__tests__/extensionTestUtils.test.ts",
+          "src/utils/__tests__/litegraphTestUtils.ts",
+          "src/utils/__tests__/stubPath2D.ts",
+          "src/utils/__tests__/testI18n.ts"
+        ]
+      },
+      {
+        "name": "text-output-preview/domain",
+        "patterns": ["src/utils/htmlEscape.test.ts", "src/utils/htmlEscape.ts"]
+      },
+      {
         "name": "text-output-preview/presentation",
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
@@ -2770,12 +4169,68 @@
         ]
       },
       {
+        "name": "value-formatting/domain",
+        "patterns": [
+          "src/utils/numberUtil.ts",
+          "src/utils/numberUtil.test.ts",
+          "src/utils/dateTimeUtil.ts",
+          "src/utils/dateTimeUtil.test.ts"
+        ]
+      },
+      {
         "name": "version-compatibility/application",
         "patterns": [
           "src/platform/updates/common/versionCompatibilityStore.ts",
           "src/platform/updates/common/versionCompatibilityStore.test.ts",
           "src/platform/updates/common/useFrontendVersionMismatchWarning.ts",
           "src/platform/updates/common/useFrontendVersionMismatchWarning.test.ts"
+        ]
+      },
+      {
+        "name": "video-edit/domain",
+        "patterns": [
+          "src/composables/video/useVideoEditFormats.test.ts",
+          "src/composables/video/useVideoEditFormats.ts",
+          "src/utils/videoFrameUtil.test.ts",
+          "src/utils/videoFrameUtil.ts"
+        ]
+      },
+      {
+        "name": "video-edit/application",
+        "patterns": [
+          "src/composables/video/useCropBoxEditor.test.ts",
+          "src/composables/video/useCropBoxEditor.ts",
+          "src/composables/video/useCropRatioLock.test.ts",
+          "src/composables/video/useCropRatioLock.ts",
+          "src/composables/video/useTimelineScrub.ts",
+          "src/composables/video/useTrimPlayback.test.ts",
+          "src/composables/video/useTrimPlayback.ts",
+          "src/composables/video/useVideoEditModel.test.ts",
+          "src/composables/video/useVideoEditModel.ts"
+        ]
+      },
+      {
+        "name": "video-edit/infrastructure",
+        "patterns": [
+          "src/composables/video/useVideoFilmstrip.test.ts",
+          "src/composables/video/useVideoFilmstrip.ts",
+          "src/composables/video/useVideoSourceUrl.test.ts",
+          "src/composables/video/useVideoSourceUrl.ts",
+          "src/utils/videoMetadataUtil.test.ts",
+          "src/utils/videoMetadataUtil.ts"
+        ]
+      },
+      {
+        "name": "video-edit/presentation",
+        "patterns": [
+          "src/components/videoEdit/VideoCropOverlay.test.ts",
+          "src/components/videoEdit/VideoCropOverlay.vue",
+          "src/components/videoEdit/VideoEditPanel.test.ts",
+          "src/components/videoEdit/VideoEditPanel.vue",
+          "src/components/videoEdit/VideoFilmstripTrim.test.ts",
+          "src/components/videoEdit/VideoFilmstripTrim.vue",
+          "src/components/videoEdit/WidgetVideoEdit.test.ts",
+          "src/components/videoEdit/WidgetVideoEdit.vue"
         ]
       },
       {
@@ -2869,7 +4324,8 @@
           "src/renderer/extensions/vueNodes/utils/nodeErrorState.test.ts",
           "src/renderer/extensions/vueNodes/utils/nodeErrorState.ts",
           "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.test.ts",
-          "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts"
+          "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts",
+          "src/composables/useVueFeatureFlags.ts"
         ]
       },
       {
@@ -2944,7 +4400,16 @@
         "patterns": [
           "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts"
+          "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts",
+          "src/composables/node/canvasImagePreviewTypes.ts",
+          "src/utils/imageUtil.test.ts",
+          "src/utils/imageUtil.ts",
+          "src/utils/mediaUploadUtil.test.ts",
+          "src/utils/mediaUploadUtil.ts",
+          "src/utils/widgetPropFilter.ts",
+          "src/types/simplifiedWidget.ts",
+          "src/types/widgetConstructor.ts",
+          "src/types/positionConfig.ts"
         ]
       },
       {
@@ -2962,7 +4427,13 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.test.ts",
-          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts"
+          "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
+          "src/stores/widgetStore.ts",
+          "src/stores/widgetStore.test.ts",
+          "src/stores/domWidgetStore.ts",
+          "src/stores/domWidgetStore.test.ts",
+          "src/composables/element/useDomClipping.test.ts",
+          "src/composables/element/useDomClipping.ts"
         ]
       },
       {
@@ -3029,7 +4500,23 @@
           "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.test.ts",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
           "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
-          "src/renderer/extensions/vueNodes/widgets/registry/**"
+          "src/renderer/extensions/vueNodes/widgets/registry/**",
+          "src/components/boundingbox/WidgetBoundingBox.test.ts",
+          "src/components/boundingbox/WidgetBoundingBox.vue",
+          "src/components/curve/WidgetCurve.test.ts",
+          "src/components/curve/WidgetCurve.vue",
+          "src/components/graph/widgets/MultiSelectWidget.test.ts",
+          "src/components/graph/widgets/MultiSelectWidget.vue",
+          "src/components/graph/widgets/TextPreviewWidget.test.ts",
+          "src/components/graph/widgets/TextPreviewWidget.vue",
+          "src/components/palette/WidgetColors.test.ts",
+          "src/components/palette/WidgetColors.vue",
+          "src/components/range/WidgetRange.test.ts",
+          "src/components/range/WidgetRange.vue",
+          "src/types/widgetTypes.ts",
+          "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
+          "src/lib/litegraph/src/widgets/CurveWidget.ts",
+          "src/lib/litegraph/src/widgets/VideoEditWidget.ts"
         ]
       },
       {
@@ -3080,12 +4567,115 @@
           "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.test.ts",
           "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.ts",
-          "src/renderer/utils/nodeTypeGuards.ts"
+          "src/renderer/utils/nodeTypeGuards.ts",
+          "src/components/graph/DomWidgets.test.ts",
+          "src/components/graph/DomWidgets.vue",
+          "src/components/graph/widgets/DomWidget.test.ts",
+          "src/components/graph/widgets/DomWidget.vue",
+          "src/components/graph/widgets/domWidgetMountReporting.test.ts",
+          "src/components/graph/widgets/domWidgetMountReporting.ts",
+          "src/components/graph/widgets/domWidgetZIndex.test.ts",
+          "src/components/graph/widgets/domWidgetZIndex.ts",
+          "src/composables/node/useNodeAnimatedImage.test.ts",
+          "src/composables/node/useNodeAnimatedImage.ts",
+          "src/composables/node/useNodeCanvasImagePreview.test.ts",
+          "src/composables/node/useNodeCanvasImagePreview.ts",
+          "src/composables/node/useNodeDragAndDrop.test.ts",
+          "src/composables/node/useNodeDragAndDrop.ts",
+          "src/composables/node/useNodeFileInput.test.ts",
+          "src/composables/node/useNodeFileInput.ts",
+          "src/composables/node/useNodeImage.test.ts",
+          "src/composables/node/useNodeImage.ts",
+          "src/composables/node/useNodeImageUpload.test.ts",
+          "src/composables/node/useNodeImageUpload.ts",
+          "src/composables/node/useNodePaste.test.ts",
+          "src/composables/node/useNodePaste.ts",
+          "src/composables/node/useNodeProgressText.ts",
+          "src/composables/node/useProgressTextPreviews.test.ts",
+          "src/composables/node/useProgressTextPreviews.ts",
+          "src/composables/useUpstreamValue.test.ts",
+          "src/composables/useUpstreamValue.ts",
+          "src/scripts/widgets.ts",
+          "src/scripts/errorNodeWidgets.ts",
+          "src/scripts/domWidget.ts",
+          "src/scripts/domWidget.test.ts",
+          "src/scripts/domWidget.performance.test.ts",
+          "src/extensions/core/uploadImage.ts"
         ]
       },
       {
         "name": "webcam-capture/integration",
         "patterns": ["src/extensions/core/webcamCapture.ts"]
+      },
+      {
+        "name": "workbench-shell/domain",
+        "patterns": [
+          "src/utils/splitterWidthUtil.test.ts",
+          "src/utils/splitterWidthUtil.ts"
+        ]
+      },
+      {
+        "name": "workbench-shell/application",
+        "patterns": [
+          "src/stores/commandStore.ts",
+          "src/stores/commandStore.test.ts",
+          "src/stores/menuItemStore.ts",
+          "src/stores/menuItemStore.test.ts",
+          "src/stores/workspace/sidebarTabStore.ts",
+          "src/stores/workspace/sidebarTabStore.test.ts",
+          "src/stores/workspace/bottomPanelStore.ts",
+          "src/stores/workspace/bottomPanelStore.test.ts",
+          "src/stores/actionBarButtonStore.ts",
+          "src/stores/topbarBadgeStore.ts",
+          "src/stores/workspaceStore.ts",
+          "src/stores/workspaceStore.test.ts",
+          "src/composables/usePanelSizing.test.ts",
+          "src/composables/usePanelSizing.ts",
+          "src/composables/useWorkspaceInset.test.ts",
+          "src/composables/useWorkspaceInset.ts"
+        ]
+      },
+      {
+        "name": "workbench-shell/infrastructure",
+        "patterns": [
+          "src/utils/splitterPersistence.test.ts",
+          "src/utils/splitterPersistence.ts"
+        ]
+      },
+      {
+        "name": "workbench-shell/presentation",
+        "patterns": [
+          "src/components/common/ExtensionSlot.vue",
+          "src/components/LiteGraphCanvasSplitterOverlay.test.ts",
+          "src/components/LiteGraphCanvasSplitterOverlay.vue",
+          "src/components/MenuHamburger.vue",
+          "src/components/sidebar/ComfyMenuButton.test.ts",
+          "src/components/sidebar/ComfyMenuButton.vue",
+          "src/components/sidebar/SidebarIcon.test.ts",
+          "src/components/sidebar/SidebarIcon.vue",
+          "src/components/sidebar/SideToolbar.test.ts",
+          "src/components/sidebar/SideToolbar.vue",
+          "src/components/sidebar/tabs/SidebarTabCloseButton.vue",
+          "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
+          "src/components/sidebar/tabs/SidebarTabTemplate.vue",
+          "src/components/sidebar/tabs/SidebarTopArea.vue",
+          "src/components/topbar/ActionBarButtons.vue",
+          "src/components/topbar/TopbarBadge.test.ts",
+          "src/components/topbar/TopbarBadge.vue",
+          "src/components/topbar/TopbarBadges.vue",
+          "src/components/TopMenuSection.test.ts",
+          "src/components/TopMenuSection.vue"
+        ]
+      },
+      {
+        "name": "workbench-shell/integration",
+        "patterns": [
+          "src/composables/useCoreCommands.ts",
+          "src/composables/useCoreCommands.test.ts",
+          "src/composables/useCoreCommands.selectOnly.test.ts",
+          "src/composables/sidebarTabs/registerCoreSidebarTabs.ts",
+          "src/composables/sidebarTabs/registerCoreSidebarTabs.test.ts"
+        ]
       },
       {
         "name": "workflow-deployment/domain",
@@ -3103,6 +4693,54 @@
         "patterns": ["src/platform/workflow/deploy/components/**"]
       },
       {
+        "name": "workflow-errors/domain",
+        "patterns": [
+          "src/components/rightSidePanel/errors/executionItemList.ts",
+          "src/components/rightSidePanel/errors/types.ts",
+          "src/utils/errorReportUtil.ts",
+          "src/utils/errorReportUtil.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-errors/application",
+        "patterns": [
+          "src/components/error/useErrorOverlayState.test.ts",
+          "src/components/error/useErrorOverlayState.ts",
+          "src/components/rightSidePanel/errors/__tests__/absorptionFixtures.ts",
+          "src/components/rightSidePanel/errors/selectionEmphasis.ts",
+          "src/components/rightSidePanel/errors/swapNodeGroups.test.ts",
+          "src/components/rightSidePanel/errors/useErrorActions.test.ts",
+          "src/components/rightSidePanel/errors/useErrorActions.ts",
+          "src/components/rightSidePanel/errors/useErrorClassification.ts",
+          "src/components/rightSidePanel/errors/useErrorGroups.test.ts",
+          "src/components/rightSidePanel/errors/useErrorGroups.ts",
+          "src/components/rightSidePanel/errors/useErrorReport.test.ts",
+          "src/components/rightSidePanel/errors/useErrorReport.ts",
+          "src/components/rightSidePanel/errors/useHasBlockingError.ts"
+        ]
+      },
+      {
+        "name": "workflow-errors/presentation",
+        "patterns": [
+          "src/components/error/ErrorOverlay.test.ts",
+          "src/components/error/ErrorOverlay.vue",
+          "src/components/rightSidePanel/errors/ErrorCardSection.vue",
+          "src/components/rightSidePanel/errors/ErrorGroupList.test.ts",
+          "src/components/rightSidePanel/errors/ErrorGroupList.vue",
+          "src/components/rightSidePanel/errors/ErrorNodeCard.stories.ts",
+          "src/components/rightSidePanel/errors/ErrorNodeCard.test.ts",
+          "src/components/rightSidePanel/errors/ErrorNodeCard.vue",
+          "src/components/rightSidePanel/errors/LocateNodeButton.test.ts",
+          "src/components/rightSidePanel/errors/LocateNodeButton.vue",
+          "src/components/rightSidePanel/errors/MissingNodeCard.test.ts",
+          "src/components/rightSidePanel/errors/MissingNodeCard.vue",
+          "src/components/rightSidePanel/errors/MissingPackGroupRow.test.ts",
+          "src/components/rightSidePanel/errors/MissingPackGroupRow.vue",
+          "src/components/rightSidePanel/errors/TabErrors.test.ts",
+          "src/components/rightSidePanel/errors/TabErrors.vue"
+        ]
+      },
+      {
         "name": "workflow-format/domain",
         "patterns": [
           "src/platform/workflow/core/types/formats.ts",
@@ -3111,15 +4749,28 @@
           "src/platform/workflow/core/utils/workflowFlattening.test.ts",
           "src/platform/workflow/core/utils/workflowFlattening.ts",
           "src/platform/workflow/validation/schemas/workflowSchema.test.ts",
-          "src/platform/workflow/validation/schemas/workflowSchema.ts"
+          "src/platform/workflow/validation/schemas/workflowSchema.ts",
+          "src/utils/jsonUtil.test.ts",
+          "src/utils/jsonUtil.ts",
+          "src/utils/linkFixer.test.ts",
+          "src/utils/linkFixer.ts",
+          "src/utils/migration/migrateReroute.test.ts",
+          "src/utils/migration/migrateReroute.ts"
         ]
       },
       {
         "name": "workflow-format/application",
         "patterns": [
           "src/platform/workflow/validation/composables/useWorkflowValidation.test.ts",
-          "src/platform/workflow/validation/composables/useWorkflowValidation.ts"
+          "src/platform/workflow/validation/composables/useWorkflowValidation.ts",
+          "src/utils/executionUtil.stability.test.ts",
+          "src/utils/executionUtil.test.ts",
+          "src/utils/executionUtil.ts"
         ]
+      },
+      {
+        "name": "workflow-format/infrastructure",
+        "patterns": ["src/utils/fileUtil.test.ts", "src/utils/fileUtil.ts"]
       },
       {
         "name": "workflow-management/domain",
@@ -3128,12 +4779,15 @@
           "src/platform/workflow/core/utils/workflowId.ts",
           "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
           "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
-          "src/platform/workflow/core/utils/workflowToClipboardItems.ts"
+          "src/platform/workflow/core/utils/workflowToClipboardItems.ts",
+          "src/scripts/defaultGraph.ts",
+          "src/types/workflowMenuItem.ts"
         ]
       },
       {
         "name": "workflow-management/application",
         "patterns": [
+          "src/platform/workflow/management/stores/workflowStoreTypes.ts",
           "src/platform/workflow/core/services/__mocks__/workflowService.ts",
           "src/platform/workflow/core/services/workflowActionsService.test.ts",
           "src/platform/workflow/core/services/workflowActionsService.ts",
@@ -3145,14 +4799,46 @@
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
           "src/platform/workflow/management/stores/comfyWorkflow.ts",
           "src/platform/workflow/management/stores/workflowStore.test.ts",
-          "src/platform/workflow/management/stores/workflowStore.ts"
+          "src/platform/workflow/management/stores/workflowStore.ts",
+          "src/stores/workflowTabActivityStore.ts",
+          "src/stores/workflowTabActivityStore.test.ts",
+          "src/composables/useNewMenuItemIndicator.test.ts",
+          "src/composables/useNewMenuItemIndicator.ts",
+          "src/composables/useWorkflowActionsMenu.test.ts",
+          "src/composables/useWorkflowActionsMenu.ts",
+          "src/utils/syncUtil.ts",
+          "src/scripts/changeTracker.ts",
+          "src/scripts/changeTracker.test.ts"
         ]
       },
       {
         "name": "workflow-management/infrastructure",
         "patterns": [
           "src/platform/workflow/utils/workflowExtractionUtil.test.ts",
-          "src/platform/workflow/utils/workflowExtractionUtil.ts"
+          "src/platform/workflow/utils/workflowExtractionUtil.ts",
+          "src/stores/userFileStore.ts",
+          "src/stores/userFileStore.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/presentation",
+        "patterns": [
+          "src/components/common/WorkflowActionsDropdown.test.ts",
+          "src/components/common/WorkflowActionsDropdown.vue",
+          "src/components/dialog/UnloadWindowConfirmDialog.vue",
+          "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+          "src/components/sidebar/tabs/AppsSidebarTab.vue",
+          "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+          "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
+          "src/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
+          "src/components/sidebar/tabs/WorkflowsSidebarTab.vue",
+          "src/components/topbar/WorkflowOverflowMenu.test.ts",
+          "src/components/topbar/WorkflowOverflowMenu.vue",
+          "src/components/topbar/WorkflowTab.test.ts",
+          "src/components/topbar/WorkflowTab.vue",
+          "src/components/topbar/WorkflowTabPopover.vue",
+          "src/components/topbar/WorkflowTabs.test.ts",
+          "src/components/topbar/WorkflowTabs.vue"
         ]
       },
       {
@@ -3255,7 +4941,17 @@
         "patterns": [
           "src/platform/workflow/templates/composables/**",
           "src/platform/workflow/templates/services/**",
-          "src/platform/workflow/templates/stores/**"
+          "src/platform/workflow/templates/stores/**",
+          "src/stores/templateRankingStore.ts",
+          "src/stores/templateRankingStore.test.ts",
+          "src/stores/templateInputDownloadStore.ts",
+          "src/stores/templateInputDownloadStore.test.ts",
+          "src/composables/useLazyPagination.test.ts",
+          "src/composables/useLazyPagination.ts",
+          "src/composables/useTemplateFiltering.test.ts",
+          "src/composables/useTemplateFiltering.ts",
+          "src/composables/useWorkflowTemplateSelectorDialog.test.ts",
+          "src/composables/useWorkflowTemplateSelectorDialog.ts"
         ]
       },
       {
@@ -3264,7 +4960,30 @@
       },
       {
         "name": "workflow-templates/presentation",
-        "patterns": ["src/components/templates/**"]
+        "patterns": [
+          "src/components/templates/**",
+          "src/components/actionbar/PartnerNodesEducationCard.test.ts",
+          "src/components/actionbar/PartnerNodesEducationCard.vue",
+          "src/components/custom/widget/PaidTemplateBadge.test.ts",
+          "src/components/custom/widget/PaidTemplateBadge.vue",
+          "src/components/custom/widget/TemplateFilterControls.test.ts",
+          "src/components/custom/widget/TemplateFilterControls.vue",
+          "src/components/custom/widget/WorkflowTemplateDescription.vue",
+          "src/components/custom/widget/WorkflowTemplateDetail.stories.ts",
+          "src/components/custom/widget/WorkflowTemplateDetail.test.ts",
+          "src/components/custom/widget/WorkflowTemplateDetail.vue",
+          "src/components/custom/widget/WorkflowTemplateDetailGroup.vue",
+          "src/components/custom/widget/WorkflowTemplateDownloadFailure.test.ts",
+          "src/components/custom/widget/WorkflowTemplateDownloadFailure.vue",
+          "src/components/custom/widget/WorkflowTemplateDownloadStatus.vue",
+          "src/components/custom/widget/WorkflowTemplateModelStatus.stories.ts",
+          "src/components/custom/widget/WorkflowTemplateModelStatus.vue",
+          "src/components/custom/widget/WorkflowTemplateSelectorDialog.detail.test.ts",
+          "src/components/custom/widget/WorkflowTemplateSelectorDialog.test.ts",
+          "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue",
+          "src/components/sidebar/SidebarTemplatesButton.test.ts",
+          "src/components/sidebar/SidebarTemplatesButton.vue"
+        ]
       },
       {
         "name": "workflow-thumbnails/application",
@@ -3313,7 +5032,9 @@
           "src/platform/workspace/utils/inviteLinks.test.ts",
           "src/platform/workspace/utils/inviteLinks.ts",
           "src/platform/workspace/utils/platformLink.test.ts",
-          "src/platform/workspace/utils/platformLink.ts"
+          "src/platform/workspace/utils/platformLink.ts",
+          "src/storybook/mocks/teamWorkspaceStore.ts",
+          "src/storybook/mocks/useWorkspaceUI.ts"
         ]
       },
       {
@@ -3443,6 +5164,69 @@
         ]
       },
       {
+        "from": "app-builder/domain",
+        "allow": ["app-builder/domain", "unclassified"]
+      },
+      {
+        "from": "app-builder/application",
+        "allow": [
+          "app-builder/domain",
+          "app-builder/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-builder/presentation",
+        "allow": [
+          "app-builder/domain",
+          "app-builder/application",
+          "app-builder/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-host/domain",
+        "allow": ["app-host/domain", "unclassified"]
+      },
+      {
+        "from": "app-host/application",
+        "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-host/infrastructure",
+        "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-host/presentation",
+        "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-host/integration",
+        "allow": [
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "assets/domain",
         "allow": ["assets/domain", "unclassified"]
       },
@@ -3483,6 +5267,10 @@
           "assets/integration",
           "unclassified"
         ]
+      },
+      {
+        "from": "async-control/application",
+        "allow": ["async-control/application", "unclassified"]
       },
       {
         "from": "audio/application",
@@ -3580,6 +5368,51 @@
         ]
       },
       {
+        "from": "billing/integration",
+        "allow": [
+          "billing/domain",
+          "billing/application",
+          "billing/infrastructure",
+          "billing/presentation",
+          "billing/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bottom-panel/application",
+        "allow": [
+          "bottom-panel/application",
+          "bottom-panel/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bottom-panel/infrastructure",
+        "allow": [
+          "bottom-panel/application",
+          "bottom-panel/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bottom-panel/presentation",
+        "allow": [
+          "bottom-panel/application",
+          "bottom-panel/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bottom-panel/integration",
+        "allow": [
+          "bottom-panel/application",
+          "bottom-panel/infrastructure",
+          "bottom-panel/presentation",
+          "bottom-panel/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "bounding-boxes/domain",
         "allow": ["bounding-boxes/domain", "unclassified"]
       },
@@ -3607,6 +5440,32 @@
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "browser-export/infrastructure",
+        "allow": ["browser-export/infrastructure", "unclassified"]
+      },
+      {
+        "from": "browser-interaction/domain",
+        "allow": ["browser-interaction/domain", "unclassified"]
+      },
+      {
+        "from": "browser-interaction/application",
+        "allow": [
+          "browser-interaction/domain",
+          "browser-interaction/application",
+          "browser-interaction/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "browser-interaction/infrastructure",
+        "allow": [
+          "browser-interaction/domain",
+          "browser-interaction/application",
+          "browser-interaction/infrastructure",
           "unclassified"
         ]
       },
@@ -3675,11 +5534,21 @@
         ]
       },
       {
+        "from": "canvas-renderer/presentation",
+        "allow": [
+          "canvas-renderer/domain",
+          "canvas-renderer/application",
+          "canvas-renderer/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "canvas-renderer/integration",
         "allow": [
           "canvas-renderer/domain",
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "unclassified"
         ]
@@ -3727,6 +5596,44 @@
         ]
       },
       {
+        "from": "color-conversion/domain",
+        "allow": ["color-conversion/domain", "unclassified"]
+      },
+      {
+        "from": "color-palettes/domain",
+        "allow": ["color-palettes/domain", "unclassified"]
+      },
+      {
+        "from": "color-palettes/application",
+        "allow": [
+          "color-palettes/domain",
+          "color-palettes/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "comfy-registry/domain",
+        "allow": ["comfy-registry/domain", "unclassified"]
+      },
+      {
+        "from": "comfy-registry/application",
+        "allow": [
+          "comfy-registry/domain",
+          "comfy-registry/application",
+          "comfy-registry/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "comfy-registry/infrastructure",
+        "allow": [
+          "comfy-registry/domain",
+          "comfy-registry/application",
+          "comfy-registry/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
         "from": "comfyui-api/domain",
         "allow": ["comfyui-api/domain", "unclassified"]
       },
@@ -3739,6 +5646,16 @@
         "allow": [
           "design-system/domain",
           "design-system/application",
+          "design-system/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "design-system/infrastructure",
+        "allow": [
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "unclassified"
         ]
       },
@@ -3752,8 +5669,51 @@
         ]
       },
       {
+        "from": "dialog-host/domain",
+        "allow": ["dialog-host/domain", "unclassified"]
+      },
+      {
+        "from": "dialog-host/application",
+        "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "dialog-host/presentation",
+        "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "dialog-host/integration",
+        "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation",
+          "dialog-host/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "error-catalog/domain",
         "allow": ["error-catalog/domain", "unclassified"]
+      },
+      {
+        "from": "error-handling/domain",
+        "allow": ["error-handling/domain", "unclassified"]
+      },
+      {
+        "from": "error-handling/application",
+        "allow": [
+          "error-handling/domain",
+          "error-handling/application",
+          "unclassified"
+        ]
       },
       {
         "from": "error-reporting/domain",
@@ -3778,8 +5738,46 @@
         ]
       },
       {
+        "from": "execution/domain",
+        "allow": ["execution/domain", "unclassified"]
+      },
+      {
         "from": "execution/application",
-        "allow": ["execution/application", "unclassified"]
+        "allow": [
+          "execution/domain",
+          "execution/application",
+          "execution/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "execution/infrastructure",
+        "allow": [
+          "execution/domain",
+          "execution/application",
+          "execution/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "execution/presentation",
+        "allow": [
+          "execution/domain",
+          "execution/application",
+          "execution/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "execution/integration",
+        "allow": [
+          "execution/domain",
+          "execution/application",
+          "execution/infrastructure",
+          "execution/presentation",
+          "execution/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "extension-manager/domain",
@@ -3809,6 +5807,48 @@
           "extension-manager/domain",
           "extension-manager/application",
           "extension-manager/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/domain",
+        "allow": ["extension-runtime/domain", "unclassified"]
+      },
+      {
+        "from": "extension-runtime/application",
+        "allow": [
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/infrastructure",
+        "allow": [
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/presentation",
+        "allow": [
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/integration",
+        "allow": [
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
           "unclassified"
         ]
       },
@@ -3924,6 +5964,10 @@
         ]
       },
       {
+        "from": "graph-compatibility/integration",
+        "allow": ["graph-compatibility/integration", "unclassified"]
+      },
+      {
         "from": "graph-layout/domain",
         "allow": ["graph-layout/domain", "unclassified"]
       },
@@ -4019,6 +6063,10 @@
         ]
       },
       {
+        "from": "graph-traversal/application",
+        "allow": ["graph-traversal/application", "unclassified"]
+      },
+      {
         "from": "hdr-viewer/domain",
         "allow": ["hdr-viewer/domain", "unclassified"]
       },
@@ -4061,6 +6109,18 @@
         ]
       },
       {
+        "from": "help-center/application",
+        "allow": ["help-center/application", "unclassified"]
+      },
+      {
+        "from": "help-center/presentation",
+        "allow": [
+          "help-center/application",
+          "help-center/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compare/application",
         "allow": ["image-compare/application", "unclassified"]
       },
@@ -4082,12 +6142,31 @@
         ]
       },
       {
+        "from": "image-compositor/domain",
+        "allow": ["image-compositor/domain", "unclassified"]
+      },
+      {
         "from": "image-compositor/application",
-        "allow": ["image-compositor/application", "unclassified"]
+        "allow": [
+          "image-compositor/domain",
+          "image-compositor/application",
+          "image-compositor/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/infrastructure",
+        "allow": [
+          "image-compositor/domain",
+          "image-compositor/application",
+          "image-compositor/infrastructure",
+          "unclassified"
+        ]
       },
       {
         "from": "image-compositor/presentation",
         "allow": [
+          "image-compositor/domain",
           "image-compositor/application",
           "image-compositor/presentation",
           "unclassified"
@@ -4096,7 +6175,9 @@
       {
         "from": "image-compositor/integration",
         "allow": [
+          "image-compositor/domain",
           "image-compositor/application",
+          "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
           "unclassified"
@@ -4151,6 +6232,17 @@
           "job-queue/domain",
           "job-queue/application",
           "job-queue/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "job-queue/integration",
+        "allow": [
+          "job-queue/domain",
+          "job-queue/application",
+          "job-queue/infrastructure",
+          "job-queue/presentation",
+          "job-queue/integration",
           "unclassified"
         ]
       },
@@ -4251,6 +6343,15 @@
         ]
       },
       {
+        "from": "link-connection/integration",
+        "allow": [
+          "link-connection/domain",
+          "link-connection/application",
+          "link-connection/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "link-presentation/domain",
         "allow": ["link-presentation/domain", "unclassified"]
       },
@@ -4284,6 +6385,10 @@
         ]
       },
       {
+        "from": "markdown-rendering/infrastructure",
+        "allow": ["markdown-rendering/infrastructure", "unclassified"]
+      },
+      {
         "from": "mask-editor/domain",
         "allow": ["mask-editor/domain", "unclassified"]
       },
@@ -4292,6 +6397,16 @@
         "allow": [
           "mask-editor/domain",
           "mask-editor/application",
+          "mask-editor/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/infrastructure",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/infrastructure",
           "unclassified"
         ]
       },
@@ -4309,8 +6424,49 @@
         "allow": [
           "mask-editor/domain",
           "mask-editor/application",
+          "mask-editor/infrastructure",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "media-lightbox/presentation",
+        "allow": ["media-lightbox/presentation", "unclassified"]
+      },
+      {
+        "from": "media-loading/application",
+        "allow": ["media-loading/application", "unclassified"]
+      },
+      {
+        "from": "media-metadata/domain",
+        "allow": ["media-metadata/domain", "unclassified"]
+      },
+      {
+        "from": "media-metadata/application",
+        "allow": [
+          "media-metadata/domain",
+          "media-metadata/application",
+          "media-metadata/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "media-metadata/infrastructure",
+        "allow": [
+          "media-metadata/domain",
+          "media-metadata/application",
+          "media-metadata/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "media-metadata/integration",
+        "allow": [
+          "media-metadata/domain",
+          "media-metadata/application",
+          "media-metadata/infrastructure",
+          "media-metadata/integration",
           "unclassified"
         ]
       },
@@ -4440,6 +6596,27 @@
         ]
       },
       {
+        "from": "model-library/application",
+        "allow": ["model-library/application", "unclassified"]
+      },
+      {
+        "from": "model-library/presentation",
+        "allow": [
+          "model-library/application",
+          "model-library/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "model-library/integration",
+        "allow": [
+          "model-library/application",
+          "model-library/presentation",
+          "model-library/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "navigation/domain",
         "allow": ["navigation/domain", "unclassified"]
       },
@@ -4468,6 +6645,64 @@
           "navigation/application",
           "navigation/infrastructure",
           "navigation/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-badges/application",
+        "allow": ["node-badges/application", "unclassified"]
+      },
+      {
+        "from": "node-badges/integration",
+        "allow": [
+          "node-badges/application",
+          "node-badges/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-definition/domain",
+        "allow": ["node-definition/domain", "unclassified"]
+      },
+      {
+        "from": "node-library/domain",
+        "allow": ["node-library/domain", "unclassified"]
+      },
+      {
+        "from": "node-library/application",
+        "allow": [
+          "node-library/domain",
+          "node-library/application",
+          "node-library/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-library/infrastructure",
+        "allow": [
+          "node-library/domain",
+          "node-library/application",
+          "node-library/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-library/presentation",
+        "allow": [
+          "node-library/domain",
+          "node-library/application",
+          "node-library/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-library/integration",
+        "allow": [
+          "node-library/domain",
+          "node-library/application",
+          "node-library/infrastructure",
+          "node-library/presentation",
+          "node-library/integration",
           "unclassified"
         ]
       },
@@ -4505,6 +6740,10 @@
       {
         "from": "node-templates/integration",
         "allow": ["node-templates/integration", "unclassified"]
+      },
+      {
+        "from": "node-type-registration/integration",
+        "allow": ["node-type-registration/integration", "unclassified"]
       },
       {
         "from": "node-widgets/domain",
@@ -4559,6 +6798,10 @@
           "note-nodes/integration",
           "unclassified"
         ]
+      },
+      {
+        "from": "numeric-geometry/domain",
+        "allow": ["numeric-geometry/domain", "unclassified"]
       },
       {
         "from": "onboarding-tours/domain",
@@ -4621,6 +6864,18 @@
         ]
       },
       {
+        "from": "properties-panel/application",
+        "allow": ["properties-panel/application", "unclassified"]
+      },
+      {
+        "from": "properties-panel/presentation",
+        "allow": [
+          "properties-panel/application",
+          "properties-panel/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "release-notes/application",
         "allow": [
           "release-notes/application",
@@ -4667,6 +6922,10 @@
         ]
       },
       {
+        "from": "runtime-guards/domain",
+        "allow": ["runtime-guards/domain", "unclassified"]
+      },
+      {
         "from": "secrets/domain",
         "allow": ["secrets/domain", "unclassified"]
       },
@@ -4694,6 +6953,27 @@
           "secrets/domain",
           "secrets/application",
           "secrets/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "selection-toolbox/domain",
+        "allow": ["selection-toolbox/domain", "unclassified"]
+      },
+      {
+        "from": "selection-toolbox/presentation",
+        "allow": [
+          "selection-toolbox/domain",
+          "selection-toolbox/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "selection-toolbox/integration",
+        "allow": [
+          "selection-toolbox/domain",
+          "selection-toolbox/presentation",
+          "selection-toolbox/integration",
           "unclassified"
         ]
       },
@@ -4791,6 +7071,10 @@
         ]
       },
       {
+        "from": "subgraph-blueprints/application",
+        "allow": ["subgraph-blueprints/application", "unclassified"]
+      },
+      {
         "from": "subgraph-promotion/domain",
         "allow": ["subgraph-promotion/domain", "unclassified"]
       },
@@ -4799,6 +7083,15 @@
         "allow": [
           "subgraph-promotion/domain",
           "subgraph-promotion/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "subgraph-promotion/presentation",
+        "allow": [
+          "subgraph-promotion/domain",
+          "subgraph-promotion/application",
+          "subgraph-promotion/presentation",
           "unclassified"
         ]
       },
@@ -4859,6 +7152,27 @@
         ]
       },
       {
+        "from": "system-info/domain",
+        "allow": ["system-info/domain", "unclassified"]
+      },
+      {
+        "from": "system-info/application",
+        "allow": [
+          "system-info/domain",
+          "system-info/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "system-info/presentation",
+        "allow": [
+          "system-info/domain",
+          "system-info/application",
+          "system-info/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "tasks/infrastructure",
         "allow": ["tasks/infrastructure", "unclassified"]
       },
@@ -4895,20 +7209,68 @@
         ]
       },
       {
+        "from": "test-support/integration",
+        "allow": ["test-support/integration", "unclassified"]
+      },
+      {
+        "from": "text-output-preview/domain",
+        "allow": ["text-output-preview/domain", "unclassified"]
+      },
+      {
         "from": "text-output-preview/presentation",
-        "allow": ["text-output-preview/presentation", "unclassified"]
+        "allow": [
+          "text-output-preview/domain",
+          "text-output-preview/presentation",
+          "unclassified"
+        ]
       },
       {
         "from": "text-output-preview/integration",
         "allow": [
+          "text-output-preview/domain",
           "text-output-preview/presentation",
           "text-output-preview/integration",
           "unclassified"
         ]
       },
       {
+        "from": "value-formatting/domain",
+        "allow": ["value-formatting/domain", "unclassified"]
+      },
+      {
         "from": "version-compatibility/application",
         "allow": ["version-compatibility/application", "unclassified"]
+      },
+      {
+        "from": "video-edit/domain",
+        "allow": ["video-edit/domain", "unclassified"]
+      },
+      {
+        "from": "video-edit/application",
+        "allow": [
+          "video-edit/domain",
+          "video-edit/application",
+          "video-edit/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "video-edit/infrastructure",
+        "allow": [
+          "video-edit/domain",
+          "video-edit/application",
+          "video-edit/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "video-edit/presentation",
+        "allow": [
+          "video-edit/domain",
+          "video-edit/application",
+          "video-edit/presentation",
+          "unclassified"
+        ]
       },
       {
         "from": "viewport-3d/domain",
@@ -5030,6 +7392,48 @@
         "allow": ["webcam-capture/integration", "unclassified"]
       },
       {
+        "from": "workbench-shell/domain",
+        "allow": ["workbench-shell/domain", "unclassified"]
+      },
+      {
+        "from": "workbench-shell/application",
+        "allow": [
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workbench-shell/infrastructure",
+        "allow": [
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workbench-shell/presentation",
+        "allow": [
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workbench-shell/integration",
+        "allow": [
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workbench-shell/presentation",
+          "workbench-shell/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-deployment/domain",
         "allow": ["workflow-deployment/domain", "unclassified"]
       },
@@ -5051,6 +7455,27 @@
         ]
       },
       {
+        "from": "workflow-errors/domain",
+        "allow": ["workflow-errors/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-errors/application",
+        "allow": [
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-errors/presentation",
+        "allow": [
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-format/domain",
         "allow": ["workflow-format/domain", "unclassified"]
       },
@@ -5059,6 +7484,16 @@
         "allow": [
           "workflow-format/domain",
           "workflow-format/application",
+          "workflow-format/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-format/infrastructure",
+        "allow": [
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
           "unclassified"
         ]
       },
@@ -5085,11 +7520,21 @@
         ]
       },
       {
+        "from": "workflow-management/presentation",
+        "allow": [
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-management/integration",
         "allow": [
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-management/presentation",
           "workflow-management/integration",
           "unclassified"
         ]
@@ -5254,11 +7699,20 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "app-builder/domain",
+          "app-builder/application",
+          "app-builder/presentation",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
           "assets/domain",
           "assets/application",
           "assets/infrastructure",
           "assets/presentation",
           "assets/integration",
+          "async-control/application",
           "audio/application",
           "audio/infrastructure",
           "audio/presentation",
@@ -5272,10 +7726,19 @@
           "billing/application",
           "billing/infrastructure",
           "billing/presentation",
+          "billing/integration",
+          "bottom-panel/application",
+          "bottom-panel/infrastructure",
+          "bottom-panel/presentation",
+          "bottom-panel/integration",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
+          "browser-export/infrastructure",
+          "browser-interaction/domain",
+          "browser-interaction/application",
+          "browser-interaction/infrastructure",
           "camera-authoring/domain",
           "camera-authoring/application",
           "camera-authoring/infrastructure",
@@ -5284,25 +7747,48 @@
           "canvas-renderer/domain",
           "canvas-renderer/application",
           "canvas-renderer/infrastructure",
+          "canvas-renderer/presentation",
           "canvas-renderer/integration",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "color-conversion/domain",
+          "color-palettes/domain",
+          "color-palettes/application",
+          "comfy-registry/domain",
+          "comfy-registry/application",
+          "comfy-registry/infrastructure",
           "comfyui-api/domain",
           "design-system/domain",
           "design-system/application",
+          "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation",
+          "dialog-host/integration",
           "error-catalog/domain",
+          "error-handling/domain",
+          "error-handling/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
+          "execution/domain",
           "execution/application",
+          "execution/infrastructure",
+          "execution/presentation",
+          "execution/integration",
           "extension-manager/domain",
           "extension-manager/application",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
           "first-run-tour/domain",
           "first-run-tour/application",
           "first-run-tour/presentation",
@@ -5317,6 +7803,7 @@
           "graph-canvas/integration",
           "graph-commands/application",
           "graph-commands/infrastructure",
+          "graph-compatibility/integration",
           "graph-layout/domain",
           "graph-layout/application",
           "graph-layout/infrastructure",
@@ -5329,15 +7816,19 @@
           "graph-selection/domain",
           "graph-selection/application",
           "graph-selection/integration",
+          "graph-traversal/application",
           "hdr-viewer/domain",
           "hdr-viewer/application",
           "hdr-viewer/infrastructure",
           "hdr-viewer/presentation",
           "hdr-viewer/integration",
+          "help-center/application",
+          "help-center/presentation",
           "job-queue/domain",
           "job-queue/application",
           "job-queue/infrastructure",
           "job-queue/presentation",
+          "job-queue/integration",
           "keybindings/domain",
           "keybindings/application",
           "keybindings/presentation",
@@ -5351,11 +7842,19 @@
           "linear-mode/presentation",
           "link-connection/domain",
           "link-connection/application",
+          "link-connection/integration",
           "link-presentation/domain",
           "link-presentation/application",
           "link-presentation/presentation",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
+          "markdown-rendering/infrastructure",
+          "media-lightbox/presentation",
+          "media-loading/application",
+          "media-metadata/domain",
+          "media-metadata/application",
+          "media-metadata/infrastructure",
+          "media-metadata/integration",
           "minimap/domain",
           "minimap/application",
           "minimap/infrastructure",
@@ -5372,15 +7871,27 @@
           "model-3d/infrastructure",
           "model-3d/presentation",
           "model-3d/integration",
+          "model-library/application",
+          "model-library/presentation",
+          "model-library/integration",
           "navigation/domain",
           "navigation/application",
           "navigation/infrastructure",
           "navigation/integration",
+          "node-badges/application",
+          "node-badges/integration",
+          "node-definition/domain",
+          "node-library/domain",
+          "node-library/application",
+          "node-library/infrastructure",
+          "node-library/presentation",
+          "node-library/integration",
           "node-replacement/domain",
           "node-replacement/application",
           "node-replacement/infrastructure",
           "node-replacement/presentation",
           "node-templates/integration",
+          "node-type-registration/integration",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -5388,22 +7899,29 @@
           "node-widgets/integration",
           "note-nodes/presentation",
           "note-nodes/integration",
+          "numeric-geometry/domain",
           "onboarding-tours/domain",
           "onboarding-tours/application",
           "onboarding-tours/infrastructure",
           "onboarding-tours/presentation",
           "prompt-authoring/domain",
           "prompt-authoring/integration",
+          "properties-panel/application",
+          "properties-panel/presentation",
           "release-notes/application",
           "release-notes/infrastructure",
           "release-notes/presentation",
           "remote-config/domain",
           "remote-config/application",
           "remote-config/infrastructure",
+          "runtime-guards/domain",
           "secrets/domain",
           "secrets/application",
           "secrets/infrastructure",
           "secrets/presentation",
+          "selection-toolbox/domain",
+          "selection-toolbox/presentation",
+          "selection-toolbox/integration",
           "server-facts/domain",
           "settings/domain",
           "settings/application",
@@ -5416,8 +7934,10 @@
           "skill-packs/presentation",
           "startup-tracing/application",
           "startup-tracing/infrastructure",
+          "subgraph-blueprints/application",
           "subgraph-promotion/domain",
           "subgraph-promotion/application",
+          "subgraph-promotion/presentation",
           "subgraphs/domain",
           "subgraphs/application",
           "subgraphs/presentation",
@@ -5427,14 +7947,24 @@
           "surveys/domain",
           "surveys/application",
           "surveys/presentation",
+          "system-info/domain",
+          "system-info/application",
+          "system-info/presentation",
           "tasks/infrastructure",
           "telemetry/domain",
           "telemetry/application",
           "telemetry/infrastructure",
           "telemetry/integration",
+          "test-support/integration",
+          "text-output-preview/domain",
           "text-output-preview/presentation",
           "text-output-preview/integration",
+          "value-formatting/domain",
           "version-compatibility/application",
+          "video-edit/domain",
+          "video-edit/application",
+          "video-edit/infrastructure",
+          "video-edit/presentation",
           "viewport-3d/domain",
           "viewport-3d/application",
           "viewport-3d/infrastructure",
@@ -5450,14 +7980,24 @@
           "vue-node-widgets/presentation",
           "vue-node-widgets/integration",
           "webcam-capture/integration",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workbench-shell/presentation",
+          "workbench-shell/integration",
           "workflow-deployment/domain",
           "workflow-deployment/application",
           "workflow-deployment/presentation",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
           "workflow-format/domain",
           "workflow-format/application",
+          "workflow-format/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "workflow-management/presentation",
           "workflow-management/integration",
           "workflow-persistence/domain",
           "workflow-persistence/application",

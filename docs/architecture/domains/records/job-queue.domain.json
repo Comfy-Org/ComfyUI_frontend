@@ -250,6 +250,118 @@
     {
       "path": "src/stores/resultItemParsing.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/components/actionbar/BatchCountEdit.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/BatchCountEdit.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyActionbar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyActionbar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/ComfyQueueButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/ComfyQueueButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/index.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/JobHistorySidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/services/autoQueueService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/autoQueueService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/jobOutputCache.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/jobOutputCache.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/cloud/getWorkflowFromHistory.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useReconnectQueueRefresh.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useReconnectQueueRefresh.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/queueDisplay.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/queueDisplay.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/queueUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItem.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItemUrl.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItemUrl.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/queue.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/storybook/mocks/useJobActions.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/storybook/mocks/useJobList.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -288,6 +400,35 @@
         "src/composables/queue/useQueueNotificationBanners.test.ts",
         "src/composables/queue/useQueueProgress.test.ts",
         "src/components/queue/job/JobAssetsList.test.ts"
+      ]
+    },
+    {
+      "name": "Actionbar run button queues prompts with batch count and run modes and shows queue progress",
+      "checks": [
+        "src/components/actionbar/ComfyActionbar.test.ts",
+        "src/components/actionbar/ComfyRunButton/ComfyQueueButton.test.ts",
+        "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.test.ts",
+        "src/components/actionbar/BatchCountEdit.test.ts"
+      ]
+    },
+    {
+      "name": "Auto-queue requeues on change or instant mode and respects the partner-node run gate",
+      "checks": ["src/services/autoQueueService.test.ts"]
+    },
+    {
+      "name": "Job detail, outputs, assets, and workflows are fetched and cached per job",
+      "checks": [
+        "src/services/jobOutputCache.test.ts",
+        "src/platform/workflow/cloud/getWorkflowFromHistory.test.ts"
+      ]
+    },
+    {
+      "name": "Job display state, reconnect refresh, and job-history sidebar registration follow queue state",
+      "checks": [
+        "src/utils/queueDisplay.test.ts",
+        "src/composables/useReconnectQueueRefresh.test.ts",
+        "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+        "src/stores/queueStore.test.ts"
       ]
     }
   ],

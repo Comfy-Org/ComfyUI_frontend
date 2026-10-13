@@ -414,6 +414,14 @@
     {
       "path": "src/extensions/core/cloudSessionCookie.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/utils/textCaseUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/textCaseUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -480,6 +488,10 @@
         "src/platform/cloud/notification/components/DesktopCloudNotificationController.test.ts",
         "src/platform/distribution/cloudPreviewUtil.test.ts"
       ]
+    },
+    {
+      "name": "Title-casing used by cloud surfaces stays stable",
+      "checks": ["src/utils/textCaseUtil.test.ts"]
     }
   ],
   "adrs": [

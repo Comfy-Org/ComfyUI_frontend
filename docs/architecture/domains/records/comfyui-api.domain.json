@@ -22,6 +22,18 @@
     {
       "path": "src/platform/remote/comfyui/types.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/utils/createAnnotatedPath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/createAnnotatedPath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/resultItemTypeSchema.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -35,6 +47,10 @@
     {
       "name": "HTTP error payloads parse into stable codes and bounded user-facing messages",
       "checks": ["src/platform/remote/comfyui/errors.test.ts"]
+    },
+    {
+      "name": "Annotated result paths round-trip folder type and subfolder",
+      "checks": ["src/utils/createAnnotatedPath.test.ts"]
     }
   ],
   "adrs": [],

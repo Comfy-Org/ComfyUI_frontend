@@ -30,6 +30,10 @@
     {
       "path": "src/lib/litegraph/src/litegraph.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/composables/useGlobalLitegraph.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],

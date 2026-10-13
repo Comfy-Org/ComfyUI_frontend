@@ -270,6 +270,122 @@
     {
       "path": "src/lib/litegraph/src/widgets/widgetMap.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/stores/widgetValueStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetValueStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetValueStore.graphReactivity.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/widgetUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/widgetUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/widgetId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetVisibility.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetVisibility.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/widgetValuePropagation.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/widgetValuePropagation.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.clone.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.numericOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.subgraphPromotion.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/saveImageExtraOutput.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/saveImageExtraOutput.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useWatchWidget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/useWatchWidget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/nodeDefUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeDefUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/widgetBinding.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/searchAndReplace.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/searchAndReplace.test.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -303,6 +419,45 @@
         "src/core/graph/widgets/valueControl.test.ts",
         "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts"
       ]
+    },
+    {
+      "name": "Widget value store keeps scoped widget state reactive across graph edits and announces value intents",
+      "checks": [
+        "src/stores/widgetValueStore.test.ts",
+        "src/stores/widgetValueStore.graphReactivity.test.ts"
+      ]
+    },
+    {
+      "name": "Widget default values and renames stay consistent",
+      "checks": ["src/utils/widgetUtil.test.ts"]
+    },
+    {
+      "name": "Widget ids stay unique per node and widget visibility derives canvas, Vue node, and panel surfaces",
+      "checks": [
+        "src/types/widgetId.test.ts",
+        "src/types/widgetVisibility.test.ts"
+      ]
+    },
+    {
+      "name": "PrimitiveNode and widget-to-input conversion keep widget config, combo refresh, and propagated values",
+      "checks": [
+        "src/extensions/core/widgetInputs.test.ts",
+        "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+        "src/extensions/core/widgetValuePropagation.test.ts"
+      ]
+    },
+    {
+      "name": "CustomCombo and primitive numeric nodes keep options across copy, paste, and subgraph promotion",
+      "checks": [
+        "src/extensions/core/customWidgets.test.ts",
+        "src/extensions/core/customWidgets.clone.test.ts",
+        "src/extensions/core/customWidgets.numericOptions.test.ts",
+        "src/extensions/core/customWidgets.subgraphPromotion.test.ts"
+      ]
+    },
+    {
+      "name": "Save node filename prefixes apply text replacements at serialization",
+      "checks": ["src/extensions/core/saveImageExtraOutput.test.ts"]
     }
   ],
   "adrs": [

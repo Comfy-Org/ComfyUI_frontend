@@ -1,7 +1,7 @@
 {
   "id": "image-compositor",
   "capability": "Image compositor",
-  "description": "Layered image-composition presentation, editing orchestration, extension registration, Vue-node adaptation, and LiteGraph widget integration.",
+  "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
   "modules": [
     {
       "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
@@ -34,6 +34,334 @@
     {
       "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerEditorContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/LayerPropertiesPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/PropertyNumberField.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/PropertyNumberField.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/bakeContent.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/prop.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/prop.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/selection.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/setTransform.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/structure.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/commands/structure.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/compositor.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/compositor/modeCodes.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/compositor/modeCodes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/content.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/document.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/document.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/overlayList.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/pickOps.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/pickOps.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/selectionMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/selectionMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/selectionOps.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/fill.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/fill.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/history.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/history.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/id.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/impl/contentStore.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/impl/contentStore.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/kinds/fill.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/kinds/group.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/kinds/index.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/kinds/raster.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/mode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/node.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/node.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/nodeKind.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/bake.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/place.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/place.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/renderStack.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/renderStack.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/snapping.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/snapping.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tool.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/index.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/overlayBox.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/selectTool.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/tools.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/transformMath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/transformMath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/tools/transformTool.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/panZoom.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/panZoom.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/layerEditor.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],
@@ -51,6 +379,35 @@
         "src/renderer/extensions/compositor/composables/compositorWidgets.test.ts",
         "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
         "src/extensions/core/imageCompositor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor engine keeps the scene document, undo history, layer kinds, and transform tools consistent",
+      "checks": [
+        "src/renderer/extensions/layerEditor/engine/document.test.ts",
+        "src/renderer/extensions/layerEditor/engine/history.test.ts",
+        "src/renderer/extensions/layerEditor/engine/commands/structure.test.ts",
+        "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts",
+        "src/renderer/extensions/layerEditor/engine/tools/tools.test.ts",
+        "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor renders the stack, bakes and places content, and exports PSD files",
+      "checks": [
+        "src/renderer/extensions/layerEditor/engine/render/renderStack.test.ts",
+        "src/renderer/extensions/layerEditor/engine/render/place.test.ts",
+        "src/renderer/extensions/layerEditor/psdExport.test.ts",
+        "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor dialog opens from node outputs and drives the editing session",
+      "checks": [
+        "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+        "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts"
       ]
     }
   ],

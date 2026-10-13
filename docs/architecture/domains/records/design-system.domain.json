@@ -470,6 +470,190 @@
     {
       "path": "src/components/gradientslider/gradients.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/components/actionbar/TinyChevronIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/PropertiesAccordionItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/TransitionCollapse.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavTitle.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/panel/LeftSidePanel.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/panel/LeftSidePanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/services/mediaCacheService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/mediaCacheService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/palette/usePaletteSwatchRow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/palette/usePaletteSwatchRow.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/tree/useTreeFolderOperations.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useAttrsClass.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCurveEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCurveEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useImageQuiet.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useIntersectionObserver.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useModalLiftedZIndex.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useModalLiftedZIndex.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePopoverSizing.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePopoverSizing.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRangeEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRangeEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useTreeExpansion.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/gridUtil.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/histogramUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/histogramUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mouseDownUtil.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/textTickerUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/textTickerUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/treeUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/treeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/validationUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/toastId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/toastOptions.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/navTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/element/useOverflowObserver.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/zodTypedSchema.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/zodTypedSchema.test.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -555,6 +739,41 @@
         "src/components/ui/color-picker/useColorPicker.test.ts",
         "src/components/ui/color-picker/ColorPickerPanel.test.ts",
         "src/components/ui/slider/Slider.test.ts"
+      ]
+    },
+    {
+      "name": "Modal layout, navigation items, and accordion items render feature-agnostic structure",
+      "checks": [
+        "src/components/widget/layout/BaseModalLayout.test.ts",
+        "src/components/widget/nav/NavItem.test.ts",
+        "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts"
+      ]
+    },
+    {
+      "name": "Media cache fetches, reuses, and evicts object URLs for lazy images",
+      "checks": ["src/services/mediaCacheService.test.ts"]
+    },
+    {
+      "name": "Curve, range, and palette swatch editors keep value shapes, drag behaviour, and histogram paths",
+      "checks": [
+        "src/composables/useCurveEditor.test.ts",
+        "src/composables/useRangeEditor.test.ts",
+        "src/composables/palette/usePaletteSwatchRow.test.ts",
+        "src/utils/histogramUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Popover sizing and modal z-index lifting keep overlays visible above dialogs",
+      "checks": [
+        "src/composables/usePopoverSizing.test.ts",
+        "src/composables/useModalLiftedZIndex.test.ts"
+      ]
+    },
+    {
+      "name": "Tree data helpers and ticker text splitting stay pure",
+      "checks": [
+        "src/utils/treeUtil.test.ts",
+        "src/utils/textTickerUtils.test.ts"
       ]
     }
   ],

@@ -3,8 +3,14 @@
   "capability": "Settings",
   "description": "User setting definitions, persistence and migration, global settings API, search and dialog navigation, LiteGraph setting sync, and the legacy app.ui.settings dialog. Keybinding, about, credits, user, workspace, secrets, and skill panels remain separate capabilities.",
   "modules": [
-    { "path": "src/platform/settings/types.ts", "role": "domain" },
-    { "path": "src/platform/settings/constants/agent.ts", "role": "domain" },
+    {
+      "path": "src/platform/settings/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/constants/agent.ts",
+      "role": "domain"
+    },
     {
       "path": "src/platform/settings/constants/canvasNavigation.ts",
       "role": "domain"
@@ -21,7 +27,10 @@
       "path": "src/platform/settings/constants/errorSystemSettings.test.ts",
       "role": "application"
     },
-    { "path": "src/platform/settings/settingStore.ts", "role": "application" },
+    {
+      "path": "src/platform/settings/settingStore.ts",
+      "role": "application"
+    },
     {
       "path": "src/platform/settings/settingStore.test.ts",
       "role": "application"
@@ -110,8 +119,74 @@
       "path": "src/components/dialog/content/setting/SettingItem.test.ts",
       "role": "presentation"
     },
-    { "path": "src/scripts/ui/settings.ts", "role": "integration" },
-    { "path": "src/scripts/ui/settings.test.ts", "role": "integration" }
+    {
+      "path": "src/scripts/ui/settings.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/ui/settings.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/common/BackgroundImageUpload.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/CustomFormValue.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormColorPicker.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormColorPicker.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormImageUpload.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormNumberField.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormRadioGroup.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormRadioGroup.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarSettingsButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/serverConfigStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/serverConfigStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/constants/serverConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/serverArgs.ts",
+      "role": "domain"
+    }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
@@ -154,6 +229,18 @@
         "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
         "src/scripts/ui/settings.test.ts"
       ]
+    },
+    {
+      "name": "Setting form items render the field type for each setting and emit values",
+      "checks": [
+        "src/components/common/FormItem.test.ts",
+        "src/components/common/FormRadioGroup.test.ts",
+        "src/components/common/FormColorPicker.test.ts"
+      ]
+    },
+    {
+      "name": "Server config store organizes server settings and produces launch arguments from modified values",
+      "checks": ["src/stores/serverConfigStore.test.ts"]
     }
   ],
   "adrs": [],

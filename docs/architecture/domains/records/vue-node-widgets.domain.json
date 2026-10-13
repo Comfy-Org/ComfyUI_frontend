@@ -498,6 +498,262 @@
     {
       "path": "src/renderer/utils/nodeTypeGuards.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/components/boundingbox/WidgetBoundingBox.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/boundingbox/WidgetBoundingBox.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/DomWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/DomWidget.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/domWidgetMountReporting.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/domWidgetMountReporting.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/domWidgetZIndex.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/domWidgetZIndex.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/widgetStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/domWidgetStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/domWidgetStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/canvasImagePreviewTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/node/useNodeAnimatedImage.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeAnimatedImage.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeCanvasImagePreview.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeCanvasImagePreview.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeDragAndDrop.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeDragAndDrop.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeFileInput.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeFileInput.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeImage.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeImage.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeImageUpload.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeImageUpload.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodePaste.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodePaste.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeProgressText.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useProgressTextPreviews.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useProgressTextPreviews.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/imageUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/imageUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mediaUploadUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mediaUploadUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/widgetPropFilter.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/simplifiedWidget.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetConstructor.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/positionConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetTypes.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/widgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/errorNodeWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.performance.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/uploadImage.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
+      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],
@@ -545,6 +801,67 @@
         "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.promoted.test.ts",
         "browser_tests/tests/vueNodes/widgets/legacy.spec.ts",
         "browser_tests/tests/domWidget.spec.ts"
+      ]
+    },
+    {
+      "name": "DOM widget host positions, stacks, and reports mount failures for DOM widgets",
+      "checks": [
+        "src/components/graph/DomWidgets.test.ts",
+        "src/components/graph/widgets/DomWidget.test.ts",
+        "src/components/graph/widgets/domWidgetZIndex.test.ts",
+        "src/components/graph/widgets/domWidgetMountReporting.test.ts"
+      ]
+    },
+    {
+      "name": "Value-editor widget adapters bind curve, range, color, bounding box, multi-select, and progress text values",
+      "checks": [
+        "src/components/curve/WidgetCurve.test.ts",
+        "src/components/range/WidgetRange.test.ts",
+        "src/components/palette/WidgetColors.test.ts",
+        "src/components/boundingbox/WidgetBoundingBox.test.ts",
+        "src/components/graph/widgets/MultiSelectWidget.test.ts",
+        "src/components/graph/widgets/TextPreviewWidget.test.ts"
+      ]
+    },
+    {
+      "name": "Widget type registry resolves core and extension widget constructors and DOM widget state tracks mounted DOM widgets",
+      "checks": [
+        "src/stores/widgetStore.test.ts",
+        "src/stores/domWidgetStore.test.ts"
+      ]
+    },
+    {
+      "name": "Node image upload combines drag-and-drop, file input, and paste handlers with accepted media types",
+      "checks": [
+        "src/composables/node/useNodeImageUpload.test.ts",
+        "src/composables/node/useNodeDragAndDrop.test.ts",
+        "src/composables/node/useNodeFileInput.test.ts",
+        "src/composables/node/useNodePaste.test.ts",
+        "src/utils/mediaUploadUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Node image, animated image, canvas image, and progress-text previews attach to nodes",
+      "checks": [
+        "src/composables/node/useNodeImage.test.ts",
+        "src/composables/node/useNodeAnimatedImage.test.ts",
+        "src/composables/node/useNodeCanvasImagePreview.test.ts",
+        "src/composables/node/useProgressTextPreviews.test.ts",
+        "src/utils/imageUtil.test.ts"
+      ]
+    },
+    {
+      "name": "DOM widgets clip to the canvas and widgets read upstream linked values",
+      "checks": [
+        "src/composables/element/useDomClipping.test.ts",
+        "src/composables/useUpstreamValue.test.ts"
+      ]
+    },
+    {
+      "name": "DOM widget hosts preserve position, visibility, and bounded layout reads",
+      "checks": [
+        "src/scripts/domWidget.test.ts",
+        "src/scripts/domWidget.performance.test.ts"
       ]
     }
   ],

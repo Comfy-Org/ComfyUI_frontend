@@ -38,6 +38,50 @@
     {
       "path": "src/platform/workflow/validation/schemas/workflowSchema.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/utils/executionUtil.stability.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/executionUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/executionUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/fileUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/fileUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/jsonUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/jsonUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/linkFixer.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/linkFixer.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/migration/migrateReroute.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/migration/migrateReroute.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -61,6 +105,22 @@
       "checks": [
         "src/platform/workflow/core/utils/workflowFlattening.test.ts",
         "src/platform/workflow/core/utils/modelRequirements.test.ts"
+      ]
+    },
+    {
+      "name": "Workflow documents load with link repair, legacy reroute migration, and non-finite JSON parsing",
+      "checks": [
+        "src/utils/linkFixer.test.ts",
+        "src/utils/migration/migrateReroute.test.ts",
+        "src/utils/jsonUtil.test.ts",
+        "src/utils/fileUtil.test.ts"
+      ]
+    },
+    {
+      "name": "graphToPrompt produces stable API-format prompts",
+      "checks": [
+        "src/utils/executionUtil.test.ts",
+        "src/utils/executionUtil.stability.test.ts"
       ]
     }
   ],

@@ -78,6 +78,22 @@
     {
       "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts",
       "role": "application"
+    },
+    {
+      "path": "src/extensions/core/slotDefaults.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/slotDefaultTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/slotDefaultTypes.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/searchBoxTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -100,6 +116,10 @@
         "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
         "browser_tests/tests/rerouteNode.spec.ts"
       ]
+    },
+    {
+      "name": "Slot default node suggestions register every searchable input and output type from node definitions",
+      "checks": ["src/extensions/core/slotDefaultTypes.test.ts"]
     }
   ],
   "adrs": [

@@ -126,6 +126,18 @@
     {
       "path": "src/renderer/core/layout/utils/nodeSizeUtil.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/utils/positionBounds.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/positionBounds.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/spatialIndex.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -163,6 +175,10 @@
         "src/renderer/core/layout/utils/mappers.test.ts",
         "src/renderer/core/spatial/QuadTree.test.ts"
       ]
+    },
+    {
+      "name": "Position extents and bounds are computed from node rects",
+      "checks": ["src/utils/positionBounds.test.ts"]
     }
   ],
   "adrs": [

@@ -4,6 +4,14 @@
   "description": "The reportError entry point and its Sentry, Datadog RUM, and desktop-host routing; Sentry and Datadog RUM SDK initialization; beforeSend filters that drop third-party noise and enrich Vue directive errors; assertion, preload, resource, and image load failure reporters; and the manual-refresh stability action. Product analytics dispatch and startup tracing are separate records.",
   "modules": [
     {
+      "path": "src/platform/telemetry/redactTelemetryUrls.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/redactTelemetryUrls.test.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/platform/telemetry/reportError.ts",
       "role": "application"
     },
@@ -98,6 +106,22 @@
     {
       "path": "src/platform/telemetry/manualRefreshTracker.test.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "src/base/assert.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/base/assert.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -129,6 +153,13 @@
       "checks": [
         "src/platform/telemetry/imageFailureDiagnostics.test.ts",
         "src/platform/telemetry/manualRefreshTracker.test.ts"
+      ]
+    },
+    {
+      "name": "Assertions throw in DEV and delegate to the registered reporter otherwise; preload failures are parsed for reporting",
+      "checks": [
+        "src/base/assert.test.ts",
+        "src/utils/preloadErrorUtil.test.ts"
       ]
     }
   ],
