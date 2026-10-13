@@ -1,8 +1,7 @@
+import type { AgentIdentity } from '@comfyorg/ingest-types'
 import type { Page } from '@playwright/test'
-import type { z } from 'zod'
 
-import type { zAgentIdentityWire } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
+import { WEB_SESSION } from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
@@ -54,24 +53,11 @@ export async function announceHandledAgentFrames(page: Page): Promise<void> {
   )
 }
 
-/**
- * The user id `GET /api/agent/identity` reports. The follower stamps every
- * human op with `human:<user_id>:<tab>`, so it matches the signed-in cloud
- * test user the boot mocks authenticate as.
- */
-const AGENT_USER_ID = 'test-user-e2e'
-
-type AgentIdentityWire = z.infer<typeof zAgentIdentityWire>
-
-/**
- * Answers the identity lookup the canvas follower waits on; until it answers
- * the follower stays inactive and never sends `doc_subscribe`.
- */
 export async function mockAgentIdentity(
   page: Page,
-  userId: string = AGENT_USER_ID
+  userId = WEB_SESSION.user.id
 ): Promise<void> {
-  const identity: AgentIdentityWire = {
+  const identity: AgentIdentity = {
     workspace_id: 'ws-personal',
     user_id: userId
   }

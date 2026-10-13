@@ -11,7 +11,7 @@ import { waitForIsland } from './fixtures/islands'
 const PATH = '/seedance-2.5'
 const HERO_TITLE = t('seedance.hero.title', {}, { locale: 'en' })
 const MODELS_HEADING = t('seedance.models.heading', {}, { locale: 'en' })
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const STEPS_HEADING = t('seedance.steps.heading', {}, { locale: 'en' })
 const STEPS_SECONDARY = t('seedance.steps.secondaryCta', {}, { locale: 'en' })
 const STEPS_PRIMARY = t('seedance.steps.primaryCta', {}, { locale: 'en' })
@@ -84,7 +84,7 @@ test.describe('Seedance 2.5 page — link targets', () => {
         name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

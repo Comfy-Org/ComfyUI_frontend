@@ -41,7 +41,7 @@ const responseUsageSchema = z.object({
     cache_write_tokens: tokenCountSchema.default(0)
   }),
   output_tokens_details: z.object({ reasoning_tokens: tokenCountSchema })
-}) satisfies z.ZodType<ResponseUsage, z.ZodTypeDef, unknown>
+}) satisfies z.ZodType<ResponseUsage>
 
 const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
 const responseMetadataSchema = z.object({
@@ -88,9 +88,7 @@ const responseMetadataSchema = z.object({
     })
     .nullable()
 }) satisfies z.ZodType<
-  Pick<Response, 'status' | 'error' | 'incomplete_details'>,
-  z.ZodTypeDef,
-  unknown
+  Pick<Response, 'status' | 'error' | 'incomplete_details'>
 >
 const responseEnvelopeSchema = responseMetadataSchema.extend({
   output: z.array(

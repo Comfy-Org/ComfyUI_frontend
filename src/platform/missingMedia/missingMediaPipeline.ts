@@ -1,6 +1,5 @@
 import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -9,7 +8,7 @@ import {
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -53,10 +52,7 @@ export async function runMissingMediaPipeline({
   const pending = candidates.some((c) => c.isMissing === undefined)
   if (pending) {
     const controller = missingMediaStore.createVerificationAbortController()
-    void verifyMediaCandidates(candidates, {
-      isCloud,
-      signal: controller.signal
-    })
+    void verifyMediaCandidates(candidates, { signal: controller.signal })
       .then(() => {
         if (controller.signal.aborted) return
         // Re-check ancestor after async verification (see model pipeline).
@@ -75,14 +71,13 @@ export async function runMissingMediaPipeline({
       })
       .catch((err) => {
         console.warn('[Missing Media Pipeline] Asset verification failed:', err)
-        useToastStore().add({
-          severity: 'warn',
-          summary: st(
+        useToast().warning(
+          st(
             'toastMessages.missingMediaVerificationFailed',
             'Failed to verify missing media. Some inputs may not be shown in the Issues tab.'
           ),
-          life: 5000
-        })
+          { duration: 5000 }
+        )
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)

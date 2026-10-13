@@ -99,6 +99,36 @@ package or `workspace:`. The launcher warns that package source edits will not
 hot-reload when the published package is selected, and refuses `pnpm link`; use
 `workspace:` when developing the package alongside the frontend.
 
+## Running the agent yourself
+
+The launcher above is the supported path and nothing in this section is needed for it.
+Start the agent in its own terminal only when you need to attach a debugger to it, run
+a build Air does not produce, or keep it alive across frontend restarts. Then Vite needs
+to be told where the agent published itself rather than handed a token:
+
+```bash
+VITE_AGENT_STANDALONE=true DEV_AGENT_URL=http://127.0.0.1:6286 \
+  DEV_AGENT_DATA_DIR=~/.comfy-agent \
+  pnpm dev --port 6207 --strictPort
+```
+
+`DEV_AGENT_DATA_DIR` is the agent's `AGENT_DATA_DIR` (its default is `~/.comfy-agent`).
+Vite reads the token out of that directory's `agent.json` on each agent request, so
+restarting the agent recovers on its own — no Vite restart, no page reload. It is
+mutually exclusive with `DEV_AGENT_SESSION_TOKEN`.
+Only the token is rediscovered. Vite continues forwarding to `DEV_AGENT_URL`, so an
+agent restart on a different port still requires restarting Vite with the new URL.
+
+Give it a path that already exists and that exists _as written_: Vite refuses to start
+on a `DEV_AGENT_DATA_DIR` that is not a readable directory, so start the agent once
+before using it. The shell expands `~` in the command above, but `.env` is read by
+`dotenv`, which does not — a `DEV_AGENT_DATA_DIR=~/.comfy-agent` line in `.env` points
+at a literal `./~/.comfy-agent` and the dev server will say so rather than answering 401
+forever.
+
+Starting Vite before the agent is fine once the directory exists: requests answer `401`
+until the agent publishes `agent.json`, then succeed.
+
 ## How it works
 
 The Vite proxy keeps the standalone session token server-side. Browser REST and event
@@ -136,3 +166,6 @@ the turn's first frame; replay sends back to back by default and
   an in-process event bus rather than Postgres, Redis, ingest, or Temporal.
 - **Vite proxy:** the development-only same-origin bridge that forwards agent requests
   and injects the standalone session credential outside browser code.
+- **`agent.json`:** the discovery file the standalone agent writes into its data
+  directory on every start — `{ port, token, pid }`, mode 0600. It is how a local client
+  finds the running agent and its current token without scanning ports.

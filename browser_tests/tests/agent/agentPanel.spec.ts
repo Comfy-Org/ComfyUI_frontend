@@ -235,7 +235,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage('Complete this workflow without a refusal')
       await expect.poll(() => postedMessages.length).toBe(1)
       pushEvent(await getAgentSocket(), THINKING_EVENT)
@@ -248,7 +248,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
@@ -270,7 +270,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage(
         'Complete another workflow without a refusal'
       )
@@ -302,7 +302,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('remove the standing paywall after the final funded refresh', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
         .click()
@@ -620,7 +620,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
     expect((await uploadResponse).ok()).toBe(true)
     await expect(
-      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+      panel
+        .getByTestId('composer-asset-section')
+        .getByRole('group', { name: 'movie.mp4' })
     ).toBeVisible()
     await expect.poll(() => uploadCount).toBe(1)
 
@@ -630,11 +632,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       buffer: Buffer.alloc(25 * 1024 * 1024)
     })
     await expect(
-      page.getByText('too-large.mp4 is larger than 24 MB')
+      comfyPage.toast.withText('too-large.mp4 is larger than 24 MB')
     ).toBeVisible()
-    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
-      0
-    )
+    await expect(
+      panel.getByRole('group', { name: 'too-large.mp4' })
+    ).toHaveCount(0)
     await expect.poll(() => uploadCount).toBe(1)
   })
 
@@ -687,6 +689,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await editButton.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
+    await composer.focus()
+    await expect(editButton).toHaveCSS('pointer-events', 'none')
+
+    await panel.getByText(originalPrompt, { exact: true }).last().hover()
+    await expect(editButton).toHaveCSS('pointer-events', 'auto')
     await editButton.click()
 
     await expect(composer).toHaveText(originalPrompt)

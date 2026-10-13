@@ -15,79 +15,59 @@ const i18n = createI18n({
   messages: {}
 })
 
+const mockNode = {
+  key: '1',
+  label: 'Test Node',
+  leaf: false,
+  totalLeaves: 3,
+  icon: 'pi pi-folder',
+  type: 'folder',
+  handleRename: () => {}
+} as RenderedTreeExplorerNode
+
+function renderNode(
+  overrides: Partial<RenderedTreeExplorerNode> = {},
+  handleEditLabel = vi.fn()
+) {
+  render(TreeExplorerTreeNode, {
+    props: { node: { ...mockNode, ...overrides } },
+    global: {
+      components: { EditableText, Badge },
+      plugins: [getActivePinia()!, i18n],
+      provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabel }
+    }
+  })
+}
+
 describe('TreeExplorerTreeNode', () => {
-  const mockNode = {
-    key: '1',
-    label: 'Test Node',
-    leaf: false,
-    totalLeaves: 3,
-    icon: 'pi pi-folder',
-    type: 'folder',
-    handleRename: () => {}
-  } as RenderedTreeExplorerNode
+  it.for([
+    { kind: 'a folder', overrides: {}, leafCount: '3' },
+    {
+      kind: 'a leaf',
+      overrides: { leaf: true, type: 'node' as const },
+      leafCount: undefined
+    }
+  ])('renders $kind with its leaf count', ({ overrides, leafCount }) => {
+    renderNode(overrides)
 
-  const mockHandleEditLabel = vi.fn()
-
-  it('renders correctly', () => {
-    render(TreeExplorerTreeNode, {
-      props: { node: mockNode },
-      global: {
-        components: { EditableText, Badge },
-        plugins: [getActivePinia()!, i18n],
-        provide: {
-          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
-        }
-      }
-    })
-
-    const treeNode = screen.getByTestId('tree-node-1')
-    expect(treeNode).toBeInTheDocument()
-    expect(treeNode).toHaveClass('tree-folder')
-    expect(treeNode).not.toHaveClass('tree-leaf')
     expect(screen.getByText('Test Node')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.queryByTestId('tree-leaf-count')?.textContent.trim()).toBe(
+      leafCount
+    )
   })
 
   it('makes node label editable when isEditingLabel is true', () => {
-    render(TreeExplorerTreeNode, {
-      props: {
-        node: {
-          ...mockNode,
-          isEditingLabel: true
-        }
-      },
-      global: {
-        components: { EditableText, Badge },
-        plugins: [getActivePinia()!, i18n],
-        provide: {
-          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
-        }
-      }
-    })
+    renderNode({ isEditingLabel: true })
 
     expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 
   it('triggers handleEditLabel callback when editing is finished', async () => {
-    const handleEditLabelMock = vi.fn()
+    const handleEditLabel = vi.fn()
+    renderNode({ isEditingLabel: true }, handleEditLabel)
 
-    render(TreeExplorerTreeNode, {
-      props: {
-        node: {
-          ...mockNode,
-          isEditingLabel: true
-        }
-      },
-      global: {
-        components: { EditableText, Badge },
-        provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
-        plugins: [getActivePinia()!, i18n]
-      }
-    })
-
-    // Trigger blur on the input to finish editing (fires the 'edit' event)
     await fireEvent.blur(screen.getByRole('textbox'))
 
-    expect(handleEditLabelMock).toHaveBeenCalledOnce()
+    expect(handleEditLabel).toHaveBeenCalledOnce()
   })
 })

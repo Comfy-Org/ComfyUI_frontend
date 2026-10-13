@@ -20,7 +20,6 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -371,7 +370,7 @@ async function verifyAndAddPendingMedia(
     ])
   )
   try {
-    await verifyMediaCandidates(pending, { isCloud, signal })
+    await verifyMediaCandidates(pending, { signal })
     if (
       signal?.aborted ||
       !rootGraphAtScan ||

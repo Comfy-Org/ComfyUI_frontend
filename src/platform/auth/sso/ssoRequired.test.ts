@@ -1,4 +1,6 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -7,9 +9,11 @@ import {
   presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry'))
 
 const SSO_REFUSAL = {
   code: 'sso_required',
@@ -25,21 +29,31 @@ async function shownDialog() {
 
 describe('the SSO-required screen', () => {
   beforeAll(() => import('@/platform/auth/sso/SsoRequiredDialogContent.vue'))
+  afterEach(() => {
+    ssoFlowStore.finish()
+  })
 
   it('stays hidden with the flag off, so the caller keeps its handling', async () => {
-    expect(presentSsoRequired({ email: 'ada@acme.com' })).toBe(false)
+    expect(
+      presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    ).toBe(false)
     expect(await shownDialog()).toBeUndefined()
   })
 
   it('opens once with the flag on, keeping what any caller knew', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
 
-    expect(presentSsoRequired()).toBe(true)
+    expect(presentSsoRequired('session_refused')).toBe(true)
     await shownDialog()
-    expect(presentSsoRequired({ email: 'ada@acme.com', returnTo: '/x' })).toBe(
+    expect(
+      presentSsoRequired('session_refused', {
+        email: 'ada@acme.com',
+        returnTo: '/x'
+      })
+    ).toBe(true)
+    expect(presentSsoRequired('session_refused', { email: undefined })).toBe(
       true
     )
-    expect(presentSsoRequired({ email: undefined })).toBe(true)
 
     const dialog = await shownDialog()
     expect(dialog?.contentProps).toEqual({
@@ -47,6 +61,54 @@ describe('the SSO-required screen', () => {
       returnTo: '/x'
     })
     expect(useDialogStore().dialogStack).toHaveLength(1)
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:sso_required_shown',
+      properties: {
+        surface: 'cloud_app',
+        trigger: 'session_refused',
+        presentation: 'notice',
+        flow_id: expect.any(String)
+      }
+    })
+  })
+
+  async function closeShownDialog(beforeClose: () => void) {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    await shownDialog()
+    beforeClose()
+    useDialogStore().closeDialog({ key: SSO_REQUIRED_DIALOG_KEY })
+  }
+
+  it('closing the dialog drops an attempt never continued', async () => {
+    await closeShownDialog(() => {})
+
+    expect(ssoFlowStore.current()).toBeUndefined()
+  })
+
+  it('closing the dialog keeps an attempt already continued', async () => {
+    await closeShownDialog(() => ssoFlowStore.markContinued('cloud_app'))
+
+    expect(ssoFlowStore.current()?.continued).toBe(true)
+  })
+
+  it('reports a refused API request as the api_key trigger', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+
+    presentForRefusal(403, SSO_REFUSAL)
+    await shownDialog()
+
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:sso_required_shown',
+      properties: expect.objectContaining({ trigger: 'api_key' })
+    })
+  })
+
+  it('reports nothing with the flag off', async () => {
+    presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    await shownDialog()
+
+    expect(useTelemetry()?.trackSsoEvent).not.toHaveBeenCalled()
   })
 
   it.for<{ name: string; status: number; body: unknown; shown: boolean }>([
@@ -71,6 +133,45 @@ describe('the SSO-required screen', () => {
     expect(Boolean(await shownDialog())).toBe(shown)
   })
 
+  it.for<{ name: string; body: unknown; context: object }>([
+    {
+      name: 'the organization a refusal names',
+      body: { ...SSO_REFUSAL, organization_id: 'org_meta' },
+      context: { organizationId: 'org_meta' }
+    },
+    {
+      name: 'no organization when none is named',
+      body: SSO_REFUSAL,
+      context: {}
+    }
+  ])('passes $name to the screen', async ({ body, context }) => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+
+    expect(await presentForResponse(Response.json(body, { status: 403 }))).toBe(
+      true
+    )
+    expect((await shownDialog())?.contentProps).toEqual(context)
+  })
+
+  it('drops an earlier organization when a later refusal names none', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    presentForRefusal(403, { ...SSO_REFUSAL, organization_id: 'org_meta' })
+    expect((await shownDialog())?.contentProps).toEqual({
+      organizationId: 'org_meta'
+    })
+
+    presentForRefusal(403, SSO_REFUSAL)
+
+    expect((await shownDialog())?.contentProps.organizationId).toBeUndefined()
+  })
+
+  it('stays hidden with the flag off even when the refusal names an organization', async () => {
+    const body = { ...SSO_REFUSAL, organization_id: 'org_meta' }
+
+    expect(presentForRefusal(403, body)).toBe(false)
+    expect(await shownDialog()).toBeUndefined()
+  })
+
   it('reads a 403 response through a clone, leaving it for the caller', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
     const response = Response.json(SSO_REFUSAL, { status: 403 })
@@ -79,6 +180,27 @@ describe('the SSO-required screen', () => {
     expect(await response.json()).toEqual(SSO_REFUSAL)
     expect(await shownDialog()).toBeDefined()
   })
+
+  it.for<{ name: string; sso: boolean; shown: boolean }>([
+    { name: 'the flag on', sso: true, shown: true },
+    { name: 'the flag off', sso: false, shown: false }
+  ])(
+    'presents an account outside the organization with $name without the SSO action: $shown',
+    async ({ sso, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      const body = {
+        code: 'account_outside_organization',
+        message: "This workspace admits only its organization's accounts",
+        organization_id: 'org_meta'
+      }
+
+      expect(presentForRefusal(403, body)).toBe(shown)
+      await vi.dynamicImportSettled()
+      const keys = useDialogStore().dialogStack.map((dialog) => dialog.key)
+      expect(keys.includes('sso-account-outside-organization')).toBe(shown)
+      expect(keys).not.toContain(SSO_REQUIRED_DIALOG_KEY)
+    }
+  )
 
   it('leaves a response unread with the flag off', async () => {
     const response = Response.json(SSO_REFUSAL, { status: 403 })

@@ -142,8 +142,18 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       return
     }
 
-    const moved = useWidgetValueStore().renameWidget(
-      widgetId(graphId, nodeId, previous),
+    const store = useWidgetValueStore()
+    const previousId = widgetId(graphId, nodeId, previous)
+
+    const registered = store.getWidget(previousId)
+    if (!registered) {
+      this._name = value
+      return
+    }
+    if (registered !== this._state) return
+
+    const moved = store.renameWidget(
+      previousId,
       widgetId(graphId, nodeId, value)
     )
     if (!moved) return
@@ -415,6 +425,17 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     )
     if (!registered) return
     this.bindRegisteredState(nodeId)
+  }
+
+  releaseRegisteredState(): void {
+    const graphId = this.node.graph?.rootGraph.id
+    const { nodeId, name } = this._state
+    if (!graphId || nodeId === undefined) return
+
+    const store = useWidgetValueStore()
+    const id = widgetId(graphId, nodeId, name)
+    if (store.getWidget(id) !== this._state) return
+    store.deleteWidget(id)
   }
 
   bindRegisteredState(nodeId: NodeId): boolean {

@@ -9,28 +9,36 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type {
+  AuthRejectionStatus,
+  AuthRejectionTags
+} from '@/platform/auth/authRejection'
+import {
+  authRejectionTags,
+  isAuthRejectionStatus
+} from '@/platform/auth/authRejection'
 import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
-import type * as AgentAuth from './agentAuth'
+import { withAgentAuth } from './agentAuth'
 
 import {
-  zAgentAnswerAccepted,
+  zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
-  zCloudWorkflowIndex,
-  zAgentIdentityWire
+  zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
-  AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -40,21 +48,6 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
-
-// The auth header module is loaded on first use and shared: the auth store it
-// reads is app state, and a client module that pulled it in at load would
-// drag it into every importer (and every test that only needs the transport).
-// One promise for every request, so concurrent first requests load it once.
-let agentAuth: Promise<typeof AgentAuth> | undefined
-function loadAgentAuth(): Promise<typeof AgentAuth> {
-  // A failed chunk load (a deploy, a network drop) is forgotten, so the next
-  // request retries it instead of every request failing until a reload.
-  agentAuth ??= import('./agentAuth').catch((error: unknown) => {
-    agentAuth = undefined
-    throw error
-  })
-  return agentAuth
-}
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -97,16 +90,60 @@ type AgentApiOperation =
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
+type ReportedAuthCredential = AuthCredential | 'unreported'
 
 /**
  * The reported message for an auth rejection, constant by construction.
  *
  * The backend's own text is what `AgentApiError` carries to the caller, but it
- * is not what gets reported: it is uncontrolled, is not needed to diagnose
- * PM-1802, and varies enough to fragment issue grouping across what is one
- * failure mode. Status, operation and auth scheme ride as tags instead.
+ * is not the Sentry message: it is uncontrolled and varies enough to fragment
+ * issue grouping across what is one failure mode. Status, operation, auth
+ * scheme, credential kind and an allowlisted classification of the backend's
+ * refusal ride as tags.
  */
 const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
+
+interface AuthRejection {
+  status: AuthRejectionStatus
+  operation: AgentApiOperation
+  authScheme: ReportedAuthScheme
+  credential: ReportedAuthCredential
+  body: unknown
+  message: string
+}
+
+/**
+ * Reports an auth rejection and says whether it was delivered. Diagnostics
+ * fail open: nothing in here may change the error the caller receives, so
+ * tag-building and the reporter are each allowed to fail on their own.
+ */
+function reportAuthRejection({
+  status,
+  operation,
+  authScheme,
+  credential,
+  body,
+  message
+}: AuthRejection): boolean {
+  let backendTags: AuthRejectionTags = {}
+  try {
+    backendTags = authRejectionTags(body, message)
+  } catch (error) {
+    console.warn('Could not classify the agent auth rejection:', error)
+  }
+  try {
+    reportError(new Error(AUTH_REJECTED_MESSAGE), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: { operation, status, authScheme, credential, ...backendTags },
+      level: 'warning'
+    })
+    return true
+  } catch (error) {
+    console.warn('Could not report the agent auth rejection:', error)
+    return false
+  }
+}
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -161,11 +198,6 @@ export type OpenTabsSnapshot = Pick<
 export type DraftSnapshot = Required<
   NonNullable<AgentPostMessageRequest['draft']>
 >
-
-export interface AgentIdentity {
-  workspaceId: string
-  userId: string
-}
 
 export interface PostMessageInput {
   content: string
@@ -457,7 +489,8 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
-    authScheme: ReportedAuthScheme
+    authScheme: ReportedAuthScheme,
+    credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
@@ -474,13 +507,17 @@ export function createAgentRestClient() {
       body,
       retryAfterSeconds
     )
-    if (response.status === 401 || response.status === 403) {
-      reportError(new Error(AUTH_REJECTED_MESSAGE), {
-        surface: 'agent',
-        errorType: 'agent_api_auth_rejected',
-        tags: { operation, status: response.status, authScheme },
-        level: 'warning'
+    if (
+      isAuthRejectionStatus(response.status) &&
+      reportAuthRejection({
+        status: response.status,
+        operation,
+        authScheme,
+        credential,
+        body,
+        message
       })
+    ) {
       // Callers still receive the backend text for the UI, but their generic
       // catch boundaries must not emit it as a second, separately-grouped
       // report after the complete bounded diagnostic above.
@@ -496,17 +533,22 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
-    const { withAgentAuth } = await loadAgentAuth()
+    let credential: ReportedAuthCredential = 'unreported'
     const response = await api.fetchApi(
       route,
       await withAgentAuth({
         ...init,
         onAuthScheme: (scheme: AuthScheme) => {
           authScheme = scheme
+        },
+        onAuthCredential: (kind) => {
+          credential = kind
         }
       })
     )
-    if (!response.ok) throw await toApiError(response, operation, authScheme)
+    if (!response.ok) {
+      throw await toApiError(response, operation, authScheme, credential)
+    }
     let payload: unknown
     try {
       payload = await response.json()
@@ -576,14 +618,14 @@ export function createAgentRestClient() {
    * a fixed local user the panel cannot otherwise see, and every canvas op
    * must carry that actor or the writer refuses it.
    */
-  async function getIdentity(): Promise<AgentIdentity> {
-    const wire = await request(
+  async function getIdentity(): Promise<{ userId: string }> {
+    const identity = await request(
       'get_agent_identity',
       '/agent/identity',
       { method: 'GET' },
-      zAgentIdentityWire
+      zAgentIdentity
     )
-    return { workspaceId: wire.workspace_id, userId: wire.user_id }
+    return { userId: identity.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -662,12 +704,12 @@ export function createAgentRestClient() {
     threadId: string,
     askId: string,
     selected: string[]
-  ): Promise<AgentAnswerAccepted> {
+  ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
-      zAgentAnswerAccepted
+      zAgentAnswerReceipt
     )
   }
 

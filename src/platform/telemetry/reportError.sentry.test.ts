@@ -6,6 +6,7 @@ import { createApp } from 'vue'
 import { reportError } from './reportError'
 
 it('suppresses a report raised by real Sentry payload normalization', async () => {
+  const consoleError = vi.mocked(console.error)
   const beforeSend = vi.fn((event: ErrorEvent) => event)
   const client = init({
     app: createApp({}),
@@ -17,7 +18,6 @@ it('suppresses a report raised by real Sentry payload normalization', async () =
       flush: async () => true
     })
   })
-  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
   const nested = new Error('Graph serialization state mismatch')
   const toJSON = vi
     .fn(() => ({}))

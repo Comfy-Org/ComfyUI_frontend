@@ -29,7 +29,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -252,7 +252,7 @@ describe('TopMenuSection', () => {
 
   it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
     const pinia = getActivePinia()!
-    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+    useCanvasStore(pinia).isPickingNodes = true
 
     createWrapper({
       pinia,
@@ -401,7 +401,7 @@ describe('TopMenuSection', () => {
     it('does not render inline progress summary while action bars are hidden', async () => {
       const pinia = getActivePinia()!
       configureSettings(pinia, true)
-      useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+      useCanvasStore(pinia).isPickingNodes = true
 
       const { container } = createWrapper({ pinia })
 
@@ -475,8 +475,7 @@ describe('TopMenuSection', () => {
       async ({ isActionBarsHidden, rendered }) => {
         const pinia = getActivePinia()!
         configureSettings(pinia, false)
-        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
-          isActionBarsHidden
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
 
         const { container } = createWrapper({ pinia })
         await nextTick()
@@ -495,8 +494,7 @@ describe('TopMenuSection', () => {
       async ({ isActionBarsHidden, hidden }) => {
         const pinia = getActivePinia()!
         configureSettings(pinia, false)
-        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
-          isActionBarsHidden
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
 
         const { container } = createWrapper({ pinia })
         await nextTick()

@@ -19,7 +19,6 @@ test.describe(
         'Comfy.Canvas.SelectionToolbox': true,
         'Comfy.Canvas.NavigationMode': 'standard',
         'Comfy.Pointer.ClickDrift': 6,
-        'Comfy.Pointer.ClickBufferTime': 32,
         'LiteGraph.Group.SelectChildrenOnClick': false,
         'Comfy.Graph.LiveSelection': false
       }
@@ -33,24 +32,6 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
-    })
-
-    test('slow group-title click selects without moving the group', async ({
-      comfyPage
-    }) => {
-      const title = await getGroupTitlePosition(comfyPage, 'Pair')
-      const before = await groupBounds(comfyPage, 'Pair')
-      await expect(comfyPage.selectionToolbox).toBeHidden()
-
-      await pressMoveRelease(comfyPage, title, { x: 1, y: 0 }, 150)
-
-      await expect(comfyPage.selectionToolbox).toBeVisible()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      test.fail(
-        true,
-        'FE-2040 / time-based promotion moves the group after 150 ms and 1 px of drift'
-      )
-      await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
     })
 
     test('slow empty-canvas click clears selection without panning', async ({
@@ -84,28 +65,17 @@ test.describe(
         'data-node-id',
         '1'
       )
-      test.fail(
-        true,
-        'FE-2040 / Vue nodes drag at 3 px instead of the configured 6 px ClickDrift'
-      )
       await expect.poll(() => a.boundingBox()).toEqual(before)
     })
 
     test('group-title movement below ClickDrift is a click', async ({
       comfyPage
     }) => {
-      test.slow(
-        Number(process.env.SLOW_MO) > 0,
-        'Video recording runs pointer actions slowly'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.Pointer.ClickBufferTime',
-        10_000
-      )
       const title = await getGroupTitlePosition(comfyPage, 'Pair')
       const before = await groupBounds(comfyPage, 'Pair')
+      await expect(comfyPage.selectionToolbox).toBeHidden()
 
-      await pressMoveRelease(comfyPage, title, { x: 4, y: 0 })
+      await pressMoveRelease(comfyPage, title, { x: 4, y: 0 }, 150)
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
@@ -158,18 +128,18 @@ test.describe(
       const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
       const b = await comfyPage.vueNodes.getFixtureByTitle('Node B')
       await b.title.click()
+      await expect
+        .poll(
+          async () => (await nodeZIndex(b.root)) - (await nodeZIndex(a.root))
+        )
+        .toBeGreaterThan(0)
       const front = await nodeZIndex(b.root)
-      expect(await nodeZIndex(a.root)).toBeLessThan(front)
       await expect(a.pinIndicator).toBeHidden()
       await a.title.hover()
 
       await using press = await comfyMouse.hold()
       await comfyPage.nextFrame()
 
-      test.fail(
-        true,
-        'FE-2040 / Vue nodes are brought to front on release, not on press'
-      )
       await expect.poll(() => nodeZIndex(a.root)).toBeGreaterThan(front)
       await press.disposeAsync()
     })
@@ -184,8 +154,12 @@ test.describe(
       await comfyPage.page.keyboard.press('p')
       await expect(a.pinIndicator).toBeVisible()
       await b.title.click()
+      await expect
+        .poll(
+          async () => (await nodeZIndex(b.root)) - (await nodeZIndex(a.root))
+        )
+        .toBeGreaterThan(0)
       const before = await nodeZIndex(a.root)
-      expect(before).toBeLessThan(await nodeZIndex(b.root))
       await a.title.hover()
 
       await using press = await comfyMouse.hold()
