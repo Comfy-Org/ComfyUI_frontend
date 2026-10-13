@@ -47,6 +47,13 @@ function denied(status = 403) {
   })
 }
 
+// The shared demo link should land on its entry page, not a dead end.
+function noSession(context: APIContext) {
+  return context.locals.siteDemo && context.request.method === 'GET'
+    ? context.redirect('/admin/local-access', 303)
+    : denied(404)
+}
+
 async function credentials(context: APIContext) {
   const token = context.cookies.get(TESTER_COOKIE)?.value
   if (!token)
@@ -137,7 +144,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const failure = await authenticate(context)
     if (failure) return failure
   }
-  if (admin && !signIn && !context.locals.site) return denied(404)
+  if (admin && !signIn && !context.locals.site) return noSession(context)
   const selection = selectPreview(context)
   if (selection) return selection
   const response = await next()
