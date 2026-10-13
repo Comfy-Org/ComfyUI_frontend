@@ -342,7 +342,7 @@ export function parseFilePath(filepath?: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath.trim()) return { filename: '', subfolder: '' }
+  if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
