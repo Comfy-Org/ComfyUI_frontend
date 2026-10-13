@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "모션, 카메라 움직임 및 타이밍은 유지하면서 참조 이미지의 새 캐릭터, 장소 또는 스타일로 동영상을 재구성합니다.",
+    "display_name": "Higgsfield Genjutsu 모션 전송",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "저해상도 이미지를 초고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 최대 출력: 32 메가픽셀.",
     "display_name": "HitPaw 일반 이미지 향상",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "모델의 노이즈 제거 일정 중 이 비율에서 작업 적용을 중지합니다. 1은 끝입니다."
+      },
       "model": {
         "name": "모델"
       },
       "operation": {
         "name": "연산"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "모델의 노이즈 제거 일정 중 이 비율부터 작업 적용을 시작합니다. 0은 시작입니다."
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "잠재 데이터"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "전체 잠재 공간을 참조 잠재 공간 쪽으로 블렌딩하며, 필요하면 최근접 이웃 보간법으로 참조의 크기를 조정합니다.",
+    "display_name": "잠재 공간 작업 블렌드",
+    "inputs": {
+      "reference": {
+        "name": "참조"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "0이면 잠재 공간을 변경하지 않고, 1이면 크기가 조정된 참조 잠재 공간과 일치합니다."
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "확산 모델에 LoRA 스택을 적용합니다. LoRA당 한 행을 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기(모델)",
+    "inputs": {
+      "loras": {
+        "name": "lora",
+        "tooltip": "각 행은 모델에 하나의 LoRA를 적용합니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIP 텍스트 인코더에 LoRA 스택을 적용합니다. LoRA당 한 행을 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기(텍스트 인코더)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 텍스트 인코더입니다."
+      },
+      "loras": {
+        "name": "lora",
+        "tooltip": "각 행은 텍스트 인코더에 하나의 LoRA를 적용합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 CLIP 텍스트 인코더입니다."
       }
     }
   },

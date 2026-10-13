@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Gestalten Sie ein Video mit neuen Charakteren, Orten oder Stilen aus Referenzbildern neu, während Bewegung, Kamerabewegung und Timing erhalten bleiben.",
+    "display_name": "Higgsfield Genjutsu Motion Transfer",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Skalieren Sie niedrig aufgelöste Bilder auf Superauflösung hoch und entfernen Sie Artefakte und Rauschen. Maximale Ausgabe: 32 Megapixel.",
     "display_name": "HitPaw Allgemeine Bildverbesserung",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Beenden Sie die Anwendung der Operation bei diesem Anteil des Denoising-Zeitplans des Modells. 1 ist das Ende."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Beginnen Sie mit der Anwendung der Operation bei diesem Anteil des Denoising-Zeitplans des Modells. 0 ist der Anfang."
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mischen Sie den gesamten Latent-Raum in Richtung des Referenz-Latent-Raums und skalieren Sie die Referenz bei Bedarf mit Nächster-Nachbar-Interpolation.",
+    "display_name": "Latent-Operationsmischung",
+    "inputs": {
+      "reference": {
+        "name": "Referenz"
+      },
+      "strength": {
+        "name": "Stärke",
+        "tooltip": "0 lässt den Latent-Raum unverändert; 1 entspricht dem skalierten Referenz-Latent-Raum."
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Wenden Sie einen Stapel von LoRAs auf ein Diffusionsmodell an. Fügen Sie für jede LoRA eine Zeile hinzu; jede Zeile wählt eine LoRA-Datei und deren Stärke aus.",
+    "display_name": "LoRA laden (Modell)",
+    "inputs": {
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "Jede Zeile wendet eine LoRA auf das Modell an."
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das Diffusionsmodell, auf das die LoRAs angewendet werden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Das geänderte Diffusionsmodell."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Wenden Sie einen Stapel von LoRAs auf einen CLIP-Text-Encoder an. Fügen Sie für jede LoRA eine Zeile hinzu; jede Zeile wählt eine LoRA-Datei und deren Stärke aus.",
+    "display_name": "LoRA laden (Text-Encoder)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Der CLIP-Text-Encoder, auf den die LoRAs angewendet werden."
+      },
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "Jede Zeile wendet eine LoRA auf den Text-Encoder an."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Der geänderte CLIP-Text-Encoder."
       }
     }
   },

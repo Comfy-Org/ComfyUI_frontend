@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Rielabora un video con nuovi personaggi, luoghi o stili da immagini di riferimento, mantenendone il movimento, il movimento della fotocamera e la tempistica.",
+    "display_name": "Trasferimento di movimento Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Ingrandisci immagini a bassa risoluzione fino a super-risoluzione, elimina artefatti e rumore. Output massimo: 32 megapixel.",
     "display_name": "HitPaw General Image Enhance",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "Applica Operazione Latent CFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Interrompi l'applicazione dell'operazione a questa frazione della pianificazione di denoising del modello. 1 corrisponde alla fine."
+      },
       "model": {
         "name": "modello"
       },
       "operation": {
         "name": "operazione"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Inizia ad applicare l'operazione a questa frazione della pianificazione di denoising del modello. 0 corrisponde all'inizio."
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "campioni"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Fonde l'intero latent verso il latent di riferimento, ridimensionando il riferimento con interpolazione del vicino più prossimo quando necessario.",
+    "display_name": "Fusione di operazioni latenti",
+    "inputs": {
+      "reference": {
+        "name": "riferimento"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "0 lascia invariato il latent; 1 corrisponde al latent di riferimento ridimensionato."
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Applica una pila di lora a un modello di diffusione. Aggiungi una riga per ogni lora; ogni riga seleziona un file lora e la relativa intensità.",
+    "display_name": "Carica lora (modello)",
+    "inputs": {
+      "loras": {
+        "name": "lora",
+        "tooltip": "Ogni riga applica un lora al modello."
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Il modello di diffusione a cui verranno applicati i lora."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Il modello di diffusione modificato."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Applica una pila di lora a un codificatore di testo clip. Aggiungi una riga per ogni lora; ogni riga seleziona un file lora e la relativa intensità.",
+    "display_name": "Carica lora (codificatore di testo)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Il codificatore di testo clip a cui verranno applicati i lora."
+      },
+      "loras": {
+        "name": "lora",
+        "tooltip": "Ogni riga applica un lora al codificatore di testo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Il codificatore di testo clip modificato."
       }
     }
   },

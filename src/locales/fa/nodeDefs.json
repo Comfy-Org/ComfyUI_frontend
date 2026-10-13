@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "یک ویدئو را با شخصیت‌ها، مکان‌ها یا سبک‌های جدید از تصاویر مرجع بازآفرینی کنید، در حالی که حرکت، حرکت دوربین و زمان‌بندی آن حفظ می‌شود.",
+    "display_name": "انتقال حرکت Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
     "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "درصد_پایان",
+        "tooltip": "اعمال عملیات را در این بخش از برنامهٔ نویززُدایی مدل متوقف کنید. ۱ انتهای آن است."
+      },
       "model": {
         "name": "مدل"
       },
       "operation": {
         "name": "عملیات"
+      },
+      "start_percent": {
+        "name": "درصد_شروع",
+        "tooltip": "اعمال عملیات را از این بخش از برنامهٔ نویززُدایی مدل آغاز کنید. ۰ ابتدای آن است."
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "نمونه‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "کل latent را به‌سمت latent مرجع ترکیب کنید و در صورت نیاز، اندازهٔ مرجع را با درون‌یابی نزدیک‌ترین همسایه تغییر دهید.",
+    "display_name": "ترکیب عملیات latent",
+    "inputs": {
+      "reference": {
+        "name": "مرجع"
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "۰ latent را بدون تغییر نگه می‌دارد؛ ۱ با latent مرجعِ تغییراندازه‌یافته مطابقت دارد."
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "یک پشته از LoRAها را روی یک مدل انتشار اعمال کنید. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و شدت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (مدل)",
+    "inputs": {
+      "loras": {
+        "name": "LoRAها",
+        "tooltip": "هر ردیف یک LoRA را روی مدل اعمال می‌کند."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل انتشاری که LoRAها روی آن اعمال خواهند شد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل انتشارِ تغییر‌یافته."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "یک پشته از LoRAها را روی یک رمزگذار متن CLIP اعمال کنید. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و شدت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (رمزگذار متن)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "رمزگذار متن CLIP که LoRAها روی آن اعمال خواهند شد."
+      },
+      "loras": {
+        "name": "LoRAها",
+        "tooltip": "هر ردیف یک LoRA را روی رمزگذار متن اعمال می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "رمزگذار متن CLIP تغییر‌یافته."
       }
     }
   },

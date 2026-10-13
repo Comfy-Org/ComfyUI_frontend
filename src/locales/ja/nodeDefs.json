@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "参照画像の新しいキャラクター、場所、またはスタイルで動画を再構成しつつ、動き、カメラワーク、タイミングを維持します。",
+    "display_name": "Higgsfield Genjutsu モーション転送",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "低解像度画像を超解像度にアップスケールし、アーティファクトやノイズを除去します。最大出力：32メガピクセル。",
     "display_name": "HitPaw 一般画像強化",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "潜在操作CFGを適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "モデルのノイズ除去スケジュールのこの割合で操作の適用を停止します。1 は終了位置です。"
+      },
       "model": {
         "name": "モデル"
       },
       "operation": {
         "name": "操作"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "モデルのノイズ除去スケジュールのこの割合から操作の適用を開始します。0 は開始位置です。"
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "潜在空間全体を参照潜在空間に向けてブレンドします。必要に応じて、最近傍補間で参照をリサイズします。",
+    "display_name": "潜在空間操作のブレンド",
+    "inputs": {
+      "reference": {
+        "name": "参照"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "0 では潜在空間は変更されません。1 ではリサイズされた参照潜在空間に一致します。"
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "拡散モデルに LoRA のスタックを適用します。LoRA ごとに1行を追加します。各行で LoRA ファイルとその強度を選択します。",
+    "display_name": "LoRA を読み込む（モデル）",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "各行で1つの LoRA をモデルに適用します。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "LoRA が適用される拡散モデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後の拡散モデル。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIP テキストエンコーダーに LoRA のスタックを適用します。LoRA ごとに1行を追加します。各行で LoRA ファイルとその強度を選択します。",
+    "display_name": "LoRA を読み込む（テキストエンコーダー）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA が適用される CLIP テキストエンコーダー。"
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "各行で1つの LoRA をテキストエンコーダーに適用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後の CLIP テキストエンコーダー。"
       }
     }
   },
