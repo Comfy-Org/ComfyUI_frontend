@@ -473,6 +473,22 @@ describe('ImagePreview', () => {
   })
 
   describe('grid view', () => {
+    it('hands the loaded image back to the node when the same URLs arrive again', async () => {
+      const sync = vi
+        .spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+        .mockImplementation(() => {})
+      const urls = ['/api/view?filename=test.png&type=input']
+      const { rerender } = renderImagePreview({ imageUrls: urls, nodeId: '1' })
+      const image = screen.getByTestId('main-image')
+      await fireEvent.load(image)
+
+      await rerender({ imageUrls: [...urls], nodeId: '1' })
+      await nextTick()
+
+      expect(sync).toHaveBeenCalledTimes(2)
+      expect(sync).toHaveBeenLastCalledWith('1', image, 0)
+    })
+
     it('remounts a failed grid thumbnail when the same URLs arrive again', async () => {
       const { rerender } = renderImagePreview()
       const [thumbnail] = screen.getAllByRole('img')

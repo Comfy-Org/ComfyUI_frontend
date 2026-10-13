@@ -339,6 +339,7 @@ const gridCols = computed(() => {
   return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
 
+let loadedImage: HTMLImageElement | undefined
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
@@ -349,7 +350,16 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
-    if (!urlsChanged) return
+    if (!urlsChanged) {
+      // Same URLs, so no reload: hand the node back the image it already has.
+      if (loadedImage && nodeId)
+        nodeOutputStore.syncLegacyNodeImgs(
+          nodeId,
+          loadedImage,
+          currentIndex.value
+        )
+      return
+    }
 
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
@@ -375,6 +385,7 @@ function handleImageLoad(event: Event) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
+  loadedImage = img
   if (nodeId) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
