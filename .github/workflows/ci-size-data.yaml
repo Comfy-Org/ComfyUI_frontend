@@ -40,7 +40,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Build project
-        run: pnpm build
+        run: pnpm build:dist
 
       - name: Collect size data
         run: pnpm size:collect
