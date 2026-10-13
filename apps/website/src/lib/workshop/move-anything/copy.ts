@@ -1,4 +1,6 @@
 import type { Locale, LocalizedText } from '@/i18n/translations'
+import type { CopyValues } from '@/lib/workshop/app-copy'
+import { appCopy } from '@/lib/workshop/app-copy'
 
 const copy = {
   'move.title': { en: 'Move anything', 'zh-CN': '随意移动' },
@@ -125,19 +127,11 @@ const copy = {
 
 export type MoveCopyKey = keyof typeof copy
 
-type NamedValues = Record<string, string | number>
-
 /** Move anything copy. A `one | many` entry picks by `n`. */
 export function mc(
   key: MoveCopyKey,
   locale: Locale = 'en',
-  named: NamedValues = {}
+  named: CopyValues = {}
 ): string {
-  const entry: LocalizedText = copy[key]
-  const text = entry[locale] ?? entry.en
-  const forms = text.split(' | ')
-  const form = forms.length === 2 && named.n !== 1 ? forms[1] : forms[0]
-  return form.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
-    Object.hasOwn(named, name) ? String(named[name]) : placeholder
-  )
+  return appCopy(copy[key], locale, named)
 }
