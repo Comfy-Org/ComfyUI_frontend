@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -15,10 +16,12 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
     const uploadHeld = new Promise<void>((resolve) => {
       releaseUpload = resolve
     })
-    await page.route('**/api/upload/image', async (route) => {
-      await uploadHeld
-      await route.abort()
-    })
+    let uploadSettled = Promise.resolve()
+    const holdUpload = (route: Route) => {
+      uploadSettled = uploadHeld.then(() => route.abort())
+      return uploadSettled
+    }
+    await page.route('**/api/upload/image', holdUpload)
 
     try {
       const openButton = page.getByRole('button', {
@@ -58,7 +61,8 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await expect(send).toBeEnabled()
     } finally {
       releaseUpload()
-      await page.unrouteAll({ behavior: 'wait' })
+      await uploadSettled
+      await page.unroute('**/api/upload/image', holdUpload)
     }
   })
 })
