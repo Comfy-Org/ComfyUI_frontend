@@ -21,6 +21,7 @@ import { t } from '@/i18n/translations'
 import { DEFAULT_SECTION_ORDER } from './types'
 import type {
   ModelLaunchAudioCard,
+  ModelLaunchBeforeAfter,
   ModelLaunchClosingCta,
   ModelLaunchComparison,
   ModelLaunchFaqSection,
@@ -145,6 +146,25 @@ function expectTranslated(key: TranslationKey) {
   for (const locale of LOCALES) {
     expect(t(key, {}, { locale }), `${key} (${locale})`).not.toBe('')
   }
+}
+
+function expectBeforeAfterTabs(
+  beforeAfter: ModelLaunchBeforeAfter | undefined
+) {
+  const tabs = beforeAfter?.tabs ?? []
+  expect(beforeAfter === undefined || tabs.length > 0).toBe(true)
+  expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
+  for (const tab of tabs) {
+    expectLocalized(tab.label, tab.id, 'label')
+    expectLocalized(tab.caption, tab.id, 'caption')
+  }
+  expect(
+    tabs
+      .filter(
+        (tab) => !VIDEO_URL.test(tab.beforeSrc) || !VIDEO_URL.test(tab.afterSrc)
+      )
+      .map((tab) => tab.id)
+  ).toEqual([])
 }
 
 function expectLocalized(text: LocalizedText, id: string, field: string) {
@@ -326,6 +346,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+  })
+
+  it('gives every before/after tab a unique id, localized copy, and a clip pair', () => {
+    expectBeforeAfterTabs(page.beforeAfter)
   })
 
   it('orders every optional section it defines', () => {

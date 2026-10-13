@@ -7,7 +7,8 @@ import type {
 const nvidiaRtxLinks = {
   download: 'https://comfy.org/download/',
   github: 'https://github.com/Comfy-Org/ComfyUI_Nvidia_VFX_Nodes',
-  cloud: 'https://cloud.comfy.org/?template=utility_nvidia_rtx_video_enhance'
+  cloud:
+    'https://cloud.comfy.org/?template=utility_nvidia_rtx_video_enhance&utm_source=comfy.org&utm_medium=referral&utm_campaign=nvidia-vfx'
 } as const
 
 const media = {
@@ -78,7 +79,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     ],
     primaryCta: {
       labelKey: 'nvidiaRtx.hero.primaryCta',
-      href: nvidiaRtxLinks.cloud
+      href: nvidiaRtxLinks.cloud,
+      target: '_blank'
     },
     secondaryCta: {
       labelKey: 'nvidiaRtx.hero.secondaryCta',
@@ -163,9 +165,9 @@ export const nvidiaRtxPage: ModelLaunchPage = {
           'zh-CN': 'Nvidia VFX 节点可以在任何 GPU 上运行吗？'
         },
         answer: {
-          en: "No. The nvidia-vfx library requires an Nvidia GPU powered by Nvidia's proprietary technology. The RTX Video Frame Generation is supported on Nvidia 40 series and later only.",
+          en: "No. The nvidia-vfx library requires an Nvidia RTX GPU powered by Nvidia's proprietary technology. The RTX Video Frame Generation is supported on Nvidia 40 series and later only.",
           'zh-CN':
-            '不可以。nvidia-vfx 库需要由 Nvidia 专有技术驱动的 Nvidia GPU。RTX 视频帧生成仅支持 Nvidia 40 系列及更新的显卡。'
+            '不可以。nvidia-vfx 库需要由 Nvidia 专有技术驱动的 Nvidia RTX GPU。RTX 视频帧生成仅支持 Nvidia 40 系列及更新的显卡。'
         }
       },
       {
@@ -202,6 +204,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   reviews: {
     headingKey: 'nvidiaRtx.reviews.heading',
     autoplayMs: 4000,
+    quoteSize: 'compact',
     highlight: {
       titleKey: 'nvidiaRtx.reviews.highlightTitle',
       descriptionKey: 'nvidiaRtx.reviews.highlightDescription',

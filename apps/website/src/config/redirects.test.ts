@@ -189,6 +189,13 @@ describe('generated Vercel rules', () => {
     }
   )
 
+  it.for(['/nvidia-vfx/', '/zh-CN/nvidia-vfx/'])(
+    'sends the old NVIDIA address to %s, a built page',
+    (destination) => {
+      expect(pageExistsAt(destination)).toBe(true)
+    }
+  )
+
   it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects

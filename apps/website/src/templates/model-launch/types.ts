@@ -106,7 +106,6 @@ export interface ModelLaunchGallery {
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent' | 'none'
   cardMeta?: 'default' | 'none'
-  mobileVisibleCards?: number
   captionPlacement?: 'below' | 'overlay'
   cards: readonly ModelLaunchGalleryCard[]
 }
@@ -243,6 +242,7 @@ export interface ModelLaunchHighlight {
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
   autoplayMs?: number
+  quoteSize?: 'default' | 'compact'
   highlight?: ModelLaunchHighlight
 }
 

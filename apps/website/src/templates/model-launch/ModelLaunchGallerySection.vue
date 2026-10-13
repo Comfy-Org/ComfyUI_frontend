@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
-import { computed, ref, shallowRef, useTemplateRef } from 'vue'
+import { ref, shallowRef, useTemplateRef } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchGallery } from './types'
 
-import BrandButton from '@/components/common/BrandButton.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
@@ -39,21 +38,6 @@ function expand(card: GalleryCard) {
 }
 function closeLightboxWhenDismissed(open: boolean) {
   if (!open) expanded.value = null
-}
-
-const mobileExpanded = ref(false)
-const hasMobileOverflow =
-  gallery.mobileVisibleCards !== undefined &&
-  gallery.cards.length > gallery.mobileVisibleCards
-const showLoadMore = computed(() => hasMobileOverflow && !mobileExpanded.value)
-
-function cardClass(card: GalleryCard, index: number) {
-  const collapsed =
-    showLoadMore.value && index >= (gallery.mobileVisibleCards ?? 0)
-  return cn(
-    collapsed && 'hidden md:block',
-    card.span === 'full' && 'md:col-span-full'
-  )
 }
 
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
@@ -89,7 +73,7 @@ const { stop } = useIntersectionObserver(
       "
     >
       <ModelLaunchGalleryCard
-        v-for="(card, index) in gallery.cards"
+        v-for="card in gallery.cards"
         :key="card.id"
         :card
         :locale
@@ -97,7 +81,7 @@ const { stop } = useIntersectionObserver(
         :card-meta="gallery.cardMeta"
         :caption-placement="gallery.captionPlacement"
         :load-video="shouldLoadVideos"
-        :class="cardClass(card, index)"
+        :class="cn(card.span === 'full' && 'md:col-span-full')"
         @expand="expand(card)"
       />
     </div>
@@ -119,17 +103,5 @@ const { stop } = useIntersectionObserver(
         />
       </DialogContent>
     </Dialog>
-
-    <div v-if="showLoadMore" class="mt-10 flex justify-center md:hidden">
-      <BrandButton
-        type="button"
-        variant="outline"
-        size="lg"
-        class="uppercase"
-        @click="mobileExpanded = true"
-      >
-        {{ t('modelLaunch.loadMore') }}
-      </BrandButton>
-    </div>
   </section>
 </template>

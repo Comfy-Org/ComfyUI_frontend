@@ -115,7 +115,7 @@ describe('VideoCompareSlider', () => {
     { before: 4, after: 1, expected: 4 },
     { before: 4, after: 3.9, expected: 3.9 }
   ])(
-    'leaves the after clip at $after when the before clip is at $before',
+    'puts the after clip at $expected when it is at $after and the before clip is at $before',
     async ({ before, after, expected }) => {
       const { beforeVideo, afterVideo } = await renderSlider()
 
@@ -126,4 +126,15 @@ describe('VideoCompareSlider', () => {
       expect(afterVideo.currentTime).toBe(expected)
     }
   )
+
+  it('resumes the after clip when it has paused while the before clip plays', async () => {
+    const { beforeVideo, afterVideo } = await renderSlider()
+    vi.spyOn(beforeVideo, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(afterVideo, 'paused', 'get').mockReturnValue(true)
+    const play = vi.spyOn(afterVideo, 'play').mockResolvedValue()
+
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+
+    expect(play).toHaveBeenCalledOnce()
+  })
 })

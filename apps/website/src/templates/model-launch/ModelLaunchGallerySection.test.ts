@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ModelLaunchGallery } from './types'
@@ -61,37 +61,24 @@ describe('ModelLaunchGallerySection', () => {
     }
   )
 
-  it('stretches a full-span card across the row at a 3:1 ratio on desktop', () => {
-    const [first, second] = gallery.cards
-    render(ModelLaunchGallerySection, {
-      props: {
-        gallery: { ...gallery, cards: [first, { ...second, span: 'full' }] }
-      }
-    })
-    const [plain, featured] = screen.getAllByRole('article')
+  it.for([
+    { captionPlacement: undefined, insideTile: 0 },
+    { captionPlacement: 'overlay' as const, insideTile: 1 }
+  ])(
+    'renders the caption once, $insideTile time(s) inside the tile, for captionPlacement=$captionPlacement',
+    ({ captionPlacement, insideTile }) => {
+      render(ModelLaunchGallerySection, {
+        props: { gallery: { ...gallery, captionPlacement } }
+      })
+      const [tile] = screen.getAllByTestId('gallery-card-media')
 
-    const [plainMedia, featuredMedia] =
-      screen.getAllByTestId('gallery-card-media')
+      expect(screen.getAllByText('One.')).toHaveLength(1)
+      expect(within(tile).queryAllByText('One.')).toHaveLength(insideTile)
+    }
+  )
 
-    expect(plain).not.toHaveClass('md:col-span-full')
-    expect(featured).toHaveClass('md:col-span-full')
-    expect(plainMedia).toHaveClass('aspect-19/10')
-    expect(featuredMedia).toHaveClass('md:aspect-3/1')
-  })
-
-  it('overlays the caption on a square tile when captionPlacement is overlay', () => {
-    render(ModelLaunchGallerySection, {
-      props: { gallery: { ...gallery, captionPlacement: 'overlay' } }
-    })
-    const [media] = screen.getAllByTestId('gallery-card-media')
-
-    expect(media).toHaveClass('aspect-square')
-    expect(screen.getByTestId('model-launch-gallery-grid')).toHaveClass('gap-2')
-    expect(screen.getAllByText('One.')).toHaveLength(1)
-    expect(screen.getByText('One.')).toHaveClass('absolute')
-  })
-
-  it('opens an expandable image full screen when its tile is clicked', async () => {
+  it('opens an expandable image full screen and closes it on Escape', async () => {
+    const user = userEvent.setup()
     const [first, second] = gallery.cards
     render(ModelLaunchGallerySection, {
       props: {
@@ -100,41 +87,37 @@ describe('ModelLaunchGallerySection', () => {
     })
 
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getAllByRole('button', { name: 'Fullscreen' })).toHaveLength(
-      1
-    )
-    expect(screen.getAllByTestId('gallery-card-expand')).toHaveLength(1)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Fullscreen' }))
+    await user.click(screen.getByRole('button', { name: 'Fullscreen' }))
 
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getAllByAltText('Second render')).toHaveLength(2)
+    expect(
+      within(screen.getByRole('dialog')).getByRole('img', {
+        name: 'Second render'
+      })
+    ).toBeVisible()
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
-  it('collapses cards past the mobile limit until Load more is pressed', async () => {
-    const user = userEvent.setup()
+  it('offers no full screen button for an expandable video card', () => {
+    const [first] = gallery.cards
     render(ModelLaunchGallerySection, {
-      props: { gallery: { ...gallery, mobileVisibleCards: 1 } }
-    })
-    const [first, second] = screen.getAllByRole('article')
-
-    expect(first).not.toHaveClass('hidden')
-    expect(second).toHaveClass('hidden', 'md:block')
-
-    await user.click(screen.getByRole('button', { name: 'Load more' }))
-
-    expect(second).not.toHaveClass('hidden')
-    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
-  })
-
-  it('offers no Load more when every card already fits the mobile limit', () => {
-    render(ModelLaunchGallerySection, {
-      props: { gallery: { ...gallery, mobileVisibleCards: 2 } }
+      props: {
+        gallery: {
+          ...gallery,
+          cards: [
+            {
+              ...first,
+              expandable: true,
+              media: { kind: 'video', src: '/one.mp4' }
+            }
+          ]
+        }
+      }
     })
 
-    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
-    for (const article of screen.getAllByRole('article')) {
-      expect(article).not.toHaveClass('hidden')
-    }
+    expect(screen.queryByRole('button', { name: 'Fullscreen' })).toBeNull()
   })
 })

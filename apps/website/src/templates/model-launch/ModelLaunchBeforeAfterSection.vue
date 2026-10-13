@@ -70,7 +70,7 @@ const activeTab = computed(
           v-for="tab in beforeAfter.tabs"
           :key="tab.id"
           :value="tab.id"
-          class="focus-visible:outline-none"
+          class="rounded-4.5xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
         >
           <VideoCompareSlider
             :before-src="tab.beforeSrc"

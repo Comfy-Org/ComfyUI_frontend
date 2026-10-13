@@ -35,8 +35,6 @@ const container = useTemplateRef<HTMLElement>('container')
 const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
-// Server markup carries no clip sources, so nothing downloads until the
-// island hydrates, which with client:visible is when it scrolls into view.
 const isMounted = useMounted()
 
 function moveTo(clientX: number) {
@@ -74,6 +72,7 @@ function syncAfterToBefore() {
   const before = beforeVideo.value
   const after = afterVideo.value
   if (!before || !after) return
+  if (!before.paused && after.paused) void after.play().catch(() => undefined)
   if (Math.abs(after.currentTime - before.currentTime) > SYNC_TOLERANCE_S) {
     after.currentTime = before.currentTime
   }
