@@ -92,6 +92,11 @@ describe('WorkflowPage header', () => {
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
     ).toHaveAttribute('data-variant', 'outline')
+    expect(
+      within(paths)
+        .getAllByRole('link')
+        .filter((link) => link.dataset.variant === 'default')
+    ).toEqual([])
     expect(within(paths).queryByRole('link', { name: 'Run here' })).toBeNull()
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
@@ -112,7 +117,7 @@ describe('WorkflowPage header', () => {
       change: { incompleteReason: 'missing-input-schema' }
     }
   ] as const)(
-    'offers no run and no API for a workflow that $kind',
+    'offers no run and no API for a workflow that $kind, and makes Try in Cloud its one yellow action',
     ({ change }) => {
       mount({ ...model, ...change })
 
@@ -126,7 +131,10 @@ describe('WorkflowPage header', () => {
       ).toEqual(['Download workflow', 'Try in Cloud (opens in a new tab)'])
       expect(
         within(paths).getByRole('link', { name: /Try in Cloud/ })
-      ).toHaveAttribute('data-variant', 'ghost')
+      ).toHaveAttribute('data-variant', 'default')
+      expect(
+        within(paths).getByRole('link', { name: 'Download workflow' })
+      ).toHaveAttribute('data-variant', 'outline')
       expect(screen.queryByTestId('workflow-playground')).toBeNull()
       expect(screen.getByTestId('workflow-inside')).toBeTruthy()
       expect(screen.queryByTestId('workflow-actions')).toBeNull()

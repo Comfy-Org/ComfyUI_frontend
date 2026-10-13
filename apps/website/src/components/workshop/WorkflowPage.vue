@@ -111,7 +111,7 @@ function captureDownload() {
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          variant="ghost"
+          :variant="paths.run ? 'ghost' : 'default'"
           class="font-bold tracking-wider uppercase"
           data-testid="workflow-path-cloud"
           @click="captureTryInCloud"
