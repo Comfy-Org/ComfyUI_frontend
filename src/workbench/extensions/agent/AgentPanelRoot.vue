@@ -261,6 +261,7 @@ const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
       ? true
       : useWorkflowService().openWorkflow(workflow, { force: true })
   },
+  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
   onError: reportNodeCatalogRefreshFailure
 })
 onBeforeUnmount(stopNodeCatalogRefresh)
