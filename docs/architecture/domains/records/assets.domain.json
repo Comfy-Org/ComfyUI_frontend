@@ -276,6 +276,10 @@
       "role": "application"
     },
     {
+      "path": "src/platform/assets/utils/resolveWidgetValueAsset.ts",
+      "role": "application"
+    },
+    {
       "path": "src/platform/assets/composables/media/**",
       "role": "infrastructure"
     },

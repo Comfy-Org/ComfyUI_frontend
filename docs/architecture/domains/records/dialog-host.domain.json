@@ -1,7 +1,7 @@
 {
   "id": "dialog-host",
   "capability": "Dialog host",
-  "description": "Global dialog state, stacking, focus, renderer selection, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
+  "description": "Global dialog state, stacking, focus, dismissal guards, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
   "modules": [
     {
       "path": "src/services/dialogServiceTypes.ts",
@@ -72,7 +72,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/rekaPrimeVueBridge.ts",
+      "path": "src/components/dialog/dialogDismissGuards.ts",
       "role": "presentation"
     },
     {
@@ -100,7 +100,7 @@
       "role": "application"
     },
     {
-      "path": "src/services/dialogService.renderer.test.ts",
+      "path": "src/services/dialogService.options.test.ts",
       "role": "application"
     },
     {
@@ -133,7 +133,7 @@
       ]
     },
     {
-      "name": "Dialog store stacks, focuses, and closes dialogs and selects the renderer",
+      "name": "Dialog store stacks, focuses, and closes dialogs",
       "checks": ["src/stores/dialogStore.test.ts"]
     },
     {
@@ -141,7 +141,7 @@
       "checks": [
         "src/services/dialogService.concurrency.test.ts",
         "src/services/dialogService.errorCatalog.test.ts",
-        "src/services/dialogService.renderer.test.ts",
+        "src/services/dialogService.options.test.ts",
         "browser_tests/tests/dialogs/concurrentConfirmDialog.spec.ts",
         "browser_tests/tests/dialogs/errorDialog.spec.ts"
       ]

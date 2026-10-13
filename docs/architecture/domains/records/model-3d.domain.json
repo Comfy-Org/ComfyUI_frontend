@@ -196,6 +196,10 @@
       "role": "application"
     },
     {
+      "path": "src/components/load3d/modelThumbnail.deferredImport.test.ts",
+      "role": "application"
+    },
+    {
       "path": "src/components/load3d/modelThumbnail.test.ts",
       "role": "application"
     },

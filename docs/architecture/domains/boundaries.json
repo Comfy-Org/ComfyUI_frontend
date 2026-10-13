@@ -403,6 +403,7 @@
           "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
           "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts",
           "src/platform/assets/utils/resolveModelNodeFromAsset.ts",
+          "src/platform/assets/utils/resolveWidgetValueAsset.ts",
           "src/stores/assetsStore.test.ts",
           "src/stores/assetsStore.ts",
           "src/stores/assetDownloadStore.test.ts",
@@ -934,7 +935,10 @@
       },
       {
         "name": "browser-interaction/infrastructure",
-        "patterns": ["src/composables/usePragmaticDragAndDrop.ts"]
+        "patterns": [
+          "src/composables/usePragmaticDragAndDrop.ts",
+          "src/composables/usePragmaticDragAndDrop.test.ts"
+        ]
       },
       {
         "name": "camera-authoring/domain",
@@ -1311,7 +1315,6 @@
           "src/composables/useIntersectionObserver.ts",
           "src/composables/useModalLiftedZIndex.test.ts",
           "src/composables/useModalLiftedZIndex.ts",
-          "src/composables/usePopoverSizing.test.ts",
           "src/composables/usePopoverSizing.ts",
           "src/composables/useRangeEditor.test.ts",
           "src/composables/useRangeEditor.ts",
@@ -1342,6 +1345,7 @@
           "src/components/ui/hover-card/**",
           "src/components/ui/input/**",
           "src/components/ui/input-group/**",
+          "src/components/ui/knob/**",
           "src/components/ui/label/**",
           "src/components/ui/menu/**",
           "src/components/ui/message/**",
@@ -1402,6 +1406,7 @@
           "src/components/common/ImperativePopover.vue",
           "src/components/common/ImperativePopover.test.ts",
           "src/components/common/InputKnob.vue",
+          "src/components/common/InputKnob.test.ts",
           "src/components/common/InputSlider.vue",
           "src/components/common/LazyImage.vue",
           "src/components/common/LoadingOverlay.vue",
@@ -1471,7 +1476,7 @@
           "src/services/dialogService.ts",
           "src/services/dialogService.concurrency.test.ts",
           "src/services/dialogService.errorCatalog.test.ts",
-          "src/services/dialogService.renderer.test.ts",
+          "src/services/dialogService.options.test.ts",
           "src/services/__mocks__/dialogService.ts"
         ]
       },
@@ -1493,7 +1498,7 @@
           "src/components/dialog/GlobalDialog.menu.test.ts",
           "src/components/dialog/GlobalDialog.test.ts",
           "src/components/dialog/GlobalDialog.vue",
-          "src/components/dialog/rekaPrimeVueBridge.ts",
+          "src/components/dialog/dialogDismissGuards.ts",
           "src/components/dialog/vRekaZIndex.ts"
         ]
       },
@@ -2953,6 +2958,7 @@
           "src/services/load3dService.ts",
           "src/services/load3dService.test.ts",
           "src/components/load3d/modelThumbnail.ts",
+          "src/components/load3d/modelThumbnail.deferredImport.test.ts",
           "src/components/load3d/modelThumbnail.test.ts"
         ]
       },
@@ -4525,6 +4531,7 @@
           "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",

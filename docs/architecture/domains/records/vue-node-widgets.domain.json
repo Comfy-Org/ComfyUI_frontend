@@ -328,6 +328,10 @@
       "role": "integration"
     },
     {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
       "role": "integration"
     },

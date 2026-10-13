@@ -48,6 +48,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/ui/knob/**",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/ui/label/**",
       "role": "presentation"
     },
@@ -293,6 +297,10 @@
     },
     {
       "path": "src/components/common/InputKnob.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/InputKnob.test.ts",
       "role": "presentation"
     },
     {
@@ -576,10 +584,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/usePopoverSizing.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/usePopoverSizing.ts",
       "role": "application"
     },
@@ -763,11 +767,8 @@
       ]
     },
     {
-      "name": "Popover sizing and modal z-index lifting keep overlays visible above dialogs",
-      "checks": [
-        "src/composables/usePopoverSizing.test.ts",
-        "src/composables/useModalLiftedZIndex.test.ts"
-      ]
+      "name": "Modal z-index lifting keeps overlays visible above dialogs",
+      "checks": ["src/composables/useModalLiftedZIndex.test.ts"]
     },
     {
       "name": "Tree data helpers and ticker text splitting stay pure",
@@ -783,7 +784,7 @@
     "Component file paths, props, emits, and slots stay stable because extensions, renderer widgets, platform features, and stories import them directly.",
     "The toast store keeps its Pinia id and the add, update, and remove contract used by api, app, and service callers.",
     "Curve and range value shapes stay compatible with the litegraph widget types and GLSL uniform consumers that read them.",
-    "No-test holes remain for dialog, field, input-group, label, the select primitives, skeleton, splitter, tabs, button-group, the tab, card, loader, and icon kits, ui/Popover, ZoomPane, ScrubableNumberInput, StatusBadge, LazyImage, LoadingOverlay, DraggableList, InputKnob, InputSlider, and the divider, spinner, and placeholder widgets; classification does not claim coverage for them."
+    "No-test holes remain for dialog, field, input-group, label, the select primitives, skeleton, splitter, tabs, button-group, the tab, card, loader, and icon kits, ui/Popover, ZoomPane, ScrubableNumberInput, StatusBadge, LazyImage, LoadingOverlay, DraggableList, InputSlider, and the divider, spinner, and placeholder widgets; classification does not claim coverage for them."
   ],
   "deepImports": "inventory"
 }
