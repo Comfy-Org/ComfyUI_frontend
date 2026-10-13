@@ -2378,6 +2378,51 @@
       "step": "步骤"
     }
   },
+  "fishAudio": {
+    "meta": {
+      "title": "Comfy 上的 Fish Audio Drama 3：多角色场景",
+      "description": "Fish Audio 的 Drama 3 是其迄今最富情感、最可控的模型，能把多角色场景作为一段对话完整演绎。发布首日即可在 Comfy Cloud 中试用。"
+    },
+    "breadcrumb": {
+      "model": "Fish Audio Drama 3",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "hero": {
+      "titleModel": "Fish Audio Drama 3",
+      "titleRest": " 现已登陆 Comfy",
+      "description": "首 30 天享 5 折优惠。这是 Fish Audio 迄今最富情感、最可控的模型。把多角色场景写成一段对话，再在同一个工作流中连同音频一起构建。",
+      "badge1": "合作伙伴节点",
+      "badge2": "多角色场景",
+      "badge3": "首发半价",
+      "secondaryCta": "查看文档"
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "pricing": {
+      "banner": {
+        "title": "首发优惠：Fish Audio Drama 3 前 30 天半价",
+        "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+        "cta": "免费试用"
+      }
+    },
+    "steps": {
+      "heading": "执导你的第一个场景",
+      "step": "步骤",
+      "secondaryCta": "查看文档"
+    },
+    "runOptions": {
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在 Comfy Cloud 中运行 Drama 3，通过 API 批量生成场景，或在你自己机器上的 ComfyUI 中运行。",
+      "cta": "了解更多"
+    },
+    "reviews": {
+      "heading": "400 万+ Comfy 创作者这样说",
+      "highlightTitle": "Comfy MCP：让你的智能体成为创意技术专家。",
+      "highlightDescription": "你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。",
+      "highlightCta": "开始使用"
+    }
+  },
   "modelDiscovery": {
     "browse": "浏览全部模型",
     "workflowRowLabel": "工作流",
