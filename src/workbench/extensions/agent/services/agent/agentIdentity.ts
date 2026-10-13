@@ -11,24 +11,16 @@ interface AgentIdentityDeps {
   onFailure(error: unknown): void
 }
 
-/**
- * Outcome of the identity lookup. `unavailable` keeps retrying at the capped
- * backoff; `rejected` holds until `reset()`.
- */
+/** Outcome of the identity lookup. `rejected` holds until `reset()`. */
 export type AgentIdentityState =
   | { status: 'pending' }
   | { status: 'resolved'; userId: string }
-  | { status: 'unavailable' }
   | { status: 'rejected' }
 
 interface ResolvedAgentIdentity {
   reset(): void
   state: Readonly<Ref<AgentIdentityState>>
   stop(): void
-}
-
-function isLookingUp(state: AgentIdentityState): boolean {
-  return state.status === 'pending' || state.status === 'unavailable'
 }
 
 export function resolveAgentIdentity(
@@ -66,12 +58,11 @@ export function resolveAgentIdentity(
       state.value = { status: 'rejected' }
       return
     }
-    if (retryDelay() === RETRY_MAX_MS) state.value = { status: 'unavailable' }
     scheduleRetry()
   }
 
   async function attempt(): Promise<void> {
-    if (stopped || inFlight || !isLookingUp(state.value)) return
+    if (stopped || inFlight || state.value.status !== 'pending') return
     cancelRetry()
     inFlight = true
     const started = generation
