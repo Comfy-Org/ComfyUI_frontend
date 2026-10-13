@@ -266,7 +266,6 @@ export class AgentCrdtDocLifecycle {
     return false
   }
 
-  /** Whether no retry will answer the last refusal. */
   refusalIsFinal(): boolean {
     return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
   }

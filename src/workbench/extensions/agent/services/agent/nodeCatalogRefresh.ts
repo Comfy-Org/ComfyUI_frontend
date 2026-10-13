@@ -1,52 +1,38 @@
-import { z } from 'zod'
-
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
+import { parseAgentWsEvent } from '../../schemas/agentApiSchema'
 
-export interface NodeCatalogRefreshDeps {
-  /** Rejects when the node definitions could not be loaded. */
-  refreshNodeDefinitions(): Promise<unknown>
-  /** `false` when the open workflow could not be rebuilt. */
+interface NodeCatalogRefreshDeps {
+  refreshNodeDefinitions(): Promise<boolean>
   reloadCurrentWorkflow(): Promise<boolean>
-  onFailure(error: unknown): void
 }
 
-const zRestartSucceeded = z.object({
-  type: z.literal('agent_tool_call'),
-  data: z.object({
-    tool_call_id: z.string(),
-    tool_name: z.literal('restart_comfyui'),
-    status: z.literal('success')
-  })
-})
+function restartSucceeded(raw: unknown): string | null {
+  const parsed = parseAgentWsEvent(raw)
+  if (!parsed.success || parsed.data.type !== 'agent_tool_call') return null
+  const { tool_call_id, tool_name, status } = parsed.data.data
+  return tool_name === 'restart_comfyui' && status === 'success'
+    ? tool_call_id
+    : null
+}
 
-/** Re-registers node definitions and rebuilds the open workflow after the agent restarts ComfyUI. */
 export function refreshNodeCatalogOnRestart(
   events: AgentEventSource,
   deps: NodeCatalogRefreshDeps
 ): () => void {
-  const calls = new Map<string, 'pending' | 'done'>()
+  const calls = new Set<string>()
   let queue = Promise.resolve()
 
   async function refreshFor(callId: string): Promise<void> {
-    let reloaded: boolean
-    try {
-      await deps.refreshNodeDefinitions()
-      reloaded = await deps.reloadCurrentWorkflow()
-    } catch (error) {
-      calls.delete(callId)
-      deps.onFailure(error)
-      return
-    }
-    if (reloaded) calls.set(callId, 'done')
-    else calls.delete(callId)
+    const refreshed =
+      (await deps.refreshNodeDefinitions()) &&
+      (await deps.reloadCurrentWorkflow())
+    if (!refreshed) calls.delete(callId)
   }
 
   return events.subscribe((raw) => {
-    const parsed = zRestartSucceeded.safeParse(raw)
-    if (!parsed.success) return
-    const callId = parsed.data.data.tool_call_id
-    if (calls.has(callId)) return
-    calls.set(callId, 'pending')
+    const callId = restartSucceeded(raw)
+    if (callId === null || calls.has(callId)) return
+    calls.add(callId)
     queue = queue.then(() => refreshFor(callId))
   })
 }

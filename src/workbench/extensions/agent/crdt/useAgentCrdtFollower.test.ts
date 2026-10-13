@@ -490,14 +490,12 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', { ok: false, workflow_id: 'wf-1' })
     }
 
-    function refuseUntilTerminal(status: () => AgentCrdtStatus): number {
-      let refusals = 0
-      while (status().terminal === null && refusals < 20) {
-        refuse()
-        refusals += 1
-        vi.runOnlyPendingTimers()
-      }
-      return refusals
+    function refuseForGood(): void {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        workflow_id: 'wf-1',
+        code: 'schema_version_mismatch'
+      })
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
@@ -510,10 +508,10 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a terminal refusal once the retry budget is spent, and clears it on the next confirmed subscribe', () => {
+    it('reports a permanent refusal as terminal, and clears it on the next confirmed subscribe', () => {
       const { unmount, status } = mountFollower('wf-1')
 
-      expect(refuseUntilTerminal(status)).toBeGreaterThan(1)
+      refuseForGood()
 
       expect(status().terminal).toBe('refused')
       expect(status().connected).toBe(false)
@@ -541,7 +539,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('a retarget clears the terminal state', async () => {
       const { unmount, status, workflowId } = mountFollower('wf-1')
-      refuseUntilTerminal(status)
+      refuseForGood()
       expect(status().terminal).toBe('refused')
 
       workflowId.value = 'wf-2'
