@@ -348,7 +348,8 @@ function auditState(
   ])
   const actual = auditLocaleTokens(state.plan.source, output, skipped, {
     strict: config.strictProtectedTokens,
-    localeCode: state.locale.code
+    localeCode: state.locale.code,
+    groups: config.messageGroups
   })
   const known = new Set<string>()
   const unexpected: typeof actual = []

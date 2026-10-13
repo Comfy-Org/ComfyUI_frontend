@@ -10,6 +10,7 @@ export interface OutputLocale {
 export interface TranslationPipelineConfig {
   output: string
   strictProtectedTokens: boolean
+  messageGroups?: readonly (readonly string[][])[]
   model: string
   reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number

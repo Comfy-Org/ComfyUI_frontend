@@ -265,12 +265,12 @@ describe('strict protected-token audit', () => {
       added: '<a href="/zh-CN/pricing/#faq" class="underline">'
     },
     {
-      name: 'a locale segment in an absolute URL',
+      name: 'another domain in an absolute URL',
       source: '<a href="https://comfy.org/">x</a>',
-      target: '<a href="https://comfy.org/zh-CN/">x</a>',
+      target: '<a href="https://other.org/zh-CN/">x</a>',
       localeCode: 'zh-CN',
       missing: '<a href="https://comfy.org/">',
-      added: '<a href="https://comfy.org/zh-CN/">'
+      added: '<a href="https://other.org/zh-CN/">'
     }
   ])('rejects $name', ({ source, target, localeCode, missing, added }) => {
     expect(audit(source, target, { strict: true, localeCode })).toEqual([
@@ -329,7 +329,10 @@ describe('non-strict protected-token audit', () => {
       name: 'reports an introduced linked message',
       source: 'Send',
       target: 'Enviar @:g.cancel',
-      expected: [{ code: 'added-linked-message', token: '@' }]
+      expected: [
+        { code: 'added-token', token: '@:g.cancel' },
+        { code: 'added-linked-message', token: '@' }
+      ]
     },
     {
       name: 'reports a placeholder renamed across plural forms',

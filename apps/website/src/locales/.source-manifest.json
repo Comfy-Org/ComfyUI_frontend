@@ -1,17 +1,6 @@
 {
   "files": {
-    "main.json": "e5316457f5c9ef40fff299135153ba7765712bb5"
-  },
-  "knownViolations": {
-    "main.json": [
-      "[\"cloud\",\"reason\",\"1\",\"title\"]",
-      "[\"cloud\",\"reason\",\"4\",\"title\"]",
-      "[\"contact\",\"faq\",\"a1\"]",
-      "[\"contact\",\"faq\",\"a2\"]",
-      "[\"contact\",\"faq\",\"a3\"]",
-      "[\"models\",\"list\",\"heroTitleAfter\"]",
-      "[\"workshop\",\"model\",\"meta\",\"price\"]"
-    ]
+    "main.json": "873bc6e4f7d9a6145acdabbf91690b094eaed7aa"
   },
   "version": 1
 }

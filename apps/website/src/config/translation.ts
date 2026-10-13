@@ -21,9 +21,17 @@ export const translationExclusions = [
   'minimaxLicense'
 ] as const
 
+const messageGroups: readonly (readonly string[][])[] = [
+  [
+    ['models', 'list', 'heroTitleBefore'],
+    ['models', 'list', 'heroTitleAfter']
+  ]
+]
+
 export const websiteTranslationConfig = {
   output: 'apps/website/src/locales',
   strictProtectedTokens: true,
+  messageGroups,
   translationContext:
     'comfy.org marketing, product, support, and legal content',
   glossary: `Keep these names untranslated: Comfy, ComfyUI, Comfy Cloud, Comfy Desktop, Managed Builds, MiniMax, Flux, LTX, Wan, Seedance, LoRA, ControlNet, MCP, Hugging Face, Civitai.

@@ -1,5 +1,5 @@
 import type { LocaleObject, LocaleValue } from './locale-tree'
-import { collectLeaves } from './locale-tree'
+import { collectLeaves, pathKey } from './locale-tree'
 
 type ViolationCode = keyof typeof violationDescriptions
 
@@ -12,6 +12,7 @@ export interface TokenViolation {
 interface TokenCheckOptions {
   strict?: boolean
   localeCode?: string
+  groups?: readonly (readonly string[][])[]
 }
 
 interface ProtectedToken {
@@ -58,10 +59,11 @@ const protectedLiteralPatterns = [
   /\b\d+k\+\d+\b/g,
   new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
 ]
-// Named ({name}), positional list ({0}), and literal ({'@'}) interpolation
-const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
+const interpolationPattern = /\{(?:[A-Za-z_][A-Za-z0-9_$-]*|\d+|'[^']*')\}/g
 const literalInterpolationPattern = /\{'[^']*'\}/g
 const linkedMessagePattern = /@[.:]/
+const literalOrLinkedTokenPattern =
+  /\{'[^']*'\}|@(?:\.[A-Za-z_][A-Za-z0-9_$]*)?:(?:\{(?:[A-Za-z_][A-Za-z0-9_$-]*|\d+|'[^']*')\}|[^\s{}@|()]+)/g
 const urlPattern = /\]\((https?:\/\/[^\s)]+)\)|https?:\/\/[\w\-./?=&#%~:@+,;]+/g
 
 function pluralForms(value: string): string[] {
@@ -108,10 +110,14 @@ function tagIdentity(tag: HtmlTag): string {
 }
 
 function unlocalizedHref(href: string, localeCode: string): string | undefined {
+  const origin = href.startsWith('https://comfy.org/')
+    ? 'https://comfy.org'
+    : ''
+  const path = href.slice(origin.length)
   const prefix = `/${localeCode}`
-  if (!href.startsWith(`${prefix}/`)) return undefined
-  const unprefixed = href.slice(prefix.length)
-  return unprefixed.startsWith('//') ? undefined : unprefixed
+  if (!path.startsWith(`${prefix}/`)) return undefined
+  const unprefixed = path.slice(prefix.length)
+  return unprefixed.startsWith('//') ? undefined : `${origin}${unprefixed}`
 }
 
 function htmlToken(text: string, localeCode?: string): ProtectedToken {
@@ -140,18 +146,54 @@ function formTokens(
   ].flatMap((pattern) =>
     (form.match(pattern) ?? []).map((text) => ({ text, identity: text }))
   )
-  const htmlTokens = strict
-    ? htmlTags(form).map((text) => htmlToken(text, localeCode))
-    : []
+  const linkedTokens = [...form.matchAll(literalOrLinkedTokenPattern)]
+    .filter(([text]) => text.startsWith('@'))
+    .map(([text]) => ({ text, identity: text }))
+  const htmlTokens = strict ? protectedHtmlTokens(form, localeCode) : []
   const urlTokens = strict
     ? [...form.replace(htmlTagPattern, ' ').matchAll(urlPattern)].map(
         ([match, target]) => {
           const text = target || match.replace(/[.,;:]+$/, '')
-          return { text, identity: text }
+          return {
+            text,
+            identity: text,
+            localizedIdentity:
+              localeCode === undefined
+                ? undefined
+                : unlocalizedHref(text, localeCode)
+          }
         }
       )
     : []
-  return [...literalTokens, ...htmlTokens, ...urlTokens]
+  return [...literalTokens, ...linkedTokens, ...htmlTokens, ...urlTokens]
+}
+
+function protectedHtmlTokens(
+  form: string,
+  localeCode?: string
+): ProtectedToken[] {
+  const optionalSpans: boolean[] = []
+  return htmlTags(form).flatMap((text) => {
+    const tag = parseHtmlTag(text)
+    if (localeCode !== undefined && tag?.name === 'span' && !tag.selfClosing) {
+      if (tag.closing) {
+        if (optionalSpans.pop()) return []
+      } else {
+        const optional = hasOnlyNowrapClass(tag)
+        optionalSpans.push(optional)
+        if (optional) return []
+      }
+    }
+    return [htmlToken(text, localeCode)]
+  })
+}
+
+function hasOnlyNowrapClass({ attributes }: HtmlTag): boolean {
+  return (
+    attributes.length === 1 &&
+    attributes[0][0] === 'class' &&
+    attributes[0][1] === 'whitespace-nowrap'
+  )
 }
 
 function countFormTokens(
@@ -249,13 +291,13 @@ function tokenDifferences(
     sourceForms.length === targetForms.length
       ? sourceForms.map((form, index) =>
           countDifferences(
-            countTokens([form], strict),
+            countTokens([form], strict, localeCode),
             countTokens([targetForms[index]], strict, localeCode)
           )
         )
       : [
           countDifferences(
-            countTokens(sourceForms, strict),
+            countTokens(sourceForms, strict, localeCode),
             countTokens(targetForms, strict, localeCode)
           )
         ]
@@ -431,11 +473,41 @@ export function auditLocaleTokens(
   skipKeys: ReadonlySet<string>,
   options: TokenCheckOptions = {}
 ): TokenViolation[] {
+  const sourceLeaves = collectLeaves(source)
   const targetLeaves = collectLeaves(target)
-  return [...collectLeaves(source)].flatMap(([key, leaf]) => {
-    if (skipKeys.has(key)) return []
+  const groups = options.groups ?? []
+  const groupedKeys = new Set(groups.flatMap((group) => group.map(pathKey)))
+  const leafErrors = [...sourceLeaves].flatMap(([key, leaf]) => {
+    if (skipKeys.has(key) || groupedKeys.has(key)) return []
     const targetLeaf = targetLeaves.get(key)
     if (targetLeaf === undefined) return []
     return leafViolations(leaf.value, targetLeaf.value, leaf.path, options)
   })
+  const groupErrors = groups.flatMap((group): TokenViolation[] => {
+    if (!group.some((path) => sourceLeaves.has(pathKey(path)))) return []
+    const sourceValues = group.map(
+      (path) => sourceLeaves.get(pathKey(path))?.value
+    )
+    const targetValues = group.map(
+      (path) => targetLeaves.get(pathKey(path))?.value
+    )
+    if (
+      sourceValues.every((value) => typeof value === 'string') &&
+      targetValues.every((value) => typeof value === 'string')
+    ) {
+      return stringViolations(
+        sourceValues.join(' '),
+        targetValues.join(' '),
+        group[0] ?? [],
+        options
+      )
+    }
+    return group.flatMap((path, index): TokenViolation[] =>
+      typeof sourceValues[index] !== 'string' ||
+      typeof targetValues[index] !== 'string'
+        ? [{ path, code: 'leaf-type-changed', token: '' }]
+        : []
+    )
+  })
+  return [...leafErrors, ...groupErrors]
 }
