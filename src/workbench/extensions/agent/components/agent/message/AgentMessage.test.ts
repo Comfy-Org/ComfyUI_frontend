@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
   AssistantMessage,
@@ -710,7 +711,7 @@ describe('AgentMessage run approval', () => {
 
 describe('AgentMessage ask_user question', () => {
   const askMessage = (): AssistantMessage => ({
-    id: 'msg-ask' as TurnId,
+    id: toTurnId('msg-ask'),
     role: 'assistant',
     parts: [
       {
@@ -789,7 +790,7 @@ describe('AgentMessage ask the panel cannot render', () => {
     render(AgentMessage, {
       props: {
         message: {
-          id: 'msg-unknown' as TurnId,
+          id: toTurnId('msg-unknown'),
           role: 'assistant',
           parts: [
             toAskOrNoticePart({

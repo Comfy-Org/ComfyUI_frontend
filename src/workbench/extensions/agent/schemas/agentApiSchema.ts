@@ -16,6 +16,7 @@ import type {
   AgentAnswerAccepted,
   AgentAnswerRequest,
   AgentAskKind,
+  AgentAskOption,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -29,6 +30,7 @@ export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentAnswerRequest,
+  AgentAskOption,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
@@ -63,12 +65,6 @@ export const RENDERED_ASK_KINDS = [
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
-/**
- * The generated pending ask with `kind` and `context` left open, so an ask of
- * a kind this client predates still parses and renders the stand-in notice
- * instead of failing the frame or the whole transcript. Each card parses its
- * own kind's `context` with the generated schema.
- */
 const zAgentPendingAsk = zAgentPendingAskBase.extend({
   kind: z.string(),
   context: z.unknown().optional()

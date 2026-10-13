@@ -8,7 +8,10 @@ import type {
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
-import { isPendingAskPart } from '../../../services/agent/agentMessageParts'
+import {
+  isAskPart,
+  isPendingAskPart
+} from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -53,10 +56,8 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
 
 const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
-// An ask card holds the user's in-progress answer, so it keeps its identity
-// when an earlier group in the message comes or goes.
 function groupKey(group: Group, index: number): string {
-  return group.kind === 'runApproval' || group.kind === 'askUser'
+  return 'part' in group && isAskPart(group.part)
     ? `ask:${group.part.askId}`
     : `group:${index}`
 }
@@ -76,8 +77,6 @@ const replyAssets = computed(() =>
   showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
 )
 
-// The stretch after the last tool settles and before the first reply token, with
-// no question pending: the turn is still running but nothing on screen moves.
 const composing = computed(
   () =>
     message.streaming &&

@@ -44,8 +44,6 @@ describe('AskUserCard', () => {
     renderCard()
 
     expect(screen.getByText('Which model should I use?')).toBeInTheDocument()
-    // Every option, in order, named by its label and described by its
-    // description (or by nothing when it has none).
     expect(screen.getAllByRole('radio')).toEqual(
       options.map(({ label, description }) =>
         screen.getByRole('radio', {
@@ -201,7 +199,6 @@ describe('AskUserCard', () => {
     const other = screen.getByRole('textbox', { name: 'Other' })
     await user.type(other, '日本')
 
-    // user-event cannot drive an IME, so raise the composing keydown directly.
     other.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Enter',
@@ -217,8 +214,6 @@ describe('AskUserCard', () => {
     ])
   })
 
-  // WebKit can end the composition before the Enter that committed it, so
-  // that keydown arrives with isComposing false.
   it('does not submit on an Enter that follows compositionend in the same turn', async () => {
     const { user, emitted } = renderCard({ allowOther: true })
     const other = screen.getByRole('textbox', { name: 'Other' })

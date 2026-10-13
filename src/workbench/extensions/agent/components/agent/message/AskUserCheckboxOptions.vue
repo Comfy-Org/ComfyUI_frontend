@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 
-import type { AskUserOption } from '../../../services/agent/agentMessageParts'
+import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import {
   askUserOptionDescribedBy,
@@ -9,10 +9,6 @@ import {
   askUserOptionRowClass
 } from './askUserOptions'
 
-/**
- * Any number of choices: one checkbox per option, labelled by the prompt.
- * Once `full`, only the options already chosen can still be changed.
- */
 const {
   options,
   idPrefix,
@@ -21,7 +17,7 @@ const {
   disabled = false,
   full = false
 } = defineProps<{
-  options: AskUserOption[]
+  options: AgentAskOption[]
   idPrefix: string
   labelledBy: string
   describedBy?: string

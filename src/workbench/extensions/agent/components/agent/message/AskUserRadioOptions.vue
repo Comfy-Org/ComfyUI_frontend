@@ -2,7 +2,7 @@
 import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
 import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 
-import type { AskUserOption } from '../../../services/agent/agentMessageParts'
+import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import {
   askUserOptionDescribedBy,
@@ -10,14 +10,13 @@ import {
   askUserOptionRowClass
 } from './askUserOptions'
 
-/** A required single choice: one radio per option, labelled by the prompt. */
 const {
   options,
   idPrefix,
   labelledBy,
   disabled = false
 } = defineProps<{
-  options: AskUserOption[]
+  options: AgentAskOption[]
   idPrefix: string
   labelledBy: string
   disabled?: boolean

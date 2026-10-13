@@ -93,13 +93,6 @@ export interface AgentEventTransport {
   notifyCanvasCaughtUp: () => void
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
-  /**
-   * PM-1658: retires an ask's part the way an `agent_ask_resolved` frame
-   * would, for an ask resolved out of band: a run-approval card goes, an
-   * `ask_user` card turns read-only with `resolution`. The transport owns the
-   * message every later emit republishes, so editing the store's copy alone
-   * lets a dismissed card reappear the next time this one snapshots.
-   */
   dropAskPart: (askId: string, resolution?: AskUserResolution) => void
   /**
    * Tears the transport down for a reason other than natural completion
@@ -335,18 +328,6 @@ export function createAgentEventTransport(
     return true
   }
 
-  /**
-   * Applies one `agent_ask` frame: a `run_approval` or `ask_user` card, or a
-   * notice standing in for an ask this panel cannot render. Returns `false`
-   * for a redelivered ask (a replay, a resubscribe) that is already on
-   * screen: a second card would share its key and its in-progress answer.
-   *
-   * An ask that cannot be rendered still parks the server waiting for an
-   * answer nothing on screen can give — the same dead-panel outcome as an ask
-   * dropped in routing, so it is reported the same way. Generated-contract
-   * kinds with no card here, or whose card refuses the ask (an `ask_user`
-   * with nothing to choose), are tagged separately from unknown input.
-   */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     const shown = message.parts.some((part) => askIdOf(part) === data.ask_id)
     if (shown) return false
@@ -375,9 +356,6 @@ export function createAgentEventTransport(
     message.thinkingText = openThinking?.text
   }
 
-  /** Applies one `agent_ask_resolved` frame: retires the matching ask part,
-   * since its ask is no longer pending. Returns `false` when no part
-   * matched. */
   function handleAskResolvedEvent(
     data: AgentAskResolvedEvent['data']
   ): boolean {
@@ -462,15 +440,6 @@ export function createAgentEventTransport(
     return part
   }
 
-  /**
-   * Applies one chat event to `message` by dispatching to the per-type
-   * handler above, and reports whether `ingest` should emit a fresh
-   * snapshot afterwards. Most event types always want a snapshot; a
-   * repeated `agent_active_tab`, a redelivered `agent_ask` or an
-   * `agent_ask_resolved` for an ask this message does not hold is a no-op
-   * (mirroring their handlers' own `false` return), and
-   * `agent_message_done` already emits via `settle()` so it says no too.
-   */
   function applyChatEvent(event: AgentChatEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
