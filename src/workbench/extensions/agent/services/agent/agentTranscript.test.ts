@@ -632,10 +632,7 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
-  const pendingAsk = (
-    kind: string,
-    overrides: Partial<NonNullable<AgentMessages[number]['pending_ask']>> = {}
-  ): NonNullable<AgentMessages[number]['pending_ask']> => ({
+  const pendingAsk = (kind: string) => ({
     message_id: 'row-1',
     ask_id: 'ask-1',
     kind,
@@ -646,8 +643,7 @@ describe('normalizeAgentTranscript', () => {
     ],
     min_selections: 1,
     max_selections: 2,
-    allow_other: true,
-    ...overrides
+    allow_other: true
   })
 
   it.for([
@@ -674,10 +670,12 @@ describe('normalizeAgentTranscript', () => {
     }
   ])('restores $name and keeps the turn live', ({ ask, part }) => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')
-    message.status = 'streaming'
-    message.pending_ask = ask
 
-    const transcript = normalizeAgentTranscript([message])
+    const transcript = normalizeAgentTranscript(
+      zAgentMessages.parse([
+        { ...message, status: 'streaming', pending_ask: ask }
+      ])
+    )
 
     expect(transcript.messages[0].parts).toEqual([part])
     expect(transcript.messages[0].streaming).toBe(true)
@@ -686,11 +684,10 @@ describe('normalizeAgentTranscript', () => {
 
   it('drops a pending ask_user card from a streaming row a later turn retired', () => {
     const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
-    asked.status = 'streaming'
-    asked.pending_ask = pendingAsk('ask_user')
-
     const transcript = normalizeAgentTranscript([
-      asked,
+      zAgentMessages.parse([
+        { ...asked, status: 'streaming', pending_ask: pendingAsk('ask_user') }
+      ])[0],
       row(2, 'user', 'turn-b', 'next', 'row-2'),
       row(3, 'assistant', 'turn-b', 'all done', 'row-3')
     ])

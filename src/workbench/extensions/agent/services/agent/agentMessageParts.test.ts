@@ -69,7 +69,7 @@ describe('toAskPart ask_user', () => {
     })
   })
 
-  it.for([undefined, 'mystery'])(
+  it.for(['unknown', 'paused'] as const)(
     'renders nothing for an ask whose kind is %s',
     (kind) => {
       expect(toAskPart(askUser({ kind }))).toBeUndefined()
@@ -168,7 +168,7 @@ describe('toAskPart ask_user', () => {
     expect(
       toAskPart(
         askUser({
-          kind: 'permission',
+          kind: 'unknown',
           context: { target_kind: 'host', target: 'example.org' }
         })
       )

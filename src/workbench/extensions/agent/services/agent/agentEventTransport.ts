@@ -1,5 +1,3 @@
-import { zAgentAskKind } from '@comfyorg/ingest-types/zod'
-
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
@@ -334,9 +332,7 @@ export function createAgentEventTransport(
     if (!toAskPart(data))
       reportUndeliverableAsk(
         data,
-        zAgentAskKind.safeParse(data.kind).success
-          ? 'unrendered-kind'
-          : 'unknown-kind'
+        data.kind === 'unknown' ? 'unknown-kind' : 'unrendered-kind'
       )
     dropDraft()
     closeOpenText()

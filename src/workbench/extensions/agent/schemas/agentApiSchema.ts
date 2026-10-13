@@ -1,6 +1,7 @@
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
+  zAgentAskKind,
   zAgentAskResolvedData,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
@@ -66,7 +67,7 @@ export const RENDERED_ASK_KINDS = [
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
 const zAgentPendingAsk = zAgentPendingAskBase.extend({
-  kind: z.string(),
+  kind: zAgentAskKind.or(z.literal('unknown')).catch('unknown'),
   context: z.unknown().optional()
 })
 
