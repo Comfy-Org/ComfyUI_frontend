@@ -1,5 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+
 interface BillingCapabilitiesMockState {
   canSubscribeSelfServe: boolean
   canCancel: boolean
@@ -47,8 +49,12 @@ export function useBillingCapabilities() {
     canCancel: computed(() => capabilityState.canCancel),
     canReactivate: computed(() => capabilityState.canReactivate),
     canChangeSeats: computed(() => capabilityState.canChangeSeats),
-    canManageMembers: computed(() => capabilityState.canManageMembers),
-    canInviteMembers: computed(() => capabilityState.canInviteMembers),
+    canManageMembers: computed(() =>
+      receiveServerFact('can_manage_members', capabilityState.canManageMembers)
+    ),
+    canInviteMembers: computed(() =>
+      receiveServerFact('can_invite_members', capabilityState.canInviteMembers)
+    ),
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
     ),

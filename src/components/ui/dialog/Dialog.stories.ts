@@ -13,7 +13,7 @@ import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { FOR_STORIES } from '@/components/ui/dialog/dialog.variants'
 
-const { sizes } = FOR_STORIES
+const { sizes, surfaces } = FOR_STORIES
 
 const meta: Meta = {
   title: 'Components/Dialog/Dialog',
@@ -23,10 +23,16 @@ const meta: Meta = {
       control: { type: 'select' },
       options: sizes,
       defaultValue: 'md'
+    },
+    surface: {
+      control: { type: 'select' },
+      options: surfaces,
+      defaultValue: 'card'
     }
   },
   args: {
-    size: 'md'
+    size: 'md',
+    surface: 'card'
   }
 }
 
@@ -56,7 +62,7 @@ export const Default: Story = {
       <Dialog v-model:open="open">
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent :size="args.size">
+          <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Are you sure?</DialogTitle>
               <DialogClose />
@@ -98,7 +104,7 @@ export const LongContent: Story = {
       <Dialog v-model:open="open">
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent :size="args.size">
+          <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Long content scrolls</DialogTitle>
               <DialogClose />

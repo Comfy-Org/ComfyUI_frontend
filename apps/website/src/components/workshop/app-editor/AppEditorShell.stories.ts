@@ -23,8 +23,10 @@ import EditorResultDock from './EditorResultDock.vue'
 import EditorRun from './EditorRun.vue'
 import EditorSeedField from './EditorSeedField.vue'
 import EditorSegmented from './EditorSegmented.vue'
+import EditorSourceTile from './EditorSourceTile.vue'
 import EditorSwitch from './EditorSwitch.vue'
 import EditorTool from './EditorTool.vue'
+import EditorUndoRemove from './EditorUndoRemove.vue'
 import type { EditorView } from './view'
 
 interface Source {
@@ -121,8 +123,10 @@ const meta: Meta<
       EditorRun,
       EditorSeedField,
       EditorSegmented,
+      EditorSourceTile,
       EditorSwitch,
-      EditorTool
+      EditorTool,
+      EditorUndoRemove
     },
     setup() {
       const { t } = translationsFor(args.locale ?? 'en')
@@ -138,6 +142,16 @@ const meta: Meta<
       const source = computed(() =>
         stage.value.kind === 'empty' ? undefined : stage.value.source
       )
+      const removed = shallowRef<typeof source.value>()
+      function remove() {
+        removed.value = source.value
+        stage.value = { kind: 'empty' }
+      }
+      function restore() {
+        if (removed.value)
+          stage.value = { kind: 'editing', source: removed.value }
+        removed.value = undefined
+      }
       const download = computed(() =>
         stage.value.kind === 'result'
           ? { href: stage.value.result, name: 'relit.jpg' }
@@ -210,6 +224,9 @@ const meta: Meta<
         t,
         stage,
         source,
+        removed,
+        remove,
+        restore,
         download,
         view,
         light,
@@ -241,12 +258,9 @@ const meta: Meta<
         >
           <EditorEmpty
             v-if="stage.kind === 'empty'"
-            title="Drop a photo to start"
-            meta="PNG, JPG or WebP, up to 20 MB"
-            upload-label="Upload a photo"
-            example-label="Try the pier"
-            :example-image="EXAMPLE.url"
-            @file="open"
+            title="Try an example"
+            hint="Or upload your own photo in the panel."
+            :examples="[{ id: 'pier', image: EXAMPLE.url, label: 'The pier' }]"
             @example="stage = { kind: 'editing', source: EXAMPLE }"
           />
           <EditorResult
@@ -277,6 +291,7 @@ const meta: Meta<
           </EditorFrame>
 
           <template #tray>
+            <EditorUndoRemove v-if="removed && !source" label="Undo remove photo" @undo="restore" />
             <EditorAlert v-if="stage.kind === 'editing' && stage.notice">{{ stage.notice }}</EditorAlert>
           </template>
           <template #dock>
@@ -311,6 +326,16 @@ const meta: Meta<
           </template>
 
           <template #panel>
+            <EditorSourceTile
+              kind="image"
+              :src="source?.url"
+              caption="pier.jpg"
+              add-label="Upload photo"
+              hint="PNG, JPG or WebP"
+              remove-label="Remove photo"
+              @file="open"
+              @remove="remove"
+            />
             <EditorCollapsible title="Light" initially-open>
               <EditorSegmented v-model="light" label="Time of day" :options="LIGHTS" fill />
               <EditorSwitch v-model="keepFace" label="Keep the face" />
