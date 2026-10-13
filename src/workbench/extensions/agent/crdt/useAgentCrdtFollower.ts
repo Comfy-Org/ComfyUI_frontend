@@ -25,7 +25,6 @@ import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
-import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
@@ -93,8 +92,6 @@ interface AgentCrdtOutcomeCounters {
   /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
   dropped: number
 }
-
-type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 interface ProjectionFrameId {
   opIds?: readonly string[]
@@ -225,7 +222,6 @@ export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
-  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with
@@ -353,7 +349,6 @@ export function useAgentCrdtFollower(
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
-    terminal: null,
     outcomes: {
       received: 0,
       applied: 0,
@@ -427,7 +422,6 @@ function startAgentCrdtFollower(
   }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
-  const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -447,9 +441,8 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    (reason) => {
+    () => {
       connected.value = false
-      terminal.value = reason
     }
   )
   const tabId = createUuidv4()
@@ -669,7 +662,6 @@ function startAgentCrdtFollower(
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
     else lifecycle.stopProbing()
-    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
   }
 
   function handleRejectedSubscription(
@@ -680,11 +672,9 @@ function startAgentCrdtFollower(
       message?: unknown
     } | null
   ) {
-    const reseeding = tryReseed()
-    const refusal = reseeding
+    const refusal = tryReseed()
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -704,7 +694,6 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
@@ -811,7 +800,6 @@ function startAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
-    terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -850,7 +838,6 @@ function startAgentCrdtFollower(
   }
   function onSocketOpen(): void {
     connected.value = false
-    terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.reconnect()
@@ -1002,7 +989,6 @@ function startAgentCrdtFollower(
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
-      terminal.value = null
       pendingLiveNodeIds.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)
@@ -1051,7 +1037,6 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
-    terminal: terminal.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
     outcomes: outcomes.value
