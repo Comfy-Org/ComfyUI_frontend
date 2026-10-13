@@ -178,14 +178,18 @@ describe('ModelsCatalogue', () => {
     ).toBeNull()
   })
 
-  it('filters the workflows section by its own categories', async () => {
+  it('filters the workflows section by its Best-for use cases', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
+    await user.click(await screen.findByRole('button', { name: /^Best for/ }))
     await user.click(
-      await screen.findByRole('tab', { name: 'Control & tools' })
+      within(await screen.findByRole('menu')).getByRole('menuitemcheckbox', {
+        name: /^Control & tools/
+      })
     )
+    await user.keyboard('{Escape}')
     expect(
       screen.getByRole('link', { name: /Remove an image background/ })
     ).toBeVisible()

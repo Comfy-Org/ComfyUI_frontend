@@ -33,7 +33,7 @@ describe('modelTabCounts', () => {
     { tab: 'all', expected: 2 },
     { tab: 'video', expected: 1 },
     { tab: 'image', expected: 1 },
-    { tab: 'upscale', expected: 1 },
+    { tab: 'edit', expected: 1 },
     { tab: 'llm', expected: 0 }
   ])('counts what $tab lists before any search', ({ tab, expected }) => {
     expect(counts.get(tab)).toBe(expected)
@@ -64,7 +64,7 @@ describe('shownTabGroups', () => {
       },
       {
         titleKey: 'workshop.explorer.tabs.groups.task',
-        tabs: ['edit', 'upscale']
+        tabs: ['edit']
       }
     ])
   })
@@ -73,8 +73,7 @@ describe('shownTabGroups', () => {
     const counts = new Map<ModelTab, number>([
       ...everyTab,
       ['llm', 0],
-      ['edit', 0],
-      ['upscale', 0]
+      ['edit', 0]
     ])
     expect(shownTabGroups(counts)).toEqual([
       {

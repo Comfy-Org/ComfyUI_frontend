@@ -242,28 +242,62 @@ export function splitTask(
   return input && output && output !== 'all' ? { input, output } : undefined
 }
 
-// The catalog is organised by what a visitor wants to do: what the model
-// produces and, for images and videos, whether it starts from a prompt or
-// from existing media. Models with an unknown modality only show up under "All".
-// Images lead, then video, then what makes neither: a reading order that holds
-// however the counts move.
 export const USE_CASES = [
   'generate-images',
   'edit-images',
   'generate-videos',
   'animate-images',
   'edit-videos',
-  'text',
+  'upscale',
+  'audio',
+  'characters',
+  'product',
+  'tools',
   '3d',
-  'audio'
+  'text'
 ] as const
 export type UseCase = (typeof USE_CASES)[number]
+
+/** The Best-for use case each workflow category, current or retired, stands for. */
+export const WORKFLOW_CATEGORY_USE_CASE: Readonly<
+  Record<string, UseCase | undefined>
+> = {
+  'image-to-image': 'edit-images',
+  cleanup: 'edit-images',
+  'image-to-video': 'animate-images',
+  videos: 'animate-images',
+  'reference-to-video': 'generate-videos',
+  'video-to-video': 'edit-videos',
+  upscale: 'upscale',
+  audio: 'audio',
+  characters: 'characters',
+  product: 'product',
+  tools: 'tools'
+}
 
 export function useCaseFor(model: WorkshopModel): UseCase | undefined {
   return useCasesFor(model)[0]
 }
 
 export function useCasesFor(model: WorkshopModel): readonly UseCase[] {
+  const categoryUseCase =
+    model.type === 'CLOUD' || model.type === 'SERVERLESS'
+      ? WORKFLOW_CATEGORY_USE_CASE[model.category ?? '']
+      : undefined
+  if (categoryUseCase) return [categoryUseCase]
+  const declared = declaredUseCases(model)
+  return upscales(model) && !declared.includes('upscale')
+    ? [...declared, 'upscale']
+    : declared
+}
+
+function upscales(model: WorkshopModel): boolean {
+  return model.capabilities.some(
+    (capability) => capability.toLowerCase() === 'upscale'
+  )
+}
+
+function declaredUseCases(model: WorkshopModel): readonly UseCase[] {
   if (model.useCases?.length) return model.useCases
   const input = model.task ? splitTask(model.task)?.input : undefined
   switch (model.modality) {

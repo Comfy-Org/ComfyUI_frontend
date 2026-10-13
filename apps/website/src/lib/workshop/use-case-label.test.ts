@@ -11,8 +11,12 @@ const expected = [
   ['generate-videos', 'workshop.useCase.generateVideos'],
   ['animate-images', 'workshop.useCase.animateImages'],
   ['edit-videos', 'workshop.useCase.editVideos'],
-  ['3d', 'workshop.useCase.3d'],
+  ['upscale', 'workshop.useCase.upscale'],
   ['audio', 'workshop.useCase.audio'],
+  ['characters', 'workshop.useCase.characters'],
+  ['product', 'workshop.useCase.product'],
+  ['tools', 'workshop.useCase.tools'],
+  ['3d', 'workshop.useCase.3d'],
   ['text', 'workshop.useCase.text']
 ] as const
 

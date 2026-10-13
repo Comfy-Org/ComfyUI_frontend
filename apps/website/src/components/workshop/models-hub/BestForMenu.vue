@@ -6,9 +6,13 @@ import {
   Check,
   ChevronDown,
   Clapperboard,
+  Columns2,
   Film,
+  Gamepad2,
   Image,
   Pencil,
+  ShoppingBag,
+  SlidersHorizontal,
   Video
 } from '@lucide/vue'
 import {
@@ -52,7 +56,11 @@ const ICONS: Record<UseCase, Component> = {
   'generate-videos': Video,
   'animate-images': Clapperboard,
   'edit-videos': Film,
+  upscale: Columns2,
   audio: AudioLines,
+  characters: Gamepad2,
+  product: ShoppingBag,
+  tools: SlidersHorizontal,
   '3d': Box,
   text: BookOpen
 }

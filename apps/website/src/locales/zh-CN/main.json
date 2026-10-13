@@ -4398,15 +4398,19 @@
     "useCase": {
       "3d": "3D",
       "all": "全部",
-      "animateImages": "图像生成视频",
-      "audio": "音频",
+      "animateImages": "让图像动起来",
+      "audio": "音频与语音",
+      "characters": "角色与游戏素材",
       "editImages": "编辑图像",
       "editVideos": "编辑视频",
       "generateImages": "生成图像",
       "generateVideos": "生成视频",
       "label": "按用途浏览",
       "more": "更多分类",
-      "text": "文本"
+      "product": "产品与广告",
+      "text": "文本",
+      "tools": "控制与工具",
+      "upscale": "放大与修复"
     },
     "useCaseOption": {
       "animateImage": "让图像动起来",
@@ -4605,7 +4609,6 @@
         "audio": "音频",
         "3d": "3D",
         "edit": "编辑",
-        "upscale": "放大",
         "llm": "大语言模型",
         "groups": {
           "type": "类型",
@@ -4693,7 +4696,6 @@
           "audio": "音频模型",
           "3d": "3D 模型",
           "edit": "编辑模型",
-          "upscale": "放大模型",
           "llm": "语言模型"
         },
         "access": {

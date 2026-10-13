@@ -89,8 +89,7 @@ describe('WorkshopModelsGrid category tabs', () => {
     { tab: 'Image', hosted: ['Sharp Upscaler'] },
     { tab: 'Video', hosted: ['Kling AI'] },
     { tab: 'Audio', hosted: ['Speech'] },
-    { tab: 'Edit', hosted: ['Sharp Upscaler'] },
-    { tab: 'Upscale', hosted: ['Sharp Upscaler'] }
+    { tab: 'Edit', hosted: ['Sharp Upscaler'] }
   ])(
     '$tab lists the flat results of that category and no open weights',
     async ({ tab, hosted }) => {
@@ -147,6 +146,16 @@ describe('WorkshopModelsGrid category tabs', () => {
       expect(wholeCatalogue()).toBeTruthy()
     }
   )
+
+  it('offers no Upscale tab and opens an old ?tab=upscale address on Upscale & restore', async () => {
+    history.replaceState(null, '', '/models/?tab=upscale')
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await waitFor(() => expect(location.search).toBe('?useCase=upscale'))
+    expect(screen.queryByRole('tab', { name: 'Upscale' })).toBeNull()
+    expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
+    expect(hostedNames()).toEqual(['Sharp Upscaler'])
+  })
 
   it('opens on the tab the address names', async () => {
     history.replaceState(null, '', '/models/?tab=video')

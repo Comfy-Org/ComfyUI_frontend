@@ -199,12 +199,16 @@
       "generateImages": "Generate images",
       "editImages": "Edit images",
       "generateVideos": "Generate videos",
-      "animateImages": "Image to video",
+      "animateImages": "Animate images",
       "editVideos": "Edit videos",
       "3d": "3D",
-      "audio": "Audio",
+      "audio": "Audio & speech",
       "text": "Text",
-      "more": "More categories"
+      "more": "More categories",
+      "upscale": "Upscale & restore",
+      "characters": "Characters & game assets",
+      "product": "Product & ads",
+      "tools": "Control & tools"
     },
     "useCaseOption": {
       "generate": "Generate",
@@ -751,7 +755,6 @@
         "audio": "Audio",
         "3d": "3D",
         "edit": "Edit",
-        "upscale": "Upscale",
         "llm": "LLM",
         "groups": {
           "type": "Type",
@@ -839,7 +842,6 @@
           "audio": "Audio models",
           "3d": "3D models",
           "edit": "Edit models",
-          "upscale": "Upscale models",
           "llm": "Language models"
         },
         "access": {

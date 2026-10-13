@@ -11,7 +11,23 @@ describe('parseUseCases', () => {
       ['edit-images', 'generate-videos']
     ],
     ['?useCase=edit-images,nonsense,edit-images', ['edit-images']],
-    ['?useCase=other', ['text', '3d', 'audio']]
+    ['?useCase=other', ['text', '3d', 'audio']],
+    ['?useCase=upscale', ['upscale']],
+    ['?tab=upscale', ['upscale']],
+    ['?useCase=edit-images&tab=upscale', ['edit-images', 'upscale']],
+    ['?category=image-to-image', ['edit-images']],
+    ['?category=cleanup', ['edit-images']],
+    ['?category=image-to-video', ['animate-images']],
+    ['?category=videos', ['animate-images']],
+    ['?category=reference-to-video', ['generate-videos']],
+    ['?category=video-to-video', ['edit-videos']],
+    ['?category=upscale', ['upscale']],
+    ['?category=audio', ['audio']],
+    ['?category=characters', ['characters']],
+    ['?category=product', ['product']],
+    ['?category=tools', ['tools']],
+    ['?category=unknown&category=audio', ['audio']],
+    ['?category=unknown', []]
   ] as const)('reads %s as %j', ([search, useCases]) => {
     expect(parseUseCases(search)).toEqual(useCases)
   })

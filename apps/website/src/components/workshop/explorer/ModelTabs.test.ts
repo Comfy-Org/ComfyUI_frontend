@@ -55,8 +55,7 @@ describe('ModelTabs', () => {
       'audio',
       '3d',
       'llm',
-      'edit',
-      'upscale'
+      'edit'
     ])
     expect(screen.getByText('Task')).toBeTruthy()
     expect(screen.queryByText('Type')).toBeNull()
@@ -83,12 +82,7 @@ describe('ModelTabs', () => {
   it('hides a category that lists nothing, and a group left with none', () => {
     renderTabs(
       'all',
-      new Map<ModelTab, number>([
-        ...EVERY_TAB_LISTS,
-        ['llm', 0],
-        ['edit', 0],
-        ['upscale', 0]
-      ])
+      new Map<ModelTab, number>([...EVERY_TAB_LISTS, ['llm', 0], ['edit', 0]])
     )
     expect(tabNames()).toEqual(['all', 'image', 'video', 'audio', '3d'])
     expect(screen.queryByText('Task')).toBeNull()
@@ -125,16 +119,16 @@ describe('ModelTabs', () => {
     expect(screen.getByRole('tab', { name: 'Image' })).toHaveFocus()
 
     await user.keyboard('{ArrowUp}{ArrowUp}')
-    expect(selected.value).toBe('upscale')
+    expect(selected.value).toBe('edit')
 
     await user.keyboard('{Home}')
     expect(selected.value).toBe('all')
     await user.keyboard('{End}')
-    expect(selected.value).toBe('upscale')
-    expect(screen.getByRole('tab', { name: 'Upscale' })).toHaveFocus()
+    expect(selected.value).toBe('edit')
+    expect(screen.getByRole('tab', { name: 'Edit' })).toHaveFocus()
 
     await user.keyboard('{ArrowLeft}')
-    expect(selected.value).toBe('upscale')
+    expect(selected.value).toBe('edit')
   })
 
   it('moves along the phone chip row with Left and Right', async () => {
@@ -150,6 +144,6 @@ describe('ModelTabs', () => {
     await user.keyboard('{ArrowRight}')
     expect(selected.value).toBe('image')
     await user.keyboard('{ArrowLeft}{ArrowLeft}')
-    expect(selected.value).toBe('upscale')
+    expect(selected.value).toBe('edit')
   })
 })

@@ -719,11 +719,11 @@ test.describe('Models catalog', () => {
     await page.goto('/hub/models/kling-avatar/')
     await page
       .getByTestId('model-hero')
-      .getByRole('link', { name: 'Image to video', exact: true })
+      .getByRole('link', { name: 'Animate images', exact: true })
       .click()
     await expect(page).toHaveURL(/\/hub\/models\/?\?useCase=animate-images$/)
     await expect(
-      page.getByRole('heading', { level: 2, name: /Image to video/ })
+      page.getByRole('heading', { level: 2, name: /Animate images/ })
     ).toBeVisible()
   })
 
