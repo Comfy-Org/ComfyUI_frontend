@@ -70,8 +70,7 @@ vi.mock<unknown>(
 
   () => {
     const managerState = {
-      shouldShowExtensionsButton: computed(() => true),
-      openManager: vi.fn()
+      shouldShowExtensionsButton: computed(() => true)
     }
 
     return {
@@ -86,6 +85,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
