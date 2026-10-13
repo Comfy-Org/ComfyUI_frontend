@@ -70,15 +70,3 @@ export function discountedAmount(
 ): number {
   return Math.round((amount * (100 - offer.percent_off)) / 100)
 }
-
-export function fullPriceRenewal(periodEnd: number, months: number): Date {
-  const start = new Date(periodEnd * 1000)
-  const renewal = new Date(start)
-  renewal.setUTCDate(1)
-  renewal.setUTCMonth(start.getUTCMonth() + months)
-  const lastDayOfMonth = new Date(
-    Date.UTC(renewal.getUTCFullYear(), renewal.getUTCMonth() + 1, 0)
-  ).getUTCDate()
-  renewal.setUTCDate(Math.min(start.getUTCDate(), lastDayOfMonth))
-  return renewal
-}

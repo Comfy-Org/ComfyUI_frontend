@@ -66,21 +66,30 @@ function onPlan(tier: SubscriptionInfo['tier']) {
 
 function renderOffer({
   isScopeCurrent = (): boolean => true,
-  unitAmount = 10000
-}: { isScopeCurrent?: () => boolean; unitAmount?: number } = {}) {
+  unitAmount = 10000,
+  percent = 30,
+  months = 3,
+  periodEnd = Date.UTC(2026, 10, 12, 12) / 1000
+}: {
+  isScopeCurrent?: () => boolean
+  unitAmount?: number
+  percent?: number
+  months?: number
+  periodEnd?: number
+} = {}) {
   const onDecide = vi.fn<(outcome: RetentionOfferOutcome) => void>()
   render(RetentionOfferStep, {
     props: {
       offer: {
         id: 'save_30_next_3_v1',
-        percent_off: 30,
-        duration_in_months: 3
+        percent_off: percent,
+        duration_in_months: months
       },
       subscription: {
         currency: 'usd',
         unit_amount: unitAmount,
         quantity: 1,
-        period_end: Date.UTC(2026, 10, 12, 12) / 1000
+        period_end: periodEnd
       },
       sessionId: 'session-1',
       workspaceId: 'workspace-1',
@@ -115,9 +124,7 @@ describe('RetentionOfferStep', () => {
     expect(screen.getByText('30% off')).toBeInTheDocument()
     expect(screen.getByText('$70')).toBeInTheDocument()
     expect(screen.getByText('$100')).toBeInTheDocument()
-    expect(
-      screen.getByText('for your next 3 payments, then $100/mo')
-    ).toBeInTheDocument()
+    expect(screen.getByText('30% off for 3 months')).toBeInTheDocument()
     expect(
       screen.getByText(
         'Keep your 21,100 monthly credits, custom LoRAs, and everything else in Pro.'
@@ -125,7 +132,7 @@ describe('RetentionOfferStep', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'One-time offer. After 3 renewals, Pro returns to $100/mo. Cancel anytime.'
+        'One-time offer for your current plan. Your discount period starts when you accept. After it ends, your plan returns to its regular monthly price. Changing plans may end your discount. Cancel anytime.'
       )
     ).toBeInTheDocument()
     expect(
@@ -135,6 +142,38 @@ describe('RetentionOfferStep', () => {
       event: 'offer_shown'
     })
   })
+
+  it.for([
+    {
+      percent: 25,
+      months: 1,
+      term: '25% off for one month',
+      applied: 'Your 25% discount is applied for one month from acceptance.',
+      period: 'One-month discount',
+      price: '$75.00/mo'
+    },
+    {
+      percent: 40,
+      months: 2,
+      term: '40% off for 2 months',
+      applied: 'Your 40% discount is applied for 2 months from acceptance.',
+      period: '2-month discount',
+      price: '$60.00/mo'
+    }
+  ])(
+    'uses the server terms for $percent% off for $months months',
+    async ({ percent, months, term, applied, period, price }) => {
+      settlesAs('succeeded')
+      const { user } = renderOffer({ percent, months })
+      expect(screen.getByText(term)).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', { name: `Keep Pro and save ${percent}%` })
+      )
+      expect(await screen.findByText(applied)).toBeInTheDocument()
+      expect(screen.getByText(period)).toBeInTheDocument()
+      expect(screen.getByText(price)).toBeInTheDocument()
+    }
+  )
 
   it('leaves custom LoRAs out for a plan without them', () => {
     onPlan('STANDARD')
@@ -169,34 +208,51 @@ describe('RetentionOfferStep', () => {
     }
   )
 
-  it('confirms the kept plan with the discounted payments once applied', async () => {
-    settlesAs('succeeded')
-    const { onDecide, user } = renderOffer()
+  it.for([
+    {
+      name: 'mid-month acceptance',
+      acceptedAt: '2026-10-12T12:00:00Z',
+      periodEnd: Date.UTC(2026, 10, 12, 12) / 1000
+    },
+    {
+      name: 'February 28 acceptance with May 28 expiry before the May 31 renewal',
+      acceptedAt: '2027-02-28T12:00:00Z',
+      periodEnd: Date.UTC(2027, 2, 31, 12) / 1000
+    }
+  ])(
+    'confirms $name without predicting payments or expiry',
+    async ({ acceptedAt, periodEnd }) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(acceptedAt))
+      settlesAs('succeeded')
+      const { onDecide, user } = renderOffer({ periodEnd })
 
-    await user.click(
-      screen.getByRole('button', { name: 'Keep Pro and save 30%' })
-    )
-
-    expect(
-      await screen.findByRole('heading', { name: "You're staying on Pro" })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        '30% off is applied to your next 3 payments, starting November 12, 2026.'
+      await user.click(
+        screen.getByRole('button', { name: 'Keep Pro and save 30%' })
       )
-    ).toBeInTheDocument()
-    expect(screen.getByText('$70.00/mo')).toBeInTheDocument()
-    expect(
-      screen.getByText("You'll save $90.00 across these 3 payments.")
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('Renews at $100.00 on February 12, 2027.')
-    ).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Done' }))
+      expect(
+        await screen.findByRole('heading', { name: "You're staying on Pro" })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'Your 30% discount is applied for 3 months from acceptance.'
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByText('$70.00/mo')).toBeInTheDocument()
+      expect(screen.getByText('3-month discount')).toBeInTheDocument()
+      expect(screen.getByText('$100.00')).toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          /payments|renewals|Renews at|starting|until|November|February|May|June|\$90/
+        )
+      ).not.toBeInTheDocument()
 
-    expect(onDecide).toHaveBeenCalledExactlyOnceWith('retained')
-  })
+      await user.click(screen.getByRole('button', { name: 'Done' }))
+
+      expect(onDecide).toHaveBeenCalledExactlyOnceWith('retained')
+    }
+  )
 
   it('offers to check again, but not to cancel, when the outcome is unconfirmed', async () => {
     settlesAs('timeout')
