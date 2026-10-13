@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import type { MoveImage, useMoveAnything } from '@/composables/useMoveAnything'
 import type { Locale } from '@/i18n/translations'
 import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorPromptBox from '@/components/workshop/app-editor/EditorPromptBox.vue'
 import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
@@ -64,22 +65,11 @@ const qualityLabel = computed(
       @remove="move.removeImage"
     />
 
-    <section>
-      <label for="move-prompt" class="sr-only">
-        {{ mc('move.prompt', locale) }}
-      </label>
-      <div
-        class="flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 focus-within:border-primary-warm-white/60"
-      >
-        <textarea
-          id="move-prompt"
-          v-model="prompt"
-          rows="4"
-          :placeholder="mc('move.prompt.placeholder', locale)"
-          class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
-        />
-      </div>
-    </section>
+    <EditorPromptBox
+      v-model="prompt"
+      :label="mc('move.prompt', locale)"
+      :placeholder="mc('move.prompt.placeholder', locale)"
+    />
 
     <div class="grid grid-cols-2 gap-2">
       <CinematicMenu
