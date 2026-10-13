@@ -29,6 +29,7 @@ import {
   relightRequest,
   runRelight
 } from '@/lib/workshop/relight/mock-run'
+import { useSnapshotHistory } from './useSnapshotHistory'
 
 export interface RelightImage {
   readonly url: string
@@ -81,9 +82,8 @@ export function useRelight(locale: Locale = 'en') {
   }
 
   const image = shallowRef<RelightImage>()
-  const setup = shallowRef<RelightSetup>(setupFor('sunset', false))
-  const past = shallowRef<RelightSetup[]>([])
-  const future = shallowRef<RelightSetup[]>([])
+  const history = useSnapshotHistory<RelightSetup>(setupFor('sunset', false))
+  const setup = history.state
   const phase = shallowRef<RelightPhase>({ kind: 'editing' })
   const tray = ref<RelightTray>()
   const comparing = ref(false)
@@ -91,7 +91,6 @@ export function useRelight(locale: Locale = 'en') {
   const lightOnly = ref(false)
   const handles = ref(true)
   const selected = ref<string>()
-  let lastEdit: string | undefined
   let added = 0
   let ownUrl: string | undefined
   let pendingUrl: string | undefined
@@ -119,10 +118,7 @@ export function useRelight(locale: Locale = 'en') {
     run?.abort()
     leaveResult({ kind: 'editing' })
     image.value = next
-    setup.value = setupFor(mood, next.url === RELIGHT_EXAMPLE.url)
-    past.value = []
-    future.value = []
-    lastEdit = undefined
+    history.reset(setupFor(mood, next.url === RELIGHT_EXAMPLE.url))
     selected.value = setup.value.lights[0]?.id
     comparing.value = false
     lightOnly.value = false
@@ -158,15 +154,11 @@ export function useRelight(locale: Locale = 'en') {
    * in a row (one slider dragged, one light nudged) undo as one step.
    */
   function checkpoint(key?: string) {
-    if (key && key === lastEdit) return
-    lastEdit = key
-    past.value = [...past.value, setup.value]
-    future.value = []
+    history.change(setup.value, key)
   }
 
   function change(next: Partial<RelightSetup>, key?: string) {
-    checkpoint(key)
-    setup.value = { ...setup.value, ...next }
+    history.change({ ...setup.value, ...next }, key)
   }
 
   const patched = (id: string, patch: Partial<Light>) =>
@@ -275,27 +267,19 @@ export function useRelight(locale: Locale = 'en') {
     })
   }
 
-  function restore(next: RelightSetup) {
-    setup.value = next
-    lastEdit = undefined
-    if (!next.lights.some((light) => light.id === selected.value))
-      selected.value = next.lights[0]?.id
+  function keepSelection() {
+    if (!lights.value.some((light) => light.id === selected.value))
+      selected.value = lights.value[0]?.id
   }
 
   function undo() {
-    const previous = past.value.at(-1)
-    if (!previous) return
-    future.value = [setup.value, ...future.value]
-    past.value = past.value.slice(0, -1)
-    restore(previous)
+    history.undo()
+    keepSelection()
   }
 
   function redo() {
-    const next = future.value.at(0)
-    if (!next) return
-    past.value = [...past.value, setup.value]
-    future.value = future.value.slice(1)
-    restore(next)
+    history.redo()
+    keepSelection()
   }
 
   async function relight() {
@@ -355,8 +339,8 @@ export function useRelight(locale: Locale = 'en') {
     full,
     canRun,
     shadows: computed(() => shadowStyle(lights.value)),
-    canUndo: computed(() => past.value.length > 0),
-    canRedo: computed(() => future.value.length > 0),
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
     useExample,
     useFile,
     checkpoint,

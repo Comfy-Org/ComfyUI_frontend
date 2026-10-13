@@ -1,3 +1,4 @@
+import { loadImage } from '@/lib/workshop/load-image'
 import type { Light, MoodId, RelightScene } from './lights'
 import { MOOD_IDS } from './lights'
 import type { RelightRequest } from './mock-run'
@@ -8,17 +9,6 @@ import { heightMap, shadingUniforms } from './shading'
 const HEIGHT_EDGE = 384
 const MAX_EDGE = 4096
 const FINISH = { contrast: 1.06, grain: 0.035 }
-
-/** A decoded image, or undefined when it does not load. */
-export function loadImage(url: string): Promise<HTMLImageElement | undefined> {
-  return new Promise((resolve) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.onload = () => resolve(image)
-    image.onerror = () => resolve(undefined)
-    image.src = url
-  })
-}
 
 /** The image drawn no larger than `edge` on its long side. */
 export function fitImage(image: HTMLImageElement, edge: number) {

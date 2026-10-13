@@ -7,11 +7,8 @@ import type {
   RelightMask,
   RelightScene
 } from '@/lib/workshop/relight/lights'
-import {
-  fitImage,
-  imageHeightMap,
-  loadImage
-} from '@/lib/workshop/relight/render-image'
+import { loadImage } from '@/lib/workshop/load-image'
+import { fitImage, imageHeightMap } from '@/lib/workshop/relight/render-image'
 import type { RelightRenderer } from '@/lib/workshop/relight/renderer'
 import { createRelightRenderer } from '@/lib/workshop/relight/renderer'
 import { shadingUniforms } from '@/lib/workshop/relight/shading'
