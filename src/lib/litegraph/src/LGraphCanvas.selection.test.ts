@@ -425,6 +425,15 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
+    it('node removal does not report a selection change', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      graph.remove(a)
+
+      expect(onSelectionChange).not.toHaveBeenCalled()
+    })
+
     it('node removal clears legacy selection before a deselection hook throws', () => {
       canvas.select(a)
       a.onDeselected = () => {
@@ -436,13 +445,24 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
-    it('select() and deselect() each report the change', () => {
+    it('select() and deselect() each report the changed selection', () => {
       canvas.select(a)
-
-      expect(onSelectionChange).toHaveBeenCalledTimes(1)
       canvas.deselect(a)
 
-      expect(onSelectionChange).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(onSelectionChange).mock.calls).toEqual([
+        [{ [a.id]: a }],
+        [{}]
+      ])
+    })
+
+    it('reports one change when a selection hook selects another item', () => {
+      canvas.onNodeSelected = () => canvas.select(b)
+
+      canvas.select(a)
+
+      expect(vi.mocked(onSelectionChange).mock.calls).toEqual([
+        [{ [a.id]: a, [b.id]: b }]
+      ])
     })
 
     it('ghost placement reports one change holding the placed node', () => {
@@ -452,13 +472,10 @@ describe('LGraphCanvas selection', () => {
       canvas.startGhostPlacement(b)
 
       try {
-        expect(
-          vi
-            .mocked(onSelectionChange)
-            .mock.calls.map(([selected]) => Object.keys(selected))
-        ).toEqual([[String(b.id)]])
+        expect(vi.mocked(onSelectionChange).mock.calls).toEqual([
+          [{ [b.id]: b }]
+        ])
       } finally {
-        // Leaves document listeners behind otherwise, failing later tests.
         canvas.finalizeGhostPlacement(true)
       }
     })
@@ -483,17 +500,13 @@ describe('LGraphCanvas selection', () => {
 
       canvas.deselectAll()
 
-      expect(
-        vi
-          .mocked(onSelectionChange)
-          .mock.calls.map(([selected]) => Object.keys(selected))
-      ).toEqual([[String(b.id)]])
+      expect(vi.mocked(onSelectionChange).mock.calls).toEqual([[{ [b.id]: b }]])
     })
 
     it('alt aux-clicking a selected reroute reports one change', () => {
-      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })
+      assert.exists(reroute)
       canvas._visibleReroutes.add(reroute)
-      canvas.visible_nodes = [...graph.nodes]
       canvas.select(reroute)
       vi.mocked(onSelectionChange).mockClear()
 
@@ -788,7 +801,7 @@ describe('LGraphCanvas selection', () => {
       canvas.select(b)
       vi.mocked(onSelectionChange).mockClear()
 
-      canvas.deselectAll(b)
+      canvas.deselectAll({ keepSelected: b })
 
       expect(selectedTitles(canvas)).toEqual(['B'])
       expect(a.selected).toBe(false)

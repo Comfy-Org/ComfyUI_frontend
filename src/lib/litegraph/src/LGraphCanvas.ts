@@ -476,11 +476,7 @@ function connectSearchBoxNodeTo(
   )
 }
 
-/**
- * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
- * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
- */
-type DeselectAllOptions = {
+interface DeselectAllOptions {
   keepSelected?: Positionable
   notify?: boolean
 }
@@ -488,9 +484,13 @@ type DeselectAllOptions = {
 function isDeselectAllOptions(
   value: Positionable | DeselectAllOptions | undefined
 ): value is DeselectAllOptions {
-  return value !== undefined && ('keepSelected' in value || 'notify' in value)
+  return value !== undefined && !('id' in value)
 }
 
+/**
+ * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
+ * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
+ */
 export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap> {
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -1104,6 +1104,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
   onSelectionChange?: (selected: Dictionary<Positionable>) => void
   private selectionNotificationDepth = 0
+
+  private notifySelectionChange(): void {
+    if (this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selected_nodes)
+  }
+
+  private mutateSelection<T>(mutation: () => T): T {
+    this.selectionNotificationDepth++
+    try {
+      return mutation()
+    } finally {
+      this.selectionNotificationDepth--
+    }
+  }
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -2118,7 +2132,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    this.onSelectionChange?.(this.selected_nodes)
+    this.notifySelectionChange()
 
     this.visible_nodes = []
     this.node_over = undefined
@@ -4003,7 +4017,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         newValue: false
       })
 
-      this.onSelectionChange?.(this.selected_nodes)
+      this.notifySelectionChange()
     }
 
     this.dirty_canvas = true
@@ -4577,11 +4591,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const dropped = [...this.selectedItems].filter((item) => !desired.has(item))
-    const removed = changeCanvasSelection(this, dropped, false)
-    const added = changeCanvasSelection(this, desired, true)
+    const [removed, added] = this.mutateSelection(() => [
+      changeCanvasSelection(this, dropped, false),
+      changeCanvasSelection(this, desired, true)
+    ])
 
     if (removed || added) {
-      this.onSelectionChange?.(this.selected_nodes)
+      this.notifySelectionChange()
       this.setDirty(true)
     }
   }
@@ -4592,7 +4608,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private finalizeLiveSelect(): void {
     // Selection is already updated by handleLiveSelect
     // Just trigger the final selection change callback
-    this.onSelectionChange?.(this.selected_nodes)
+    this.notifySelectionChange()
   }
 
   /**
@@ -4612,20 +4628,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const itemsInRect = this._getItemsInRect(normalizedRect)
     const { selectedItems } = this
 
-    if (e.shiftKey) {
-      changeCanvasSelection(this, itemsInRect, true)
-    } else if (e.altKey) {
-      changeCanvasSelection(this, itemsInRect, false)
-    } else {
-      changeCanvasSelection(
-        this,
-        [...selectedItems].filter((item) => !itemsInRect.has(item)),
-        false
-      )
-      changeCanvasSelection(this, itemsInRect, true)
-    }
+    this.mutateSelection(() => {
+      if (e.shiftKey) {
+        changeCanvasSelection(this, itemsInRect, true)
+      } else if (e.altKey) {
+        changeCanvasSelection(this, itemsInRect, false)
+      } else {
+        changeCanvasSelection(
+          this,
+          [...selectedItems].filter((item) => !itemsInRect.has(item)),
+          false
+        )
+        changeCanvasSelection(this, itemsInRect, true)
+      }
+    })
 
-    this.onSelectionChange?.(this.selected_nodes)
+    this.notifySelectionChange()
   }
 
   /**
@@ -4672,7 +4690,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else {
       return
     }
-    this.onSelectionChange?.(this.selected_nodes)
+    this.notifySelectionChange()
     this.setDirty(true)
   }
 
@@ -4689,11 +4707,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     if (isCanvasItemSelected(this, item)) return
     if (
-      changeCanvasSelection(this, [item], true, selectGroupChildren) &&
+      this.mutateSelection(() =>
+        changeCanvasSelection(this, [item], true, selectGroupChildren)
+      ) &&
       notify &&
       this.selectionNotificationDepth === 0
     )
-      this.onSelectionChange?.(this.selected_nodes)
+      this.notifySelectionChange()
   }
 
   /**
@@ -4710,7 +4730,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       notify &&
       this.selectionNotificationDepth === 0
     )
-      this.onSelectionChange?.(this.selected_nodes)
+      this.notifySelectionChange()
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
@@ -4755,9 +4775,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     if (itemsToSelect.length === 0 && items?.length) return
     if (!add_to_current_selection) this.deselectAll({ notify: false })
-    changeCanvasSelection(this, itemsToSelect, true)
-    if (this.selectionNotificationDepth === 0)
-      this.onSelectionChange?.(this.selected_nodes)
+    this.mutateSelection(() => changeCanvasSelection(this, itemsToSelect, true))
+    this.notifySelectionChange()
     this.setDirty(true)
   }
 
@@ -4817,12 +4836,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } finally {
       this.selectionNotificationDepth--
     }
-    if (
-      notify &&
-      this.selectionNotificationDepth === 0 &&
-      selected.size !== resultingSelectionSize
-    )
-      this.onSelectionChange?.(this.selected_nodes)
+    if (notify && selected.size !== resultingSelectionSize)
+      this.notifySelectionChange()
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -4841,9 +4856,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
     graph.beforeChange()
 
-    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
     const toDelete = [...this.selectedItems]
-    // Removal deselects each item in turn; report the deletion once, below.
     this.selectionNotificationDepth++
     try {
       for (const item of toDelete) {
@@ -4866,7 +4879,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
 
-    this.onSelectionChange?.(this.selected_nodes)
+    this.notifySelectionChange()
     this.setDirty(true)
     graph.afterChange()
     this.emitAfterChange()

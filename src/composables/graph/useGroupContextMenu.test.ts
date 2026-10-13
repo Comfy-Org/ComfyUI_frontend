@@ -108,6 +108,7 @@ describe('useGroupContextMenu', () => {
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
     expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group, {
+      notify: false,
       selectGroupChildren: false
     })
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
@@ -267,6 +268,7 @@ describe('useGroupContextMenu', () => {
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
     expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group, {
+      notify: false,
       selectGroupChildren: false
     })
     expect([...stubCanvas.selectedItems]).toEqual([group])

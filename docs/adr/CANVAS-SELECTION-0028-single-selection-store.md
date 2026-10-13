@@ -90,9 +90,10 @@ Specifically:
 6. Existing methods remain the behavior boundary. `select`, `deselect`,
    `deselectAll`, `processSelect`, `selectNode`, `selectNodes`, and
    `selectItems` translate their current decisions into store commands. They
-   continue to emit `onSelectionChange`, node selection hooks, redraw requests,
-   and z-order changes at their current points and with their current call
-   counts. A state command does not emit hooks by itself.
+   preserve one `onSelectionChange` notification for compound selection actions.
+   Direct `select` and `deselect` notify after a successful state change.
+   Nested mutations from selection hooks do not add notifications. A state
+   command does not emit hooks by itself.
 7. Group selection keeps `groupSelectChildren`, `LGraphGroup._children`, and
    `recomputeInsideNodes()` unchanged. The store records the resulting selected
    items rather than introducing new group semantics during this migration.
@@ -116,8 +117,10 @@ The migration must preserve these observable behaviors:
 - Group selection and deselection keep their current child-cascade behavior.
 - Workflow switches and subgraph navigation clear selection rather than
   restoring a selection retained for that graph.
-- Selection callbacks and node hooks keep their current entry-point-specific
-  emission behavior.
+- Compound selection actions notify once after their final state is applied.
+  Direct `select` and `deselect` calls notify once after a successful state
+  change. Extensions that listen to `onSelectionChange` must tolerate either
+  entry point.
 - Extension reads and writes through documented or observed legacy selection
   paths continue to work until separately deprecated.
 

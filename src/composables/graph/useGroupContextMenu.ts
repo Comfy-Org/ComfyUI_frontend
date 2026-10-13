@@ -43,7 +43,8 @@ export function useGroupContextMenu() {
 
     if (!groupIsOnlySelection && !this.selectOnly) {
       this.deselectAll({ notify: false })
-      this.select(group, { selectGroupChildren: false })
+      this.select(group, { notify: false, selectGroupChildren: false })
+      this.onSelectionChange?.(this.selected_nodes)
       this.setDirty(true)
     }
     showNodeOptions(event)
