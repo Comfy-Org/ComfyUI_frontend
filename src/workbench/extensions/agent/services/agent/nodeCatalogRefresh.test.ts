@@ -45,12 +45,12 @@ function setup() {
   const deps = {
     refreshNodeDefinitions: vi.fn(async () => {
       order.push('refresh')
+      return true
     }),
     reloadCurrentWorkflow: vi.fn(async () => {
       order.push('reload')
       return true
-    }),
-    onFailure: vi.fn()
+    })
   }
   const stop = refreshNodeCatalogOnRestart(events, deps)
   return { events, deps, order, stop }
@@ -88,42 +88,54 @@ describe('refreshNodeCatalogOnRestart', () => {
     expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(2)
   })
 
-  it('reports a failed refresh and keeps handling later restarts', async () => {
-    const { events, deps } = setup()
-    deps.refreshNodeDefinitions.mockRejectedValueOnce(new Error('offline'))
+  it('runs back-to-back restarts one after the other', async () => {
+    const { events, deps, order } = setup()
+    let finishFirst!: (refreshed: boolean) => void
+    deps.refreshNodeDefinitions.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          order.push('refresh')
+          finishFirst = resolve
+        })
+    )
     events.emit(toolCall('restart_comfyui', 'success', 'a'))
-    await flush()
-    expect(deps.onFailure).toHaveBeenCalledWith(new Error('offline'))
-    expect(deps.reloadCurrentWorkflow).not.toHaveBeenCalled()
     events.emit(toolCall('restart_comfyui', 'success', 'b'))
     await flush()
-    expect(deps.reloadCurrentWorkflow).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['refresh'])
+
+    finishFirst(true)
+    await flush()
+
+    expect(order).toEqual(['refresh', 'reload', 'refresh', 'reload'])
   })
 
-  it('refreshes again when a restart whose refresh failed is delivered again', async () => {
+  it.for<{
+    step: string
+    failing: 'refreshNodeDefinitions' | 'reloadCurrentWorkflow'
+  }>([
+    { step: 'refresh', failing: 'refreshNodeDefinitions' },
+    { step: 'reload', failing: 'reloadCurrentWorkflow' }
+  ])(
+    'tries again when a restart whose $step failed is delivered again',
+    async ({ failing }) => {
+      const { events, deps } = setup()
+      deps[failing].mockResolvedValueOnce(false)
+      events.emit(toolCall('restart_comfyui', 'success', 'a'))
+      await flush()
+
+      events.emit(toolCall('restart_comfyui', 'success', 'a'))
+      await flush()
+
+      expect(deps[failing]).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('does not rebuild the workflow when the refresh failed', async () => {
     const { events, deps } = setup()
-    deps.refreshNodeDefinitions.mockRejectedValueOnce(new Error('offline'))
-    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    deps.refreshNodeDefinitions.mockResolvedValueOnce(false)
+    events.emit(toolCall('restart_comfyui', 'success'))
     await flush()
-    expect(deps.onFailure).toHaveBeenCalledWith(new Error('offline'))
-
-    events.emit(toolCall('restart_comfyui', 'success', 'a'))
-    await flush()
-
-    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(2)
-    expect(deps.reloadCurrentWorkflow).toHaveBeenCalledOnce()
-  })
-
-  it('rebuilds again when a restart whose workflow reload failed is delivered again', async () => {
-    const { events, deps } = setup()
-    deps.reloadCurrentWorkflow.mockResolvedValueOnce(false)
-    events.emit(toolCall('restart_comfyui', 'success', 'a'))
-    await flush()
-
-    events.emit(toolCall('restart_comfyui', 'success', 'a'))
-    await flush()
-
-    expect(deps.reloadCurrentWorkflow).toHaveBeenCalledTimes(2)
+    expect(deps.reloadCurrentWorkflow).not.toHaveBeenCalled()
   })
 
   it('stops listening when unsubscribed', () => {

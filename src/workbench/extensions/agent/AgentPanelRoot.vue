@@ -237,24 +237,26 @@ const agentIdentity = resolveAgentIdentity({
 onBeforeUnmount(() => agentIdentity.stop())
 
 const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
-  refreshNodeDefinitions: () =>
-    useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
+  refreshNodeDefinitions: async () => {
+    let refreshed = true
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
       errorHandler: (error) => {
-        throw error
+        refreshed = false
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_refreshing_agent_node_catalog',
+          level: 'warning'
+        })
       }
-    }),
+    })
+    return refreshed
+  },
   reloadCurrentWorkflow: async () => {
     const workflow = workflowStore.activeWorkflow
     return workflow === null
       ? true
       : useWorkflowService().openWorkflow(workflow, { force: true })
-  },
-  onFailure: (error) =>
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'failure_refreshing_agent_node_catalog',
-      level: 'warning'
-    })
+  }
 })
 onBeforeUnmount(stopNodeCatalogRefresh)
 
