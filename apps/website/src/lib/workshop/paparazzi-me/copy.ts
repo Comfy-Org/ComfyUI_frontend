@@ -26,10 +26,13 @@ const copy = {
     en: 'Start with an example',
     'zh-CN': '从示例开始'
   },
-  'paparazzi.empty.example': {
-    en: 'Me on the red carpet',
-    'zh-CN': '我走红毯'
+  'paparazzi.examples.red': { en: 'Red hair', 'zh-CN': '红发' },
+  'paparazzi.examples.curly': { en: 'Curly hair', 'zh-CN': '卷发' },
+  'paparazzi.examples.black-hair': {
+    en: 'Long black hair',
+    'zh-CN': '黑色长发'
   },
+  'paparazzi.examples.beard': { en: 'Grey beard', 'zh-CN': '灰色胡子' },
   'paparazzi.star': { en: 'Star', 'zh-CN': '明星' },
   'paparazzi.star.label': { en: 'Star’s name', 'zh-CN': '明星姓名' },
   'paparazzi.star.placeholder': {

@@ -5,7 +5,7 @@ import type { PaparazziMe } from '@/composables/usePaparazziMe'
 import type { Locale } from '@/i18n/translations'
 import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import { outputSize } from '@/lib/workshop/paparazzi-me/setup'
-import { PAPARAZZI_EXAMPLE } from '@/lib/workshop/paparazzi-me/mock-run'
+import { PAPARAZZI_EXAMPLES } from '@/lib/workshop/paparazzi-me/mock-run'
 import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import PaparazziWorkspace from './PaparazziWorkspace.vue'
@@ -43,13 +43,13 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!face"
     :title="pc('paparazzi.empty.title', locale)"
-    :examples="[
-      {
-        id: 'red-carpet',
-        image: PAPARAZZI_EXAMPLE.url,
-        label: pc('paparazzi.empty.example', locale)
-      }
-    ]"
+    :examples="
+      PAPARAZZI_EXAMPLES.map(({ id, image }) => ({
+        id,
+        image: image.url,
+        label: pc(`paparazzi.examples.${id}` as const, locale)
+      }))
+    "
     data-testid="paparazzi-empty"
     @example="paparazzi.useExample"
   />

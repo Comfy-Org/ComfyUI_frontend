@@ -36,7 +36,7 @@ beforeEach(() => {
 async function open(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(PaparazziStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Me on the red carpet' }))
+  await user.click(screen.getByRole('button', { name: 'Red hair' }))
   return user
 }
 
@@ -242,9 +242,7 @@ describe('PaparazziStudio', () => {
     expect(screen.getByTestId('paparazzi-empty')).toBeVisible()
     expect(within(panel()).getByTestId('paparazzi-run')).toBeDisabled()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Me on the red carpet' })
-    )
+    await user.click(screen.getByRole('button', { name: 'Red hair' }))
     await user.click(
       within(panel()).getByRole('button', { name: 'Remove face photo' })
     )

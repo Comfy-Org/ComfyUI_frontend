@@ -13,14 +13,31 @@ export const PAPARAZZI_RUN_MS = 2400
 
 const EXAMPLE_RESULT = '/images/apps/paparazzi-me/example-result.jpg'
 
+const FACES = '/images/apps/paparazzi-me/faces'
+
 export const PAPARAZZI_EXAMPLE = {
-  url: '/images/cinematic-studio/options/shot-close.jpg',
+  url: `${FACES}/red.jpg`,
   name: 'my-face.jpg',
   width: 1280,
   height: 720,
   /** Where her head sits, for the mock composite. */
-  crop: { cx: 0.6, cy: 0.36, size: 0.66 }
+  crop: { cx: 0.5, cy: 0.38, size: 0.6 }
 } as const
+
+const face = (id: string) => ({
+  url: `${FACES}/${id}.jpg`,
+  name: `${id}.jpg`,
+  width: 1280,
+  height: 720
+})
+
+/** The faces offered to start from; only the first has its shot prepared. */
+export const PAPARAZZI_EXAMPLES = [
+  { id: 'red', image: PAPARAZZI_EXAMPLE },
+  { id: 'curly', image: face('curly') },
+  { id: 'black-hair', image: face('black-hair') },
+  { id: 'beard', image: face('beard') }
+] as const
 
 /** The example's own scene: the example star on the red carpet. */
 export const EXAMPLE_SCENE_TOKEN = lookUp(DEFAULT_SETUP.celebrity).candidates[0]

@@ -9,7 +9,7 @@ import type {
 } from '@/lib/workshop/paparazzi-me/contract'
 import { paparazziRequest } from '@/lib/workshop/paparazzi-me/contract'
 import {
-  PAPARAZZI_EXAMPLE,
+  PAPARAZZI_EXAMPLES,
   runPaparazzi
 } from '@/lib/workshop/paparazzi-me/mock-run'
 import { lookUp, searchScenes } from '@/lib/workshop/paparazzi-me/mock-search'
@@ -197,8 +197,9 @@ export function usePaparazziMe() {
     face.value = image
   }
 
-  function useExample() {
-    showFace(PAPARAZZI_EXAMPLE)
+  function useExample(id: string = PAPARAZZI_EXAMPLES[0].id) {
+    const example = PAPARAZZI_EXAMPLES.find((option) => option.id === id)
+    if (example) showFace(example.image)
   }
 
   async function useFaceFile(file: File) {
