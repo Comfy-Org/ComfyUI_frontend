@@ -60,11 +60,11 @@ function useDeploymentUrlLoader(): ReturnType<
       messages: {
         en: {
           deploymentSwitcher: {
-            linkRefused: 'Could not open the deployment this link names',
+            linkRefused: "Couldn't open this deployment",
             linkTimedOut:
-              'Could not open this deployment in time. Try opening the link again.',
+              'This deployment took too long to open. Try the link again.',
             linkWorkspaceRefused:
-              "Could not open the workspace this link names. You're still in {workspaceName}."
+              "Couldn't switch to that workspace. You're still in {workspaceName}."
           }
         }
       }
@@ -96,8 +96,7 @@ const studio = {
   role: 'member' as const
 }
 
-const STAYED =
-  "Could not open the workspace this link names. You're still in Home Base."
+const STAYED = "Couldn't switch to that workspace. You're still in Home Base."
 
 describe('useDeploymentUrlLoader', () => {
   beforeEach(() => {
@@ -245,7 +244,7 @@ describe('useDeploymentUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useToast().error).toHaveBeenCalledWith(
-      'Could not open the deployment this link names',
+      "Couldn't open this deployment",
       {
         description: "deployment dep-gone is not one of this workspace's",
         duration: 8000
@@ -263,7 +262,7 @@ describe('useDeploymentUrlLoader', () => {
     ).resolves.toBe(false)
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useToast().error).toHaveBeenCalledWith(
-      'Could not open this deployment in time. Try opening the link again.',
+      'This deployment took too long to open. Try the link again.',
       { duration: 8000 }
     )
   })
