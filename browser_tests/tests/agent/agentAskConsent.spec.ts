@@ -388,70 +388,77 @@ test.describe(
   }
 )
 
-test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
-  test('the card names the nodes and answers only the ask it shows', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const { panel, send, answers } = await startTurn(page, 'Tidy up.', 'auto')
-    const nodes = panel.getByRole('list', {
-      name: t('agent.deleteApproval.nodes')
-    })
-    const deleteButton = panel.getByRole('button', {
-      name: t('agent.deleteApproval.delete'),
-      exact: true
-    })
-    const keepButton = panel.getByRole('button', {
-      name: t('agent.deleteApproval.keep'),
-      exact: true
-    })
-
-    await test.step('the card lists the nodes it would delete', async () => {
-      send(deleteApprovalFrame(ids, DELETE_ASK_ID))
-      await expect(panel.getByText(DELETE_APPROVAL_PROMPT)).toBeVisible()
-      await expect(nodes.getByRole('listitem')).toHaveText([
-        /Hero sampler\s*#12/,
-        /VAEDecode\s*#13/
-      ])
-      await expect(deleteButton).toBeEnabled()
-      await expect(keepButton).toBeEnabled()
-    })
-
-    await test.step('the click posts once, to that ask, and locks the card', async () => {
-      let release = () => {}
-      const held = new Promise<void>((resolve) => {
-        release = resolve
+test.describe(
+  'Agent delete approval',
+  { tag: ['@cloud', '@agent', '@screenshot'] },
+  () => {
+    test('the card names the nodes and answers only the ask it shows', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      const { panel, send, answers } = await startTurn(page, 'Tidy up.', 'auto')
+      const nodes = panel.getByRole('list', {
+        name: t('agent.deleteApproval.nodes')
       })
-      const isDeleteAnswer = (url: URL) =>
-        decodeURIComponent(url.pathname) === DELETE_PATH
-      await page.route(isDeleteAnswer, async (route) => {
-        await held
-        await route.fallback()
+      const deleteButton = panel.getByRole('button', {
+        name: t('agent.deleteApproval.delete'),
+        exact: true
       })
-      const posted = page.waitForRequest((request) =>
-        isDeleteAnswer(new URL(request.url()))
-      )
-      await deleteButton.click()
-      await posted
-      await expect(deleteButton).toBeDisabled()
-      await expect(keepButton).toBeDisabled()
+      const keepButton = panel.getByRole('button', {
+        name: t('agent.deleteApproval.keep'),
+        exact: true
+      })
 
-      release()
-      await expect.poll(() => answers().length).toBe(1)
-      expect(answers()[0]).toEqual({
-        path: DELETE_PATH,
-        body: { selected: ['delete'] }
+      await test.step('the card lists the nodes it would delete', async () => {
+        send(deleteApprovalFrame(ids, DELETE_ASK_ID))
+        await expect(panel.getByText(DELETE_APPROVAL_PROMPT)).toBeVisible()
+        await expect(nodes.getByRole('listitem')).toHaveText([
+          /Hero sampler\s*#12/,
+          /VAEDecode\s*#13/
+        ])
+        await expect(deleteButton).toBeEnabled()
+        await expect(keepButton).toBeEnabled()
+        await expect(
+          panel.getByRole('group', { name: t('agent.deleteApproval.card') })
+        ).toHaveScreenshot('agent-delete-approval-card.png')
+      })
+
+      await test.step('the click posts once, to that ask, and locks the card', async () => {
+        let release = () => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const isDeleteAnswer = (url: URL) =>
+          decodeURIComponent(url.pathname) === DELETE_PATH
+        await page.route(isDeleteAnswer, async (route) => {
+          await held
+          await route.fallback()
+        })
+        const posted = page.waitForRequest((request) =>
+          isDeleteAnswer(new URL(request.url()))
+        )
+        await deleteButton.click()
+        await posted
+        await expect(deleteButton).toBeDisabled()
+        await expect(keepButton).toBeDisabled()
+
+        release()
+        await expect.poll(() => answers().length).toBe(1)
+        expect(answers()[0]).toEqual({
+          path: DELETE_PATH,
+          body: { selected: ['delete'] }
+        })
+      })
+
+      await test.step('the resolved card reads back the answer', async () => {
+        send(askResolved(['delete'], DELETE_ASK_ID))
+        await expect(
+          panel
+            .getByRole('status')
+            .filter({ hasText: t('agent.deleteApproval.deleted', 2) })
+        ).toBeVisible()
+        await expect(deleteButton).toHaveCount(0)
       })
     })
-
-    await test.step('the resolved card reads back the answer', async () => {
-      send(askResolved(['delete'], DELETE_ASK_ID))
-      await expect(
-        panel
-          .getByRole('status')
-          .filter({ hasText: t('agent.deleteApproval.deleted', 2) })
-      ).toBeVisible()
-      await expect(deleteButton).toHaveCount(0)
-    })
-  })
-})
+  }
+)

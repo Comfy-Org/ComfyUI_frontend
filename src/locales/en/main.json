@@ -5646,6 +5646,7 @@
       "retired": "This question is no longer open here."
     },
     "deleteApproval": {
+      "card": "Delete request from the agent",
       "nodes": "Nodes the agent asked to delete",
       "moreNodes": "{count} more node not listed | {count} more nodes not listed",
       "delete": "Delete",
