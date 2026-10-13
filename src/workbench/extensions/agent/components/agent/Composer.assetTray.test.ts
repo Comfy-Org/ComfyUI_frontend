@@ -272,6 +272,48 @@ describe('composer asset tray', () => {
     ])
   })
 
+  it('explains on hover and focus that invalid videos block Send', async () => {
+    const user = userEvent.setup()
+    const { store, editor, send } = setup()
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    await user.type(editor, 'Keep my draft')
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    expect(sendButton).toHaveAttribute('aria-disabled', 'true')
+    await user.hover(sendButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'bad.mov isn’t a valid video. Remove it to send.'
+    )
+    await user.click(sendButton)
+    await user.click(editor)
+    await user.keyboard('{Enter}')
+    expect(send).not.toHaveBeenCalled()
+    expect(store.draft).toBe('Keep my draft')
+
+    store.addAttachment({
+      id: 'worse',
+      name: 'worse.mp4',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    await user.unhover(sendButton)
+    sendButton.focus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      '2 files aren’t valid videos. Remove them to send.'
+    )
+
+    store.removeAttachment('bad')
+    store.removeAttachment('worse')
+    await waitFor(() => expect(sendButton).not.toHaveAttribute('aria-disabled'))
+    expect(sendButton).toBeEnabled()
+    await user.click(sendButton)
+    expect(send).toHaveBeenCalledExactlyOnceWith('Keep my draft', [])
+  })
+
   it('offers bounded page scrolling without changing the draft or included assets', async () => {
     const resize = trackResizes()
     const { store, editor } = setup()

@@ -364,6 +364,17 @@ const primaryActionVariant = computed(() =>
 const primaryActionDisabled = computed(
   () => !running.value && (workflowSelecting || !composer.canSend.value)
 )
+const sendBlockedReason = computed(() => {
+  const invalid = composer.attachments.value.filter(
+    (item) => item.validationError
+  )
+  if (running.value || invalid.length === 0) return undefined
+  return t(
+    'agent.sendBlockedByInvalidVideo',
+    { name: invalid[0].name, count: invalid.length },
+    invalid.length
+  )
+})
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
 )
@@ -633,18 +644,21 @@ defineExpose({
         <div class="flex items-center gap-1">
           <RunModePopover />
           <Button
-            :tooltip="primaryActionTooltip"
+            :tooltip="sendBlockedReason ?? primaryActionTooltip"
             type="button"
             :variant="primaryActionVariant"
             size="icon"
             :aria-label="primaryActionTooltip"
-            :disabled="primaryActionDisabled"
+            :aria-disabled="!!sendBlockedReason || undefined"
+            :aria-description="sendBlockedReason"
+            :disabled="primaryActionDisabled && !sendBlockedReason"
+            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-base-foreground"
             @click="onPrimaryAction"
           >
             <i-lucide:square v-if="running" class="size-4" />
             <i-lucide:arrow-up v-else class="size-4" />
             <template #tooltip>
-              {{ primaryActionTooltip }}
+              {{ sendBlockedReason ?? primaryActionTooltip }}
               <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>

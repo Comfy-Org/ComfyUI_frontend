@@ -3779,14 +3779,21 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeVisible()
     expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
     await userEvent.type(screen.getByRole('textbox'), 'Describe these files')
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
     await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(fetchRequests(/\/messages$/)).toEqual([])
     expect(useToast().toasts).toEqual([])
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove renamed.mp4' })
     )
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Send' })).not.toHaveAttribute(
+      'aria-disabled'
+    )
     expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
   })
 

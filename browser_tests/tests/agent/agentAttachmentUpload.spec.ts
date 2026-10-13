@@ -87,6 +87,15 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
       })
     ).toBeVisible()
     await expect(agentPanel.sendButton).toBeDisabled()
+    await agentPanel.sendButton.hover()
+    await expect(
+      comfyPage.page.getByRole('tooltip', {
+        name: enMessages.agent.sendBlockedByInvalidVideo
+          .split(' | ')[0]
+          .replace('{name}', 'renamed.mp4'),
+        exact: true
+      })
+    ).toBeVisible()
     await agentPanel.composer.press('Enter')
     await expect(agentPanel.composer).toHaveText('Describe this video')
     await agentPanel.closeButton.click()

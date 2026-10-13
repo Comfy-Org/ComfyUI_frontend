@@ -5741,6 +5741,7 @@
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
     "send": "Send",
+    "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send. | {count} files aren’t valid videos. Remove them to send.",
     "stop": "Stop",
     "updatingGraph": "The agent is updating the graph",
     "editWhileWorking": "You can keep editing while it works",
