@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { useMounted } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -13,6 +14,7 @@ const { locale = 'en', beforeAfter } = defineProps<{
   locale?: Locale
 }>()
 
+const isMounted = useMounted()
 const activeId = ref(beforeAfter.tabs[0]?.id ?? '')
 const activeTab = computed(
   () =>
@@ -72,12 +74,24 @@ const activeTab = computed(
           class="focus-visible:outline-none"
         >
           <VideoCompareSlider
+            v-if="'beforeSrc' in tab"
             :before-src="tab.beforeSrc"
             :after-src="tab.afterSrc"
             :before-label="t('modelLaunch.beforeAfter.before', locale)"
             :after-label="t('modelLaunch.beforeAfter.after', locale)"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel', locale)"
             class="rounded-4.5xl"
+          />
+          <video
+            v-else
+            data-testid="video-single"
+            :src="isMounted ? tab.src : undefined"
+            autoplay
+            loop
+            muted
+            playsinline
+            aria-hidden="true"
+            class="aspect-video w-full rounded-4.5xl bg-primary-comfy-ink object-cover"
           />
         </TabsContent>
       </div>

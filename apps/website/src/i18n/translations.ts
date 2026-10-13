@@ -7888,8 +7888,8 @@ Enterprise`
     'zh-CN': '在 NVIDIA RTX 上创作'
   },
   'nvidiaRtx.steps.heading': {
-    en: 'Run it locally in three steps',
-    'zh-CN': '三步在本地运行'
+    en: 'Prefer running locally?',
+    'zh-CN': '更喜欢在本地运行？'
   },
   'nvidiaRtx.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'nvidiaRtx.steps.primaryCta': {

@@ -30,6 +30,15 @@ function beforeAfterWith(chinese: boolean): ModelLaunchBeforeAfter {
         },
         beforeSrc: 'https://media.comfy.org/b-before.webm',
         afterSrc: 'https://media.comfy.org/b-after.webm'
+      },
+      {
+        id: 'side-by-side',
+        label: { en: 'Side by side', 'zh-CN': chinese ? '并排' : '' },
+        caption: {
+          en: 'Both states in one frame.',
+          'zh-CN': chinese ? '两种状态同框。' : ''
+        },
+        src: 'https://media.comfy.org/c-side-by-side.webm'
       }
     ]
   }
@@ -80,6 +89,23 @@ describe('ModelLaunchBeforeAfterSection', () => {
         'https://media.comfy.org/b-before.webm',
         'https://media.comfy.org/b-after.webm'
       ])
+    )
+  })
+
+  it('plays a single clip without the slider when a tab has one src', async () => {
+    const user = userEvent.setup()
+    render(ModelLaunchBeforeAfterSection, { props: { beforeAfter } })
+
+    await user.click(screen.getByRole('tab', { name: 'Side by side' }))
+    await screen.findByText('Both states in one frame.')
+
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.queryByTestId('video-compare-before')).toBeNull()
+    await waitFor(() =>
+      expect(screen.getByTestId('video-single')).toHaveAttribute(
+        'src',
+        'https://media.comfy.org/c-side-by-side.webm'
+      )
     )
   })
 

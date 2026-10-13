@@ -54,20 +54,22 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('gives every before/after tab a unique id, English copy, and a clip pair', () => {
+  it('gives every before/after tab a unique id, English copy, and playable clips', () => {
     const tabs = page.beforeAfter?.tabs ?? []
     // A page that defines the section but lists no tabs would render a
     // heading over an empty box.
     expect(page.beforeAfter === undefined || tabs.length > 0).toBe(true)
     expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
 
-    const offenders = tabs.filter(
-      (tab) =>
+    const offenders = tabs.filter((tab) => {
+      const sources =
+        'beforeSrc' in tab ? [tab.beforeSrc, tab.afterSrc] : [tab.src]
+      return (
         !tab.label.en ||
         !tab.caption.en ||
-        !VIDEO_URL.test(tab.beforeSrc) ||
-        !VIDEO_URL.test(tab.afterSrc)
-    )
+        !sources.every((src) => VIDEO_URL.test(src))
+      )
+    })
 
     expect(offenders.map((tab) => tab.id)).toEqual([])
   })
