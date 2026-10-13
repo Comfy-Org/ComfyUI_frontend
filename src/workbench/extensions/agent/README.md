@@ -12,27 +12,29 @@ The panel speaks one contract on the cloud and on the local agent:
 
 - **Events socket, `/api/agent/events`** (`services/agent/agentEventSource.ts`).
   Agent events and CRDT doc frames share it in both directions; ComfyUI's
-  `/ws` carries neither. Its URL comes from `api.apiURL`, and the caller's
-  credential rides as `?token=`, read again on every connect. Reconnects back
-  off with jitter until a socket delivers a frame.
+  `/ws` carries neither. Its URL comes from `api.apiURL`. In the cloud it
+  authenticates exactly as `/ws` does; elsewhere the signed-in user's
+  credential rides as `?token=`. Both are read again on every connect.
+  Reconnects back off with jitter until a socket delivers a frame.
 - **Identity, `GET /api/agent/identity`** (`services/agent/agentIdentity.ts`).
   Canvas ops carry `human:<user_id>:<tab>` with the id the backend reports,
   so the follower stays inactive until it answers. A failed lookup retries
   with backoff, and at once when the socket connects again.
-- **Saved workflows, `GET /api/workflows`**. A saved tab the index does not
-  name is refused with a retryable notice rather than sent without an id.
-- **Credential** (`services/agent/agentAuth.ts`). Agent requests carry the
-  signed-in user's auth header, or the stored API key when no one is signed in.
-  A signed-out send opens the sign-in dialog, except in a development
-  standalone build, whose dev proxy can supply a credential. Signing out or switching account
-  (or API key) reconnects the socket and looks the identity up again.
+- **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
+  saved-workflow index on every backend.
+- **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
+  authenticate through `api.fetchApi` like every other request. Elsewhere they
+  carry the signed-in user's auth header, or the stored API key when no one is
+  signed in. A signed-out send opens the sign-in dialog, unless the dev proxy
+  injects `DEV_AGENT_COMFY_TOKEN`. Signing out or switching account (or API
+  key) reconnects the socket and looks the identity up again.
 
 ## Activation and consent
 
 The dock is visible only when the `agent-in-app-experience` feature flag is
 enabled, the panel has an open intent, and the current user and workspace have
-accepted Agent consent. Development mode and the standalone agent build
-(`VITE_AGENT_STANDALONE`) enable the feature flag; consent is still required. A restored open intent cannot bypass consent.
+accepted Agent consent. Development mode enables the feature flag; consent is
+still required. A restored open intent cannot bypass consent.
 
 On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under

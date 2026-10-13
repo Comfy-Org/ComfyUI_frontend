@@ -320,20 +320,21 @@ described above is not needed:
 
 - **One socket.** Agent events and document frames share
   `/api/agent/events`. Its path comes from `api.apiURL`, as every agent REST
-  path does. The credential is sent as `?token=` because a browser cannot set
-  WebSocket headers. The transport has no distribution branch.
+  path does. The transport has no distribution branch.
 - **Identity from the backend.** Ops carry `human:<user_id>:<tab>` with the id
   from `GET /api/agent/identity`. The Firebase uid is not the backend user id
   for identity-mapped accounts.
-- **Credential.** Agent REST requests carry the user's own auth header
-  (`getUserAuthHeader`), the same hand-off `queuePrompt` makes for partner
-  nodes, because a local build's `fetchApi` attaches none. In the cloud,
-  `fetchApi` still applies its workspace credential. The socket token comes
-  from `getAuthHeader()`.
-- **Development exception.** A signed-out send in a development standalone
-  build skips the sign-in dialog, because the dev proxy can supply a
-  credential (`DEV_AGENT_COMFY_TOKEN`). This is the only product-code branch
-  on development mode.
+- **Credential, one `isCloud` branch.** In the cloud, agent requests
+  authenticate exactly as `fetchApi` and `/ws` do: the socket takes
+  `api.addSocketAuth` params (the session cookie with `workspace_id`, or the
+  cloud token). Ingest prefers a header credential over the session cookie, so
+  adding the user's own header there would move a request out of its
+  workspace. Off-cloud, `fetchApi` attaches nothing, so REST requests carry the
+  user's auth header (`getUserAuthHeader`), the hand-off `queuePrompt` makes for
+  partner nodes, and the socket carries the same credential as `?token=`.
+- **Development exception.** A signed-out send skips the sign-in dialog only
+  when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`, which Vite exposes as
+  `VITE_DEV_AGENT_PROXY_CREDENTIAL`.
 
 Rejected: keeping `/ws` in the cloud and adding a second socket for the local
 agent. That would keep two transports and a distribution branch in the
