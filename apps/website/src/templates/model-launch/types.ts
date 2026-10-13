@@ -218,7 +218,7 @@ interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
 
 // One clip that already shows both states side by side, e.g. the RTX Video
 // effects on /nvidia-rtx, with the effects it covers listed under the intro.
-interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
+export interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
   src: string
   features: readonly LocalizedText[]
   // A text link under the features, e.g. into the Comfy Cloud workflow.

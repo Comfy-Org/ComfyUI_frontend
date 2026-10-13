@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { useMounted } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchBeforeAfter } from './types'
 
-import CheckIcon from '../../components/icons/CheckIcon.vue'
 import VideoCompareSlider from '../../components/common/VideoCompareSlider.vue'
+import ModelLaunchClipShowcase from './ModelLaunchClipShowcase.vue'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', beforeAfter } = defineProps<{
@@ -15,7 +14,6 @@ const { locale = 'en', beforeAfter } = defineProps<{
   locale?: Locale
 }>()
 
-const isMounted = useMounted()
 const tabs = computed(() => ('tabs' in beforeAfter ? beforeAfter.tabs : []))
 const activeId = ref(tabs.value[0]?.id ?? '')
 const activeTab = computed(
@@ -25,60 +23,11 @@ const activeTab = computed(
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
-    <div
+    <ModelLaunchClipShowcase
       v-if="'src' in beforeAfter"
-      class="flex flex-col items-stretch gap-10 rounded-5xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8"
-    >
-      <div class="flex min-w-0 flex-1 flex-col p-6">
-        <h2 class="text-3xl font-light text-primary-comfy-canvas lg:text-4xl">
-          {{ t(beforeAfter.headingKey, locale) }}
-        </h2>
-        <p
-          v-if="beforeAfter.bodyKey"
-          class="mt-6 text-sm text-primary-comfy-canvas/70"
-        >
-          {{ t(beforeAfter.bodyKey, locale) }}
-        </p>
-        <ul class="mt-8 space-y-3">
-          <li
-            v-for="feature in beforeAfter.features"
-            :key="feature.en"
-            class="flex items-start gap-2.5 text-sm/relaxed font-light text-primary-comfy-canvas"
-          >
-            <CheckIcon
-              class="mt-1 size-4 shrink-0 text-primary-comfy-yellow"
-              aria-hidden="true"
-            />
-            {{ feature[locale] || feature.en }}
-          </li>
-        </ul>
-        <a
-          v-if="beforeAfter.cta"
-          :href="beforeAfter.cta.href"
-          :target="beforeAfter.cta.target"
-          :rel="
-            beforeAfter.cta.target === '_blank'
-              ? 'noopener noreferrer'
-              : undefined
-          "
-          class="mt-8 self-start rounded-sm text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        >
-          {{ t(beforeAfter.cta.labelKey, locale) }}
-        </a>
-      </div>
-      <div class="w-full min-w-0 flex-1">
-        <video
-          data-testid="video-single"
-          :src="isMounted ? beforeAfter.src : undefined"
-          autoplay
-          loop
-          muted
-          playsinline
-          aria-hidden="true"
-          class="aspect-video w-full rounded-4.5xl bg-primary-comfy-ink object-cover"
-        />
-      </div>
-    </div>
+      :showcase="beforeAfter"
+      :locale
+    />
     <TabsRoot
       v-else
       v-model="activeId"
