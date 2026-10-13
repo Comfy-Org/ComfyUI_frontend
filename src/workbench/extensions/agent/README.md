@@ -91,6 +91,7 @@ each update. Human edits are minted into the shared op vocabulary and sent as
 While the follower holds the bound document, a turn sends no draft: the
 document is the source of truth and an unversioned draft would overwrite it.
 Once the follower gives up on that document (refused for good, every subscribe
-unanswered, or unreadable), or the identity lookup is rejected or unavailable,
-turns seed the draft again; a reconnect retries the document and withholds it until that
-attempt settles.
+unanswered, or unreadable), or the identity lookup is rejected, turns seed the
+draft again. An identity lookup that is still retrying, even at its backoff cap,
+keeps withholding the draft. A reconnect retries the document and withholds it
+until that attempt settles.

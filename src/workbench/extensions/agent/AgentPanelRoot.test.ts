@@ -10251,6 +10251,19 @@ describe('AgentPanelRoot workflow binding', () => {
       return bodies
     }
 
+    function subscribedWorkflowIds(): unknown[] {
+      return socketSend.mock.calls
+        .map(
+          ([frame]) =>
+            JSON.parse(String(frame)) as {
+              type: string
+              data: { workflow_id?: unknown }
+            }
+        )
+        .filter(({ type }) => type === 'doc_subscribe')
+        .map(({ data }) => data.workflow_id)
+    }
+
     it('seeds the draft again once the follower has given up on a refused document', async () => {
       const bodies = await bindAndSettle()
       ws.emit('doc_subscribed', {
@@ -10299,30 +10312,58 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[1]).not.toHaveProperty('draft')
     })
 
-    it.for<{ outcome: string; state: AgentIdentityState }>([
-      { outcome: 'rejected for good', state: { status: 'rejected' } },
-      {
-        outcome: 'unavailable past its backoff cap',
-        state: { status: 'unavailable' }
-      }
-    ])(
-      'seeds the draft again once the agent identity lookup is $outcome',
-      async ({ state }) => {
-        vi.mocked(resolveAgentIdentity).mockReturnValue({
-          state: ref(state),
-          reset: vi.fn(),
-          stop: () => {}
-        })
-        const bodies = await bindAndSettle()
+    it('withholds the draft while the agent identity lookup is unavailable and still retrying', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state: ref<AgentIdentityState>({ status: 'unavailable' }),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
 
-        await sendFromComposer('second message')
+      await sendFromComposer('second message')
 
-        expect(bodies[1]).toMatchObject({
-          workflow_id: 'wf-42',
-          draft: { content: { id: 'wf-42' } }
-        })
-      }
-    )
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('starts the follower without seeding a draft once an unavailable identity lookup resolves', async () => {
+      const state = ref<AgentIdentityState>({ status: 'unavailable' })
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state,
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+      await sendFromComposer('second message')
+      ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+      expect(subscribedWorkflowIds()).toEqual([])
+
+      state.value = { status: 'resolved', userId: 'account-a' }
+
+      await vi.waitFor(() => expect(subscribedWorkflowIds()).toEqual(['wf-42']))
+      await sendFromComposer('third message')
+      expect(bodies.slice(1)).toEqual([
+        expect.not.objectContaining({ draft: expect.anything() }),
+        expect.not.objectContaining({ draft: expect.anything() })
+      ])
+    })
+
+    it('seeds the draft again once the agent identity lookup is rejected', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state: ref<AgentIdentityState>({ status: 'rejected' }),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
+    })
   })
 
   it('keeps the editable target when viewing an unbound tab without current_tab fallback', async () => {
