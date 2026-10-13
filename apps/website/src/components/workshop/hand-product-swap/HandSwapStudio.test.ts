@@ -253,4 +253,15 @@ describe('HandSwapStudio', () => {
       within(panel()).queryByRole('radiogroup', { name: 'Product' })
     ).toBeNull()
   })
+
+  it('offers four hand photos to start from', async () => {
+    const user = userEvent.setup()
+    render(HandSwapStudio)
+    const empty = within(screen.getByTestId('swap-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'Hand holding a jar' }))
+
+    expect(within(panel()).getByText('hand-holding-jar.jpg')).toBeVisible()
+  })
 })

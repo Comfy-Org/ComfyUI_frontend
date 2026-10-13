@@ -1,7 +1,7 @@
 import { loadImage } from '@/lib/workshop/load-image'
 import type { HandSwapRequest } from './contract'
 import { clearWhiteBackdrop } from './cutout'
-import { HAND_EXAMPLE } from './examples'
+import { exampleRegion } from './examples'
 import { GUESSED_GRIP, gripRect } from './placement'
 
 const MAX_EDGE = 2048
@@ -61,7 +61,7 @@ export async function renderSwapImage(
   const spot = gripRect(
     product.naturalWidth,
     product.naturalHeight,
-    request.hand === HAND_EXAMPLE.url ? HAND_EXAMPLE.region : GUESSED_GRIP,
+    exampleRegion(request.hand) ?? GUESSED_GRIP,
     width / height
   )
   const x = spot.x * width

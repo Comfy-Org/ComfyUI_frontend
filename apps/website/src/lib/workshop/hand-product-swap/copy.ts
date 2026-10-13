@@ -16,7 +16,10 @@ const copy = {
     'zh-CN': '从示例开始'
   },
   'swap.empty.upload': { en: 'Upload hand photo', 'zh-CN': '上传手部照片' },
-  'swap.empty.example': { en: 'Hand holding a can', 'zh-CN': '手持罐子' },
+  'swap.examples.can': { en: 'Hand holding a can', 'zh-CN': '手持罐子' },
+  'swap.examples.bottle': { en: 'Hand holding a bottle', 'zh-CN': '手持瓶子' },
+  'swap.examples.jar': { en: 'Hand holding a jar', 'zh-CN': '手持罐装面霜' },
+  'swap.examples.box': { en: 'Hand holding a box', 'zh-CN': '手持盒子' },
   'swap.hint': {
     en: 'Same hand & grip, new product',
     'zh-CN': '同样的手和握姿，换上新产品'

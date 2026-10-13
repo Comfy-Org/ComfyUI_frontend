@@ -14,7 +14,7 @@ import type {
 } from '@/lib/workshop/hand-product-swap/examples'
 import {
   EXAMPLE_PRODUCTS,
-  HAND_EXAMPLE,
+  HAND_EXAMPLES,
   OWN_PRODUCT_ID
 } from '@/lib/workshop/hand-product-swap/examples'
 import * as history from '@/lib/workshop/hand-product-swap/history'
@@ -108,9 +108,11 @@ export function useHandProductSwap(locale: Locale = 'en') {
     comparing.value = false
   }
 
-  function useExample() {
+  function useExample(id: string = HAND_EXAMPLES[0].id) {
+    const example = HAND_EXAMPLES.find((option) => option.id === id)
+    if (!example) return
     pendingUrl = undefined
-    const { url, name, width, height } = HAND_EXAMPLE
+    const { url, name, width, height } = example.image
     reset({ url, name, width, height })
   }
 

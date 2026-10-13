@@ -25,6 +25,51 @@ export const HAND_EXAMPLE = {
   region: { x: 0.4333, y: 0.279, w: 0.1833, h: 0.4688 } satisfies Rect
 } as const
 
+const hand = (id: string, name: string, region: Rect) => ({
+  url: `${DIR}/examples/${id}.jpg`,
+  name,
+  width: 1200,
+  height: 905,
+  region
+})
+
+/** The hand photos offered to start from, each with where its plain item sits. */
+export const HAND_EXAMPLES = [
+  { id: 'can', image: HAND_EXAMPLE },
+  {
+    id: 'bottle',
+    image: hand('bottle', 'hand-holding-bottle.jpg', {
+      x: 0.35,
+      y: 0.12,
+      w: 0.31,
+      h: 0.76
+    })
+  },
+  {
+    id: 'jar',
+    image: hand('jar', 'hand-holding-jar.jpg', {
+      x: 0.33,
+      y: 0.28,
+      w: 0.33,
+      h: 0.38
+    })
+  },
+  {
+    id: 'box',
+    image: hand('box', 'hand-holding-box.jpg', {
+      x: 0.33,
+      y: 0.26,
+      w: 0.36,
+      h: 0.51
+    })
+  }
+] as const
+
+/** Where the plain item sits in an example hand photo, if it is one. */
+export function exampleRegion(url: string): Rect | undefined {
+  return HAND_EXAMPLES.find(({ image }) => image.url === url)?.image.region
+}
+
 export const EXAMPLE_PRODUCTS = [
   {
     id: 'can',

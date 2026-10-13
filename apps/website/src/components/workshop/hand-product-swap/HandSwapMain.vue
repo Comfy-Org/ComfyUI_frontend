@@ -4,7 +4,10 @@ import { computed } from 'vue'
 import type { HandProductSwap } from '@/composables/useHandProductSwap'
 import type { Locale } from '@/i18n/translations'
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
-import { HAND_EXAMPLE } from '@/lib/workshop/hand-product-swap/examples'
+import {
+  HAND_EXAMPLE,
+  HAND_EXAMPLES
+} from '@/lib/workshop/hand-product-swap/examples'
 import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import HandSwapWorkspace from './HandSwapWorkspace.vue'
@@ -31,13 +34,13 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!hand"
     :title="hc('swap.empty.title', locale)"
-    :examples="[
-      {
-        id: 'can',
-        image: HAND_EXAMPLE.url,
-        label: hc('swap.empty.example', locale)
-      }
-    ]"
+    :examples="
+      HAND_EXAMPLES.map(({ id, image }) => ({
+        id,
+        image: image.url,
+        label: hc(`swap.examples.${id}` as const, locale)
+      }))
+    "
     data-testid="swap-empty"
     @example="swap.useExample"
   />
