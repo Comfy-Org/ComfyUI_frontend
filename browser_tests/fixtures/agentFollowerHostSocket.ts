@@ -64,7 +64,6 @@ export interface ClientDocFrame {
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
-  /** 1 for the panel's first agent socket, 2 after one reconnect, and so on. */
   connection: number
 }
 
@@ -108,7 +107,6 @@ function parseClientDocFrame(
   }
 }
 
-/** Routed agent socket host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private refuseReason: string | null = null
   private refusalsLeft = 0
@@ -171,13 +169,11 @@ export class AgentFollowerHostSocket {
     this.socket.send(JSON.stringify(frame))
   }
 
-  /** Emits a ComfyUI execution frame on ComfyUI's `/ws`. */
   sendExecution(frame: ExecutionHostFrame): void {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     this.comfySocket.send(JSON.stringify(frame))
   }
 
-  /** Emits a binary ComfyUI execution frame on ComfyUI's `/ws`. */
   sendExecutionBinary(frame: Buffer): void {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     this.comfySocket.send(frame)
@@ -285,7 +281,6 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
-  /** Replaces the default subscribe answer; an empty list leaves it unanswered. */
   answerSubscribesWith(answer: (stateVector: string) => HostFrame[]): void {
     this.subscribeAnswer = answer
   }
@@ -366,7 +361,6 @@ export class AgentFollowerHostSocket {
     return this.subscribes
   }
 
-  /** Agent sockets the panel has opened, reconnects included. */
   connectionCount(): number {
     return this.connections
   }

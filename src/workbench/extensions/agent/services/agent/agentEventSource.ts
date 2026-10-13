@@ -1,7 +1,6 @@
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
 export interface AgentEventSocket extends AgentEventSource {
-  /** `false` while the socket is not OPEN, so a caller retries rather than aborts. */
   send(frame: string): boolean
   reconnect(): void
   onStatus(listener: (live: boolean) => void): () => void
@@ -12,7 +11,6 @@ interface AgentEventSourceOptions {
   getAuthParams: () => Promise<URLSearchParams>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
-  /** Jitter source in [0, 1); the delay is scaled into [50%, 100%]. */
   random?: () => number
 }
 
@@ -81,8 +79,10 @@ export function createAgentEventSource({
   function open(url: string): void {
     const current = new WebSocket(url)
     socket = current
+    let openedAt: number | null = null
     current.addEventListener('open', () => {
       if (socket !== current) return
+      openedAt = Date.now()
       notifyStatus(true)
     })
     current.addEventListener('message', (event) => {
@@ -103,6 +103,8 @@ export function createAgentEventSource({
     })
     current.addEventListener('close', () => {
       if (socket !== current) return
+      if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs)
+        failedConnects = 0
       socket = null
       notifyStatus(false)
       scheduleReconnect()

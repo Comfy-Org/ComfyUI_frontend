@@ -853,7 +853,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   bridge.addEventListener('doc_reseed_result', onReseedResult)
-  const stopTransportConnected = transport.onConnected(onSocketOpen)
+  const stopTransportConnected = transport.onSocketOpen(onSocketOpen)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null

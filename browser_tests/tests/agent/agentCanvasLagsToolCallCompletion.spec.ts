@@ -6,7 +6,6 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
@@ -14,7 +13,6 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -123,7 +121,6 @@ async function driveThroughToolCallDone(
   const vueNodes = new VueNodeHelpers(page)
 
   const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
-  const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
   await page.route('**/api/agent/threads', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
@@ -213,7 +210,7 @@ async function driveThroughToolCallDone(
     panel.getByText('Add a note to the canvas.').first()
   ).toBeVisible()
 
-  send({
+  hostSocket.send({
     type: 'agent_active_tab',
     data: {
       workflow_id: WORKFLOW_ID,
@@ -254,12 +251,12 @@ async function driveThroughToolCallDone(
   // while the tool is still (from the chat frames' perspective) running --
   // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
   // for notifyCanvasCaughtUp()'s edge triggering.
-  if (order === 'docUpdateBeforeToolCall') send(update)
+  if (order === 'docUpdateBeforeToolCall') hostSocket.send(update)
 
   // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
   // flips this tool part `done` the instant this frame is read, purely from
   // `status`, with nothing checked on the CRDT doc side (see file header).
-  send({
+  hostSocket.send({
     type: 'agent_tool_call',
     data: {
       tool_call_id: 'call-add-node',
@@ -270,7 +267,7 @@ async function driveThroughToolCallDone(
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_delta',
     data: {
       delta: 'Added a note to the canvas.',
@@ -278,7 +275,7 @@ async function driveThroughToolCallDone(
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_done',
     data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
   })
@@ -294,7 +291,7 @@ async function driveThroughToolCallDone(
     // A no-op once `order` already sent it above -- resending the same
     // update twice is not part of what either ordering means to exercise.
     sendDelayedDocUpdate: () => {
-      if (order !== 'docUpdateBeforeToolCall') send(update)
+      if (order !== 'docUpdateBeforeToolCall') hostSocket.send(update)
     }
   }
 }

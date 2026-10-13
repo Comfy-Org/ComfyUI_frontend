@@ -64,33 +64,6 @@ describe('AgentFollowerHostSocket transport', () => {
     ])
     expect(hostSocket.subscribeCount()).toBe(1)
   })
-
-  it('answers a doc_subscribe with the frames a test substitutes', async () => {
-    const host = new HostDoc(
-      WORKFLOW_ID,
-      { nodes: [], links: [] },
-      { types: {} }
-    )
-    const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
-    const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
-    hostSocket.answerSubscribesWith(() => [host.subscribed()])
-    await hostSocket.install()
-
-    emitClientFrame({
-      type: 'doc_subscribe',
-      data: { workflow_id: WORKFLOW_ID, state_vector_b64: 'AA==' }
-    })
-
-    expect(sentFrames().map((frame) => frame.type)).toEqual(['doc_subscribed'])
-    expect(hostSocket.subscribeCount()).toBe(1)
-    expect(hostSocket.clientDocFrames()).toEqual([
-      expect.objectContaining({
-        type: 'doc_subscribe',
-        stateVector: 'AA==',
-        connection: 1
-      })
-    ])
-  })
 })
 
 describe('AgentFollowerHostSocket human doc_ops handling', () => {

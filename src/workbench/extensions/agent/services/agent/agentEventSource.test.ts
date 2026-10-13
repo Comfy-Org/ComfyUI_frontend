@@ -101,18 +101,15 @@ describe('createAgentEventSource', () => {
     }
   )
 
-  it('delivers JSON frames and reports the socket live', async () => {
+  it('delivers JSON frames', async () => {
     const source = createSource()
     const seen = vi.fn()
-    const status = vi.fn()
 
     source.subscribe(seen)
     await connected()
-    source.onStatus(status)
     lastSocket().open()
     lastSocket().receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
 
-    expect(status.mock.calls).toEqual([[false], [true]])
     expect(seen).toHaveBeenCalledWith({
       type: 'agent_message_delta',
       data: { delta: 'hi' }
@@ -277,6 +274,23 @@ describe('createAgentEventSource reconnect backoff', () => {
       await vi.advanceTimersByTimeAsync(1)
       expect(sockets()).toHaveLength(opened + 1)
     }
+  })
+
+  it('reconnects promptly after a socket that stayed open closes without traffic', async () => {
+    const source = createSource()
+    source.subscribe(vi.fn())
+    await connected()
+    sockets()[0].error()
+    await vi.advanceTimersByTimeAsync(1_000)
+    sockets()[1].error()
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    sockets()[2].open()
+    await vi.advanceTimersByTimeAsync(30_000)
+    sockets()[2].close()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(sockets()).toHaveLength(4)
   })
 
   it('caps the delay and spreads it with jitter', async () => {

@@ -5,8 +5,7 @@ import type { DocFrameTransport } from './docFrameClient'
 const INBOUND_DOC_FRAMES = new Set<string>(SERVER_DOC_FRAME_TYPES)
 
 export interface AgentDocFrameTransport extends DocFrameTransport {
-  /** Fires on every open of the shared socket, when a dropped subscribe can go out again. */
-  onConnected(listener: () => void): () => void
+  onSocketOpen(listener: () => void): () => void
   destroy(): void
 }
 
@@ -38,7 +37,7 @@ export function createAgentDocFrameTransport(
     removeEventListener(type, listener) {
       target.removeEventListener(type, listener)
     },
-    onConnected(listener) {
+    onSocketOpen(listener) {
       return source.onStatus((live) => {
         if (live) listener()
       })

@@ -7,7 +7,7 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type {
   AuthRejectionStatus,
@@ -713,7 +713,7 @@ export function createAgentRestClient() {
       'refresh_credential',
       '/agent/threads?limit=1',
       { method: 'GET' },
-      zAgentThreads
+      z.unknown()
     )
   }
 

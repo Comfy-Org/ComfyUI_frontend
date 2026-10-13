@@ -31,7 +31,6 @@ function globalSettingsUrl(key?: GlobalSettingKey): string {
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
-/** Ingest takes a workspace token; the Comfy API rejects one. */
 export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
   const authStore = useAuthStore()
   return isCloud

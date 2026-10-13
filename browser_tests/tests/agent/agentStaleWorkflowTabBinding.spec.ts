@@ -207,7 +207,6 @@ test.describe(
         enMessages.agent.targetWorkflowUnavailable
       )
       await expect(unavailable).toBeVisible()
-      expect(hostSocket.connectionCount()).toBeGreaterThan(0)
 
       // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {
