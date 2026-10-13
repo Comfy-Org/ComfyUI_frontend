@@ -1,16 +1,26 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { authCredentialOf } from '@/platform/auth/authCredential'
+import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthCredential } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader } from '@/types/authTypes'
 
 interface AgentRequestInit extends RequestInit {
   onAuthCredential?: (credential: AuthCredential) => void
 }
 
+function credentialValue(header: AuthHeader): string {
+  return 'X-API-KEY' in header
+    ? header['X-API-KEY']
+    : header.Authorization.slice('Bearer '.length)
+}
+
+/** Off-cloud only: in the cloud `fetchApi` already authenticates the request. */
 export async function withAgentAuth<T extends AgentRequestInit>(
   init: T
 ): Promise<T & RequestInit> {
+  if (isCloud) return init
   const header = await useAuthStore().getUserAuthHeader()
   if (!header) return init
   const headers = new Headers(init.headers)
@@ -20,17 +30,20 @@ export async function withAgentAuth<T extends AgentRequestInit>(
     ...init,
     headers,
     redirect: 'error',
-    onAuthCredential: (credential) =>
-      init.onAuthCredential?.(credential === 'none' ? attached : credential)
+    onAuthCredential: () => init.onAuthCredential?.(attached)
   }
 }
 
-export async function agentSocketToken(): Promise<string | undefined> {
-  const header = await useAuthStore().getAuthHeader()
-  if (!header) return undefined
-  return 'X-API-KEY' in header
-    ? header['X-API-KEY']
-    : header.Authorization.slice('Bearer '.length)
+/** The agent socket authenticates as ComfyUI's `/ws` does in the cloud. */
+export async function agentSocketParams(): Promise<URLSearchParams> {
+  const params = new URLSearchParams()
+  if (isCloud) {
+    await api.addSocketAuth(params)
+    return params
+  }
+  const header = await useAuthStore().getUserAuthHeader()
+  if (header) params.set('token', credentialValue(header))
+  return params
 }
 
 export function hasAgentCredential(): boolean {
@@ -43,7 +56,7 @@ export function hasAgentCredential(): boolean {
 function devProxySuppliesCredential(): boolean {
   return (
     import.meta.env.MODE === 'development' &&
-    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL === 'true'
   )
 }
 

@@ -56,17 +56,21 @@ function lastSocket(): FakeSocket {
   return socket
 }
 
-function createSource(
-  options: {
-    endpoint?: string
-    getToken?: () => Promise<string | undefined>
-    random?: () => number
-    maxReconnectDelayMs?: number
-  } = {}
-) {
+function createSource({
+  getToken = async () => undefined,
+  ...options
+}: {
+  endpoint?: string
+  getToken?: () => Promise<string | undefined>
+  random?: () => number
+  maxReconnectDelayMs?: number
+} = {}) {
   return createAgentEventSource({
     endpoint: '/api/agent/events',
-    getToken: async () => undefined,
+    getAuthParams: async () => {
+      const token = await getToken()
+      return new URLSearchParams(token === undefined ? {} : { token })
+    },
     random: () => 1,
     ...options
   })
@@ -365,6 +369,20 @@ describe('createAgentEventSource token', () => {
     await connected()
 
     expect(new URL(lastSocket().url).searchParams.has('token')).toBe(false)
+  })
+
+  it('carries every auth param onto the socket URL', async () => {
+    const source = createAgentEventSource({
+      endpoint: '/api/agent/events',
+      getAuthParams: async () => new URLSearchParams({ workspace_id: 'ws-1' })
+    })
+
+    source.subscribe(vi.fn())
+    await connected()
+
+    const params = new URL(lastSocket().url).searchParams
+    expect(params.get('workspace_id')).toBe('ws-1')
+    expect(params.has('token')).toBe(false)
   })
 
   it('opens nothing when the last listener leaves while the token is read', async () => {

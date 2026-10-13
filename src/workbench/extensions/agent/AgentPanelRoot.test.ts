@@ -12015,16 +12015,10 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 })
 
-describe('AgentPanelRoot signed-in credential hand-off', () => {
+describe('AgentPanelRoot sign-in and saved workflows', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
   })
-
-  function postedAuthHeaders(): (string | null)[] {
-    return fetchRequests({ method: 'POST', url: /\/messages$/ }).map(
-      (request) => request.headers.get('Authorization')
-    )
-  }
 
   it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
     useAuthStore().currentUser = null
@@ -12048,7 +12042,7 @@ describe('AgentPanelRoot signed-in credential hand-off', () => {
     expect(bodies).toHaveLength(0)
   })
 
-  it('sends a saved file under the id the workflow index gives it, with the user credential', async () => {
+  it('sends a saved file under the id the workflow index gives it', async () => {
     const activeState = fromPartial<ComfyWorkflowJSON>({
       nodes: [{ id: 1, type: 'LoadImage' }],
       links: []
@@ -12073,7 +12067,6 @@ describe('AgentPanelRoot signed-in credential hand-off', () => {
       workflow_id: 'wf-portrait',
       draft: { content: activeState }
     })
-    expect(postedAuthHeaders()).toEqual(['Bearer id-token'])
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 })

@@ -870,7 +870,7 @@ export class ComfyApi extends EventTarget {
   }
 
   /** False when the web session is on and no one is signed in to open it. */
-  private async addSocketAuth(params: URLSearchParams): Promise<boolean> {
+  async addSocketAuth(params: URLSearchParams): Promise<boolean> {
     const requests = webSessionRequests()
     const sessionScope = requests && (await requests.scope())
     if (sessionScope?.workspaceId) {
