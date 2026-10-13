@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "המר מחדש סרטון עם דמויות, מיקומים או סגנונות חדשים מתמונות ייחוס, תוך שמירה על התנועה, תנועת המצלמה והתזמון שלו.",
+    "display_name": "העברת תנועה של Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "הגדל תמונות ברזולוציה נמוכה לסופר-רזולוציה, הסר ארטיפקטים ורעש. פלט מקסימלי: 32 מגה-פיקסל.",
     "display_name": "HitPaw שיפור תמונה כללי",
@@ -11411,11 +11438,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "אחוז סיום",
+        "tooltip": "הפסק להחיל את הפעולה בשלב זה בלוח הזמנים של הסרת הרעש של המודל. 1 הוא הסוף."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "פעולה"
+      },
+      "start_percent": {
+        "name": "אחוז התחלה",
+        "tooltip": "התחל להחיל את הפעולה בשלב זה בלוח הזמנים של הסרת הרעש של המודל. 0 הוא ההתחלה."
       }
     },
     "outputs": {
@@ -11650,6 +11685,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "מזג את כל הלטנט לכיוון לטנט הייחוס, תוך שינוי גודל הייחוס באמצעות אינטרפולציית השכן הקרוב בעת הצורך.",
+    "display_name": "מיזוג פעולת לטנט",
+    "inputs": {
+      "reference": {
+        "name": "ייחוס"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "0 משאיר את הלטנט ללא שינוי; 1 תואם ללטנט הייחוס ששונה גודלו."
       }
     },
     "outputs": {
@@ -12059,6 +12112,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "החל מחסנית של LoRAs על מודל דיפוזיה. הוסף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA ועוצמתו.",
+    "display_name": "טעינת LoRA (מודל)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "כל שורה מחילה LoRA אחד על המודל."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל הדיפוזיה שעליו יוחלו LoRAs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מודל הדיפוזיה שהשתנה."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "החל מחסנית של LoRAs על מקודד טקסט CLIP. הוסף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA ועוצמתו.",
+    "display_name": "טעינת LoRA (מקודד טקסט)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד הטקסט CLIP שעליו יוחלו LoRAs."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "כל שורה מחילה LoRA אחד על מקודד הטקסט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מקודד הטקסט CLIP שהשתנה."
       }
     }
   },
