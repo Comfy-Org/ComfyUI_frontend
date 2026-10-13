@@ -52,6 +52,7 @@ const sides = [
           :side
           :added="group.added"
           :empty="t('cmsAdmin.review.empty')"
+          :locale
         />
       </div>
     </dl>

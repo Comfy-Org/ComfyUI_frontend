@@ -5,9 +5,11 @@ import { computed, ref } from 'vue'
 import EditorCover from '@/components/cms/editor/EditorCover.vue'
 import EditorDetails from '@/components/cms/editor/EditorDetails.vue'
 import EditorExamples from '@/components/cms/editor/EditorExamples.vue'
+import EditorCardDialog from '@/components/cms/editor/EditorCardDialog.vue'
 import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
 import EditorParameters from '@/components/cms/editor/EditorParameters.vue'
 import EditorPublishing from '@/components/cms/editor/EditorPublishing.vue'
+import EditorVersions from '@/components/cms/editor/EditorVersions.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -16,6 +18,7 @@ import { editorProblems } from '@/lib/cms/editor'
 import type { SaveNotice } from '@/lib/cms/save-client'
 import { noticeFor, saveToDraft } from '@/lib/cms/save-client'
 import type { SaveError } from '@/lib/cms/save-item'
+import type { ItemVersion } from '@/lib/cms/versions'
 
 const {
   initial,
@@ -25,6 +28,8 @@ const {
   isLive,
   published = false,
   inDraft,
+  versions,
+  liveVersion,
   notice,
   canUpload = false,
   locale = 'en'
@@ -37,6 +42,8 @@ const {
   /** Has a live version, even an archived one, that an undo goes back to. */
   published?: boolean
   inDraft: boolean
+  versions?: ItemVersion[]
+  liveVersion?: string
   notice?: SaveNotice
   canUpload?: boolean
   locale?: Locale
@@ -48,6 +55,7 @@ const dirty = computed(
   () => JSON.stringify(state.value) !== JSON.stringify(initial)
 )
 const saving = ref(false)
+const showCard = ref(false)
 const error = ref<SaveError>()
 const showProblems = ref(false)
 const problems = computed(() =>
@@ -104,7 +112,9 @@ function discard() {
       "
       :can-save="canEdit && !saving && (dirty || initial.isNew)"
       :locale
+      @card="showCard = true"
     />
+    <EditorCardDialog v-model:open="showCard" :state :locale />
 
     <p
       v-if="notice"
@@ -154,19 +164,30 @@ function discard() {
           :locale
         />
       </div>
-      <EditorPublishing
-        v-model="state"
-        :is-new="initial.isNew"
-        :archived="initial.deleted"
-        :busy="saving"
-        :undo="
-          inDraft && canEdit
-            ? { csrf, uid: initial.uid, title, published }
-            : undefined
-        "
-        :locale
-        @archive="save"
-      />
+      <div class="grid content-start gap-5">
+        <EditorPublishing
+          v-model="state"
+          :is-new="initial.isNew"
+          :archived="initial.deleted"
+          :busy="saving"
+          :undo="
+            inDraft && canEdit
+              ? { csrf, uid: initial.uid, title, published }
+              : undefined
+          "
+          :locale
+          @archive="save"
+        />
+        <EditorVersions
+          v-if="versions && versions.length > 1"
+          :uid="initial.uid"
+          :versions
+          :live-version="liveVersion"
+          :csrf
+          :can-edit="canEdit"
+          :locale
+        />
+      </div>
     </div>
 
     <div

@@ -41,6 +41,11 @@ const copy = {
   backgroundRemovalTask: {
     en: 'Cut the subject out of a photo',
     'zh-CN': '将主体从照片中抠出'
+  },
+  virtualTryOnName: { en: 'Virtual try-on', 'zh-CN': '虚拟试穿' },
+  virtualTryOnTask: {
+    en: 'Dress a person in a garment',
+    'zh-CN': '为人物换上一件衣服'
   }
 } as const satisfies Record<string, LocalizedText>
 

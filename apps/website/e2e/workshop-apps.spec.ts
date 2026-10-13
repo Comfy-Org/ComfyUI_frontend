@@ -19,6 +19,7 @@ async function mockFlags(
     relight?: boolean
     handProductSwap?: boolean
     spriteSheet?: boolean
+    virtualTryOn?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -36,6 +37,7 @@ async function mockFlags(
               'workshop-hand-product-swap-app-enabled':
                 flags.handProductSwap ?? true,
               'workshop-sprite-sheet-app-enabled': flags.spriteSheet ?? true,
+              'workshop-virtual-try-on-app-enabled': flags.virtualTryOn ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -127,7 +129,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const grid = page.getByTestId('app-grid')
   const cards = grid.getByRole('link')
-  await expect(cards).toHaveCount(6)
+  await expect(cards).toHaveCount(7)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -140,6 +142,10 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
     '/hub/apps/hand-product-swap/'
   )
   await expect(cards.nth(5)).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
+  await expect(cards.nth(6)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
+  )
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -161,7 +167,8 @@ for (const { reducedMotion, paused } of [
       moveAnything: false,
       relight: false,
       handProductSwap: false,
-      spriteSheet: false
+      spriteSheet: false,
+      virtualTryOn: false
     })
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
@@ -202,7 +209,8 @@ test('decodes a frame of each hub app card video while it plays', async ({
     moveAnything: false,
     relight: false,
     handProductSwap: false,
-    spriteSheet: false
+    spriteSheet: false,
+    virtualTryOn: false
   })
   await page.goto('/hub/apps/')
 
@@ -224,7 +232,7 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-grid').getByRole('link')
-  await expect(cards).toHaveCount(5)
+  await expect(cards).toHaveCount(6)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -236,6 +244,10 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
     '/hub/apps/hand-product-swap/'
   )
   await expect(cards.nth(4)).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
+  await expect(cards.nth(5)).toHaveAttribute(
+    'href',
+    '/hub/apps/virtual-try-on/'
+  )
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -406,7 +418,8 @@ test('hides the site header in the editor apps only', async ({
     '/hub/apps/relight/',
     '/hub/apps/move-anything/',
     '/hub/apps/hand-product-swap/',
-    '/hub/apps/sprite-sheet/'
+    '/hub/apps/sprite-sheet/',
+    '/hub/apps/virtual-try-on/'
   ]) {
     await page.goto(path)
     await expect(page.getByTestId('apps-home')).toBeVisible()
@@ -1016,6 +1029,153 @@ test('makes a sprite sheet of the example from the floating panel', async ({
 
   await tools.getByRole('button', { name: 'Edit', exact: true }).click()
   await expect(panel.getByTestId('sprite-picker-motion')).toContainText('Jump')
+})
+
+test('closes Virtual try-on while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    virtualTryOn: false
+  })
+  await page.goto('/hub/apps/virtual-try-on/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('virtual-try-on')).toHaveCount(0)
+})
+
+test('tries a garment on the Virtual try-on example from the floating panel', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  await expect(
+    app.getByRole('img', { name: 'Garment: Breton tee' })
+  ).toBeVisible()
+
+  await panel.getByRole('radio', { name: 'Flannel shirt' }).click()
+  await panel.getByRole('radio', { name: 'Relaxed' }).click()
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+  await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  await expectPanelWidth(panel)
+  await expect(
+    app
+      .getByRole('toolbar', { name: 'Virtual try-on tools' })
+      .getByRole('button')
+      .last()
+  ).toHaveAccessibleName('Redo')
+
+  await panel.getByTestId('try-on-run').click()
+  await expect(app.getByRole('status')).toContainText(/Queued|Trying it on/)
+  const download = app.getByRole('link', { name: 'Download' })
+  await expect(download).toHaveAttribute(
+    'href',
+    '/images/apps/virtual-try-on/result-flannel.jpg'
+  )
+  await expectDownloadBesideGitHub(app)
+  const slider = app.getByRole('slider', {
+    name: 'Drag to compare the original and the try-on'
+  })
+  const tools = app.getByRole('toolbar', { name: 'Virtual try-on tools' })
+  const compare = tools.getByRole('button', { name: 'Compare' })
+  await expect(slider).toBeHidden()
+  await compare.click()
+  await slider.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(slider).toHaveValue('49')
+  await compare.click()
+  await expect(slider).toBeHidden()
+  await tools.getByRole('button', { name: 'Edit' }).click()
+  await expect(panel.getByRole('radio', { name: 'Relaxed' })).toBeChecked()
+
+  const chooser = page.waitForEvent('filechooser')
+  await panel.getByRole('button', { name: 'Upload a garment' }).click()
+  await (
+    await chooser
+  ).setFiles('public/images/apps/virtual-try-on/garment-knit.jpg')
+  await expect(
+    app.getByRole('img', { name: 'Garment: garment-knit.jpg' })
+  ).toBeVisible()
+  await panel.getByTestId('try-on-run').click()
+  await expect(download).toHaveAttribute('href', /^blob:/)
+})
+
+test('takes a Virtual try-on garment dropped on the picker or pasted, and names what is missing', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const panel = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+  const run = panel.getByTestId('try-on-run')
+
+  await app.getByRole('button', { name: 'Remove garment' }).click()
+  await expect(run).toBeDisabled()
+  await expect(run).toContainText('Upload a garment')
+
+  const garment = (name: string) =>
+    page.evaluateHandle(async (name) => {
+      const response = await fetch(
+        '/images/apps/virtual-try-on/garment-knit.jpg'
+      )
+      const data = new DataTransfer()
+      data.items.add(
+        new File([await response.blob()], name, { type: 'image/jpeg' })
+      )
+      return data
+    }, name)
+  await panel
+    .getByTestId('try-on-garment-drop')
+    .dispatchEvent('drop', { dataTransfer: await garment('dropped.jpg') })
+  await expect(
+    app.getByRole('img', { name: 'Garment: dropped.jpg' })
+  ).toBeVisible()
+  await expect(run).toContainText('Try it on')
+
+  const pasted = await garment('pasted.jpg')
+  await page.evaluate(
+    (clipboardData) =>
+      window.dispatchEvent(new ClipboardEvent('paste', { clipboardData })),
+    pasted
+  )
+  await expect(
+    app.getByRole('img', { name: 'Garment: pasted.jpg' })
+  ).toBeVisible()
+})
+
+test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/virtual-try-on/')
+  const app = page.getByTestId('virtual-try-on')
+  const sheet = app.getByRole('complementary', {
+    name: 'Virtual try-on settings'
+  })
+
+  await sheet.getByRole('button', { name: 'Breton tee · Regular fit' }).click()
+  await sheet.getByRole('radio', { name: 'Slim' }).click()
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await expect(
+    sheet.getByRole('button', { name: 'Breton tee · Slim fit' })
+  ).toBeVisible()
+
+  await sheet.getByTestId('try-on-run').click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow).toBe(0)
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

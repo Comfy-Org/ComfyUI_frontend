@@ -87,7 +87,8 @@ const appSchema = z
       'hand-product-swap',
       'sprite-sheet',
       'paparazzi-me',
-      'background-removal'
+      'background-removal',
+      'virtual-try-on'
     ])
   })
   .strict()

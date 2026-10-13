@@ -27,6 +27,10 @@
     "flag": "workshop-sprite-sheet-app-enabled",
     "reason": "The Sprite Sheet Generator is a front-end mock while its backend is built; shown only where PostHog turns it on."
   },
+  "apps/virtual-try-on": {
+    "flag": "workshop-virtual-try-on-app-enabled",
+    "reason": "Virtual try-on is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "bfl--flux-3-video-continuation--edit-videos": {
     "disabled": true,
     "reason": "The provider rejects the default source video as invalid (HTTP 422) with both URL and Base64 MP4 inputs."

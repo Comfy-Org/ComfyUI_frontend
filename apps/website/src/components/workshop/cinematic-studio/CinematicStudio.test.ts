@@ -2036,7 +2036,7 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(8)
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(9)
       const [
         firstApp,
         secondApp,
@@ -2045,7 +2045,8 @@ describe('CinematicStudio', () => {
         fifthApp,
         sixthApp,
         seventhApp,
-        eighthApp
+        eighthApp,
+        ninthApp
       ] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
@@ -2071,6 +2072,9 @@ describe('CinematicStudio', () => {
       expect(
         within(eighthApp).getByRole('link', { name: 'Sprite Sheet Generator' })
       ).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
+      expect(
+        within(ninthApp).getByRole('link', { name: 'Virtual try-on' })
+      ).toHaveAttribute('href', '/hub/apps/virtual-try-on/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

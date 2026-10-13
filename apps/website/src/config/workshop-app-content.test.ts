@@ -20,7 +20,8 @@ describe('Workshop apps', () => {
       },
       { appId: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' },
       { appId: 'paparazzi-me', href: '/hub/apps/paparazzi-me/' },
-      { appId: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' }
+      { appId: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' },
+      { appId: 'virtual-try-on', href: '/hub/apps/virtual-try-on/' }
     ])
   })
 
@@ -35,7 +36,8 @@ describe('Workshop apps', () => {
       ['background-removal', 'background-removal'],
       ['hand-product-swap', 'hand-product-swap'],
       ['paparazzi-me', 'paparazzi-me'],
-      ['sprite-sheet', 'sprite-sheet']
+      ['sprite-sheet', 'sprite-sheet'],
+      ['virtual-try-on', 'virtual-try-on']
     ])
   })
 

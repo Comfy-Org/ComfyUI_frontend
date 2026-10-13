@@ -7,6 +7,8 @@ import {
   validMutation
 } from '@/lib/cms/admin'
 import { saveDraftItem, undoDraftItem } from '@/lib/cms/save-item'
+import { saveStaging } from '@/lib/cms/staging'
+import { restoreVersion } from '@/lib/cms/versions'
 
 function returnPath(value: FormDataEntryValue | null) {
   return typeof value === 'string' && /^\/(?![/\\])[^\s]*$/.test(value)
@@ -53,9 +55,13 @@ function submissionReviews(body: FormData, field: string, status: string) {
   })
 }
 
+const UID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function publishCommand(body: FormData) {
   const approvals = submissionReviews(body, 'approve', 'approved')
-  if (!approvals) return new Response('Invalid submission', { status: 400 })
+  const approvedItems = body.getAll('approve_item').map(String)
+  if (!approvals || !approvedItems.every((uid) => UID.test(uid)))
+    return new Response('Invalid submission', { status: 400 })
   return {
     commands: [
       ...approvals,
@@ -63,7 +69,9 @@ function publishCommand(body: FormData) {
         path: '/admin/api/site/publish',
         payload: {
           draft_id: Number(body.get('draft_id')),
-          generation: Number(body.get('generation'))
+          generation: Number(body.get('generation')),
+          // Only these catalog changes go live; deferred ones stay in the draft.
+          approved_uids: approvedItems
         }
       }
     ],
@@ -114,31 +122,28 @@ function publication(body: FormData) {
     : new Response('Unknown action', { status: 400 })
 }
 
-export const POST: APIRoute = async (context) => {
-  const session = context.locals.site
-  if (!session) return new Response('Not found', { status: 404 })
-  const body = await context.request.formData()
-  if (!validMutation(context, body.get('csrf')))
-    return new Response('Access denied', { status: 403 })
-  if (['exit', 'preview', 'now'].includes(String(body.get('action'))))
-    return previewAction(context, body)
-  if (body.get('action') === 'save')
-    return Response.json(
-      await saveDraftItem(session, body.get('uid'), body.get('record')),
-      { headers: { 'Cache-Control': 'private, no-store' } }
-    )
-  if (body.get('action') === 'undo')
-    return Response.json(await undoDraftItem(session, body.get('uid')), {
-      headers: { 'Cache-Control': 'private, no-store' }
-    })
-  if (!session.review.can_apply)
-    return new Response('Access denied', { status: 403 })
-  if (body.get('confirm') !== 'yes')
-    return new Response('Confirmation required', { status: 400 })
-  const command = publication(body)
-  if (command instanceof Response) return command
-  for (const { path, payload } of command.commands) {
-    const response = await siteAPI(path, session.credential, {
+type SiteSession = NonNullable<APIContext['locals']['site']>
+
+// Draft edits answer the page's fetch with JSON instead of redirecting.
+const edits = new Map<
+  string,
+  (session: SiteSession, body: FormData) => Promise<unknown>
+>([
+  ['save', (s, body) => saveDraftItem(s, body.get('uid'), body.get('record'))],
+  ['stage', (s, body) => saveStaging(s, body.get('decision'))],
+  [
+    'restoreVersion',
+    (s, body) => restoreVersion(s, body.get('uid'), body.get('version'))
+  ],
+  ['undo', (s, body) => undoDraftItem(s, body.get('uid'))]
+])
+
+async function runCommands(
+  commands: SiteCommand[],
+  credential: string
+): Promise<Response | undefined> {
+  for (const { path, payload } of commands) {
+    const response = await siteAPI(path, credential, {
       method: 'POST',
       body: JSON.stringify(payload)
     })
@@ -153,5 +158,29 @@ export const POST: APIRoute = async (context) => {
         }
       )
   }
+  return undefined
+}
+
+export const POST: APIRoute = async (context) => {
+  const session = context.locals.site
+  if (!session) return new Response('Not found', { status: 404 })
+  const body = await context.request.formData()
+  if (!validMutation(context, body.get('csrf')))
+    return new Response('Access denied', { status: 403 })
+  if (['exit', 'preview', 'now'].includes(String(body.get('action'))))
+    return previewAction(context, body)
+  const edit = edits.get(String(body.get('action')))
+  if (edit)
+    return Response.json(await edit(session, body), {
+      headers: { 'Cache-Control': 'private, no-store' }
+    })
+  if (!session.review.can_apply)
+    return new Response('Access denied', { status: 403 })
+  if (body.get('confirm') !== 'yes')
+    return new Response('Confirmation required', { status: 400 })
+  const command = publication(body)
+  if (command instanceof Response) return command
+  const failure = await runCommands(command.commands, session.credential)
+  if (failure) return failure
   return context.redirect(command.destination, 303)
 }

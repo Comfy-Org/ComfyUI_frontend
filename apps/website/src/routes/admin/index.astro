@@ -10,7 +10,9 @@ import { resolveLocale } from '@/config/locales'
 import { draftChanges } from '@/lib/cms/admin'
 import { editorState, newFromTemplate } from '@/lib/cms/editor'
 import { buildQueue, contentRows } from '@/lib/cms/queue'
+import { loadStaging } from '@/lib/cms/staging'
 import { loadSubmissions } from '@/lib/cms/submissions'
+import { loadVersions } from '@/lib/cms/versions'
 
 const session = Astro.locals.site
 if (!session) return new Response('Not found', { status: 404 })
@@ -39,11 +41,15 @@ const liveRecord = editId
 const isLive = Boolean(liveRecord && !liveRecord.deleted)
 const inDraft = draftChanges(review).some(({ uid }) => uid === editId)
 const noticeParam = Astro.url.searchParams.get('notice')
-const notice = (['saved', 'archived', 'restored', 'undone'] as const).find(
-  (value) => value === noticeParam
-)
+const notice = (
+  ['saved', 'archived', 'restored', 'undone', 'versionRestored'] as const
+).find((value) => value === noticeParam)
 
-const submissions = await loadSubmissions(session)
+const [submissions, staging, versions] = await Promise.all([
+  loadSubmissions(session),
+  page === '' ? loadStaging(session) : undefined,
+  editId ? loadVersions(session, editId) : undefined
+])
 const queue = buildQueue(review, submissions ?? [])
 const rows = contentRows(review)
 ---
@@ -63,6 +69,8 @@ const rows = contentRows(review)
     <DraftQueue
       client:load
       items={queue}
+      staging={staging ?? {}}
+      stagingSaved={staging !== undefined}
       csrf={session.csrf}
       canApply={review.can_apply}
       canEdit={review.can_edit}
@@ -92,6 +100,8 @@ const rows = contentRows(review)
       isLive={isLive}
       published={Boolean(liveRecord)}
       inDraft={inDraft}
+      versions={versions}
+      liveVersion={liveRecord?.edit_version}
       notice={notice}
       canUpload={Astro.locals.siteDemo === true}
       locale={locale}

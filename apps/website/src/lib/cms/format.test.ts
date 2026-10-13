@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { isFuture, kindCounts, matchesListing, previewChanges } from './format'
+import {
+  formatValue,
+  isFuture,
+  kindCounts,
+  matchesListing,
+  previewChanges
+} from './format'
 
 describe('admin listings', () => {
   it.for([
@@ -74,5 +80,16 @@ describe('preview changes list', () => {
         launch: undefined
       }
     ])
+  })
+})
+
+describe('formatValue', () => {
+  it.for([
+    ['2026-10-20T16:00:00.000Z', 'Oct 20, 16:00 UTC'],
+    [['a', 'b'], 'a, b'],
+    [undefined, ''],
+    [{ url: 'x' }, '{"url":"x"}']
+  ] as const)('shows %j as %s', ([value, shown]) => {
+    expect(formatValue(value)).toBe(shown)
   })
 })

@@ -35,7 +35,7 @@ function sentBody() {
   const upstream = vi
     .fn<typeof fetch>()
     .mockResolvedValue(new Response(null, { status: 200 }))
-  vi.stubGlobal('fetch', upstream)
+  vi.mocked(globalThis.fetch).mockImplementation(upstream)
   return () => JSON.parse(String(upstream.mock.calls[0][1]?.body))
 }
 

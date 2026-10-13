@@ -77,7 +77,8 @@ const appTasks = {
   'hand-product-swap': 'handProductSwapTask',
   'sprite-sheet': 'spriteSheetTask',
   'paparazzi-me': 'paparazziMeTask',
-  'background-removal': 'backgroundRemovalTask'
+  'background-removal': 'backgroundRemovalTask',
+  'virtual-try-on': 'virtualTryOnTask'
 } as const satisfies Record<AppWorkshopModel['appId'], Parameters<typeof ac>[0]>
 const appCards = computed<readonly CatalogueApp[]>(() =>
   apps.value.map((app) => ({

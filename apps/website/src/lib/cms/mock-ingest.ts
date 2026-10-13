@@ -82,6 +82,35 @@ export function createMockIngest(seed: SeedEntry[]) {
     })
   ]
 
+  // Each item's saves, newest first, so the editor can show and restore them.
+  interface Save {
+    edit_version: string
+    saved_at: string
+    saved_by: string
+    record: CatalogRecord
+  }
+  const saves = new Map<string, Save[]>()
+  const remember = (record: CatalogRecord, by: string, at: string) =>
+    saves.set(record.uid, [
+      { edit_version: record.edit_version, saved_at: at, saved_by: by, record },
+      ...(saves.get(record.uid) ?? [])
+    ])
+  for (const record of live)
+    remember(record, 'staff-alex', iso('2026-10-02T09:00:00Z'))
+  for (const record of draft)
+    if (!live.some((item) => item.edit_version === record.edit_version))
+      remember(record, 'staff-sam', iso('2026-10-09T15:30:00Z'))
+
+  // Review decisions by change: a catalog uid or a submission share id.
+  type StageStatus = 'NEW' | 'APPROVED' | 'DEFERRED'
+  let staging: Record<string, { status: StageStatus; reapproval?: boolean }> =
+    {}
+  const unstage = (id: string) => {
+    staging = Object.fromEntries(
+      Object.entries(staging).filter(([key]) => key !== id)
+    )
+  }
+
   // Every LIVE revision the demo can restore. The seed stands in for the two
   // publishes before the first one the demo starts from.
   const snapshots = new Map<number, CatalogRecord[]>([
@@ -182,20 +211,33 @@ export function createMockIngest(seed: SeedEntry[]) {
         )
       ]
     },
-    submissions: () => [200, submissions]
+    submissions: () => [200, submissions],
+    staging: () => [200, staging]
   }
   const writes: Partial<
     Record<string, (body: Record<string, unknown>) => Reply>
   > = {
-    publish: () => {
+    publish: (body) => {
       record({
         id: String(liveRevision + 1),
         action: 'PUBLISH',
         target_id: String(liveRevision + 1),
         previous_id: String(liveRevision)
       })
-      live = [...draft]
-      draft = [...live]
+      // With approved_uids, only those catalog changes go live; the rest
+      // stay in the draft for a later publish.
+      const approved = Array.isArray(body.approved_uids)
+        ? new Set(body.approved_uids.map(String))
+        : undefined
+      const before = new Map(live.map((item) => [item.uid, item]))
+      live = approved
+        ? draft.flatMap((item) => {
+            const shown = approved.has(item.uid) ? item : before.get(item.uid)
+            return shown ? [shown] : []
+          })
+        : [...draft]
+      if (!approved) draft = [...live]
+      for (const uid of approved ?? []) unstage(uid)
       liveRevision += 1
       generation += 1
       snapshots.set(liveRevision, live)
@@ -244,18 +286,41 @@ export function createMockIngest(seed: SeedEntry[]) {
       (current !== undefined && body.edit_version !== current.edit_version)
     )
   }
+  // Editing a change sends it back to review, flagged if it was approved.
+  const restage = (uid: string) => {
+    const was = staging[uid]?.status
+    unstage(uid)
+    if (was === 'APPROVED')
+      staging = { ...staging, [uid]: { status: 'NEW', reapproval: true } }
+  }
+  const stage = (body: Record<string, unknown>): Reply => {
+    const items = Array.isArray(body.items) ? body.items : []
+    for (const item of items) {
+      const { id, status } = item as { id?: unknown; status?: unknown }
+      if (
+        typeof id !== 'string' ||
+        (status !== 'NEW' && status !== 'APPROVED' && status !== 'DEFERRED')
+      )
+        return [400]
+      staging = { ...staging, [id]: { status } }
+    }
+    return [204]
+  }
   const saveItem = (uid: string, body: Record<string, unknown>): Reply => {
     if (stale(uid, body)) return [409]
     if (!body.data || typeof body.data !== 'object') return [400]
     const saved = savedItem(uid, body)
     const index = draft.findIndex((item) => item.uid === uid)
     draft = index === -1 ? [...draft, saved] : draft.with(index, saved)
+    remember(saved, 'local-designer', iso(Date.now()))
+    restage(uid)
     return [200, saved]
   }
   const reviewSubmission = (shareId: string, status: unknown): Reply => {
     submissions = submissions.filter(
       (submission) => submission.share_id !== shareId
     )
+    unstage(shareId)
     record({
       id: randomUUID(),
       action: status === 'approved' ? 'APPROVE' : 'REJECT',
@@ -265,7 +330,24 @@ export function createMockIngest(seed: SeedEntry[]) {
   }
 
   const notFound = (): Reply => [404]
-  const read = (path: string, url: URL) => (reads[path] ?? notFound)(url)
+  const itemHistory = (uid: string): Reply => [
+    200,
+    (saves.get(uid) ?? []).map(({ record, ...save }) => ({
+      ...save,
+      data: record.data,
+      kind: record.kind,
+      slug: record.slug,
+      enabled: record.enabled,
+      visibility: record.visibility,
+      deleted: record.deleted,
+      ...(record.visible_from ? { visible_from: record.visible_from } : {})
+    }))
+  ]
+  const read = (path: string, url: URL) => {
+    const historyOf = path.match(/^items\/([0-9a-f-]{36})\/history$/i)?.[1]
+    if (historyOf) return itemHistory(historyOf)
+    return (reads[path] ?? notFound)(url)
+  }
   const parseBody = (raw: string) => JSON.parse(raw || '{}')
   const write = (path: string, raw: string) => {
     const body = parseBody(raw)
@@ -273,6 +355,7 @@ export function createMockIngest(seed: SeedEntry[]) {
     if (shareId) return reviewSubmission(shareId, body.status)
     const itemId = path.match(/^items\/([0-9a-f-]{36})$/i)?.[1]
     if (itemId) return saveItem(itemId, body)
+    if (path === 'staging') return stage(body)
     return (writes[path] ?? notFound)(body)
   }
   return (

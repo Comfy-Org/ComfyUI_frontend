@@ -14,7 +14,8 @@ describe('app catalogue copy', () => {
         'Hand product swap',
         'Sprite Sheet Generator',
         'Paparazzi me',
-        'Background Removal'
+        'Background Removal',
+        'Virtual try-on'
       ]
     },
     {
@@ -27,7 +28,8 @@ describe('app catalogue copy', () => {
         '手持产品替换',
         '精灵图生成器',
         '狗仔偶遇',
-        '背景移除'
+        '背景移除',
+        '虚拟试穿'
       ]
     }
   ] as const)('names every app in $locale', ({ locale, names }) => {
@@ -39,7 +41,8 @@ describe('app catalogue copy', () => {
       ac('handProductSwapName', locale),
       ac('spriteSheetName', locale),
       ac('paparazziMeName', locale),
-      ac('backgroundRemovalName', locale)
+      ac('backgroundRemovalName', locale),
+      ac('virtualTryOnName', locale)
     ]).toEqual(names)
   })
 })

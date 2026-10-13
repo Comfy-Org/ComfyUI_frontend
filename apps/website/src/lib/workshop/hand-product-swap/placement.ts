@@ -1,4 +1,10 @@
-import type { Rect } from '@/lib/workshop/move-anything/arrange'
+/** A box in image fractions. */
+export interface Rect {
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+}
 
 /** How much taller than the box a product may grow before it is shrunk. */
 const MAX_OVERHANG = 1.6

@@ -178,6 +178,7 @@ export type AppWorkshopModel = WorkshopPresentation & {
     | 'sprite-sheet'
     | 'paparazzi-me'
     | 'background-removal'
+    | 'virtual-try-on'
   readonly routerId?: never
   readonly workflowId?: never
 }

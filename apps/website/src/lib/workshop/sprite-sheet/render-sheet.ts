@@ -1,4 +1,4 @@
-import { loadImage } from '@/lib/workshop/relight/render-image'
+import { loadImage } from '@/lib/workshop/load-image'
 import type { SpriteMotion, SpriteStyle } from './options'
 import { SPRITE_GRID, SPRITE_STYLES } from './options'
 import type { Bounds, Pixels } from './pixels'

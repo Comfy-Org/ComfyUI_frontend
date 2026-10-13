@@ -70,7 +70,7 @@ async function lightAction(
     within(editor()).getByRole('button', { name: `More for ${light}` })
   )
   await user.click(
-    within(editor()).getByRole('menuitem', { name: `${action} ${light}` })
+    within(editor()).getByRole('button', { name: `${action} ${light}` })
   )
 }
 
@@ -251,7 +251,7 @@ describe('RelightStudio', () => {
     await user.click(
       within(editor()).getByRole('button', { name: 'Direction presets' })
     )
-    await user.click(within(editor()).getByRole('menuitem', { name: 'Top' }))
+    await user.click(within(editor()).getByRole('button', { name: 'Top' }))
 
     expect(screen.getByTestId('relight-dial-readout')).toHaveTextContent(
       '90° · 20°'
@@ -268,7 +268,7 @@ describe('RelightStudio', () => {
 
     await user.click(add())
     await user.click(
-      within(section('Lights')).getByRole('menuitem', { name: 'Directional' })
+      within(section('Lights')).getByRole('button', { name: 'Directional' })
     )
     expect(expandedRows()).toEqual([expect.stringContaining('Light 3')])
     expect(
@@ -278,7 +278,7 @@ describe('RelightStudio', () => {
 
     await user.click(add())
     await user.click(
-      within(section('Lights')).getByRole('menuitem', { name: 'Point' })
+      within(section('Lights')).getByRole('button', { name: 'Point' })
     )
 
     expect(lightNames()).toHaveLength(4)

@@ -16,14 +16,14 @@ describe('staff site administration boundary', () => {
     const upstream = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(null, { status: 403 }))
-    vi.stubGlobal('fetch', upstream)
+    vi.mocked(globalThis.fetch).mockImplementation(upstream)
     expect(await verifySiteSession('ordinary-account-token')).toBeUndefined()
     expect(upstream).toHaveBeenCalledOnce()
   })
 
   it('rejects malformed credentials before an upstream request', async () => {
     const upstream = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', upstream)
+    vi.mocked(globalThis.fetch).mockImplementation(upstream)
     expect(await verifySiteSession('token\r\nInjected: yes')).toBeUndefined()
     expect(await verifySiteSession('')).toBeUndefined()
     expect(upstream).not.toHaveBeenCalled()
@@ -31,8 +31,7 @@ describe('staff site administration boundary', () => {
 
   it('allows an applier to review without granting edit', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof fetch>()
         .mockResolvedValue(
@@ -48,8 +47,7 @@ describe('staff site administration boundary', () => {
 
   it('does not authorize an ordinary account even on a successful response', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof fetch>()
         .mockResolvedValue(
@@ -62,7 +60,7 @@ describe('staff site administration boundary', () => {
   it('normalizes integer revisions for rendering and enforces Draft = Live + 1', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     const upstream = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', upstream)
+    vi.mocked(globalThis.fetch).mockImplementation(upstream)
     upstream.mockResolvedValueOnce(
       Response.json({ ...empty, previous_live_id: 1 })
     )

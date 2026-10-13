@@ -39,12 +39,14 @@ import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStud
 import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
 import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
 import BackgroundRemovalStudio from '@/components/workshop/background-removal/BackgroundRemovalStudio.vue'
+import VirtualTryOnStudio from '@/components/workshop/virtual-try-on/VirtualTryOnStudio.vue'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import { lc } from '@/lib/workshop/relight/copy'
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import { brc } from '@/lib/workshop/background-removal/copy'
+import { vc } from '@/lib/workshop/virtual-try-on/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -76,7 +78,8 @@ const APPS = [
   'hand-product-swap',
   'sprite-sheet',
   'paparazzi-me',
-  'background-removal'
+  'background-removal',
+  'virtual-try-on'
 ] as const
 const EDITOR_APPS: readonly WorkshopAppId[] = [
   'move-anything',
@@ -84,7 +87,8 @@ const EDITOR_APPS: readonly WorkshopAppId[] = [
   'hand-product-swap',
   'sprite-sheet',
   'paparazzi-me',
-  'background-removal'
+  'background-removal',
+  'virtual-try-on'
 ]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
@@ -196,6 +200,10 @@ const appOptions = computed(() =>
     {
       id: 'background-removal',
       label: brc('cutout.title', locale)
+    },
+    {
+      id: 'virtual-try-on',
+      label: vc('tryOn.title', locale)
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -293,6 +301,7 @@ function pickApp(id: string) {
       :layout
       :locale
     />
+    <VirtualTryOnStudio v-else-if="app === 'virtual-try-on'" :layout :locale />
     <CinematicAppDetail
       v-else-if="detailShown && studioApp"
       :app="studioApp"

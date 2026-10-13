@@ -13,7 +13,8 @@ const appRoutes = {
   'hand-product-swap': 'handProductSwap',
   'sprite-sheet': 'spriteSheet',
   'paparazzi-me': 'paparazziMe',
-  'background-removal': 'backgroundRemoval'
+  'background-removal': 'backgroundRemoval',
+  'virtual-try-on': 'virtualTryOn'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -83,6 +84,12 @@ const appCopy = {
     summary: 'cinematic.hub.backgroundRemovalSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.backgroundRemovalMeta'
+  },
+  'virtual-try-on': {
+    name: 'cinematic.hub.virtualTryOn',
+    summary: 'cinematic.hub.virtualTryOnSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.virtualTryOnMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

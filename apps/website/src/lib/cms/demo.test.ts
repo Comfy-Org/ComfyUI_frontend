@@ -23,14 +23,13 @@ describe('Hub admin demo', { timeout: 30_000 }, () => {
   it('answers the site API from sample data without the network', async () => {
     vi.stubEnv('SITE_CATALOG_DEMO', '1')
     vi.stubEnv('VERCEL_ENV', 'preview')
-    const network = vi.spyOn(globalThis, 'fetch')
     const review = await catalogFetch(site('/admin/api/site/review'), auth)
     expect(review.status).toBe(200)
     expect(await review.json()).toMatchObject({ can_apply: true })
     expect((await catalogFetch(site('/admin/api/site/review'))).status).toBe(
       401
     )
-    expect(network).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('publishes into the in-memory draft', async () => {

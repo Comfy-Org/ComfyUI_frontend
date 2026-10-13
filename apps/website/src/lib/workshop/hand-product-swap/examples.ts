@@ -1,4 +1,4 @@
-import type { Rect } from '@/lib/workshop/move-anything/arrange'
+import type { Rect } from './placement'
 import type { HandSwapCopyKey } from './copy'
 
 const DIR = '/images/apps/hand-product-swap'

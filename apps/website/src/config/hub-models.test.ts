@@ -27,7 +27,8 @@ describe('hub model addresses', () => {
       routes.paparazziMe,
       routes.relight,
       routes.reshoot,
-      routes.spriteSheet
+      routes.spriteSheet,
+      routes.virtualTryOn
     ]).toEqual(hubAppSlugs.map(hubAppHref))
   })
 

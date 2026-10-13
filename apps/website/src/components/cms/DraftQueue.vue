@@ -2,27 +2,27 @@
 import { Eye } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import DraftContentChanges from '@/components/cms/DraftContentChanges.vue'
-import DraftSubmissions from '@/components/cms/DraftSubmissions.vue'
-import DraftSummary from '@/components/cms/DraftSummary.vue'
+import DraftLists from '@/components/cms/DraftLists.vue'
+import FinalReviewDialog from '@/components/cms/FinalReviewDialog.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
-import PublishDialog from '@/components/cms/PublishDialog.vue'
 import RejectDialog from '@/components/cms/RejectDialog.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
-import { isFuture, kindCounts, matchesListing } from '@/lib/cms/format'
-import type {
-  CatalogQueueItem,
-  QueueItem,
-  SubmissionQueueItem
-} from '@/lib/cms/queue'
+import { kindCounts, matchesListing } from '@/lib/cms/format'
+import type { QueueItem, SubmissionQueueItem } from '@/lib/cms/queue'
+import type { Staging, StageStatus } from '@/lib/cms/stage-status'
+import { postDecision } from '@/lib/cms/stage-client'
+import { STAGE_STATUSES, stageOf } from '@/lib/cms/stage-status'
 
 const {
   items,
+  staging = {},
+  stagingSaved = false,
   csrf,
   canApply,
   canEdit = false,
@@ -31,6 +31,9 @@ const {
   locale = 'en'
 } = defineProps<{
   items: QueueItem[]
+  staging?: Staging
+  /** Whether decisions are kept by the API; otherwise they live in the page. */
+  stagingSaved?: boolean
   csrf: string
   canApply: boolean
   canEdit?: boolean
@@ -40,47 +43,53 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
+const decisions = ref<Staging>({ ...staging })
+const stageFor = (item: QueueItem) => stageOf(decisions.value, item.id)
+const inStatus = (status: StageStatus) =>
+  items.filter((item) => stageFor(item).status === status)
+const counts = computed(() =>
+  Object.fromEntries(
+    STAGE_STATUSES.map((status) => [status, inStatus(status).length])
+  )
+)
+const tab = ref<StageStatus>(
+  counts.value.NEW > 0 || counts.value.APPROVED === 0 ? 'NEW' : 'APPROVED'
+)
+const tabs = computed(() =>
+  STAGE_STATUSES.map((status) => ({
+    value: status,
+    label: t(`cmsAdmin.stage.tab.${status}`, { count: counts.value[status] })
+  }))
+)
+
 const filter = ref<ListingFilter>('ALL')
 const query = ref('')
-// A submission goes live only once someone approves it; the rest keep waiting.
-const approvedIds = ref(new Set<string>())
 const openId = ref<string>()
-const publishing = ref(false)
+const reviewing = ref(false)
 const rejecting = ref<SubmissionQueueItem[]>([])
+const failed = ref(false)
 
-const isSubmission = (item: QueueItem): item is SubmissionQueueItem =>
-  item.source === 'submission'
-const isCatalog = (item: QueueItem): item is CatalogQueueItem =>
-  item.source === 'catalog'
-const isApproved = (item: QueueItem) => approvedIds.value.has(item.id)
-
-const submissions = computed(() => items.filter(isSubmission))
-const catalog = computed(() => items.filter(isCatalog))
-const included = computed(() =>
-  items.filter((item) => isCatalog(item) || isApproved(item))
+const inTab = computed(() => inStatus(tab.value))
+const kinds = computed(() => kindCounts(inTab.value.map((item) => item.kind)))
+const shown = computed(() =>
+  inTab.value.filter((item) =>
+    matchesListing(filter.value, query.value, item.kind, [
+      item.title,
+      item.source === 'submission' ? item.author : item.provider,
+      item.source === 'submission' ? item.shareId : item.slug
+    ])
+  )
 )
-const undecided = computed(() =>
-  submissions.value.filter((item) => !isApproved(item))
+const shownSubmissions = computed(() =>
+  shown.value.filter((item) => item.source === 'submission')
 )
-const flagged = computed(
-  () => catalog.value.filter((item) => item.gaps.length > 0).length
+const shownChanges = computed(() =>
+  shown.value.filter((item) => item.source === 'catalog')
 )
-const scheduled = computed(
-  () => catalog.value.filter((item) => isFuture(item.visibleFrom)).length
-)
-const counts = computed(() => kindCounts(items.map((item) => item.kind)))
-const matches = (item: QueueItem) =>
-  matchesListing(filter.value, query.value, item.kind, [
-    item.title,
-    isSubmission(item) ? item.author : item.provider,
-    isSubmission(item) ? item.shareId : item.slug
-  ])
-const shownSubmissions = computed(() => submissions.value.filter(matches))
-const shownCatalog = computed(() => catalog.value.filter(matches))
 // The sheet steps through rows in the order the page shows them.
-const visible = computed<QueueItem[]>(() => [
+const visible = computed(() => [
   ...shownSubmissions.value,
-  ...shownCatalog.value
+  ...shownChanges.value
 ])
 const openIndex = computed(() =>
   visible.value.findIndex((item) => item.id === openId.value)
@@ -92,19 +101,49 @@ const sheetOpen = computed({
     if (!value) openId.value = undefined
   }
 })
+const approved = computed(() => inStatus('APPROVED'))
+// Like the catalog API, the final review waits until nothing is left to review.
+const canFinish = computed(
+  () => canApply && counts.value.NEW === 0 && approved.value.length > 0
+)
+const guidance = computed(() => {
+  if (counts.value.NEW > 0) return t('cmsAdmin.stage.guide.review')
+  if (approved.value.length > 0)
+    return t(
+      'cmsAdmin.stage.guide.ready',
+      { count: approved.value.length },
+      approved.value.length
+    )
+  return undefined
+})
 
-function setApproved(items: QueueItem[], value: boolean) {
-  const next = new Set(approvedIds.value)
-  for (const item of items)
-    if (value) next.add(item.id)
-    else next.delete(item.id)
-  approvedIds.value = next
+async function decide(changes: QueueItem[], status: StageStatus) {
+  const before = decisions.value
+  decisions.value = {
+    ...before,
+    ...Object.fromEntries(changes.map((item) => [item.id, { status }]))
+  }
+  failed.value = false
+  if (!stagingSaved) return
+  const ids = changes.map((item) => item.id)
+  if (await postDecision(csrf, ids, status)) return
+  decisions.value = before
+  failed.value = true
+}
+// Deciding in the panel moves on to the next change still in this tab.
+function decideOpen(status: StageStatus) {
+  const item = openItem.value
+  if (!item) return
+  const next =
+    visible.value[openIndex.value + 1] ?? visible.value[openIndex.value - 1]
+  void decide([item], status)
+  openId.value = next?.id
 }
 function step(direction: -1 | 1) {
   openId.value = visible.value[openIndex.value + direction]?.id
 }
 function rejectOpen() {
-  if (openItem.value && isSubmission(openItem.value))
+  if (openItem.value?.source === 'submission')
     rejecting.value = [openItem.value]
 }
 </script>
@@ -127,14 +166,14 @@ function rejectOpen() {
         </AdminButton>
         <AdminButton
           variant="primary"
-          :disabled="!canApply || included.length === 0"
-          @click="publishing = true"
+          :disabled="!canFinish"
+          @click="reviewing = true"
         >
           {{
             t(
-              'cmsAdmin.draft.publish',
-              { count: included.length },
-              included.length
+              'cmsAdmin.finalReview.open',
+              { count: approved.length },
+              approved.length
             )
           }}
         </AdminButton>
@@ -147,14 +186,13 @@ function rejectOpen() {
     >
       {{ t('cmsAdmin.applyOnly') }}
     </p>
-
-    <DraftSummary
-      :undecided="undecided.length"
-      :flagged
-      :scheduled
-      :publishing="included.length"
-      :locale
-    />
+    <p
+      v-if="failed"
+      role="alert"
+      class="rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
+    >
+      {{ t('cmsAdmin.stage.failed') }}
+    </p>
 
     <div
       v-if="items.length === 0"
@@ -167,37 +205,32 @@ function rejectOpen() {
     </div>
 
     <template v-else>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <AdminSegmented
+          v-model="tab"
+          :options="tabs"
+          :label="t('cmsAdmin.stage.tabLabel')"
+        />
+        <p v-if="guidance" class="text-xs text-admin-muted">{{ guidance }}</p>
+      </div>
       <ListingFilters
         v-model:filter="filter"
         v-model:query="query"
-        :counts
+        :counts="kinds"
         :search-label="t('cmsAdmin.draft.search')"
         :locale
       />
-      <p
-        v-if="visible.length === 0"
-        class="rounded-lg border border-admin-line px-6 py-10 text-center text-xs text-admin-muted"
-      >
-        {{ t('cmsAdmin.draft.noMatches') }}
-      </p>
-
-      <DraftSubmissions
-        v-if="shownSubmissions.length"
-        :items="shownSubmissions"
-        :approved-ids="approvedIds"
+      <DraftLists
+        :tab
+        :in-tab-count="inTab.length"
+        :submissions="shownSubmissions"
+        :changes="shownChanges"
+        :stage-of="stageFor"
         :open-id="openId"
         :can-apply="canApply"
         :locale
-        @approve="setApproved"
+        @decide="decide"
         @reject="rejecting = $event"
-        @open="openId = $event"
-      />
-      <DraftContentChanges
-        v-if="shownCatalog.length"
-        :items="shownCatalog"
-        :open-id="openId"
-        :can-apply="canApply"
-        :locale
         @open="openId = $event"
       />
     </template>
@@ -205,22 +238,22 @@ function rejectOpen() {
     <ReviewSheet
       v-if="openItem"
       v-model:open="sheetOpen"
-      :approved="isApproved(openItem)"
       :item="openItem"
+      :stage="stageFor(openItem)"
       :index="openIndex"
       :total="visible.length"
       :can-apply="canApply"
       :can-edit="canEdit"
       :csrf
       :locale
-      @update:approved="setApproved([openItem], $event)"
+      @decide="decideOpen"
       @step="step"
       @reject="rejectOpen"
     />
-    <PublishDialog
-      v-model:open="publishing"
-      :items="included"
-      :held-count="undecided.length"
+    <FinalReviewDialog
+      v-model:open="reviewing"
+      :items="approved"
+      :later-count="counts.DEFERRED"
       :csrf
       :draft-id="draftId"
       :generation

@@ -96,6 +96,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -245,6 +246,7 @@ function isRetryableInitializationError(error: unknown): boolean {
   ) {
     return false
   }
+  if (error instanceof SessionRevokedError) return false
   return !(
     error instanceof Error && error.message === 'No workspaces available'
   )
