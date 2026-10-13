@@ -124,7 +124,7 @@ import {
   createAgentRestClient
 } from './services/agent/agentRestClient'
 import {
-  agentSocketParams,
+  agentSocketAuthParams,
   ensureSignedIn,
   hasAgentCredential
 } from './services/agent/agentAuth'
@@ -216,7 +216,7 @@ const rest = createAgentRestClient()
 
 const events = createAgentEventSource({
   endpoint: api.apiURL('/agent/events'),
-  getAuthParams: agentSocketParams
+  getAuthParams: agentSocketAuthParams
 })
 
 const docTransport = createAgentDocFrameTransport(events)

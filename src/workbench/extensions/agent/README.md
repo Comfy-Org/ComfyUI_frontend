@@ -13,9 +13,10 @@ The panel speaks one contract on the cloud and on the local agent:
 - **Events socket, `/api/agent/events`** (`services/agent/agentEventSource.ts`).
   Agent events and CRDT doc frames share it in both directions; ComfyUI's
   `/ws` carries neither. Its URL comes from `api.apiURL`. In the cloud it
-  authenticates exactly as `/ws` does; elsewhere the signed-in user's
-  credential rides as `?token=`. Both are read again on every connect.
-  Reconnects back off with jitter until a socket delivers a frame.
+  takes the auth params `/ws` uses, and does not open when no one is signed
+  in; elsewhere the signed-in user's credential rides as `?token=`. Both are
+  read again on every connect. Reconnects back off with jitter; the backoff
+  resets once a socket delivers a frame or stays open for the maximum delay.
 - **Identity, `GET /api/agent/identity`** (`services/agent/agentIdentity.ts`).
   Canvas ops carry `human:<user_id>:<tab>` with the id the backend reports,
   so the follower stays inactive until it answers. A failed lookup retries
@@ -25,8 +26,8 @@ The panel speaks one contract on the cloud and on the local agent:
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
   authenticate through `api.fetchApi` like every other request. Elsewhere they
   carry the signed-in user's auth header, or the stored API key when no one is
-  signed in. A signed-out send opens the sign-in dialog, unless the dev proxy
-  injects `DEV_AGENT_COMFY_TOKEN`. Signing out or switching account (or API
+  signed in, and a running turn re-sends it. A signed-out send opens the sign-in
+  dialog, unless the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Signing out or switching account (or API
   key) reconnects the socket and looks the identity up again.
 
 ## Activation and consent
@@ -82,9 +83,3 @@ Incoming `doc_update` frames are decoded and applied incrementally with
 `Y.applyUpdate`; the follower never requests or fans out a full document for
 each update. Human edits are minted into the shared op vocabulary and sent as
 `doc_ops` frames on the same socket (`crdt/docOpMinter.ts`).
-
-While the follower holds the bound document, a turn sends no draft: the
-document is the source of truth and an unversioned draft would overwrite it.
-Once the follower gives up on that document (refused for good, every subscribe
-unanswered, or unreadable), turns seed the draft again; a reconnect retries the
-document and withholds it until that attempt settles.
