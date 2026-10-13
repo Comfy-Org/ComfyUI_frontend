@@ -802,7 +802,7 @@ describe('AgentMessage delete approval', () => {
     context: {
       action: 'delete_nodes',
       nodes: [
-        { id: 12, type: 'KSampler', title: 'Hero sampler' },
+        { id: '12', type: 'KSampler', title: 'Hero sampler' },
         { id: '13', type: 'VAEDecode', title: '' }
       ]
     },
@@ -887,7 +887,8 @@ describe('AgentMessage delete approval', () => {
         message: deleteMessage({
           context: {
             action: 'delete_nodes',
-            nodes: [{ id: 12, type: 'KSampler' }, { title: 'no id' }]
+            nodes: [{ id: '12', type: 'KSampler' }],
+            hidden_node_count: 1
           }
         })
       },

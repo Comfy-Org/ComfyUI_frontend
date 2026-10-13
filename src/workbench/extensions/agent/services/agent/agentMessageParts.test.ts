@@ -1,7 +1,7 @@
+import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
-import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   ASK_USER_LIMITS,
@@ -10,7 +10,8 @@ import {
   isRenderedAskKind,
   retireAskParts,
   toAskOrNoticePart,
-  toAskPart
+  toAskPart,
+  toAskResolution
 } from './agentMessageParts'
 
 type AskInput = Parameters<typeof toAskPart>[0]
@@ -191,7 +192,7 @@ describe('toAskPart delete_approval', () => {
         action: 'delete_nodes',
         nodes: [
           { id: '12', type: 'KSampler', title: 'Hero sampler' },
-          { id: 13, type: 'VAEDecode' },
+          { id: '13', type: 'VAEDecode', title: '  ' },
           { id: '12', type: 'KSampler', title: 'A repeat' }
         ]
       },
@@ -211,6 +212,20 @@ describe('toAskPart delete_approval', () => {
     })
   })
 
+  it('counts the nodes the host left out of the list as not listed', () => {
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler' }],
+            hidden_node_count: 20
+          }
+        })
+      )
+    ).toMatchObject({ hiddenNodeCount: 20 })
+  })
+
   it.for([
     { name: 'no context', context: undefined },
     { name: 'no nodes', context: { action: 'delete_nodes' } },
@@ -220,12 +235,38 @@ describe('toAskPart delete_approval', () => {
     },
     { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
     {
-      name: 'only blank ids',
-      context: { action: 'delete_nodes', nodes: [{ id: '' }, { id: '   ' }] }
+      name: 'a blank id',
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }, { id: '  ' }] }
     },
     {
-      name: 'only unreadable entries',
-      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
+      name: 'an unreadable entry next to a readable one',
+      context: {
+        action: 'delete_nodes',
+        nodes: [{ id: '12' }, { type: 'NoId' }]
+      }
+    },
+    {
+      name: 'a numeric id',
+      context: { action: 'delete_nodes', nodes: [{ id: 12 }] }
+    },
+    {
+      name: 'more nodes listed than the contract allows',
+      context: {
+        action: 'delete_nodes',
+        nodes: Array.from({ length: 51 }, (_, i) => ({ id: String(i) }))
+      }
+    },
+    {
+      name: 'a hidden count below one',
+      context: {
+        action: 'delete_nodes',
+        nodes: [{ id: '12' }],
+        hidden_node_count: 0
+      }
+    },
+    {
+      name: 'another action',
+      context: { action: 'delete_links', nodes: [{ id: '12' }] }
     }
   ])('falls back to the notice with $name in context', ({ context }) => {
     expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
@@ -234,51 +275,28 @@ describe('toAskPart delete_approval', () => {
     })
   })
 
-  it('counts unreadable entries next to readable ones as not listed', () => {
-    expect(
-      toAskPart(
-        deleteApproval({
-          context: {
-            action: 'delete_nodes',
-            nodes: [{ id: 12, type: 'KSampler' }, { type: 'NoId' }]
-          }
-        })
-      )
-    ).toMatchObject({
-      nodes: [{ id: '12', name: 'KSampler' }],
-      hiddenNodeCount: 1
-    })
-  })
-
-  it('bounds an untrusted node list and counts what it does not list', () => {
-    const nodes = Array.from({ length: ASK_USER_LIMITS.nodes + 5 }, (_, i) => ({
-      id: i,
-      title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
-    }))
+  it('clips a long node name but never its id', () => {
+    const prefix = 'n'.repeat(ASK_USER_LIMITS.label)
     const part = toAskPart(
-      deleteApproval({ context: { action: 'delete_nodes', nodes } })
+      deleteApproval({
+        context: {
+          action: 'delete_nodes',
+          nodes: [
+            {
+              id: `${prefix}-a`,
+              title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
+            },
+            { id: `${prefix}-b` }
+          ]
+        }
+      })
     )
     assert(part?.type === 'deleteApproval')
-    expect(part.nodes).toHaveLength(ASK_USER_LIMITS.nodes)
+    expect(part.nodes.map(({ id }) => id)).toEqual([
+      `${prefix}-a`,
+      `${prefix}-b`
+    ])
     expect(part.nodes[0].name).toHaveLength(ASK_USER_LIMITS.label)
-    expect(part.hiddenNodeCount).toBe(5)
-  })
-
-  it('tells apart nodes whose long ids share a prefix', () => {
-    const prefix = 'n'.repeat(ASK_USER_LIMITS.label)
-    expect(
-      toAskPart(
-        deleteApproval({
-          context: {
-            action: 'delete_nodes',
-            nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }]
-          }
-        })
-      )
-    ).toMatchObject({
-      nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }],
-      hiddenNodeCount: 0
-    })
   })
 
   it.for([
@@ -291,18 +309,37 @@ describe('toAskPart delete_approval', () => {
         ]
       }
     },
+    {
+      name: 'a third option',
+      ask: {
+        options: [
+          { id: 'delete', label: 'Delete' },
+          { id: 'keep', label: 'Keep' },
+          { id: 'delete_all', label: 'Delete all' }
+        ]
+      }
+    },
     { name: 'free text', ask: { allow_other: true } },
     { name: 'a multi-choice', ask: { max_selections: 2 } }
   ])('renders nothing for $name', ({ ask }) => {
     expect(toAskPart(deleteApproval(ask))).toBeUndefined()
   })
+
+  it('stays on screen read-only with its resolution once retired', () => {
+    const card = toAskPart(deleteApproval())
+    assert(card)
+    expect(
+      retireAskParts([card], card.askId, {
+        status: 'answered',
+        selected: ['keep']
+      })
+    ).toEqual([
+      { ...card, resolution: { status: 'answered', selected: ['keep'] } }
+    ])
+  })
 })
 
-describe('RENDERED_ASK_KINDS', () => {
-  it.for(RENDERED_ASK_KINDS)('claims %s', (kind) => {
-    expect(isRenderedAskKind(kind)).toBe(true)
-  })
-
+describe('isRenderedAskKind', () => {
   it.for(['paused', 'permission', 'toString', undefined])(
     'does not claim %s',
     (kind) => {
@@ -330,7 +367,7 @@ describe('toAskOrNoticePart', () => {
   })
 
   it('stands a notice in for an ask it cannot render', () => {
-    expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
+    expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({
       type: 'askUnavailable',
       askId: 'turn-1:call-1'
     })
@@ -458,5 +495,47 @@ describe('retireAskParts', () => {
 
   it('returns the same array when no part belongs to the ask', () => {
     expect(retireAskParts(parts, 'missing')).toBe(parts)
+  })
+})
+
+describe('toAskResolution', () => {
+  const frame = {
+    thread_id: 'th',
+    message_id: 'turn-1',
+    ask_id: 'turn-1:call-1'
+  }
+
+  it.for<{
+    name: string
+    data: Pick<AgentAskResolvedData, 'status' | 'selected' | 'other_text'>
+    expected: AskUserResolution
+  }>([
+    {
+      name: 'a cancelled ask',
+      data: { status: 'cancelled', selected: null },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'an expired ask',
+      data: { status: 'expired', selected: null },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'an answer naming no selection',
+      data: { status: 'answered', selected: null },
+      expected: { status: 'answered', selected: [] }
+    },
+    {
+      name: 'the committed ids',
+      data: { status: 'answered', selected: ['oil'] },
+      expected: { status: 'answered', selected: ['oil'] }
+    },
+    {
+      name: 'the committed free text',
+      data: { status: 'answered', selected: [], other_text: 'watercolor' },
+      expected: { status: 'answered', selected: [], otherText: 'watercolor' }
+    }
+  ])('reads $name off the frame', ({ data, expected }) => {
+    expect(toAskResolution({ ...frame, ...data })).toEqual(expected)
   })
 })

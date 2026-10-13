@@ -55,6 +55,13 @@ export type BillingChargeReason = BillingChargeBreakdown['reasons'][number]
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
 
 /**
+ * The plan the server reports an operation is for, in every status of a plan
+ * change, initial subscription or resubscribe. Its tier and prices are absent
+ * when the server cannot describe the plan.
+ */
+export type BillingOperationPlan = NonNullable<BillingOpStatus['plan']>
+
+/**
  * Where the customer completes the operation: the challenge this tab drives
  * through the host's payment-provider adapter, or the page behind the
  * server's `action_url`.
@@ -140,6 +147,7 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly cancelable?: boolean
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
+  readonly plan?: BillingOperationPlan
 }
 
 export type FailedBillingOperation = BillingOperationIdentity & {
@@ -159,7 +167,7 @@ export interface BillingOperationReceipt {
   readonly amountChargedCents?: number
   readonly chargeBreakdown?: BillingChargeBreakdown
   readonly creditsAdded?: number
-  readonly plan?: NonNullable<BillingOpStatus['plan']>
+  readonly plan?: BillingOperationPlan
 }
 
 export type SucceededBillingOperation = BillingOperationIdentity & {
@@ -404,9 +412,11 @@ function reducePending(
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
+  const { plan: _previousPlan, ...rest } = state
 
   return {
-    ...state,
+    ...rest,
+    ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
     actionUrl,

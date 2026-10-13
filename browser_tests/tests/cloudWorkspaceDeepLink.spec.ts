@@ -54,7 +54,7 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
       const page = comfyPage.page
 
       await expect(
-        page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
+        comfyPage.toast.withText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
       ).toBeVisible()
       expect(new URL(page.url()).searchParams.has('workspace')).toBe(false)
 
@@ -82,7 +82,7 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
     await comfyPage.waitForAppReady()
 
     await expect(
-      page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
+      comfyPage.toast.withText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
     ).toBeVisible()
     expect(new URL(page.url()).searchParams.has('workspace')).toBe(false)
   })
@@ -90,7 +90,7 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   test('is unchanged with no workspace param', async ({ comfyPage }) => {
     const page = comfyPage.page
 
-    await expect(page.locator('.p-toast-message:visible')).toHaveCount(0)
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
       PERSONAL_WORKSPACE_NAME

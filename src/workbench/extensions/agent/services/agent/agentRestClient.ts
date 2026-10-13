@@ -41,7 +41,6 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  RenderedAskKind,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
@@ -222,19 +221,6 @@ export interface PostMessageInput {
    * gap in the funnel read, never a failed send.
    */
   clientMessageId?: string
-}
-
-/**
- * The turn POST body, plus `client_message_id`.
- *
- * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
- */
-type TurnPostBody = AgentPostMessageRequest & {
-  client_message_id?: string
-  // Lands in the generated types when the backend spec ships `ask_kinds`.
-  ask_kinds?: RenderedAskKind[]
 }
 
 /**
@@ -570,7 +556,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<TurnPostBody>({
+    const body = withoutUndefined<AgentPostMessageRequest>({
       content: req.content,
       ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,

@@ -1,3 +1,8 @@
+import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
+import {
+  zAgentDeleteApprovalContext,
+  zAgentRunApprovalContext
+} from '@comfyorg/ingest-types/zod'
 import { uniqBy } from 'es-toolkit'
 
 import type {
@@ -5,10 +10,7 @@ import type {
   RenderedAskKind,
   TurnId
 } from '../../schemas/agentApiSchema'
-import {
-  RENDERED_ASK_KINDS,
-  zAgentAskNodeRef
-} from '../../schemas/agentApiSchema'
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -132,6 +134,23 @@ export function settleResolution(
   return shown === undefined || supersedes(next, shown) ? next : shown
 }
 
+/**
+ * The resolution an `agent_ask_resolved` frame reports: the answer the server
+ * committed, whoever gave it, so this client's own free text is never shown
+ * in its place.
+ */
+export function toAskResolution({
+  status,
+  selected,
+  other_text: otherText
+}: AgentAskResolvedData): AskUserResolution {
+  if (status !== 'answered') return { status: 'closed', selected: [] }
+  if (selected === null) return { status: 'answered', selected: [] }
+  return otherText
+    ? { status: 'answered', selected, otherText }
+    : { status: 'answered', selected }
+}
+
 /** The generic `ask_user` question: a prompt plus every option the agent offered. */
 export interface AskUserPart {
   type: 'askUser'
@@ -248,8 +267,7 @@ export const ASK_USER_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
-  description: 500,
-  nodes: 50
+  description: 500
 } as const
 
 function clip(text: string, max: number): string {
@@ -292,34 +310,20 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
-function toAskNodeRef(value: unknown): AskNodeRef | undefined {
-  const parsed = zAgentAskNodeRef.safeParse(value)
-  if (!parsed.success) return undefined
-  const { id, title, type } = parsed.data
-  const name = title?.trim() || type?.trim()
-  return {
-    id: String(id),
-    name: name ? clip(name, ASK_USER_LIMITS.label) : undefined
-  }
-}
-
-/**
- * The host's `context.nodes`: unique by id (first wins, as with options),
- * capped, and anything not listed counted as hidden. Nothing when the list is
- * missing, not an array, or has no readable node, so the card is never shown
- * without the nodes a Delete would remove.
- */
 function toAskNodeRefs(
   context: AskInput['context']
 ): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> | undefined {
-  const raw: unknown = context?.nodes
-  if (!Array.isArray(raw)) return undefined
-  const readable = raw.flatMap((node) => toAskNodeRef(node) ?? [])
-  const unique = uniqBy(readable, (node) => node.id)
-  if (unique.length === 0) return undefined
-  const nodes = unique.slice(0, ASK_USER_LIMITS.nodes)
-  const duplicates = readable.length - unique.length
-  return { nodes, hiddenNodeCount: raw.length - duplicates - nodes.length }
+  const parsed = zAgentDeleteApprovalContext.safeParse(context)
+  if (!parsed.success) return undefined
+  const { nodes, hidden_node_count: hiddenNodeCount = 0 } = parsed.data
+  if (nodes.some(({ id }) => id.trim() === '')) return undefined
+  return {
+    nodes: uniqBy(nodes, ({ id }) => id).map(({ id, title, type }) => {
+      const name = title?.trim() || type?.trim()
+      return { id, name: name ? clip(name, ASK_USER_LIMITS.label) : undefined }
+    }),
+    hiddenNodeCount
+  }
 }
 
 const DELETE_APPROVAL_OPTIONS = ['delete', 'keep']
@@ -351,12 +355,15 @@ const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
 > = {
-  run_approval: (ask) => ({
-    type: 'runApproval',
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }),
+  run_approval: (ask) => {
+    const context = zAgentRunApprovalContext.safeParse(ask.context).data
+    return {
+      type: 'runApproval',
+      askId: ask.ask_id,
+      workflowId: context?.workflow_id || undefined,
+      workflowName: context?.workflow_name || undefined
+    }
+  },
   ask_user: toAskUserPart,
   delete_approval: toDeleteApprovalPart
 }
@@ -366,7 +373,7 @@ export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
 }
 
 /**
- * The card for an ask, by its explicit kind. An unknown or missing kind maps to
+ * The card for an ask, by its explicit kind. An unknown kind maps to
  * nothing: a privileged ask that lost its discriminator must not render as a
  * generic chooser.
  */

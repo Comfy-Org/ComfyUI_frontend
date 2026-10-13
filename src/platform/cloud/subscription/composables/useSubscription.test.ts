@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -160,6 +160,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
@@ -217,9 +218,6 @@ const statusReadPaths = [
     idleReader: () => mockGetBillingStatus
   }
 ]
-
-// Mock fetch
-global.fetch = vi.fn()
 
 beforeEach(() => {
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
@@ -2549,9 +2547,6 @@ describe('useSubscription', () => {
     })
 
     it('waits on a web session until the workspace is selected', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
@@ -2569,7 +2564,7 @@ describe('useSubscription', () => {
       expect(mockReadStatus).toHaveBeenCalledOnce()
       expect(subscriptionStatus.value).toEqual(buildStatus())
       expect(isInitialized.value).toBe(true)
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('recovers a pending checkout on a web session only once the workspace is selected', async () => {
@@ -2591,7 +2586,6 @@ describe('useSubscription', () => {
           resolveRead = resolve
         })
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
@@ -2642,7 +2636,7 @@ describe('useSubscription', () => {
       await requireActiveSubscription()
 
       expect(
-        useDialogService().showSubscriptionRequiredDialog
+        useBillingDialogs().showSubscriptionRequiredDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -2658,7 +2652,7 @@ describe('useSubscription', () => {
       await requireActiveSubscription()
 
       expect(
-        useDialogService().showSubscriptionRequiredDialog
+        useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalled()
     })
   })

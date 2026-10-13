@@ -2,8 +2,8 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 interface ViewportInstance {
@@ -154,13 +154,16 @@ describe('useCameraAngle', () => {
     ViewportMock.mockImplementationOnce(() => {
       throw new Error('webgl unavailable')
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const camera = useCameraAngle(nodeRef(makeNode(DEFAULT_WIDGETS)))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
-    expect(useToastStore().addAlert).toHaveBeenCalledOnce()
-
-    consoleError.mockRestore()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title:
+          'Failed to initialize Camera Angle viewer. Try reloading the page.'
+      })
+    )
   })
 
   it('writes viewport interaction results back into the widgets', () => {
