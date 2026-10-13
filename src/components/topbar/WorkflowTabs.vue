@@ -56,7 +56,7 @@
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
     >
-      <i class="pi pi-plus" />
+      <i class="pi pi-plus text-base" />
     </Button>
     <div
       v-if="isIntegratedTabBar"
