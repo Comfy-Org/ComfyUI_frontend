@@ -59,14 +59,14 @@ const rows = computed(() =>
 
 const rowClass = (key: PickerKey) =>
   cn(
-    'flex h-12 w-full items-center gap-3 px-3 text-left transition-colors hover:bg-transparency-white-t4',
+    'flex h-12 w-full items-center gap-3 rounded-xl px-2.5 text-left transition-colors hover:bg-transparency-white-t4',
     openPicker === key && 'bg-transparency-white-t8'
   )
 </script>
 
 <template>
   <div
-    class="flex flex-col divide-y divide-transparency-white-t8 overflow-hidden rounded-2xl border border-transparency-white-t8"
+    class="flex flex-col gap-0.5 overflow-hidden rounded-2xl border border-transparency-white-t8 p-1"
   >
     <button
       type="button"
