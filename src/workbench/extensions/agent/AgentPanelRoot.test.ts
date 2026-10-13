@@ -1610,6 +1610,24 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
   })
 
+  it('removes the first-chat offer when the scoped grant is exhausted', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('note', { name: 'Free use notice' })
+    ).toBeInTheDocument()
+
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      screen.queryByRole('note', { name: 'Free use notice' })
+    ).not.toBeInTheDocument()
+  })
+
   it('reports one impression however often the panel remounts', async () => {
     observeAgentScopedFunds(true)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })

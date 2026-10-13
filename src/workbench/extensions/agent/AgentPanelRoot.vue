@@ -345,8 +345,9 @@ const showCreditTransitionNotice = computed(
 )
 
 function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
@@ -1362,6 +1363,9 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
+const visibleFreeUsePlacement = computed(() =>
+  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
+)
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
@@ -1964,7 +1968,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="freeUsePlacement"
+      :free-use-placement="visibleFreeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
