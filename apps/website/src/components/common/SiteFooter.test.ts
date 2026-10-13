@@ -98,7 +98,27 @@ describe('SiteFooter', () => {
     ['en', '/fish-audio/'],
     ['zh-CN', '/zh-CN/fish-audio/']
   ] as const)(
-    'links the Fish Audio page last in footer Models (%s)',
+    'links the Fish Audio page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const fishAudio = models.find(
+        (link) => link.textContent.trim() === 'Fish Audio'
+      )
+      expect(fishAudio?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/nvidia-vfx/'],
+    ['zh-CN', '/zh-CN/nvidia-vfx/']
+  ] as const)(
+    'links the Nvidia VFX page last in footer Models (%s)',
     ([locale, href]) => {
       render(SiteFooter, { props: { locale } })
 
@@ -108,7 +128,7 @@ describe('SiteFooter', () => {
         })
       ).getAllByRole('link')
       const last = models.at(-1)
-      expect(last?.textContent.trim()).toBe('Fish Audio')
+      expect(last?.textContent.trim()).toBe('Nvidia VFX')
       expect(last?.getAttribute('href')).toBe(href)
     }
   )

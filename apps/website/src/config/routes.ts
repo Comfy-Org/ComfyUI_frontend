@@ -42,6 +42,7 @@ const baseRoutes = {
   minimaxLicense: '/minimax/license/',
   minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
   fishAudio: '/fish-audio/',
+  nvidiaVfx: '/nvidia-vfx/',
   flux3: '/flux-3/',
   seedance: '/seedance-2.5/',
   fdct: '/forward-deployed-creatives/',
