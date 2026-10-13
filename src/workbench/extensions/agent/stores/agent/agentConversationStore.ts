@@ -1169,9 +1169,7 @@ export const useAgentConversationStore = defineStore(
       const retired = retiredAsksFor()
       const named = new Set(
         history.flatMap((row) =>
-          row.pending_ask?.kind === 'run_approval'
-            ? [row.pending_ask.ask_id]
-            : []
+          row.pending_ask ? [row.pending_ask.ask_id] : []
         )
       )
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
