@@ -7875,11 +7875,6 @@ Enterprise`
     en: 'VIEW ON GITHUB',
     'zh-CN': '在 GitHub 查看'
   },
-  'nvidiaRtx.beforeAfter.heading': {
-    en: 'One clip, two states.',
-    'zh-CN': '一段视频，两种状态。'
-  },
-  'nvidiaRtx.beforeAfter.cta': { en: 'TRY NOW', 'zh-CN': '立即试用' },
   'nvidiaRtx.gallery.heading': {
     en: 'Made on NVIDIA RTX',
     'zh-CN': '在 NVIDIA RTX 上创作'

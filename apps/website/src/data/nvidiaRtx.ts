@@ -1,5 +1,4 @@
 import type {
-  ModelLaunchBeforeAfter,
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
@@ -26,35 +25,10 @@ const media = {
     src: `${placeholderMediaBase}/alien-convenience-store.webp`
   },
   goldfish: { kind: 'image', src: `${placeholderMediaBase}/goldfish.webp` },
-  engine: { kind: 'image', src: `${placeholderMediaBase}/flame-engine.webp` },
-  canyon: { kind: 'image', src: `${placeholderMediaBase}/canyon-chase.webp` },
-  horizon: { kind: 'image', src: `${placeholderMediaBase}/anime-horizon.webp` }
+  engine: { kind: 'image', src: `${placeholderMediaBase}/flame-engine.webp` }
 } as const satisfies Record<string, ModelLaunchMedia>
 
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
-
-const beforeAfter: ModelLaunchBeforeAfter = {
-  headingKey: 'nvidiaRtx.beforeAfter.heading',
-  src: 'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
-  features: [
-    {
-      en: 'Super Resolution: Same clip, more resolution.',
-      'zh-CN': '超分辨率：同一段视频，更高的分辨率。'
-    },
-    {
-      en: 'Frame Generation: 15 fps in, 60 fps out.',
-      'zh-CN': '帧生成：输入 15 fps，输出 60 fps。'
-    },
-    {
-      en: 'SDR-to-HDR: SDR in, HDR out. Best viewed on an HDR display.',
-      'zh-CN': 'SDR 转 HDR：输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
-    }
-  ],
-  cta: {
-    labelKey: 'nvidiaRtx.beforeAfter.cta',
-    href: nvidiaRtxLinks.cloud
-  }
-}
 
 export const nvidiaRtxPage: ModelLaunchPage = {
   metaTitleKey: 'nvidiaRtx.meta.title',
@@ -63,9 +37,8 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'nvidiaRtx.breadcrumb.updated',
   hero: {
     layout: 'media-first',
-    placeholderImageSrc: '/images/models/qwen-image-2-1-logo-mask.webp',
-    logoSrc: '/icons/ai-models/nvidia.png',
-    logoSize: 'large',
+    videoSrc:
+      'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
     titleKey: 'nvidiaRtx.hero.title',
     titleSize: 'compact',
     descriptionKey: 'nvidiaRtx.hero.description',
@@ -84,7 +57,6 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       target: '_blank'
     }
   },
-  beforeAfter,
   gallery: {
     headingKey: 'nvidiaRtx.gallery.heading',
     ctaVariant: 'none',
@@ -150,36 +122,6 @@ export const nvidiaRtxPage: ModelLaunchPage = {
         },
         media: media.engine,
         href: nvidiaRtxLinks.download
-      },
-      {
-        id: 'canyon-chase',
-        name: {
-          en: 'Canyon car chase generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的峡谷飞车追逐场景'
-        },
-        tier: 'free',
-        note: localNote,
-        description: {
-          en: 'Drop the nodes into any existing ComfyUI video workflow.',
-          'zh-CN': '将这些节点加入任何现有的 ComfyUI 视频工作流。'
-        },
-        media: media.canyon,
-        href: nvidiaRtxLinks.download
-      },
-      {
-        id: 'anime-horizon',
-        name: {
-          en: 'Anime hero at a red horizon generated locally on NVIDIA RTX',
-          'zh-CN': '在 NVIDIA RTX 上本地生成的红日地平线动画场景'
-        },
-        tier: 'free',
-        note: localNote,
-        description: {
-          en: 'Open weights, ready for commercial use.',
-          'zh-CN': '开放权重，可用于商业用途。'
-        },
-        media: media.horizon,
-        href: nvidiaRtxLinks.download
       }
     ]
   },
@@ -208,7 +150,10 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       },
       {
         id: 'run-locally',
-        title: { en: 'Run it on your GPU', 'zh-CN': '在你的 GPU 上运行' },
+        title: {
+          en: 'Run it on your Nvidia RTX GPU',
+          'zh-CN': '在你的 Nvidia RTX GPU 上运行'
+        },
         description: {
           en: 'No cloud, no credits, no uploads.',
           'zh-CN': '无需云端、无需积分、无需上传。'
@@ -260,7 +205,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
       }
     ]
   },
-  sectionOrder: ['beforeAfter', 'gallery', 'steps', 'faq'],
+  sectionOrder: ['gallery', 'steps', 'faq'],
   runOptions: {
     headingKey: 'nvidiaRtx.runOptions.heading',
     subtitleKey: 'nvidiaRtx.runOptions.subtitle',

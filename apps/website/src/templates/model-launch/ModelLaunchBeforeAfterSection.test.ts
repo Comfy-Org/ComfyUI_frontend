@@ -8,7 +8,7 @@ import ModelLaunchBeforeAfterSection from './ModelLaunchBeforeAfterSection.vue'
 
 function beforeAfterWith(chinese: boolean): ModelLaunchBeforeAfter {
   return {
-    headingKey: 'nvidiaRtx.beforeAfter.heading',
+    headingKey: 'modelLaunch.beforeAfter.tabsLabel',
     tabs: [
       {
         id: 'sharpen',
@@ -89,12 +89,12 @@ describe('ModelLaunchBeforeAfterSection', () => {
         'Sharpen: soft in, sharp out.',
         'Denoise: grain in, clean out.'
       ],
-      cta: 'TRY NOW'
+      cta: 'After'
     },
     {
       locale: 'zh-CN' as const,
       features: ['锐化：输入柔和，输出锐利。', '降噪：输入噪点，输出干净。'],
-      cta: '立即试用'
+      cta: '处理后'
     }
   ])(
     'plays one clip with its effects as bullets and no tabs or slider ($locale)',
@@ -103,7 +103,7 @@ describe('ModelLaunchBeforeAfterSection', () => {
         props: {
           locale,
           beforeAfter: {
-            headingKey: 'nvidiaRtx.beforeAfter.heading',
+            headingKey: 'modelLaunch.beforeAfter.tabsLabel',
             src: 'https://media.comfy.org/side-by-side.mp4',
             features: [
               {
@@ -116,7 +116,7 @@ describe('ModelLaunchBeforeAfterSection', () => {
               }
             ],
             cta: {
-              labelKey: 'nvidiaRtx.beforeAfter.cta',
+              labelKey: 'modelLaunch.beforeAfter.after',
               href: 'https://cloud.comfy.org/?ref=test'
             }
           }
