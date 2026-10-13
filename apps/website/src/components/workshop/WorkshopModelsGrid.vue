@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
@@ -335,17 +335,11 @@ watch(browseAll, (on) => on && resetFilters())
 
         <Button
           variant="secondaryOutline"
-          class="group mx-auto mt-12 max-sm:w-full"
+          class="mx-auto mt-12 max-sm:w-full"
           data-testid="browse-all-end"
           @click="browseAll = true"
         >
           {{ t('workshop.sections.browseAll') }}
-          <template #append>
-            <ChevronRight
-              class="size-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </template>
         </Button>
       </template>
 

@@ -31,7 +31,6 @@ function captureClick() {
   <Button
     v-if="repo"
     variant="secondaryOutline"
-    size="sm"
     :href="repo"
     target="_blank"
     rel="noopener noreferrer"
