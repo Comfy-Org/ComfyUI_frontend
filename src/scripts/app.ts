@@ -99,9 +99,11 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
+import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -128,6 +130,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
   ComfyApp as IComfyApp,
   ComfyExtension,
+  ComfyWidgetConstructor,
+  CustomComfyWidgetConstructor,
   LoadGraphDataOptions,
   QueuePromptOptions
 } from '@/types/comfy'
@@ -144,9 +148,11 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -188,7 +194,6 @@ import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -428,6 +433,7 @@ export class ComfyApp implements IComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
+  private readonly pendingGraphLoads = new Set<number>()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -484,8 +490,10 @@ export class ComfyApp implements IComfyApp {
   /**
    * @deprecated Use useWidgetStore().widgets instead
    */
-  get widgets(): Record<string, CustomComfyWidgetConstructor> &
-    typeof ComfyWidgets {
+  get widgets(): Record<
+    string,
+    ComfyWidgetConstructor | CustomComfyWidgetConstructor
+  > {
     const widgetStore = useWidgetStore()
     return Object.assign(
       Object.fromEntries(widgetStore.widgets.entries()),
@@ -540,7 +548,15 @@ export class ComfyApp implements IComfyApp {
 
   constructor() {
     this.vueAppReady = false
-    this.ui = new ComfyUI(this)
+    this.ui = new ComfyUI(this, {
+      resetView: () => useLitegraphService().resetView(),
+      restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
+      trackRunButton: (intent) =>
+        useRunButtonTelemetry().trackRunButton(intent),
+      enterFocusMode: () => {
+        useWorkspaceStore().focusMode = true
+      }
+    })
     this.api = api
     // Dummy placeholder elements before GraphCanvas is mounted.
     this.bodyTop = $el('div.comfyui-body-top')
@@ -599,7 +615,7 @@ export class ComfyApp implements IComfyApp {
 
   static onClipspaceEditorSave() {
     if (clipspace.returnNode) {
-      pasteFromClipspace(clipspace.returnNode)
+      ComfyApp.pasteFromClipspace(clipspace.returnNode)
     }
   }
 
@@ -1182,7 +1198,7 @@ export class ComfyApp implements IComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
     }
   }
 
@@ -1208,6 +1224,13 @@ export class ComfyApp implements IComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    this.pendingGraphLoads.add(loadId)
+    ChangeTracker.isLoadingGraph = true
+    const releaseGraphLoad = () => {
+      this.pendingGraphLoads.delete(loadId)
+      if (this.pendingGraphLoads.size === 0)
+        ChangeTracker.isLoadingGraph = false
+    }
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1378,7 +1401,11 @@ export class ComfyApp implements IComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
-      await this.reportGraphLoadFailure(error)
+      try {
+        await this.reportGraphLoadFailure(error)
+      } finally {
+        releaseGraphLoad()
+      }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1420,7 +1447,6 @@ export class ComfyApp implements IComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
@@ -1495,6 +1521,16 @@ export class ComfyApp implements IComfyApp {
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
+      const configuredGraphState = this.rootGraph.state
+      const configuredLoadId = this.committedGraphLoadSequence
+      const isCurrentGraphLoad = () =>
+        configuredGraphState === this.rootGraph.state &&
+        configuredLoadId === this.committedGraphLoadSequence
+      const cancelReplacedLoad = () =>
+        useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1559,6 +1595,10 @@ export class ComfyApp implements IComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
 
       const effectiveShareId =
         shareId ??
@@ -1590,7 +1630,20 @@ export class ComfyApp implements IComfyApp {
         console.error(error)
         return false
       }
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
+      for (const pendingLoadId of this.pendingGraphLoads) {
+        if (pendingLoadId <= loadId)
+          this.pendingGraphLoads.delete(pendingLoadId)
+      }
+      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1658,7 +1711,7 @@ export class ComfyApp implements IComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      releaseGraphLoad()
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
@@ -1749,10 +1802,14 @@ export class ComfyApp implements IComfyApp {
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const workspaceAuthToken = await useAuthStore().getWorkspaceAuthToken()
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
+    const comfyOrgAuthToken = await queueAuthToken(
+      workspaceAuthToken,
+      executionWorkspaceId
+    )
     const workspaceChangedWhileAuthenticating =
       (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
         workspaceGenerationBeforeAuthentication !==

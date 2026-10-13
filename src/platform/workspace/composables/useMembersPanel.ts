@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
@@ -24,6 +25,19 @@ import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspa
 type ActiveView = 'active' | 'pending'
 type SortField = 'inviteDate' | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
+
+interface MemberGates {
+  canViewPendingInvites: ServerFact<'can_manage_members'>
+  canInviteMembers: ServerFact<'can_invite_members'>
+  canManageInvites: ServerFact<'can_manage_members'>
+  canManageMembers: ServerFact<'can_manage_members'>
+}
+
+type MembersPanelPermissions = Omit<
+  ReturnType<typeof useWorkspaceUI>['permissions']['value'],
+  keyof MemberGates
+> &
+  MemberGates
 
 export function sortMembers(
   members: WorkspaceMember[],
@@ -122,10 +136,8 @@ export function useMembersPanel() {
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
-  const permissions = computed(() => {
-    const canManage = isCloud
-      ? canManageMembers.value
-      : hasMemberSeats.value && workspaceRole.value === 'owner'
+  const permissions = computed((): MembersPanelPermissions => {
+    const canManage = canManageMembers.value
 
     return {
       ...workspacePermissions.value,
@@ -133,7 +145,7 @@ export function useMembersPanel() {
         ? membersLoaded.value
         : hasMemberSeats.value || canManage,
       canViewPendingInvites: canManage,
-      canInviteMembers: isCloud ? canInviteMembers.value : canManage,
+      canInviteMembers: canInviteMembers.value,
       canManageInvites: canManage,
       canManageMembers: canManage
     }

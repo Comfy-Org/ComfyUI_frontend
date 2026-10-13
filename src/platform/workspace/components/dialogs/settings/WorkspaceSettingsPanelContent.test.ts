@@ -6,6 +6,7 @@ import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 
@@ -50,7 +51,9 @@ const stubs = {
 }
 
 beforeEach(() => {
-  useBillingCapabilities().canManageMembers = computed(() => true)
+  useBillingCapabilities().canManageMembers = computed(() =>
+    receiveServerFact('can_manage_members', true)
+  )
   const workspaceUI = vi.mocked(useWorkspaceUI())
   workspaceUI.workspaceRole = computed(() => 'owner')
   const ownerPermissions = workspaceUI.permissions.value

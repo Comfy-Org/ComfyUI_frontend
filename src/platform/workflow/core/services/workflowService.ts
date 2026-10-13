@@ -780,12 +780,17 @@ export const useWorkflowService = () => {
     const tabsOpenBefore = new Set(
       workflowStore.openWorkflows.map((open) => open.path)
     )
+    const graphState = useApp().rootGraphOrUndefined?.state
+    const isSuperseded = () =>
+      graphState !== useApp().rootGraphOrUndefined?.state
     try {
       await activateLoadedWorkflow(value, workflowData, shareId)
+      if (isSuperseded()) return
       useNodeOutputStore().restorePreviewsForWorkflow(
         workflowStore.activeWorkflow?.path
       )
     } catch (error) {
+      if (isSuperseded()) return
       // An activation that already switched to its workflow left the canvas
       // owned; one that did not leaves the built nodes unowned.
       const active = workflowStore.activeWorkflow
@@ -801,6 +806,7 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
+    const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
@@ -851,6 +857,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -886,11 +893,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
