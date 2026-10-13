@@ -73,7 +73,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * The stash owns the object URL retain taken when the previews were set.
    */
   const stashedPreviews = new Map<string, NodePreviewMap>()
-  const uploadPreviewIds = new Map<string, string>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -242,11 +241,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
     if (typeof filenames === 'string') {
-      const outputs = createOutputs([filenames], folder, isAnimated)
-      const previewId = uploadPreviewIds.get(filenames)
-      if (previewId && outputs.images?.[0])
-        outputs.images[0].preview_id = previewId
-      setOutputsByLocatorId(locatorId, outputs)
+      setOutputsByLocatorId(
+        locatorId,
+        createOutputs([filenames], folder, isAnimated)
+      )
     } else if (!Array.isArray(filenames)) {
       setOutputsByLocatorId(locatorId, filenames)
     } else {
@@ -254,11 +252,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (!resultItems.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
-  }
-
-  function setUploadPreviewId(path: string, previewId: string | undefined) {
-    if (previewId) uploadPreviewIds.set(path, previewId)
-    else uploadPreviewIds.delete(path)
   }
 
   function setNodeOutputImages(
@@ -558,7 +551,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getPreviewParam,
 
     setNodeOutputs,
-    setUploadPreviewId,
     setNodeOutputImages,
     replaceNodeOutputImages,
     setNodeOutputsByExecutionId,

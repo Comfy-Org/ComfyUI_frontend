@@ -111,6 +111,7 @@
       <!-- Main Image -->
       <img
         v-if="!imageError && !isHdrPlaceholder(currentImageUrl)"
+        :key="currentImageUrl"
         data-testid="main-image"
         :src="currentHdrPreviewUrl ?? currentImageUrl"
         :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"

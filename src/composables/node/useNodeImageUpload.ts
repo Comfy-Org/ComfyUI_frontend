@@ -8,7 +8,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { api } from '@/scripts/api'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -40,10 +39,6 @@ interface ImageUploadFormFields {
   type: ResultItemType
 }
 
-function uploadedPath(data: { name: string; subfolder?: string }) {
-  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
-}
-
 const uploadFile = async (
   file: File,
   formFields: Partial<ImageUploadFormFields> = {}
@@ -65,12 +60,12 @@ const uploadFile = async (
 
   const data = await resp.json()
 
-  const path = uploadedPath(data)
+  // Update AssetsStore input assets when files are uploaded to input folder
   if (formFields.type === 'input' || !formFields.type) {
     await useAssetsStore().inputAssets.invalidate()
-    useNodeOutputStore().setUploadPreviewId(path, data.asset?.preview_id)
   }
-  return path
+
+  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
 interface ImageUploadOptions {
