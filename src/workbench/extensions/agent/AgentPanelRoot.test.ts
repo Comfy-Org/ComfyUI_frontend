@@ -5512,6 +5512,33 @@ describe('AgentPanelRoot node catalog refresh', () => {
     expect(refreshNodeDefinitions).toHaveBeenCalledTimes(2)
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
   })
+  it('reports a refresh command that cannot run and refreshes on the next restart', async () => {
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    ws.emit('agent_tool_call', restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_refreshing_agent_node_catalog'
+      })
+    )
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    const refreshNodeDefinitions = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.RefreshNodeDefinitions',
+      function: refreshNodeDefinitions
+    })
+    ws.emit('agent_tool_call', { ...restartSucceeded, tool_call_id: 'call-2' })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refreshNodeDefinitions).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('stops refreshing once the panel unmounts', async () => {
     const refreshNodeDefinitions = vi.fn()
     useCommandStore().registerCommand({

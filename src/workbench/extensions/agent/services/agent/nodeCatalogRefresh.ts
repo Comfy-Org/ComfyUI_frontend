@@ -4,6 +4,7 @@ import { parseAgentWsEvent } from '../../schemas/agentApiSchema'
 interface NodeCatalogRefreshDeps {
   refreshNodeDefinitions(): Promise<boolean>
   reloadCurrentWorkflow(): Promise<boolean>
+  onError(error: unknown): void
 }
 
 function restartSucceeded(raw: unknown): string | null {
@@ -15,6 +16,18 @@ function restartSucceeded(raw: unknown): string | null {
     : null
 }
 
+async function stepSucceeded(
+  step: () => Promise<boolean>,
+  onError: (error: unknown) => void
+): Promise<boolean> {
+  try {
+    return await step()
+  } catch (error) {
+    onError(error)
+    return false
+  }
+}
+
 export function refreshNodeCatalogOnRestart(
   events: AgentEventSource,
   deps: NodeCatalogRefreshDeps
@@ -24,8 +37,8 @@ export function refreshNodeCatalogOnRestart(
 
   async function refreshFor(callId: string): Promise<void> {
     const refreshed =
-      (await deps.refreshNodeDefinitions()) &&
-      (await deps.reloadCurrentWorkflow())
+      (await stepSucceeded(deps.refreshNodeDefinitions, deps.onError)) &&
+      (await stepSucceeded(deps.reloadCurrentWorkflow, deps.onError))
     if (!refreshed) calls.delete(callId)
   }
 
