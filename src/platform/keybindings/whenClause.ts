@@ -12,10 +12,6 @@ export type WhenClauseParseResult =
   | { success: true; clause: WhenClause }
   | { success: false; error: string }
 
-/**
- * Any text free of operator characters, so extension names with spaces, `@`
- * or `/` can prefix their keys.
- */
 const KEY_SOURCE = String.raw`[^\s!&|()=<>~'"](?:[^!&|()=<>~'"]*[^\s!&|()=<>~'"])?`
 const KEY_PATTERN = new RegExp(`^${KEY_SOURCE}$`)
 const ATOM_PATTERN = new RegExp(`^(!?)\\s*(${KEY_SOURCE})$`)
@@ -46,10 +42,6 @@ export function parseWhenClause(source: string): WhenClauseParseResult {
   return { success: true, clause: atoms }
 }
 
-/**
- * A key nobody has registered never matches, negated or not, so a typo
- * cannot silently enable a binding everywhere.
- */
 export function matchesContext(
   clause: WhenClause,
   context: ContextSnapshot
@@ -60,12 +52,11 @@ export function matchesContext(
   )
 }
 
-/** Sorted, whitespace-free spelling, so equal clauses compare equal. */
 export function canonicalWhenClause(source: string): string {
   const parsed = parseWhenClause(source)
   if (!parsed.success) return source.trim()
   return [...parsed.clause]
-    .sort((a, b) => a.key.localeCompare(b.key))
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
     .map((atom) => `${atom.negated ? '!' : ''}${atom.key}`)
     .join(' && ')
 }

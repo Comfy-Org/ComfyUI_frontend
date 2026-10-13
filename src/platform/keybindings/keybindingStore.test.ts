@@ -643,19 +643,17 @@ describe('useKeybindingStore', () => {
       ])
     })
 
-    it('prefers a user binding over a default registered after it', () => {
+    it('excludes a default overridden before its registration', () => {
       const store = useKeybindingStore()
       const userBinding = new KeybindingImpl({
         commandId: 'test.save',
-        combo: { key: 'z', ctrl: true }
+        combo: { key: 'z', ctrl: true },
+        targetElementId: 'graph-canvas-container'
       })
       store.addUserKeybinding(userBinding)
       store.addDefaultKeybinding(workspaceUndo())
 
-      expect(store.getKeybindings(userBinding.combo)).toEqual([
-        userBinding,
-        workspaceUndo()
-      ])
+      expect(store.getKeybindings(userBinding.combo)).toEqual([userBinding])
       expect(store.keybindings).toEqual([userBinding])
       expect(store.getKeybindingsByCommandId('test.undo')).toEqual([])
       expect(store.isCommandKeybindingModified('test.undo')).toBe(true)

@@ -1,41 +1,39 @@
-import type { ComputedRef } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { isPlainObject } from 'es-toolkit'
+import { isRef } from 'vue'
+import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useDialogService } from '@/services/dialogService'
 
-interface DialogProps {
-  dialogState: EditKeybindingDialogState
-  existingKeybindingOnCombo: ComputedRef<KeybindingImpl | null>
-  onUpdateCombo: (combo: KeyComboImpl) => void
-}
-
-interface FooterProps {
-  newKeybinding: ComputedRef<KeybindingImpl | null>
-}
-
-const showSmallLayoutDialog = vi.hoisted(() =>
-  vi.fn<(options: { props: DialogProps; footerProps: FooterProps }) => void>()
-)
-
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showSmallLayoutDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const ctrlZ = new KeyComboImpl({ key: 'z', ctrl: true })
 const ctrlY = new KeyComboImpl({ key: 'y', ctrl: true })
 
 function shownDialog() {
-  const call = showSmallLayoutDialog.mock.lastCall
-  if (!call) throw new Error('dialog was not shown')
-  return { ...call[0].props, ...call[0].footerProps }
+  const call = vi.mocked(useDialogService().showSmallLayoutDialog).mock.lastCall
+  assert.exists(call)
+  const props: Record<string, unknown> = call[0].props ?? {}
+  const footerProps: Record<string, unknown> = call[0].footerProps ?? {}
+  const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = props
+  const { newKeybinding } = footerProps
+  assert(isPlainObject(dialogState))
+  assert(typeof onUpdateCombo === 'function')
+  assert(isRef<KeybindingImpl | null>(existingKeybindingOnCombo))
+  assert(isRef<KeybindingImpl | null>(newKeybinding))
+  return {
+    dialogState,
+    onUpdateCombo,
+    existingKeybindingOnCombo,
+    newKeybinding
+  }
 }
 
 describe('useEditKeybindingDialog', () => {
-  it('builds the new binding with the scope of the binding being edited', () => {
+  it('preserves the scope and condition of the binding being edited', () => {
     useEditKeybindingDialog().show({
       commandId: 'test.maskEditor.undo',
       commandLabel: 'Undo',
@@ -44,7 +42,8 @@ describe('useEditKeybindingDialog', () => {
         commandId: 'test.maskEditor.undo',
         combo: ctrlZ,
         dialogKey: 'global-mask-editor',
-        targetElementId: 'mask-editor'
+        targetElementId: 'mask-editor',
+        when: 'maskEditorFocused'
       })
     })
     const dialog = shownDialog()
@@ -55,7 +54,8 @@ describe('useEditKeybindingDialog', () => {
         commandId: 'test.maskEditor.undo',
         combo: ctrlY,
         dialogKey: 'global-mask-editor',
-        targetElementId: 'mask-editor'
+        targetElementId: 'mask-editor',
+        when: 'maskEditorFocused'
       })
     )
   })

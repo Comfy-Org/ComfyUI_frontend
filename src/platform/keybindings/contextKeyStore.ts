@@ -5,7 +5,6 @@ import { isContextKeyName } from './whenClause'
 
 export type ContextSnapshot = Readonly<Record<string, boolean>>
 
-/** Derived by the dispatcher on every keydown rather than set by anyone. */
 const BUILT_IN_CONTEXT_KEYS = ['modalOpen', 'textInputFocus']
 
 const CORE_CONTEXT_KEY_OWNER = 'core'

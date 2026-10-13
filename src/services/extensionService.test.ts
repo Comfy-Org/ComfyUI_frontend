@@ -5,7 +5,6 @@ import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { Keybinding } from '@/platform/keybindings/types'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -378,9 +377,11 @@ describe('registerExtension keybindings', () => {
   it('rejects a malformed keybinding with a toast and registers nothing', () => {
     const toast = vi.spyOn(useToast(), 'error')
     const extension: ComfyExtension = {
-      name: 'Test.Broken',
-      keybindings: [{ combo: { key: 'k', ctrl: true } } as Keybinding]
+      name: 'Test.Broken'
     }
+    Object.defineProperty(extension, 'keybindings', {
+      value: [{ combo: { key: 'k', ctrl: true } }]
+    })
 
     useExtensionService().registerExtension(extension)
 
@@ -423,9 +424,11 @@ describe('registerExtension keybindings', () => {
   it('rejects contextKeys that are not a list of names', () => {
     const toast = vi.spyOn(useToast(), 'error')
     const extension: ComfyExtension = {
-      name: 'Test.BadKeys',
-      contextKeys: { wasdMode: true } as unknown as string[]
+      name: 'Test.BadKeys'
     }
+    Object.defineProperty(extension, 'contextKeys', {
+      value: { wasdMode: true }
+    })
 
     useExtensionService().registerExtension(extension)
 

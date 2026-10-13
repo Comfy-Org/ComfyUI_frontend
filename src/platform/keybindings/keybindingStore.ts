@@ -11,14 +11,12 @@ function scopeKey(combo: KeyComboImpl, dialogKey: string | undefined) {
   return `${combo.serialize()}:${dialogKey ?? ''}`
 }
 
-/** Same combo, scope and clause: the dispatcher could not tell them apart. */
 function conflicts(a: KeybindingImpl, b: KeybindingImpl): boolean {
   return (
     a.combo.equals(b.combo) && a.dialogKey === b.dialogKey && a.when === b.when
   )
 }
 
-/** Narrower clauses first; within a clause width, user bindings first. */
 function byResolutionOrder(a: KeybindingImpl, b: KeybindingImpl): number {
   return whenClauseSpecificity(b.when) - whenClauseSpecificity(a.when)
 }
@@ -88,11 +86,15 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
   )
 
-  const keybindings = computed<KeybindingImpl[]>(() => [
-    ...activeDefaultKeybindings.value.filter(
+  const unshadowedDefaultKeybindings = computed(() =>
+    activeDefaultKeybindings.value.filter(
       (binding) =>
         !userKeybindings.value.some((user) => conflicts(user, binding))
-    ),
+    )
+  )
+
+  const keybindings = computed<KeybindingImpl[]>(() => [
+    ...unshadowedDefaultKeybindings.value,
     ...userKeybindings.value
   ])
 
@@ -100,14 +102,13 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     Partial<Record<string, KeybindingImpl[]>>
   >(() => {
     const groups = groupBy(
-      [...userKeybindings.value, ...activeDefaultKeybindings.value],
+      [...userKeybindings.value, ...unshadowedDefaultKeybindings.value],
       (binding) => scopeKey(binding.combo, binding.dialogKey)
     )
     for (const group of Object.values(groups)) group.sort(byResolutionOrder)
     return groups
   })
 
-  /** Active bindings for a combo in a scope, in the order the dispatcher tries them. */
   function getKeybindings(
     combo: KeyComboImpl,
     dialogKey?: string
@@ -115,7 +116,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return keybindingsByScope.value[scopeKey(combo, dialogKey)] ?? []
   }
 
-  /** The binding a dispatcher that does not evaluate clauses should run. */
   function getKeybinding(
     combo: KeyComboImpl,
     dialogKey?: string
@@ -134,7 +134,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   const keybindingsByCommandId = computed<
-    Partial<Partial<Record<string, KeybindingImpl[]>>>
+    Partial<Record<string, KeybindingImpl[]>>
   >(() => {
     return groupBy(keybindings.value, 'commandId')
   })
@@ -153,7 +153,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return defaultKeybindingsByCommandId.value[commandId] ?? []
   }
 
-  /** The binding to advertise in menus and tooltips: one that fires anywhere. */
   function getKeybindingByCommandId(commandId: string) {
     return getKeybindingsByCommandId(commandId).find(
       (binding) => binding.dialogKey === undefined && binding.when === undefined

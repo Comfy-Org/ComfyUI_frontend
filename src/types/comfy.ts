@@ -295,11 +295,6 @@ export interface ComfyExtension {
    * The keybindings defined by the extension
    */
   keybindings?: Keybinding[]
-  /**
-   * Context keys the extension owns, registered as `<name>.<key>`. Keybindings
-   * may require them in `when`; set them with
-   * `app.extensionManager.contextKey.set`.
-   */
   contextKeys?: string[]
   /**
    * Menu commands to add to the menu bar

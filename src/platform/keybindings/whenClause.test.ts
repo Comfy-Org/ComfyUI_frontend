@@ -100,9 +100,12 @@ describe('isContextKeyName', () => {
 })
 
 describe('canonicalWhenClause', () => {
-  it('orders atoms so equal clauses spell the same', () => {
-    expect(canonicalWhenClause('b && !a')).toBe('!a && b')
-    expect(canonicalWhenClause(' !a&&b ')).toBe('!a && b')
+  it.for([
+    { source: 'b && !a', expected: '!a && b' },
+    { source: ' !a&&b ', expected: '!a && b' },
+    { source: 'b && B && a && A', expected: 'A && B && a && b' }
+  ])('canonicalizes "$source" as "$expected"', ({ source, expected }) => {
+    expect(canonicalWhenClause(source)).toBe(expected)
   })
 
   it('keeps an unparseable clause as written', () => {
