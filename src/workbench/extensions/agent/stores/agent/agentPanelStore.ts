@@ -406,7 +406,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     key: string,
     fetchStatus: () => Promise<boolean>,
     afterCurrent = false,
-    onLateError?: (error: unknown) => void
+    onLateError?: (error: unknown) => void,
+    onLateSuccess?: () => void
   ): Promise<boolean> {
     const existing = billingRefreshes.get(key)
     if (existing) return existing
@@ -420,10 +421,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         }, 15_000)
         Promise.resolve()
           .then(fetchStatus)
-          .then(resolve, (error: unknown) => {
-            if (timedOut) onLateError?.(error)
-            else reject(error)
-          })
+          .then(
+            (adopted) => {
+              if (timedOut) {
+                if (adopted) onLateSuccess?.()
+              } else resolve(adopted)
+            },
+            (error: unknown) => {
+              if (timedOut) onLateError?.(error)
+              else reject(error)
+            }
+          )
           .finally(() => clearTimeout(timeoutId))
       })
     const pending = previous ? previous.catch(() => false).then(start) : start()
