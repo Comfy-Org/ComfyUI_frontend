@@ -973,6 +973,52 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      const deleteTranscript = (): AgentMessages => [
+        historyRow(1, 'user', 'turn-1', 'Tidy up', 'user-message-1'),
+        zAgentMessages.parse([
+          {
+            id: 'assistant-message-1',
+            thread_id: 'th',
+            seq: 2,
+            role: 'assistant',
+            status: 'streaming',
+            turn_id: 'turn-1',
+            pending_ask: {
+              ...pendingAskUser,
+              kind: 'delete_approval',
+              options: [
+                { id: 'delete', label: 'Delete' },
+                { id: 'keep', label: 'Keep' }
+              ],
+              allow_other: false,
+              context: { action: 'delete_nodes', nodes: [{ id: '12' }] }
+            }
+          }
+        ])[0]
+      ]
+      store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', 'th', {
+        status: 'answered',
+        selected: ['keep']
+      })
+
+      store.hydrate(deleteTranscript())
+
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: { status: 'answered', selected: ['keep'] }
+        })
+      ])
+    })
+
     it('rebuilds a retired question read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
