@@ -3787,6 +3787,7 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(fetchRequests(/\/messages$/)).toEqual([])
     expect(useToast().toasts).toEqual([])
+    await userEvent.hover(screen.getByRole('group', { name: 'renamed.mp4' }))
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove renamed.mp4' })
     )

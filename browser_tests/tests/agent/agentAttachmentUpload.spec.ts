@@ -128,12 +128,16 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
       agentPanel.root.getByRole('menuitem', { name: 'renamed.mp4' })
     ).toHaveCount(0)
     await agentPanel.composer.press('Escape')
-    await agentPanel
+    const removeButton = agentPanel
       .attachmentChip('renamed.mp4')
       .getByRole('button', {
         name: enMessages.agent.removeAsset.replace('{name}', 'renamed.mp4')
       })
-      .click()
+    await comfyPage.page.mouse.move(0, 0)
+    await expect(removeButton).toHaveCSS('opacity', '0')
+    await agentPanel.attachmentChip('renamed.mp4').hover()
+    await expect(removeButton).toHaveCSS('opacity', '1')
+    await removeButton.click()
     await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
     await expect(agentPanel.sendButton).toBeEnabled()
   })
