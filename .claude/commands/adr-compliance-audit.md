@@ -57,7 +57,7 @@ Reference: 40+ custom node repos depend on these (rgthree-comfy, ComfyUI-Impact-
 
 ## Step 3: Priority 2 — General ADR Compliance
 
-1. Read `docs/adr/README.md` for the full ADR index
+1. List `docs/adr/` for the full set of ADRs
 2. For each ADR (except skip list), read the Decision section
 3. Check the diff for contradictions
 4. Only flag ACTUAL violations in changed code

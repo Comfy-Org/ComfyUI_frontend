@@ -81,6 +81,11 @@ FE-3349 (TDD "Server-fact guardrails"):
   that fails open (FE-3352, FE-3353)
 - the `pendingServerFact` bridge and its expiry check (FE-3354)
 - orthogonality tests on every gate a PR touches (FE-3355)
+- a `ServerFact<Field>` type, branded with the API field that answered it.
+  A gate slot typed as a fact rejects `||`, `&&`, `!` and ternaries that mix
+  in other state at compile time. It is adopted surface by surface,
+  starting with the members panel (FE-3361); the lint gate holds the line on
+  surfaces not yet migrated.
 
 Until those land, this ADR and the `AGENTS.md` line are the only guidance.
 
@@ -91,10 +96,10 @@ Until those land, this ADR and the `AGENTS.md` line are the only guidance.
 - **An LLM reviewer prompt for this rule.** Rejected as a gate: that is what
   approved the three PRs. It is not calibrated, and it shares the author's
   framing.
-- **Opaque `ServerFact<T>` types now.** Deferred: it is the strongest
-  guarantee, but about 15 billing surfaces and other domains have to migrate
-  first. The planned lint gate (FE-3351) is meant to hold the line in the
-  meantime.
+- **Opaque `ServerFact<T>` types on every surface at once.** Rejected: it is
+  the strongest guarantee, but about 15 billing surfaces and other domains
+  would have to migrate in one change. The type is adopted incrementally
+  instead (see above).
 - **Server-driven UI.** Rejected for now: out of scope for the capabilities
   API.
 

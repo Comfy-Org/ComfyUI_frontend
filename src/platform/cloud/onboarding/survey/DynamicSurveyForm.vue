@@ -95,7 +95,6 @@
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -105,6 +104,7 @@ import type {
   OnboardingSurvey,
   OnboardingSurveyField
 } from '@/platform/remoteConfig/types'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 import DynamicSurveyField from './DynamicSurveyField.vue'
 import {
