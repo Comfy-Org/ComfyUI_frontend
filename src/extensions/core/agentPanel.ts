@@ -555,8 +555,6 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
-  // The standalone build has no cloud identity for the flag to evaluate;
-  // build/devAgentConfig.ts refuses VITE_AGENT_STANDALONE in a cloud bundle.
   const forcedOn =
     import.meta.env.MODE === 'development' ||
     import.meta.env.VITE_AGENT_STANDALONE === 'true'

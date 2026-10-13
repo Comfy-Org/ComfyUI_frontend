@@ -265,8 +265,6 @@ const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
 })
-// The agent socket is faked at its seam (`ws.socket`); the identity lookup is
-// stubbed to the signed-in account except where a test exercises it.
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
@@ -332,8 +330,6 @@ beforeEach(() => {
     reset: vi.fn(),
     stop: () => {}
   })
-  // The panel runs signed in: every agent request carries the user's auth
-  // header and a send is gated on having one. Signed-out cases say so.
   useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
@@ -611,8 +607,6 @@ async function renderAndSend(text: string): Promise<void> {
   await sendFromComposer(text)
 }
 
-// A send the panel refuses locally never reaches the Stop state; it ends on
-// the failed-send notice for a saved tab the saved-workflow index cannot name.
 async function renderAndSendUnresolved(text: string): Promise<void> {
   renderWithSelectedTarget()
   const textbox = screen.getByRole('textbox')
@@ -5742,8 +5736,6 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
     renderWithSelectedTarget()
     await screen.findByRole('textbox')
-    // The mount's own refresh has to land first, or it is the one that
-    // switches the target.
     await vi.waitFor(() => expect(listings).toBeGreaterThan(0))
     sending = true
 
@@ -8282,9 +8274,6 @@ describe('AgentPanelRoot workflow binding', () => {
     workflowStore.activeWorkflow = scratch
     await sendFromComposer('second message')
 
-    // The pinned workflow's document stays bound while its tab is in the
-    // background, so it is the source of truth and the stale tab is not seeded
-    // over it.
     expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
     expect(bodies[1]).not.toHaveProperty('draft')
   })
@@ -9282,8 +9271,6 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  // Sent without an id, the server would fall back to the thread's previous
-  // workflow; an unnamed saved tab is refused instead of misattributed.
   it('refuses to send a saved tab when the saved-workflow lookup fails', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
@@ -10257,9 +10244,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('second message')
 
-    // The pinned workflow's document stays bound while its tab is in the
-    // background, so it is the source of truth and the stale tab is not seeded
-    // over it.
     expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
     expect(bodies[1]).not.toHaveProperty('draft')
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(

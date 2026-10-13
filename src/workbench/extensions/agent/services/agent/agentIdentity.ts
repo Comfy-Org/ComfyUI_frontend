@@ -18,11 +18,7 @@ export interface ResolvedAgentIdentity {
   stop(): void
 }
 
-/**
- * The user id the agent authenticated this client as, which every canvas op
- * must carry as its actor. A failed lookup retries on its own with backoff;
- * a socket that connects again retries it at once.
- */
+/** The user id the agent authenticated this client as; a failed lookup retries with backoff. */
 export function resolveAgentIdentity(
   deps: AgentIdentityDeps
 ): ResolvedAgentIdentity {

@@ -34,7 +34,6 @@ function isReadableDirectory(path: string): boolean {
   }
 }
 
-// Mirrors `SessionHeader` in Comfy-Org/cloud services/agent/local/internal/server/local_auth.go.
 const AGENT_SESSION_HEADER = 'X-Comfy-Agent-Session'
 
 type AgentTokenSource =

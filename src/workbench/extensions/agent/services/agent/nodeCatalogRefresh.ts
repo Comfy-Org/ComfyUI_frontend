@@ -19,16 +19,11 @@ const zRestartSucceeded = z.object({
   })
 })
 
-/**
- * After the agent restarts ComfyUI (it does so after installing or writing a
- * node pack), registers the node definitions again and rebuilds the open
- * workflow, so the new pack's nodes stop rendering as missing types.
- */
+/** Re-registers node definitions and rebuilds the open workflow after the agent restarts ComfyUI. */
 export function refreshNodeCatalogOnRestart(
   events: AgentEventSource,
   deps: NodeCatalogRefreshDeps
 ): () => void {
-  // A reconnect can redeliver a call; only a refresh that succeeded is final.
   const calls = new Map<string, 'pending' | 'done'>()
   let queue = Promise.resolve()
 

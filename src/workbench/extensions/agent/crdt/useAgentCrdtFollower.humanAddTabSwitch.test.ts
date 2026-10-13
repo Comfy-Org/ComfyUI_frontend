@@ -54,7 +54,6 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   }
 }
 
-// The agent's one socket, faked at its seam with the real document transport.
 let agentSocket = createFakeAgentSocket()
 
 function deliver(type: string, data: unknown): void {

@@ -58,8 +58,6 @@ function runNonce(label: string): string {
 
 async function submitTurn(agentPanel: AgentPanel, text: string) {
   await agentPanel.composer.fill(text)
-  // Enter submits the composer; the CRDT dev-panel chip overlaps the Send
-  // button under the harness and intercepts pointer clicks on it.
   await agentPanel.composer.press('Enter')
 }
 

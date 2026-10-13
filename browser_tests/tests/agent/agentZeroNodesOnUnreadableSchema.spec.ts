@@ -85,18 +85,10 @@ test.describe(
 
       const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       hostSocket.answerSubscribesWith((stateVector) => {
-        // Simulates the unproven trigger this repro exercises (see file
-        // header): the catch-up frame's merged doc has no readable
-        // meta.schema_version at all.
         host.corruptSchemaVersion()
         return [
           host.subscribed(),
           host.catchUp(stateVector),
-          // Sent as its own later-seq frame -- not folded silently into a
-          // later apply()'s delta -- so the fix that stops the latch from
-          // outliving one bad frame is exercised for real: this repair alone
-          // is enough for the gate to pass again before the add_node frame
-          // below arrives.
           host.repairSchemaVersion()
         ]
       })

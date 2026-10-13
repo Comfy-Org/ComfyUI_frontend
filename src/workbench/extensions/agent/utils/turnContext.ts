@@ -8,11 +8,7 @@ interface TurnContextInput {
   hasOrigin: boolean
 }
 
-/**
- * An unresolved saved tab is marked `unresolved` so the send refuses it:
- * tab-only, the agent would mint a second workflow for a tab that already has
- * one; without a tab, the turn would land on the thread's previous workflow.
- */
+/** Marks an unresolved saved origin tab `unresolved` so the send refuses it. */
 export function turnContextFor({
   id,
   tabPath,

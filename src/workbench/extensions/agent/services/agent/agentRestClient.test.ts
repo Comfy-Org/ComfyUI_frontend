@@ -411,11 +411,10 @@ describe('postMessage wire body', () => {
       currentTabUnbound: true
     })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as Record<
-      string,
-      unknown
-    >
-    expect(parsed).toEqual({ content: 'add a node', current_tab_unbound: true })
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'add a node',
+      current_tab_unbound: true
+    })
   })
 
   it('omits absent optionals rather than sending them as undefined keys', async () => {

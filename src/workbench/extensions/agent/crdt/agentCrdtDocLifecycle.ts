@@ -266,16 +266,7 @@ export class AgentCrdtDocLifecycle {
     return false
   }
 
-  /**
-   * Whether the last refusal was the last word: no retry is scheduled (the
-   * budget is spent, the refusal was permanent, or nothing is bound), so
-   * nothing will answer the intent until the next confirmed subscribe,
-   * reconnect or retarget restores the budget. The composable needs the
-   * distinction because its intent (`status.workflowId`) is what the panel
-   * withholds the draft seed on, and an intent nothing will ever satisfy must
-   * be visible as such. A stale permanent refusal that raced behind a
-   * confirm (see `confirmedSinceLastSend`) answers nothing, so it is not.
-   */
+  /** Whether no retry will answer the last refusal. */
   refusalIsFinal(): boolean {
     return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
   }

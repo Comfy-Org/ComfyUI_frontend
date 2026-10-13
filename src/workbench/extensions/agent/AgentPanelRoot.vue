@@ -253,8 +253,6 @@ const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
 })
 onBeforeUnmount(stopNodeCatalogRefresh)
 
-// The account the agent authenticates: the signed-in user, or with none the
-// stored API key's user (never the key itself).
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const agentAccountId = computed(
@@ -756,8 +754,6 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  // The backend applies a versionless draft unconditionally, so it would
-  // overwrite a live document the canvas has not caught up with.
   if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
@@ -949,8 +945,6 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-// Every canvas op carries the actor the agent reported, so the follower waits
-// for the identity.
 const isFollowerActive = computed(
   () => isBoundWorkflowActive.value && agentIdentity.userId.value !== null
 )
@@ -1013,8 +1007,6 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-// A human edit minted before the subscribe left the socket would settle
-// undeliverable, silently.
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
@@ -1625,8 +1617,6 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
-    // Checked synchronously first, like consent, so a signed-in send pins its
-    // turn in the tick it was clicked.
     if (!hasAgentCredential() && !(await ensureSignedIn())) return false
     const submissionId = composerStore.submission?.id
     if (
