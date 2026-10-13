@@ -15,7 +15,6 @@ export const fishAudioPage: ModelLaunchPage = {
   hero: {
     videoSrc: 'https://media.comfy.org/website/fish-audio/fish-audio-hero2.mp4',
     posterSrc: HERO_POSTER_SRC,
-    mobileFallbackImageSrc: HERO_POSTER_SRC,
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
