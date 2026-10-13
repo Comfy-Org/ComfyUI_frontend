@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ChevronDown, Dices, SquareDashed } from '@lucide/vue'
-import { computed, useId } from 'vue'
+import { ChevronDown, SquareDashed } from '@lucide/vue'
+import { computed } from 'vue'
 
 import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
 import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
-import EditorIconButton from '@/components/workshop/app-editor/EditorIconButton.vue'
 import type { Relight } from '@/composables/useRelight'
 import type { Locale } from '@/i18n/translations'
 import { lc } from '@/lib/workshop/relight/copy'
+import RelightSeed from './RelightSeed.vue'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight
@@ -15,7 +15,6 @@ const { relight, locale = 'en' } = defineProps<{
 }>()
 
 const { setup } = relight
-const seedId = useId()
 
 const areas = computed(() => [
   { id: 'whole', label: lc('relight.generation.whole', locale) },
@@ -33,20 +32,6 @@ const area = computed({
 const areaLabel = computed(
   () => areas.value.find((option) => option.id === area.value)?.label
 )
-
-function onSeed(event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const seed = Number.parseFloat(event.target.value)
-  if (Number.isFinite(seed))
-    relight.updateGeneration({ seed: Math.max(0, Math.floor(seed)) }, 'seed')
-}
-
-function shuffle() {
-  relight.updateGeneration(
-    { seed: Math.floor(Math.random() * 1_000_000_000) },
-    'seed'
-  )
-}
 </script>
 
 <template>
@@ -69,26 +54,6 @@ function shuffle() {
         aria-hidden="true"
       />
     </CinematicMenu>
-    <div
-      class="flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3 hover:border-transparency-white-t20"
-    >
-      <label :for="seedId" class="sr-only">
-        {{ lc('relight.generation.seed', locale) }}
-      </label>
-      <input
-        :id="seedId"
-        :value="setup.generation.seed"
-        type="number"
-        min="0"
-        step="1"
-        class="h-8 min-w-0 flex-1 bg-transparent px-1 text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
-        @change="onSeed"
-      />
-      <EditorIconButton
-        :icon="Dices"
-        :label="lc('relight.generation.shuffle', locale)"
-        @click="shuffle"
-      />
-    </div>
+    <RelightSeed :relight :locale />
   </div>
 </template>
