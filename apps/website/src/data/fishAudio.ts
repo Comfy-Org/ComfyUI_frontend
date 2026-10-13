@@ -3,7 +3,7 @@ import type { ModelLaunchPage } from '@/templates/model-launch/types'
 import { externalLinks } from '@/config/routes'
 
 const DOCS_HREF =
-  'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio'
+  'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/drama-3'
 const HERO_POSTER_SRC =
   'https://media.comfy.org/website/fish-audio/fish-audio-poster.jpg'
 
@@ -18,11 +18,6 @@ export const fishAudioPage: ModelLaunchPage = {
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
-    primaryCta: {
-      labelKey: 'fishAudio.hero.primaryCta',
-      href: externalLinks.cloud,
-      target: '_blank'
-    },
     secondaryCta: {
       labelKey: 'fishAudio.hero.secondaryCta',
       href: DOCS_HREF,
@@ -38,11 +33,6 @@ export const fishAudioPage: ModelLaunchPage = {
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
-    primaryCta: {
-      labelKey: 'fishAudio.steps.primaryCta',
-      href: externalLinks.cloud,
-      target: '_blank'
-    },
     secondaryCta: {
       labelKey: 'fishAudio.steps.secondaryCta',
       href: DOCS_HREF,
