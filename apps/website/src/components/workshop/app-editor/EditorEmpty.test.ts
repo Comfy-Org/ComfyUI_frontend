@@ -6,10 +6,11 @@ import EditorEmpty from './EditorEmpty.vue'
 
 const props = {
   title: 'Try an example',
-  hint: 'Or upload your own photo in the panel.',
+  hint: 'Each one loads a photo ready to try.',
+  upload: 'Or upload your photo in the panel',
   examples: [
     { id: 'pier', image: '/pier.jpg', label: 'Pier' },
-    { id: 'cafe', image: '/cafe.jpg', label: 'Cafe' }
+    { id: 'cafe', image: '/cafe.jpg', label: 'Cafe', result: 'Night' }
   ]
 }
 
@@ -17,7 +18,7 @@ describe('EditorEmpty', () => {
   it('offers the examples and hands back the one picked', async () => {
     const { emitted } = render(EditorEmpty, { props })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Cafe' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cafe → Night' }))
 
     expect(emitted('example')).toEqual([['cafe']])
     expect(screen.queryByRole('button', { name: /upload/i })).toBeNull()
@@ -30,6 +31,6 @@ describe('EditorEmpty', () => {
       'aria-busy',
       'true'
     )
-    expect(screen.getByRole('button', { name: 'Cafe' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cafe → Night' })).toBeDisabled()
   })
 })
