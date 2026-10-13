@@ -1,8 +1,8 @@
+import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -39,13 +39,15 @@ describe('keybindingService - dialog gate', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
 
   beforeEach(() => {
-    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
+    useCommandStore().registerCommands(
+      [...new Set(CORE_KEYBINDINGS.map((binding) => binding.commandId))].map(
+        (id) => ({ id, function: vi.fn() })
+      )
+    )
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
-    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -69,9 +71,10 @@ describe('keybindingService - dialog gate', () => {
     const event = createKeyboardEvent('w')
     await keybindingService.keybindHandler(event)
 
-    expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Workspace.ToggleSidebarTab.workflows'
-    )
+    expect(
+      useCommandStore().getCommand('Workspace.ToggleSidebarTab.workflows')
+        .function
+    ).toHaveBeenCalledOnce()
   })
 
   it('does NOT execute a global keybinding while a dialog is open', async () => {
@@ -160,9 +163,9 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
       await keybindingService.keybindHandler(event)
 
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.SaveWorkflow'
-      )
+      expect(
+        useCommandStore().getCommand('Comfy.SaveWorkflow').function
+      ).toHaveBeenCalledOnce()
       expect(event.defaultPrevented).toBe(true)
     } finally {
       document.body.removeChild(dialog)
@@ -202,9 +205,9 @@ describe('keybindingService - dialog gate', () => {
         const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
         await keybindingService.keybindHandler(event)
 
-        expect(useCommandStore().execute).toHaveBeenCalledWith(
-          'Comfy.SaveWorkflow'
-        )
+        expect(
+          useCommandStore().getCommand('Comfy.SaveWorkflow').function
+        ).toHaveBeenCalledOnce()
         expect(event.defaultPrevented).toBe(true)
       } finally {
         document.body.removeChild(wrapper)
@@ -259,9 +262,10 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Workspace.ToggleSidebarTab.workflows'
-      )
+      expect(
+        useCommandStore().getCommand('Workspace.ToggleSidebarTab.workflows')
+          .function
+      ).toHaveBeenCalledOnce()
     } finally {
       document.body.removeChild(popper)
     }
