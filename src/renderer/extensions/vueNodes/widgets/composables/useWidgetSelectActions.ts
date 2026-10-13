@@ -8,6 +8,7 @@ import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import { uploadedPath } from '@/composables/node/useNodeImageUpload'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -84,9 +85,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const data = await resp.json()
 
-    const path: string = data.subfolder
-      ? `${data.subfolder}/${data.name}`
-      : data.name
+    const path = uploadedPath(data)
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
       await useAssetsStore().inputAssets.invalidate()
       useNodeOutputStore().setUploadPreviewId(path, data.asset?.preview_id)

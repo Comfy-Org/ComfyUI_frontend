@@ -40,6 +40,10 @@ interface ImageUploadFormFields {
   type: ResultItemType
 }
 
+export function uploadedPath(data: { name: string; subfolder?: string }) {
+  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+}
+
 const uploadFile = async (
   file: File,
   formFields: Partial<ImageUploadFormFields> = {}
@@ -61,9 +65,7 @@ const uploadFile = async (
 
   const data = await resp.json()
 
-  const path: string = data.subfolder
-    ? `${data.subfolder}/${data.name}`
-    : data.name
+  const path = uploadedPath(data)
   if (formFields.type === 'input' || !formFields.type) {
     await useAssetsStore().inputAssets.invalidate()
     useNodeOutputStore().setUploadPreviewId(path, data.asset?.preview_id)
