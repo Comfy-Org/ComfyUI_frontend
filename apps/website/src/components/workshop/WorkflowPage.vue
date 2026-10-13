@@ -96,7 +96,7 @@ function captureDownload() {
           :href="template.downloadUrl"
           download
           variant="outline"
-          class="px-5"
+          class="px-5 text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink"
           data-testid="workflow-path-download"
           @click="captureDownload"
         >

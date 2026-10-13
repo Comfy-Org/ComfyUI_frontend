@@ -38,7 +38,7 @@ const MOSAIC_LAYOUT: Readonly<Record<number, string>> = {
     >
       {{ t('workshop.explore.useCasesTitle') }}
     </h2>
-    <ul class="grid grid-cols-2 gap-5 lg:grid-cols-4">
+    <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <li v-for="tile in tiles" :key="tile.id">
         <a
           :href="tile.href"
