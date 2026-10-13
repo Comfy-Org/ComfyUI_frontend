@@ -154,7 +154,6 @@ import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
-import { turnContextFor } from './utils/turnContext'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -736,12 +735,12 @@ function targetWorkflowTurnContext(
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  return turnContextFor({
-    id: cloudIdFor(target),
-    tabPath: target.path,
-    isTemporary: target.isTemporary,
-    hasOrigin: origin !== undefined
-  })
+  const id = cloudIdFor(target)
+  if (id === undefined && !target.isTemporary && origin !== undefined)
+    return undefined
+  return id === undefined
+    ? { tabPath: target.path }
+    : { id, tabPath: target.path }
 }
 
 function serializedCanvas(target: ComfyWorkflow) {

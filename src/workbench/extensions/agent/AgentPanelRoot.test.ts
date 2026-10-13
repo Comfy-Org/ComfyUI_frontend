@@ -607,19 +607,6 @@ async function renderAndSend(text: string): Promise<void> {
   await sendFromComposer(text)
 }
 
-async function renderAndSendUnresolved(text: string): Promise<void> {
-  renderWithSelectedTarget()
-  const textbox = screen.getByRole('textbox')
-  await userEvent.click(textbox)
-  await userEvent.paste(text)
-  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-  expect(
-    await screen.findByText(i18n.global.t('agent.targetNotResolved'), {
-      exact: false
-    })
-  ).toBeVisible()
-}
-
 function addTab(
   path: string,
   overrides: Partial<LoadedComfyWorkflow> = {}
@@ -1967,9 +1954,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       }
     )
     paywallHasFunds.value = false
-    workflowStore.activeWorkflow = addTab('workflows/current.json', {
-      isTemporary: true
-    })
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
     renderWithSelectedTarget()
     await screen.findByTestId(STANDING)
 
@@ -4443,7 +4428,6 @@ describe('AgentPanelRoot canvas draft on send', () => {
     const prepareForSave = vi.fn()
     const activeWorkflow = addTab('workflows/video_minimax_h3_i2v.json', {
       activeState,
-      isTemporary: true,
       changeTracker: createMockChangeTracker({ prepareForSave })
     })
     workflowStore.activeWorkflow = activeWorkflow
@@ -9211,16 +9195,17 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not resolve two same-named open saved tabs to one cloud id, and refuses the send', async () => {
+  it('does not resolve two same-named open saved tabs to one cloud id', async () => {
     const current = makeTab()
     const archived = addTab('workflows/archive/current.json')
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-cloud-current', name: 'current' }
     ])
 
-    await renderAndSendUnresolved('first message')
+    await renderAndSend('first message')
 
-    expect(bodies).toHaveLength(0)
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
     ).toBeUndefined()
@@ -9229,7 +9214,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('excludes ambiguous and nameless cloud records from resolution, and refuses the send', async () => {
+  it('excludes ambiguous and nameless cloud records from resolution', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-a', name: 'current' },
@@ -9237,9 +9222,10 @@ describe('AgentPanelRoot workflow binding', () => {
       { id: 'wf-nameless' } as { id: string; name: string }
     ])
 
-    await renderAndSendUnresolved('first message')
+    await renderAndSend('first message')
 
-    expect(bodies).toHaveLength(0)
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
   })
 
   it('falls back to bindings when the cloud index request fails', async () => {
@@ -9271,7 +9257,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('refuses to send a saved tab when the saved-workflow lookup fails', async () => {
+  it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
     vi.mocked(fetch).mockImplementation(
@@ -9288,15 +9274,15 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
-    await renderAndSendUnresolved('first message')
+    await renderAndSend('first message')
 
-    expect(bodies).toHaveLength(0)
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
     ).toBeUndefined()
   })
 
-  it('refuses to send a saved tab after saved-workflow preparation times out', async () => {
+  it('does not adopt a minted workflow after cloud preparation times out', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const tab = makeTab()
     const bodies: unknown[] = []
@@ -9331,14 +9317,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await vi.advanceTimersByTimeAsync(3000)
 
-    await vi.waitFor(() =>
-      expect(
-        screen.getByText(i18n.global.t('agent.targetNotResolved'), {
-          exact: false
-        })
-      ).toBeVisible()
-    )
-    expect(bodies).toHaveLength(0)
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
     ).toBeUndefined()
@@ -10139,7 +10119,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('skips the draft on first send from an unbound empty tab', async () => {
-    Object.assign(makeTab(), { isTemporary: true })
+    makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
@@ -10533,7 +10513,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
-    const tab = Object.assign(makeTab(), { isTemporary: true })
+    const tab = makeTab()
     tab.activeState = fromPartial<ComfyWorkflowJSON>({
       id: 'graph-internal-id-not-a-cloud-id'
     })

@@ -76,9 +76,10 @@ interface SentTag {
   title: string
 }
 
-export type WorkflowTurnContext =
-  | { id: string; tabPath: string; unresolved?: undefined }
-  | { id?: undefined; tabPath: string; unresolved?: true }
+export interface WorkflowTurnContext {
+  id?: string
+  tabPath: string
+}
 
 /**
  * Workflow lookup context: omitted resolves the currently selected target,
@@ -883,14 +884,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
-  function recordUnresolvedTarget(text: string): void {
-    conversationStore.recordFailedSend(
-      nextLocalErrorId(),
-      text,
-      i18n.global.t('agent.targetNotResolved')
-    )
-  }
-
   function postTurn(
     threadId: string,
     text: string,
@@ -1218,8 +1211,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (rejectUnattributableTarget(text, originContext, wfContext))
+      if (workflowTargetChanged(originContext, wfContext)) {
+        recordUnavailableTarget(text)
         return false
+      }
       sentContext = wfContext
       const ack = await postTurn(
         threadAtSend,
@@ -1261,29 +1256,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function rejectUnattributableTarget(
-    text: string,
-    origin: WorkflowTurnContext | undefined,
-    current: WorkflowTurnContext | undefined
-  ): boolean {
-    if (workflowTargetChanged(origin, current)) {
-      recordUnavailableTarget(text)
-      return true
-    }
-    if (current?.unresolved) {
-      recordUnresolvedTarget(text)
-      return true
-    }
-    return false
-  }
-
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
   ): boolean {
-    if (origin === undefined) return false
-    if (current === undefined) return true
-    return origin.id !== undefined && current.id !== origin.id
+    if (origin?.id === undefined) return false
+    return current?.id !== origin.id
   }
 
   async function sendMessage(
