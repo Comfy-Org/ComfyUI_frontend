@@ -19,7 +19,7 @@ const emit = defineEmits<{ example: [example: SwapExample] }>()
 
 <template>
   <section
-    class="my-auto flex w-full max-w-4xl flex-col gap-4 self-center"
+    class="my-auto flex w-full max-w-4xl flex-col gap-5 self-center rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:p-8"
     data-testid="openjutsu-empty"
   >
     <div class="flex flex-col gap-1">
