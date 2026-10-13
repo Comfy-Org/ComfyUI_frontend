@@ -113,7 +113,7 @@ const partNote = computed(() => {
       </div>
     </section>
 
-    <div class="grid grid-cols-2 gap-2">
+    <div class="flex flex-col gap-2">
       <CinematicMenu
         v-model="sizeValue"
         :options="sizes"
