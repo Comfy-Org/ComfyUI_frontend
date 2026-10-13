@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 
 import type { SpriteSheet } from '@/composables/useSpriteSheet'
 import type { Locale } from '@/i18n/translations'
 import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorPromptBox from '@/components/workshop/app-editor/EditorPromptBox.vue'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import SpriteSheetPickers from './SpriteSheetPickers.vue'
 import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
@@ -20,7 +21,6 @@ const {
 }>()
 
 const { image, phase, setup } = sprite
-const promptId = useId()
 const description = computed({
   get: () => setup.value.description,
   set: (next: string) => sprite.change({ description: next }, 'description')
@@ -49,22 +49,11 @@ const seed = computed({
       @remove="sprite.removeImage"
     />
 
-    <section>
-      <label :for="promptId" class="sr-only">
-        {{ spc('sprite.animation', locale) }}
-      </label>
-      <div
-        class="flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 focus-within:border-primary-warm-white/60"
-      >
-        <textarea
-          :id="promptId"
-          v-model="description"
-          rows="4"
-          :placeholder="spc('sprite.animation.placeholder', locale)"
-          class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
-        />
-      </div>
-    </section>
+    <EditorPromptBox
+      v-model="description"
+      :label="spc('sprite.animation', locale)"
+      :placeholder="spc('sprite.animation.placeholder', locale)"
+    />
 
     <SpriteSheetPickers :sprite :inline :locale />
 
