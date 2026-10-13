@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
+import { computed, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -361,8 +361,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
-  function dismissCreditTransitionNotice(identity: string): void {
-    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  function dismissCreditTransitionNotice(identity: string): boolean {
+    return dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
   return {
@@ -376,7 +376,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
-    creditTransitionNotice: readonly(creditTransitionNotice),
+    creditTransitionNotice: computed(() => creditTransitionNotice.value),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
