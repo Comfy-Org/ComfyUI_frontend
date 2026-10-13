@@ -1296,15 +1296,12 @@ async function onAnswerAsk(
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  // Only a run-approval card records when it was shown, so an `ask_user`
-  // that happens to offer `run` or `cancel` never reports as one.
   const decision =
     shownAt === undefined ? undefined : runApprovalDecision(answer)
   if ((await answerAsk(askId, answer)) && decision)
     trackApprovalResolved(askId, decision, decidedAt, shownAt)
 }
 
-/** The run-approval decision an answer carries, if it is one. */
 function runApprovalDecision(
   answer: AgentAnswerRequest
 ): 'run' | 'cancel' | undefined {

@@ -712,7 +712,7 @@ describe('AgentMessage run approval', () => {
 
 describe('AgentMessage ask_user question', () => {
   const askMessage = (): AssistantMessage => ({
-    id: 'msg-ask' as TurnId,
+    id: toTurnId('msg-ask'),
     role: 'assistant',
     parts: [
       {
@@ -968,7 +968,7 @@ describe('AgentMessage ask the panel cannot render', () => {
     render(AgentMessage, {
       props: {
         message: {
-          id: 'msg-unknown' as TurnId,
+          id: toTurnId('msg-unknown'),
           role: 'assistant',
           parts: [
             toAskOrNoticePart({

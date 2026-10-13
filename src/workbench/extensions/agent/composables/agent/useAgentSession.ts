@@ -323,13 +323,6 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
-/**
- * PM-1658: whether a resolution frame names an answer other than the one this
- * client sent. The server commits the first answer only, so any option we
- * chose that the settled selection lacks means someone else's choice won. An
- * empty settlement (a free-text-only answer, or a cancelled ask) names no
- * option to disagree with.
- */
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
   settled: readonly string[]

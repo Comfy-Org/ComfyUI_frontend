@@ -902,7 +902,6 @@ describe('useAgentConversationStore', () => {
         expect.objectContaining({ askId: 'turn-1:call-1', allowOther: true })
       ])
 
-      // A resubscribe replays the live ask frame for the restored card.
       store.ingest(
         chat({
           type: 'agent_ask',
@@ -954,9 +953,6 @@ describe('useAgentConversationStore', () => {
       }
     )
 
-    // The resolved frame can land while this client's POST is still out; the
-    // POST settling afterwards must not erase the server's answer that a
-    // refetch rebuilds the card from.
     it('keeps the server answer through a later commit and refetch', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -977,8 +973,6 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
-    // The read-only card is the record of the user's answer; a refetch that
-    // still lists the ask as pending must neither re-arm it nor erase it.
     it('rebuilds a retired question read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1915,8 +1909,6 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
-  // A lost agent_ask_resolved leaves the question pending locally while the
-  // server has finished the turn; settling must not hand back a live form.
   it.for([
     {
       name: 'a persisted reply',

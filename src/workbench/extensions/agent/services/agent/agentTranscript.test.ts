@@ -650,9 +650,6 @@ describe('normalizeAgentTranscript', () => {
     ...overrides
   })
 
-  // The turn is waiting on the ask whether or not the panel can show it, so
-  // the card -- or the notice standing in for one -- keeps the restored turn
-  // live, and Stop stays available.
   it.for([
     {
       name: 'an ask_user card',

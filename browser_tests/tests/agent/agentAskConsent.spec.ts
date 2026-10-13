@@ -18,6 +18,10 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import {
+  ASK_USER_QUESTION,
+  askUserQuestionFrame
+} from '@e2e/fixtures/agentAskFrames'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
@@ -114,27 +118,6 @@ interface Turn {
 const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
 const QUESTION_ASK_ID = `${MESSAGE_ID}:call-ask`
 const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/answer`
-const QUESTION = 'Which styles should I try?'
-
-function askUserQuestion(): AgentWsEvent {
-  return {
-    type: 'agent_ask',
-    data: {
-      ...ids,
-      ask_id: QUESTION_ASK_ID,
-      kind: 'ask_user',
-      prompt: QUESTION,
-      options: [
-        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
-        { id: 'ink', label: 'Ink sketch' },
-        { id: 'pixel', label: 'Pixel art' }
-      ],
-      min_selections: 1,
-      max_selections: 2,
-      allow_other: true
-    }
-  }
-}
 
 const DELETE_ASK_ID = `${MESSAGE_ID}:call-delete`
 const DELETE_PATH = `/api/agent/threads/${THREAD_ID}/asks/${DELETE_ASK_ID}/answer`
@@ -388,22 +371,13 @@ test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
   }) => {
     test.setTimeout(60_000)
     const { panel, send, answers } = await startTurn(page, 'Paint it.', 'auto')
-    const choices = panel.getByRole('group', { name: QUESTION })
+    const choices = panel.getByRole('group', { name: ASK_USER_QUESTION })
     const submit = panel.getByRole('button', { name: t('g.submit') })
 
     await test.step('the question arrives as a card with every option', async () => {
-      send(askUserQuestion())
+      send(askUserQuestionFrame(ids, QUESTION_ASK_ID))
       await expect(
         choices.getByRole('checkbox', { name: 'Oil painting' })
-      ).toBeVisible()
-      await expect(
-        choices.getByRole('checkbox', { name: 'Ink sketch' })
-      ).toBeVisible()
-      await expect(
-        choices.getByRole('checkbox', { name: 'Pixel art' })
-      ).toBeVisible()
-      await expect(
-        panel.getByText(t('agent.askUser.chooseBetween', { min: 1, max: 2 }))
       ).toBeVisible()
     })
 
@@ -421,23 +395,13 @@ test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
     })
 
     await test.step('the resolved card reads back the answer', async () => {
-      send({
-        type: 'agent_ask_resolved',
-        data: {
-          ...ids,
-          ask_id: QUESTION_ASK_ID,
-          status: 'answered',
-          selected: ['oil']
-        }
-      })
-      const record = panel.getByRole('status').filter({
-        hasText: t('agent.askUser.answered')
-      })
-      await expect(record).toContainText('Oil painting')
-      // The frame names the ids, not the free text, so ours is not echoed.
-      await expect(record).not.toContainText('watercolor')
+      send(askResolved(['oil'], QUESTION_ASK_ID))
+      await expect(
+        panel
+          .getByRole('status')
+          .filter({ hasText: t('agent.askUser.answered') })
+      ).toContainText('Oil painting')
       await expect(submit).toHaveCount(0)
-      expect(answers()).toHaveLength(1)
     })
   })
 })

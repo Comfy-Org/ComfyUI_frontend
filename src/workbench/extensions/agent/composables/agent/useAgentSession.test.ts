@@ -2102,8 +2102,6 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(card()).toMatchObject({
         resolution: { status: 'answered', selected: ['sdxl'] }
       })
-      // The frame names the ids but not the text, so ours is not echoed back
-      // as the committed answer.
       expect(card()).not.toHaveProperty('resolution.otherText')
       expect(session.notices.value).toEqual([])
     })
@@ -2176,8 +2174,6 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
 
-    // Another tab answered first: the frame's selection is what the server
-    // committed, so the card shows that, never ours.
     it('shows the committed answer when another answer won', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', {

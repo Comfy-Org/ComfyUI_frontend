@@ -431,37 +431,12 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * A row's `pending_ask` is present only while that row is still mid-ask; this
- * reads it into the card it renders (`runApproval` or `askUser`), a notice
- * when the panel cannot render it, or `undefined` once it is resolved.
- *
- * The server persists no record of a resolved ask on the row, so the
- * read-only answered `ask_user` card is session-only: after a reload the
- * transcript's own text (the agent's reply to the answer) carries it. Within
- * a session the conversation store keeps each retired resolution, so a
- * refetch that still lists the ask rebuilds the card read-only, not armed.
- */
 function pendingAskPart(
   row: AgentMessages[number]
 ): AskPart | AskUnavailablePart | undefined {
   return row.pending_ask ? toAskOrNoticePart(row.pending_ask) : undefined
 }
 
-/**
- * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, attaches its ask card (or the notice standing in for
- * one) when that row is also mid-ask. Returns the `pending` entry for a live
- * row, or `undefined` for a terminal one; `normalizeAgentTranscript` owns
- * `message.streaming` itself.
- *
- * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
- * still running. Reading a live row as finished unless it carried a
- * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
- * a refreshed tab — showing a completed transcript and offering Send for a
- * thread the server answers with 409.
- */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -557,15 +532,7 @@ function recordAssistantRow(
   return rowPending
 }
 
-/**
- * Strips the liveness a row's `streaming` status granted a message that turns
- * out not to be getting a transport. The parts matter as much as the flag,
- * and both kinds this row could have been granted are settled here because a
- * transport is the only thing that could have settled either: a still-running
- * tool call is clamped, and a pending ask card (or the notice standing in for
- * one) is dropped -- left in place it renders an enabled card whose answer
- * would be posted against a turn that is no longer active.
- */
+/** Settles a live message that will not get a transport. */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
   message.parts = message.parts.filter((part) => !isOpenAskPart(part))

@@ -61,11 +61,6 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   return emit.mock.calls.at(-1)?.[0] ?? message
 }
 
-/**
- * Ingests each event into its own turn's transport, all sharing one
- * undeliverable-ask reporter as the store does, so the transport's own
- * redelivery dedupe cannot hide the reporter's.
- */
 function driveInFreshTurns(events: AgentChatEvent[]): void {
   const { report } = createUndeliverableAskReporter()
   for (const event of events)
@@ -776,8 +771,9 @@ describe('agentEventTransport ask_user', () => {
     transport.ingest(askUser('ask-1'))
     transport.ingest(askUser('ask-1', { prompt: 'A replayed copy' }))
 
-    const latest = emit.mock.calls.at(-1)![0]
-    expect(latest.parts.filter((part) => part.type === 'askUser')).toEqual([
+    expect(
+      emit.mock.lastCall?.[0].parts.filter((part) => part.type === 'askUser')
+    ).toEqual([
       expect.objectContaining({ askId: 'ask-1', prompt: 'Which style?' })
     ])
     expect(emit).toHaveBeenCalledTimes(1)
@@ -821,11 +817,9 @@ describe('agentEventTransport ask_user', () => {
       selected: [],
       otherText: 'watercolor'
     })
-    // The frame arriving afterwards cannot name the free text, so it must not
-    // overwrite the richer resolution already on the card.
     transport.ingest(askResolved('ask-1', [], 'answered'))
 
-    expect(emit.mock.calls.at(-1)![0].parts).toEqual([
+    expect(emit.mock.lastCall?.[0].parts).toEqual([
       expect.objectContaining({
         type: 'askUser',
         resolution: {

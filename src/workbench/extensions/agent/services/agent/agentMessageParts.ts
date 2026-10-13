@@ -6,6 +6,7 @@ import {
 import { isEqual, uniqBy } from 'es-toolkit'
 
 import type {
+  AgentAskOption,
   AgentMessages,
   RenderedAskKind,
   TurnId
@@ -51,10 +52,7 @@ export interface NoticePart {
   retryAfterSeconds?: number
 }
 
-/**
- * Stands in for an ask the panel cannot render, so the user sees why the turn
- * is waiting. It goes when that ask resolves.
- */
+/** Stands in for an ask the panel cannot render. */
 export interface AskUnavailablePart {
   type: 'askUnavailable'
   askId: string
@@ -74,19 +72,7 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
-export interface AskUserOption {
-  id: string
-  label: string
-  description?: string
-}
-
-/**
- * How an ask was closed. The server decides `answered` (naming the committed
- * answer as far as it reported it; `selected` may be empty) and `closed`
- * (cancelled or expired). The client alone decides `unknown` (it sent an
- * answer but could not confirm the server took it) and `retired` (it stopped
- * waiting knowing nothing, e.g. a 409 or the turn ending).
- */
+/** How an ask was closed. */
 export interface AskUserResolution {
   status: 'answered' | 'closed' | 'unknown' | 'retired'
   selected: string[]
@@ -108,12 +94,6 @@ function namesAnswer({ selected, otherText }: AskUserResolution): boolean {
   return selected.length > 0 || otherText !== undefined
 }
 
-/**
- * Whether `next` should replace the resolution a card already shows. What the
- * server decided outranks anything this client guessed, and a local guess
- * never replaces the server's. Between two server reports, one that names the
- * answer replaces one that did not.
- */
 function supersedes(
   next: AskUserResolution,
   shown: AskUserResolution
@@ -123,10 +103,7 @@ function supersedes(
   return isServerDecided(next) && !namesAnswer(shown) && namesAnswer(next)
 }
 
-/**
- * The resolution an ask ends up with when `next` arrives after `shown`: the
- * same rule a card on screen follows, for anything that keeps a resolution.
- */
+/** The resolution an ask keeps when `next` arrives after `shown`. */
 export function settleResolution(
   shown: AskUserResolution | undefined,
   next: AskUserResolution = { status: 'retired', selected: [] }
@@ -134,11 +111,7 @@ export function settleResolution(
   return shown === undefined || supersedes(next, shown) ? next : shown
 }
 
-/**
- * The resolution an `agent_ask_resolved` frame reports: the answer the server
- * committed, whoever gave it, so this client's own free text is never shown
- * in its place.
- */
+/** The resolution an `agent_ask_resolved` frame reports. */
 export function toAskResolution({
   status,
   selected,
@@ -151,16 +124,15 @@ export function toAskResolution({
     : { status: 'answered', selected }
 }
 
-/** The generic `ask_user` question: a prompt plus every option the agent offered. */
+/** The generic `ask_user` question. */
 export interface AskUserPart {
   type: 'askUser'
   askId: string
   prompt: string
-  options: AskUserOption[]
+  options: AgentAskOption[]
   minSelections: number
   maxSelections: number
   allowOther: boolean
-  /** Set once the ask is resolved; the card then reads back the answer. */
   resolution?: AskUserResolution
 }
 
@@ -196,11 +168,7 @@ export function isPendingAskPart(part: MessagePart): part is AskPart {
   )
 }
 
-/**
- * A part still waiting on an answer: a pending card or the notice standing in
- * for one. Only a live turn's transport can settle it, so a settled turn drops
- * it rather than keep an answerable form.
- */
+/** A pending ask card or the notice standing in for one. */
 export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
 }
@@ -212,12 +180,7 @@ export function askIdOf(part: MessagePart): string | undefined {
     : undefined
 }
 
-/**
- * The parts with ask `askId` retired: a run-approval card or the notice
- * standing in for an unrenderable ask is dropped, and an `ask_user` or
- * delete-approval card stays on screen read-only with its resolution. Returns
- * the same array when nothing changed, so callers can skip a republish.
- */
+/** The parts with ask `askId` retired; returns `parts` when nothing changed. */
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
@@ -248,10 +211,7 @@ type AskInput = Pick<
   | 'allow_other'
 >
 
-/**
- * Bounds on what an `ask_user` frame may render. The frame is untrusted input,
- * so a runaway option list or text cannot freeze the panel.
- */
+/** Bounds on what an ask frame may render. */
 export const ASK_LIMITS = {
   options: 50,
   prompt: 2000,
@@ -263,27 +223,19 @@ function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}\u2026` : text
 }
 
-/** Unique options (first occurrence wins, as on the server), capped and clipped. */
-function toAskUserOptions(options: AskInput['options']): AskUserOption[] {
-  const seen = new Set<string>()
-  const choices: AskUserOption[] = []
-  for (const { id, label, description } of options) {
-    if (seen.has(id)) continue
-    seen.add(id)
-    choices.push({
+function toAskUserOptions(options: AgentAskOption[]): AgentAskOption[] {
+  return uniqBy(options, ({ id }) => id)
+    .slice(0, ASK_LIMITS.options)
+    .map(({ id, label, description }) => ({
       id,
       label: clip(label, ASK_LIMITS.label),
       description:
         clip(description?.trim() ?? '', ASK_LIMITS.description) || undefined
-    })
-    if (choices.length === ASK_LIMITS.options) break
-  }
-  return choices
+    }))
 }
 
 function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   const options = toAskUserOptions(ask.options)
-  // Free text counts as one more selection, so it is one more thing to choose.
   const choosable = options.length + (ask.allow_other ? 1 : 0)
   if (choosable === 0) return undefined
   const maxSelections = Math.min(Math.max(1, ask.max_selections), choosable)
@@ -351,21 +303,14 @@ export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
   return RENDERED_ASK_KINDS.some((rendered) => rendered === kind)
 }
 
-/**
- * The card for an ask, by its explicit kind. An unknown kind maps to
- * nothing: a privileged ask that lost its discriminator must not render as a
- * generic chooser.
- */
+/** The card for an ask, by its explicit kind. */
 export function toAskPart(ask: AskInput): AskPart | undefined {
   return isRenderedAskKind(ask.kind)
     ? ASK_PART_BUILDERS[ask.kind](ask)
     : undefined
 }
 
-/**
- * The ask's card, or a stand-in notice when it cannot be rendered, so the
- * user sees why the turn is waiting instead of an invisible prompt.
- */
+/** The ask's card, or a stand-in notice when it cannot be rendered. */
 export function toAskOrNoticePart(ask: AskInput): AskPart | AskUnavailablePart {
   return toAskPart(ask) ?? { type: 'askUnavailable', askId: ask.ask_id }
 }

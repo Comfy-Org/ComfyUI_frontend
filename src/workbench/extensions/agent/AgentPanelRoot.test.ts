@@ -5213,7 +5213,7 @@ describe('AgentPanelRoot ask_user answer telemetry', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
     store.setThreadId('th-1')
-    const turnId = 'turn-question' as TurnId
+    const turnId = toTurnId('turn-question')
     store.recordUser(turnId, 'go on')
     store.startTurn(turnId)
     store.ingest(

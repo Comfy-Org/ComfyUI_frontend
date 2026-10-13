@@ -410,15 +410,6 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    /**
-     * PM-1658: retires an ask card that must never be offered again, the way
-     * an `agent_ask_resolved` frame would. `ingest` cannot serve this: it
-     * routes only to the active turn, and the cases this exists for are
-     * exactly the ones where that turn is gone. Every holder of the message
-     * has to be told, or whichever one is asked to republish next puts the
-     * card back. A run-approval card is removed; an `ask_user` card stays,
-     * read-only, showing `resolution` (or that it closed unanswered).
-     */
     function retireAsk(
       askId: string,
       owner?: string,
@@ -446,8 +437,6 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.dropAskPart(askId, resolution)
-      // A later local retirement (the POST settling after the frame) must
-      // not erase the server's answer that a refetch rebuilds the card from.
       const retired = retiredAsksFor(key)
       retired.set(askId, settleResolution(retired.get(askId), resolution))
       clearAskResolutionWatchdog(askId)
@@ -455,20 +444,6 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    /**
-     * PM-1658: asks this client has retired, per owning thread. `hydrate()`
-     * rebuilds a card from the server's `pending_ask`, which still reads
-     * pending while an answer is in flight and after a resolution broadcast is
-     * lost, so a refetch would otherwise put an answered card back on screen
-     * ENABLED — and the server answers the second, contradictory click by
-     * replaying the FIRST selection. Survives a remount because the store
-     * does; pruned once the thread's own transcript stops naming the ask.
-     *
-     * Keyed by thread so that loading another one cannot prune these, and so
-     * nothing here rests on an ask id being unique across threads. Each entry
-     * keeps the `ask_user` resolution the card was retired with, so a refetch
-     * rebuilds it read-only rather than dropping the user's answer.
-     */
     const resolvedAskIds = new Map<string, Map<string, AskUserResolution>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
@@ -501,11 +476,6 @@ export const useAgentConversationStore = defineStore(
       return submittedAskSelections.get(askId)
     }
 
-    /**
-     * The resolution for an answer the server accepted (202). A 202 also
-     * comes back for a later answer while the server keeps the first, so it
-     * confirms the ask was answered but not with what.
-     */
     function acceptedAskResolution(
       askId: string
     ): AskUserResolution | undefined {
@@ -603,10 +573,6 @@ export const useAgentConversationStore = defineStore(
       ingestBackgroundTurnEvent(event, eventThreadId)
     }
 
-    /**
-     * An `agent_ask` replayed (a resubscribe) for an ask this client already
-     * retired: putting it back would re-arm a settled card or a stale notice.
-     */
     function isRetiredAskReplay(event: AgentChatEvent): boolean {
       return (
         event.type === 'agent_ask' &&

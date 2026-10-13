@@ -1,4 +1,4 @@
-import type { AskUserOption } from '../../../services/agent/agentMessageParts'
+import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 
 export const askUserOptionRowClass =
   'flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary-background-hover'
@@ -9,7 +9,7 @@ export function askUserOptionId(idPrefix: string, index: number): string {
 
 export function askUserOptionDescribedBy(
   idPrefix: string,
-  option: AskUserOption,
+  option: AgentAskOption,
   index: number
 ): string | undefined {
   return option.description

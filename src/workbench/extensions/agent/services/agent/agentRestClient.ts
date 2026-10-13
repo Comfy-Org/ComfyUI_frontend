@@ -676,8 +676,6 @@ export function createAgentRestClient() {
     askId: string,
     answer: AgentAnswerRequest
   ): Promise<AgentAnswerReceipt> {
-    // The ask id in the path is what binds this answer: free text only ever
-    // travels with the ask whose card collected it.
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,

@@ -24,15 +24,7 @@ export type AgentMessageGroup =
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
-/**
- * Consecutive text parts separated only by tool calls or thinking steps
- * collapse into one text group, so MarkdownStream renders their joined text
- * as a single flowing reply: standalone assets that end up adjacent in that
- * joined text (no prose between them) still coalesce into one grid, exactly
- * as they would within a single text part. Every activity part folds into
- * one trace group placed where the first one occurs; anything user-facing
- * (tab link, ask card, paywall, notice) closes the open text group.
- */
+/** Groups a message's parts into the blocks the message renders. */
 export function groupMessageParts(
   parts: readonly MessagePart[]
 ): AgentMessageGroup[] {

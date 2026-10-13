@@ -3,22 +3,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type {
-  AskUserOption,
-  AskUserResolution
-} from '../../../services/agent/agentMessageParts'
+import type { AgentAskOption } from '../../../schemas/agentApiSchema'
+import type { AskUserResolution } from '../../../services/agent/agentMessageParts'
 
 const { resolution, options } = defineProps<{
   resolution: AskUserResolution
-  options: AskUserOption[]
+  options: AgentAskOption[]
 }>()
 
 const { t } = useI18n()
 
-// What a resolved card reads back: the settled options by label, plus any
-// free text the server reported with it. An id the card never
-// offered is shown as-is rather than dropped, so the record stays faithful to
-// what the server settled.
 const answers = computed(() => {
   const labels = new Map(options.map(({ id, label }) => [id, label]))
   const chosen = resolution.selected.map((id) => labels.get(id) ?? id)

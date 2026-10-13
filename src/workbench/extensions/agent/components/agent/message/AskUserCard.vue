@@ -25,15 +25,11 @@ const baseId = useId()
 const selected = ref<string[]>([])
 const otherText = ref('')
 
-// One choice at a time: picking an option replaces the last one. A required
-// single choice renders as radios; an optional one as checkboxes, so it can be
-// cleared again.
 const exclusive = computed(() => part.maxSelections === 1)
 const single = computed(() => exclusive.value && part.minSelections > 0)
 const trimmedOther = computed(() =>
   part.allowOther ? otherText.value.trim() : ''
 )
-// Mirrors the server rule: free text counts as one more selection.
 const count = computed(
   () => selected.value.length + (trimmedOther.value ? 1 : 0)
 )
@@ -61,8 +57,6 @@ const hint = computed(() => {
 const promptId = `${baseId}-prompt`
 const hintId = `${baseId}-hint`
 const otherId = `${baseId}-other`
-// The Other box sits outside the option group, so it needs the prompt and
-// the selection hint spelled out for assistive technology itself.
 const otherDescribedBy = computed(() =>
   hint.value ? `${promptId} ${hintId}` : promptId
 )
@@ -97,10 +91,6 @@ const otherDisabled = computed(
   () => answering || (!exclusive.value && atMax.value && !trimmedOther.value)
 )
 
-// Enter commits an IME candidate; it must not submit. WebKit can fire
-// compositionend before that final keydown, so the composition is tracked
-// here and released only after the current event has been handled, with the
-// legacy 229 key code as a fallback.
 const IME_PROCESS_KEY_CODE = 229
 const composing = ref(false)
 
@@ -123,7 +113,6 @@ function onOtherEnter(event: KeyboardEvent): void {
 
 function submit(): void {
   if (!canSubmit.value) return
-  // Built from the unique selection state the counts checked, in option order.
   const order = new Map(part.options.map(({ id }, index) => [id, index]))
   const chosen = [...selected.value].sort(
     (a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0)

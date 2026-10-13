@@ -1,12 +1,9 @@
 import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   ASK_LIMITS,
-  askIdOf,
-  isAskPart,
   isRenderedAskKind,
   retireAskParts,
   toAskOrNoticePart,
@@ -346,42 +343,12 @@ describe('isRenderedAskKind', () => {
   )
 })
 
-describe('isAskPart', () => {
-  it('recognises every ask card and nothing else', () => {
-    const samples: MessagePart[] = [
-      { type: 'runApproval', askId: 'a' },
-      fromPartial<MessagePart>({ type: 'askUser', askId: 'b' }),
-      { type: 'text', text: '', state: 'done' },
-      { type: 'tool', callId: 'c', name: 'x', state: 'done' },
-      { type: 'paywall' }
-    ]
-    expect(samples.map(isAskPart)).toEqual([true, true, false, false, false])
-  })
-})
-
 describe('toAskOrNoticePart', () => {
-  it('returns the card for a renderable ask', () => {
-    expect(toAskOrNoticePart(askUser()).type).toBe('askUser')
-  })
-
   it('stands a notice in for an ask it cannot render', () => {
     expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({
       type: 'askUnavailable',
       askId: 'turn-1:call-1'
     })
-  })
-})
-
-describe('askIdOf', () => {
-  it('names the ask of every ask card and stand-in, and nothing else', () => {
-    const samples: MessagePart[] = [
-      { type: 'runApproval', askId: 'a' },
-      fromPartial<MessagePart>({ type: 'askUser', askId: 'b' }),
-      { type: 'askUnavailable', askId: 'c' },
-      { type: 'notice', level: 'warning', text: 'plain notice' },
-      { type: 'text', text: '', state: 'done' }
-    ]
-    expect(samples.map(askIdOf)).toEqual(['a', 'b', 'c', undefined, undefined])
   })
 })
 

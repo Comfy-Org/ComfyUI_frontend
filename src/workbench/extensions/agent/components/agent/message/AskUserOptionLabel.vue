@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AskUserOption } from '../../../services/agent/agentMessageParts'
+import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 
 const {
   optionId,
@@ -9,7 +9,7 @@ const {
   disabled = false
 } = defineProps<{
   optionId: string
-  option: AskUserOption
+  option: AgentAskOption
   disabled?: boolean
 }>()
 </script>
