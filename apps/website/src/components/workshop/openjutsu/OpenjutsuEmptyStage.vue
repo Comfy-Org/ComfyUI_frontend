@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ArrowLeft, LoaderCircle } from '@lucide/vue'
+import { LoaderCircle } from '@lucide/vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
 import { SWAP_EXAMPLES } from '@/lib/workshop/openjutsu/examples'
 
-/** The stage before a video: a card of examples to start from; uploading lives in the panel. */
+/** The stage before a video: a card of examples to start from. */
 const { loading, locale = 'en' } = defineProps<{
   loading?: SwapExample['id']
   locale?: Locale
@@ -21,23 +21,12 @@ const exampleName = (example: SwapExample) =>
 
 <template>
   <section
-    class="m-auto flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-6 sm:p-7"
+    class="m-auto flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-5 sm:p-7"
     data-testid="openjutsu-empty"
   >
-    <div class="flex flex-col gap-2">
-      <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
-        {{ t('openjutsu.examples.title') }}
-      </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{ t('openjutsu.examples.hint') }}
-      </p>
-      <p
-        class="flex items-center gap-2 text-sm text-primary-warm-white max-md:hidden"
-      >
-        <ArrowLeft class="size-4 text-primary-warm-gray" aria-hidden="true" />
-        {{ t('openjutsu.examples.upload') }}
-      </p>
-    </div>
+    <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
+      {{ t('openjutsu.examples.title') }}
+    </h2>
     <ul class="grid grid-cols-2 gap-2 sm:gap-3">
       <li v-for="example in SWAP_EXAMPLES" :key="example.id">
         <button

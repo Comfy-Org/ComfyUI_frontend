@@ -100,7 +100,7 @@ describe('OpenjutsuPanel', () => {
 
     await userEvent.type(screen.getByLabelText('Who to replace'), 'the man')
     await userEvent.click(
-      screen.getByRole('button', { name: 'Quality: 768p · sharper' })
+      screen.getByRole('button', { name: 'Quality: 768p · Sharper' })
     )
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: /480p/ })

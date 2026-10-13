@@ -5659,9 +5659,7 @@
       "audio": "original sound"
     },
     "examples": {
-      "title": "Try an example",
-      "hint": "Each one loads a clip, a character and who to replace, ready to try.",
-      "upload": "Or upload your video in the panel",
+      "title": "Start with an example",
       "road": {
         "place": "Desert road",
         "character": "Robot"
@@ -5688,8 +5686,8 @@
     },
     "size": {
       "label": "Quality",
-      "768p": "768p · sharper",
-      "480p": "480p · faster"
+      "768p": "768p · Sharper",
+      "480p": "480p · Faster"
     },
     "run": "Swap character",
     "tools": "Result views",
