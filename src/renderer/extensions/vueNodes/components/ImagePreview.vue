@@ -36,6 +36,7 @@
             draggable="false"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
+            @error="failedHdrPreviews.add(imageUrls[index])"
           />
         </div>
         <div
@@ -293,6 +294,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const failedHdrPreviews = ref(new Set<string | undefined>())
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -305,7 +307,8 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const isHdrPlaceholder = (url: string | undefined) =>
-  isHdrImageUrl(url) && !getHdrPreviewUrl(url)
+  isHdrImageUrl(url) &&
+  (!getHdrPreviewUrl(url) || failedHdrPreviews.value.has(url))
 
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const currentHdrPreviewUrl = computed(() =>
@@ -381,6 +384,10 @@ function updateAspectRatio(event: Event, index: number) {
 function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
+  if (currentHdrPreviewUrl.value) {
+    failedHdrPreviews.value.add(currentImageUrl.value)
+    return
+  }
   imageError.value = true
   actualDimensions.value = null
 
