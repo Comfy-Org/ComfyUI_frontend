@@ -121,11 +121,10 @@ describe('useManagerDialog', () => {
     it('INCOMPATIBLE re-emits the upgrade toast on every call without a settings redirect', async () => {
       setManagerState(ManagerUIState.INCOMPATIBLE)
       await useManagerDialog().openManager()
-      const toastsAfterFirstCall = useToast().toasts.length
+      expect(useToast().toasts).toEqual([incompatibleToast])
       await useManagerDialog().openManager()
       const { toasts } = useToast()
-      expect(toasts.length).toBe(toastsAfterFirstCall + 1)
-      expect(toasts).toEqual(Array(toasts.length).fill(incompatibleToast))
+      expect(toasts).toEqual([incompatibleToast, incompatibleToast])
       expect(useSettingsDialog().show).not.toHaveBeenCalled()
       expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     })

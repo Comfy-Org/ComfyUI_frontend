@@ -1,5 +1,3 @@
-import { effectScope } from 'vue'
-
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -8,8 +6,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
   ManagerUIState,
-  showIncompatibleManagerToast,
-  useManagerState
+  getManagerUIState,
+  showIncompatibleManagerToast
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import ManagerDialog from '@/workbench/extensions/manager/components/manager/ManagerDialog.vue'
@@ -45,11 +43,7 @@ export function useManagerDialog() {
   }
 
   async function openManager(options?: OpenManagerOptions): Promise<void> {
-    const scope = effectScope()
-    const managerUIState = scope.run(
-      () => useManagerState().managerUIState.value
-    )
-    scope.stop()
+    const managerUIState = getManagerUIState()
     const settingsDialog = useSettingsDialog()
 
     switch (managerUIState) {
