@@ -366,13 +366,13 @@ describe('ModelsCatalogue', () => {
       await user.type(await screen.findByTestId('explore-search'), 'zzz')
       expect(screen.getByTestId('explore-empty')).toBeVisible()
       expect(screen.queryByTestId('explore-doors')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('explore-community')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('explore-use-cases')).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
       expect(screen.getByTestId('explore-search')).toHaveValue('')
       expect(screen.getByTestId('explore-doors')).toBeVisible()
-      expect(screen.getByTestId('explore-community')).toBeVisible()
+      expect(screen.getByTestId('explore-use-cases')).toBeVisible()
       expect(screen.getByRole('heading', { name: 'Popular' })).toBeVisible()
     })
 
@@ -409,24 +409,41 @@ describe('ModelsCatalogue', () => {
       }
     )
 
-    it('closes on work from the community, leading to the gallery and to sharing', async () => {
+    it('closes on a tile per use case, each leading to its filtered catalogue', async () => {
       renderExplore()
 
-      const community = within(await screen.findByTestId('explore-community'))
-      expect(community.getAllByTestId('explore-community-post')).toHaveLength(
-        16
-      )
+      const section = within(await screen.findByTestId('explore-use-cases'))
       expect(
-        community
-          .getByRole('link', { name: 'Explore the gallery' })
-          .getAttribute('href')
-      ).toBe('/gallery/')
+        section.getByRole('heading', {
+          level: 2,
+          name: 'Browse by what you want to make'
+        })
+      ).toBeVisible()
       expect(
-        community.getByRole('link', { name: 'Share yours' })
-      ).toHaveAttribute(
-        'href',
-        expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//)
-      )
+        section
+          .getAllByTestId('explore-use-case')
+          .map((tile) => [
+            tile.dataset.useCase,
+            tile.getAttribute('href'),
+            tile.textContent.replace(/\s+/g, ' ').trim()
+          ])
+      ).toEqual([
+        [
+          'generate-images',
+          '/hub/models/?useCase=generate-images',
+          'Generate images1 model'
+        ],
+        [
+          'edit-images',
+          '/hub/workflows/?useCase=edit-images',
+          'Edit images1 workflow'
+        ],
+        [
+          'animate-images',
+          '/hub/models/?useCase=animate-images',
+          'Animate images1 model'
+        ]
+      ])
     })
 
     it('shows only the doors when the catalogue is empty', async () => {

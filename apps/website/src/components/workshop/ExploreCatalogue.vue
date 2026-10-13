@@ -14,10 +14,10 @@ import { upcomingApps } from '@/lib/workshop/coming-soon-apps'
 import { doorArt } from '@/lib/workshop/explore-art'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
 import { exploreRow, searchExplore } from '@/lib/workshop/explore-search'
-import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
+import ExploreUseCases from './ExploreUseCases.vue'
 
 const RESULTS = 12
 
@@ -40,7 +40,6 @@ const query = ref('')
 const art = computed(() => doorArt({ models, workflows, apps }, locale))
 
 const needle = computed(() => query.value.trim())
-// An app still being built is found by name, but not offered as popular.
 const searchedApps = computed(() =>
   apps.length ? [...apps, ...upcomingApps(locale)] : []
 )
@@ -119,6 +118,6 @@ function clear() {
       @clear="clear"
     />
 
-    <ExploreCommunity v-if="!needle" :locale />
+    <ExploreUseCases v-if="!needle" :models :workflows :locale />
   </div>
 </template>

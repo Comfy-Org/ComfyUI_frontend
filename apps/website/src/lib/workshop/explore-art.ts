@@ -66,7 +66,7 @@ const APP_CANDIDATES = [
 
 type Thumbnail = WorkshopModel['thumbnail']
 
-const stillOf = (thumbnail: Thumbnail) =>
+export const stillOf = (thumbnail: Thumbnail) =>
   thumbnail?.kind === 'image' ? thumbnail.url : thumbnail?.poster
 
 function firstWithStill<C, T extends { thumbnail?: Thumbnail }>(
