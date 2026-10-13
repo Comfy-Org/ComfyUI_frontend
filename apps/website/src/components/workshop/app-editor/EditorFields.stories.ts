@@ -11,6 +11,7 @@ import EditorMenuButton from './EditorMenuButton.vue'
 import EditorNumberField from './EditorNumberField.vue'
 import EditorOutput from './EditorOutput.vue'
 import EditorPanelRow from './EditorPanelRow.vue'
+import EditorPromptBox from './EditorPromptBox.vue'
 import EditorSeedField from './EditorSeedField.vue'
 import EditorSegmented from './EditorSegmented.vue'
 import EditorSelect from './EditorSelect.vue'
@@ -66,7 +67,8 @@ function fieldState() {
     size: ref<(typeof SIZES)[number]['id']>('source'),
     keepFace: ref(true),
     steps: ref(28),
-    seed: ref(421_337)
+    seed: ref(421_337),
+    prompt: ref('')
   }
 }
 
@@ -80,6 +82,7 @@ const components = {
   EditorNumberField,
   EditorOutput,
   EditorPanelRow,
+  EditorPromptBox,
   EditorSeedField,
   EditorSegmented,
   EditorSelect,
@@ -100,6 +103,7 @@ export const PanelFields: Story = {
     }),
     template: `
       <div class="w-editor-panel rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 px-4">
+        <EditorPromptBox v-model="prompt" label="Prompt" placeholder="Describe the scene" />
         <EditorCollapsible title="Light" meta="3 looks" initially-open>
           <template #actions>
             <EditorIconButton :icon="RotateCcw" label="Reset light" />

@@ -37,7 +37,7 @@ const emit = defineEmits<{ toggle: [] }>()
     :aria-label="`${label}: ${value}`"
     :class="
       cn(
-        'flex h-12 w-full items-center gap-3 text-left transition-colors hover:bg-transparency-white-t4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent',
+        'flex min-h-14 w-full items-center gap-3 py-2 text-left transition-colors hover:bg-transparency-white-t4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent',
         labelAbove
           ? 'rounded-xl px-1.5 ring-1 ring-transparency-white-t8 ring-inset'
           : 'rounded-lg px-1',
@@ -47,19 +47,18 @@ const emit = defineEmits<{ toggle: [] }>()
     @click="emit('toggle')"
   >
     <span
-      class="grid h-8 w-12 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t4 text-primary-warm-gray ring-1 ring-transparency-white-t8"
+      class="grid h-9 w-12 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t4 text-primary-warm-gray ring-1 ring-transparency-white-t8"
     >
       <slot />
     </span>
-    <span
-      v-if="!labelAbove"
-      class="w-14 shrink-0 text-xs text-primary-warm-gray"
-      >{{ label }}</span
-    >
-    <span
-      class="min-w-0 flex-1 truncate text-[13px] font-semibold text-primary-warm-white"
-      >{{ value }}</span
-    >
+    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span v-if="!labelAbove" class="text-xs text-primary-warm-gray">{{
+        label
+      }}</span>
+      <span class="text-sm/snug font-semibold text-primary-warm-white">{{
+        value
+      }}</span>
+    </span>
     <ChevronRight
       :class="
         cn(
