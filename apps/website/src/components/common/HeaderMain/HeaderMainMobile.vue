@@ -139,6 +139,22 @@ onUnmounted(() => {
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
                 <div
+                  v-if="activeItem.exploreLink"
+                  class="flex flex-col gap-y-2"
+                >
+                  <p class="text-sm text-primary-warm-gray">
+                    {{ activeItem.exploreLink.intro }}
+                  </p>
+                  <Button
+                    :href="activeItem.exploreLink.href"
+                    variant="link"
+                    as="a"
+                    data-testid="nav-explore-link"
+                  >
+                    {{ activeItem.exploreLink.label }}
+                  </Button>
+                </div>
+                <div
                   v-for="(column, columnIndex) in activeItem.columns"
                   :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"

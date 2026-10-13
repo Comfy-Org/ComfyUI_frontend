@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
+import Button from '@/components/ui/button/Button.vue'
 import NavigationMenu from '@/components/ui/navigation-menu/NavigationMenu.vue'
 import NavigationMenuContent from '@/components/ui/navigation-menu/NavigationMenuContent.vue'
 import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuItem.vue'
@@ -65,6 +67,28 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <div class="w-max">
+              <div
+                v-if="navItem.exploreLink"
+                class="mb-6 flex items-center justify-between gap-8 border-b border-transparency-white-t8 pb-4"
+                data-testid="nav-explore-row"
+              >
+                <p class="pl-2 text-sm text-primary-warm-gray">
+                  {{ navItem.exploreLink.intro }}
+                </p>
+                <Button
+                  as="a"
+                  variant="link"
+                  size="sm"
+                  :href="navItem.exploreLink.href"
+                  class="shrink-0"
+                  data-testid="nav-explore-link"
+                >
+                  {{ navItem.exploreLink.label }}
+                  <template #append>
+                    <ArrowRight class="size-4" aria-hidden="true" />
+                  </template>
+                </Button>
+              </div>
               <ul class="flex gap-16">
                 <NavFeaturedCard
                   v-if="navItem.featured"

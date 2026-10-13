@@ -222,7 +222,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('hovering HUB shows the featured launch, then each column with its line and its All link', async ({
+  test('hovering HUB shows the Explore row, the featured launch, then each column with its line and its All link', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -245,10 +245,12 @@ test.describe('Desktop dropdown @interaction', () => {
     await expect(
       dropdown.getByRole('link', { name: 'All models' })
     ).toHaveAttribute('href', '/hub/models/')
-    await expect(dropdown.getByTestId('nav-explore-row')).toHaveCount(0)
-    await expect(
-      dropdown.getByRole('link', { name: /^Explore the Hub/ })
-    ).toHaveCount(0)
+    const explore = dropdown.getByTestId('nav-explore-row')
+    await expect(explore).toContainText(
+      'Try in the browser, call by API, or take it into ComfyUI'
+    )
+    await explore.getByRole('link', { name: /^Explore the Hub/ }).click()
+    await expect(page).toHaveURL('/hub/')
   })
 
   const PANEL_EDGE_GAP = 10
@@ -454,7 +456,7 @@ test.describe('Mobile menu @mobile', () => {
     await expect(menu.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
-  test('Hub drill-down shows the examples without images or meta lines, each column with its All link', async ({
+  test('Hub drill-down leads with the Explore link, then the examples without images or meta lines, each column with its All link', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -471,7 +473,7 @@ test.describe('Mobile menu @mobile', () => {
     ).toHaveAttribute('href', '/hub/models/')
     await expect(
       menu.getByRole('link', { name: /^Explore the Hub/ })
-    ).toHaveCount(0)
+    ).toHaveAttribute('href', '/hub/')
   })
 
   test('Company drill-down folds in Community and names each social icon link', async ({

@@ -2684,7 +2684,9 @@
     "hubModelsDescription": "运行最新的 AI 模型",
     "hubMotionTransfer": "运动迁移",
     "hubVideoFromReferences": "参考生成视频",
-    "hubWorkflowsDescription": "针对任务的现成方案"
+    "hubWorkflowsDescription": "针对任务的现成方案",
+    "hubExplore": "探索 Hub",
+    "hubExploreHint": "在浏览器中试用、通过 API 调用，或导入 ComfyUI"
   },
   "payment": {
     "failed": {

@@ -31,6 +31,19 @@ describe('HeaderMainDesktop', () => {
     expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
+  it('leads the Hub with its intro and a link to the Hub home', async () => {
+    const menu = await openHub()
+    const row = within(menu.getByTestId('nav-explore-row'))
+
+    expect(
+      row.getByText('Try in the browser, call by API, or take it into ComfyUI')
+    ).toBeTruthy()
+    expect(row.getByRole('link', { name: 'Explore the Hub' })).toHaveAttribute(
+      'href',
+      '/hub/'
+    )
+  })
+
   it('opens the Hub as described Models, Workflows and Apps columns', async () => {
     const menu = await openHub()
     const linksIn = (list: string) =>

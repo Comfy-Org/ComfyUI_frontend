@@ -22,6 +22,19 @@ describe('HeaderMainMobile', () => {
     expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
 
+  it('drills into the Hub with a link to the Hub home first', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
+
+    const explore = screen.getByRole('link', { name: 'Explore the Hub' })
+    expect(explore).toHaveAttribute('href', '/hub/')
+    expect(
+      explore.compareDocumentPosition(
+        screen.getByRole('link', { name: 'All models' })
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   it('drills into the described Hub columns, each ending with its All link', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
@@ -42,6 +55,7 @@ describe('HeaderMainMobile', () => {
         .map((link) => link.getAttribute('href'))
         .filter((href) => href?.startsWith('/hub/'))
     ).toEqual([
+      '/hub/',
       '/hub/models/seedream-5-0-pro-text-to-image/',
       '/hub/models/seedance-2-5-reference-to-video/',
       '/hub/models/nano-banana-2-image-edit/',

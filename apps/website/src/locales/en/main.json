@@ -2654,7 +2654,9 @@
     "hubModelsDescription": "Run the latest AI models",
     "hubMotionTransfer": "Motion transfer",
     "hubVideoFromReferences": "Video from references",
-    "hubWorkflowsDescription": "Ready-made recipes for a task"
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubExplore": "Explore the Hub",
+    "hubExploreHint": "Try in the browser, call by API, or take it into ComfyUI"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
