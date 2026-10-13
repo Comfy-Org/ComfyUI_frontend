@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -30,5 +30,19 @@ describe('EditorEmpty', () => {
       'true'
     )
     expect(screen.getByRole('button', { name: 'Cafe → Night' })).toBeDisabled()
+  })
+
+  it('shows a portrait example whole when it asks to fit', () => {
+    render(EditorEmpty, {
+      props: {
+        ...props,
+        examples: [
+          { id: 'hero', image: '/hero.png', label: 'Hero', fit: 'contain' }
+        ]
+      }
+    })
+
+    const tile = screen.getByRole('button', { name: 'Hero' })
+    expect(within(tile).getByRole('presentation')).toHaveClass('object-contain')
   })
 })
