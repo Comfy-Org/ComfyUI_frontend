@@ -257,26 +257,28 @@ describe('R-73 cross-workflow pending operations', () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
-    await enqueue([deleteNode('a-inflight')])
-    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
+    await enqueue([deleteNode('a-inflight'), deleteNode('a-inflight-2')])
+    expect(clientState.sent[0].ops).toMatchObject([
+      { base_version: 1, stamp: [1, expect.any(String)] },
+      { base_version: 2, stamp: [2, expect.any(String)] }
+    ])
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
-    // The switch itself settles A's transmitted in-flight batch unconfirmed
-    // (the composable calls sender.abortIfUnbound() after retargeting the
-    // bridge), so B's batch goes out at once instead of queueing behind A for
-    // the 10 s result-silence window.
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
       {
         state: 'unconfirmed',
-        ops: [expect.objectContaining({ op_id: operationAId })]
+        ops: clientState.sent[0].ops
       }
     )
     await enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
-    expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
+    expect(clientState.sent[1].ops[0]).toMatchObject({
+      base_version: 1,
+      stamp: [1, expect.any(String)]
+    })
     const operationBId = clientState.sent[1].ops[0].op_id
 
     dispatchOpsResult({
@@ -286,20 +288,12 @@ describe('R-73 cross-workflow pending operations', () => {
       skipped: []
     })
 
-    // A's late result names A's op_id, which is not in B's in-flight batch,
-    // so the sender ignores it: B stays in flight and nothing else settles.
     expect(
       devLogState.recordDevEvent.mock.calls.filter(
         ([event]) => event === 'human_ops_settled'
       )
     ).toHaveLength(1)
 
-    // R-73 regression guard: result frames carry workflowId, and the guard
-    // added alongside this test (onOpsResult in useAgentCrdtFollower.ts)
-    // drops a result whose workflowId no longer matches the subscribed
-    // workflow, so workflow B's status is never updated from workflow A's
-    // late frame, and the composable never re-emits that frame as a
-    // 'doc_ops_result' dev event.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
       lastFrameType: null

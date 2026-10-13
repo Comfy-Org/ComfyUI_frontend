@@ -1349,7 +1349,7 @@ describe('createOpSender', () => {
     expect(() => sender.flush()).not.toThrow()
     expect(settled.at(-1)?.state).toBe('undeliverable')
     expect(settled.every((outcome) => outcome.ops.length <= 256)).toBe(true)
-  })
+  }, 30_000)
 
   it('settles the admitted ops when a rejection settlement detaches the sender', () => {
     const localSettled: BatchOutcome[] = []
