@@ -74,9 +74,6 @@ const toRegistryPublisher = (
   }
 }
 
-/**
- * Convert from node pack in Algolia format to Comfy Registry format
- */
 const toRegistryPack = (
   algoliaNode: AlgoliaNodePack
 ): RegistryNodePack & { comfy_nodes: string[] } => {

@@ -2780,16 +2780,16 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     ).toBe(`wf-${MAX_JOB_LOOKUP_ENTRIES + 4}`)
   })
 
-  it('jobIdToWorkflowId keeps re-registered jobs when evicting', () => {
+  it('jobIdToWorkflowId evicts re-registered jobs last', () => {
     store.registerJobWorkflowIdMapping('job-live', 'wf-live')
-    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES; i++) {
+    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES - 1; i++) {
       store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
-      if (i % 100 === 0) {
-        store.registerJobWorkflowIdMapping('job-live', 'wf-live')
-      }
     }
+    store.registerJobWorkflowIdMapping('job-live', 'wf-live')
+    store.registerJobWorkflowIdMapping('job-new', 'wf-new')
 
     expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
     expect(store.jobIdToWorkflowId.get('job-live')).toBe('wf-live')
   })
 
@@ -2797,22 +2797,17 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES; i++) {
       store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
     }
-    const workflow = {
-      activeState: { id: 'wf-stored' },
-      path: '/workflows/stored.json'
-    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
-
     store.storeJob({
       nodes: [],
       id: 'job-stored',
       promptOutput: {},
-      workflow,
+      workflow: createQueuedWorkflow(),
       mode: 'graph'
     })
 
     expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
     expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
-    expect(store.jobIdToWorkflowId.get('job-stored')).toBe('wf-stored')
+    expect(store.jobIdToWorkflowId.get('job-stored')).toBe('workflow-id')
   })
 
   it('ensureSessionWorkflowPath is idempotent and updates on change', () => {
