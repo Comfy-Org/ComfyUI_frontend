@@ -16,9 +16,6 @@ import ManagerDialog from '@/workbench/extensions/manager/components/manager/Man
 
 const DIALOG_KEY = 'global-manager'
 
-const MANAGER_CONTENT_CLASS =
-  'w-[min(90vw,1724px)] min-[3000px]:w-[min(90vw,2200px)] sm:max-w-none h-[80vh] max-h-[1026px] min-[3000px]:max-h-[1320px] rounded-2xl overflow-hidden'
-
 interface OpenManagerOptions {
   initialTab?: ManagerTab
   initialPackId?: string
@@ -43,12 +40,6 @@ export function useManagerDialog() {
         onClose: hide,
         initialTab,
         initialPackId
-      },
-      dialogComponentProps: {
-        renderer: 'reka',
-        modal: false,
-        size: 'full',
-        contentClass: MANAGER_CONTENT_CLASS
       }
     })
   }
