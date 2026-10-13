@@ -210,7 +210,6 @@ test.describe(
       // CRDT call -- exactly as a user would trigger the tool.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      // The panel opens the agent socket when it mounts, not at boot.
       const socket = await getAgentSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))

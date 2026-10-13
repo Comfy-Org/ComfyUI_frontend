@@ -1,4 +1,3 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -7,18 +6,17 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
@@ -85,18 +83,25 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
-      let socket: WebSocketRoute | null = null
-
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket)
-          throw new Error('the panel has not opened the agent socket yet')
-        socket.send(JSON.stringify(frame))
-      }
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      hostSocket.answerSubscribesWith((stateVector) => {
+        // Simulates the unproven trigger this repro exercises (see file
+        // header): the catch-up frame's merged doc has no readable
+        // meta.schema_version at all.
+        host.corruptSchemaVersion()
+        return [
+          host.subscribed(),
+          host.catchUp(stateVector),
+          // Sent as its own later-seq frame -- not folded silently into a
+          // later apply()'s delta -- so the fix that stops the latch from
+          // outliving one bad frame is exercised for real: this repair alone
+          // is enough for the gate to pass again before the add_node frame
+          // below arrives.
+          host.repairSchemaVersion()
+        ]
+      })
+      const send = (frame: AgentWsEvent | HostFrame): void =>
+        hostSocket.send(frame)
 
       await page.route('**/api/agent/threads', (route) =>
         route.fulfill(jsonRoute({ threads: [] }))
@@ -115,41 +120,7 @@ test.describe(
         }
         return route.fulfill(jsonRoute([]))
       })
-      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
-        socket = ws
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          // Simulates the unproven trigger this repro exercises (see file
-          // header): the catch-up frame's merged doc has no readable
-          // meta.schema_version at all.
-          host.corruptSchemaVersion()
-          send(host.subscribed())
-          send(host.catchUp(state_vector_b64))
-          // Sent as its own later-seq frame -- not folded silently into a
-          // later apply()'s delta -- so the fix that stops the latch from
-          // outliving one bad frame is exercised for real: this repair alone
-          // is enough for the gate to pass again before the add_node frame
-          // below arrives.
-          send(host.repairSchemaVersion())
-        })
-      })
+      await hostSocket.install()
 
       await bootAgentApp(page, true, {
         settings: {
@@ -220,7 +191,7 @@ test.describe(
 
       // Setup checkpoint, still expected to pass: the doc subscription round
       // trip (with its corrupted catch-up) actually completed.
-      await expect.poll(() => socket !== null).toBe(true)
+      await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
       const composer = panel.getByRole('textbox', {
         name: AGENT_COMPOSER_LABEL

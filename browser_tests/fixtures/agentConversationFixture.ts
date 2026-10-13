@@ -1208,8 +1208,6 @@ export class AgentConversationHarness {
       throw new Error('Host operation did not produce a doc_update')
 
     const receipt = crypto.randomUUID()
-    // The receipt is set once the page has handled this exact doc_update
-    // from the agent socket, so the next step races a frame already applied.
     await this.page.evaluate(
       ({ receipt, workflowId, seq, handledEvent }) => {
         const attribute = 'data-agent-crdt-update-receipt'

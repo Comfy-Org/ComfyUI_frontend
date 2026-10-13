@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -18,8 +17,8 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -76,34 +75,12 @@ test.describe(
         ] as const
       )
 
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
-        socket = ws
-        // Answers a doc_subscribe for the abandoned workflow with its real
-        // seeded content, the way the production doc host would.
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== staleWorkflowId ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          ws.send(JSON.stringify(host.subscribed()))
-          ws.send(JSON.stringify(host.catchUp(state_vector_b64)))
-        })
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        staleWorkflowId,
+        host
+      )
+      await hostSocket.install()
 
       const history: AgentMessage[] = [
         {
@@ -230,7 +207,7 @@ test.describe(
         enMessages.agent.targetWorkflowUnavailable
       )
       await expect(unavailable).toBeVisible()
-      if (!socket) throw new Error('the panel never opened the agent socket')
+      expect(hostSocket.connectionCount()).toBeGreaterThan(0)
 
       // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {
