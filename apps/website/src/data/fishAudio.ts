@@ -4,6 +4,8 @@ import { externalLinks } from '@/config/routes'
 
 const DOCS_HREF =
   'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio'
+const HERO_POSTER_SRC =
+  'https://media.comfy.org/website/fish-audio/fish-audio-poster.jpg'
 
 export const fishAudioPage: ModelLaunchPage = {
   metaTitleKey: 'fishAudio.meta.title',
@@ -12,8 +14,8 @@ export const fishAudioPage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'fishAudio.breadcrumb.updated',
   hero: {
     videoSrc: 'https://media.comfy.org/website/fish-audio/fish-audio-hero.mp4',
-    posterSrc:
-      'https://media.comfy.org/website/fish-audio/fish-audio-poster.jpg',
+    posterSrc: HERO_POSTER_SRC,
+    mobileFallbackImageSrc: HERO_POSTER_SRC,
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
