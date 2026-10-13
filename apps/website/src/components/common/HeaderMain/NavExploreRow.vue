@@ -22,7 +22,7 @@ defineProps<{
       variant="link"
       size="sm"
       :href="link.href"
-      class="shrink-0"
+      class="shrink-0 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
       data-testid="nav-explore-link"
     >
       {{ link.label }}
