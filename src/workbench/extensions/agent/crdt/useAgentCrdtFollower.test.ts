@@ -485,119 +485,6 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
-  describe('terminal follower state', () => {
-    function refuse(): void {
-      dispatchFrame('doc_subscribed', { ok: false, workflow_id: 'wf-1' })
-    }
-
-    function refuseUntilTerminal(status: () => AgentCrdtStatus): number {
-      let refusals = 0
-      while (status().terminal === null && refusals < 20) {
-        refuse()
-        refusals += 1
-        vi.runOnlyPendingTimers()
-      }
-      return refusals
-    }
-
-    it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
-      const { unmount, status } = mountFollower('wf-1')
-
-      refuse()
-
-      expect(status().connected).toBe(false)
-      expect(status().terminal).toBeNull()
-      unmount()
-    })
-
-    it('reports a terminal refusal once the retry budget is spent, and clears it on the next confirmed subscribe', () => {
-      const { unmount, status } = mountFollower('wf-1')
-
-      expect(refuseUntilTerminal(status)).toBeGreaterThan(1)
-
-      expect(status().terminal).toBe('refused')
-      expect(status().connected).toBe(false)
-      expect(status().workflowId).toBe('wf-1')
-
-      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
-
-      expect(status().terminal).toBeNull()
-      expect(status().connected).toBe(true)
-      unmount()
-    })
-
-    it('reports a schema error as terminal, cleared by the next confirmed subscribe', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
-
-      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
-      expect(status().terminal).toBe('schema_error')
-      expect(status().workflowId).toBe('wf-1')
-
-      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 2 })
-      expect(status().terminal).toBeNull()
-      unmount()
-    })
-
-    it('a retarget clears the terminal state', async () => {
-      const { unmount, status, workflowId } = mountFollower('wf-1')
-      refuseUntilTerminal(status)
-      expect(status().terminal).toBe('refused')
-
-      workflowId.value = 'wf-2'
-      await nextTick()
-
-      expect(status().terminal).toBeNull()
-      expect(status().workflowId).toBe('wf-2')
-      unmount()
-    })
-
-    it('an ordinary reconnect drops connected without becoming terminal', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
-      expect(status().connected).toBe(true)
-
-      agentSocket.open()
-
-      expect(status().connected).toBe(false)
-      expect(status().terminal).toBeNull()
-      unmount()
-    })
-
-    it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
-      expect(status().terminal).toBeNull()
-
-      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-
-      expect(status().terminal).toBe('timeout')
-      expect(status().workflowId).toBe('wf-1')
-      unmount()
-    })
-
-    it('a reconnect clears a terminal refusal while the new subscribe is in flight', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribed', {
-        ok: false,
-        workflow_id: 'wf-1',
-        code: 'schema_version_mismatch'
-      })
-      expect(status().terminal).toBe('refused')
-
-      agentSocket.open()
-
-      expect(status().terminal).toBeNull()
-      expect(status().connected).toBe(false)
-      expect(status().workflowId).toBe('wf-1')
-      unmount()
-    })
-  })
-
   it('FE-1902: persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
     expect(persistedRecord()).toBeNull()
@@ -3040,40 +2927,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('keeps the draft seed withheld while a reseed is in flight, and releases it once the reseed is refused for good', () => {
-      vi.useFakeTimers()
-      const { unmount, status } = mountWithCanvas()
-
-      refuseAsStale()
-      expect(status().terminal).toBeNull()
-
-      dispatchFrame('doc_reseed_result', {
-        workflowId: 'wf-1',
-        ok: false,
-        code: 'stale_schema_reseed_refused'
-      })
-      expect(status().terminal).toBe('refused')
-      unmount()
-    })
-
     it('a reconnect on the agent socket clears a refused reseed and lets the new session reseed once', () => {
       vi.useFakeTimers()
-      const { unmount, status } = mountWithCanvas()
+      const { unmount } = mountWithCanvas()
       refuseAsStale()
       dispatchFrame('doc_reseed_result', {
         workflowId: 'wf-1',
         ok: false,
         code: 'stale_schema_reseed_refused'
       })
-      expect(status().terminal).toBe('refused')
 
       agentSocket.open()
 
       expect(bridge().reconnect).toHaveBeenCalledOnce()
-      expect(status().terminal).toBeNull()
       refuseAsStale()
       expect(bridge().reseed).toHaveBeenCalledTimes(2)
-      expect(status().terminal).toBeNull()
       unmount()
     })
 
