@@ -40,11 +40,12 @@ function readEvent() {
 }
 
 function comparisonBase(event: z.infer<typeof eventSchema>, explicit?: string) {
-  const base =
-    explicit ??
-    event.merge_group?.base_sha ??
-    event.pull_request?.base.sha ??
+  const base = [
+    explicit,
+    event.merge_group?.base_sha,
+    event.pull_request?.base.sha,
     event.before
+  ].find((candidate) => candidate !== undefined)
   if (!base || /^0+$/.test(base))
     throw new Error(
       'Catalog delivery requires a base revision (--base or event)'
@@ -84,12 +85,7 @@ function readDeliveryInput(event: z.infer<typeof eventSchema>, base: string) {
   }
 }
 
-function run() {
-  const { values } = parseArgs({ options: { base: { type: 'string' } } })
-  const event = readEvent()
-  const plan = catalogDeliveryPlan(
-    readDeliveryInput(event, comparisonBase(event, values.base))
-  )
+function validateDeliveries(plan: ReturnType<typeof catalogDeliveryPlan>) {
   for (const [target, locales] of Object.entries(plan)) {
     if (!locales) continue
     const scope = locales === 'all' ? [] : [`--locales=${locales.join(',')}`]
@@ -100,6 +96,15 @@ function run() {
       { stdio: 'inherit' }
     )
   }
+}
+
+function run() {
+  const { values } = parseArgs({ options: { base: { type: 'string' } } })
+  const event = readEvent()
+  const plan = catalogDeliveryPlan(
+    readDeliveryInput(event, comparisonBase(event, values.base))
+  )
+  validateDeliveries(plan)
   if (!plan.app && !plan.website)
     console.log('Catalogs may use English fallback until translation delivery.')
 }

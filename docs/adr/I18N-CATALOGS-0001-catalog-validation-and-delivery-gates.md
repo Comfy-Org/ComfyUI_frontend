@@ -37,7 +37,7 @@ website translation PRs have an owner and pending status.
 
 ## Alternatives
 
-- Every-feature completeness blocks post-merge generation on credentials.
+- Complete catalogs on every feature need credentials before merge.
 - Missing-key baselines hide stale coverage and add separate upkeep.
 - Releasing all generated locales makes unpublished targets dependencies.
 - Model approval cannot prove syntax, tokens, freshness, or completeness.
