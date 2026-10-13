@@ -1,66 +1,80 @@
 <script setup lang="ts">
-import { LoaderCircle } from '@lucide/vue'
+import { ArrowLeft, LoaderCircle } from '@lucide/vue'
 
-/** One ready-made start: a picture of it and its name. */
+import { cn } from '@comfyorg/tailwind-utils'
+
 interface EditorExample {
   readonly id: string
   readonly image: string
   readonly label: string
+  readonly result?: string
+  readonly thumb?: string
 }
 
-/**
- * The stage before anything is chosen: examples to start from. Uploading lives
- * in the panel, so the stage offers no upload of its own.
- */
-const { title, hint, examples, loading } = defineProps<{
+/** The stage before anything is chosen: a card of examples to start from; uploading lives in the panel. */
+const { title, hint, upload, examples, loading } = defineProps<{
   title: string
   hint: string
+  upload: string
   examples: readonly EditorExample[]
-  /** The example being fetched. */
   loading?: string
 }>()
 const emit = defineEmits<{ example: [id: string] }>()
+
+const exampleName = (example: EditorExample) =>
+  example.result ? `${example.label} → ${example.result}` : example.label
 </script>
 
 <template>
-  <section class="my-auto flex w-full max-w-4xl flex-col gap-4 self-center">
-    <div class="flex flex-col gap-1">
-      <h2 class="text-base font-medium text-primary-warm-white">
+  <section
+    class="m-auto flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:gap-6 sm:p-7"
+  >
+    <div class="flex flex-col gap-2">
+      <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
         {{ title }}
       </h2>
       <p class="text-sm text-primary-warm-gray">{{ hint }}</p>
+      <p
+        class="flex items-center gap-2 text-sm text-primary-warm-white max-md:hidden"
+      >
+        <ArrowLeft class="size-4 text-primary-warm-gray" aria-hidden="true" />
+        {{ upload }}
+      </p>
     </div>
-    <ul class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <ul
+      :class="cn('grid gap-2 sm:gap-3', examples.length > 1 && 'grid-cols-2')"
+    >
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
           :disabled="!!loading"
           :aria-busy="loading === example.id"
-          class="group flex w-full cursor-pointer flex-col gap-2 text-left focus-visible:outline-none disabled:cursor-default"
+          :aria-label="exampleName(example)"
+          class="group relative block aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-transparency-white-t8 transition hover:border-primary-warm-white/50 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:cursor-default"
           @click="emit('example', example.id)"
         >
+          <img
+            :src="example.image"
+            alt=""
+            loading="lazy"
+            class="size-full object-cover transition group-hover:scale-[1.02]"
+          />
+          <img
+            v-if="example.thumb"
+            :src="example.thumb"
+            alt=""
+            loading="lazy"
+            class="absolute top-2 right-2 aspect-3/4 w-1/5 rounded-md border border-primary-warm-white/70 object-cover shadow-lg"
+          />
           <span
-            class="relative block aspect-video overflow-hidden rounded-xl border border-transparency-white-t8 transition group-hover:border-primary-warm-white/50 group-focus-visible:ring-3 group-focus-visible:ring-primary-comfy-yellow/50"
+            v-if="loading === example.id"
+            class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
           >
-            <img
-              :src="example.image"
-              alt=""
-              loading="lazy"
-              class="size-full object-cover"
+            <LoaderCircle
+              class="size-6 text-primary-comfy-yellow motion-safe:animate-spin"
+              aria-hidden="true"
             />
-            <span
-              v-if="loading === example.id"
-              class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
-            >
-              <LoaderCircle
-                class="size-6 text-primary-comfy-yellow motion-safe:animate-spin"
-                aria-hidden="true"
-              />
-            </span>
           </span>
-          <span class="text-sm text-primary-warm-white">{{
-            example.label
-          }}</span>
         </button>
       </li>
     </ul>
