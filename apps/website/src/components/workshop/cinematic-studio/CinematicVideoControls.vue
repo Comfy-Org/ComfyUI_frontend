@@ -40,14 +40,14 @@ const {
 )
 
 const triggerClass =
-  'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm max-sm:justify-center max-sm:gap-1.5 max-sm:px-2 text-primary-warm-white hover:border-transparency-white-t20'
+  'h-10 w-full gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20'
 </script>
 
 <template>
   <div
     role="group"
     :aria-label="tc('cinematic.section.output')"
-    :class="cn('grid gap-2', video.audioField ? 'grid-cols-4' : 'grid-cols-3')"
+    class="grid grid-cols-2 gap-2"
   >
     <CinematicMenu
       v-if="aspectOptions.length"
@@ -64,11 +64,8 @@ const triggerClass =
           :style="framedStyle(aspect, '1rem')"
         />
       </span>
-      <span class="text-left tabular-nums sm:flex-1">{{ aspect }}</span>
-      <ChevronDown
-        class="size-3.5 text-primary-warm-gray max-sm:hidden"
-        aria-hidden="true"
-      />
+      <span class="flex-1 text-left tabular-nums">{{ aspect }}</span>
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
     <CinematicMenu
       v-if="resolutionOptions.length"
@@ -80,13 +77,10 @@ const triggerClass =
       :trigger-class
     >
       <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="text-left sm:flex-1">
+      <span class="flex-1 text-left">
         {{ resolution && resolutionLabel(resolution) }}
       </span>
-      <ChevronDown
-        class="size-3.5 text-primary-warm-gray max-sm:hidden"
-        aria-hidden="true"
-      />
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
     <CinematicMenu
       v-if="durationOptions.length"
@@ -98,11 +92,8 @@ const triggerClass =
       :trigger-class
     >
       <Clock class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-      <span class="text-left tabular-nums sm:flex-1">{{ duration }}s</span>
-      <ChevronDown
-        class="size-3.5 text-primary-warm-gray max-sm:hidden"
-        aria-hidden="true"
-      />
+      <span class="flex-1 text-left tabular-nums">{{ duration }}s</span>
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
     <CinematicTooltip
       v-if="video.audioField"
@@ -135,7 +126,7 @@ const triggerClass =
           class="size-4 shrink-0"
           aria-hidden="true"
         />
-        <span class="text-xs font-semibold tracking-wide uppercase">
+        <span class="text-sm">
           {{
             tc(audio ? 'cinematic.video.audioOn' : 'cinematic.video.audioOff')
           }}

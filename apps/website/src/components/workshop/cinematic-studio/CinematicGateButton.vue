@@ -46,7 +46,10 @@ const signInHref = useSignInHref(locale)
 const personal = usePersonalWorkspaceSwitch()
 
 const buttonClass = computed(() =>
-  wide ? 'w-full rounded-full px-5' : 'shrink-0 rounded-full px-6'
+  cn(
+    'normal-case',
+    wide ? 'w-full rounded-full px-5' : 'shrink-0 rounded-full px-6'
+  )
 )
 const switchLabel = computed(() =>
   t(

@@ -38,7 +38,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
   <div
     role="group"
     :aria-label="tc('cinematic.section.output')"
-    class="grid grid-cols-3 gap-2"
+    class="grid grid-cols-2 gap-2"
   >
     <CinematicMenu
       v-model="aspectValue"
@@ -72,9 +72,11 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
     <div
       role="group"
       :aria-label="tc('cinematic.output.takes')"
-      :title="tc('cinematic.output.takes')"
-      class="flex h-10 items-center justify-between rounded-xl border border-transparency-white-t8 px-1"
+      class="col-span-2 flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3"
     >
+      <span class="flex-1 text-sm text-primary-warm-gray" aria-hidden="true">
+        {{ tc('cinematic.output.takes') }}
+      </span>
       <button
         type="button"
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
@@ -85,7 +87,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
         <Minus class="size-3.5" aria-hidden="true" />
       </button>
       <span
-        class="text-sm text-primary-warm-white tabular-nums"
+        class="w-6 text-center text-sm text-primary-warm-white tabular-nums"
         aria-live="polite"
         data-testid="cinematic-takes"
       >
