@@ -60,7 +60,7 @@ function onDismiss(): void {
     "
   >
     <p class="my-0 min-w-0 flex-1 text-sm/5">
-      {{ $t('agent.freeUseNotice') }}
+      {{ $t('agent.firstChatFreeNotice') }}
       <Button
         variant="link"
         size="unset"

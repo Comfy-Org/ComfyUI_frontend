@@ -114,7 +114,7 @@ describe('useAgentDockMount', () => {
     )
   })
 
-  it('observes the scoped balance again after the billing identity changes', async () => {
+  it('waits for a fresh scoped balance after the billing identity changes', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const accountId = ref('account-a')
     useCurrentUser().resolvedUserInfo = computed(() =>
@@ -125,8 +125,16 @@ describe('useAgentDockMount', () => {
       agentHasFunds: true,
       agentScopedHasFunds: true
     })
+    let finishRefresh: (() => void) | undefined
+    const fetchStatus = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishRefresh = resolve
+        })
+    )
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
+      fetchStatus,
       subscription: computed(() =>
         fromPartial<SubscriptionInfo>(subscription.value)
       )
@@ -144,9 +152,50 @@ describe('useAgentDockMount', () => {
     }
     await nextTick()
 
+    expect(fetchStatus).toHaveBeenCalledOnce()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    finishRefresh?.()
+    await nextTick()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       true
     )
+  })
+
+  it('refreshes billing when the panel reopens', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const fetchStatus = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatus,
+      type: computed(() => 'workspace')
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    store.isOpen = true
+    await nextTick()
+
+    expect(fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
