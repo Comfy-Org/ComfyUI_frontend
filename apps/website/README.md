@@ -107,6 +107,16 @@ copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
 `pnpm --filter @comfyorg/website locale:check` or
 `pnpm --filter @comfyorg/website locale`.
 
+The `i18n: Update Website` workflow runs after English catalogs or locale
+configuration change on `main`, with a daily retry. It opens a draft PR from
+`bl/website-locale-updates` and skips generation while that PR is awaiting
+review. Runs with no catalog changes do not open a PR. Review and merge the
+translated copy to resume automatic updates.
+
+Manual dispatch on `main` uses the same PR flow. Dispatch on another branch
+commits generated catalogs back to that branch. Automatic runs reject output
+if catalog or translation inputs changed during generation.
+
 The website uses the app's pipeline and manifest format, described in
 [`src/locales/CONTRIBUTING.md`](../../src/locales/CONTRIBUTING.md#what-happens-in-ci).
 `apps/website/src/locales/.source-manifest.json` maps each English file to the Git blob ID
