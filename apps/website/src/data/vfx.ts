@@ -1,5 +1,7 @@
+import type { CardWorkflowItem } from '@/components/blocks/CardWorkflow01.vue'
 import type { FeatureRow } from '@/components/blocks/FeatureRows01.vue'
-import { filterByCategory } from '@/data/learningTutorials'
+import { localizeHref } from '@/config/routes'
+import { filterByCategory, tutorialPath } from '@/data/learningTutorials'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -38,5 +40,27 @@ export function vfxContent(locale: Locale) {
     }
   })
 
-  return { examples }
+  const workflows: CardWorkflowItem[] = tutorials.map((tutorial) => ({
+    id: tutorial.id,
+    title: tutorial.title[locale] || tutorial.title.en,
+    href: localizeHref(tutorialPath(tutorial), locale),
+    media: {
+      type: 'image',
+      src: tutorial.poster,
+      alt: tutorial.title[locale] || tutorial.title.en
+    },
+    tags: [t('vfx.workflows.tag')]
+  }))
+
+  const reasons = ([1, 2, 3] as const).map((id) => ({
+    id: String(id),
+    title: t(`vfx.why.${id}.title`),
+    description: t(`vfx.why.${id}.description`)
+  }))
+  const faqs = ([1, 2, 3, 4, 5] as const).map((id) => ({
+    id: `vfx-${id}`,
+    question: t(`vfx.faq.${id}.q`),
+    answer: t(`vfx.faq.${id}.a`)
+  }))
+  return { hero, examples, workflows, reasons, faqs }
 }

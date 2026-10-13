@@ -1,0 +1,62 @@
+---
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+
+const { t } = Astro.locals
+---
+
+<FeatureRows02
+  heading={t('enterpriseProduction.rolloutHeading')}
+  rows={[
+    {
+      id: 'packaging',
+      term: 'Environment packaging',
+      description:
+        'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.'
+    },
+    {
+      id: 'governance',
+      term: 'Node governance',
+      description:
+        'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.'
+    },
+    {
+      id: 'rollout',
+      term: 'Onboarding and rollout',
+      description:
+        'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.'
+    }
+  ]}
+/>
+
+<div id="how-it-works" class="scroll-mt-24">
+  <StepsCards01
+    heading="From one working setup to an approved fleet"
+    steps={[
+      {
+        id: 'define',
+        title: 'Define the build',
+        description:
+          'Start from a known-good environment or import a snapshot of a setup you already run.'
+      },
+      {
+        id: 'build',
+        title: 'Build it once',
+        description:
+          'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies.'
+      },
+      {
+        id: 'update',
+        title: 'Update deliberately',
+        description:
+          'Cut a new version when you decide. Move the team together without changing work already in flight.'
+      },
+      {
+        id: 'deploy',
+        title: 'Roll out to the fleet',
+        description:
+          'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.'
+      }
+    ]}
+  />
+</div>

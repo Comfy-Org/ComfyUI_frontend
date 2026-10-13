@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const logos = [
+import SocialProofLogo from '@/components/common/SocialProofLogo.vue'
+
+const { agencyPartners = false } = defineProps<{ agencyPartners?: boolean }>()
+
+const clientLogos = [
   'Amazon Studios',
   'Apple',
   'Autodesk',
@@ -13,6 +17,10 @@ const logos = [
   'Ubisoft'
 ]
 
+const logos = agencyPartners
+  ? [...clientLogos, 'Native Foreign', 'Black Math']
+  : clientLogos
+
 const mobileRow1Logos = logos.slice(0, 6)
 const mobileRow2Logos = logos.slice(6)
 </script>
@@ -22,18 +30,18 @@ const mobileRow2Logos = logos.slice(6)
     <!-- Single row on desktop -->
     <div data-testid="social-proof-desktop" class="hidden w-max gap-2 md:flex">
       <div
-        v-for="copy in 4"
+        v-for="copy in 2"
         :key="copy"
         class="flex shrink-0 animate-marquee items-center gap-2"
         style="--marquee-gap: 0.5rem"
-        :aria-hidden="copy > 1 ? 'true' : undefined"
+        :aria-hidden="copy === 2 ? 'true' : undefined"
       >
         <div
           v-for="logo in logos"
           :key="logo"
           class="flex h-20 w-50 shrink-0 items-center justify-center"
         >
-          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <SocialProofLogo :name="logo" />
         </div>
       </div>
     </div>
@@ -56,7 +64,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>
@@ -73,7 +81,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>

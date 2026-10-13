@@ -1045,3 +1045,38 @@ describe('shared auth telemetry events', () => {
     )
   })
 })
+
+describe('agency campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it('captures agency campaign attribution separately from self-serve links', async () => {
+    const { initPostHog, captureAgencyLinkClick } = await import('./posthog')
+    initPostHog()
+    captureAgencyLinkClick({
+      vertical: 'vfx',
+      campaign_type: 'agency-led',
+      destination: '/contact/',
+      placement: 'partners'
+    })
+    expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+      'website:agency_link_clicked',
+      {
+        vertical: 'vfx',
+        campaign_type: 'agency-led',
+        destination: '/contact/',
+        placement: 'partners'
+      }
+    )
+  })
+
+  it('does not capture agency clicks before initialization', async () => {
+    const { captureAgencyLinkClick } = await import('./posthog')
+    captureAgencyLinkClick({
+      vertical: 'advertising',
+      campaign_type: 'agency-led',
+      destination: '/contact/',
+      placement: 'hero'
+    })
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})

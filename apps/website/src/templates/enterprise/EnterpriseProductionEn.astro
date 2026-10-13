@@ -1,0 +1,210 @@
+---
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import ManagedBuildsRolloutSections from './ManagedBuildsRolloutSections.astro'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import OfferGrid01 from '@/components/blocks/OfferGrid01.vue'
+import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
+import { externalLinks } from '@/config/routes'
+
+const {
+  includeIndustries = false,
+  includeManagedDetails = false,
+  showOptionDetails = false
+} = Astro.props as {
+  includeIndustries?: boolean
+  includeManagedDetails?: boolean
+  showOptionDetails?: boolean
+}
+
+const { t } = Astro.locals
+
+const enterpriseOffers = [
+  {
+    id: 'commercial-licensing',
+    label: 'COMMERCIAL RIGHTS',
+    title: 'Model licensing',
+    description:
+      'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+    cta: {
+      label: 'VIEW MINIMAX LICENSING',
+      href: '/minimax/license/'
+    }
+  },
+  {
+    id: 'forward-deployed-creatives',
+    label: 'HANDS-ON DELIVERY',
+    title: 'Forward Deployed Creatives',
+    description:
+      'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.',
+    cta: {
+      label: 'VIEW THE OFFERING',
+      href: '/forward-deployed-creatives/'
+    }
+  }
+] as const
+
+const governanceRows = [
+  {
+    id: 'build-policy',
+    term: 'Build policy',
+    description:
+      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.'
+  },
+  {
+    id: 'model-policy',
+    term: 'Model policy and BYOK',
+    description:
+      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.'
+  },
+  {
+    id: 'people-access',
+    term: 'People and access',
+    description:
+      'Use company identity and SSO to assign approved environments to the teams that need them.'
+  },
+  {
+    id: 'usage-records',
+    term: 'Usage visibility and audit requirements',
+    description:
+      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.'
+  }
+] as const
+
+const productionRows = [
+  {
+    id: 'dedicated-capacity',
+    term: 'Dedicated GPU capacity',
+    description:
+      'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.'
+  },
+  {
+    id: 'priority-queueing',
+    term: 'Priority queueing',
+    description:
+      'Production jobs run ahead of standard shared-capacity traffic when demand spikes.'
+  },
+  {
+    id: 'deployment',
+    term: 'Flexible deployment',
+    description:
+      'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.'
+  },
+  {
+    id: 'support',
+    term: 'Custom SLAs and support',
+    description:
+      'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.'
+  }
+] as const
+---
+
+<SectionIntro01
+  eyebrow={t('enterpriseProduction.intro.eyebrow')}
+  heading={t('enterpriseProduction.intro.heading')}
+  subtitle={t('enterpriseProduction.intro.subtitle')}
+  maxWidth="xl"
+/>
+
+<BuildConfiguratorSplit01
+  showOptionDetails={showOptionDetails}
+  eyebrow="MANAGED BUILDS"
+  heading={'One approved ComfyUI environment,\neverywhere your team runs it.'}
+  body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
+  features={[
+    'Private custom nodes and models',
+    'Use supported provider keys and existing contracts',
+    'Assign approved builds through company identity'
+  ]}
+  releasesLabel="COMFYUI RELEASE"
+  releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+  environmentsLabel="PYTHON · PYTORCH · CUDA"
+  environments={[
+    { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+    { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+    { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' }
+  ]}
+  nodesLabel="CUSTOM NODES"
+  nodes={[
+    { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+    { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+    { id: 'controlnet', label: 'ControlNet Aux' },
+    { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+    { id: 'studio-nodes', label: 'studio-nodes (private)', selected: true }
+  ]}
+  modelsLabel="MODELS"
+  models={[
+    { id: 'flux', label: 'FLUX 3', selected: true },
+    { id: 'wan', label: 'Wan 3.0' },
+    { id: 'sdxl', label: 'SDXL Base', selected: true },
+    { id: 'ltx', label: 'LTX-2.5' },
+    { id: 'brand-lora', label: 'brand-lora (private)', selected: true }
+  ]}
+  cta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  client:visible
+/>
+
+{includeManagedDetails && <ManagedBuildsRolloutSections locale="en" />}
+
+<OfferGrid01 offers={enterpriseOffers} />
+
+<CardSplitContent02
+  title="Govern the build, models, people, and usage."
+  imageSrc="https://media.comfy.org/website/enterprise/enterprise-featured.png"
+/>
+<FeatureRows02
+  class="pt-0 lg:pt-0"
+  rows={governanceRows}
+  footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+/>
+
+<CardSplitContent02
+  title="Capacity and support for production."
+  imageSrc="/assets/enterprise/capacity-checker-falls.webp"
+  reverse
+/>
+<FeatureRows02
+  class="pt-0 lg:pt-0"
+  rows={productionRows}
+  footnote="Enterprise includes a 99.5% workflow-execution uptime SLA. Dedicated capacity, response commitments, and custom SLA terms are defined in your agreement."
+/>
+
+{includeIndustries && (
+  <IndustriesSection heading="Built with studios in the room" client:visible />
+)}
+
+<BenefitsGrid01
+  heading="A clearer path through security review."
+  numbered={false}
+  benefits={[
+    {
+      id: 'soc2',
+      title: 'SOC 2',
+      description: Astro.locals.t('enterpriseProduction.soc2Report')
+    },
+    {
+      id: 'sso',
+      title: 'Identity',
+      description: 'Single Sign-On is available for enterprise teams.'
+    },
+    {
+      id: 'data',
+      title: 'Data control',
+      description:
+        'For local deployments, Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.'
+    },
+    {
+      id: 'dpa',
+      title: 'Procurement',
+      description: 'A DPA and enterprise agreement are available.'
+    }
+  ]}
+  footnote="Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA."
+  primaryCta={{
+    label: 'VIEW TRUST CENTER',
+    href: externalLinks.trustCenter,
+    target: '_blank'
+  }}
+/>

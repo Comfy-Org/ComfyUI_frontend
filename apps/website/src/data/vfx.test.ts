@@ -5,9 +5,19 @@ import { vfxContent } from './vfx'
 
 describe('VFX content', () => {
   it.for(['en', 'zh-CN'] as const)(
-    'gives %s visitors captioned VFX examples',
+    'gives %s visitors a tutorial path for every workflow',
     (locale) => {
-      const { examples } = vfxContent(locale)
+      const { hero, workflows, examples } = vfxContent(locale)
+      const prefix = locale === 'en' ? '' : '/zh-CN'
+      expect(workflows).toHaveLength(6)
+      expect(workflows.map(({ href }) => href)).toEqual(
+        expect.arrayContaining([
+          `${prefix}/learning/vfx/sky-replacement/`,
+          `${prefix}/learning/vfx/cleanplate-walkthrough/`,
+          `${prefix}/learning/vfx/deaging-workflow/`
+        ])
+      )
+      expect(hero.videoSrc).toContain('skyreplacement')
       expect(examples.map(({ id }) => id)).toEqual([
         'sky-replacement',
         'cleanplate-walkthrough'
@@ -47,8 +57,17 @@ describe('VFX content', () => {
       }))
     vi.spyOn(learningTutorials, 'filterByCategory').mockReturnValue(tutorials)
 
-    const { examples } = vfxContent('zh-CN')
+    const { workflows, examples } = vfxContent('zh-CN')
 
+    expect(workflows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Sky Replacement',
+          href: '/zh-CN/learning/vfx/sky-replacement/',
+          media: expect.objectContaining({ alt: 'Sky Replacement' })
+        })
+      ])
+    )
     expect(examples.map(({ media }) => media.alt)).toEqual([
       'Sky Replacement',
       'Cleanplate Walkthrough'
