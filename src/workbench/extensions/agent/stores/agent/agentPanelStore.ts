@@ -87,6 +87,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const creditTransitionRefresh = shallowRef<{
+    identity: string
+    epoch: number
+    ready: boolean
+  } | null>(null)
+  const billingRefreshes = new Map<string, Promise<boolean>>()
+  const panelOpenEpoch = ref(0)
+  let latestBillingRefresh: Promise<boolean> | undefined
+  let creditTransitionRefreshEpoch = 0
+  watch(isOpen, (open, wasOpen) => {
+    if (open && !wasOpen) panelOpenEpoch.value += 1
+  })
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -365,6 +377,58 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     return dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
+  function beginCreditTransitionRefresh(identity: string): number {
+    const current = creditTransitionRefresh.value
+    if (current?.identity === identity && !current.ready) return current.epoch
+    const epoch = ++creditTransitionRefreshEpoch
+    creditTransitionRefresh.value = { identity, epoch, ready: false }
+    return epoch
+  }
+
+  function completeCreditTransitionRefresh(
+    identity: string,
+    epoch: number
+  ): void {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || current.epoch !== epoch) return
+    creditTransitionRefresh.value = { ...current, ready: true }
+  }
+
+  function claimCompletedCreditTransitionRefresh(identity: string): boolean {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || !current.ready) return false
+    creditTransitionRefresh.value = null
+    return true
+  }
+
+  function refreshBillingStatus(
+    key: string,
+    fetchStatus: () => Promise<boolean>,
+    afterCurrent = false
+  ): Promise<boolean> {
+    const existing = billingRefreshes.get(key)
+    if (existing) return existing
+    const previous = afterCurrent ? latestBillingRefresh : undefined
+    const start = () =>
+      new Promise<boolean>((resolve, reject) => {
+        const timeoutId = setTimeout(() => resolve(false), 15_000)
+        Promise.resolve()
+          .then(fetchStatus)
+          .then(resolve, reject)
+          .finally(() => clearTimeout(timeoutId))
+      })
+    const pending = previous ? previous.catch(() => false).then(start) : start()
+    const refresh = pending.finally(() => {
+      if (billingRefreshes.get(key) === refresh) {
+        billingRefreshes.delete(key)
+      }
+      if (latestBillingRefresh === refresh) latestBillingRefresh = undefined
+    })
+    billingRefreshes.set(key, refresh)
+    latestBillingRefresh = refresh
+    return refresh
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -376,10 +440,23 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
-    creditTransitionNotice: computed(() => creditTransitionNotice.value),
+    creditTransitionNotice:
+      computed<Readonly<CreditTransitionNoticeState> | null>(
+        () => creditTransitionNotice.value
+      ),
+    creditTransitionRefresh: computed<Readonly<{
+      identity: string
+      epoch: number
+      ready: boolean
+    }> | null>(() => creditTransitionRefresh.value),
+    panelOpenEpoch: computed(() => panelOpenEpoch.value),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
+    beginCreditTransitionRefresh,
+    completeCreditTransitionRefresh,
+    claimCompletedCreditTransitionRefresh,
+    refreshBillingStatus,
     width,
     requestedWidth,
     isOverlay,

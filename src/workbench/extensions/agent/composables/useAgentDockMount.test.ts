@@ -125,16 +125,16 @@ describe('useAgentDockMount', () => {
       agentHasFunds: true,
       agentScopedHasFunds: true
     })
-    let finishRefresh: (() => void) | undefined
-    const fetchStatus = vi.fn(
+    let finishRefresh: ((adopted: boolean) => void) | undefined
+    const fetchStatusFresh = vi.fn(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<boolean>((resolve) => {
           finishRefresh = resolve
         })
     )
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
-      fetchStatus,
+      fetchStatusFresh,
       subscription: computed(() =>
         fromPartial<SubscriptionInfo>(subscription.value)
       )
@@ -152,13 +152,16 @@ describe('useAgentDockMount', () => {
     }
     await nextTick()
 
-    expect(fetchStatus).toHaveBeenCalledOnce()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       false
     )
 
-    finishRefresh?.()
-    await nextTick()
+    finishRefresh?.(true)
+    await vi.waitFor(() => {
+      expect(store.creditTransitionRefresh).toBeNull()
+    })
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       false
     )
@@ -181,21 +184,175 @@ describe('useAgentDockMount', () => {
     )
   })
 
-  it('refreshes billing when the panel reopens', async () => {
+  it('deduplicates refreshes across dock hosts and refreshes on every reopen', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-    const fetchStatus = vi.fn().mockResolvedValue(undefined)
+    const fetchStatusFresh = vi.fn().mockResolvedValue(true)
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
-      fetchStatus,
+      fetchStatusFresh,
       type: computed(() => 'workspace')
     })
     const store = useAgentPanelStore()
 
     useAgentDockMount()
+    useAgentDockMount()
     store.isOpen = true
     await nextTick()
 
-    expect(fetchStatus).toHaveBeenCalledOnce()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    store.isOpen = false
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    store.isOpen = true
+    await nextTick()
+
+    expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('queues one fresh read when reopened during an in-flight read', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    let finishFirst: ((adopted: boolean) => void) | undefined
+    const fetchStatusFresh = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishFirst = resolve
+          })
+      )
+      .mockResolvedValue(true)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatusFresh,
+      type: computed(() => 'workspace')
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    useAgentDockMount()
+    store.isOpen = true
+    await nextTick()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    store.isOpen = false
+    await nextTick()
+    store.isOpen = true
+    await nextTick()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    finishFirst?.(true)
+    await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('waits for the winning billing read across concurrent dock hosts', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    let finishRefresh: ((adopted: boolean) => void) | undefined
+    const fetchStatusFresh = vi.fn(() => {
+      return new Promise<boolean>((resolve) => {
+        finishRefresh = resolve
+      })
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatusFresh,
+      type: computed(() => 'workspace'),
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    useAgentDockMount()
+    accountId.value = 'account-b'
+    await nextTick()
+
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+    subscription.value = { ...subscription.value, agentScopedHasFunds: false }
+    finishRefresh?.(false)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    // A later reopen retries the stale read and adopts the winning snapshot.
+    fetchStatusFresh.mockResolvedValueOnce(true)
+    store.isOpen = true
+    await vi.waitFor(() => {
+      expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+      expect(store.creditTransitionRefresh).toBeNull()
+    })
+    expect(store.creditTransitionRefresh).toBeNull()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    subscription.value = { ...subscription.value, agentScopedHasFunds: true }
+    await nextTick()
+    subscription.value = { ...subscription.value, agentScopedHasFunds: false }
+    await nextTick()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
+    )
+  })
+
+  it('seeds the new identity after a rejected refresh', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    })
+    const fetchStatusFresh = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(true)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatusFresh,
+      type: computed(() => 'workspace'),
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    accountId.value = 'account-b'
+    await nextTick()
+    await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    store.isOpen = true
+    await vi.waitFor(() => {
+      expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+      expect(store.creditTransitionRefresh).toBeNull()
+    })
+
+    subscription.value = { ...subscription.value, agentScopedHasFunds: true }
+    await nextTick()
+    subscription.value = { ...subscription.value, agentScopedHasFunds: false }
+    await nextTick()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
+    )
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
