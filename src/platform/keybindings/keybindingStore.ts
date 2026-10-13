@@ -116,15 +116,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return keybindingsByScope.value[scopeKey(combo, dialogKey)] ?? []
   }
 
-  function getKeybinding(
-    combo: KeyComboImpl,
-    dialogKey?: string
-  ): KeybindingImpl | undefined {
-    return getKeybindings(combo, dialogKey).find(
-      (binding) => binding.when === undefined
-    )
-  }
-
   function findConflictingKeybinding(
     keybinding: KeybindingImpl
   ): KeybindingImpl | undefined {
@@ -319,7 +310,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     keybindings,
     getUserKeybindings,
     getUserUnsetKeybindings,
-    getKeybinding,
     getKeybindings,
     findConflictingKeybinding,
     getKeybindingsByCommandId,

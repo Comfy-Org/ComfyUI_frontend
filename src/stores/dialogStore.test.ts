@@ -358,4 +358,21 @@ describe('dialogStore', () => {
       ).toBe(false)
     })
   })
+
+  describe('active dialog after close', () => {
+    it('reactivates the most recently opened dialog, not the highest priority one', () => {
+      const store = useDialogStore()
+      store.showDialog({
+        key: 'persistent',
+        component: MockComponent,
+        priority: 5
+      })
+      store.showDialog({ key: 'settings', component: MockComponent })
+      store.showDialog({ key: 'confirm', component: MockComponent })
+
+      store.closeDialog({ key: 'confirm' })
+
+      expect(store.activeKey).toBe('settings')
+    })
+  })
 })
