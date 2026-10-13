@@ -954,6 +954,10 @@ const isBoundWorkflowActive = computed(() => {
   )
 })
 
+// The CRDT follower is the inbound content channel: subscribes to the
+// session's bound workflow while its tab is active. Suspending the background
+// subscription makes reopening pull state-vector catch-up only after the
+// workflow's serialized activeState has hydrated the transient stores.
 const agentUserId = computed(() => {
   const identity = agentIdentity.state.value
   return identity.status === 'resolved' ? identity.userId : null
