@@ -285,11 +285,7 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
-  /**
-   * Replaces the default subscribe answer (`subscribed` then a catch-up), for
-   * a host that withholds or reorders frames. An empty list leaves the
-   * subscribe unanswered.
-   */
+  /** Replaces the default subscribe answer; an empty list leaves it unanswered. */
   answerSubscribesWith(answer: (stateVector: string) => HostFrame[]): void {
     this.subscribeAnswer = answer
   }

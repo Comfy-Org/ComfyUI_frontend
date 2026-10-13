@@ -73,7 +73,6 @@ function docOpsFrames(raw: string[]): string[][] {
   return raw.map(mintedOpIds).filter((ids) => ids.length > 0)
 }
 
-// The agent's one socket, faked at its seam with the real document transport.
 let agentSocket = createFakeAgentSocket()
 
 function answerWithOpsResult(detail: Record<string, unknown>): void {

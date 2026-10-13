@@ -75,10 +75,6 @@ test.describe(
           )
       const postReconnectSubscribes = (): ClientDocFrame[] =>
         postReconnectDocFrames().filter(({ type }) => type === 'doc_subscribe')
-      // The reconnect's re-subscribe never gets an answer: the general
-      // realtime channel recovered (chat keeps flowing below), but the
-      // host swallows the doc subscription frame. Only a retry of that
-      // subscribe is answered.
       hostSocket.answerSubscribesWith((stateVector) =>
         hostSocket.connectionCount() > 1 &&
         postReconnectSubscribes().length === 1
