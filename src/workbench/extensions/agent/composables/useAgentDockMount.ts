@@ -44,22 +44,29 @@ export function useAgentDockMount(): AgentDockMount {
 
   const billingIdentity = useBillingIdentity()
 
+  function reportBillingRefreshError(error: unknown): void {
+    reportError(error, {
+      errorType: 'error_refreshing_agent_billing_status',
+      surface: 'agent'
+    })
+  }
+
   function refreshTransitionBaseline(identity: string, epoch: number): void {
     if (fetchStatusFresh === undefined || type.value === 'unknown') return
     const key = `${type.value}:${identity}:${epoch}`
     void agentPanelStore
-      .refreshBillingStatus(key, fetchStatusFresh)
+      .refreshBillingStatus(
+        key,
+        fetchStatusFresh,
+        false,
+        reportBillingRefreshError
+      )
       .then((adopted) => {
         if (!adopted || billingIdentity.value !== identity) return
         agentPanelStore.completeCreditTransitionRefresh(identity, epoch)
         observeFreshScopedFunds(identity)
       })
-      .catch((error: unknown) => {
-        reportError(error, {
-          errorType: 'error_refreshing_agent_billing_status',
-          surface: 'agent'
-        })
-      })
+      .catch(reportBillingRefreshError)
   }
 
   watch(billingIdentity, (identity, previousIdentity) => {
@@ -120,14 +127,10 @@ export function useAgentDockMount(): AgentDockMount {
         .refreshBillingStatus(
           `${type.value}:${identity}:reopen:${agentPanelStore.panelOpenEpoch}`,
           fetchStatusFresh,
-          true
+          true,
+          reportBillingRefreshError
         )
-        .catch((error: unknown) => {
-          reportError(error, {
-            errorType: 'error_refreshing_agent_billing_status',
-            surface: 'agent'
-          })
-        })
+        .catch(reportBillingRefreshError)
     }
   )
 
