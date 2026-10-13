@@ -14,6 +14,7 @@ const { person, garment } = tryOn
 <template>
   <span class="flex shrink-0 -space-x-2">
     <img
+      v-if="person"
       :src="person.url"
       alt=""
       class="size-9 rounded-md object-cover ring-1 ring-transparency-white-t8"

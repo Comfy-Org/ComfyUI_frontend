@@ -5,7 +5,6 @@ import type { VirtualTryOn } from '@/composables/useVirtualTryOn'
 import type { Locale } from '@/i18n/translations'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
 import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
-import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
 import VirtualTryOnGarmentEmpty from './VirtualTryOnGarmentEmpty.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
@@ -22,11 +21,7 @@ const { garment, phase } = tryOn
     class="absolute top-3 right-3 w-20 sm:w-32"
     data-testid="try-on-garment-card"
   >
-    <EditorDropZone
-      :disabled="phase.kind === 'running'"
-      class="rounded-xl"
-      @file="tryOn.useGarmentFile"
-    >
+    <div class="rounded-xl">
       <figure
         v-if="garment"
         class="relative m-0 overflow-hidden rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink-light/90 shadow-xl shadow-black/40 backdrop-blur-md"
@@ -66,6 +61,6 @@ const { garment, phase } = tryOn
         </span>
       </figure>
       <VirtualTryOnGarmentEmpty v-else :locale @file="tryOn.useGarmentFile" />
-    </EditorDropZone>
+    </div>
   </aside>
 </template>

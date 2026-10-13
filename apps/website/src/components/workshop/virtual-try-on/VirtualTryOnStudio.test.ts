@@ -1,6 +1,5 @@
-import { fireEvent, render, screen, within } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import type { UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import VirtualTryOnStudio from './VirtualTryOnStudio.vue'
@@ -31,9 +30,11 @@ beforeEach(() => {
   screenIsWide(true)
 })
 
-function open(layout?: string) {
+async function open(layout?: string) {
   render(VirtualTryOnStudio, { props: { layout } })
-  return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  await user.click(screen.getByRole('button', { name: 'Motel balcony' }))
+  return user
 }
 
 const panel = () =>
@@ -43,7 +44,7 @@ const tools = () =>
 
 describe('VirtualTryOnStudio', () => {
   it('tries a garment on from the floating panel and compares the result', async () => {
-    const user = open()
+    const user = await open()
     expect(
       screen.getByRole('img', { name: 'Garment: Breton tee' })
     ).toBeVisible()
@@ -101,9 +102,13 @@ describe('VirtualTryOnStudio', () => {
     { layout: 'e', wide: true, tools: ['Try it on 8 credits', 'Undo', 'Redo'] }
   ])(
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
-    ({ layout, wide, tools: expected }) => {
+    async ({ layout, wide, tools: expected }) => {
       screenIsWide(wide)
-      open(layout)
+      const user = await open(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const names = within(tools())
         .getAllByRole('button')
@@ -115,7 +120,7 @@ describe('VirtualTryOnStudio', () => {
   )
 
   it('undoes a garment change and empties the garment card', async () => {
-    const user = open()
+    const user = await open()
     await user.click(within(panel()).getByRole('radio', { name: 'Sage knit' }))
     await user.click(screen.getByRole('button', { name: 'Undo' }))
     expect(
@@ -124,39 +129,19 @@ describe('VirtualTryOnStudio', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove garment' }))
     const card = screen.getByRole('complementary', { name: 'Garment' })
-    expect(card).toHaveTextContent('Drop or paste a garment photo')
+    expect(card).toHaveTextContent('Paste or upload a garment photo')
     const run = within(panel()).getByTestId('try-on-run')
     expect(run).toBeDisabled()
     expect(run).toHaveTextContent('Upload a garment')
   })
 
-  it.for([
-    {
-      name: 'pastes a garment from the clipboard',
-      send: (data: DataTransfer, user: UserEvent) => user.paste(data)
-    },
-    {
-      name: 'drops a garment on the garment picker',
-      send: (data: DataTransfer) =>
-        fireEvent.drop(screen.getByTestId('try-on-garment-drop'), {
-          dataTransfer: data
-        })
-    },
-    {
-      name: 'drops a garment on the garment card',
-      send: (data: DataTransfer) =>
-        fireEvent.drop(
-          screen.getByRole('img', { name: 'Garment: Breton tee' }),
-          { dataTransfer: data }
-        )
-    }
-  ])('$name', async ({ send }) => {
-    const user = open()
+  it('pastes a garment from the clipboard', async () => {
+    const user = await open()
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:shirt')
     const data = new DataTransfer()
     data.items.add(new File(['x'], 'shirt.png', { type: 'image/png' }))
 
-    await send(data, user)
+    await user.paste(data)
 
     expect(
       screen.getByRole('img', { name: 'Garment: shirt.png' })
@@ -166,19 +151,14 @@ describe('VirtualTryOnStudio', () => {
     ).toBeChecked()
   })
 
-  it.for([
-    { name: 'the photo', target: () => screen.getByTestId('try-on-person') },
-    {
-      name: 'the person row',
-      target: () => within(panel()).getByTestId('try-on-person-row')
-    }
-  ])('drops a person on $name', async ({ target }) => {
-    open()
+  it('uploads a person from the tile at the top of the panel', async () => {
+    const user = await open()
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:me')
-    const data = new DataTransfer()
-    data.items.add(new File(['x'], 'me.jpg', { type: 'image/jpeg' }))
 
-    await fireEvent.drop(target(), { dataTransfer: data })
+    await user.upload(
+      within(panel()).getByTestId('try-on-person-input'),
+      new File(['x'], 'me.jpg', { type: 'image/jpeg' })
+    )
 
     expect(await screen.findByRole('img', { name: 'me.jpg' })).toHaveAttribute(
       'src',
@@ -188,7 +168,7 @@ describe('VirtualTryOnStudio', () => {
   })
 
   it('keeps a shuffleable seed as a row of the panel', async () => {
-    const user = open()
+    const user = await open()
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(seed).toHaveValue(7)
     expect(
@@ -202,7 +182,7 @@ describe('VirtualTryOnStudio', () => {
   })
 
   it('sets the fit from a tray in the bottom composer', async () => {
-    const user = open('e')
+    const user = await open('e')
     expect(
       screen.queryByRole('complementary', { name: 'Virtual try-on settings' })
     ).toBeNull()
@@ -217,15 +197,11 @@ describe('VirtualTryOnStudio', () => {
     ).toBeVisible()
   })
 
-  it('sums the setup up on the collapsed phone sheet', async () => {
+  it('opens the phone sheet and sums the setup up once folded', async () => {
     screenIsWide(false)
-    const user = open()
+    const user = await open()
     const sheet = panel()
-    expect(within(sheet).queryByRole('radiogroup', { name: 'Fit' })).toBeNull()
 
-    await user.click(
-      within(sheet).getByRole('button', { name: 'Breton tee · Regular fit' })
-    )
     await user.click(within(sheet).getByRole('radio', { name: 'Slim' }))
     await user.click(
       within(sheet).getByRole('button', { name: 'Hide settings' })
@@ -233,5 +209,20 @@ describe('VirtualTryOnStudio', () => {
     expect(
       within(sheet).getByRole('button', { name: 'Breton tee · Slim fit' })
     ).toBeVisible()
+  })
+
+  it('waits for a person, and takes them out with the X and back from the tray', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(VirtualTryOnStudio)
+    expect(screen.getByTestId('try-on-empty')).toBeVisible()
+    expect(within(panel()).getByTestId('try-on-run')).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Motel balcony' }))
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Remove person' })
+    )
+    expect(screen.getByTestId('try-on-empty')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Undo remove person' }))
+    expect(within(panel()).getByText('motel-balcony.jpg')).toBeVisible()
   })
 })

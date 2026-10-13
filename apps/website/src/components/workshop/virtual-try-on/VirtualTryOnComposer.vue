@@ -23,7 +23,12 @@ const { tray, phase, person } = tryOn
     class="flex size-8 shrink-0 items-center justify-center rounded-full bg-transparency-white-t4 transition hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
     @file="tryOn.usePersonFile"
   >
-    <img :src="person.url" alt="" class="size-6 rounded-full object-cover" />
+    <img
+      v-if="person"
+      :src="person.url"
+      alt=""
+      class="size-6 rounded-full object-cover"
+    />
   </EditorUploadSlot>
   <EditorChip
     v-for="section in TRY_ON_SECTIONS"

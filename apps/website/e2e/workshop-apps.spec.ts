@@ -521,6 +521,7 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   const panel = app.getByRole('complementary', {
     name: 'Virtual try-on settings'
   })
+  await app.getByRole('button', { name: 'Motel balcony' }).click()
   await expect(
     app.getByRole('img', { name: 'Garment: Breton tee' })
   ).toBeVisible()
@@ -572,7 +573,7 @@ test('tries a garment on the Virtual try-on example from the floating panel', as
   await expect(download).toHaveAttribute('href', /^blob:/)
 })
 
-test('takes a Virtual try-on garment dropped on the picker or pasted, and names what is missing', async ({
+test('takes a pasted Virtual try-on garment, and names what is missing', async ({
   page,
   context
 }) => {
@@ -583,6 +584,7 @@ test('takes a Virtual try-on garment dropped on the picker or pasted, and names 
     name: 'Virtual try-on settings'
   })
   const run = panel.getByTestId('try-on-run')
+  await app.getByRole('button', { name: 'Motel balcony' }).click()
 
   await app.getByRole('button', { name: 'Remove garment' }).click()
   await expect(run).toBeDisabled()
@@ -599,14 +601,6 @@ test('takes a Virtual try-on garment dropped on the picker or pasted, and names 
       )
       return data
     }, name)
-  await panel
-    .getByTestId('try-on-garment-drop')
-    .dispatchEvent('drop', { dataTransfer: await garment('dropped.jpg') })
-  await expect(
-    app.getByRole('img', { name: 'Garment: dropped.jpg' })
-  ).toBeVisible()
-  await expect(run).toContainText('Try it on')
-
   const pasted = await garment('pasted.jpg')
   await page.evaluate(
     (clipboardData) =>
@@ -616,6 +610,7 @@ test('takes a Virtual try-on garment dropped on the picker or pasted, and names 
   await expect(
     app.getByRole('img', { name: 'Garment: pasted.jpg' })
   ).toBeVisible()
+  await expect(run).toContainText('Try it on')
 })
 
 test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile', async ({
@@ -628,6 +623,8 @@ test('tries a garment on from the Virtual try-on bottom sheet on phones @mobile'
   const sheet = app.getByRole('complementary', {
     name: 'Virtual try-on settings'
   })
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await app.getByRole('button', { name: 'Motel balcony' }).click()
 
   await sheet.getByRole('button', { name: 'Breton tee · Regular fit' }).click()
   await sheet.getByRole('radio', { name: 'Slim' }).click()

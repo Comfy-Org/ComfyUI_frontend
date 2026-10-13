@@ -47,7 +47,8 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     ...garment,
     name: vc(`tryOn.garment.${garment.id}`, locale)
   }))
-  const person = shallowRef<TryOnImage>(TRY_ON_PERSON)
+  const person = shallowRef<TryOnImage>()
+  const removed = shallowRef<TryOnImage>()
   const history = useSnapshotHistory<TryOnSetup>({
     ...START,
     garment: examples[0]
@@ -67,10 +68,11 @@ export function useVirtualTryOn(locale: Locale = 'en') {
       ? [...examples, current]
       : examples
   })
-  /** The input the run still needs; the example person is always there. */
+  /** The garment the run still needs; the person comes first, from the stage. */
   const missing = computed(() => (garment.value ? undefined : 'garment'))
   const canRun = computed(
-    () => phase.value.kind !== 'running' && !missing.value
+    () =>
+      Boolean(person.value) && phase.value.kind !== 'running' && !missing.value
   )
 
   function leaveResult(next: TryOnPhase) {
@@ -102,10 +104,33 @@ export function useVirtualTryOn(locale: Locale = 'en') {
       URL.revokeObjectURL(url)
       return
     }
+    showPerson({ url: keepUpload(url), name: file.name, ...size })
+  }
+
+  function showPerson(next: TryOnImage) {
     pendingPerson = undefined
     run?.abort()
     leaveResult({ kind: 'editing' })
-    person.value = { url: keepUpload(url), name: file.name, ...size }
+    removed.value = undefined
+    person.value = next
+  }
+
+  function useExample() {
+    showPerson(TRY_ON_PERSON)
+  }
+
+  function removePerson() {
+    if (!person.value) return
+    run?.abort()
+    leaveResult({ kind: 'editing' })
+    removed.value = person.value
+    person.value = undefined
+  }
+
+  function restorePerson() {
+    if (!removed.value) return
+    person.value = removed.value
+    removed.value = undefined
   }
 
   function useGarmentFile(file: File) {
@@ -135,7 +160,8 @@ export function useVirtualTryOn(locale: Locale = 'en') {
 
   async function tryOn() {
     const current = garment.value
-    if (!current || !canRun.value) return
+    const model = person.value
+    if (!current || !model || !canRun.value) return
     tray.value = undefined
     const controller = new AbortController()
     run = controller
@@ -143,7 +169,7 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     const { fit, seed } = setup.value
     try {
       const result = await runTryOn(
-        { person: person.value.url, garment: current.url, fit, seed },
+        { person: model.url, garment: current.url, fit, seed },
         controller.signal
       )
       if (run === controller) {
@@ -178,6 +204,10 @@ export function useVirtualTryOn(locale: Locale = 'en') {
 
   return {
     person,
+    removed,
+    useExample,
+    removePerson,
+    restorePerson,
     setup,
     garment,
     garments,

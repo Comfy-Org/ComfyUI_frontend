@@ -7,7 +7,6 @@ import type { Locale } from '@/i18n/translations'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
 import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
 import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
-import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
 
 const { tryOn, locale = 'en' } = defineProps<{
   tryOn: VirtualTryOn
@@ -27,10 +26,9 @@ const picked = computed({
 </script>
 
 <template>
-  <EditorDropZone
+  <div
     class="flex flex-col gap-3 rounded-xl pb-1"
     data-testid="try-on-garment-drop"
-    @file="tryOn.useGarmentFile"
   >
     <EditorTiles
       v-model="picked"
@@ -53,5 +51,5 @@ const picked = computed({
       <Upload class="size-3.5" aria-hidden="true" />
       {{ vc('tryOn.garment.upload', locale) }}
     </EditorUploadSlot>
-  </EditorDropZone>
+  </div>
 </template>

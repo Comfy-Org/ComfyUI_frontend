@@ -13,15 +13,29 @@ const copy = {
   'tryOn.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'tryOn.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'tryOn.hint': {
-    en: 'Pick, drop or paste a garment, choose a fit, then try it on',
-    'zh-CN': '选择、拖入或粘贴一件服装，选好版型，然后试穿'
+    en: 'Pick, paste or upload a garment, choose a fit, then try it on',
+    'zh-CN': '选择、粘贴或上传一件服装，选好版型，然后试穿'
   },
   'tryOn.person': { en: 'Person', 'zh-CN': '人物' },
-  'tryOn.person.change': { en: 'Change', 'zh-CN': '更换' },
-  'tryOn.person.changeLabel': {
-    en: 'Change the photo of the person',
-    'zh-CN': '更换人物照片'
+  'tryOn.person.upload': { en: 'Upload person', 'zh-CN': '上传人物照片' },
+  'tryOn.person.hint': {
+    en: 'A full or half-body photo',
+    'zh-CN': '全身或半身照片'
   },
+  'tryOn.person.remove': { en: 'Remove person', 'zh-CN': '移除人物' },
+  'tryOn.person.restore': {
+    en: 'Undo remove person',
+    'zh-CN': '撤销移除人物'
+  },
+  'tryOn.person.changeLabel': {
+    en: 'Upload a photo of the person',
+    'zh-CN': '上传人物照片'
+  },
+  'tryOn.empty.title': {
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
+  },
+  'tryOn.empty.example': { en: 'Motel balcony', 'zh-CN': '汽车旅馆阳台' },
   'tryOn.person.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'
@@ -33,8 +47,8 @@ const copy = {
   'tryOn.garment.remove': { en: 'Remove garment', 'zh-CN': '移除服装' },
   'tryOn.garment.yours': { en: 'Your garment', 'zh-CN': '你的服装' },
   'tryOn.garment.empty': {
-    en: 'Drop or paste a garment photo',
-    'zh-CN': '拖入或粘贴服装照片'
+    en: 'Paste or upload a garment photo',
+    'zh-CN': '粘贴或上传服装照片'
   },
   'tryOn.garment.emptyMeta': {
     en: 'A flat lay or product shot works best',

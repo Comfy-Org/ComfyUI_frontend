@@ -10,9 +10,15 @@ vi.mock(import('@/lib/workshop/virtual-try-on/render-image'), () => ({
 
 let scope: EffectScope
 
-function start() {
+function open() {
   const tryOn = scope.run(() => useVirtualTryOn('en'))
   if (!tryOn) throw new Error('no scope')
+  return tryOn
+}
+
+function start() {
+  const tryOn = open()
+  tryOn.useExample()
   return tryOn
 }
 
@@ -30,13 +36,29 @@ afterEach(() => {
 })
 
 describe('useVirtualTryOn', () => {
-  it('opens on the example person in the Breton tee, ready to run', () => {
-    const tryOn = start()
-    expect(tryOn.person.value.name).toBe('motel-balcony.jpg')
+  it('waits for a person, then runs the example person in the Breton tee', () => {
+    const tryOn = open()
+    expect(tryOn.person.value).toBeUndefined()
+    expect(tryOn.canRun.value).toBe(false)
+
+    tryOn.useExample()
+    expect(tryOn.person.value?.name).toBe('motel-balcony.jpg')
     expect(tryOn.garment.value?.name).toBe('Breton tee')
     expect(tryOn.setup.value.fit).toBe('regular')
     expect(tryOn.canRun.value).toBe(true)
     expect(tryOn.canUndo.value).toBe(false)
+  })
+
+  it('takes the person out and puts them back', () => {
+    const tryOn = start()
+
+    tryOn.removePerson()
+    expect(tryOn.person.value).toBeUndefined()
+    expect(tryOn.canRun.value).toBe(false)
+    tryOn.restorePerson()
+
+    expect(tryOn.person.value?.name).toBe('motel-balcony.jpg')
+    expect(tryOn.canRun.value).toBe(true)
   })
 
   it('undoes and redoes garment, fit and seed changes, a typed seed as one step', () => {

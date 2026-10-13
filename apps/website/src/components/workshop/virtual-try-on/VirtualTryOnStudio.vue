@@ -9,6 +9,7 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import VirtualTryOnDocks from './VirtualTryOnDocks.vue'
 import VirtualTryOnHistory from './VirtualTryOnHistory.vue'
@@ -25,9 +26,12 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const tryOn = useVirtualTryOn(locale)
-const { phase, person } = tryOn
+const { phase, person, removed } = tryOn
 const panel = computed(() => layout !== 'e')
-const download = useResultDownload(phase, () => `try-on-${person.value.name}`)
+const download = useResultDownload(
+  phase,
+  () => `try-on-${person.value?.name ?? 'result'}`
+)
 reportStudioBusy(() => phase.value.kind === 'running')
 useImagePaste(
   (file) => {
@@ -60,6 +64,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ vc('tryOn.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !person"
+        :label="vc('tryOn.person.restore', locale)"
+        @undo="tryOn.restorePerson"
+      />
       <VirtualTryOnTrays v-if="!panel" :try-on :locale />
     </template>
     <template #dock>

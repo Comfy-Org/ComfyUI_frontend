@@ -4,6 +4,8 @@ import { computed } from 'vue'
 import type { VirtualTryOn } from '@/composables/useVirtualTryOn'
 import type { Locale } from '@/i18n/translations'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
+import { TRY_ON_PERSON } from '@/lib/workshop/virtual-try-on/mock-run'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import VirtualTryOnWorkspace from './VirtualTryOnWorkspace.vue'
 import { personAlt } from './person-alt'
@@ -16,7 +18,7 @@ const { tryOn, locale = 'en' } = defineProps<{
 const { person, phase, comparing } = tryOn
 const labels = computed(() => ({
   resultAlt: vc('tryOn.alt.result', locale),
-  originalAlt: personAlt(person.value, locale),
+  originalAlt: person.value ? personAlt(person.value, locale) : '',
   original: vc('tryOn.view.original', locale),
   result: vc('tryOn.view.result', locale),
   slider: vc('tryOn.compare', locale)
@@ -24,8 +26,22 @@ const labels = computed(() => ({
 </script>
 
 <template>
+  <EditorEmpty
+    v-if="!person"
+    :title="vc('tryOn.empty.title', locale)"
+    :examples="[
+      {
+        id: 'balcony',
+        image: TRY_ON_PERSON.url,
+        label: vc('tryOn.empty.example', locale),
+        fit: 'contain'
+      }
+    ]"
+    data-testid="try-on-empty"
+    @example="tryOn.useExample"
+  />
   <EditorResult
-    v-if="phase.kind === 'done'"
+    v-else-if="phase.kind === 'done'"
     :before="person.url"
     :after="phase.result.url"
     :view="comparing ? 'compare' : 'result'"
@@ -33,5 +49,5 @@ const labels = computed(() => ({
     :height="person.height"
     :labels
   />
-  <VirtualTryOnWorkspace v-else :try-on :locale />
+  <VirtualTryOnWorkspace v-else :person :try-on :locale />
 </template>

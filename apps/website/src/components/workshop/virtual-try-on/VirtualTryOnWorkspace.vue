@@ -2,7 +2,7 @@
 import { useNow } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import type { VirtualTryOn } from '@/composables/useVirtualTryOn'
+import type { TryOnImage, VirtualTryOn } from '@/composables/useVirtualTryOn'
 import type { Locale } from '@/i18n/translations'
 import { elapsedLabel } from '@/lib/workshop/elapsed'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
@@ -10,18 +10,22 @@ import { mockProgress } from '@/lib/workshop/virtual-try-on/mock-run'
 import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
 import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
 import EditorHint from '@/components/workshop/app-editor/EditorHint.vue'
-import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
 import VirtualTryOnGarmentCard from './VirtualTryOnGarmentCard.vue'
 import { personAlt } from './person-alt'
 
-const { tryOn, locale = 'en' } = defineProps<{
+const {
+  person,
+  tryOn,
+  locale = 'en'
+} = defineProps<{
+  person: TryOnImage
   tryOn: VirtualTryOn
   locale?: Locale
 }>()
 
-const { person, setup, garment, phase } = tryOn
+const { setup, garment, phase } = tryOn
 const touched = ref(false)
-watch([setup, person], () => (touched.value = true))
+watch([setup, () => person], () => (touched.value = true))
 
 const running = computed(() => phase.value.kind === 'running')
 const now = useNow({ interval: 200 })
@@ -46,19 +50,14 @@ const busy = computed(() => {
 <template>
   <div class="size-full max-w-5xl">
     <EditorFrame :width="person.width" :height="person.height">
-      <EditorDropZone
-        :disabled="running"
-        class="absolute inset-0 rounded-sm"
-        data-testid="try-on-person-drop"
-        @file="tryOn.usePersonFile"
-      >
+      <div class="absolute inset-0 rounded-sm" data-testid="try-on-person-drop">
         <img
           :src="person.url"
           :alt="personAlt(person, locale)"
           class="size-full rounded-sm object-cover"
           data-testid="try-on-person"
         />
-      </EditorDropZone>
+      </div>
       <EditorHint
         v-if="!touched && phase.kind === 'editing'"
         :text="vc('tryOn.hint', locale)"
