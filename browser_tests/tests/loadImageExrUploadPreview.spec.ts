@@ -73,18 +73,18 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
       )
       await expect(dimensions).toBeVisible()
 
-      const loadImageImgs = () =>
-        comfyPage.page.evaluate(() => {
-          const loadImage = window.app?.graph.nodes.find(
+      const nodeImage = (mark?: 'stale') =>
+        comfyPage.page.evaluate((mark) => {
+          const img = window.app?.graph.nodes.find(
             (n) => n.type === 'LoadImage'
-          )
-          const previous = Reflect.get(loadImage ?? {}, 'previousImgs')
-          Reflect.set(loadImage ?? {}, 'previousImgs', loadImage?.imgs)
-          return previous !== undefined && previous !== loadImage?.imgs
-        })
-      await loadImageImgs()
+          )?.imgs?.[0]
+          if (mark && img) img.dataset.stale = mark
+          if (!img?.complete || !img.naturalWidth) return 'loading'
+          return img.dataset.stale ?? img.dataset.testid ?? 'replaced'
+        }, mark)
+      await nodeImage('stale')
       await uploadFromPicker(comfyPage, node)
-      await expect.poll(loadImageImgs).toBe(true)
+      await expect.poll(() => nodeImage()).toBe('replaced')
       await expect(dimensions).toBeVisible()
 
       await image.dispatchEvent('load')
