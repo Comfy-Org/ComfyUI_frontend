@@ -161,6 +161,7 @@ export function isAskPart(part: MessagePart): part is AskPart {
   )
 }
 
+/** An ask card still waiting on the user. */
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
