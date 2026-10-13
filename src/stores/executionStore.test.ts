@@ -12,11 +12,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import {
-  MAX_PROGRESS_JOBS,
-  MAX_JOB_LOOKUP_ENTRIES,
-  useExecutionStore
-} from '@/stores/executionStore'
+import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import {
@@ -101,6 +97,15 @@ function createQueuedWorkflow(path: string = 'workflows/test.json') {
     initialState: { id: 'workflow-id' },
     path
   })
+}
+
+function registerSequentialJobs(
+  store: ReturnType<typeof useExecutionStore>,
+  count: number
+) {
+  for (let i = 0; i < count; i++) {
+    store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
+  }
 }
 
 function createPromptNode(title: string, classType: string) {
@@ -2768,35 +2773,27 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('jobIdToWorkflowId evicts the oldest jobs beyond its cap', () => {
-    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES + 5; i++) {
-      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
-    }
+    registerSequentialJobs(store, 4005)
 
-    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
     expect(store.jobIdToWorkflowId.has('job-4')).toBe(false)
     expect(store.jobIdToWorkflowId.get('job-5')).toBe('wf-5')
-    expect(
-      store.jobIdToWorkflowId.get(`job-${MAX_JOB_LOOKUP_ENTRIES + 4}`)
-    ).toBe(`wf-${MAX_JOB_LOOKUP_ENTRIES + 4}`)
+    expect(store.jobIdToWorkflowId.get('job-4004')).toBe('wf-4004')
   })
 
   it('jobIdToWorkflowId evicts re-registered jobs last', () => {
     store.registerJobWorkflowIdMapping('job-live', 'wf-live')
-    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES - 1; i++) {
-      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
-    }
+    registerSequentialJobs(store, 3999)
     store.registerJobWorkflowIdMapping('job-live', 'wf-live')
     store.registerJobWorkflowIdMapping('job-new', 'wf-new')
 
-    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
     expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
     expect(store.jobIdToWorkflowId.get('job-live')).toBe('wf-live')
   })
 
   it('storeJob respects the jobIdToWorkflowId cap', () => {
-    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES; i++) {
-      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
-    }
+    registerSequentialJobs(store, 4000)
     store.storeJob({
       nodes: [],
       id: 'job-stored',
@@ -2805,7 +2802,7 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       mode: 'graph'
     })
 
-    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
     expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
     expect(store.jobIdToWorkflowId.get('job-stored')).toBe('workflow-id')
   })

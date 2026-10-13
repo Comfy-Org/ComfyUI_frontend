@@ -115,8 +115,7 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-/** Cap on `jobIdToSessionWorkflowPath` and `jobIdToWorkflowId`; oldest evicted first. */
-export const MAX_JOB_LOOKUP_ENTRIES = 4000
+const MAX_JOB_LOOKUP_ENTRIES = 4000
 
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
