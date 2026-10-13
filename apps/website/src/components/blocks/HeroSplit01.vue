@@ -51,7 +51,6 @@ const {
   videoLoop = false,
   videoMinimal = false,
   videoHideControls = false,
-  videoPreview = false,
   videoPlayButtonVariant = 'solid',
   videoAriaLabel,
   compact = false,
@@ -86,7 +85,6 @@ const {
   videoLoop?: boolean
   videoMinimal?: boolean
   videoHideControls?: boolean
-  videoPreview?: boolean
   videoPlayButtonVariant?: 'solid' | 'overlay'
   videoAriaLabel?: string
   compact?: boolean
@@ -207,7 +205,6 @@ const { t } = translationsFor(locale)
           :loop="videoLoop"
           :minimal="videoMinimal"
           :hide-controls="videoHideControls"
-          :preview="videoPreview"
           :play-button-variant="videoPlayButtonVariant"
           :aria-label="videoAriaLabel"
         />

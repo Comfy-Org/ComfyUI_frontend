@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import VfxProofHero from '@/components/campaign/VfxProofHero.vue'
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import AgencyEngagementTimeline from '@/components/campaign/AgencyEngagementTimeline.vue'
 import VfxProductionPanel from '@/templates/campaign/VfxProductionPanel.astro'
 import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
@@ -37,6 +38,29 @@ const prefix = blackMath
     ? 'vfxV2.agency'
     : 'vfxV2.comfy'
 const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2${blackMath ? '&agency_partner=black-math' : ''}`
+const metaTitle = t(
+  blackMath
+    ? 'blackMathVfx.metaTitle'
+    : agency
+      ? 'agency.vfx.metaTitle'
+      : 'vfx.meta.title'
+)
+const intakeNote = t(
+  blackMath ? 'blackMathVfx.intakeNote' : 'vfxV2.agency.intakeNote'
+)
+const workflowsHeading = t(
+  blackMath ? 'blackMathVfx.workflowsHeading' : 'vfxV2.workflows.heading'
+)
+const workflowsDescription = t(
+  blackMath
+    ? 'blackMathVfx.workflowsDescription'
+    : 'vfxV2.workflows.description'
+)
+const primaryLabelKey = blackMath
+  ? 'blackMathVfx.primaryCta'
+  : agency
+    ? 'vfxV2.agency.primaryCta'
+    : 'vfxV2.comfy.contactButton'
 const { examples } = vfxContent(locale)
 const previewExamples = examples.map((row) => ({
   ...row,
@@ -44,6 +68,9 @@ const previewExamples = examples.map((row) => ({
     row.media.type === 'video' ? { ...row.media, preview: true } : row.media
 }))
 const story = getCustomerVideoStory('black-math')
+const ogImage = blackMath
+  ? story.poster
+  : vfxWorkflows[5].template.thumbnails[0]
 const benefits = ([1, 2, 3, 4] as const).map((id) => ({
   id: `pipeline-${id}`,
   title: t(`vfxV2.pipeline.${id}.title`),
@@ -52,15 +79,9 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
 ---
 
 <BaseLayout
-  title={t(
-    blackMath
-      ? 'blackMathVfx.metaTitle'
-      : agency
-        ? 'agency.vfx.metaTitle'
-        : 'vfx.meta.title'
-  )}
+  title={metaTitle}
   description={t(`${prefix}.heroDescription`)}
-  ogImage={blackMath ? story.poster : vfxWorkflows[5].template.thumbnails[0]}
+  ogImage={ogImage}
   hideAnnouncementBanner
 >
   <div
@@ -81,18 +102,23 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
           label: t('blackMathVfx.secondaryCta'),
           href: '#workflows'
         }}
-        videoSrc={story.videoSrc}
-        videoPoster={story.poster}
-        videoTracks={[...story.captions]}
-        videoAriaLabel={t('vfx.proof.title')}
-        videoPreview
         mediaWrapperClass="order-none lg:flex-[1.2]"
         titleClass="text-3xl tracking-tight md:text-4xl lg:text-4xl"
         subtitleClass="max-w-lg text-base"
         class="lg:gap-12 lg:[&>div:first-child]:flex-[0.8]"
         data-campaign-hero
-        client:load
-      />
+      >
+        <VideoPlayer
+          slot="media"
+          locale={locale}
+          src={story.videoSrc}
+          poster={story.poster}
+          tracks={[...story.captions]}
+          ariaLabel={t('vfx.proof.title')}
+          preview
+          client:load
+        />
+      </HeroSplit01>
     ) : (
       <VfxProofHero
         locale={locale}
@@ -105,7 +131,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
     {agency && <p
       class="mx-auto max-w-9xl px-6 pb-6 text-sm text-primary-comfy-canvas/70 lg:px-16"
     >
-      {t(blackMath ? 'blackMathVfx.intakeNote' : 'vfxV2.agency.intakeNote')}
+      {intakeNote}
     </p>}
     {!blackMath && <SocialProofBarSection agencyPartners={agency} />}
     {agency && <div id="approach" class="scroll-mt-28">
@@ -123,16 +149,8 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
     </div>}
     <div id="workflows" class="scroll-mt-28">
       <SectionIntro01
-        heading={t(
-          blackMath
-            ? 'blackMathVfx.workflowsHeading'
-            : 'vfxV2.workflows.heading'
-        )}
-        subtitle={t(
-          blackMath
-            ? 'blackMathVfx.workflowsDescription'
-            : 'vfxV2.workflows.description'
-        )}
+        heading={workflowsHeading}
+        subtitle={workflowsDescription}
         class="pb-0 lg:pb-0"
       />
       <FeaturedWorkflowsSection
@@ -265,13 +283,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
       <CallToActionSection
         locale={locale}
         headingKey={`${prefix}.contactHeading`}
-        primaryLabelKey={
-          blackMath
-            ? 'blackMathVfx.primaryCta'
-            : agency
-              ? 'vfxV2.agency.primaryCta'
-              : 'vfxV2.comfy.contactButton'
-        }
+        primaryLabelKey={primaryLabelKey}
         primaryHref={contactHref}
       />
     </div>
