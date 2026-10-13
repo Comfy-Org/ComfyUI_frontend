@@ -27,8 +27,9 @@ The panel speaks one contract on the cloud and on the local agent:
   authenticate through `api.fetchApi` like every other request. Elsewhere they
   carry the signed-in user's auth header, or the stored API key when no one is
   signed in, and a running turn re-sends it. A signed-out send opens the sign-in
-  dialog, unless the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Signing out or switching account (or API
-  key) reconnects the socket and looks the identity up again.
+  dialog, unless the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Signing out or
+  switching account (or API key) reconnects the socket and looks the identity
+  up again.
 
 ## Activation and consent
 

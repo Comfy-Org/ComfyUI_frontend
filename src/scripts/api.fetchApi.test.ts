@@ -389,6 +389,47 @@ describe('api.fetchApi', () => {
     })
   })
 
+  describe('socketAuthParams', () => {
+    it.for([
+      {
+        name: 'a web session takes its workspace and no token',
+        scope: { session: fromPartial({}), epoch: 1, workspaceId: 'ws-1' },
+        token: 'cloud-token',
+        expected: 'workspace_id=ws-1'
+      },
+      {
+        name: 'a web session with no one signed in opens nothing',
+        scope: undefined,
+        token: undefined,
+        expected: null
+      }
+    ])('$name', async ({ scope, token, expected }) => {
+      api.setAuthProvider({
+        ...anonymousApiAuthProvider,
+        getAuthToken: vi.fn().mockResolvedValue(token)
+      })
+      const release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope })
+      )
+
+      try {
+        const params = await api.socketAuthParams()
+        expect(params === null ? null : params.toString()).toBe(expected)
+      } finally {
+        release()
+      }
+    })
+
+    it('takes the cloud token without a web session', async () => {
+      api.setAuthProvider({
+        ...anonymousApiAuthProvider,
+        getAuthToken: vi.fn().mockResolvedValue('cloud-token')
+      })
+
+      expect((await api.socketAuthParams())?.get('token')).toBe('cloud-token')
+    })
+  })
+
   describe('default options', () => {
     it('should set cache to no-cache by default', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response())
