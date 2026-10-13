@@ -1,0 +1,41 @@
+{
+  "corpus_version": "372f30a1b001c95ff5b57f895304274a7fcd83d7209117925dfe1913a9eed5dc",
+  "source_metadata_role": "effective",
+  "source_metadata_sha256": "0718a944aabf14e84195777bdff054cab6f70bb5c25e508e2c3d2b2cebd8a253",
+  "source_metadata_sources": [
+    {
+      "preserved_existing": false,
+      "role": "effective",
+      "source_metadata_bytes": 19005,
+      "source_metadata_sha256": "0718a944aabf14e84195777bdff054cab6f70bb5c25e508e2c3d2b2cebd8a253"
+    }
+  ],
+  "summary": {
+    "corpus_status": {
+      "admission": "archive_only",
+      "reasons": ["byte_verified_native_validation_not_run"],
+      "source_metadata_bytes": 19005,
+      "source_metadata_sha256": "0718a944aabf14e84195777bdff054cab6f70bb5c25e508e2c3d2b2cebd8a253"
+    },
+    "description": "A ComfyUI workflow using a FLUX-family UNET loader with DualCLIP text encoding, a chained three-LoRA model stack, custom sampling via SamplerCustomAdvanced, then VAE decode, 4x model upscale, a lanczos rescale, and saves via two save nodes. The prompt is a Venice Grand Canal scene; the graph shows 832x1216 latent dimensions with a batch of 4.",
+    "metadata_sha256": "",
+    "name": "FLUX Dev Venice Canal Generator with LoRA Chain and 4x Upscale",
+    "node_count": 27,
+    "structural_cluster": "layout-only-v1:b9f97360e8e280c3019422f7ec6b8f233b733c7a34bca622d2d035c402db7b29",
+    "tags": [
+      "ComfyUI",
+      "FLUX",
+      "flux1-dev",
+      "LoRA chain",
+      "Venice",
+      "Grand Canal",
+      "upscale",
+      "SamplerCustomAdvanced",
+      "image generation"
+    ],
+    "tasks": [],
+    "unresolved_pack_count": 2,
+    "verified": false,
+    "workflow_sha256": "000c1da4e21710be75a2d8508394a8b9279a95365b6121cb9fdeeba265855d82"
+  }
+}

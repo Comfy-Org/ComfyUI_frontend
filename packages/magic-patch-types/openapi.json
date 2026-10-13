@@ -9,6 +9,37 @@
   "servers": [{ "url": "/api/magic-patch" }],
   "security": [{ "existingSession": [] }],
   "paths": {
+    "/sources/pack": {
+      "post": {
+        "operationId": "mintPackSource",
+        "description": "Draft Cloud-owned source producer matching magicpatchsource.NewPackSourceAPI. Mint only current-authorized owned original source; revision/source digests are never browser-minted. This specification does not mount the route.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackSourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current authorized immutable generation input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackSourceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/requests": {
       "post": {
         "operationId": "createPatchRequest",
@@ -280,6 +311,43 @@
         "properties": {
           "code": { "type": "string" },
           "message": { "type": "string", "maxLength": 2000 }
+        }
+      },
+      "PackSourceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pack_id", "revision_id"],
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      },
+      "PackSourceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_ref", "entry_point", "pack_id", "revision_id"],
+        "properties": {
+          "source_ref": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "entry_point": {
+            "type": "string",
+            "enum": ["pack_pin"]
+          },
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          }
         }
       }
     }

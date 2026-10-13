@@ -146,7 +146,7 @@ export function createCommunityWorkflowRequest(
     const detail = parsed.data
     if (
       detail.summary.workflow_sha256 !== hash ||
-      detail.metadata.workflow_sha256 !== hash
+      (detail.metadata && detail.metadata.workflow_sha256 !== hash)
     )
       return Response.json({}, { status: 502 })
     if (url.searchParams.get('include_workflow') === 'true') {

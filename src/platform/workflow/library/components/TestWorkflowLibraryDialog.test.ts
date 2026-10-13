@@ -3,12 +3,13 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createHash, webcrypto } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { zTestWorkflowImportMetadata } from '@comfyorg/ingest-types/test-workflows/zod'
 import cloudMetadata from '@/platform/community/fixtures/cloud-reference-v1/import.json'
 import cloudOriginal from '@/platform/community/fixtures/cloud-reference-v1/workflow.json?raw'
 import cloudAdapted from '@/platform/community/fixtures/cloud-reference-v1/workflow.cloud.json?raw'
+import archiveDetail from '@/platform/workflow/library/fixtures/archive-only-detail.json'
 
 import messages from '@/locales/en/main.json'
 import TestWorkflowLibraryDialog from './TestWorkflowLibraryDialog.vue'
@@ -129,6 +130,104 @@ beforeEach(() => {
 })
 
 describe('Test workflow library UI', () => {
+  it('shows archive-only detail without qualifying metadata and opens its exact original on request', async () => {
+    const user = userEvent.setup()
+    const archive = {
+      ...archiveDetail,
+      summary: { ...archiveDetail.summary, workflow_sha256: hash }
+    }
+    const baseline = mocks.fetch.getMockImplementation()
+    mocks.fetch.mockImplementation((route: string) => {
+      if (route.includes(`/entries/${hash}`))
+        return response(
+          route.includes('include_workflow=true')
+            ? { ...archive, workflow_json: raw }
+            : archive
+        )
+      if (route.includes('/entries?'))
+        return response({
+          entries: [archive.summary],
+          total: 1,
+          unresolved: 1,
+          verified: 0,
+          next_cursor: ''
+        })
+      return baseline?.(route)
+    })
+    renderLibrary()
+    await user.click(
+      await screen.findByRole('button', { name: archive.summary.name })
+    )
+    expect(
+      await screen.findByRole('heading', { name: archive.summary.name })
+    ).toBeVisible()
+    expect(
+      screen.getByText(messages.testWorkflowLibrary.archiveOnly)
+    ).toBeVisible()
+    expect(
+      screen.getAllByText(messages.testWorkflowLibrary.notVerified).length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryByRole('button', {
+        name: messages.community.openCloudAdapted
+      })
+    ).not.toBeInTheDocument()
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    await user.click(
+      screen.getByRole('button', {
+        name: messages.testWorkflowLibrary.openOriginal
+      })
+    )
+    await waitFor(() => expect(mocks.handleFile).toHaveBeenCalledOnce())
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(raw)
+  })
+
+  it('keeps card selection alive after an explicit search with a pending input debounce', async () => {
+    renderLibrary()
+    const entry = await screen.findByRole('button', {
+      name: /Unknown node original/
+    })
+    const baseline = mocks.fetch.getMockImplementation()
+    let resolveDetail: (value: Response) => void = () => {}
+    const pendingDetail = new Promise<Response>((resolve) => {
+      resolveDetail = resolve
+    })
+    let detailSignal: AbortSignal | undefined
+    mocks.fetch.mockImplementation((route: string, options: RequestInit) => {
+      if (route.includes(`/entries/${hash}`)) {
+        detailSignal = options.signal ?? undefined
+        return pendingDetail
+      }
+      return baseline?.(route, options)
+    })
+    vi.useFakeTimers()
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.type(
+        screen.getByLabelText(messages.testWorkflowLibrary.search),
+        'Unknown'
+      )
+      await user.click(screen.getByRole('button', { name: 'Search' }))
+      await vi.advanceTimersByTimeAsync(0)
+      await user.click(entry)
+      expect(detailSignal).toBeDefined()
+      await vi.advanceTimersByTimeAsync(300)
+      expect(detailSignal?.aborted).toBe(false)
+      expect(
+        mocks.fetch.mock.calls.filter(([route]) =>
+          String(route).includes('q=Unknown')
+        )
+      ).toHaveLength(1)
+      resolveDetail(response(detail))
+      await vi.advanceTimersByTimeAsync(0)
+      await nextTick()
+      expect(screen.getByText('UnknownCustomNode')).toBeVisible()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('offers both graph choices without promoting reference adaptation to execution verification', async () => {
     const cloudRecord = {
       ...detail,

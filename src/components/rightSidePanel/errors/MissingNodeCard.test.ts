@@ -66,6 +66,13 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   })
 }))
 
+vi.mock('@/platform/magicPatch/components/MissingPackConversions.vue', () => ({
+  default: {
+    props: ['groups'],
+    template: '<section data-testid="pack-conversions" />'
+  }
+}))
+
 vi.mock('./MissingPackGroupRow.vue', () => ({
   default: {
     name: 'MissingPackGroupRow',

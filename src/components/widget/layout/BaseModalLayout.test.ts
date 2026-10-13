@@ -31,6 +31,17 @@ function renderLayout(props: Record<string, unknown> = {}) {
 const closeButton = () => screen.getByRole('button', { name: 'Close dialog' })
 
 describe('BaseModalLayout close button', () => {
+  it('keeps the standalone title unless the enclosing Hub supplies it', () => {
+    const { unmount } = renderLayout()
+    expect(screen.getByRole('heading', { name: 'Title' })).toBeVisible()
+    unmount()
+
+    renderLayout({ compact: true })
+    expect(
+      screen.queryByRole('heading', { name: 'Title' })
+    ).not.toBeInTheDocument()
+    expect(closeButton()).toBeVisible()
+  })
   it('renders the secondary variant by default', () => {
     renderLayout()
 

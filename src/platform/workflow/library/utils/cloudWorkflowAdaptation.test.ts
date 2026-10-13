@@ -5,10 +5,12 @@ import { zTestWorkflowImportMetadata } from '@comfyorg/ingest-types/test-workflo
 import metadata from '@/platform/community/fixtures/cloud-reference-v1/import.json'
 import original from '@/platform/community/fixtures/cloud-reference-v1/workflow.json?raw'
 import adapted from '@/platform/community/fixtures/cloud-reference-v1/workflow.cloud.json?raw'
+import archiveDetail from '@/platform/workflow/library/fixtures/archive-only-detail.json'
 import {
   getCloudAdaptation,
   verifyCloudWorkflow,
-  workflowDigest
+  workflowDigest,
+  zCommunityWorkflowDetail
 } from './cloudWorkflowAdaptation'
 
 const record = {
@@ -27,6 +29,31 @@ const record = {
   metadata: zTestWorkflowImportMetadata.parse(metadata)
 }
 beforeEach(() => vi.stubGlobal('crypto', webcrypto))
+
+describe('Archive-only workflow detail', () => {
+  it('accepts the actual archive response without inventing import metadata or adaptation', () => {
+    const parsed = zCommunityWorkflowDetail.parse(archiveDetail)
+    expect(parsed.metadata).toBeUndefined()
+    expect(parsed.summary.verified).toBe(false)
+    expect(parsed.summary.workflow_sha256).toBe(
+      archiveDetail.summary.workflow_sha256
+    )
+    expect(getCloudAdaptation(parsed)).toBeUndefined()
+  })
+
+  it.for([
+    { ...archiveDetail, summary: { ...archiveDetail.summary, verified: true } },
+    {
+      ...archiveDetail,
+      summary: { ...archiveDetail.summary, corpus_status: undefined }
+    },
+    { ...archiveDetail, source_metadata_sha256: 'a'.repeat(64) },
+    { ...archiveDetail, metadata: {} },
+    { ...archiveDetail, community_cloud_workflow_json: '{}' }
+  ])('refuses an incomplete or promoted archive response', (record) => {
+    expect(zCommunityWorkflowDetail.safeParse(record).success).toBe(false)
+  })
+})
 
 describe('Cloud reference adaptation v1', () => {
   it('validates the producer fixture with separate byte hashes and an exact change ledger', async () => {

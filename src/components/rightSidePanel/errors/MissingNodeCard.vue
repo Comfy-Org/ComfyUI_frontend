@@ -69,6 +69,7 @@
         @open-manager-info="emit('openManagerInfo', $event)"
       />
     </div>
+    <MissingPackConversions v-if="isCloud" :groups="missingPackGroups" />
   </div>
 
   <!-- Apply Changes: shown when manager enabled and at least one pack install succeeded -->
@@ -108,6 +109,7 @@ import { useMissingNodes } from '@/workbench/extensions/manager/composables/node
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import MissingPackConversions from '@/platform/magicPatch/components/MissingPackConversions.vue'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
 

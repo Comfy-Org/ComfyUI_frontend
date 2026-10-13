@@ -11,8 +11,8 @@ vi.mock('@/platform/community/composables/useCommunityDialog', () => ({
   useCommunityDialog: () => ({ show: mocks.show })
 }))
 
-describe('Community sidebar entry', () => {
-  it('opens Community from its labelled sidebar action', async () => {
+describe('Hub sidebar entry', () => {
+  it('opens Hub from its labelled sidebar action', async () => {
     const user = userEvent.setup()
     render(SidebarCommunityButton, {
       global: {
@@ -26,8 +26,8 @@ describe('Community sidebar entry', () => {
         ]
       }
     })
-    const button = screen.getByRole('button', { name: 'Community' })
-    expect(button).toHaveTextContent('Community')
+    const button = screen.getByRole('button', { name: 'Hub' })
+    expect(button).toHaveTextContent('Hub')
     await user.click(button)
     expect(mocks.show).toHaveBeenCalledOnce()
   })

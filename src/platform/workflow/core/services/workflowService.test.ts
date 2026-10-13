@@ -1,6 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw, toRaw } from 'vue'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { onWorkflowWarningsReady } from '@/platform/workflow/core/utils/workflowLoadEvents'
 
 import type {
   LoadedComfyWorkflow,
@@ -221,9 +224,9 @@ describe('useWorkflowService', () => {
     })
 
     it('always downloads a .json file, even when the filename prompt is off', async () => {
-      // With Comfy.PromptFilename off — the default whenever the settings
+      // With Comfy.PromptFilename off â€” the default whenever the settings
       // store cannot be read, e.g. the local Cloud stack where /api/settings
-      // 401s — no prompt runs, and the `.json` ensure that lived only in the
+      // 401s â€” no prompt runs, and the `.json` ensure that lived only in the
       // prompt branch was skipped. Worse, exportWorkflow uses workflow.filename,
       // which is the basename with the extension ALREADY stripped, so even a
       // normally-saved workflow exported an extensionless file the OS cannot
@@ -511,6 +514,358 @@ describe('useWorkflowService', () => {
         )
       } finally {
         consoleErrorSpy.mockRestore()
+      }
+    })
+  })
+
+  describe('reloadCurrentWorkflow result', () => {
+    it('returns false without an active graph', async () => {
+      useWorkflowStore().activeWorkflow = null
+      expect(await useWorkflowService().reloadCurrentWorkflow()).toBe(false)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+    it('propagates a rejected graph load', async () => {
+      useWorkflowStore().activeWorkflow = createModeTestWorkflow()
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      expect(await useWorkflowService().reloadCurrentWorkflow()).toBe(false)
+    })
+    it('returns success after loading the retained current workflow', async () => {
+      useWorkflowStore().activeWorkflow = createModeTestWorkflow()
+      expect(await useWorkflowService().reloadCurrentWorkflow()).toBe(true)
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('reloadCurrentWorkflow document guard', () => {
+    it('preserves the zero argument forced reload behavior', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      workflowStore.activeWorkflow = workflow
+
+      await expect(useWorkflowService().reloadCurrentWorkflow()).resolves.toBe(
+        true
+      )
+
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      const [data, clean, restoreView, loadedWorkflow, options] = vi.mocked(
+        app.loadGraphData
+      ).mock.calls[0]
+      expect(data).toEqual(workflow.activeState)
+      expect(clean).toBe(true)
+      expect(restoreView).toBe(true)
+      expect(loadedWorkflow).toBe(workflowStore.activeWorkflow)
+      expect(options).toEqual({
+        checkForRerouteMigration: false,
+        deferWarnings: true,
+        skipAssetScans: false,
+        workflowNavigationId: 1
+      })
+    })
+
+    it('skips a queued reload when the active instance changes even at the same path', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      const replacement = createModeTestWorkflow({ path: workflow.path })
+      workflowStore.activeWorkflow = workflow
+      let release: (() => void) | undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await gate
+        return true
+      })
+      const service = useWorkflowService()
+      const blockingLoad = service.loadBlankWorkflow()
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+
+      const reload = service.reloadCurrentWorkflow(() => true)
+      workflowStore.activeWorkflow = replacement
+      release?.()
+      await Promise.all([blockingLoad, reload])
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflow.changeTracker.prepareForSave).not.toHaveBeenCalled()
+      expect(toRaw(workflowStore.activeWorkflow)).toBe(replacement)
+      expect(
+        subgraphNavigationMocks.endWorkflowNavigation
+      ).toHaveBeenCalledWith(1)
+    })
+
+    it('captures edits made while waiting for the queued reload boundary', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      workflowStore.activeWorkflow = workflow
+      let latestState = makeWorkflowData({ title: 'Before waiting' })
+      workflow.changeTracker.activeState = latestState
+      vi.mocked(workflow.changeTracker.prepareForSave).mockImplementation(
+        () => {
+          workflow.changeTracker.activeState = latestState
+        }
+      )
+      let release: (() => void) | undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await gate
+        return true
+      })
+      const service = useWorkflowService()
+      const blockingLoad = service.loadBlankWorkflow()
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+
+      const reload = service.reloadCurrentWorkflow(() => true)
+      expect(workflow.changeTracker.prepareForSave).not.toHaveBeenCalled()
+      latestState = makeWorkflowData({ title: 'Edited while waiting' })
+      release?.()
+      await Promise.all([blockingLoad, reload])
+
+      expect(workflow.changeTracker.prepareForSave).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(app.loadGraphData).mock.calls[1][0]).toEqual(latestState)
+    })
+
+    it('preserves the saved baseline and dirty state through workflow activation', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      const savedState = makeWorkflowData({ title: 'Saved title' })
+      const editedState = makeWorkflowData({ title: 'Edited title' })
+      const tracker = markRaw(new ChangeTracker(workflow, savedState))
+      workflow.changeTracker = tracker
+      workflowStore.attachWorkflow(workflow)
+      workflowStore.activeWorkflow = workflow
+      tracker.undoQueue.push(savedState)
+      vi.spyOn(tracker, 'prepareForSave').mockImplementation(() => {
+        tracker.activeState = editedState
+        tracker.updateModified()
+      })
+      const service = useWorkflowService()
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await service.afterLoadNewGraph(workflow, editedState)
+        return true
+      })
+
+      await service.reloadCurrentWorkflow(() => true)
+
+      expect(vi.mocked(app.loadGraphData).mock.calls[0][0]).toEqual(editedState)
+      expect(tracker.activeState).toEqual(editedState)
+      expect(tracker.initialState).toEqual(savedState)
+      expect(tracker.undoQueue).toEqual([savedState])
+      tracker.updateModified()
+      expect(workflow.isModified).toBe(true)
+
+      tracker.activeState = savedState
+      tracker.updateModified()
+      expect(workflow.isModified).toBe(false)
+    })
+
+    it('marks an initially clean publication remap dirty after restoring the tracker', async () => {
+      const workflowStore = useWorkflowStore()
+      const workflow = createModeTestWorkflow()
+      const savedState: ComfyWorkflowJSON = {
+        ...makeWorkflowData(),
+        nodes: [
+          {
+            id: 1,
+            type: 'RandomNumber',
+            pos: [10, 20],
+            size: [120, 80],
+            flags: {},
+            order: 0,
+            mode: 0,
+            properties: { cnr_id: 'original-pack', ver: 'original-version' },
+            widgets_values: [7]
+          }
+        ]
+      }
+      const mappedState: ComfyWorkflowJSON = {
+        ...savedState,
+        nodes: savedState.nodes.map((node) => ({
+          ...node,
+          type: 'NativeRandomNumber',
+          properties: { ...node.properties, cnr_id: 'installed-pack' }
+        }))
+      }
+      const tracker = markRaw(new ChangeTracker(workflow, savedState))
+      workflow.changeTracker = tracker
+      workflowStore.attachWorkflow(workflow)
+      workflowStore.activeWorkflow = workflow
+      workflow.isModified = false
+      vi.spyOn(tracker, 'prepareForSave').mockImplementation(() => {
+        tracker.activeState = savedState
+      })
+      vi.mocked(app.rootGraph.serialize).mockReturnValue(
+        savedState as ReturnType<typeof app.rootGraph.serialize>
+      )
+      const modification = vi.spyOn(tracker, 'updateModified')
+      const service = useWorkflowService()
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        expect(tracker._restoringState).toBe(true)
+        await service.afterLoadNewGraph(workflow, mappedState)
+        return true
+      })
+
+      expect(
+        await service.reloadCurrentWorkflow(
+          () => true,
+          () => mappedState
+        )
+      ).toBe(true)
+
+      expect(tracker._restoringState).toBe(false)
+      expect(tracker.initialState).toEqual(savedState)
+      expect(tracker.activeState).toEqual(mappedState)
+      expect(tracker.undoQueue).toEqual([])
+      expect(modification.mock.calls).toEqual([[]])
+      expect(workflow.isModified).toBe(true)
+    })
+
+    it('releases tracker restoration when a guarded graph reload fails', async () => {
+      const workflow = createModeTestWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      workflow.changeTracker._restoringState = false
+      const error = new Error('Reload failed')
+      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+
+      await expect(
+        useWorkflowService().reloadCurrentWorkflow(() => true)
+      ).rejects.toBe(error)
+
+      expect(workflow.changeTracker._restoringState).toBe(false)
+    })
+
+    it('returns false and restores the tracker after a reported load failure', async () => {
+      const workflow = createModeTestWorkflow()
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = workflow
+      workflow.changeTracker._restoringState = false
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        expect(workflow.changeTracker._restoringState).toBe(true)
+        return false
+      })
+
+      await expect(
+        useWorkflowService().reloadCurrentWorkflow(() => true)
+      ).resolves.toBe(false)
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflow.changeTracker.prepareForSave).toHaveBeenCalledOnce()
+      expect(workflow.changeTracker._restoringState).toBe(false)
+      expect(toRaw(workflowStore.activeWorkflow)).toBe(workflow)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
+    })
+
+    it('refuses a reload when the caller document predicate has changed', async () => {
+      const workflow = createModeTestWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+
+      await expect(
+        useWorkflowService().reloadCurrentWorkflow(() => false)
+      ).resolves.toBe(false)
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(workflow.changeTracker.prepareForSave).not.toHaveBeenCalled()
+      expect(
+        subgraphNavigationMocks.endWorkflowNavigation
+      ).toHaveBeenCalledWith(1)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
+    })
+
+    it('rechecks the guard after awaiting remote workflow loading', async () => {
+      const workflow = createModeTestWorkflow({ loaded: false })
+      let current = true
+      let release: (() => void) | undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const load = vi.spyOn(workflow, 'load').mockImplementation(async () => {
+        await gate
+        return workflow
+      })
+      const beforeLoad = vi.fn()
+      const opening = useWorkflowService().openWorkflow(workflow, {
+        force: true,
+        isCurrent: () => current,
+        beforeLoad
+      })
+      await vi.waitFor(() => expect(load).toHaveBeenCalledOnce())
+
+      current = false
+      release?.()
+      await expect(opening).resolves.toBe(false)
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(beforeLoad).not.toHaveBeenCalled()
+      expect(
+        subgraphNavigationMocks.endWorkflowNavigation
+      ).toHaveBeenCalledWith(1)
+    })
+    it('maps the latest graph serialized at queued execution, preserving edits', async () => {
+      const workflow = createModeTestWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      const earlier = makeWorkflowData({ title: 'Before wait' })
+      const modification = vi.fn()
+      workflow.changeTracker = createMockChangeTracker({
+        activeState: earlier,
+        _restoringState: false,
+        updateModified: modification
+      })
+      let latest = earlier
+      vi.mocked(app.rootGraph.serialize).mockImplementation(
+        () => latest as ReturnType<typeof app.rootGraph.serialize>
+      )
+      let release: (() => void) | undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await gate
+        return true
+      })
+      const service = useWorkflowService()
+      const blocking = service.loadBlankWorkflow()
+      await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
+      const transform = vi.fn((graph: ComfyWorkflowJSON) => ({
+        ...graph,
+        extra: { ...graph.extra, publication: 'actual-native' }
+      }))
+      const reload = service.reloadCurrentWorkflow(() => true, transform)
+      expect(transform).not.toHaveBeenCalled()
+      latest = makeWorkflowData({
+        title: 'Edited while waiting',
+        userValue: 123
+      })
+      release?.()
+      await Promise.all([blocking, reload])
+      expect(transform).toHaveBeenCalledOnce()
+      expect(transform).toHaveBeenCalledWith(latest)
+      expect(vi.mocked(app.loadGraphData).mock.calls[1][0]).toEqual({
+        ...latest,
+        extra: { ...latest.extra, publication: 'actual-native' }
+      })
+      expect(workflow.changeTracker._restoringState).toBe(false)
+      expect(modification.mock.calls).toEqual([[]])
+    })
+
+    it('signals completed warnings after clearing the missing store for a clean graph', () => {
+      const workflow = createModeTestWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      const missing = useMissingNodesErrorStore()
+      const observed = vi.fn(() => {
+        expect(missing.surfaceMissingNodes).toHaveBeenCalledWith([])
+      })
+      const unsubscribe = onWorkflowWarningsReady(observed)
+      try {
+        useWorkflowService().showPendingWarnings()
+        expect(observed).toHaveBeenCalledOnce()
+      } finally {
+        unsubscribe()
       }
     })
   })
@@ -2124,20 +2479,20 @@ describe('useWorkflowService', () => {
       it('does not set initialMode on tab switch even if data has linearMode', async () => {
         const workflow = createModeTestWorkflow({ loaded: false })
 
-        // First load — no linearMode in data
+        // First load â€” no linearMode in data
         await service.afterLoadNewGraph(workflow, makeWorkflowData())
         expect(workflow.initialMode).toBeNull()
 
         // User switches to app mode at runtime
         workflow.activeMode = 'app'
 
-        // Tab switch / reload — data now has linearMode (leaked from graph)
+        // Tab switch / reload â€” data now has linearMode (leaked from graph)
         await service.afterLoadNewGraph(
           workflow,
           makeWorkflowData({ linearMode: true })
         )
 
-        // initialMode should NOT have been updated — only builder save sets it
+        // initialMode should NOT have been updated â€” only builder save sets it
         expect(workflow.initialMode).toBeNull()
       })
 
@@ -2361,7 +2716,7 @@ describe('useWorkflowService', () => {
       })
 
       // Different extension means different path, so it's not a self-overwrite
-      // — a new copy is created instead of modifying the source in place
+      // â€” a new copy is created instead of modifying the source in place
       expect(source.initialMode).toBe('graph')
       expect(workflowStore.saveAs).toHaveBeenCalledWith(
         source,
@@ -2388,7 +2743,7 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      // Same path → self-overwrite: saves in place via saveWorkflow, no copy
+      // Same path â†’ self-overwrite: saves in place via saveWorkflow, no copy
       expect(workflowStore.saveAs).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source)
     })

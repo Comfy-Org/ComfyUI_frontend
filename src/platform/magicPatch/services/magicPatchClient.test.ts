@@ -25,6 +25,34 @@ beforeEach(() => {
 })
 
 describe('Magic Patch client', () => {
+  it('accepts only a minted source bound to the selected pack and revision', async () => {
+    const selector = { pack_id: 'example', revision_id: 'c'.repeat(64) }
+    const transport = vi.fn(async () =>
+      Response.json({
+        ...selector,
+        source_ref: 'd'.repeat(64),
+        entry_point: 'pack_pin'
+      })
+    )
+    const client = createMagicPatchClient(transport, () => true, scopeGuard)
+    await expect(client.source(selector)).resolves.toMatchObject({
+      ok: true,
+      value: { source_ref: 'd'.repeat(64) }
+    })
+    transport.mockResolvedValueOnce(
+      Response.json({
+        ...selector,
+        revision_id: 'e'.repeat(64),
+        source_ref: 'd'.repeat(64),
+        entry_point: 'pack_pin'
+      })
+    )
+    await expect(client.source(selector)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'invalid_response' }
+    })
+  })
+
   it('rejects invalid source inputs before admission and returns an explicit failure', async () => {
     const transport = vi.fn(async () => Response.json(request))
     const client = createMagicPatchClient(transport, () => true, scopeGuard)

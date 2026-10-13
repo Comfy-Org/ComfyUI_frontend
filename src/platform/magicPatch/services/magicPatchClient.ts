@@ -1,8 +1,14 @@
-import type { CreateRequest, RequestStatus } from '@comfyorg/magic-patch-types'
+import type {
+  CreateRequest,
+  PackSourceRequest,
+  RequestStatus
+} from '@comfyorg/magic-patch-types'
 import {
   zCancellationStatus,
   zCreateRequest,
   zDigest,
+  zPackSourceRequest,
+  zPackSourceResponse,
   zRequestPage,
   zRequestStatus
 } from '@comfyorg/magic-patch-types/zod'
@@ -219,6 +225,23 @@ export function createMagicPatchClient<Scope>(
     return finish(response, zRequestStatus.parse(await readJSON(response)))
   }
 
+  async function source(input: PackSourceRequest, signal?: AbortSignal) {
+    const body = validateInput(zPackSourceRequest, input)
+    const response = await request('/sources/pack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal
+    })
+    const value = zPackSourceResponse.parse(await readJSON(response))
+    if (
+      value.pack_id !== body.pack_id ||
+      value.revision_id !== body.revision_id
+    )
+      throw new MagicPatchProtocolError('invalid_response')
+    return finish(response, value)
+  }
+
   async function list(
     after?: string,
     signal?: AbortSignal,
@@ -322,6 +345,8 @@ export function createMagicPatchClient<Scope>(
   }
 
   return {
+    source: (...args: Parameters<typeof source>) =>
+      recover(() => source(...args)),
     submit: (...args: Parameters<typeof submit>) =>
       recover(() => submit(...args)),
     list: (...args: Parameters<typeof list>) => recover(() => list(...args)),

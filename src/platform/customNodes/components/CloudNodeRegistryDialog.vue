@@ -1,6 +1,8 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    compact
+    content-padding="compact"
     :size
     :content-title="
       $t(
@@ -19,69 +21,84 @@
       <LeftSidePanel v-model="filter" :nav-items="navItems" />
     </template>
     <template #header>
-      <SearchInput
-        v-model="query"
-        :placeholder="$t('manager.searchPlaceholder')"
-        :aria-label="
-          $t(
-            showUserNodes
-              ? 'customNodePacks.userNodes.search'
-              : 'customNodePacks.registry.search'
-          )
-        "
-        :debounce-time="0"
-        class="max-w-96 flex-1"
-      />
-      <CommunityFacetSelect
-        v-if="community && !showUserNodes"
-        v-model="tag"
-        :options="tagOptions"
-        :label="$t('community.workflowTags')"
-        class="min-w-32"
-      />
-      <SingleSelect
-        v-if="!showUserNodes"
-        v-model="version"
-        :options="versionOptions"
-        :label="$t('customNodePacks.registry.nodeVersion')"
-        class="min-w-32"
-      />
-      <Button
-        v-if="!showUserNodes"
-        variant="secondary"
-        size="icon"
-        :disabled="busy"
-        :aria-label="$t('customNodePacks.registry.refresh')"
-        @click="refresh"
+      <div
+        role="toolbar"
+        :aria-label="$t('g.filter')"
+        data-testid="registry-filter-bar"
+        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
-      </Button>
+        <SearchInput
+          v-model="query"
+          :placeholder="$t('manager.searchPlaceholder')"
+          :aria-label="
+            $t(
+              showUserNodes
+                ? 'customNodePacks.userNodes.search'
+                : 'customNodePacks.registry.search'
+            )
+          "
+          :debounce-time="0"
+          class="min-w-44 flex-1"
+        />
+        <CommunityFacetSelect
+          v-if="community && !showUserNodes"
+          v-model="tag"
+          :options="tagOptions"
+          :label="$t('community.workflowTags')"
+          class="w-28 shrink-0"
+        />
+        <SingleSelect
+          v-if="!showUserNodes"
+          v-model="version"
+          :options="versionOptions"
+          :label="$t('customNodePacks.registry.nodeVersion')"
+          class="w-36 shrink-0"
+        />
+        <SingleSelect
+          v-if="!showUserNodes"
+          v-model="sort"
+          :options="sortOptions"
+          :label="$t('g.sort')"
+          class="w-36 shrink-0"
+        />
+        <Button
+          v-if="!showUserNodes"
+          variant="secondary"
+          size="icon"
+          class="shrink-0"
+          :disabled="busy"
+          :aria-label="$t('customNodePacks.registry.refresh')"
+          @click="refresh"
+        >
+          <i class="icon-[lucide--refresh-cw] size-4" />
+        </Button>
+      </div>
     </template>
     <template #contentFilter>
-      <div v-if="!showUserNodes" class="flex flex-col gap-2 px-6 pb-4">
-        <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('customNodePacks.registry.description') }}
-        </p>
-        <p
-          v-if="tagsFailed"
-          role="status"
-          class="m-0 text-xs text-muted-foreground"
+      <div v-if="!showUserNodes" class="shrink-0 px-6 pb-2">
+        <div
+          class="flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
         >
-          {{ $t('community.tagsUnavailable') }}
-        </p>
-        <div class="flex items-center justify-between gap-3">
-          <span v-if="catalog" class="text-xs text-muted-foreground">{{
+          <p
+            class="m-0 min-w-0 flex-1 truncate"
+            :title="$t('customNodePacks.registry.description')"
+          >
+            {{ $t('customNodePacks.registry.description') }}
+          </p>
+          <span v-if="catalog" class="shrink-0">{{
             $t('customNodePacks.registry.corpus', {
               count: catalog.revisions.length,
               commit: catalog.corpus_commit.slice(0, 12)
             })
           }}</span>
-          <SingleSelect
-            v-model="sort"
-            :options="sortOptions"
-            :label="$t('g.sort')"
-            class="w-48"
-          />
+          <span
+            v-if="tagsFailed"
+            role="status"
+            class="max-w-60 min-w-0 truncate"
+            :title="$t('community.tagsUnavailable')"
+          >
+            {{ $t('community.tagsUnavailable') }}
+          </span>
         </div>
         <p v-if="state.phase === 'error'" role="alert" class="m-0 text-sm">
           {{ $t('customNodePacks.registry.failed') }}
@@ -116,6 +133,7 @@
       </p>
       <VirtualGrid
         v-else
+        class="min-h-0 flex-1"
         :items="packs"
         :buffer-rows="4"
         :grid-style="gridStyle"
@@ -133,7 +151,10 @@
           />
         </template>
       </VirtualGrid>
-      <p v-if="!showUserNodes" class="m-0 pt-3 text-xs text-muted-foreground">
+      <p
+        v-if="!showUserNodes"
+        class="m-0 shrink-0 pt-2 text-xs text-muted-foreground"
+      >
         {{ $t('customNodePacks.registry.qualification') }}
       </p>
     </template>

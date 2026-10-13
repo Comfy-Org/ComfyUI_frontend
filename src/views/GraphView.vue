@@ -1,23 +1,27 @@
 <template>
-  <div class="comfyui-body grid size-full min-h-0 min-w-0 overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
-    <div
-      v-show="!linearMode"
-      id="graph-canvas-container"
-      ref="graphCanvasContainerRef"
-      class="graph-canvas-container min-h-0 min-w-0"
-    >
-      <GraphCanvas @ready="onGraphReady" />
+  <div class="flex size-full min-h-0 min-w-0 flex-col">
+    <div class="comfyui-body grid min-h-0 min-w-0 flex-1 overflow-hidden">
+      <div id="comfyui-body-top" class="comfyui-body-top" />
+      <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
+      <div id="comfyui-body-left" class="comfyui-body-left" />
+      <div id="comfyui-body-right" class="comfyui-body-right" />
+      <div
+        v-show="!linearMode"
+        id="graph-canvas-container"
+        ref="graphCanvasContainerRef"
+        class="graph-canvas-container min-h-0 min-w-0"
+      >
+        <GraphCanvas @ready="onGraphReady" />
+      </div>
+      <LinearView v-if="linearMode" />
+      <template v-if="isBuilderMode">
+        <BuilderToolbar />
+        <BuilderMenu />
+        <BuilderFooterToolbar />
+      </template>
     </div>
-    <LinearView v-if="linearMode" />
-    <template v-if="isBuilderMode">
-      <BuilderToolbar />
-      <BuilderMenu />
-      <BuilderFooterToolbar />
-    </template>
+
+    <MagicPatchProgressBar v-if="isCloud" />
   </div>
 
   <GlobalToast />
@@ -102,6 +106,7 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
+import MagicPatchProgressBar from '@/platform/magicPatch/components/MagicPatchProgressBar.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()

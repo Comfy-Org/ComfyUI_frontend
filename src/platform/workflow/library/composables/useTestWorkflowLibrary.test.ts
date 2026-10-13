@@ -9,6 +9,7 @@ import { zTestWorkflowImportMetadata } from '@comfyorg/ingest-types/test-workflo
 import cloudMetadata from '@/platform/community/fixtures/cloud-reference-v1/import.json'
 import cloudOriginal from '@/platform/community/fixtures/cloud-reference-v1/workflow.json?raw'
 import cloudAdapted from '@/platform/community/fixtures/cloud-reference-v1/workflow.cloud.json?raw'
+import archiveDetail from '@/platform/workflow/library/fixtures/archive-only-detail.json'
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
@@ -113,6 +114,48 @@ beforeEach(() => {
 })
 
 describe('Test workflow library', () => {
+  it('selects an archive-only original and opens only its SHA-matching bytes', async () => {
+    const archive = {
+      ...archiveDetail,
+      summary: { ...archiveDetail.summary, workflow_sha256: hash }
+    }
+    mocks.fetch.mockImplementation(async (route: string) =>
+      response(
+        route.includes('include_workflow=true')
+          ? { ...archive, workflow_json: raw }
+          : archive
+      )
+    )
+    const { library, owner } = setup()
+    library.collection.value = 'corpus-pilot'
+    expect(await library.select(hash)).toBe(true)
+    expect(library.data.value.selected?.metadata).toBeUndefined()
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    expect(await library.open()).toBe(true)
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(raw)
+    owner.stop()
+  })
+
+  it('refuses substituted archive originals and a Cloud variant without an adaptation ledger', async () => {
+    const archive = {
+      ...archiveDetail,
+      summary: { ...archiveDetail.summary, workflow_sha256: hash }
+    }
+    mocks.fetch.mockResolvedValue(response(archive))
+    const { library, owner } = setup()
+    library.collection.value = 'corpus-pilot'
+    expect(await library.select(hash)).toBe(true)
+    mocks.fetch.mockResolvedValue(
+      response({ ...archive, workflow_json: raw + ' ' })
+    )
+    expect(await library.open()).toBe(false)
+    mocks.fetch.mockResolvedValue(response({ ...archive, workflow_json: raw }))
+    expect(await library.open('cloud')).toBe(false)
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    owner.stop()
+  })
+
   it('opens the only available collection without loading any originals', async () => {
     const { library, owner } = setup()
     expect(await library.initialize()).toBe(true)
@@ -288,7 +331,7 @@ describe('Test workflow library', () => {
     await library.chooseCollection('corpus-pilot')
     await library.select(hash)
     expect(mocks.handleFile).not.toHaveBeenCalled()
-    expect(library.data.value.selected?.metadata.node_types).toEqual([
+    expect(library.data.value.selected?.metadata?.node_types).toEqual([
       'UnknownCustomNode'
     ])
     expect(await library.open()).toBe(true)

@@ -58,3 +58,15 @@ export type APIError = {
   code: string
   message: string
 }
+
+export type PackSourceRequest = {
+  pack_id: string
+  revision_id: Digest
+}
+
+export type PackSourceResponse = {
+  source_ref: Digest
+  entry_point: 'pack_pin'
+  pack_id: string
+  revision_id: Digest
+}

@@ -2,7 +2,10 @@ import { isEqual, isPlainObject } from 'es-toolkit'
 import { visit } from 'jsonc-parser'
 import { z } from 'zod'
 import type { TestWorkflowDetail } from '@comfyorg/ingest-types/test-workflows'
-import { zTestWorkflowDetail } from '@comfyorg/ingest-types/test-workflows/zod'
+import {
+  zTestWorkflowDetail,
+  zTestWorkflowSummary
+} from '@comfyorg/ingest-types/test-workflows/zod'
 
 const sha256 = z.string().regex(/^[a-f0-9]{64}$/)
 const pointer = z.string().regex(/^(?:\/(?:[^~]|~[01])*)+$/)
@@ -27,14 +30,72 @@ const zCloudAdaptation = z.object({
   blocked: z.array(z.object({ location: pointer, reason: z.string() }))
 })
 
-export const zCommunityWorkflowDetail = zTestWorkflowDetail.extend({
+const zImportedWorkflowDetail = zTestWorkflowDetail.extend({
   community_cloud_adaptation_available: z.boolean().optional(),
   community_cloud_workflow_json: z.string().optional()
 })
+
+const zArchiveWorkflowDetail = z
+  .object({
+    summary: zTestWorkflowSummary.extend({
+      workflow_sha256: sha256,
+      metadata_sha256: z.literal(''),
+      verified: z.literal(false),
+      corpus_status: z.object({
+        admission: z.literal('archive_only'),
+        reasons: z.array(z.string().min(1).max(2000)).min(1).max(100),
+        source_metadata_bytes: z.number().int().nonnegative(),
+        source_metadata_sha256: sha256
+      })
+    }),
+    metadata: z.undefined(),
+    corpus_version: sha256,
+    workflow_json: z.string().optional(),
+    source_metadata_json: zTestWorkflowDetail.shape.source_metadata_json,
+    source_metadata_sha256: sha256,
+    source_metadata_role: z.string().min(1).max(64),
+    source_metadata_sources: z
+      .array(
+        z.object({
+          preserved_existing: z.boolean(),
+          role: z.string().min(1).max(64),
+          source_metadata_bytes: z.number().int().nonnegative(),
+          source_metadata_sha256: sha256
+        })
+      )
+      .min(1)
+      .max(16),
+    community_cloud_adaptation_available: z.literal(false).optional(),
+    community_cloud_workflow_json: z.undefined()
+  })
+  .superRefine((record, context) => {
+    const status = record.summary.corpus_status
+    if (
+      status.source_metadata_sha256 !== record.source_metadata_sha256 ||
+      !record.source_metadata_sources.some(
+        (source) =>
+          source.role === record.source_metadata_role &&
+          source.source_metadata_sha256 === record.source_metadata_sha256 &&
+          source.source_metadata_bytes === status.source_metadata_bytes
+      )
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Archive source evidence mismatch'
+      })
+  })
+
+export const zCommunityWorkflowDetail = z.union([
+  zImportedWorkflowDetail,
+  zArchiveWorkflowDetail
+])
 export type CommunityWorkflowDetail = z.infer<typeof zCommunityWorkflowDetail>
 export type TestWorkflowGraphVariant = 'original' | 'cloud'
 
-export function getCloudAdaptation(record: TestWorkflowDetail) {
+export function getCloudAdaptation(
+  record: TestWorkflowDetail | CommunityWorkflowDetail
+) {
+  if (!record.metadata) return undefined
   const result = zCloudAdaptation.safeParse(record.metadata.cloud_adaptation)
   if (
     !result.success ||
@@ -56,7 +117,7 @@ export async function workflowDigest(raw: string) {
 }
 
 export async function verifyCloudWorkflow(
-  record: TestWorkflowDetail,
+  record: TestWorkflowDetail | CommunityWorkflowDetail,
   original: string,
   adapted: string
 ) {

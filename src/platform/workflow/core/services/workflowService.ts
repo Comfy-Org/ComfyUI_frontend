@@ -1,5 +1,7 @@
 import { toRaw } from 'vue'
 
+import { notifyWorkflowWarningsReady } from '@/platform/workflow/core/utils/workflowLoadEvents'
+
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
@@ -332,10 +334,48 @@ export const useWorkflowService = () => {
    * Reload the current workflow
    * This is used to refresh the node definitions update, e.g. when the locale changes.
    */
-  const reloadCurrentWorkflow = async () => {
+  const reloadCurrentWorkflow = async (
+    isCurrent?: () => boolean,
+    transformCurrent?: (graph: ComfyWorkflowJSON) => ComfyWorkflowJSON
+  ): Promise<boolean> => {
     const workflow = workflowStore.activeWorkflow
-    if (workflow) {
-      await openWorkflow(workflow, { force: true })
+    if (!workflow) return false
+    const capturedWorkflow = toRaw(workflow)
+    let restoreTracker: (() => void) | undefined
+    let loaded = false
+    try {
+      loaded = await openWorkflow(workflow, {
+        force: true,
+        isCurrent: isCurrent
+          ? () =>
+              toRaw(workflowStore.activeWorkflow) === capturedWorkflow &&
+              isCurrent()
+          : undefined,
+        beforeLoad: isCurrent
+          ? () => {
+              const tracker = capturedWorkflow.changeTracker
+              tracker.prepareForSave()
+              if (transformCurrent) {
+                tracker.activeState = transformCurrent(
+                  structuredClone(
+                    app.rootGraph.serialize()
+                  ) as ComfyWorkflowJSON
+                )
+              }
+              const wasRestoring = tracker._restoringState
+              tracker._restoringState = true
+              restoreTracker = () => {
+                tracker._restoringState = wasRestoring
+              }
+            }
+          : undefined
+      })
+      return loaded
+    } finally {
+      restoreTracker?.()
+      if (loaded && restoreTracker && transformCurrent) {
+        capturedWorkflow.changeTracker.updateModified()
+      }
     }
   }
 
@@ -373,7 +413,12 @@ export const useWorkflowService = () => {
 
   const openWorkflow = (
     workflow: ComfyWorkflow,
-    options: { force?: boolean; navigationIntentId?: number } = {}
+    options: {
+      force?: boolean
+      navigationIntentId?: number
+      isCurrent?: () => boolean
+      beforeLoad?: () => void
+    } = {}
   ): Promise<boolean> => {
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
@@ -390,11 +435,20 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         const loadFromRemote = !workflow.isLoaded
         if (loadFromRemote) {
           await workflow.load()
         }
 
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
+        options.beforeLoad?.()
         const loaded = await app.loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
@@ -829,6 +883,9 @@ export const useWorkflowService = () => {
       })
     } else {
       wf.pendingWarnings = null
+    }
+    if (toRaw(wf) === toRaw(workflowStore.activeWorkflow)) {
+      notifyWorkflowWarningsReady()
     }
   }
 

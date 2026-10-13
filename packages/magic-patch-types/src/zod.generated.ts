@@ -74,3 +74,19 @@ export const zAPIError = z
     message: z.string().max(2000)
   })
   .strict()
+
+export const zPackSourceRequest = z
+  .object({
+    pack_id: z.string().min(1).max(200),
+    revision_id: zDigest
+  })
+  .strict()
+
+export const zPackSourceResponse = z
+  .object({
+    source_ref: zDigest,
+    entry_point: z.enum(['pack_pin']),
+    pack_id: z.string().min(1).max(200),
+    revision_id: zDigest
+  })
+  .strict()

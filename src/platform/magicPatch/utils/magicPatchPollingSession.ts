@@ -8,7 +8,7 @@ export type MagicPatchPollingContext = {
   visible: boolean
 }
 
-export const magicPatchPollingSchedule = {
+const magicPatchPollingSchedule = {
   version: 'magic-patch-client-polling-schedule/1',
   intervalMilliseconds: 5000,
   maximumFailureDelayMilliseconds: 30000

@@ -157,6 +157,7 @@ it.for([undefined, 'service', 'static'])(
         }
       }
     })
+    expect(screen.getByRole('heading', { name: 'Hub' })).toBeVisible()
     expect(
       await screen.findByRole('button', { name: 'View Example details' })
     ).toBeVisible()
@@ -164,7 +165,7 @@ it.for([undefined, 'service', 'static'])(
       name: messages.customNodePacks.registry.search
     })
     await user.type(packSearch, 'portrait')
-    await user.click(screen.getByRole('tab', { name: 'Community workflows' }))
+    await user.click(screen.getByRole('tab', { name: 'Workflows' }))
     await user.click(await screen.findByRole('button', { name: entry.name }))
     await user.click(
       await screen.findByRole('button', { name: 'Open original graph' })

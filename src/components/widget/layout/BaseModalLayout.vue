@@ -1,10 +1,12 @@
 <template>
   <div
-    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
+    :class="
+      cn('relative min-h-0 min-w-0 overflow-hidden rounded-2xl', sizeClasses)
+    "
     @keydown.esc.capture="handleEscape"
   >
     <div
-      class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
+      class="grid size-full min-h-0 min-w-0 transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
       <nav
@@ -30,12 +32,19 @@
         <slot name="leftPanel" />
       </nav>
 
-      <div class="flex flex-col overflow-hidden bg-base-background">
+      <div
+        class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-base-background"
+      >
         <header
           v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
+          :class="
+            cn(
+              'flex w-full shrink-0 items-center justify-between gap-2',
+              compact ? 'h-14 px-4' : 'h-18 px-6'
+            )
+          "
         >
-          <div class="flex min-w-0 flex-1 gap-2">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
@@ -73,7 +82,7 @@
         <main class="flex min-h-0 flex-1 flex-col">
           <slot name="contentFilter" />
           <h2
-            v-if="!hasLeftPanel"
+            v-if="!hasLeftPanel && !compact"
             class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
           >
             {{ contentTitle }}
@@ -162,6 +171,7 @@ const {
   size = 'lg',
   leftPanelWidth = '14rem',
   contentPadding = 'default',
+  compact = false,
   closeButtonVariant
 } = defineProps<{
   contentTitle: string
@@ -169,10 +179,13 @@ const {
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  compact?: boolean
   closeButtonVariant?: ButtonVariants['variant']
 }>()
 
-const sizeClasses = computed(() => SIZE_CLASSES[size])
+const sizeClasses = computed(() =>
+  compact && size === 'full' ? 'size-full' : SIZE_CLASSES[size]
+)
 
 const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
   default: false
@@ -215,8 +228,8 @@ const contentContainerClass = computed(() =>
 
 const gridStyle = computed(() => ({
   gridTemplateColumns: hasRightPanel.value
-    ? `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
-    : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr`
+    ? `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} minmax(0, 1fr) ${isRightPanelOpen.value ? '18rem' : '0rem'}`
+    : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} minmax(0, 1fr)`
 }))
 
 const toggleLeftPanel = () => {

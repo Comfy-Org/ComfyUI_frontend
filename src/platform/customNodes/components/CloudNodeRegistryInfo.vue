@@ -8,8 +8,14 @@
         :saving-revision
         @pin="(id, pinned) => $emit('pin', id, pinned)"
       />
+      <MagicPatchConversion
+        v-if="revision.node_api_version === 1 && revision.upstream_commit"
+        :key="revision.revision_id"
+        :revision
+        :blocked="blocked || busy"
+      />
       <p
-        v-if="revision.node_api_version === 1"
+        v-else-if="revision.node_api_version === 1"
         class="m-0 text-xs text-muted-foreground"
       >
         {{ $t('customNodePacks.registry.conversionDeferred') }}
@@ -111,6 +117,7 @@
 <script setup lang="ts">
 import type { CloudNodeRegistryRevision } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
+import MagicPatchConversion from '@/platform/magicPatch/components/MagicPatchConversion.vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'

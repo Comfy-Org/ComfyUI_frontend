@@ -22,7 +22,7 @@ provide(OnCloseKey, onClose)
 </script>
 
 <template>
-  <div class="flex size-full flex-col bg-base-background">
+  <div class="flex size-full min-h-0 min-w-0 flex-col bg-base-background">
     <header
       class="flex shrink-0 items-center gap-6 border-b border-border-default px-6 py-3"
     >
@@ -32,7 +32,7 @@ provide(OnCloseKey, onClose)
         <Tab value="workflows">{{ $t('community.workflows') }}</Tab>
       </TabList>
     </header>
-    <div class="min-h-0 flex-1">
+    <div class="min-h-0 min-w-0 flex-1">
       <KeepAlive>
         <CloudNodeRegistryDialog
           v-if="section === 'packs'"

@@ -21,13 +21,16 @@ const spies = vi.hoisted(() => ({
 }))
 
 const state = vi.hoisted(() => ({
+  isCloud: false,
   isMultiUserServer: false,
   sidebarTabs: [] as TestTab[],
   activeSidebarTab: null as { id: string } | null
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
+  get isCloud() {
+    return state.isCloud
+  },
   isDesktop: false,
   isNightly: false
 }))
@@ -89,7 +92,8 @@ function renderToolbar(props: SideToolbarProps = {}) {
       directives: { tooltip: {} },
       stubs: {
         ComfyMenuButton: { template: '<div />' },
-        SidebarTemplatesButton: { template: '<div />' },
+        SidebarTemplatesButton: { template: '<button>Templates</button>' },
+        SidebarCommunityButton: { template: '<button>Hub</button>' },
         SidebarLogoutIcon: { template: '<div data-testid="logout" />' },
         SidebarHelpCenterIcon: { template: '<div />' },
         SidebarSettingsButton: { template: '<div />' },
@@ -123,9 +127,29 @@ const workflowsTab: TestTab = {
 
 describe('SideToolbar', () => {
   beforeEach(() => {
+    state.isCloud = false
     state.isMultiUserServer = false
     state.sidebarTabs = [assetsTab, workflowsTab]
     state.activeSidebarTab = null
+  })
+
+  it('places the Cloud Hub action directly after Templates', () => {
+    state.isCloud = true
+    renderToolbar()
+
+    const templates = screen.getByRole('button', { name: 'Templates' })
+    const buttons = screen.getAllByRole('button')
+    expect(buttons[buttons.indexOf(templates) + 1]).toBe(
+      screen.getByRole('button', { name: 'Hub' })
+    )
+  })
+
+  it('keeps the Cloud Hub action out of local distributions', () => {
+    renderToolbar()
+
+    expect(
+      screen.queryByRole('button', { name: 'Hub' })
+    ).not.toBeInTheDocument()
   })
 
   it('renders only the tabs listed in visibleTabIds', () => {

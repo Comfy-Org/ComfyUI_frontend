@@ -40,10 +40,10 @@
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
+        <SidebarCommunityButton v-if="isCloud" :is-small />
       </div>
 
       <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
-        <SidebarCommunityButton v-if="isCloud" :is-small />
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"

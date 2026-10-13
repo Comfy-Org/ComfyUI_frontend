@@ -171,7 +171,7 @@ export function useTestWorkflowLibrary(
       )
       if (
         selected.summary.workflow_sha256 !== hash ||
-        selected.metadata.workflow_sha256 !== hash
+        (selected.metadata && selected.metadata.workflow_sha256 !== hash)
       )
         throw new LibraryRequestError(0)
       return { ...previous, selected }
@@ -199,7 +199,7 @@ export function useTestWorkflowLibrary(
       if (
         !record.workflow_json ||
         record.summary.workflow_sha256 !== hash ||
-        record.metadata.workflow_sha256 !== hash
+        (record.metadata && record.metadata.workflow_sha256 !== hash)
       )
         throw new LibraryRequestError(0)
       const graph =

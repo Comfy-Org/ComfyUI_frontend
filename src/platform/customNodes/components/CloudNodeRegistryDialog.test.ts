@@ -190,14 +190,14 @@ describe('Cloud registry manager browsing', () => {
     expect(screen.getByRole('button', { name: 'Pin Example' })).toBeDisabled()
   })
 
-  it('shows V1 conversion as deferred and never submits it for execution or installation', async () => {
+  it('offers V1 conversion consent without silently submitting or installing', async () => {
     const user = userEvent.setup()
     renderRegistry()
     await user.click(
       await screen.findByRole('button', { name: 'View Legacy details' })
     )
     expect(
-      screen.getByText(en.customNodePacks.registry.conversionDeferred)
+      screen.getByRole('button', { name: en.magicPatch.convert })
     ).toBeVisible()
     for (const button of screen.getAllByRole('button', {
       name: 'Pin Legacy'

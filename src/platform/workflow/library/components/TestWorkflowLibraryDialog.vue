@@ -24,6 +24,7 @@ const { t } = useI18n()
 const library = useTestWorkflowLibrary(fetchLibrary)
 const { data, state, busy, collection } = library
 const query = ref('')
+let searchedQuery = ''
 const tag = ref<string>()
 const task = ref<string>()
 const pack = ref<string>()
@@ -58,6 +59,7 @@ const complexities = computed(() =>
 )
 
 function search() {
+  searchedQuery = query.value
   return library.search({
     q: query.value,
     tag: tag.value,
@@ -67,6 +69,9 @@ function search() {
     complexity: complexity.value,
     cluster: cluster.value
   })
+}
+function searchFromInput(value: string) {
+  if (value !== searchedQuery) void search()
 }
 function resetFilters() {
   query.value = ''
@@ -81,6 +86,7 @@ function resetFilters() {
 }
 function choose(id: string | undefined) {
   query.value = ''
+  searchedQuery = ''
   tag.value =
     task.value =
     pack.value =
@@ -114,80 +120,86 @@ onMounted(library.initialize)
 <template>
   <BaseModalLayout
     v-model:right-panel-open="rightOpen"
+    compact
+    content-padding="compact"
     data-testid="test-workflow-library"
     :size
     :content-title="t('community.workflows')"
     :right-panel-title="t('testWorkflowLibrary.details')"
   >
     <template #header>
-      <SearchInput
-        v-model="query"
-        :placeholder="t('testWorkflowLibrary.search')"
-        :aria-label="t('testWorkflowLibrary.search')"
-        :disabled="busy"
-        @search="search"
-      />
-      <Button variant="secondary" :disabled="busy" @click="search">{{
-        t('g.search')
-      }}</Button>
-    </template>
-    <template #contentFilter>
-      <div class="flex flex-col gap-3 px-6 pb-4">
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ t('testWorkflowLibrary.description') }}
-        </p>
+      <div
+        role="toolbar"
+        :aria-label="t('g.filter')"
+        data-testid="workflow-filter-bar"
+        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1"
+      >
+        <SearchInput
+          v-model="query"
+          :placeholder="t('testWorkflowLibrary.search')"
+          :aria-label="t('testWorkflowLibrary.search')"
+          :disabled="busy"
+          class="min-w-44 flex-1"
+          @search="searchFromInput"
+        />
+        <Button
+          variant="secondary"
+          class="shrink-0"
+          :disabled="busy"
+          @click="search"
+          >{{ t('g.search') }}</Button
+        >
         <SingleSelect
           :model-value="collection || undefined"
           :options="collections"
           :label="t('testWorkflowLibrary.collection')"
           :disabled="busy"
+          class="w-44 shrink-0"
           @update:model-value="choose"
         />
-        <div class="grid grid-cols-2 gap-2 lg:grid-cols-5">
-          <CommunityFacetSelect
-            v-model="tag"
-            :options="tags"
-            :label="t('testWorkflowLibrary.tags')"
-            :disabled="busy"
-            @update:model-value="search"
-          />
-          <CommunityFacetSelect
-            v-model="task"
-            :options="tasks"
-            :label="t('testWorkflowLibrary.tasks')"
-            :disabled="busy"
-            @update:model-value="search"
-          />
-          <CommunityFacetSelect
-            v-model="pack"
-            :options="packs"
-            :label="t('testWorkflowLibrary.packs')"
-            :disabled="busy"
-            @update:model-value="search"
-          />
-          <CommunityFacetSelect
-            v-model="model"
-            :options="models"
-            :label="t('testWorkflowLibrary.models')"
-            :disabled="busy"
-            @update:model-value="search"
-          />
-          <SingleSelect
-            :model-value="complexity"
-            :options="complexities"
-            :label="t('testWorkflowLibrary.complexity')"
-            :disabled="busy"
-            @update:model-value="selectComplexity"
-          />
-        </div>
-        <p
-          v-if="data.collectionsTruncated || data.facets?.truncated"
-          class="m-0 text-xs text-muted-foreground"
-        >
-          {{ t('testWorkflowLibrary.facetsTruncated') }}
-        </p>
+        <CommunityFacetSelect
+          v-model="tag"
+          :options="tags"
+          :label="t('testWorkflowLibrary.tags')"
+          :disabled="busy"
+          class="w-28 shrink-0"
+          @update:model-value="search"
+        />
+        <CommunityFacetSelect
+          v-model="task"
+          :options="tasks"
+          :label="t('testWorkflowLibrary.tasks')"
+          :disabled="busy"
+          class="w-28 shrink-0"
+          @update:model-value="search"
+        />
+        <CommunityFacetSelect
+          v-model="pack"
+          :options="packs"
+          :label="t('testWorkflowLibrary.packs')"
+          :disabled="busy"
+          class="w-28 shrink-0"
+          @update:model-value="search"
+        />
+        <CommunityFacetSelect
+          v-model="model"
+          :options="models"
+          :label="t('testWorkflowLibrary.models')"
+          :disabled="busy"
+          class="w-28 shrink-0"
+          @update:model-value="search"
+        />
+        <SingleSelect
+          :model-value="complexity"
+          :options="complexities"
+          :label="t('testWorkflowLibrary.complexity')"
+          :disabled="busy"
+          class="w-28 shrink-0"
+          @update:model-value="selectComplexity"
+        />
         <Button
           variant="secondary"
+          class="shrink-0"
           :disabled="busy || !collection"
           @click="resetFilters"
           >{{ t('testWorkflowLibrary.resetFilters') }}</Button
@@ -195,38 +207,60 @@ onMounted(library.initialize)
         <Button
           v-if="cluster"
           variant="secondary"
+          class="shrink-0"
           :disabled="busy"
           @click="clearCluster"
           >{{ t('testWorkflowLibrary.clearCluster') }}</Button
         >
+      </div>
+    </template>
+    <template #contentFilter>
+      <div class="shrink-0 px-6 pb-2">
+        <div
+          class="flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
+        >
+          <p
+            class="m-0 min-w-0 flex-1 truncate"
+            :title="t('testWorkflowLibrary.description')"
+          >
+            {{ t('testWorkflowLibrary.description') }}
+          </p>
+          <p v-if="busy" role="status" class="m-0 shrink-0">
+            {{ t('g.loading') }}
+          </p>
+          <p
+            v-else-if="state.phase === 'ready' && !data.collections.length"
+            class="m-0 shrink-0"
+          >
+            {{ t('testWorkflowLibrary.empty') }}
+          </p>
+          <p
+            v-else-if="state.phase === 'ready' && !collection"
+            class="m-0 shrink-0"
+          >
+            {{ t('testWorkflowLibrary.chooseCollection') }}
+          </p>
+          <p v-if="data.page" class="m-0 shrink-0">
+            {{
+              t('testWorkflowLibrary.counts', {
+                total: data.page.total,
+                unresolved: data.page.unresolved,
+                verified: data.page.verified
+              })
+            }}
+          </p>
+          <p
+            v-if="data.collectionsTruncated || data.facets?.truncated"
+            class="m-0 min-w-0 truncate"
+            :title="t('testWorkflowLibrary.facetsTruncated')"
+          >
+            {{ t('testWorkflowLibrary.facetsTruncated') }}
+          </p>
+        </div>
         <p v-if="state.phase === 'failed'" role="alert" class="m-0 text-sm">
           {{
             t('testWorkflowLibrary.failed', {
               status: state.status || t('testWorkflowLibrary.invalidResponse')
-            })
-          }}
-        </p>
-        <p v-if="busy" role="status" class="m-0 text-sm">
-          {{ t('g.loading') }}
-        </p>
-        <p
-          v-else-if="state.phase === 'ready' && !data.collections.length"
-          class="m-0 text-sm"
-        >
-          {{ t('testWorkflowLibrary.empty') }}
-        </p>
-        <p
-          v-else-if="state.phase === 'ready' && !collection"
-          class="m-0 text-sm"
-        >
-          {{ t('testWorkflowLibrary.chooseCollection') }}
-        </p>
-        <p v-if="data.page" class="m-0 text-xs text-muted-foreground">
-          {{
-            t('testWorkflowLibrary.counts', {
-              total: data.page.total,
-              unresolved: data.page.unresolved,
-              verified: data.page.verified
             })
           }}
         </p>
