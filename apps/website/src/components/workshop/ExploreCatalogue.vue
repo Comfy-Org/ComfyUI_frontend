@@ -14,12 +14,15 @@ import { upcomingApps } from '@/lib/workshop/coming-soon-apps'
 import { doorArt } from '@/lib/workshop/explore-art'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
 import { exploreRow, searchExplore } from '@/lib/workshop/explore-search'
+import { useWorkshopFlag } from '@/scripts/posthog'
+import ExploreCommunity from './ExploreCommunity.vue'
 import ExploreDoors from './ExploreDoors.vue'
 import ExploreFinder from './ExploreFinder.vue'
 import ExploreResults from './ExploreResults.vue'
 import ExploreUseCases from './ExploreUseCases.vue'
 
 const RESULTS = 12
+const HUB_HOME_COMMUNITY_FLAG = 'hub-home-community'
 
 const {
   apps,
@@ -35,6 +38,7 @@ const {
 const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
+const communityShown = useWorkshopFlag(HUB_HOME_COMMUNITY_FLAG)
 const query = ref('')
 
 const art = computed(() => doorArt({ models, workflows, apps }, locale))
@@ -119,5 +123,7 @@ function clear() {
     />
 
     <ExploreUseCases v-if="!needle" :models :workflows :locale />
+
+    <ExploreCommunity v-if="!needle && communityShown" :locale />
   </div>
 </template>

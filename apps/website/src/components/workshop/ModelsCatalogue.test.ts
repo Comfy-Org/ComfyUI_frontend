@@ -19,6 +19,7 @@ vi.mock(import('@/scripts/posthog'))
 let enabled: Ref<boolean>
 let reshootFlag: Ref<boolean>
 let appsFlag: Ref<boolean>
+let communityFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
@@ -27,8 +28,13 @@ beforeEach(() => {
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   appsFlag = ref(false)
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsFlag))
+  communityFlag = ref(false)
+  const namedFlags: Record<string, Ref<boolean> | undefined> = {
+    'workshop-reshoot-app-enabled': reshootFlag,
+    'hub-home-community': communityFlag
+  }
   vi.mocked(useWorkshopFlag).mockImplementation((name) =>
-    readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
+    readonly(namedFlags[name] ?? ref(false))
   )
 })
 
@@ -406,6 +412,33 @@ describe('ModelsCatalogue', () => {
             .getAllByRole('link')
             .map((link) => link.getAttribute('href'))
         ).toEqual(doors)
+      }
+    )
+
+    it.for([
+      { flag: false, sections: ['explore-use-cases'] },
+      { flag: true, sections: ['explore-use-cases', 'explore-community'] }
+    ])(
+      'shows the community below the use cases only behind its flag: $flag',
+      async ({ flag, sections }) => {
+        communityFlag.value = flag
+        renderExplore()
+        await screen.findByTestId('explore-use-cases')
+
+        expect(
+          screen
+            .getAllByRole('region')
+            .map((region) => region.dataset.testid)
+            .filter(
+              (id) => id === 'explore-use-cases' || id === 'explore-community'
+            )
+        ).toEqual(sections)
+        if (flag)
+          expect(
+            within(screen.getByTestId('explore-community')).getByRole('link', {
+              name: 'Explore the gallery'
+            })
+          ).toHaveAttribute('href', '/gallery/')
       }
     )
 
