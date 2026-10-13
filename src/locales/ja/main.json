@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ プロフィール画像をアップロード",
     "uploadWorkflowButton": "ワークフローをアップロード",
     "usernameError": "3～42文字の半角英数字とハイフン、小文字で始まり終わる必要があります",
-    "usernameLabel": "ユーザー名（必須）",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "ユーザー名（必須）"
   },
   "comfyHubPublish": {
     "additionalInfo": "追加情報",

@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ Profil fotoğrafı yükle",
     "uploadWorkflowButton": "Çalışma akışımı yükle",
     "usernameError": "3–42 küçük harfli alfanümerik karakter ve tire, bir harf veya rakam ile başlamalı ve bitmelidir",
-    "usernameLabel": "Kullanıcı adınız (gerekli)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "Kullanıcı adınız (gerekli)"
   },
   "comfyHubPublish": {
     "additionalInfo": "Ek bilgi",

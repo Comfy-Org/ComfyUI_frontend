@@ -1,8 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import mainMessages from './locales/en/main.json' with { type: 'json' }
 
 import { i18n, t, te } from './i18n'
+
+type SignupBlockedMessages = { auth: { errors: { signupBlocked: string } } }
+
+const localeCatalogs = Object.entries(
+  import.meta.glob<SignupBlockedMessages>('./locales/*/main.json', {
+    eager: true,
+    import: 'default'
+  })
+).map(([path, messages]) => ({ locale: path.split('/')[2], messages }))
 
 // Deliberately unmocked, unlike i18n.test.ts: these assertions are only
 // meaningful against the real src/locales catalog.
@@ -38,6 +48,24 @@ describe('main.json', () => {
     'leaves %s to the generated catalog',
     ([namespace]) => {
       expect(mainMessages).not.toHaveProperty(namespace)
+    }
+  )
+})
+
+describe('literal at signs in locale messages', () => {
+  it.for(localeCatalogs)(
+    '$locale renders the support email address',
+    ({ locale, messages }) => {
+      const catalog = createI18n({
+        legacy: false,
+        locale,
+        fallbackLocale: false,
+        messages: { [locale]: messages }
+      }).global
+
+      expect(catalog.t('auth.errors.signupBlocked')).toContain(
+        'support@comfy.org'
+      )
     }
   )
 })

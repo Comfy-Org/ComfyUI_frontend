@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
     "usernameError": "От 3 до 42 строчных буквенно-цифровых символов и дефисов, имя должно начинаться и заканчиваться буквой или цифрой",
-    "usernameLabel": "Ваш никнейм (обязательно)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "Ваш никнейм (обязательно)"
   },
   "comfyHubPublish": {
     "additionalInfo": "Дополнительная информация",

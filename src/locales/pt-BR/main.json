@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ Enviar uma foto de perfil",
     "uploadWorkflowButton": "Enviar meu fluxo de trabalho",
     "usernameError": "3–42 caracteres alfanuméricos minúsculos e hífens, deve começar e terminar com uma letra ou número",
-    "usernameLabel": "Seu nome de usuário (obrigatório)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "Seu nome de usuário (obrigatório)"
   },
   "comfyHubPublish": {
     "additionalInfo": "Informações adicionais",

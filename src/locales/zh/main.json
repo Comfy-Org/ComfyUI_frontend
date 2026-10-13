@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ 上传头像",
     "uploadWorkflowButton": "上传我的工作流",
     "usernameError": "用户名需为 3–42 个小写字母、数字或连字符，且必须以字母或数字开头和结尾",
-    "usernameLabel": "你的用户名（必填）",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "你的用户名（必填）"
   },
   "comfyHubPublish": {
     "additionalInfo": "附加信息",

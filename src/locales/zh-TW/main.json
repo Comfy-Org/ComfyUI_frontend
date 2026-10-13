@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ 上傳大頭貼",
     "uploadWorkflowButton": "上傳我的工作流程",
     "usernameError": "3–42 個小寫英數字或連字號，且必須以字母或數字開頭與結尾",
-    "usernameLabel": "你的用戶名稱（必填）",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "你的用戶名稱（必填）"
   },
   "comfyHubPublish": {
     "additionalInfo": "其他資訊",

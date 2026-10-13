@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ העלאת תמונת פרופיל",
     "uploadWorkflowButton": "העלאת תהליך העבודה שלי",
     "usernameError": "3–42 תווים אלפאנומריים קטנים ומקפים, חייב להתחיל ולהסתיים באות או מספר",
-    "usernameLabel": "שם המשתמש שלך (חובה)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "שם המשתמש שלך (חובה)"
   },
   "comfyHubPublish": {
     "additionalInfo": "מידע נוסף",

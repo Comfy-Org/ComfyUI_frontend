@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
     "usernameError": "۳ تا ۴۲ کاراکتر حرفی یا عددی کوچک و خط تیره، باید با حرف یا عدد شروع و پایان یابد",
-    "usernameLabel": "نام کاربری شما (الزامی)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "نام کاربری شما (الزامی)"
   },
   "comfyHubPublish": {
     "additionalInfo": "اطلاعات تکمیلی",

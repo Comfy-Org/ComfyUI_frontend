@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ رفع صورة الملف الشخصي",
     "uploadWorkflowButton": "رفع سير عملي",
     "usernameError": "٣–٤٢ حرفًا صغيرًا أو رقمًا أو شرطة، ويجب أن يبدأ وينتهي بحرف أو رقم",
-    "usernameLabel": "اسم المستخدم (إجباري)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "اسم المستخدم (إجباري)"
   },
   "comfyHubPublish": {
     "additionalInfo": "معلومات إضافية",

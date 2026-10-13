@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ Télécharger une photo de profil",
     "uploadWorkflowButton": "Télécharger mon workflow",
     "usernameError": "3 à 42 caractères alphanumériques minuscules et tirets, doit commencer et se terminer par une lettre ou un chiffre",
-    "usernameLabel": "Votre nom d'utilisateur (obligatoire)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "Votre nom d'utilisateur (obligatoire)"
   },
   "comfyHubPublish": {
     "additionalInfo": "Informations supplémentaires",

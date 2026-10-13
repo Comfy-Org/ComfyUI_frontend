@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ Profilbild hochladen",
     "uploadWorkflowButton": "Meinen Workflow hochladen",
     "usernameError": "3–42 alphanumerische Kleinbuchstaben und Bindestriche; muss mit einem Buchstaben oder einer Zahl beginnen und enden",
-    "usernameLabel": "Ihr Benutzername (erforderlich)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "Ihr Benutzername (erforderlich)"
   },
   "comfyHubPublish": {
     "additionalInfo": "Zusätzliche Informationen",

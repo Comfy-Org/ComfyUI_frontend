@@ -4541,7 +4541,6 @@
     "nameLabel": "Your name",
     "namePlaceholder": "Enter your name here",
     "usernameLabel": "Your username (required)",
-    "usernamePlaceholder": "{'@'}",
     "usernameError": "3–42 lowercase alphanumeric characters and hyphens, must start and end with a letter or number",
     "descriptionLabel": "Your description",
     "descriptionPlaceholder": "Tell the community about yourself...",

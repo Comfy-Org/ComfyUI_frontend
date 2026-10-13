@@ -994,8 +994,7 @@
     "uploadProfilePicture": "+ 프로필 사진 업로드",
     "uploadWorkflowButton": "내 워크플로우 업로드하기",
     "usernameError": "3~42자의 소문자 영문, 숫자, 하이픈만 사용 가능하며, 반드시 영문 또는 숫자로 시작하고 끝나야 합니다.",
-    "usernameLabel": "사용자 이름 (필수)",
-    "usernamePlaceholder": "{'@'}"
+    "usernameLabel": "사용자 이름 (필수)"
   },
   "comfyHubPublish": {
     "additionalInfo": "추가 정보",
