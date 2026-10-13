@@ -915,6 +915,12 @@ export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
+export interface AgentCreditTransitionNoticeMetadata extends Record<
+  string,
+  unknown
+> {
+  action: 'shown' | 'dismissed'
+}
 export interface AgentStarterPromptClickedMetadata
   extends
     Record<string, unknown>,
@@ -1373,6 +1379,9 @@ export interface TelemetryProvider {
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1647,6 +1656,7 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
@@ -1778,4 +1788,5 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata

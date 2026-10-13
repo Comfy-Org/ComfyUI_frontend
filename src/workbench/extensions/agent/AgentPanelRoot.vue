@@ -81,6 +81,7 @@ import {
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -106,6 +107,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -135,6 +137,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -158,6 +161,7 @@ const {
   tier: subscriptionTier,
   type: billingType,
   billingStatus,
+  canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
@@ -193,7 +197,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
-const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -283,6 +286,9 @@ watch(
  * nothing.
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const agentScopedHasFunds = computed(
+  () => subscription.value?.agentScopedHasFunds
+)
 const creditsExhausted = computed(() => {
   if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
@@ -318,21 +324,43 @@ const showStandingPaywall = computed(() => {
 })
 
 const agentPanelStore = useAgentPanelStore()
-const billingIdentity = computed(
-  () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
-)
+const billingIdentity = useBillingIdentity()
 
-/**
- * One impression per exhaustion episode, not per render: the surface is
- * standing, so it is visible for as long as the workspace is out of credits and
- * a per-render report would make impressions a function of session length.
- * Reset when funds return, so a later exhaustion reports again — mirroring how
- * `useBillingBanner` scopes its dismissal to one episode.
- */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
+
+const showCreditTransitionNotice = computed(
+  () =>
+    isCreditTransitionNoticeShown(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    canAccessSubscriptionFeatures.value &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value === true
+)
+
+function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+}
+
+function onCreditTransitionNoticeShown(): void {
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  if (
+    !agentPanelStore.claimCreditTransitionNoticeImpression(
+      billingIdentity.value
+    )
+  )
+    return
+  telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
+}
 
 function onStandingPaywallShown(): void {
   if (
@@ -1335,6 +1363,9 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
+const visibleFreeUsePlacement = computed(() =>
+  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
+)
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
@@ -1937,7 +1968,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="freeUsePlacement"
+      :free-use-placement="visibleFreeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
@@ -1972,6 +2003,14 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     >
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+      <template #composerNotice>
+        <AgentCreditTransitionNotice
+          v-if="showCreditTransitionNotice"
+          data-testid="agent-credit-transition-notice"
+          @shown="onCreditTransitionNoticeShown"
+          @dismiss="onDismissCreditTransitionNotice"
+        />
       </template>
     </AgentPanel>
     <OnboardingCoach

@@ -16,6 +16,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -78,6 +84,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -326,6 +335,36 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): boolean {
+    return dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -337,6 +376,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
+    creditTransitionNotice: computed(() => creditTransitionNotice.value),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
     width,
     requestedWidth,
     isOverlay,

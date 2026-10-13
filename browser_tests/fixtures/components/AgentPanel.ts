@@ -8,6 +8,8 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class AgentPanel {
+  public readonly composerStack: Locator
+  public readonly creditTransitionNotice: Locator
   public readonly root: Locator
   public readonly dockedPanel: Locator
   public readonly openButton: Locator
@@ -47,6 +49,10 @@ export class AgentPanel {
           exact: true
         })
       )
+    this.composerStack = this.root.getByTestId('agent-composer-stack')
+    this.creditTransitionNotice = this.root.getByTestId(
+      'agent-credit-transition-notice'
+    )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
@@ -170,6 +176,13 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+    await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
+    await expect(
+      this.page
+        .locator('.p-tooltip, [role="tooltip"]')
+        .filter({ visible: true })
+    ).toHaveCount(0)
   }
 
   async openWorkSummary(): Promise<void> {
