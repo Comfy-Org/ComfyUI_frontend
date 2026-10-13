@@ -1566,7 +1566,7 @@
     "creditsLabelYearly": "credits per year",
     "banner": {
       "title": "Start Comfy Cloud for free. Upgrade when ready.",
-      "subtitle": "5 free runs on real GPUs — no credit card required.",
+      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits for new users",
       "cta": "TRY FREE"
     },
     "feature": {
@@ -1647,15 +1647,21 @@
     },
     "comfyApi": {
       "heading": "Comfy API pricing",
-      "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
-      "metricColumn": "Limit",
+      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits depend on your plan.",
       "metric": {
-        "releases": "Total releases limit",
+        "builds": "Total builds limit",
         "deployments": "Total deployments limit",
         "concurrency": "Max worker concurrency (per deployment)"
       },
       "enterpriseNote": "Enterprise limits are determined by your contract.",
-      "learnMore": "Learn More"
+      "learnMore": "Learn More",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "builds": "{count} builds",
+        "deployments": "{count} deployments",
+        "concurrency": "Up to {count} workers per deployment",
+        "notIncluded": "Comfy API access"
+      }
     },
     "minimaxLicense": {
       "heading": "MiniMax license pricing",
@@ -1665,6 +1671,45 @@
     "cycle": {
       "monthly": "monthly",
       "yearly": "yearly"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan, and new users get free credits to try it.",
+      "learnMore": "Learn More",
+      "limit": {
+        "availability": {
+          "title": "Available on every plan",
+          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is free new-user credits or a positive credit balance."
+        },
+        "credits": {
+          "title": "Billed in Comfy Credits",
+          "description": "Once your free credits are used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
+        },
+        "runs": {
+          "title": "Workflow runs",
+          "description": "Workflows the agent runs are charged exactly like runs you start yourself, with no surcharge, and follow your plan's runtime and job limits."
+        },
+        "model": {
+          "title": "Model",
+          "description": "Comfy picks the model for you. Bringing your own LLM key is not supported yet."
+        },
+        "queue": {
+          "title": "No message cap",
+          "description": "There is no limit on how many messages you send. Past your plan's limits, new tasks wait in line instead of failing. When your credits run out, the agent pauses until you add more."
+        }
+      },
+      "metric": {
+        "tasksPerMember": "Agent tasks at once, per member",
+        "requestsPerWorkspace": "Agent requests at once, per workspace"
+      },
+      "enterpriseNote": "Enterprise plans get higher Agent limits.",
+      "cardTitle": "Comfy Agent",
+      "cardFeature": {
+        "sessionsPerWorkspace": "{count} concurrent agent sessions per workspace"
+      }
+    },
+    "planLimits": {
+      "metricColumn": "Limit"
     }
   },
   "player": {

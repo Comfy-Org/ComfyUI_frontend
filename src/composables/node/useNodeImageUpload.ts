@@ -40,7 +40,7 @@ interface ImageUploadFormFields {
   type: ResultItemType
 }
 
-export function uploadedPath(data: { name: string; subfolder?: string }) {
+function uploadedPath(data: { name: string; subfolder?: string }) {
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
