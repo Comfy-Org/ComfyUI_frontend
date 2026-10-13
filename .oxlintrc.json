@@ -425,7 +425,7 @@
     {
       "files": ["**/*.{test,spec}.{ts,tsx}"],
       "rules": {
-        "comfy/no-sorted-literal-array": "error"
+        "comfy/prefer-array-containing": "error"
       }
     },
     {
