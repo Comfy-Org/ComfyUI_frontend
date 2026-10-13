@@ -115,7 +115,6 @@ interface Turn {
 const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
 const QUESTION_ASK_ID = `${MESSAGE_ID}:call-ask`
 const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/answer`
-
 const DELETE_ASK_ID = `${MESSAGE_ID}:call-delete`
 const DELETE_PATH = `/api/agent/threads/${THREAD_ID}/asks/${DELETE_ASK_ID}/answer`
 
@@ -337,46 +336,57 @@ test.describe(
   }
 )
 
-test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
-  test('the card answers only the ask it shows and then reads back the answer', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const { panel, send, answers } = await startTurn(page, 'Paint it.', 'auto')
-    const choices = panel.getByRole('group', { name: ASK_USER_QUESTION })
-    const submit = panel.getByRole('button', { name: t('g.submit') })
+test.describe(
+  'Agent ask_user question',
+  { tag: ['@cloud', '@agent', '@screenshot'] },
+  () => {
+    test('the card answers only the ask it shows and then reads back the answer', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      const { panel, send, answers } = await startTurn(
+        page,
+        'Paint it.',
+        'auto'
+      )
+      const choices = panel.getByRole('group', { name: ASK_USER_QUESTION })
+      const submit = panel.getByRole('button', { name: t('g.submit') })
 
-    await test.step('the question arrives as a card with every option', async () => {
-      send(askUserQuestionFrame(ids, QUESTION_ASK_ID))
-      await expect(
-        choices.getByRole('checkbox', { name: 'Oil painting' })
-      ).toBeVisible()
-    })
+      await test.step('the question arrives as a card with every option', async () => {
+        send(askUserQuestionFrame(ids, QUESTION_ASK_ID))
+        await expect(
+          choices.getByRole('checkbox', { name: 'Oil painting' })
+        ).toBeVisible()
+        await expect(
+          panel.getByRole('group', { name: t('agent.askUser.card') })
+        ).toHaveScreenshot('agent-ask-user-card.png')
+      })
 
-    await test.step('answering posts once, to that ask', async () => {
-      await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
-      await panel
-        .getByRole('textbox', { name: t('agent.askUser.other') })
-        .fill('watercolor')
-      await submit.click()
-      await expect.poll(() => answers().length).toBe(1)
-      expect(answers()[0]).toEqual({
-        path: QUESTION_PATH,
-        body: { selected: ['oil'], other_text: 'watercolor' }
+      await test.step('answering posts once, to that ask', async () => {
+        await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
+        await panel
+          .getByRole('textbox', { name: t('agent.askUser.other') })
+          .fill('watercolor')
+        await submit.click()
+        await expect.poll(() => answers().length).toBe(1)
+        expect(answers()[0]).toEqual({
+          path: QUESTION_PATH,
+          body: { selected: ['oil'], other_text: 'watercolor' }
+        })
+      })
+
+      await test.step('the resolved card reads back the answer', async () => {
+        send(askResolved(['oil'], QUESTION_ASK_ID))
+        await expect(
+          panel
+            .getByRole('status')
+            .filter({ hasText: t('agent.askUser.answered') })
+        ).toContainText('Oil painting')
+        await expect(submit).toHaveCount(0)
       })
     })
-
-    await test.step('the resolved card reads back the answer', async () => {
-      send(askResolved(['oil'], QUESTION_ASK_ID))
-      await expect(
-        panel
-          .getByRole('status')
-          .filter({ hasText: t('agent.askUser.answered') })
-      ).toContainText('Oil painting')
-      await expect(submit).toHaveCount(0)
-    })
-  })
-})
+  }
+)
 
 test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
   test('the card names the nodes and answers only the ask it shows', async ({

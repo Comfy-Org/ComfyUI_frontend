@@ -77,9 +77,9 @@ describe('AskUserCard', () => {
     const { user, submit, emitted } = renderCard({ maxSelections: 2 })
 
     expect(screen.getByText('Choose 1 to 2')).toBeInTheDocument()
-    expect(screen.getByRole('group')).toHaveAccessibleDescription(
-      'Choose 1 to 2'
-    )
+    expect(
+      screen.getByRole('group', { name: 'Which model should I use?' })
+    ).toHaveAccessibleDescription('Choose 1 to 2')
     await user.click(screen.getByRole('checkbox', { name: 'SD 1.5' }))
     await user.click(screen.getByRole('checkbox', { name: 'SDXL' }))
 

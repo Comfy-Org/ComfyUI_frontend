@@ -700,7 +700,7 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
+  it('reports an ask kind outside the contract once, as unknown', () => {
     const unknownKind = 'x'.repeat(100)
     const message = drive([
       runApproval('unknown-1', unknownKind),
@@ -716,7 +716,7 @@ describe('agentEventTransport run approval', () => {
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
+          ask_kind: 'unknown'
         }
       })
     )

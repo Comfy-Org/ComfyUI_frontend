@@ -982,7 +982,7 @@ describe('AgentMessage ask the panel cannot render', () => {
           role: 'assistant',
           parts: [
             toAskOrNoticePart({
-              kind: 'erase_canvas',
+              kind: 'paused',
               ask_id: 'turn-2:call-4',
               prompt: 'Erase everything?',
               options: [{ id: 'yes', label: 'Yes' }],
