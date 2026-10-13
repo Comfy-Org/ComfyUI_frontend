@@ -6,7 +6,7 @@ import { defineComponent, h } from 'vue'
 import { i18n } from '@/i18n'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import WorkflowAgentChatsMenu from './WorkflowAgentChatsMenu.vue'
+import WorkflowHoverCard from './WorkflowHoverCard.vue'
 
 const OPEN_DELAY_MS = 200
 const CLOSE_DELAY_MS = 150
@@ -25,7 +25,7 @@ function renderMenus(workflowNames = ['portrait']) {
     defineComponent(() => () => [
       h('input', { 'aria-label': 'Search' }),
       ...workflowNames.map((name) =>
-        h(WorkflowAgentChatsMenu, {
+        h(WorkflowHoverCard, {
           workflowPath: `workflows/${name}.json`,
           workflowName: name
         })
@@ -40,7 +40,7 @@ function chatsButton(workflowName = 'portrait') {
   return screen.getByRole('button', { name: `1 chat on ${workflowName}` })
 }
 
-describe('WorkflowAgentChatsMenu', () => {
+describe('WorkflowHoverCard', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
   })
@@ -147,7 +147,7 @@ describe('WorkflowAgentChatsMenu', () => {
       ]),
       open
     )
-    render(WorkflowAgentChatsMenu, {
+    render(WorkflowHoverCard, {
       props: {
         workflowPath: 'workflows/portrait.json',
         workflowName: 'portrait'

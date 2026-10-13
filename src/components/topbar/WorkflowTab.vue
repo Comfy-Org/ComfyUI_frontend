@@ -86,7 +86,7 @@
           </span>
         </TabsTrigger>
         <span ref="agentChatsRef" class="contents">
-          <WorkflowAgentChatsMenu
+          <WorkflowHoverCard
             :workflow-path="workflowOption.workflow.path"
             :workflow-name="workflowOption.workflow.filename"
             class="absolute top-1/2 right-8 size-4 -translate-y-1/2 rounded-none text-smoke-800"
@@ -164,7 +164,7 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
-import WorkflowAgentChatsMenu from './WorkflowAgentChatsMenu.vue'
+import WorkflowHoverCard from './WorkflowHoverCard.vue'
 import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
 defineOptions({ inheritAttrs: false })

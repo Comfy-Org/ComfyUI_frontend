@@ -1,7 +1,7 @@
 <template>
   <TreeExplorerTreeNode :node="node">
     <template #trailing>
-      <WorkflowAgentChatsMenu
+      <WorkflowHoverCard
         v-if="node.data"
         :workflow-path="node.data.path"
         :workflow-name="node.data.filename"
@@ -30,7 +30,7 @@
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import WorkflowAgentChatsMenu from '@/components/topbar/WorkflowAgentChatsMenu.vue'
+import WorkflowHoverCard from '@/components/topbar/WorkflowHoverCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
