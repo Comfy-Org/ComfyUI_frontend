@@ -100,65 +100,125 @@ The following diagram illustrates the store architecture and data flow:
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Where Stores Live
+
+Stores are **not** all in this directory. A store lives with the domain that
+owns it, following the layered architecture (`base` → `platform` → `workbench`
+→ `renderer`). `src/stores/` holds the shared, cross-cutting ones that no
+single domain owns.
+
+| Location                           | Holds                                       | Examples                                                        |
+| ---------------------------------- | ------------------------------------------- | --------------------------------------------------------------- |
+| `src/stores/`                      | Shared, cross-cutting state                 | `useCommandStore`, `useExecutionStore`, `useExtensionStore`     |
+| `src/stores/workspace/`            | Workspace chrome (panels, sidebar, palette) | `useBottomPanelStore`, `useSidebarTabStore`                     |
+| `src/platform/**`                  | Platform concerns owned by their domain     | `useSettingStore`, `useWorkflowStore`, `useKeybindingStore`     |
+| `src/renderer/**`                  | Canvas and rendering state                  | `useCanvasStore`, `useTitleEditorStore`, `useLinearOutputStore` |
+| `src/workbench/extensions/**`      | Extension-owned state (manager, agent)      | `useComfyManagerStore`, `useAgentPanelStore`                    |
+| `src/core/**`, `src/components/**` | Core graph concerns and a few UI primitives | `useSelectionStore`, `useToast`                                 |
+
+Because stores move with their domain, **the directory tree is the source of
+truth**, not a list in this file. To find every store:
+
+```bash
+grep -rn "export const use\w* = defineStore" src/
+```
+
 ## Core Stores
 
-The following table lists ALL 46 store instances in the system as of 2026-01-29:
+### Shared stores (`src/stores/`)
 
-### Main Stores
-
-| File                         | Store                         | Description                                             | Category   |
-| ---------------------------- | ----------------------------- | ------------------------------------------------------- | ---------- |
-| aboutPanelStore.ts           | useAboutPanelStore            | Manages the About panel state and badges                | UI         |
-| apiKeyAuthStore.ts           | useApiKeyAuthStore            | Handles API key authentication                          | Auth       |
-| comfyManagerStore.ts         | useComfyManagerStore          | Manages ComfyUI application state                       | Core       |
-| comfyRegistryStore.ts        | useComfyRegistryStore         | Handles extensions registry                             | Registry   |
-| commandStore.ts              | useCommandStore               | Manages commands and command execution                  | Core       |
-| dialogStore.ts               | useDialogStore                | Controls dialog/modal display and state                 | UI         |
-| domWidgetStore.ts            | useDomWidgetStore             | Manages DOM widget state                                | Widgets    |
-| electronDownloadStore.ts     | useElectronDownloadStore      | Handles Electron-specific download operations           | Platform   |
-| executionStore.ts            | useExecutionStore             | Tracks workflow execution state                         | Execution  |
-| extensionStore.ts            | useExtensionStore             | Manages extension registration and state                | Extensions |
-| firebaseAuthStore.ts         | useFirebaseAuthStore          | Handles Firebase authentication                         | Auth       |
-| graphStore.ts                | useTitleEditorStore           | Manages title editing for nodes and groups              | UI         |
-| graphStore.ts                | useCanvasStore                | Manages the graph canvas state and interactions         | Core       |
-| helpCenterStore.ts           | useHelpCenterStore            | Manages help center visibility and state                | UI         |
-| nodeOutputStore.ts           | useNodeOutputStore            | Manages node outputs and execution results              | Media      |
-| maintenanceTaskStore.ts      | useMaintenanceTaskStore       | Handles system maintenance tasks                        | System     |
-| menuItemStore.ts             | useMenuItemStore              | Handles menu items and their state                      | UI         |
-| modelStore.ts                | useModelStore                 | Manages AI models information                           | Models     |
-| modelToNodeStore.ts          | useModelToNodeStore           | Maps models to compatible nodes                         | Models     |
-| nodeBookmarkStore.ts         | useNodeBookmarkStore          | Manages node bookmarks and favorites                    | Nodes      |
-| nodeDefStore.ts              | useNodeDefStore               | Manages node definitions and schemas                    | Nodes      |
-| nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
-| queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
-| queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
-| queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
-| releaseStore.ts              | useReleaseStore               | Manages application release information                 | System     |
-| serverConfigStore.ts         | useServerConfigStore          | Handles server configuration                            | Config     |
-| settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
-| subgraphNavigationStore.ts   | useSubgraphNavigationStore    | Handles subgraph navigation state                       | Navigation |
-| systemStatsStore.ts          | useSystemStatsStore           | Tracks system performance statistics                    | System     |
-| toastStore.ts                | useToast                      | Manages toast notifications                             | UI         |
-| userFileStore.ts             | useUserFileStore              | Manages user file operations                            | Files      |
-| userStore.ts                 | useUserStore                  | Manages user data and preferences                       | User       |
-| versionCompatibilityStore.ts | useVersionCompatibilityStore  | Manages frontend/backend version compatibility warnings | Core       |
-| widgetStore.ts               | useWidgetStore                | Manages widget configurations                           | Widgets    |
-| workflowStore.ts             | useWorkflowStore              | Handles workflow data and operations                    | Workflows  |
-| workflowStore.ts             | useWorkflowBookmarkStore      | Manages workflow bookmarks and favorites                | Workflows  |
-| workflowTemplatesStore.ts    | useWorkflowTemplatesStore     | Manages workflow templates                              | Workflows  |
-| workspaceStore.ts            | useWorkspaceStore             | Manages overall workspace state                         | Workspace  |
+| File                          | Store                         | Description                                                 | Category   |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------------- | ---------- |
+| aboutPanelStore.ts            | useAboutPanelStore            | About panel state and badges                                | UI         |
+| actionBarButtonStore.ts       | useActionBarButtonStore       | Extension-contributed action bar buttons                    | UI         |
+| apiKeyAuthStore.ts            | useApiKeyAuthStore            | API key authentication                                      | Auth       |
+| appModeStore.ts               | useAppModeStore               | Linear vs. graph app mode and its derived inputs            | UI         |
+| assetDownloadStore.ts         | useAssetDownloadStore         | Asset download progress and lifecycle                       | Assets     |
+| assetExportStore.ts           | useAssetExportStore           | Asset export tasks                                          | Assets     |
+| assetsStore.ts                | useAssetsStore                | Asset records and queries                                   | Assets     |
+| authStore.ts                  | useAuthStore                  | Auth headers/tokens across Firebase, unified Cloud, API key | Auth       |
+| bootstrapStore.ts             | useBootstrapStore             | Application bootstrap sequencing                            | Core       |
+| comfyRegistryStore.ts         | useComfyRegistryStore         | ComfyUI registry (node packs) access                        | Registry   |
+| commandStore.ts               | useCommandStore               | Commands and command execution                              | Core       |
+| dialogStore.ts                | useDialogStore                | Dialog/modal display and state                              | UI         |
+| domWidgetStore.ts             | useDomWidgetStore             | DOM widget state                                            | Widgets    |
+| electronDownloadStore.ts      | useElectronDownloadStore      | Electron-specific download operations                       | Platform   |
+| entityIdStore.ts              | useEntityIdStore              | Per-root-graph litegraph ID allocation state                | Graph      |
+| executionErrorStore.ts        | useExecutionErrorStore        | Execution error reporting state                             | Execution  |
+| executionOrderStore.ts        | useExecutionOrderStore        | Node execution order                                        | Execution  |
+| executionStore.ts             | useExecutionStore             | Workflow execution state                                    | Execution  |
+| extensionStore.ts             | useExtensionStore             | Extension registration and state                            | Extensions |
+| graphMetadataStore.ts         | useGraphMetadataStore         | Per-root-graph `config`/`extra` and revision                | Graph      |
+| helpCenterStore.ts            | useHelpCenterStore            | Help center visibility and state                            | UI         |
+| jobPreviewStore.ts            | useJobPreviewStore            | Job preview state                                           | Execution  |
+| linkPresentationStore.ts      | useLinkPresentationStore      | Link hidden/label presentation state                        | Graph      |
+| linkStore.ts                  | useLinkStore                  | Link records                                                | Graph      |
+| maskEditorDataStore.ts        | useMaskEditorDataStore        | Mask editor document data                                   | Image      |
+| maskEditorStore.ts            | useMaskEditorStore            | Mask editor UI state                                        | Image      |
+| menuItemStore.ts              | useMenuItemStore              | Menu items and their state                                  | UI         |
+| modelStore.ts                 | useModelStore                 | Model information                                           | Models     |
+| modelToNodeStore.ts           | useModelToNodeStore           | Maps models to compatible nodes                             | Models     |
+| nodeBookmarkStore.ts          | useNodeBookmarkStore          | Node bookmarks and favorites                                | Nodes      |
+| nodeDataStore.ts              | useNodeDataStore              | Per-node state (see `docs/architecture/node-data-store.md`) | Nodes      |
+| nodeDefStore.ts               | useNodeDefStore               | Node definitions and schemas                                | Nodes      |
+| nodeDefStore.ts               | useNodeFrequencyStore         | Node usage frequency                                        | Nodes      |
+| nodeOutputStore.ts            | useNodeOutputStore            | Node outputs and execution results                          | Media      |
+| previewExposureStore.ts       | usePreviewExposureStore       | Subgraph preview exposure chains                            | Subgraph   |
+| queueSettingsStore.ts         | useQueueSettingsStore         | Queue execution settings                                    | Execution  |
+| queueStore.ts                 | useQueueStore                 | Execution queue and task history                            | Execution  |
+| queueStore.ts                 | useQueuePendingTaskCountStore | Pending task counts                                         | Execution  |
+| queueStore.ts                 | useQueueUIStore               | Queue UI state                                              | Execution  |
+| rerouteStore.ts               | useRerouteStore               | Reroute point records                                       | Graph      |
+| serverConfigStore.ts          | useServerConfigStore          | Server configuration                                        | Config     |
+| subgraphNavigationStore.ts    | useSubgraphNavigationStore    | Subgraph navigation state                                   | Navigation |
+| subgraphStore.ts              | useSubgraphStore              | Subgraph definitions                                        | Subgraph   |
+| systemStatsStore.ts           | useSystemStatsStore           | System performance statistics                               | System     |
+| templateInputDownloadStore.ts | useTemplateInputDownloadStore | Template input asset downloads                              | Workflows  |
+| templateRankingStore.ts       | useTemplateRankingStore       | Template ranking (see `docs/TEMPLATE_RANKING.md`)           | Workflows  |
+| topbarBadgeStore.ts           | useTopbarBadgeStore           | Extension-contributed topbar badges                         | UI         |
+| userFileStore.ts              | useUserFileStore              | User file operations                                        | Files      |
+| userStore.ts                  | useUserStore                  | User data and preferences                                   | User       |
+| widgetStore.ts                | useWidgetStore                | Widget configurations                                       | Widgets    |
+| widgetValueStore.ts           | useWidgetValueStore           | Widget values (internal — not an extension surface)         | Widgets    |
+| workflowTabActivityStore.ts   | useWorkflowTabActivityStore   | Per-workflow-tab activity tracking                          | Workflows  |
+| workspaceStore.ts             | useWorkspaceStore             | Overall workspace state                                     | Workspace  |
 
 ### Workspace Stores
 
-Located in `stores/workspace/`:
+Located in `src/stores/workspace/`:
 
-| File                 | Store                | Description                                 | Category |
-| -------------------- | -------------------- | ------------------------------------------- | -------- |
-| bottomPanelStore.ts  | useBottomPanelStore  | Controls bottom panel visibility and state  | UI       |
-| colorPaletteStore.ts | useColorPaletteStore | Manages color palette configurations        | UI       |
-| nodeHelpStore.ts     | useNodeHelpStore     | Handles node help and documentation display | UI       |
-| searchBoxStore.ts    | useSearchBoxStore    | Manages search box functionality            | UI       |
-| sidebarTabStore.ts   | useSidebarTabStore   | Controls sidebar tab states and navigation  | UI       |
+| File                       | Store                      | Description                         | Category |
+| -------------------------- | -------------------------- | ----------------------------------- | -------- |
+| assetsSidebarBadgeStore.ts | useAssetsSidebarBadgeStore | Assets sidebar badge count          | UI       |
+| bottomPanelStore.ts        | useBottomPanelStore        | Bottom panel visibility and state   | UI       |
+| colorPaletteStore.ts       | useColorPaletteStore       | Color palette configurations        | UI       |
+| favoritedWidgetsStore.ts   | useFavoritedWidgetsStore   | Favorited widgets                   | UI       |
+| nodeHelpStore.ts           | useNodeHelpStore           | Node help and documentation display | UI       |
+| rightSidePanelStore.ts     | useRightSidePanelStore     | Right side panel state              | UI       |
+| searchBoxStore.ts          | useSearchBoxStore          | Search box functionality            | UI       |
+| sidebarTabStore.ts         | useSidebarTabStore         | Sidebar tab states and navigation   | UI       |
+
+### Frequently used domain-owned stores
+
+These used to live in `src/stores/` and have moved to their owning domain:
+
+| Store                        | Location                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| useSettingStore              | `src/platform/settings/settingStore.ts`                                  |
+| useKeybindingStore           | `src/platform/keybindings/keybindingStore.ts`                            |
+| useWorkflowStore             | `src/platform/workflow/management/stores/workflowStore.ts`               |
+| useWorkflowBookmarkStore     | `src/platform/workflow/management/stores/workflowStore.ts`               |
+| useWorkflowTemplatesStore    | `src/platform/workflow/templates/repositories/workflowTemplatesStore.ts` |
+| useReleaseStore              | `src/platform/updates/common/releaseStore.ts`                            |
+| useVersionCompatibilityStore | `src/platform/updates/common/versionCompatibilityStore.ts`               |
+| useCanvasStore               | `src/renderer/core/canvas/canvasStore.ts`                                |
+| useTitleEditorStore          | `src/renderer/core/canvas/canvasStore.ts`                                |
+| useSelectionStore            | `src/core/selection/selectionStore.ts`                                   |
+| useComfyManagerStore         | `src/workbench/extensions/manager/stores/comfyManagerStore.ts`           |
+| useToast                     | `src/components/ui/toast/toastStore.ts`                                  |
+
+`useFirebaseAuthStore` and `useMaintenanceTaskStore` no longer exist. Auth
+state is reached through `useAuthStore` (`src/stores/authStore.ts`).
 
 ## Store Development Guidelines
 

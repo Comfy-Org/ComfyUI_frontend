@@ -73,7 +73,6 @@ tables below follow that grouping.
 | cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
 | cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
 | cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
-| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
 
 The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
 rather than the `isCloud` constant — that literal is what lets the bundler
@@ -93,6 +92,8 @@ appears, so THREE.js (~1.8 MB) stays out of the initial bundle:
 | load3dPreviewExtensions.ts | `Comfy.PreviewGaussianSplat`, `Comfy.PreviewPointCloud`, `Comfy.SaveGaussianSplat`, `Comfy.SavePointCloud` | Splat and point-cloud preview/save |
 | saveMesh.ts                | `Comfy.SaveGLB`                                                                                            | 3D mesh saving                     |
 | cameraInfo.ts              | `Comfy.CreateCameraInfo`                                                                                   | Interactive camera-info widget     |
+| cameraAngle.ts             | `Comfy.CameraAngle`                                                                                        | Orbit-gizmo camera-angle widget    |
+| lightInfo.ts               | `Comfy.CreateLightInfo`                                                                                    | Interactive light-placement widget |
 
 ### Shared Helper Modules
 
@@ -101,13 +102,16 @@ imported by the extensions above:
 
 | File                      | Used by                               |
 | ------------------------- | ------------------------------------- |
+| slotDefaultTypes.ts       | `slotDefaults.ts`                     |
 | textPreviewWidgets.ts     | `previewAny.ts`, `saveText.ts`        |
 | widgetValuePropagation.ts | `customWidgets.ts`, `widgetInputs.ts` |
 
 The `load3d/` subdirectory holds the TypeScript manager classes backing the 3D
 viewport (`SceneManager`, `CameraManager`, `ControlsManager`, `LoaderManager`,
-`AnimationManager`, the `*ModelAdapter` implementations, and others), and
-`cameraInfo/` holds the camera overlay, viewport, and drag handles.
+`AnimationManager`, the `*ModelAdapter` implementations, and others). Each
+interactive 3D widget keeps its own subdirectory alongside its extension file:
+`cameraInfo/` (camera overlay, viewport, and drag handles), `cameraAngle/`
+(orbit gizmos and subject box), and `lightInfo/` (light overlay and viewport).
 
 ## Extension Development
 
