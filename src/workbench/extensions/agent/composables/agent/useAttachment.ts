@@ -30,13 +30,9 @@ interface UploadResult {
   url?: string
 }
 
-type DeferredFileResult =
-  | 'uploaded'
-  | 'unsupported'
-  | 'invalid'
-  | 'cancelled'
-  | 'failed'
-  | 'duplicate'
+type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
+
+type DeferredFileResult = UploadFileResult | 'unsupported' | 'duplicate'
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
@@ -44,7 +40,6 @@ export interface UseAttachmentOptions {
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
-  onInvalid?: (file: File) => void
   onUploaded?: () => void
   onDuplicate?: (names: string[]) => void
   stage: (attachment: ComposerAttachment) => boolean
@@ -137,7 +132,6 @@ export function useAttachment(options: UseAttachmentOptions) {
   const contentHashes = new WeakMap<File, Promise<string>>()
   let uploadGeneration = 0
   let activeUploads = 0
-  let cancellationGeneration = 0
 
   function contentHashFor(file: File): Promise<string> {
     const cached = contentHashes.get(file)
@@ -172,19 +166,6 @@ export function useAttachment(options: UseAttachmentOptions) {
       })
     )
     return true
-  }
-
-  function validateFile(file: File): boolean | Promise<boolean> {
-    if (!options.validate) return true
-    const result = options.validate(file)
-    if (typeof result === 'boolean') {
-      if (!result) options.onInvalid?.(file)
-      return result
-    }
-    return result.then((valid) => {
-      if (!valid) options.onInvalid?.(file)
-      return valid
-    })
   }
 
   // The file's declared size/type and the failure's shape (status code,
@@ -267,12 +248,26 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
-  async function uploadStagedFile(id: string, file: File): Promise<boolean> {
+  async function uploadStagedFile(
+    id: string,
+    file: File
+  ): Promise<UploadFileResult> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
     else activeUploads += 1
     try {
-      if (cancelled.has(id)) return false
+      if (cancelled.has(id)) return 'cancelled'
+      if (options.validate) {
+        const valid = await options.validate(file)
+        if (cancelled.has(id)) return 'cancelled'
+        if (!valid) {
+          options.onError?.(
+            i18n.global.t('agent.attachmentInvalidVideo', { name: file.name })
+          )
+          options.remove(id)
+          return 'failed'
+        }
+      }
       const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
@@ -285,11 +280,11 @@ export function useAttachment(options: UseAttachmentOptions) {
         ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
-      return true
+      return 'uploaded'
     } catch (cause) {
-      if (!cancelled.has(id))
-        failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
-      return false
+      if (cancelled.has(id)) return 'cancelled'
+      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
+      return 'failed'
     } finally {
       settle(id)
       const next = waiting.shift()
@@ -306,7 +301,6 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
-    cancellationGeneration += 1
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
@@ -326,13 +320,9 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      if (!(await validateFile(file))) {
-        options.remove(id)
-        return 'invalid'
-      }
-      if (!(await uploadStagedFile(id, file))) return 'failed'
-      options.onUploaded?.()
-      return 'uploaded'
+      const result = await uploadStagedFile(id, file)
+      if (result === 'uploaded') options.onUploaded?.()
+      return result
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
       failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
@@ -355,35 +345,21 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploadDeferredFile(id, name, resolve)
   }
 
-  function stageValidatedFile(
-    file: File,
-    valid: boolean,
-    duplicates: string[],
-    staged: Array<{ file: File; id: string }>
-  ): void {
-    if (!valid) return
-    const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
-    const id = stage(file.name, sourceKey)
-    if (!id) duplicates.push(file.name)
-    else staged.push({ file, id })
-  }
-
   async function addFiles(files: Iterable<File>): Promise<boolean> {
-    const generation = cancellationGeneration
     const duplicates: string[] = []
-    const staged: Array<{ file: File; id: string }> = []
-    for (const file of files) {
-      if (isTooLarge(file)) continue
-      const result = validateFile(file)
-      const valid = typeof result === 'boolean' ? result : await result
-      if (generation !== cancellationGeneration) return false
-      stageValidatedFile(file, valid, duplicates, staged)
-    }
+    const staged = [...files]
+      .filter((file) => !isTooLarge(file))
+      .flatMap((file) => {
+        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
+        const id = stage(file.name, sourceKey)
+        if (!id) duplicates.push(file.name)
+        return id ? [{ file, id }] : []
+      })
     if (duplicates.length) options.onDuplicate?.(duplicates)
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
-        if (await uploadStagedFile(id, file)) uploaded += 1
+        if ((await uploadStagedFile(id, file)) === 'uploaded') uploaded += 1
       })
     )
     if (uploaded > 0) options.onUploaded?.()

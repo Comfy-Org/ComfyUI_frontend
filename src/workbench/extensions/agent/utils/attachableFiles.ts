@@ -1,4 +1,4 @@
-import type { MediaType } from '@/utils/formatUtil'
+import type { MediaType, VideoExtension } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const AGENT_ATTACH_MEDIA_KINDS = [
@@ -55,39 +55,36 @@ export function attachableClipboardFiles(clipboard: DataTransfer): File[] {
   return Array.from(clipboard.files).filter(isAgentAttachable)
 }
 
-const bytesMatch = (bytes: Uint8Array, offset: number, expected: number[]) =>
-  expected.every((value, index) => bytes[offset + index] === value)
+function bytesMatch(bytes: Uint8Array, offset: number, expected: string) {
+  return expected
+    .split('')
+    .every((char, index) => bytes[offset + index] === char.charCodeAt(0))
+}
 
-/**
- * Confirms that a video starts with the container signature implied by its
- * filename. Browsers infer File.type from a renamed extension, so MIME alone
- * cannot distinguish a text file renamed to `.mp4`.
- */
+type VideoContainerCheck = (bytes: Uint8Array) => boolean
+
+const VIDEO_CONTAINER_CHECKS: Partial<Record<string, VideoContainerCheck>> = {
+  mp4: (bytes) => bytesMatch(bytes, 4, 'ftyp'),
+  m4v: (bytes) => bytesMatch(bytes, 4, 'ftyp'),
+  mov: (bytes) =>
+    ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'pnot'].some((atom) =>
+      bytesMatch(bytes, 4, atom)
+    ),
+  webm: (bytes) => bytesMatch(bytes, 0, '\x1a\x45\xdf\xa3'),
+  mkv: (bytes) => bytesMatch(bytes, 0, '\x1a\x45\xdf\xa3'),
+  avi: (bytes) => bytesMatch(bytes, 0, 'RIFF') && bytesMatch(bytes, 8, 'AVI ')
+} satisfies Record<VideoExtension, VideoContainerCheck>
+
 export function isValidAgentAttachment(file: File): boolean | Promise<boolean> {
-  if (getMediaTypeFromFilename(file.name) !== 'video') return true
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const check = Object.hasOwn(VIDEO_CONTAINER_CHECKS, extension)
+    ? VIDEO_CONTAINER_CHECKS[extension]
+    : undefined
+  if (!check) return true
 
-  const extension = file.name.split('.').pop()?.toLowerCase()
   return file
     .slice(0, 12)
     .arrayBuffer()
-    .then((buffer) => {
-      const bytes = new Uint8Array(buffer)
-      switch (extension) {
-        case 'mp4':
-        case 'm4v':
-        case 'mov':
-          return bytesMatch(bytes, 4, [0x66, 0x74, 0x79, 0x70]) // ftyp
-        case 'webm':
-        case 'mkv':
-          return bytesMatch(bytes, 0, [0x1a, 0x45, 0xdf, 0xa3]) // EBML
-        case 'avi':
-          return (
-            bytesMatch(bytes, 0, [0x52, 0x49, 0x46, 0x46]) && // RIFF
-            bytesMatch(bytes, 8, [0x41, 0x56, 0x49, 0x20]) // AVI
-          )
-        default:
-          return false
-      }
-    })
+    .then((buffer) => check(new Uint8Array(buffer)))
     .catch(() => false)
 }

@@ -78,6 +78,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -453,6 +454,11 @@ function replaceDraft(prompt: PromptSnapshot): void {
   editorRef.value?.focus()
 }
 
+function removeAttachment(id: string): void {
+  composer.removeAttachment(id)
+  emit('removeAttachment', id)
+}
+
 defineExpose({
   insert,
   replaceDraft,
@@ -531,7 +537,7 @@ defineExpose({
         v-if="composer.attachments.value.length"
         :attachments="composer.attachments.value"
         :highlighted-ids="highlightedAssetIds"
-        @remove="composer.removeAttachment"
+        @remove="removeAttachment"
       />
 
       <div

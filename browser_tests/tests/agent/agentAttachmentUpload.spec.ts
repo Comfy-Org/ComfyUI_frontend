@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
@@ -33,16 +34,14 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await expect(send).toBeEnabled()
 
       const uploadReceived = page.waitForRequest('**/api/upload/image')
-      await panel.getByTestId('agent-file-input').setInputFiles({
-        name: 'pending.mp4',
-        mimeType: 'video/mp4',
-        buffer: Buffer.from([0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70])
-      })
+      await panel
+        .getByTestId('agent-file-input')
+        .setInputFiles(assetPath('plain_video.mp4'))
       await uploadReceived
       await expect(
         panel
           .getByTestId('composer-asset-section')
-          .getByRole('group', { name: 'pending.mp4' })
+          .getByRole('group', { name: 'plain_video.mp4' })
       ).toBeVisible()
       await expect(send).toBeDisabled()
 
@@ -54,7 +53,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
 
       await expect(composer).toHaveText('Keep this draft')
       await expect(
-        panel.getByRole('group', { name: 'pending.mp4' })
+        panel.getByRole('group', { name: 'plain_video.mp4' })
       ).toHaveCount(0)
       await expect(send).toBeEnabled()
     } finally {
@@ -64,7 +63,6 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
   })
 })
 
-// Regression: https://linear.app/comfyorg/issue/PM-1514
 test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
   test('rejects text renamed as video from the file picker', async ({
     comfyPage,
@@ -77,10 +75,12 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
       buffer: Buffer.from('plain text')
     })
 
-    await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
     await expect(
-      comfyPage.toast.withText(enMessages.agent.assetNotAttachable)
+      comfyPage.toast.withText(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
+    await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
   })
 
   test('rejects text renamed as video from drag and drop', async ({
@@ -102,9 +102,11 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
       await dataTransfer.dispose()
     }
 
-    await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
     await expect(
-      comfyPage.toast.withText(enMessages.agent.assetNotAttachable)
+      comfyPage.toast.withText(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
+    await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
   })
 })

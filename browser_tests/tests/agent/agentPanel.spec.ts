@@ -612,7 +612,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = page.locator('#agent-panel-root')
     const fileInput = panel.getByTestId('agent-file-input')
-    const mp4Buffer = (size: number) => {
+    function mp4Buffer(size: number) {
       const buffer = Buffer.alloc(size)
       buffer.write('ftyp', 4, 'ascii')
       return buffer

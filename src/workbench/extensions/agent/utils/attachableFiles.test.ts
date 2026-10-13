@@ -101,6 +101,7 @@ describe('attachableClipboardFiles', () => {
 describe('isValidAgentAttachment', () => {
   it.for([
     { name: 'clip.mp4', bytes: [0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70] },
+    { name: 'clip.m4v', bytes: [0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70] },
     { name: 'clip.mov', bytes: [0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70] },
     { name: 'clip.webm', bytes: [0x1a, 0x45, 0xdf, 0xa3] },
     { name: 'clip.mkv', bytes: [0x1a, 0x45, 0xdf, 0xa3] },
@@ -114,26 +115,47 @@ describe('isValidAgentAttachment', () => {
     ).resolves.toBe(true)
   })
 
-  it('rejects text renamed to an mp4 file', async () => {
+  it.for(['moov', 'mdat', 'wide', 'free', 'skip', 'pnot'])(
+    'accepts a classic MOV beginning with %s without ftyp',
+    async (atom) => {
+      await expect(
+        isValidAgentAttachment(new File(['\0\0\0\x08', atom], 'classic.mov'))
+      ).resolves.toBe(true)
+    }
+  )
+
+  it.for([
+    { name: 'renamed.mp4', contents: 'not a video' },
+    { name: 'renamed.m4v', contents: 'not a video' },
+    { name: 'renamed.mov', contents: 'not a video' },
+    { name: 'renamed.webm', contents: 'not a video' },
+    { name: 'renamed.mkv', contents: 'not a video' },
+    { name: 'sound.avi', contents: 'RIFF\0\0\0\0WAVE' },
+    { name: 'truncated.mp4', contents: '\0\0\0\x18fty' },
+    { name: 'empty.mov', contents: '' }
+  ])(
+    'rejects $name without its container signature',
+    async ({ name, contents }) => {
+      await expect(
+        isValidAgentAttachment(new File([contents], name))
+      ).resolves.toBe(false)
+    }
+  )
+
+  it('rejects an unreadable video without propagating the read failure', async () => {
+    vi.spyOn(Blob.prototype, 'arrayBuffer').mockRejectedValue(
+      new DOMException('File became unreadable', 'NotReadableError')
+    )
+
     await expect(
-      isValidAgentAttachment(new File(['not a video'], 'renamed.mp4'))
+      isValidAgentAttachment(new File(['\0\0\0\x18ftyp'], 'clip.mp4'))
     ).resolves.toBe(false)
   })
 
-  it('rejects an unreadable video without propagating the read failure', async () => {
-    const file = new File(['video'], 'clip.mp4')
-    const unreadableSlice = new Blob(['video'])
-    vi.spyOn(unreadableSlice, 'arrayBuffer').mockRejectedValue(
-      new DOMException('File became unreadable', 'NotReadableError')
-    )
-    vi.spyOn(file, 'slice').mockReturnValue(unreadableSlice)
-
-    await expect(isValidAgentAttachment(file)).resolves.toBe(false)
-  })
-
-  it('does not inspect non-video attachments', () => {
-    expect(isValidAgentAttachment(new File(['plain text'], 'notes.txt'))).toBe(
-      true
-    )
-  })
+  it.for(['notes.txt', 'clip.mp4.txt', 'clip.constructor'])(
+    'does not inspect non-video attachment %s',
+    (name) => {
+      expect(isValidAgentAttachment(new File(['plain text'], name))).toBe(true)
+    }
+  )
 })

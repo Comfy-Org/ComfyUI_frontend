@@ -1672,8 +1672,6 @@ const attachment = useAttachment({
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) => toast.warning(message, { duration: 5000 }),
-  onInvalid: () =>
-    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 }),
   onDuplicate: notifyDuplicateAttachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
@@ -1912,6 +1910,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"
+      @remove-attachment="attachment.cancelUpload"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"

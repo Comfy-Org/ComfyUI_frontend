@@ -297,30 +297,141 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledWith(movie, expect.any(AbortSignal))
   })
 
-  it('does not stage a file cancelled while validation is pending', async () => {
+  it.for([true, false])(
+    'does not upload or warn after cancellation during validation: %s',
+    async (valid) => {
+      let resolveValidation: (valid: boolean) => void = () => {}
+      const validate = vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveValidation = resolve
+          })
+      )
+      const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addFiles, cancelAllUploads } = useAttachment({
+        upload,
+        validate,
+        onError,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('clip.mp4', 1024, 'video/mp4')])
+      cancelAllUploads()
+      resolveValidation(valid)
+      await pending
+
+      expect(upload).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('settles a cancelled mixed batch without touching a fresh retry', async () => {
     let resolveValidation: (valid: boolean) => void = () => {}
-    const validate = vi.fn(
-      () =>
-        new Promise<boolean>((resolve) => {
-          resolveValidation = resolve
-        })
+    const validation = new Promise<boolean>((resolve) => {
+      resolveValidation = resolve
+    })
+    const validate = vi.fn((file: File) =>
+      file.name.endsWith('.mp4') ? validation : true
     )
-    const upload = vi.fn()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const registry = chipRegistry()
+    const remove = vi.fn(registry.remove)
     const { addFiles, cancelAllUploads } = useAttachment({
+      ...registry,
+      remove,
       upload,
-      validate,
+      validate
+    })
+    const files = [fileOfSize('cat.png', 1024), fileOfSize('clip.mp4', 1024)]
+    const pending = addFiles(files)
+    cancelAllUploads()
+    validate.mockReturnValue(true)
+    await expect(addFiles(files)).resolves.toBe(true)
+    const replacements = [...registry.chips]
+    resolveValidation(true)
+    await expect(pending).resolves.toBe(false)
+    const removals = remove.mock.calls.length
+    cancelAllUploads()
+
+    expect(remove).toHaveBeenCalledTimes(removals)
+    expect(registry.chips).toEqual(replacements)
+    expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
+      { name: 'cat.png', ref: 'cat.png' },
+      { name: 'clip.mp4', ref: 'clip.mp4' }
+    ])
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips an invalid file and uploads the rest of the batch', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const invalid = fileOfSize('renamed.mp4', 1024, 'video/mp4')
+    const onError = vi.fn()
+    const { addFiles } = useAttachment({
+      upload,
+      validate: async (file) => file !== invalid,
+      onError,
       ...registry
     })
 
-    const pending = addFiles([fileOfSize('clip.mp4', 1024, 'video/mp4')])
-    cancelAllUploads()
-    resolveValidation(true)
-    await pending
+    await expect(
+      addFiles([invalid, fileOfSize('cat.png', 1024)])
+    ).resolves.toBe(true)
 
-    expect(registry.chips).toEqual([])
-    expect(upload).not.toHaveBeenCalled()
+    expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
+      { name: 'cat.png', ref: 'cat.png' }
+    ])
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'renamed.mp4 is not a valid video file. Choose another file.'
+    )
   })
+
+  it.for([true, false])(
+    'cancels deferred validation without late uploads or warnings: %s',
+    async (valid) => {
+      let resolveValidation: (valid: boolean) => void = () => {}
+      let started: () => void = () => {}
+      const validationStarted = new Promise<void>((resolve) => {
+        started = resolve
+      })
+      const validation = new Promise<boolean>((resolve) => {
+        resolveValidation = resolve
+      })
+      const validate = vi.fn(() => {
+        started()
+        return validation
+      })
+      const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addDeferredFile, cancelAllUploads } = useAttachment({
+        upload,
+        validate,
+        onError,
+        ...registry
+      })
+      const file = fileOfSize('clip.mp4', 1024, 'video/mp4')
+      const pending = addDeferredFile(file.name, async () => file)
+      await validationStarted
+      cancelAllUploads()
+      resolveValidation(valid)
+
+      await expect(pending).resolves.toBe('cancelled')
+      expect(onError).not.toHaveBeenCalled()
+      expect(upload).not.toHaveBeenCalled()
+      expect(registry.chips).toEqual([])
+      cancelAllUploads()
+      validate.mockResolvedValue(true)
+      await expect(addDeferredFile(file.name, async () => file)).resolves.toBe(
+        'uploaded'
+      )
+      expect(registry.chips).toMatchObject([
+        { name: file.name, ref: file.name, uploading: false }
+      ])
+    }
+  )
 
   it('stages a whole batch before uploading it concurrently', async () => {
     const resolvers: Array<(result: { ref: string }) => void> = []
@@ -610,22 +721,24 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
-  it('returns invalid and removes a deferred file that fails validation', async () => {
+  it('warns once and removes a deferred file that fails validation', async () => {
     const upload = vi.fn()
-    const onInvalid = vi.fn()
+    const onError = vi.fn()
     const registry = chipRegistry()
     const invalid = fileOfSize('renamed.mp4', 1024, 'video/mp4')
     const { addDeferredFile } = useAttachment({
       upload,
       validate: async () => false,
-      onInvalid,
+      onError,
       ...registry
     })
 
     await expect(
       addDeferredFile(invalid.name, async () => invalid)
-    ).resolves.toBe('invalid')
-    expect(onInvalid).toHaveBeenCalledWith(invalid)
+    ).resolves.toBe('failed')
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      'renamed.mp4 is not a valid video file. Choose another file.'
+    )
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
   })

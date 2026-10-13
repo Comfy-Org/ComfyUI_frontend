@@ -1,5 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setImmediate } from 'node:timers/promises'
 
 import type {
   AgentThreadListResponse,
@@ -2115,14 +2116,10 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
-function fileContents(name: string): BlobPart {
-  return /\.(?:mp4|mov|m4v)$/i.test(name)
-    ? new Uint8Array([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70]).buffer
-    : 'x'
-}
+const mp4Header = '\0\0\0\x18ftyp'
 
 function fileOfSize(name: string, size: number, type: string): File {
-  const file = new File([fileContents(name)], name, { type })
+  const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -2911,7 +2908,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
-        files: [new File([fileContents(name)], name, { type })]
+        files: [new File([mp4Header], name, { type })]
       })
     ).toBe(true)
 
@@ -3044,14 +3041,18 @@ describe('AgentPanelRoot attach flow', () => {
       new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
     )
 
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: i18n.global.t('agent.attachmentInvalidVideo', {
+            name: 'renamed.mp4'
+          })
+        })
+      )
+    )
     expect(uploaded).toEqual([])
     expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
-    expect(useToast().toasts).toContainEqual(
-      expect.objectContaining({
-        kind: 'warning',
-        title: i18n.global.t('agent.assetNotAttachable')
-      })
-    )
   })
 
   it('refuses a text file renamed to mp4 from drag and drop', async () => {
@@ -3069,7 +3070,9 @@ describe('AgentPanelRoot attach flow', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
           kind: 'warning',
-          title: i18n.global.t('agent.assetNotAttachable')
+          title: i18n.global.t('agent.attachmentInvalidVideo', {
+            name: 'renamed.mp4'
+          })
         })
       )
     )
@@ -3263,7 +3266,7 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('keeps a removed tray upload retired after completion and stale editor history', async () => {
+  it('cancels a removed tray upload and keeps it retired after stale editor history', async () => {
     const signals: AbortSignal[] = []
     let finishUpload: (response: Response) => void = () => {}
     const upload = new Promise<Response>((resolve) => {
@@ -3296,11 +3299,12 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    expect(signals[0].aborted).toBe(false)
+    expect(signals[0].aborted).toBe(true)
     finishUpload(
       json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
     )
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    await setImmediate()
+    expect(refresh).not.toHaveBeenCalled()
     expect(composer.attachments).toEqual([])
     composer.applyEditorPrompt(prompt)
     expect(composer.attachments).toEqual([])
@@ -3423,7 +3427,7 @@ describe('AgentPanelRoot attach flow', () => {
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob([fileContents(filename)]), {
+            return new Response(new Blob([mp4Header]), {
               headers: { 'Content-Type': mime }
             })
           if (url.endsWith('/api/upload/image'))
@@ -3487,18 +3491,15 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('warns once when a Media-card video has invalid contents', async () => {
-    const fetchSpy = vi.mocked(fetch).mockImplementation(async (input) => {
-      const url = String(input)
-      if (url.includes('/api/view'))
-        return new Response(new Blob(['plain text']), {
+  it('warns once when a URI-only asset drop resolves to an invalid video', async () => {
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch(
+      /\/api\/view/,
+      () =>
+        new Response(new Blob(['plain text']), {
           headers: { 'Content-Type': 'video/mp4' }
         })
-      return new Response('{"threads":[]}', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    })
+    )
     renderWithSelectedTarget()
     await nextTick()
 
@@ -3515,16 +3516,16 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() =>
       expect(
         useToast().toasts.filter(
-          ({ title }) => title === i18n.global.t('agent.assetNotAttachable')
+          ({ title }) =>
+            title ===
+            i18n.global.t('agent.attachmentInvalidVideo', {
+              name: 'renamed.mp4'
+            })
         )
       ).toHaveLength(1)
     )
     expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
-    expect(
-      fetchSpy.mock.calls.some(([url]) =>
-        String(url).endsWith('/api/upload/image')
-      )
-    ).toBe(false)
+    expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
   })
 
   it.for([
@@ -3913,6 +3914,56 @@ describe('AgentPanelRoot attach flow', () => {
           ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
         )
       }
+    }
+  )
+
+  it.for(['valid', 'invalid'] as const)(
+    'removing a video during %s validation cancels it and allows a fresh retry',
+    async (outcome) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const file = new File(
+        [outcome === 'valid' ? mp4Header : 'plain text'],
+        'clip.mp4',
+        { type: 'video/mp4' }
+      )
+      const header = file.slice(0, 12)
+      const bytes = await header.arrayBuffer()
+      let finishValidation: (bytes: ArrayBuffer) => void = () => {}
+      const validation = new Promise<ArrayBuffer>((resolve) => {
+        finishValidation = resolve
+      })
+      vi.spyOn(file, 'slice').mockReturnValue(header)
+      vi.spyOn(header, 'arrayBuffer').mockReturnValue(validation)
+      const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+      await userEvent.upload(input, file)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Describe the clip')
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+      await userEvent.keyboard('{Enter}')
+      expect(fetchRequests(/\/messages$/)).toHaveLength(0)
+
+      await clearTrayAsset('clip.mp4')
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await userEvent.upload(
+        input,
+        new File([mp4Header], 'clip.mp4', { type: 'video/mp4' })
+      )
+      await vi.waitFor(() => expect(uploaded).toEqual(['clip.mp4']))
+      finishValidation(bytes)
+      await setImmediate()
+
+      expect(uploaded).toEqual(['clip.mp4'])
+      expect(
+        useToast().toasts.filter(({ kind }) => kind === 'warning')
+      ).toEqual([])
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     }
   )
 
