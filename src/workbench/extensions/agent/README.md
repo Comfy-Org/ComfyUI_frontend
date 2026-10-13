@@ -83,3 +83,9 @@ Incoming `doc_update` frames are decoded and applied incrementally with
 `Y.applyUpdate`; the follower never requests or fans out a full document for
 each update. Human edits are minted into the shared op vocabulary and sent as
 `doc_ops` frames on the same socket (`crdt/docOpMinter.ts`).
+
+While the follower holds the bound document, a turn sends no draft: the
+document is the source of truth and an unversioned draft would overwrite it.
+Once the follower gives up on that document (refused for good, every subscribe
+unanswered, or unreadable), turns seed the draft again; a reconnect retries the
+document and withholds it until that attempt settles.
