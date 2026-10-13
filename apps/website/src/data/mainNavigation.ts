@@ -39,7 +39,7 @@ export type NavFeatured = {
   }
 }
 
-export type NavExploreLink = {
+type NavExploreLink = {
   label: string
   intro: string
   href: string
