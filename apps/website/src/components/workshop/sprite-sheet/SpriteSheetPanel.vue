@@ -6,7 +6,7 @@ import type { Locale } from '@/i18n/translations'
 import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import SpriteSheetPickers from './SpriteSheetPickers.vue'
-import SpriteSheetSeedField from './SpriteSheetSeedField.vue'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 
 const {
   sprite,
@@ -68,7 +68,7 @@ const seed = computed({
 
     <SpriteSheetPickers :sprite :inline :locale />
 
-    <SpriteSheetSeedField
+    <EditorSeedField
       v-model="seed"
       :label="spc('sprite.seed', locale)"
       :shuffle-label="spc('sprite.seed.shuffle', locale)"
