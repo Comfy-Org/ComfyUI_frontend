@@ -33,8 +33,8 @@ The panel speaks one contract on the cloud and on the local agent:
 
 The dock is visible only when the `agent-in-app-experience` feature flag is
 enabled, the panel has an open intent, and the current user and workspace have
-accepted Agent consent. Development mode enables the feature flag; consent is
-still required. A restored open intent cannot bypass consent.
+accepted Agent consent. Development mode and the standalone agent build
+(`VITE_AGENT_STANDALONE`) enable the feature flag; consent is still required. A restored open intent cannot bypass consent.
 
 On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under

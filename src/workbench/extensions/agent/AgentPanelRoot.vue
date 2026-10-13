@@ -36,6 +36,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
@@ -133,6 +134,7 @@ import {
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { refreshNodeCatalogOnRestart } from './services/agent/nodeCatalogRefresh'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
@@ -227,6 +229,28 @@ const agentIdentity = resolveAgentIdentity({
     })
 })
 onBeforeUnmount(() => agentIdentity.stop())
+
+const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
+  refreshNodeDefinitions: () =>
+    useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
+      errorHandler: (error) => {
+        throw error
+      }
+    }),
+  reloadCurrentWorkflow: async () => {
+    const workflow = workflowStore.activeWorkflow
+    return workflow === null
+      ? true
+      : useWorkflowService().openWorkflow(workflow, { force: true })
+  },
+  onFailure: (error) =>
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_refreshing_agent_node_catalog',
+      level: 'warning'
+    })
+})
+onBeforeUnmount(stopNodeCatalogRefresh)
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
@@ -729,9 +753,18 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
+  if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function followerOwnsDocument(documentId: string | undefined): boolean {
+  return (
+    documentId !== undefined &&
+    boundWorkflowId.value === documentId &&
+    crdtStatus.value.terminal === null
+  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {

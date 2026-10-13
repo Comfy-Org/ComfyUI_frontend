@@ -555,12 +555,14 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
+  const forcedOn =
+    import.meta.env.MODE === 'development' ||
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
 
   watch(
     () =>
       [
-        import.meta.env.MODE === 'development' ||
-          flags.agentInAppExperienceEnabled,
+        forcedOn || flags.agentInAppExperienceEnabled,
         remoteConfigRevision.value
       ] as const,
     ([enabled]) => {
@@ -589,7 +591,7 @@ function setupFlagGate(
   watch(
     () =>
       [
-        import.meta.env.MODE === 'development' ||
+        forcedOn ||
           authenticatedRemoteConfigState.value === 'authenticated' ||
           authenticatedRemoteConfigState.value === 'error',
         isSignedOut()
