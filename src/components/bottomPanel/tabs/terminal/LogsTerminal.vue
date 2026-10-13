@@ -44,13 +44,3 @@ const terminalCreated = (
   terminal.value = instance
 }
 </script>
-
-<style scoped>
-:deep(.terminal-container) .xterm {
-  overflow-x: auto;
-}
-
-:deep(.terminal-container) .xterm-screen {
-  overflow-y: hidden;
-}
-</style>

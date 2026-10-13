@@ -67,7 +67,7 @@
   </div>
   <div
     v-else
-    class="legacy-dialog relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
+    class="relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
   >
     <!-- Custom close button -->
     <Button
@@ -241,9 +241,3 @@ const handleViewEnterprise = () => {
   window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

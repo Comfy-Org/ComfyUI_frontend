@@ -750,9 +750,3 @@ const tierBenefits = computed((): TierBenefit[] => {
   return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
-
-<style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

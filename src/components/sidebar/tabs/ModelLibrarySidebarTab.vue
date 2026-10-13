@@ -333,10 +333,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

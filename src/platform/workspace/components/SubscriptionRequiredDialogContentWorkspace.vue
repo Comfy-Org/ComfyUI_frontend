@@ -195,9 +195,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>
