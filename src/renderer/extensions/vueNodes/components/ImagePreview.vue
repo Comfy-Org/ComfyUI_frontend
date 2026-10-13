@@ -42,6 +42,7 @@
           v-else
           class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
         >
+          <i class="icon-[lucide--sun] size-6" />
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
         </div>
       </Button>
@@ -99,6 +100,7 @@
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
         @click="openHdrViewer(currentImageUrl)"
       >
+        <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
         <span
           class="rounded-md bg-base-foreground px-3 py-1.5 text-sm text-base-background"

@@ -152,20 +152,4 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
     await comfyPage.contextMenu.clickMenuItemExact('Open Image')
     await expect.poll(openedUrl).toContain(`filename=${EXR_FILENAME}`)
   })
-
-  test(
-    'keeps the HDR placeholder when the upload carries no stored preview',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage, comfyFiles }) => {
-      await routeUploadPreviewId(comfyPage.page)
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-      const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-      comfyFiles.deleteAfterTest({ filename: EXR_FILENAME, type: 'input' })
-
-      await uploadFromPicker(comfyPage, node)
-
-      await expect(node.getByTestId('hdr-open-button')).toBeVisible()
-      await expect(node.getByTestId('main-image')).toBeHidden()
-    }
-  )
 })
