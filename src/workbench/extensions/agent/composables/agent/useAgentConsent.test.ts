@@ -129,7 +129,6 @@ describe('useAgentConsent', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getUserAuthHeader).mockReset()
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })

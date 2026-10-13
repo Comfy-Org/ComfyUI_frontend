@@ -538,7 +538,7 @@ export function createAgentRestClient() {
       route,
       await withAgentAuth({
         ...init,
-        onAuthScheme: (scheme: AuthScheme) => {
+        onAuthScheme: (scheme) => {
           authScheme = scheme
         },
         onAuthCredential: (kind) => {

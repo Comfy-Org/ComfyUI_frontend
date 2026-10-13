@@ -110,7 +110,8 @@ describe('dev agent proxy transport', () => {
   it('leaves the proxy disabled when no target or token is set', () => {
     expect(createDevAgentConfig({})).toEqual({
       host: undefined,
-      proxy: undefined
+      proxy: undefined,
+      proxySuppliesCredential: false
     })
   })
 })
@@ -145,6 +146,36 @@ describe('dev agent comfy credential', () => {
       Authorization: 'Bearer a-firebase-jwt'
     })
   })
+
+  it.for([
+    {
+      label: 'a proxy with a comfy credential',
+      env: {
+        DEV_AGENT_URL: 'http://127.0.0.1:8095',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key'
+      },
+      supplies: true
+    },
+    {
+      label: 'a proxy without one',
+      env: {
+        DEV_AGENT_URL: 'http://127.0.0.1:8095',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+      },
+      supplies: false
+    },
+    {
+      label: 'a comfy credential without a proxy',
+      env: { DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key' },
+      supplies: false
+    }
+  ])(
+    'reports whether the proxy supplies a credential for $label',
+    ({ env, supplies }) => {
+      expect(createDevAgentConfig(env).proxySuppliesCredential).toBe(supplies)
+    }
+  )
 
   it('allows remote development without a comfy credential', () => {
     expect(createDevAgentConfig({ VITE_REMOTE_DEV: 'true' }).host).toBe(

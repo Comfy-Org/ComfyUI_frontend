@@ -89,12 +89,14 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
       ? { kind: 'discovery', dataDir }
       : undefined
 
+  const proxy =
+    url && tokenSource
+      ? createAgentProxy(url, tokenSource, comfyToken)
+      : undefined
   return {
     host: !comfyToken && env.VITE_REMOTE_DEV === 'true' ? '0.0.0.0' : undefined,
-    proxy:
-      url && tokenSource
-        ? createAgentProxy(url, tokenSource, comfyToken)
-        : undefined
+    proxy,
+    proxySuppliesCredential: proxy !== undefined && Boolean(comfyToken)
   }
 }
 
