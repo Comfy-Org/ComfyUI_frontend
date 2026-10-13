@@ -1,0 +1,50 @@
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
+
+import EditorEmpty from './EditorEmpty.vue'
+
+const props = {
+  title: 'Start with an example',
+  examples: [
+    { id: 'pier', image: '/pier.jpg', label: 'Pier' },
+    { id: 'cafe', image: '/cafe.jpg', label: 'Cafe', result: 'Night' }
+  ]
+}
+
+describe('EditorEmpty', () => {
+  it('offers the examples and hands back the one picked', async () => {
+    const { emitted } = render(EditorEmpty, { props })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cafe → Night' }))
+
+    expect(emitted('example')).toEqual([['cafe']])
+    expect(screen.queryByRole('button', { name: /upload/i })).toBeNull()
+  })
+
+  it('holds every example while one is loading', () => {
+    render(EditorEmpty, { props: { ...props, loading: 'pier' } })
+
+    expect(screen.getByRole('button', { name: 'Pier' })).toHaveAttribute(
+      'aria-busy',
+      'true'
+    )
+    expect(screen.getByRole('button', { name: 'Cafe → Night' })).toBeDisabled()
+  })
+
+  it('shows a portrait example whole when it asks to fit', () => {
+    render(EditorEmpty, {
+      props: {
+        ...props,
+        examples: [
+          { id: 'hero', image: '/hero.png', label: 'Hero', fit: 'contain' }
+        ]
+      }
+    })
+
+    const tile = screen.getByRole('button', { name: 'Hero' })
+    expect(within(tile).getByRole('img', { hidden: true })).toHaveClass(
+      'object-contain'
+    )
+  })
+})

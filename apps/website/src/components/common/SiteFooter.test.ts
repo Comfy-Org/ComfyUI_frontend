@@ -10,6 +10,18 @@ const agentAlternates: LocaleAlternate[] = [
   { locale: 'zh-CN', path: '/zh-CN/agent/' }
 ]
 
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
+const socialHrefs: readonly (string | null)[] = socialChannels.map(
+  ([, href]) => href
+)
+
 describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
@@ -120,6 +132,44 @@ describe('SiteFooter', () => {
       ['Comfy CLI', routes.cli],
       ['Supported Models', routes.models]
     ])
+  })
+
+  it.for([
+    ['en', 'Follow Comfy', 'opens in new tab'],
+    ['zh-CN', '关注 Comfy', '在新标签页中打开']
+  ] as const)(
+    'shows the social channels as icon links opening in a new tab (%s)',
+    ([locale, name, newTab]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const links = within(
+        screen.getByRole('navigation', { name })
+      ).getAllByRole('link')
+      expect(
+        links.map((link) => [
+          link.textContent.replace(/\s+/g, ' ').trim(),
+          link.getAttribute('href'),
+          link.getAttribute('target'),
+          link.getAttribute('rel')
+        ])
+      ).toEqual(
+        socialChannels.map(([label, href]) => [
+          `${label} (${newTab})`,
+          href,
+          '_blank',
+          'noopener'
+        ])
+      )
+    }
+  )
+
+  it('lists no social channel as a text link in Resources', () => {
+    render(SiteFooter)
+
+    const hrefs = within(screen.getByRole('navigation', { name: 'Resources' }))
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+    expect(hrefs.filter((href) => socialHrefs.includes(href))).toEqual([])
   })
 
   it('keeps Docs in Resources, opening in a new tab', () => {
