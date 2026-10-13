@@ -53,11 +53,11 @@ const emit = defineEmits<{ toggle: [] }>()
     </span>
     <span
       v-if="!labelAbove"
-      class="w-14 shrink-0 text-xs text-primary-warm-gray"
+      class="w-16 shrink-0 text-xs text-primary-warm-gray"
       >{{ label }}</span
     >
     <span
-      class="min-w-0 flex-1 truncate text-[13px] font-semibold text-primary-warm-white"
+      class="min-w-0 flex-1 truncate text-sm font-semibold text-primary-warm-white"
       >{{ value }}</span
     >
     <ChevronRight
