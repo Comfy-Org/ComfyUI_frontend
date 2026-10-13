@@ -1,4 +1,6 @@
 import type { Locale, LocalizedText } from '@/i18n/translations'
+import type { CopyValues } from '@/lib/workshop/app-copy'
+import { appCopy } from '@/lib/workshop/app-copy'
 
 const copy = {
   'tryOn.title': { en: 'Virtual try-on', 'zh-CN': '虚拟试穿' },
@@ -95,17 +97,10 @@ const copy = {
 
 export type TryOnCopyKey = keyof typeof copy
 
-type NamedValues = Record<string, string | number>
-
 export function vc(
   key: TryOnCopyKey,
   locale: Locale = 'en',
-  named: NamedValues = {}
+  named: CopyValues = {}
 ): string {
-  const entry: LocalizedText = copy[key]
-  return (entry[locale] ?? entry.en).replace(
-    /\{(\w+)\}/g,
-    (placeholder, name: string) =>
-      Object.hasOwn(named, name) ? String(named[name]) : placeholder
-  )
+  return appCopy(copy[key], locale, named)
 }

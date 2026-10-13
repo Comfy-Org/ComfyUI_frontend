@@ -1,3 +1,4 @@
+import { loadImage } from '@/lib/workshop/load-image'
 import { dressPixels } from './composite'
 import { outlinePath } from './garments'
 import type { Area } from './garments'
@@ -8,16 +9,6 @@ const MAX_EDGE = 1600
 const TILE_WIDTH = 0.16
 const MASK_BLUR = 0.0055
 const EDGE_BLUR = 0.02
-
-function loadImage(url: string): Promise<HTMLImageElement | undefined> {
-  return new Promise((resolve) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.onload = () => resolve(image)
-    image.onerror = () => resolve(undefined)
-    image.src = url
-  })
-}
 
 function canvasOf(width: number, height: number) {
   const canvas = document.createElement('canvas')

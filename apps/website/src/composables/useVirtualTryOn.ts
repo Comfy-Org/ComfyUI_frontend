@@ -15,6 +15,7 @@ import {
   UPLOAD_FABRIC
 } from '@/lib/workshop/virtual-try-on/garments'
 import { TRY_ON_PERSON, runTryOn } from '@/lib/workshop/virtual-try-on/mock-run'
+import { useSnapshotHistory } from './useSnapshotHistory'
 
 export interface TryOnImage {
   readonly url: string
@@ -47,14 +48,15 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     name: vc(`tryOn.garment.${garment.id}`, locale)
   }))
   const person = shallowRef<TryOnImage>(TRY_ON_PERSON)
-  const setup = shallowRef<TryOnSetup>({ ...START, garment: examples[0] })
-  const past = shallowRef<TryOnSetup[]>([])
-  const future = shallowRef<TryOnSetup[]>([])
+  const history = useSnapshotHistory<TryOnSetup>({
+    ...START,
+    garment: examples[0]
+  })
+  const setup = history.state
   const phase = shallowRef<TryOnPhase>({ kind: 'editing' })
   const tray = ref<TryOnTray>()
   const comparing = ref(false)
   const uploads: string[] = []
-  let lastEdit: string | undefined
   let pendingPerson: string | undefined
   let run: AbortController | undefined
 
@@ -83,12 +85,7 @@ export function useVirtualTryOn(locale: Locale = 'en') {
    * in a row (one seed typed digit by digit) undo as one step.
    */
   function change(next: Partial<TryOnSetup>, key?: string) {
-    if (!key || key !== lastEdit) {
-      past.value = [...past.value, setup.value]
-      future.value = []
-    }
-    lastEdit = key
-    setup.value = { ...setup.value, ...next }
+    history.change({ ...setup.value, ...next }, key)
   }
 
   function keepUpload(url: string) {
@@ -134,24 +131,6 @@ export function useVirtualTryOn(locale: Locale = 'en') {
 
   function setSeed(seed: number) {
     change({ seed }, 'seed')
-  }
-
-  function undo() {
-    const previous = past.value.at(-1)
-    if (!previous) return
-    future.value = [setup.value, ...future.value]
-    past.value = past.value.slice(0, -1)
-    setup.value = previous
-    lastEdit = undefined
-  }
-
-  function redo() {
-    const next = future.value.at(0)
-    if (!next) return
-    past.value = [...past.value, setup.value]
-    future.value = future.value.slice(1)
-    setup.value = next
-    lastEdit = undefined
   }
 
   async function tryOn() {
@@ -207,16 +186,16 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     comparing,
     missing,
     canRun,
-    canUndo: computed(() => past.value.length > 0),
-    canRedo: computed(() => future.value.length > 0),
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
     usePersonFile,
     useGarmentFile,
     pickGarment,
     removeGarment,
     setFit,
     setSeed,
-    undo,
-    redo,
+    undo: history.undo,
+    redo: history.redo,
     tryOn,
     cancel,
     edit,
