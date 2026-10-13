@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -29,32 +29,6 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-
-vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
-
-  () => ({
-    useWorkflowThumbnail: () => ({
-      getThumbnail: vi.fn(() => null)
-    })
-  })
-)
-
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), async () => {
-  const { defineComponent, h, ref } = await import('vue')
-  return {
-    default: defineComponent((_, { expose }) => {
-      const shown = ref(false)
-      expose({
-        showPopover: () => (shown.value = true),
-        hidePopover: () => (shown.value = false),
-        togglePopover: () => {}
-      })
-      return () =>
-        shown.value ? h('div', { 'data-testid': 'workflow-tab-preview' }) : null
-    })
-  }
-})
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -88,10 +62,12 @@ const i18n = createI18n({
       },
       agent: {
         targetForThisChat: 'Agent target for this chat',
-        workflowChatsMenuLabel: 'Chats on {workflowName}',
         workflowChatsCount:
           '{count} chat on {workflowName} | {count} chats on {workflowName}',
         newChatOnWorkflow: 'New chat on this workflow'
+      },
+      sideToolbar: {
+        workflowTab: { workflowPreview: 'Preview of {workflowName}' }
       }
     }
   }
@@ -303,20 +279,22 @@ describe('WorkflowTab - agent activity indicators', () => {
   })
 })
 
-describe('WorkflowTab - agent chats', () => {
-  it('offers the tab’s chats and a new chat without switching tabs', async () => {
-    const open = vi.fn()
-    const workflowOption = makeWorkflowOption()
+describe('WorkflowTab - workflow card', () => {
+  const OPEN_DELAY_MS = 200
+  const CLOSE_DELAY_MS = 150
+
+  function setupHover() {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  }
+
+  function withChats(workflowOption: WorkflowOption, open = vi.fn()) {
     useWorkflowTabActivityStore().setAgentChats(
       new Map([
         [
           workflowOption.workflow.path,
           [
-            {
-              id: 'th-recent',
-              title: 'Landscape chat',
-              updatedAt: Date.now()
-            },
+            { id: 'th-recent', title: 'Landscape chat', updatedAt: Date.now() },
             {
               id: 'th-older',
               title: 'Older landscape chat',
@@ -327,13 +305,79 @@ describe('WorkflowTab - agent chats', () => {
       ]),
       open
     )
-    renderTab({ workflowOption })
+    return open
+  }
 
-    await userEvent.click(
-      screen.getByRole('button', { name: '2 chats on test.json' })
+  it('opens on a hover anywhere on the tab and stays while the pointer is in it, without switching tabs', async () => {
+    const user = setupHover()
+    renderTab()
+
+    await user.hover(screen.getByTestId('close-workflow-button'))
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS)
+    const card = screen.getByRole('menu')
+    expect(within(card).getByText('test.json')).toBeVisible()
+
+    await user.hover(card)
+    await vi.advanceTimersByTimeAsync(CLOSE_DELAY_MS * 2)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await user.unhover(card)
+    await vi.advanceTimersByTimeAsync(CLOSE_DELAY_MS)
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(useWorkflowStore().activeWorkflow?.path).toBe(
+      '/workflows/other.json'
     )
+  })
+
+  it('closes, and stays closed, once the tab is clicked', async () => {
+    const user = setupHover()
+    renderTab()
+    const tab = screen.getByRole('tab', { name: /test\.json/ })
+    await user.hover(tab)
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await user.click(tab)
+    expect(screen.queryByRole('menu')).toBeNull()
+
+    await user.unhover(tab)
+    await user.hover(tab)
+    await user.click(tab)
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS * 2)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('opens from the chat indicator with the keyboard, focusing its chats, and returns focus on Escape', async () => {
+    const workflowOption = makeWorkflowOption()
+    withChats(workflowOption)
+    renderTab({ workflowOption })
+    const indicator = screen.getByRole('button', {
+      name: '2 chats on test.json'
+    })
+    indicator.focus()
+
+    await userEvent.keyboard('{Enter}')
     expect(
-      (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
+      screen.getByRole('menuitem', { name: /^Landscape chat/ })
+    ).toHaveFocus()
+
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(indicator).toHaveFocus())
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('offers the tab’s chats and a new chat without switching tabs', async () => {
+    const workflowOption = makeWorkflowOption()
+    const open = withChats(workflowOption)
+    renderTab({ workflowOption })
+    const indicator = screen.getByRole('button', {
+      name: '2 chats on test.json'
+    })
+
+    indicator.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent)
     ).toEqual([
       'Landscape chatnow',
       'Older landscape chat3d ago',
@@ -342,11 +386,10 @@ describe('WorkflowTab - agent chats', () => {
     await userEvent.click(
       screen.getByRole('menuitem', { name: /^Older landscape chat/ })
     )
+    indicator.focus()
+    await userEvent.keyboard('{Enter}')
     await userEvent.click(
-      screen.getByRole('button', { name: '2 chats on test.json' })
-    )
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'New chat on this workflow' })
+      screen.getByRole('menuitem', { name: 'New chat on this workflow' })
     )
 
     expect(open.mock.calls).toEqual([
@@ -358,67 +401,21 @@ describe('WorkflowTab - agent chats', () => {
     )
   })
 
-  it('opens the chats menu on hover in place of the tab preview card', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: false })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  it('dates each chat from when its card opens', async () => {
     const workflowOption = makeWorkflowOption()
-    useWorkflowTabActivityStore().setAgentChats(
-      new Map([
-        [
-          workflowOption.workflow.path,
-          [{ id: 'th-1', title: 'Landscape chat', updatedAt: Date.now() }]
-        ]
-      ]),
-      vi.fn()
-    )
-    renderTab({ workflowOption })
-    const chatsButton = screen.getByRole('button', {
-      name: '1 chat on test.json'
-    })
-
-    await user.hover(chatsButton)
-    expect(screen.queryByTestId('workflow-tab-preview')).toBeNull()
-    await vi.advanceTimersByTimeAsync(200)
-    expect(
-      screen.getByRole('menuitem', { name: /^Landscape chat/ })
-    ).toBeVisible()
-
-    await user.hover(screen.getByText('test.json'))
-    await vi.advanceTimersByTimeAsync(150)
-    expect(screen.queryByRole('menu')).toBeNull()
-    expect(screen.getByTestId('workflow-tab-preview')).toBeInTheDocument()
-
-    await user.hover(chatsButton)
-    expect(screen.queryByTestId('workflow-tab-preview')).toBeNull()
-    expect(useWorkflowStore().activeWorkflow?.path).toBe(
-      '/workflows/other.json'
-    )
-  })
-
-  it('dates each chat from when its menu opens', async () => {
-    const workflowOption = makeWorkflowOption()
-    useWorkflowTabActivityStore().setAgentChats(
-      new Map([
-        [
-          workflowOption.workflow.path,
-          [{ id: 'th-1', title: 'Landscape chat', updatedAt: Date.now() }]
-        ]
-      ]),
-      vi.fn()
-    )
+    withChats(workflowOption)
     renderTab({ workflowOption })
     vi.setSystemTime(Date.now() + 2 * 3_600_000)
 
-    await userEvent.click(
-      screen.getByRole('button', { name: '1 chat on test.json' })
-    )
+    screen.getByRole('button', { name: '2 chats on test.json' }).focus()
+    await userEvent.keyboard('{Enter}')
 
     expect(
-      await screen.findByRole('menuitem', { name: /^Landscape chat/ })
+      screen.getByRole('menuitem', { name: /^Landscape chat/ })
     ).toHaveTextContent('2h ago')
   })
 
-  it('shows only a chat icon, keeping the chat count in its name', async () => {
+  it('shows only a chat icon, keeping the chat count in its name', () => {
     const workflowOption = makeWorkflowOption()
     useWorkflowTabActivityStore().setAgentChats(
       new Map([
@@ -440,21 +437,13 @@ describe('WorkflowTab - agent chats', () => {
     ).not.toHaveTextContent(/\S/)
   })
 
-  it('shows no chats button once the agent lists no chats for the tab', async () => {
+  it('shows no chat indicator once the agent lists no chats for the tab', async () => {
     const workflowOption = makeWorkflowOption()
     const activity = useWorkflowTabActivityStore()
-    activity.setAgentChats(
-      new Map([
-        [
-          workflowOption.workflow.path,
-          [{ id: 'th-1', title: 'Chat', updatedAt: Date.now() }]
-        ]
-      ]),
-      vi.fn()
-    )
+    withChats(workflowOption)
     renderTab({ workflowOption })
     expect(
-      screen.getByRole('button', { name: '1 chat on test.json' })
+      screen.getByRole('button', { name: '2 chats on test.json' })
     ).toBeInTheDocument()
 
     activity.setAgentChats(new Map(), vi.fn())

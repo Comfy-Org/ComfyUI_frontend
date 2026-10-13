@@ -11,10 +11,6 @@
           )
         "
         v-bind="$attrs"
-        @mouseenter="handleMouseEnter"
-        @mouseover="handleMouseOver"
-        @mouseleave="handleMouseLeave"
-        @click="handleClick"
       >
         <TabsTrigger
           :value="workflowOption.workflow.path"
@@ -85,14 +81,11 @@
             />
           </span>
         </TabsTrigger>
-        <span ref="agentChatsRef" class="contents">
-          <WorkflowHoverCard
-            :workflow-path="workflowOption.workflow.path"
-            :workflow-name="workflowOption.workflow.filename"
-            class="absolute top-1/2 right-8 size-4 -translate-y-1/2 rounded-none text-smoke-800"
-            @open="hideTabPopover"
-          />
-        </span>
+        <WorkflowHoverCard
+          :workflow="workflowOption.workflow"
+          :anchor="workflowTabRef"
+          class="absolute top-1/2 right-8 size-2.5 -translate-y-1/2 rounded-none"
+        />
         <Button
           :class="
             cn(
@@ -120,12 +113,6 @@
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
-  <WorkflowTabPopover
-    ref="popoverRef"
-    :workflow-filename="workflowOption.workflow.filename"
-    :thumbnail-url="thumbnailUrl"
-    :is-active-tab="isActiveTab"
-  />
 </template>
 
 <script setup lang="ts">
@@ -135,7 +122,7 @@ import {
   ContextMenuRoot,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -151,7 +138,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 import {
@@ -163,7 +149,6 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTabPopover from './WorkflowTabPopover.vue'
 import WorkflowHoverCard from './WorkflowHoverCard.vue'
 import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 
@@ -199,9 +184,6 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const agentChatsRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
-const workflowThumbnail = useWorkflowThumbnail()
 
 // Use computed refs to cache autosave settings
 const autoSaveSetting = computed(() =>
@@ -259,7 +241,7 @@ const tabActivity = useWorkflowTabActivityStore()
 
 const agentChatsSpacerClass = computed(() =>
   tabActivity.agentChatsByPath.has(workflowOption.workflow.path)
-    ? 'w-4 shrink-0'
+    ? 'w-2.5 shrink-0'
     : 'hidden'
 )
 
@@ -299,42 +281,6 @@ const hasStatusIndicator = computed(
 const revealsCloseOnHover = computed(
   () => isActiveTab.value || !compact || !hasStatusIndicator.value
 )
-
-const thumbnailUrl = computed(() => {
-  return workflowThumbnail.getThumbnail(workflowOption.workflow.key)
-})
-
-// Event handlers that delegate to the popover component
-let pointerOnAgentChats = false
-
-const handleMouseEnter = (event: Event) => {
-  if (!pointerOnAgentChats) popoverRef.value?.showPopover(event)
-}
-
-// The agent chats menu opens on hover too, so the preview card stays hidden
-// while the pointer is on its icon.
-const handleMouseOver = (event: MouseEvent) => {
-  const onAgentChats =
-    event.target instanceof Node &&
-    !!agentChatsRef.value?.contains(event.target)
-  if (onAgentChats === pointerOnAgentChats) return
-  pointerOnAgentChats = onAgentChats
-  if (onAgentChats) hideTabPopover()
-  else popoverRef.value?.showPopover(event)
-}
-
-const handleMouseLeave = () => {
-  pointerOnAgentChats = false
-  popoverRef.value?.hidePopover()
-}
-
-const handleClick = (event: Event) => {
-  popoverRef.value?.togglePopover(event)
-}
-
-function hideTabPopover(): void {
-  popoverRef.value?.hidePopover()
-}
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
@@ -439,9 +385,5 @@ usePragmaticDroppable(tabGetter, {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
     }
   }
-})
-
-onUnmounted(() => {
-  popoverRef.value?.hidePopover()
 })
 </script>

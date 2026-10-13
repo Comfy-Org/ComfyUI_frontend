@@ -26,14 +26,18 @@ export const useWorkflowTabActivityStore = defineStore(
     const agentChatsByPath = shallowRef<
       ReadonlyMap<string, readonly AgentTabChat[]>
     >(new Map())
+    /** Whether saved workflows offer agent chats at all. */
+    const agentChatsEnabled = ref(false)
     let agentChatOpener: AgentTabChatOpener | null = null
 
+    /** `opener` is null while the agent can't be used. */
     function setAgentChats(
       chats: ReadonlyMap<string, readonly AgentTabChat[]>,
-      opener: AgentTabChatOpener
+      opener: AgentTabChatOpener | null
     ): void {
       agentChatsByPath.value = chats
       agentChatOpener = opener
+      agentChatsEnabled.value = opener !== null
     }
 
     function openAgentChat(workflowPath: string, chatId: string | null): void {
@@ -75,6 +79,7 @@ export const useWorkflowTabActivityStore = defineStore(
       creatingTab,
       unseenModifiedPaths,
       agentChatsByPath,
+      agentChatsEnabled,
       setAgentChats,
       openAgentChat,
       setEditing,

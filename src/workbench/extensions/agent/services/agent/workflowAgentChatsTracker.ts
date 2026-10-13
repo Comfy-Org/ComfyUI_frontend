@@ -126,8 +126,12 @@ export function registerWorkflowAgentChatsTracker(
     })
 
     watch(
-      chatsByPath,
-      (chats) => tabActivity.setAgentChats(chats, workflowChats.openChat),
+      [chatsByPath, available],
+      ([chats, isAvailable]) =>
+        tabActivity.setAgentChats(
+          chats,
+          isAvailable ? workflowChats.openChat : null
+        ),
       { immediate: true }
     )
   })

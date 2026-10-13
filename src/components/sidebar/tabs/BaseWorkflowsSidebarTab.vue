@@ -75,8 +75,7 @@
                 <template #trailing="{ node: treeNode }">
                   <WorkflowHoverCard
                     v-if="treeNode.data"
-                    :workflow-path="treeNode.data.path"
-                    :workflow-name="treeNode.data.filename"
+                    :workflow="treeNode.data"
                     class="mr-1"
                   />
                 </template>

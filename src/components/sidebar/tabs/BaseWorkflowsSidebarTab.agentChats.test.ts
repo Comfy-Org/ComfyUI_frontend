@@ -96,15 +96,20 @@ describe('BaseWorkflowsSidebarTab agent chats', () => {
     ).toBeNull()
   })
 
-  it('opens the chats menu from a row without opening the workflow', async () => {
+  it('opens the workflow card on hover over a row’s chat indicator without opening the workflow', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const { archive, openChat } = setup()
     const [bookmarkRow] = screen.getAllByRole('treeitem', { name: 'archive' })
 
-    await userEvent.click(
+    await user.hover(
       within(bookmarkRow).getByRole('button', { name: '1 chat on archive' })
     )
-    await userEvent.click(
-      await screen.findByRole('menuitem', { name: /^Old upscale/ })
+    await vi.advanceTimersByTimeAsync(200)
+    const card = screen.getByRole('menu')
+    expect(within(card).getByText('archive')).toBeVisible()
+    await user.click(
+      within(card).getByRole('menuitem', { name: /^Old upscale/ })
     )
 
     expect(openChat).toHaveBeenCalledExactlyOnceWith(archive.path, 'th-archive')

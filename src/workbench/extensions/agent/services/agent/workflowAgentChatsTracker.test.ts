@@ -200,13 +200,16 @@ describe('registerWorkflowAgentChatsTracker', () => {
     ])
   })
 
-  it('clears every count once the agent is no longer available', async () => {
+  it('offers workflow chats only while the agent is available', async () => {
     const { available } = await trackLoaded()
+    const tabActivity = useWorkflowTabActivityStore()
+    expect(tabActivity.agentChatsEnabled).toBe(true)
 
     available.value = false
     await nextTick()
 
-    expect(useWorkflowTabActivityStore().agentChatsByPath.size).toBe(0)
+    expect(tabActivity.agentChatsEnabled).toBe(false)
+    expect(tabActivity.agentChatsByPath.size).toBe(0)
   })
 
   it('reads chats once more after a burst of tab switches instead of once per switch', async () => {

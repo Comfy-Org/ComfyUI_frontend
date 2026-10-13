@@ -16,7 +16,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     const tab = await getTab(comfyPage, index)
     await tab.hover()
 
-    const popover = comfyPage.page.locator('.workflow-popover-fade')
+    const popover = comfyPage.menu.topbar.workflowPopover
     await expect(popover).toHaveCount(1)
     await expect(popover).toBeVisible()
     if (name) {
@@ -31,8 +31,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     name?: string
   ) {
     const popover = await getTabPopover(comfyPage, index, name)
-    const thumbnailImg = popover.locator('.workflow-preview-thumbnail img')
-    return thumbnailImg
+    return popover.getByRole('img')
   }
 
   async function getNodeThumbnailBase64(comfyPage: ComfyPage, index: number) {
@@ -63,7 +62,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     )
     await expect(thumbnailImg).toBeVisible()
     const tab = await getTab(comfyPage, 0)
-    const popover = comfyPage.page.getByRole('dialog')
+    const popover = comfyPage.menu.topbar.workflowPopover
     await expect(async () => {
       const tabBox = await tab.boundingBox()
       const popoverBox = await popover.boundingBox()
@@ -76,7 +75,9 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     }).toPass({ timeout: 5000 })
   })
 
-  test('Should not show thumbnail for active tab', async ({ comfyPage }) => {
+  test('Should not show thumbnail for an empty active tab', async ({
+    comfyPage
+  }) => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     const thumbnailImg = await getTabThumbnailImage(
       comfyPage,
@@ -105,9 +106,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       canvasArea!.x + canvasArea!.width / 2,
       canvasArea!.y + canvasArea!.height / 2
     )
-    await expect(comfyPage.page.locator('.workflow-popover-fade')).toHaveCount(
-      0
-    )
+    await expect(comfyPage.menu.topbar.workflowPopover).toHaveCount(0)
 
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()

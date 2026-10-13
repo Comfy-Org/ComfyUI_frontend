@@ -29,7 +29,7 @@ export class Topbar {
       TestIds.topbar.integratedTabBarActions
     )
     this.workflowPopover = page
-      .locator('.workflow-popover-fade')
+      .getByTestId(TestIds.topbar.workflowHoverCard)
       .filter({ visible: true })
     this.workflowOverflowButton = this.workflowTabs.getByRole('button', {
       name: 'More workflows',

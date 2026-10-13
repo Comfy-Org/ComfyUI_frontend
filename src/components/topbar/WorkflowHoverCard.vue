@@ -1,51 +1,88 @@
 <script lang="ts">
-// Hover can open one menu while another one, opened from the keyboard, is
-// still open, so opening a menu closes whichever one is open.
-let closeOpenMenu: (() => void) | undefined
+// Hover can open one card while another one, opened from the keyboard, is
+// still open, so opening a card closes whichever one is open.
+let closeOpenCard: (() => void) | undefined
 </script>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useTimeoutFn } from '@vueuse/core'
+import { unrefElement, useEventListener, useTimeoutFn } from '@vueuse/core'
+import {
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, onScopeDispose, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 const HOVER_OPEN_DELAY_MS = 200
 const HOVER_CLOSE_DELAY_MS = 150
+const CHAT_ITEM_CLASS =
+  'cursor-pointer focus-visible:bg-secondary-background-hover'
 
 const {
-  workflowPath,
-  workflowName,
+  workflow,
+  anchor = null,
   class: className
 } = defineProps<{
-  workflowPath: string
-  workflowName: string
+  workflow: ComfyWorkflow
+  /**
+   * Opens the card on hover and places it; a click on it closes the card.
+   * The chat indicator then only takes keyboard focus. Defaults to the
+   * indicator.
+   */
+  anchor?: HTMLElement | null
   class?: HTMLAttributes['class']
 }>()
 
-const emit = defineEmits<{ open: [] }>()
-
 const { t } = useI18n()
 const tabActivity = useWorkflowTabActivityStore()
+const workflowStore = useWorkflowStore()
+const canvasStore = useCanvasStore()
+const { getThumbnail, createMinimapPreview } = useWorkflowThumbnail()
+
 const chats = computed(
-  () => tabActivity.agentChatsByPath.get(workflowPath) ?? []
+  () => tabActivity.agentChatsByPath.get(workflow.path) ?? []
+)
+const offersChats = computed(
+  () => tabActivity.agentChatsEnabled && workflow.isPersisted
 )
 const chatsLabel = computed(() =>
-  t('agent.workflowChatsCount', { workflowName }, chats.value.length)
+  t(
+    'agent.workflowChatsCount',
+    { workflowName: workflow.filename },
+    chats.value.length
+  )
 )
+const isActive = computed(() => workflowStore.isActive(workflow))
+const livePreview = ref<string | null>(null)
+const preview = computed(() =>
+  isActive.value ? livePreview.value : getThumbnail(workflow.key)
+)
+
+const indicator = useTemplateRef('indicator')
+const hoverTarget = computed(() => anchor ?? unrefElement(indicator))
+
 const openedAt = ref(new Date())
 const open = ref(false)
-// Hover opens and closes the menu without moving focus.
-let changedByHover = false
-// Clicking the trigger of a hover-opened menu keeps it open instead of toggling.
+// Hover and clicks on the anchor open and close the card without moving focus.
+let changedByPointer = false
+// Clicking the indicator of a hover-opened card keeps it open instead of toggling.
 let keepOpenOnClick = false
+let openedFromKeyboard = false
 
 const hoverOpenTimer = useTimeoutFn(
   () => setOpen(true, true),
@@ -62,39 +99,41 @@ function close(): void {
   setOpen(false)
 }
 
-function setOpen(next: boolean, byHover = false): void {
+function setOpen(next: boolean, byPointer = false): void {
   hoverOpenTimer.stop()
   hoverCloseTimer.stop()
   if (next === open.value) return
-  changedByHover = byHover
+  changedByPointer = byPointer
   open.value = next
   if (!next) {
-    if (closeOpenMenu === close) closeOpenMenu = undefined
+    if (closeOpenCard === close) closeOpenCard = undefined
     return
   }
-  if (closeOpenMenu !== close) closeOpenMenu?.()
-  closeOpenMenu = close
+  if (closeOpenCard !== close) closeOpenCard?.()
+  closeOpenCard = close
   openedAt.value = new Date()
-  emit('open')
+  void renderLivePreview()
+}
+
+async function renderLivePreview(): Promise<void> {
+  livePreview.value = isActive.value
+    ? await createMinimapPreview(canvasStore.currentGraph)
+    : null
 }
 
 function onOpenUpdate(next: boolean): void {
   if (!next && keepOpenOnClick) {
     keepOpenOnClick = false
-    changedByHover = false
+    changedByPointer = false
     return
   }
   setOpen(next)
 }
 
-function onTriggerPointerEnter(event: PointerEvent): void {
+function onHoverStart(event: PointerEvent): void {
   if (event.pointerType === 'touch') return
   hoverCloseTimer.stop()
   if (!open.value) hoverOpenTimer.start()
-}
-
-function onMenuPointerEnter(event: PointerEvent): void {
-  if (event.pointerType !== 'touch') hoverCloseTimer.stop()
 }
 
 function onPointerLeave(event: PointerEvent): void {
@@ -104,16 +143,42 @@ function onPointerLeave(event: PointerEvent): void {
   if (open.value) hoverCloseTimer.start()
 }
 
-function onTriggerPointerDown(): void {
-  keepOpenOnClick = open.value && changedByHover
+function onIndicatorPointerDown(): void {
+  keepOpenOnClick = open.value && changedByPointer
+  openedFromKeyboard = false
 }
 
-function onAutoFocus(event: Event): void {
-  if (changedByHover) event.preventDefault()
+function onIndicatorKeydown(event: KeyboardEvent): void {
+  openedFromKeyboard = ['Enter', ' ', 'ArrowDown'].includes(event.key)
+}
+
+useEventListener(hoverTarget, 'pointerenter', onHoverStart)
+useEventListener(hoverTarget, 'pointerleave', onPointerLeave)
+useEventListener(
+  () => anchor,
+  'pointerdown',
+  () => setOpen(false, true)
+)
+
+function onOpenAutoFocus(event: Event): void {
+  if (changedByPointer) {
+    event.preventDefault()
+    return
+  }
+  if (!openedFromKeyboard || !(event.target instanceof HTMLElement)) return
+  openedFromKeyboard = false
+  const firstItem = event.target.querySelector<HTMLElement>('[role="menuitem"]')
+  if (!firstItem) return
+  event.preventDefault()
+  firstItem.focus()
+}
+
+function onCloseAutoFocus(event: Event): void {
+  if (changedByPointer) event.preventDefault()
 }
 
 onScopeDispose(() => {
-  if (closeOpenMenu === close) closeOpenMenu = undefined
+  if (closeOpenCard === close) closeOpenCard = undefined
 })
 
 function lastActive(updatedAt: number): string {
@@ -125,57 +190,86 @@ function lastActive(updatedAt: number): string {
   })
 }
 
-const items = computed<MenuItem[]>(() => [
-  ...chats.value.map((chat) => ({
-    label: chat.title,
-    description: chat.current
-      ? t('agent.currentWorkflowChat', {
-          lastActive: lastActive(chat.updatedAt)
-        })
-      : lastActive(chat.updatedAt),
-    icon: 'icon-[lucide--message-square]',
-    class: 'cursor-pointer',
-    command: () => tabActivity.openAgentChat(workflowPath, chat.id)
-  })),
-  { separator: true },
-  {
+const chatItems = computed<MenuItem[]>(() => {
+  const newChat: MenuItem = {
     label: t('agent.newChatOnWorkflow'),
     icon: 'icon-[lucide--plus]',
-    class: 'cursor-pointer',
-    command: () => tabActivity.openAgentChat(workflowPath, null)
+    class: CHAT_ITEM_CLASS,
+    command: () => tabActivity.openAgentChat(workflow.path, null)
   }
-])
+  if (!chats.value.length) return [newChat]
+  return [
+    ...chats.value.map((chat) => ({
+      label: chat.title,
+      description: chat.current
+        ? t('agent.currentWorkflowChat', {
+            lastActive: lastActive(chat.updatedAt)
+          })
+        : lastActive(chat.updatedAt),
+      icon: 'icon-[lucide--message-square]',
+      class: CHAT_ITEM_CLASS,
+      command: () => tabActivity.openAgentChat(workflow.path, chat.id)
+    })),
+    { separator: true },
+    newChat
+  ]
+})
 </script>
 
 <template>
-  <Menu
-    v-if="chats.length"
-    :open
-    :items
-    :label="t('agent.workflowChatsMenuLabel', { workflowName })"
-    :modal="false"
-    side="bottom"
-    align="start"
-    :side-offset="4"
-    @update:open="onOpenUpdate"
-    @open-auto-focus="onAutoFocus"
-    @close-auto-focus="onAutoFocus"
-    @pointerenter="onMenuPointerEnter"
-    @pointerleave="onPointerLeave"
-  >
-    <template #trigger>
+  <DropdownMenuRoot :open :modal="false" @update:open="onOpenUpdate">
+    <DropdownMenuTrigger v-if="chats.length" as-child>
       <Button
+        ref="indicator"
         variant="muted-textonly"
         size="icon-sm"
         :aria-label="chatsLabel"
-        :class="cn('shrink-0', className)"
-        @pointerenter="onTriggerPointerEnter"
-        @pointerleave="onPointerLeave"
-        @pointerdown="onTriggerPointerDown"
+        :class="
+          cn(
+            'shrink-0 text-smoke-800',
+            anchor && 'pointer-events-none',
+            className
+          )
+        "
+        @pointerdown="onIndicatorPointerDown"
+        @keydown="onIndicatorKeydown"
         @click.stop="keepOpenOnClick = false"
       >
-        <i class="icon-[lucide--message-square] size-3.5 shrink-0" />
+        <i class="icon-[lucide--message-square] size-2.5 shrink-0" />
       </Button>
-    </template>
-  </Menu>
+    </DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <MenuContent
+        data-testid="workflow-hover-card"
+        :reference="anchor ?? undefined"
+        side="bottom"
+        :align="anchor ? 'center' : 'start'"
+        :side-offset="anchor ? 8 : 4"
+        :collision-padding="8"
+        class="max-w-64"
+        @open-auto-focus="onOpenAutoFocus"
+        @close-auto-focus="onCloseAutoFocus"
+        @pointerenter="onHoverStart"
+        @pointerleave="onPointerLeave"
+      >
+        <img
+          v-if="preview"
+          :src="preview"
+          :alt="
+            t('sideToolbar.workflowTab.workflowPreview', {
+              workflowName: workflow.filename
+            })
+          "
+          class="block h-50 w-62 rounded-md bg-secondary-background object-contain p-2"
+        />
+        <p class="truncate px-3 py-1.5 text-sm font-medium">
+          {{ workflow.filename }}
+        </p>
+        <template v-if="offersChats">
+          <MenuSeparator />
+          <MenuItems :items="chatItems" @select="close" />
+        </template>
+      </MenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
 </template>

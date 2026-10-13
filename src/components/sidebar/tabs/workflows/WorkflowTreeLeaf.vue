@@ -1,12 +1,7 @@
 <template>
   <TreeExplorerTreeNode :node="node">
     <template #trailing>
-      <WorkflowHoverCard
-        v-if="node.data"
-        :workflow-path="node.data.path"
-        :workflow-name="node.data.filename"
-        class="mr-1"
-      />
+      <WorkflowHoverCard v-if="node.data" :workflow="node.data" class="mr-1" />
     </template>
     <template #actions>
       <Button
