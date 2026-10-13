@@ -21,7 +21,7 @@ const {
   swap,
   locale = 'en'
 } = defineProps<{
-  hand: SwapImage
+  hand?: SwapImage
   swap: HandProductSwap
   locale?: Locale
 }>()
@@ -32,11 +32,13 @@ const resolutions = computed(() =>
   SWAP_RESOLUTIONS.map((id) => ({
     id,
     label: id,
-    meta: hc(
-      'swap.resolution.size',
-      locale,
-      outputSize(id, hand.width, hand.height)
-    )
+    meta:
+      hand &&
+      hc(
+        'swap.resolution.size',
+        locale,
+        outputSize(id, hand.width, hand.height)
+      )
   }))
 )
 const resolutionValue = computed({
@@ -56,12 +58,14 @@ const resolutionValue = computed({
   >
     <EditorSourceTile
       kind="image"
-      :src="hand.url"
-      :name="hand.name"
+      :src="hand?.url"
+      :caption="hand?.name"
       :add-label="hc('swap.empty.upload', locale)"
-      :change-label="hc('swap.hand.change', locale)"
+      :hint="hc('swap.hand.hint', locale)"
+      :remove-label="hc('swap.hand.remove', locale)"
       input-test-id="swap-hand-input"
       @file="swap.useHandFile"
+      @remove="swap.removeHand"
     />
     <HandSwapProducts :swap :locale />
     <div class="grid grid-cols-2 gap-2">

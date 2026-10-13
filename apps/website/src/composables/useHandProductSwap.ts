@@ -42,6 +42,7 @@ export type SwapTray = 'product' | 'resolution' | 'seed'
 /** Hand product swap's page state. The run is `runHandSwap`, mocked for now. */
 export function useHandProductSwap(locale: Locale = 'en') {
   const hand = shallowRef<SwapImage>()
+  const removed = shallowRef<SwapImage>()
   const ownProduct = shallowRef<SwapProduct>()
   const steps = shallowRef(
     history.historyOf<SwapSetup>({
@@ -99,7 +100,8 @@ export function useHandProductSwap(locale: Locale = 'en') {
   function reset(next: SwapImage) {
     run?.abort()
     leaveResult({ kind: 'editing' })
-    const previous = hand.value?.url
+    const previous = hand.value?.url ?? removed.value?.url
+    removed.value = undefined
     hand.value = next
     if (previous !== next.url) release(previous)
     steps.value = history.historyOf(setup.value)
@@ -200,6 +202,20 @@ export function useHandProductSwap(locale: Locale = 'en') {
     }
   }
 
+  function removeHand() {
+    if (!hand.value) return
+    run?.abort()
+    leaveResult({ kind: 'editing' })
+    removed.value = hand.value
+    hand.value = undefined
+  }
+
+  function restoreHand() {
+    if (!removed.value) return
+    hand.value = removed.value
+    removed.value = undefined
+  }
+
   function cancel() {
     run?.abort()
     phase.value = { kind: 'editing' }
@@ -223,6 +239,9 @@ export function useHandProductSwap(locale: Locale = 'en') {
 
   return {
     hand,
+    removed,
+    removeHand,
+    restoreHand,
     products,
     product,
     productName,

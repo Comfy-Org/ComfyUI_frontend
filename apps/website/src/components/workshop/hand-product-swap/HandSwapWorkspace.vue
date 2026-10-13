@@ -45,7 +45,7 @@ const detail = computed(() => {
 
 <template>
   <div class="relative size-full">
-    <HandSwapStage :hand :locale @file="swap.useHandFile">
+    <HandSwapStage :hand :locale>
       <HandSwapProductCard
         :product
         :name="productName"

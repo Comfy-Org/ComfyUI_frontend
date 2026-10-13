@@ -12,15 +12,11 @@ const copy = {
   'swap.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
   'swap.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
   'swap.empty.title': {
-    en: 'Drop a photo of a hand holding something',
-    'zh-CN': '拖入一张手持物品的照片'
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
   },
-  'swap.empty.meta': {
-    en: 'Same hand & grip, new product. Drop, paste or choose a PNG, JPG or WebP.',
-    'zh-CN': '同样的手和握姿，换上新产品。拖入、粘贴或选择 PNG、JPG 或 WebP。'
-  },
-  'swap.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
-  'swap.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
+  'swap.empty.upload': { en: 'Upload hand photo', 'zh-CN': '上传手部照片' },
+  'swap.empty.example': { en: 'Hand holding a can', 'zh-CN': '手持罐子' },
   'swap.hint': {
     en: 'Same hand & grip, new product',
     'zh-CN': '同样的手和握姿，换上新产品'
@@ -28,7 +24,12 @@ const copy = {
   'swap.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'swap.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'swap.history': { en: 'History', 'zh-CN': '历史记录' },
-  'swap.hand.change': { en: 'Change hand photo', 'zh-CN': '更换手部照片' },
+  'swap.hand.hint': { en: 'PNG, JPG or WebP', 'zh-CN': 'PNG、JPG 或 WebP' },
+  'swap.hand.remove': { en: 'Remove hand photo', 'zh-CN': '移除手部照片' },
+  'swap.hand.restore': {
+    en: 'Undo remove hand photo',
+    'zh-CN': '撤销移除手部照片'
+  },
   'swap.product': { en: 'Product', 'zh-CN': '产品' },
   'swap.product.can': { en: 'Can', 'zh-CN': '易拉罐' },
   'swap.product.serum': { en: 'Serum', 'zh-CN': '精华' },

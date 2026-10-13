@@ -31,12 +31,14 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!hand"
     :title="hc('swap.empty.title', locale)"
-    :meta="hc('swap.empty.meta', locale)"
-    :upload-label="hc('swap.empty.upload', locale)"
-    :example-label="hc('swap.empty.example', locale)"
-    :example-image="HAND_EXAMPLE.url"
+    :examples="[
+      {
+        id: 'can',
+        image: HAND_EXAMPLE.url,
+        label: hc('swap.empty.example', locale)
+      }
+    ]"
     data-testid="swap-empty"
-    @file="swap.useHandFile"
     @example="swap.useExample"
   />
   <EditorResult

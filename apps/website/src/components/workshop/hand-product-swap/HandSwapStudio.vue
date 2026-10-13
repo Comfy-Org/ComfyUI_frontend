@@ -10,6 +10,7 @@ import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import { swapFileName } from '@/lib/workshop/hand-product-swap/download'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import HandSwapDocks from './HandSwapDocks.vue'
 import HandSwapHistory from './HandSwapHistory.vue'
@@ -26,7 +27,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const swap = useHandProductSwap(locale)
-const { hand, phase } = swap
+const { hand, removed, phase } = swap
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
   phase,
@@ -60,6 +61,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ hc('swap.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !hand"
+        :label="hc('swap.hand.restore', locale)"
+        @undo="swap.restoreHand"
+      />
       <HandSwapTrays v-if="!panel" :swap :locale />
     </template>
     <template #dock>
@@ -68,13 +74,13 @@ const panelLabels = {
     <template v-if="phase.kind !== 'done'" #history>
       <HandSwapHistory :swap :locale />
     </template>
-    <template v-if="panel && hand" #panel>
+    <template v-if="panel" #panel>
       <HandSwapPanel :hand :swap :locale />
     </template>
-    <template v-if="panel && hand" #panel-peek>
+    <template v-if="panel" #panel-peek>
       <HandSwapSummary :swap :locale />
     </template>
-    <template v-if="panel && hand" #panel-footer>
+    <template v-if="panel" #panel-footer>
       <HandSwapRun :swap :locale block />
     </template>
   </AppEditorShell>

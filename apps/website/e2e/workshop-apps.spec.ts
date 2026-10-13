@@ -277,7 +277,7 @@ async function openHandSwapExample(page: Page, context: BrowserContext) {
   await page.goto('/hub/apps/hand-product-swap/')
   const app = page.getByTestId('hand-product-swap')
   await expect(app.getByTestId('swap-empty')).toBeVisible()
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Hand holding a can' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Hand product swap settings'
   })

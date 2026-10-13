@@ -29,7 +29,7 @@ beforeEach(() => {
 async function openExample(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(HandSwapStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.click(screen.getByRole('button', { name: 'Hand holding a can' }))
   return user
 }
 
@@ -124,7 +124,11 @@ describe('HandSwapStudio', () => {
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
     async ({ layout, wide, names }) => {
       screenIsWide(wide)
-      await openExample(layout)
+      const user = await openExample(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const labels = within(tools())
         .getAllByRole('button')
@@ -167,15 +171,22 @@ describe('HandSwapStudio', () => {
     loaded.mockRestore()
   })
 
-  it('opens the panel with the hand photo alone on top, replaceable but never removable', async () => {
-    await openExample()
+  it('opens the panel with the hand photo on top, removable with the X and back from the tray', async () => {
+    const user = await openExample()
     const fields = within(screen.getByTestId('swap-panel'))
-    const source = fields.getByRole('button', {
-      name: 'Change hand photo: hand-holding-can.jpg'
-    })
-    expect(fields.getAllByRole('button').indexOf(source)).toBe(0)
+    const remove = fields.getByRole('button', { name: 'Remove hand photo' })
+    expect(fields.getAllByRole('button').indexOf(remove)).toBe(0)
+    expect(fields.getByText('hand-holding-can.jpg')).toBeVisible()
     expect(within(panel()).queryByRole('region')).toBeNull()
-    expect(fields.queryByRole('button', { name: /Remove/ })).toBeNull()
+
+    await user.click(remove)
+    expect(
+      fields.getByRole('button', { name: /Upload hand photo/ })
+    ).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: 'Undo remove hand photo' })
+    )
+    expect(fields.getByText('hand-holding-can.jpg')).toBeVisible()
     expect(
       fields.queryByText(/cut-out PNG or a shot on white works best/)
     ).toBeNull()
@@ -223,20 +234,23 @@ describe('HandSwapStudio', () => {
     expect(screen.queryByRole('dialog', { name: 'Resolution' })).toBeNull()
   })
 
-  it('opens on phones as a sheet with a one-line summary and the run button', async () => {
+  it('opens on phones as an open sheet that folds to a one-line summary and the run button', async () => {
     screenIsWide(false)
     const user = await openExample()
-    const summary = within(panel()).getByRole('button', {
-      name: 'Can · 2K'
-    })
+    expect(
+      within(panel()).getByRole('radiogroup', { name: 'Product' })
+    ).toBeVisible()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    )
+
+    expect(
+      within(panel()).getByRole('button', { name: 'Can · 2K' })
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('swap-run')).toBeEnabled()
     expect(
       within(panel()).queryByRole('radiogroup', { name: 'Product' })
     ).toBeNull()
-
-    await user.click(summary)
-    expect(
-      within(panel()).getByRole('radiogroup', { name: 'Product' })
-    ).toBeVisible()
   })
 })
