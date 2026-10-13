@@ -66,28 +66,29 @@ function pushInterruptingGroup(
   out: AgentMessageGroup[],
   part: InterruptingPart
 ): void {
+  if (part.type !== 'tabLink') {
+    out.push(cardGroup(part))
+    return
+  }
+  const prev = out.at(-1)
+  if (prev?.kind === 'tabLinks') prev.parts.push(part)
+  else out.push({ kind: 'tabLinks', parts: [part] })
+}
+
+function cardGroup(
+  part: Exclude<InterruptingPart, TabLinkPart>
+): AgentMessageGroup {
   switch (part.type) {
-    case 'tabLink': {
-      const prev = out.at(-1)
-      if (prev?.kind === 'tabLinks') prev.parts.push(part)
-      else out.push({ kind: 'tabLinks', parts: [part] })
-      return
-    }
     case 'runApproval':
-      out.push({ kind: 'runApproval', part })
-      return
+      return { kind: 'runApproval', part }
     case 'askUser':
-      out.push({ kind: 'askUser', part })
-      return
+      return { kind: 'askUser', part }
     case 'deleteApproval':
-      out.push({ kind: 'deleteApproval', part })
-      return
+      return { kind: 'deleteApproval', part }
     case 'paywall':
-      out.push({ kind: 'paywall', part })
-      return
+      return { kind: 'paywall', part }
     case 'notice':
     case 'askUnavailable':
-      out.push({ kind: 'notice', part })
-      return
+      return { kind: 'notice', part }
   }
 }
