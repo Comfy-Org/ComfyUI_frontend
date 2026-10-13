@@ -1,11 +1,11 @@
 {
   "entries": [
     {
-      "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
+      "id": "playwright:browser_tests/tests/agent/agentAttachFileTypeParity.spec.ts:gives the same answer for a .csv whether it is picked or dropped:1",
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/agent/agentNestedOutputSentPreview.spec.ts:sends a nested video output by its display name, not its asset id:1",
+      "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
       "classification": "live-defect"
     },
     {
@@ -26,6 +26,14 @@
     },
     {
       "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<expression:`a completed turn keeps its ${selection} approval action live`>:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentTurnProgressIsLegible.spec.ts:names how long the finished turn took:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentTwoSessionCrdtSubscription.spec.ts:returning to the displaced build shows it on the canvas:1",
       "classification": "live-defect"
     },
     {
@@ -65,18 +73,6 @@
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:node-title movement below ClickDrift is a click:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:pressing an unselected unpinned node brings it to front before release:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:slow group-title click selects without moving the group:1",
-      "classification": "live-defect"
-    },
-    {
       "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/selection.spec.ts:shift-toggling a group off also deselects its cascaded children:1",
       "classification": "live-defect"
     },
@@ -86,10 +82,6 @@
     },
     {
       "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:slow movement within the drift threshold stays a click:1",
       "classification": "live-defect"
     },
     {
