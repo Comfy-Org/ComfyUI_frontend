@@ -26,7 +26,7 @@
   "dependencies": {
     "@comfyorg/object-info-parser": "workspace:*",
     "axios": "catalog:",
-    "es-toolkit": "^1.39.9",
+    "es-toolkit": "^1.52.0",
     "jsonata": "catalog:",
     "minisearch": "catalog:"
   },

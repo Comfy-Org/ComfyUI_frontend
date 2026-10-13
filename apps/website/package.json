@@ -79,7 +79,7 @@
     "ajv-formats": "catalog:",
     "class-variance-authority": "catalog:",
     "cva": "catalog:",
-    "es-toolkit": "^1.39.9",
+    "es-toolkit": "^1.52.0",
     "firebase": "catalog:",
     "gsap": "catalog:",
     "leaflet": "catalog:",
