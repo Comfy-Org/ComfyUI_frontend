@@ -132,8 +132,17 @@ const appEditorShown = computed(
 const fullScreen = computed(
   () => appEditorShown.value || (mounted.value && editorShown.value)
 )
-watch(fullScreen, (shown) =>
-  document.documentElement.toggleAttribute('data-workshop-editor', shown)
+// Cleared before a switch renders and set after it, so a page that marks
+// itself full screen while mounted is never undone by the switch.
+watch(fullScreen, (shown) => {
+  if (!shown) document.documentElement.removeAttribute('data-workshop-editor')
+})
+watch(
+  fullScreen,
+  (shown) => {
+    if (shown) document.documentElement.setAttribute('data-workshop-editor', '')
+  },
+  { flush: 'post' }
 )
 onBeforeUnmount(() =>
   document.documentElement.removeAttribute('data-workshop-editor')
