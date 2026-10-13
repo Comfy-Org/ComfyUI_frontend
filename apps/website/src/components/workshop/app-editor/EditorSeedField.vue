@@ -17,8 +17,9 @@ const id = useId()
 
 function onChange(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
-  const next = Math.round(Number(event.target.value))
-  if (Number.isFinite(next) && next >= 0) seed.value = next
+  const typed = event.target.value.trim()
+  const next = Math.round(Number(typed))
+  if (typed && Number.isFinite(next) && next >= 0) seed.value = next
   else event.target.value = String(seed.value)
 }
 
