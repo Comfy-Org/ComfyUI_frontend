@@ -20,10 +20,7 @@ const id = useId()
 </script>
 
 <template>
-  <section
-    :aria-label="title"
-    class="flex flex-col border-t border-transparency-white-t8 first:border-t-0"
-  >
+  <section :aria-label="title" class="flex flex-col">
     <div class="flex items-center gap-1">
       <h2 class="m-0 min-w-0 flex-1">
         <button
