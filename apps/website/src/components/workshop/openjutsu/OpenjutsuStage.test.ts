@@ -45,7 +45,7 @@ describe('OpenjutsuStage', () => {
       props: { ...editing, videoUrl: undefined }
     })
 
-    expect(screen.getByText(/Your video appears here/)).toBeVisible()
+    expect(screen.getByText('Try an example')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: /Office/ }))
 
     expect(emitted('example')).toEqual([[SWAP_EXAMPLES[1]]])

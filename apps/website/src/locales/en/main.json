@@ -5659,8 +5659,9 @@
       "audio": "original sound"
     },
     "examples": {
-      "title": "Your video appears here",
-      "hint": "upload one in the panel or try an example",
+      "title": "Try an example",
+      "hint": "Each one loads a clip, a character and who to replace, ready to try.",
+      "upload": "Or upload your video in the panel",
       "road": {
         "place": "Desert road",
         "character": "Robot"
