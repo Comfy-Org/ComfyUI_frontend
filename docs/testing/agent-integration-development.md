@@ -92,8 +92,9 @@ Paste the recorder command it prints, one `--prompt` per turn.
    ```
 
    Vite forwards it to the standalone agent the way ingest reads a credential: an API
-   key as `X-API-KEY`, anything else as a bearer token. Without it, sign in from the
-   panel; a signed-out send otherwise gets a 401.
+   key as `X-API-KEY`, anything else as a bearer token, and the panel sends without
+   asking a signed-out user to sign in. Without it, a signed-out send opens the
+   sign-in dialog.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
