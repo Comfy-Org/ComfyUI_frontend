@@ -23,13 +23,15 @@ const emit = defineEmits<{ example: [id: string] }>()
 
 <template>
   <section
-    class="my-auto flex w-full max-w-4xl flex-col gap-3 self-center rounded-2xl border border-dashed border-transparency-white-t20 p-4 sm:p-6"
+    class="m-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-dashed border-transparency-white-t20 p-4 sm:p-6"
   >
     <p class="text-sm text-primary-warm-white">
       {{ title }}
       <span class="text-primary-warm-gray">· {{ hint }}</span>
     </p>
-    <ul :class="cn('grid gap-3', examples.length > 1 && 'sm:grid-cols-2')">
+    <ul
+      :class="cn('grid gap-2 sm:gap-3', examples.length > 1 && 'grid-cols-2')"
+    >
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
@@ -53,7 +55,7 @@ const emit = defineEmits<{ example: [id: string] }>()
             class="absolute top-2.5 right-2.5 aspect-3/4 w-1/6 rounded-md border border-primary-warm-white/70 object-cover shadow-lg"
           />
           <span
-            class="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-3.5 pt-8 pb-3 text-sm text-primary-warm-white"
+            class="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-2.5 pt-6 pb-2 text-xs text-primary-warm-white sm:px-3.5 sm:pt-8 sm:pb-3 sm:text-sm"
           >
             {{ example.label }}
             <template v-if="example.result">
