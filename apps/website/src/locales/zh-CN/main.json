@@ -4749,6 +4749,10 @@
     "resolution": {
       "label": "分辨率",
       "all": "全部分辨率"
+    },
+    "preview": {
+      "label": "预览控制",
+      "community": "来自社区"
     }
   },
   "cinematic": {

@@ -1,15 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
 import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { useWorkshopFlag } from '@/scripts/posthog'
 import ExploreCatalogue from './ExploreCatalogue.vue'
 
 vi.mock(import('@/scripts/posthog'))
+
+beforeEach(() => {
+  vi.mocked(useWorkshopFlag).mockReturnValue(readonly(ref(false)))
+})
 
 const workflows: WorkflowWorkshopModel[] = [
   {

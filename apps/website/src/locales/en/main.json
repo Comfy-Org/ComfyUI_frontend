@@ -869,6 +869,10 @@
     "resolution": {
       "label": "Resolution",
       "all": "All resolutions"
+    },
+    "preview": {
+      "label": "Preview controls",
+      "community": "From the community"
     }
   },
   "auth": {
