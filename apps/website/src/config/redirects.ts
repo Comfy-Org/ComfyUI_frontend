@@ -82,6 +82,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
+  { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+  { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
