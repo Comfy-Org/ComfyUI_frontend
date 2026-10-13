@@ -26,6 +26,7 @@ import type { ShadowStyle } from '@/lib/workshop/relight/shadows'
 import { shadowStyle, withShadowStyle } from '@/lib/workshop/relight/shadows'
 import {
   RELIGHT_EXAMPLE,
+  RELIGHT_EXAMPLES,
   relightRequest,
   runRelight
 } from '@/lib/workshop/relight/mock-run'
@@ -102,7 +103,10 @@ export function useRelight(locale: Locale = 'en') {
   const lit = computed(() => lights.value.filter((light) => light.visible))
   const full = computed(() => lights.value.length >= MAX_LIGHTS)
   const canRun = computed(
-    () => phase.value.kind !== 'running' && lit.value.length > 0
+    () =>
+      Boolean(image.value) &&
+      phase.value.kind !== 'running' &&
+      lit.value.length > 0
   )
 
   function leaveResult(next: RelightPhase) {
@@ -132,9 +136,11 @@ export function useRelight(locale: Locale = 'en') {
     ownUrl = undefined
   }
 
-  function useExample() {
+  function useExample(id: string = RELIGHT_EXAMPLES[0].id) {
+    const example = RELIGHT_EXAMPLES.find((option) => option.id === id)
+    if (!example) return
     pendingUrl = undefined
-    reset(RELIGHT_EXAMPLE, 'sunset')
+    reset(example.image, example.mood)
     releaseOwnUrl()
   }
 

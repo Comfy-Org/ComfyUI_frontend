@@ -376,6 +376,19 @@ describe('RelightStudio', () => {
     }
   )
 
+  it('offers four photos to start from and keeps the run off until one is open', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(RelightStudio)
+    expect(within(panel()).getByTestId('relight-run')).toBeDisabled()
+    const empty = within(screen.getByTestId('relight-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'Rooftop at night' }))
+
+    expect(within(panel()).getByText('rooftop-night.jpg')).toBeVisible()
+    expect(within(panel()).getByTestId('relight-run')).toBeEnabled()
+  })
+
   it('takes the photo out with the X and puts it back from the tray', async () => {
     const user = await openExample()
 

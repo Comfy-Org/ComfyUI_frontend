@@ -4,7 +4,10 @@ import { computed } from 'vue'
 import type { Relight } from '@/composables/useRelight'
 import type { Locale } from '@/i18n/translations'
 import { lc } from '@/lib/workshop/relight/copy'
-import { RELIGHT_EXAMPLE } from '@/lib/workshop/relight/mock-run'
+import {
+  RELIGHT_EXAMPLE,
+  RELIGHT_EXAMPLES
+} from '@/lib/workshop/relight/mock-run'
 import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import type { EditorView } from '@/components/workshop/app-editor/view'
@@ -37,13 +40,13 @@ const resultLabels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="lc('relight.empty.title', locale)"
-    :examples="[
-      {
-        id: 'motel',
-        image: RELIGHT_EXAMPLE.url,
-        label: lc('relight.empty.example', locale)
-      }
-    ]"
+    :examples="
+      RELIGHT_EXAMPLES.map(({ id, image }) => ({
+        id,
+        image: image.url,
+        label: lc(`relight.example.${id}` as const, locale)
+      }))
+    "
     data-testid="relight-empty"
     @example="relight.useExample"
   />

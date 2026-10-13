@@ -42,6 +42,21 @@ export const RELIGHT_EXAMPLE = {
   subject: { cx: 0.6, cy: 0.4, rx: 0.21, ry: 0.42 }
 } as const
 
+const photo = (id: string, name: string) => ({
+  url: `/images/apps/relight/examples/${id}.jpg`,
+  name,
+  width: 1280,
+  height: 720
+})
+
+/** The photos offered to start from, each opened on the mood that suits it. */
+export const RELIGHT_EXAMPLES = [
+  { id: 'motel', image: RELIGHT_EXAMPLE, mood: 'sunset' },
+  { id: 'cafe', image: photo('cafe', 'cafe-window.jpg'), mood: 'window' },
+  { id: 'rooftop', image: photo('rooftop', 'rooftop-night.jpg'), mood: 'neon' },
+  { id: 'bench', image: photo('bench', 'park-bench.jpg'), mood: 'studio' }
+] as const
+
 /** The request for a photo, its lights, masks, scene and generation. */
 export function relightRequest(
   imageUrl: string,
