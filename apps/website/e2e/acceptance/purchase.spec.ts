@@ -34,7 +34,7 @@ for (const model of modelCases.filter((model) => model.smoke)) {
     ).toBe('test')
     expectedCharge(model.slug, 'own')
     const domain = requiredSetting('WORKSHOP_SIGNUP_EMAIL_DOMAIN')
-    const email = z.string().email().parse(`workshop-${randomUUID()}@${domain}`)
+    const email = z.email().parse(`workshop-${randomUUID()}@${domain}`)
     const path = hubModelHref(model.slug)
     await page.goto(path)
     await useOwnInputs(page, model)

@@ -133,9 +133,7 @@ describe('agentConsentStore', () => {
     await store.load()
     await store.accept()
 
-    expect(
-      vi.mocked(useAuthStore().getWorkspaceAuthHeader)
-    ).not.toHaveBeenCalled()
+    expect(useAuthStore().getWorkspaceAuthHeader).not.toHaveBeenCalled()
     expect(accountApi.get).toHaveBeenCalledWith(
       'Comfy.AgentPanel.ConsentAccepted',
       expect.any(Function)
@@ -299,9 +297,7 @@ describe('agentConsentStore', () => {
     const store = useAgentConsentStore()
     const request = store.accept()
     await vi.waitFor(() =>
-      expect(
-        vi.mocked(useAuthStore().getWorkspaceAuthHeader)
-      ).toHaveBeenCalledOnce()
+      expect(useAuthStore().getWorkspaceAuthHeader).toHaveBeenCalledOnce()
     )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     token.resolve({ Authorization: 'Bearer workspace-b-token' })
@@ -338,7 +334,7 @@ describe('agentConsentStore', () => {
     )
     const store = useAgentConsentStore()
     await expect(store.accept()).resolves.toBe(true)
-    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
+    expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(accountApi.set).toHaveBeenCalledOnce()
   })
 

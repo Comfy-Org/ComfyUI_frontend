@@ -56,7 +56,6 @@ describe('refreshRemoteConfig', () => {
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
-    vi.stubGlobal('fetch', vi.fn())
     remoteConfig.value = {}
     remoteConfigErrorStatus.value = null
     remoteConfigState.value = 'unloaded'

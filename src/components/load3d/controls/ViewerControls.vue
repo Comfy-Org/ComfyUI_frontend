@@ -2,10 +2,8 @@
   <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.openIn3DViewer'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.openIn3DViewer')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"

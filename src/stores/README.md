@@ -138,7 +138,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
 | subgraphNavigationStore.ts   | useSubgraphNavigationStore    | Handles subgraph navigation state                       | Navigation |
 | systemStatsStore.ts          | useSystemStatsStore           | Tracks system performance statistics                    | System     |
-| toastStore.ts                | useToastStore                 | Manages toast notifications                             | UI         |
+| toastStore.ts                | useToast                      | Manages toast notifications                             | UI         |
 | userFileStore.ts             | useUserFileStore              | Manages user file operations                            | Files      |
 | userStore.ts                 | useUserStore                  | Manages user data and preferences                       | User       |
 | versionCompatibilityStore.ts | useVersionCompatibilityStore  | Manages frontend/backend version compatibility warnings | Core       |
@@ -167,7 +167,7 @@ When developing or modifying stores, follow these best practices:
 1. **Define clear purpose**: Each store should have a specific responsibility
 2. **Use actions for async operations**: Encapsulate asynchronous logic in actions
 3. **Keep stores focused**: Each store should manage related state
-4. **Document public API**: Add comments for state properties, actions, and getters
+4. **Name the public API clearly**: Names should make state, actions, and getters self-explanatory. Add curt JSDoc only where an exported action's contract is not obvious, and no other comments
 5. **Use getters for derived state**: Compute derived values using getters
 6. **Test store functionality**: Write unit tests for stores
 
@@ -180,16 +180,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export const useExampleStore = defineStore('example', () => {
-  // State
   const items = ref([])
   const isLoading = ref(false)
   const error = ref(null)
 
-  // Getters
   const itemCount = computed(() => items.value.length)
   const hasError = computed(() => error.value !== null)
 
-  // Actions
   function addItem(item) {
     items.value.push(item)
   }
@@ -209,18 +206,12 @@ export const useExampleStore = defineStore('example', () => {
     }
   }
 
-  // Expose state, getters, and actions
   return {
-    // State
     items,
     isLoading,
     error,
-
-    // Getters
     itemCount,
     hasError,
-
-    // Actions
     addItem,
     fetchItems
   }

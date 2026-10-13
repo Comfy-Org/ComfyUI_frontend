@@ -15,29 +15,60 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { fetchMembers, fetchPendingInvites } = workspaceStore
-const { workspaceRole, permissions } = useWorkspaceUI()
+const { workspaceRole } = useWorkspaceUI()
+const { permissions } = useMembersPanel()
+const canViewPendingInvites = computed(
+  () => permissions.value.canViewPendingInvites
+)
 
-const loadFailed = ref(false)
+const failed = reactive({ members: false, invites: false })
+const requests = { members: 0, invites: 0 }
+const loaders = { members: fetchMembers, invites: fetchPendingInvites }
+const loadFailed = computed(
+  () => failed.members || (canViewPendingInvites.value && failed.invites)
+)
 
-async function load() {
-  loadFailed.value = false
-  const results = await Promise.allSettled([
-    fetchMembers(),
-    ...(permissions.value.canViewPendingInvites ? [fetchPendingInvites()] : [])
-  ])
-  loadFailed.value = results.some((result) => result.status === 'rejected')
+async function loadResource(resource: keyof typeof loaders) {
+  const workspaceId = workspaceStore.activeWorkspaceId
+  const request = ++requests[resource]
+  failed[resource] = false
+  const [result] = await Promise.allSettled([loaders[resource]()])
+  if (
+    workspaceId === workspaceStore.activeWorkspaceId &&
+    request === requests[resource]
+  ) {
+    failed[resource] = result.status === 'rejected'
+  }
 }
 
-onMounted(() => {
-  void load()
-})
+function loadInvites() {
+  if (canViewPendingInvites.value) return loadResource('invites')
+  ++requests.invites
+  failed.invites = false
+}
+
+function load() {
+  return Promise.all([loadResource('members'), loadInvites()])
+}
+
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  () => void loadResource('members'),
+  { immediate: true }
+)
+watch(
+  [() => workspaceStore.activeWorkspaceId, canViewPendingInvites],
+  () => void loadInvites(),
+  { immediate: true }
+)
 </script>

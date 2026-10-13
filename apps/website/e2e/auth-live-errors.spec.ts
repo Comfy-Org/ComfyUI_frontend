@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { t } from '@/i18n/translations'
+import { AuthToasts } from './fixtures/authToasts'
 import { test } from './fixtures/blockExternalMedia'
 import {
   WORKSHOP_EMAIL,
@@ -61,7 +62,7 @@ test.describe('Live sign-in error codes', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(
-      page.getByText('Invalid login credentials'),
+      new AuthToasts(page).withText('Invalid login credentials'),
       'the same copy as a wrong password keeps sign-in from revealing whether an email has an account'
     ).toBeVisible()
   })
@@ -78,7 +79,9 @@ test.describe('Live sign-in error codes', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(
-      page.getByText('This account has been disabled. Please contact support.')
+      new AuthToasts(page).withText(
+        'This account has been disabled. Please contact support.'
+      )
     ).toBeVisible()
   })
 
@@ -94,7 +97,7 @@ test.describe('Live sign-in error codes', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(
-      page.getByText(
+      new AuthToasts(page).withText(
         'Too many login attempts. Please wait a moment and try again.'
       )
     ).toBeVisible()
@@ -123,7 +126,7 @@ test.describe('Live sign-in error codes', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(
-      page.getByText(
+      new AuthToasts(page).withText(
         'Network error. Please check your connection and try again.'
       )
     ).toBeVisible()
@@ -148,7 +151,7 @@ test.describe('Live sign-up error codes and password checklist', () => {
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
 
     await expect(
-      page.getByText(
+      new AuthToasts(page).withText(
         t('auth.errors.auth/email-already-in-use', {}, { locale: 'en' })
       )
     ).toBeVisible()
@@ -234,12 +237,12 @@ test.describe('Live forgot-password transport failure', () => {
     await page.getByRole('button', { name: 'Send reset link' }).click()
 
     await expect(
-      page.getByText(
+      new AuthToasts(page).withText(
         'Too many login attempts. Please wait a moment and try again.'
       )
     ).toBeVisible()
     await expect(
-      page.getByText('Password reset email sent'),
+      new AuthToasts(page).withText('Password reset email sent'),
       'a rejected send is a real failure, not the neutral unregistered-email success'
     ).toBeHidden()
     await expect(
