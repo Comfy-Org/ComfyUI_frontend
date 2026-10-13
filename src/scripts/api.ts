@@ -9,28 +9,21 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
 import {
   authCredentialOf,
   notifyAuthCredential
 } from '@/platform/auth/authCredential'
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
-import {
-  AUTH_INIT_TIMEOUT_MS,
-  FETCH_RESPONSE_HEADERS_TIMEOUT_MS
-} from '@/scripts/apiTimeouts'
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
@@ -42,6 +35,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -86,8 +80,7 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -368,24 +361,6 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   }
 }
 
-/**
- * Fire-and-forget: a telemetry chunk-load failure must never prevent the
- * token-less WebSocket connect fallback from proceeding.
- */
-async function trackWsTokenUnavailable(): Promise<void> {
-  try {
-    if (!(await shouldRemintCloudRequest())) return
-    const { useTelemetry } = await import('@/platform/telemetry')
-    useTelemetry()?.trackUnifiedAuthRetry({
-      transport: 'ws',
-      outcome: 'failed',
-      failure_reason: 'token_unavailable'
-    })
-  } catch (err) {
-    console.warn('Failed to report WebSocket token unavailability:', err)
-  }
-}
-
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -481,10 +456,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
 
-  /**
-   * Cache Firebase auth store composable function.
-   */
-  private authStoreComposable?: typeof useAuthStore
+  private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -562,20 +534,12 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Gets the Firebase auth store instance using cached composable function.
-   * Caches the composable function on first call, then reuses it.
-   * Returns null for non-cloud distributions.
-   * @returns The Firebase auth store instance, or null if not in cloud
+   * Installs the credentials source for every request and socket connection.
+   * Called once by the composition root; requests made before that are
+   * anonymous.
    */
-  private async getAuthStore() {
-    if (isCloud) {
-      if (!this.authStoreComposable) {
-        const module = await import('@/stores/authStore')
-        this.authStoreComposable = module.useAuthStore
-      }
-
-      return this.authStoreComposable()
-    }
+  setAuthProvider(provider: ApiAuthProvider): void {
+    this.authProvider = provider
   }
 
   private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
@@ -612,18 +576,7 @@ export class ComfyApi extends EventTarget {
     credential: AuthCredential
     unifiedRetryOn401: boolean
   }> {
-    // Get Firebase JWT token if user is logged in
-    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-      try {
-        const authStore = await this.getAuthStore()
-        return authStore ? await authStore.getAuthHeader() : null
-      } catch (error) {
-        console.warn('Failed to get auth header:', error)
-        return null
-      }
-    }
-
-    const authHeader = await getAuthHeaderIfAvailable()
+    const authHeader = await this.authProvider.getAuthHeader()
     onAuthHeader?.(authHeader !== null)
     if (!authHeader) {
       return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
@@ -635,32 +588,7 @@ export class ComfyApi extends EventTarget {
     return {
       scheme: 'cloud-auth-header',
       credential: authCredentialOf(authHeader),
-      unifiedRetryOn401: await shouldRemintCloudRequest()
-    }
-  }
-
-  /**
-   * Waits for Firebase auth to be initialized before proceeding.
-   * Bounded by AUTH_INIT_TIMEOUT_MS to prevent infinite hanging.
-   */
-  private async waitForAuthInitialization(): Promise<void> {
-    if (isCloud) {
-      const authStore = await this.getAuthStore()
-      if (!authStore) return
-
-      if (authStore.isInitialized) return
-
-      const { isInitialized } = storeToRefs(authStore)
-      try {
-        await Promise.race([
-          until(isInitialized).toBe(true),
-          promiseTimeout(AUTH_INIT_TIMEOUT_MS)
-        ])
-      } catch {
-        console.warn(
-          `Firebase auth initialization timeout after ${AUTH_INIT_TIMEOUT_MS / 1000} seconds`
-        )
-      }
+      unifiedRetryOn401: await this.authProvider.shouldRetryOn401()
     }
   }
 
@@ -677,7 +605,7 @@ export class ComfyApi extends EventTarget {
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
-      await this.waitForAuthInitialization()
+      await this.authProvider.waitForInitialization()
       sendOnWebSession = await this.getWebSessionSend()
       if (sendOnWebSession) {
         onAuthHeader?.(true)
@@ -774,7 +702,7 @@ export class ComfyApi extends EventTarget {
     }
     const response = sendOnWebSession
       ? sendOnWebSession(this.unscopedApiURL(route), init)
-      : fetchWithUnifiedRemint(
+      : this.authProvider.fetch(
           this.apiURL(route),
           init,
           unifiedRetryOn401,
@@ -950,18 +878,9 @@ export class ComfyApi extends EventTarget {
     }
     if (sessionScope) return true
 
-    // Get auth token and set cloud params if available
-    // Uses workspace token (if enabled) or Firebase token
-    try {
-      const authStore = await this.getAuthStore()
-      const authToken = await authStore?.getAuthToken()
-      if (authToken) {
-        params.set('token', authToken)
-      }
-    } catch (error) {
-      void trackWsTokenUnavailable()
-      // Continue without auth token if there's an error
-      console.warn('Could not get auth token for WebSocket connection:', error)
+    const authToken = await this.authProvider.getAuthToken()
+    if (authToken) {
+      params.set('token', authToken)
     }
     return !requests || params.has('token')
   }
@@ -1747,18 +1666,41 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
-      {
-        method: 'POST',
-        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
-        ...options
-      }
-    )
-    if (resp.status !== 200 && options.throwOnError !== false) {
-      throw new Error(
-        `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
+    const overwrite = options.overwrite ?? true
+    const fullInfo = options.full_info ?? false
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
+    const resp = await this.fetchApi(route, {
+      method: 'POST',
+      body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
+      ...options
+    })
+    if (resp.status !== 200) {
+      const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      // The reported message and route are file-independent: the literal file
+      // name (and `route`, which embeds it) is unbounded cardinality and
+      // would fragment Sentry grouping into one bucket per file instead of
+      // one for this failure mode — exactly what buried PM-1906's alerts.
+      reportError(
+        new Error(
+          `Error storing user data file: ${resp.status} ${resp.statusText}`
+        ),
+        {
+          errorType: 'userdata_store_failure',
+          surface: 'platform',
+          tags: {
+            status: resp.status,
+            overwrite,
+            full_info: fullInfo
+          },
+          context: {
+            file,
+            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+          }
+        }
       )
+      if (options.throwOnError !== false) {
+        throw new Error(message)
+      }
     }
 
     return resp

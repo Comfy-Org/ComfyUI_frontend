@@ -48,6 +48,20 @@ describe('AppCatalogue', () => {
     expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
   })
 
+  it.for([
+    { locale: 'en', mark: 'Comfy app' },
+    { locale: 'zh-CN', mark: 'Comfy 应用' }
+  ] as const)('labels every card in $locale', ({ locale, mark }) => {
+    render(AppCatalogue, {
+      props: { apps: appsOf(2, 'open'), upcoming: appsOf(1, 'soon'), locale }
+    })
+    expect(
+      screen
+        .getAllByTestId('model-card-provider')
+        .map((element) => element.textContent.trim())
+    ).toEqual(Array(3).fill(`C${mark}`))
+  })
+
   it('puts no featured app ahead of the list', () => {
     render(AppCatalogue, { props: { apps: appsOf(2) } })
     expect(screen.queryByTestId('app-featured')).toBeNull()

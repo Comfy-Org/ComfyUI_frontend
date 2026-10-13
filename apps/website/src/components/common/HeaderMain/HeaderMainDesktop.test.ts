@@ -6,7 +6,11 @@ import { nextTick } from 'vue'
 import type { HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
-const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const ALL_SECTIONS: HubSections = {
+  workflows: true,
+  apps: true,
+  reshoot: true
+}
 
 async function openHub(hubSections: HubSections = ALL_SECTIONS) {
   history.replaceState(null, '', '/pricing')
@@ -108,18 +112,20 @@ describe('HeaderMainDesktop', () => {
   })
 
   it.for(['Cinematic Studio', 'Re-shoot'])(
-    'opens the %s app in a tab of its own',
+    'opens the %s app in the same tab',
     async (name) => {
       const menu = await openHub()
-      const link = menu.getByRole('link', { name })
 
-      expect(link).toHaveAttribute('target', '_blank')
-      expect(link).toHaveAttribute('rel', 'noopener')
+      expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
     }
   )
 
   it('leaves the sections that are off and their All links out of the menu', async () => {
-    const menu = await openHub({ workflows: false, apps: false })
+    const menu = await openHub({
+      workflows: false,
+      apps: false,
+      reshoot: false
+    })
 
     expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
     expect(menu.queryByRole('list', { name: 'Apps' })).toBeNull()

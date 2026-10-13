@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
-
 import { externalLinks, getRoutes } from '@/config/routes'
-import { useFrameScrub } from '@/composables/useFrameScrub'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { getSocialLinks } from '@/data/socialLinks'
 import type { LocaleAlternate } from '@/lib/hreflang'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
+import FooterSocialLinks from './FooterSocialLinks.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 
 const { locale = 'en', alternates = [] } = defineProps<{
@@ -19,187 +15,166 @@ const { locale = 'en', alternates = [] } = defineProps<{
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
-const footerRef = ref<HTMLElement>()
-const canvasRef = ref<HTMLCanvasElement>()
+type FooterColumn = { title: string; links: FooterLink[] }
 
-const frameUrls = Array.from({ length: 75 }, (_, i) => {
-  const index = String(i).padStart(5, '0')
-  return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
-})
+const products: FooterColumn = {
+  title: t('footer.products'),
+  links: [
+    {
+      label: t('nav.comfyLocal'),
+      href: routes.download
+    },
+    {
+      label: t('nav.comfyCloud'),
+      href: routes.cloud
+    },
+    {
+      label: t('nav.developerPlatform'),
+      href: routes.platform
+    },
+    {
+      label: t('nav.comfyRouter'),
+      href: routes.platformRouter
+    },
+    {
+      label: t('nav.comfyEnterprise'),
+      href: routes.enterprise
+    },
+    {
+      label: t('nav.managedBuilds'),
+      href: routes.managedBuilds
+    },
+    { label: t('nav.pricing'), href: routes.pricing }
+  ]
+}
 
-useFrameScrub(canvasRef, {
-  urls: frameUrls,
-  scrollTrigger: (canvas) => ({
-    trigger: canvas,
-    start: 'top bottom',
-    endTrigger: footerRef.value,
-    end: 'bottom bottom',
-    scrub: 1
-  })
-})
+const features: FooterColumn = {
+  title: t('nav.colFeatures'),
+  links: [
+    { label: t('nav.mcpServer'), href: routes.mcp },
+    {
+      label: t('nav.comfyAgent'),
+      href: routes.agent
+    },
+    { label: t('nav.comfyCli'), href: routes.cli },
+    {
+      label: t('nav.supportedModels'),
+      href: routes.models
+    }
+  ]
+}
 
-const topColumns: { title: string; links: FooterLink[] }[] = [
-  {
-    title: t('footer.products'),
-    links: [
-      {
-        label: t('nav.comfyLocal'),
-        href: routes.download
-      },
-      {
-        label: t('nav.comfyCloud'),
-        href: routes.cloud
-      },
-      {
-        label: t('nav.developerPlatform'),
-        href: routes.platform
-      },
-      {
-        label: t('nav.comfyRouter'),
-        href: routes.platformRouter
-      },
-      {
-        label: t('nav.comfyEnterprise'),
-        href: routes.enterprise
-      },
-      {
-        label: t('nav.managedBuilds'),
-        href: routes.managedBuilds
-      },
-      { label: t('nav.pricing'), href: routes.pricing }
-    ]
-  },
-  {
-    title: t('nav.colFeatures'),
-    links: [
-      { label: t('nav.mcpServer'), href: routes.mcp },
-      {
-        label: t('nav.comfyAgent'),
-        href: routes.agent
-      },
-      { label: t('nav.comfyCli'), href: routes.cli },
-      {
-        label: t('nav.launches'),
-        href: routes.launches
-      },
-      {
-        label: t('nav.supportedModels'),
-        href: routes.models
-      }
-    ]
-  },
-  {
-    title: t('footer.models'),
-    links: [
-      {
-        label: t('footer.modelCatalogue'),
-        href: routes.workshop
-      },
-      {
-        label: t('footer.minimaxH3'),
-        href: routes.minimax
-      },
-      {
-        label: t('footer.minimaxMusic3'),
-        href: routes.minimaxMusic3
-      },
-      {
-        label: t('footer.minimaxLicense'),
-        href: routes.minimaxLicense
-      },
-      {
-        label: t('footer.seedance'),
-        href: routes.seedance
-      },
-      {
-        label: t('footer.wanAnimate2'),
-        href: routes.wanAnimate2
-      },
-      { label: t('footer.ltx'), href: routes.ltx },
-      {
-        label: t('footer.geminiOmni'),
-        href: routes.geminiOmni
-      },
-      { label: t('footer.wan3'), href: routes.wan3 },
-      {
-        label: t('footer.chatgptImage25'),
-        href: routes.chatgptImage25
-      },
-      {
-        label: t('footer.qwenImage21'),
-        href: routes.qwenImage21
-      },
-      { label: t('footer.nanoBanana'), href: routes.nanoBanana },
-      { label: t('footer.flux3'), href: routes.flux3 }
-    ]
-  },
-  {
-    title: t('footer.resources'),
-    links: [
-      {
-        label: t('nav.learning'),
-        href: routes.learning
-      },
-      {
-        label: t('nav.customerStories'),
-        href: routes.customers
-      },
-      {
-        label: t('footer.workflows'),
-        href: externalLinks.workflows
-      },
-      {
-        label: t('footer.useCases'),
-        href: externalLinks.workflowUseCases
-      },
-      { label: t('nav.fdct'), href: routes.fdct },
-      {
-        label: t('footer.blog'),
-        href: externalLinks.blog,
-        external: true
-      },
-      {
-        label: t('nav.docs'),
-        href: externalLinks.docs,
-        external: true
-      },
-      {
-        label: t('footer.affiliateProgram'),
-        href: routes.affiliates
-      },
-      { label: t('footer.changelog'), href: routes.changelog }
-    ]
-  },
-  {
-    title: t('footer.company'),
-    links: [
-      { label: t('footer.about'), href: routes.about },
-      { label: t('nav.careers'), href: routes.careers },
-      { label: t('nav.brand'), href: routes.brand },
-      {
-        label: t('footer.termsOfService'),
-        href: routes.termsOfService
-      },
-      {
-        label: t('footer.enterpriseMsa'),
-        href: routes.enterpriseMsa
-      },
-      {
-        label: t('footer.privacyPolicy'),
-        href: routes.privacyPolicy
-      },
-      {
-        label: t('footer.trustSafety'),
-        href: externalLinks.trustCenter,
-        external: true
-      }
-    ]
-  }
-]
+const models: FooterColumn = {
+  title: t('footer.models'),
+  links: [
+    {
+      label: t('footer.modelCatalogue'),
+      href: routes.workshop
+    },
+    {
+      label: t('footer.minimaxH3'),
+      href: routes.minimax
+    },
+    {
+      label: t('footer.minimaxMusic3'),
+      href: routes.minimaxMusic3
+    },
+    {
+      label: t('footer.minimaxLicense'),
+      href: routes.minimaxLicense
+    },
+    {
+      label: t('footer.seedance'),
+      href: routes.seedance
+    },
+    {
+      label: t('footer.wanAnimate2'),
+      href: routes.wanAnimate2
+    },
+    { label: t('footer.ltx'), href: routes.ltx },
+    {
+      label: t('footer.geminiOmni'),
+      href: routes.geminiOmni
+    },
+    { label: t('footer.wan3'), href: routes.wan3 },
+    {
+      label: t('footer.chatgptImage25'),
+      href: routes.chatgptImage25
+    },
+    {
+      label: t('footer.qwenImage21'),
+      href: routes.qwenImage21
+    },
+    { label: t('footer.nanoBanana'), href: routes.nanoBanana },
+    { label: t('footer.flux3'), href: routes.flux3 }
+  ]
+}
 
-const socialLinks = getSocialLinks(locale)
+const resources: FooterColumn = {
+  title: t('footer.resources'),
+  links: [
+    {
+      label: t('nav.learning'),
+      href: routes.learning
+    },
+    {
+      label: t('nav.customerStories'),
+      href: routes.customers
+    },
+    {
+      label: t('footer.workflows'),
+      href: externalLinks.workflows
+    },
+    {
+      label: t('footer.useCases'),
+      href: externalLinks.workflowUseCases
+    },
+    { label: t('nav.fdct'), href: routes.fdct },
+    {
+      label: t('footer.blog'),
+      href: externalLinks.blog,
+      external: true
+    },
+    {
+      label: t('nav.docs'),
+      href: externalLinks.docs,
+      external: true
+    },
+    {
+      label: t('footer.affiliateProgram'),
+      href: routes.affiliates
+    },
+    { label: t('footer.changelog'), href: routes.changelog }
+  ]
+}
 
-const contactColumn: { title: string; links: FooterLink[] } = {
+const company: FooterColumn = {
+  title: t('footer.company'),
+  links: [
+    { label: t('footer.about'), href: routes.about },
+    { label: t('nav.careers'), href: routes.careers },
+    { label: t('nav.brand'), href: routes.brand },
+    {
+      label: t('footer.termsOfService'),
+      href: routes.termsOfService
+    },
+    {
+      label: t('footer.enterpriseMsa'),
+      href: routes.enterpriseMsa
+    },
+    {
+      label: t('footer.privacyPolicy'),
+      href: routes.privacyPolicy
+    },
+    {
+      label: t('footer.trustSafety'),
+      href: externalLinks.trustCenter,
+      external: true
+    }
+  ]
+}
+
+const contact: FooterColumn = {
   title: t('footer.contact'),
   links: [
     { label: t('footer.sales'), href: routes.contact },
@@ -219,79 +194,60 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     }
   ]
 }
+
+const columnGroups: FooterColumn[][] = [
+  [products, features],
+  [models],
+  [resources],
+  [company, contact]
+]
 </script>
 
 <template>
   <footer
-    ref="footerRef"
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12"
+      class="flex flex-col gap-12 border-t border-primary-warm-gray pt-16 lg:gap-6"
     >
-      <div class="flex flex-col gap-8">
+      <FooterSocialLinks :locale class="lg:order-2 lg:mt-10" />
+
+      <div
+        class="grid grid-cols-2 gap-x-6 gap-y-12 lg:order-1 lg:grid-cols-4 lg:gap-y-16"
+      >
+        <div
+          v-for="group in columnGroups"
+          :key="group[0].title"
+          class="flex flex-col gap-12"
+        >
+          <FooterLinkColumn
+            v-for="column in group"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
+        </div>
+      </div>
+
+      <div
+        class="flex flex-col gap-12 lg:order-3 lg:flex-row lg:items-end lg:justify-between"
+      >
         <p
-          class="text-2xl font-medium tracking-wide uppercase lg:max-w-80 lg:text-xl"
+          class="text-2xl font-medium tracking-wide text-primary-warm-gray uppercase lg:text-3xl"
         >
           {{ t('footer.tagline') }}
         </p>
-        <nav :aria-label="t('footer.social')">
-          <ul class="flex flex-wrap gap-2">
-            <li v-for="link in socialLinks" :key="link.href">
-              <a
-                :href="link.href"
-                target="_blank"
-                rel="noopener noreferrer"
-                :aria-label="link.label"
-                :title="link.label"
-                class="grid size-11 place-items-center rounded-full border border-transparency-white-t20 text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-              >
-                <span
-                  :class="cn('size-4.5 icon-mask', link.icon)"
-                  aria-hidden="true"
-                />
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
 
-      <!-- Link columns -->
-      <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <div class="flex flex-col gap-12">
-          <div
-            class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-5 xl:gap-x-6"
-          >
-            <FooterLinkColumn
-              v-for="column in topColumns"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
-            />
-          </div>
-
-          <div class="grid grid-cols-1 gap-12">
-            <FooterLinkColumn
-              :title="contactColumn.title"
-              :links="contactColumn.links"
-            />
-          </div>
-        </div>
-
-        <!-- Bottom bar -->
         <div
-          class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
+          class="flex flex-col items-start gap-4 text-primary-comfy-canvas/70 lg:shrink-0 lg:items-end"
         >
           <LanguageSwitcher :locale :alternates />
-          <p class="text-sm">
-            {{ t('footer.location') }}
-          </p>
-          <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+          <div class="flex flex-wrap gap-6 text-sm">
+            <p>{{ t('footer.location') }}</p>
+            <p>&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+          </div>
         </div>
       </div>
-
-      <!-- Logo -->
-      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>

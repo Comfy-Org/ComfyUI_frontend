@@ -86,7 +86,7 @@ describe('compareRows', () => {
         Object.fromEntries(rows.map((row) => [row.key, row.values]))
       ).toEqual({
         provider: ['Kling', '—'],
-        task: ['Text to Video', expect.any(String)],
+        task: ['Text to video', expect.any(String)],
         access: [access, access]
       })
     }

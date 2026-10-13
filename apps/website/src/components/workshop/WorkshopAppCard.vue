@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { getLogoPath } from '@/lib/hub/model-logos'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -18,6 +21,8 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+
+const logo = computed(() => getLogoPath(app.name))
 </script>
 
 <template>
@@ -42,6 +47,7 @@ const { t } = translationsFor(locale)
       class="relative aspect-4/3 overflow-hidden rounded-3xl bg-hub-surface"
       data-testid="app-card-artwork"
     >
+      <WorkshopCardMark :label="t('workshop.card.comfyApp')" :logo />
       <WorkshopCardMedia :model="app" />
     </div>
 

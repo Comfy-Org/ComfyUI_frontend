@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { externalLinks, getRoutes } from '@/config/routes'
+import { externalLinks } from '@/config/routes'
 import type { GalleryItem } from '@/data/gallery'
 import { visibleGalleryItems } from '@/data/gallery'
 import type { Locale } from '@/i18n/translations'
@@ -16,7 +16,6 @@ const { items = visibleGalleryItems, locale = 'en' } = defineProps<{
 }>()
 const { t } = translationsFor(locale)
 
-const gallery = getRoutes(locale).gallery
 const posts = items.slice(0, POSTS)
 </script>
 
@@ -45,9 +44,6 @@ const posts = items.slice(0, POSTS)
         </template>
       </SectionHeader>
       <div class="flex flex-wrap gap-2">
-        <Button :href="gallery">
-          {{ t('workshop.explore.communityExplore') }}
-        </Button>
         <Button
           :href="externalLinks.gallerySubmit"
           target="_blank"
@@ -59,10 +55,13 @@ const posts = items.slice(0, POSTS)
       </div>
     </div>
     <div class="columns-2 gap-4 md:columns-3 xl:columns-4">
-      <a
+      <component
+        :is="post.href ? 'a' : 'div'"
         v-for="post in posts"
         :key="post.id"
-        :href="gallery"
+        :href="post.href"
+        :target="post.href && '_blank'"
+        :rel="post.href && 'noopener noreferrer'"
         class="group relative mb-4 block break-inside-avoid overflow-hidden rounded-2xl bg-hub-surface outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         data-testid="explore-community-post"
       >
@@ -93,7 +92,7 @@ const posts = items.slice(0, POSTS)
             <GalleryItemAttribution :item="post" :locale />
           </span>
         </span>
-      </a>
+      </component>
     </div>
   </section>
 </template>

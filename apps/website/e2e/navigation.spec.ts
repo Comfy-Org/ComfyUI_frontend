@@ -5,6 +5,15 @@ import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
 
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
+
 function settleAnimations(root: Locator) {
   return root.evaluate((el) =>
     Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished))
@@ -57,7 +66,7 @@ const RETIRED_BADGE_PANELS = [
     ],
     bare: [
       { label: 'Comfy CLI', href: '/cli/' },
-      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+      { label: 'Builds', href: '/platform/builder/' }
     ]
   },
   {
@@ -163,11 +172,9 @@ test.describe('Desktop dropdown @interaction', () => {
     const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Desktop',
-      'Browse Models',
       'Comfy Cloud',
       'Comfy Agent',
       'Developer Platform',
-      'Managed Builds',
       'Docs'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
@@ -317,7 +324,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
-    for (const item of ['Events', 'About Us', 'Customer Stories', 'Launches']) {
+    for (const item of ['Events', 'About Us', 'Customer Stories']) {
       await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
     }
     await expect(
@@ -528,11 +535,11 @@ test.describe('Mobile menu @mobile', () => {
 
     const menu = page.getByRole('dialog')
     await menu.getByRole('button', { name: 'Products' }).click()
-    const models = menu.getByRole('link', { name: 'Browse Models' })
+    const platform = menu.getByRole('link', { name: 'Developer Platform' })
     const agent = menu.getByRole('link', { name: 'Comfy Agent' })
     await expect(agent).toBeVisible()
     await settleAnimations(menu)
-    const first = await badgePlacement(models, 'Browse Models')
+    const first = await badgePlacement(platform, 'Developer Platform')
     const second = await badgePlacement(agent, 'Comfy Agent')
 
     expect(first.gap).toBeGreaterThan(0)
@@ -561,47 +568,39 @@ test.describe('Footer @smoke', () => {
     }
   })
 
-  test('lays the five link columns and the social buttons out in one row each on desktop, with Contact below', async ({
+  test('social channels are icon links that open in a new tab', async ({
     page
   }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
     const footer = page.locator('footer')
-    await footer.scrollIntoViewIfNeeded()
-
-    const tops = async (locator: Locator) =>
-      locator.evaluateAll((elements) =>
-        elements.map((element) =>
-          Math.round(element.getBoundingClientRect().top)
-        )
-      )
-    const [contact, ...columns] = (
-      await tops(footer.getByRole('heading', { level: 3 }))
-    ).reverse()
-    expect(columns).toHaveLength(5)
-    expect(new Set(columns).size).toBe(1)
-    expect(contact).toBeGreaterThan(columns[0])
-    const social = await tops(
-      footer.getByRole('navigation', { name: 'Follow Comfy' }).getByRole('link')
-    )
-    expect(new Set(social).size).toBe(1)
-  })
-
-  test('social links are round icon buttons that open a new tab', async ({
-    page
-  }) => {
-    const social = page
-      .locator('footer')
-      .getByRole('navigation', { name: 'Follow Comfy' })
+    const social = footer.getByRole('navigation', { name: 'Follow Comfy' })
     await social.scrollIntoViewIfNeeded()
+    await expect(social).toBeVisible()
 
-    for (const [name, href] of SOCIAL_LINKS) {
-      const link = social.getByRole('link', { name, exact: true })
-      await expect(link).toHaveAttribute('href', href)
-      await expect(link).toHaveAttribute('target', '_blank')
-      await expect(link).toHaveText('')
-      const box = await link.boundingBox()
-      expect(box?.width).toBe(box?.height)
-    }
+    const links = social.getByRole('link')
+    await expect(links).toHaveText(
+      socialChannels.map(([label]) => `${label} (opens in new tab)`)
+    )
+    expect(
+      await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => [
+          anchor.getAttribute('href'),
+          anchor.target,
+          anchor.rel
+        ])
+      )
+    ).toEqual(socialChannels.map(([, href]) => [href, '_blank', 'noopener']))
+    const socialHrefs: readonly string[] = socialChannels.map(
+      ([, href]) => href
+    )
+    const resourceHrefs = await footer
+      .getByRole('navigation', { name: 'Resources' })
+      .getByRole('link')
+      .evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => anchor.getAttribute('href') ?? '')
+      )
+    expect(resourceHrefs.filter((href) => socialHrefs.includes(href))).toEqual(
+      []
+    )
   })
 
   test('copyright text is visible', async ({ page }) => {

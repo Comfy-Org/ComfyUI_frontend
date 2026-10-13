@@ -864,9 +864,14 @@ const showsRunMeta = computed(
 const policyMessage = computed(() =>
   refusesRealFaces(model.slug) ? t('workshop.error.policyRealFaces') : undefined
 )
-const memberWorkspace = computed(() =>
-  session.value?.role === 'member' ? session.value.workspace.name : undefined
-)
+
+function onLeaveDialogOpen(open: boolean) {
+  if (!open) leavingTo.value = undefined
+}
+
+function onReplaceDialogOpen(open: boolean) {
+  if (!open) replacing.value = undefined
+}
 
 function retry() {
   if (gate.value === 'ready') void run()
@@ -959,7 +964,9 @@ function retry() {
             compact
             :locale
             :policy-message
-            :member-workspace
+            :member-workspace="
+              session?.role === 'member' ? session.workspace.name : undefined
+            "
             @switch-personal="switchToPersonal"
             @buy-credits="requestWorkshopBuyCredits"
             @retry="retry"
@@ -1036,7 +1043,7 @@ function retry() {
       :action="leaveAction"
       :assets-href="assetsHref"
       :locale
-      @update:open="(value: boolean) => !value && (leavingTo = undefined)"
+      @update:open="onLeaveDialogOpen"
       @leave="leaveForLink"
       @keep="keepAndLeave"
     />
@@ -1044,7 +1051,7 @@ function retry() {
     <ExampleReplaceDialog
       :open="replacing !== undefined"
       :locale
-      @update:open="(value: boolean) => !value && (replacing = undefined)"
+      @update:open="onReplaceDialogOpen"
       @replace="replaceWithExample"
     />
   </div>

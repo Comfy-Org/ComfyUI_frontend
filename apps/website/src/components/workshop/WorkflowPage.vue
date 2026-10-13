@@ -80,7 +80,8 @@ function captureDownload() {
       </h1>
       <p
         v-if="model.summary"
-        class="mt-4 max-w-3xl text-lg text-primary-warm-gray"
+        class="mt-4 text-lg text-primary-warm-gray lg:truncate"
+        :title="model.summary"
       >
         {{ model.summary }}
       </p>

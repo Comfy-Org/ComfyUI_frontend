@@ -2,7 +2,7 @@
   <BaseModalLayout
     content-title=""
     data-testid="settings-dialog"
-    size="full"
+    size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
   >

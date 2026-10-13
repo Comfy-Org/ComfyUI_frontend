@@ -6,7 +6,8 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   Modality,
   SortOrder,
-  WorkflowWorkshopModel
+  WorkflowWorkshopModel,
+  WorkshopModel
 } from '@/config/models-catalogue'
 import { MODALITIES, sortWorkshopModels } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
@@ -14,6 +15,12 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { usePagedList } from '@/composables/usePagedList'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
+import {
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
 import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
 import {
   ALL_WORKFLOWS,
@@ -60,17 +67,38 @@ function knownMedia(values: readonly string[]): Modality[] {
   return MODALITIES.filter((media) => values.includes(media))
 }
 
-onMounted(() => {
-  const search = initialSearch ?? location.search
-  const params = new URLSearchParams(search)
-  query.value = params.get('q') ?? ''
-  category.value = categoryFromAddress(search, models)
-  inputs.value = knownMedia(params.getAll('input'))
-  outputs.value = knownMedia(params.getAll('output'))
-  runsOn.value = params
-    .getAll('model')
-    .filter((name) => models.some((model) => model.models?.includes(name)))
+const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
+  query,
+  resultsCount: () => visible.value.length,
+  filters: [
+    ['category', () => category.value],
+    ['model', () => runsOn.value],
+    ['sort', () => sort.value]
+  ]
 })
+onMounted(() =>
+  quietly(() => {
+    const search = initialSearch ?? location.search
+    const params = new URLSearchParams(search)
+    query.value = params.get('q') ?? ''
+    category.value = categoryFromAddress(search, models)
+    inputs.value = knownMedia(params.getAll('input'))
+    outputs.value = knownMedia(params.getAll('output'))
+    runsOn.value = params
+      .getAll('model')
+      .filter((name) => models.some((model) => model.models?.includes(name)))
+  })
+)
+
+function openWorkflow(model: WorkshopModel, position: number) {
+  submitSearch()
+  captureHubItemClick(hubItemOf(model), {
+    surface: 'workflows',
+    source: 'results_grid',
+    position,
+    ...hubActiveQuery(query.value)
+  })
+}
 
 watch(category, (value) => {
   const next = categoryAddress(location.href, value)
@@ -251,6 +279,7 @@ function clear() {
             kind="workflows"
             compact
             class="min-w-0 flex-1"
+            @submit="submitSearch"
           />
           <WorkshopFilterMenu
             ref="filterMenu"
@@ -294,8 +323,12 @@ function clear() {
             :aria-label="t('workshop.hub.workflows')"
             data-testid="workflow-grid"
           >
-            <li v-for="model in shown" :key="model.slug">
-              <WorkshopModelCard :model :locale />
+            <li v-for="(model, index) in shown" :key="model.slug">
+              <WorkshopModelCard
+                :model
+                :locale
+                @click="openWorkflow(model, index)"
+              />
             </li>
           </ul>
           <CatalogueShowMore

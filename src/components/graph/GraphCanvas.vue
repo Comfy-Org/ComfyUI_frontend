@@ -73,6 +73,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     :inert="canvasStore.isPickingNodes"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -195,7 +196,8 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -224,6 +226,12 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -392,7 +400,10 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    forEachNode(comfyApp.rootGraph, (n) => {
+    const rootGraph = comfyApp.rootGraphOrUndefined
+    if (!rootGraph) return
+
+    forEachNode(rootGraph, (n) => {
       if (!n.widgets) return
       for (const w of n.widgets) {
         if (!w[IS_CONTROL_WIDGET]) continue
@@ -487,6 +498,7 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 

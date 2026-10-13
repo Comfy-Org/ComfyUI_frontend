@@ -104,7 +104,7 @@ const labelledBy = computed(() =>
         :id="`${id}-support`"
         :reason="model.incompleteReason"
         :locale
-        class="absolute top-3 right-3 z-10"
+        class="absolute right-3 bottom-3 z-10"
       />
 
       <WorkshopCardMedia :model />
