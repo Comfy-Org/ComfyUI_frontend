@@ -1,4 +1,5 @@
 import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -16,6 +17,9 @@ interface InFlightCreateSession {
 class SsoRequiredSessionError extends Error {
   readonly code = 'SSO_REQUIRED'
 }
+
+/** Ingest refused the session because the sign-in predates a sign-out. */
+export class SessionRevokedError extends Error {}
 
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
@@ -42,10 +46,13 @@ export const useSessionCookie = () => {
 
   const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    const text = typeof message === 'string' ? message : response.statusText
-    return isSsoRequiredRefusal(response.status, errorData)
-      ? new SsoRequiredSessionError(text)
+    const refusal = zErrorResponse.partial().safeParse(errorData).data
+    const text = refusal?.message ?? response.statusText
+    if (isSsoRequiredRefusal(response.status, errorData)) {
+      return new SsoRequiredSessionError(text)
+    }
+    return response.status === 401 && refusal?.code === 'SESSION_REVOKED'
+      ? new SessionRevokedError(text)
       : new Error(text)
   }
 

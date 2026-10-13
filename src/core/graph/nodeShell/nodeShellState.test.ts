@@ -106,7 +106,6 @@ describe('node shell state', () => {
 describe('node registration invariants', () => {
   beforeEach(() => {
     vi.stubEnv('DEV', true)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('refuses to register a node under a second root graph', () => {

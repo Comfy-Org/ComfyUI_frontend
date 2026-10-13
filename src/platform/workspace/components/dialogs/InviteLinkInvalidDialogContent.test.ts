@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -31,7 +31,7 @@ describe('InviteLinkInvalidDialogContent', () => {
       })
     )
 
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'invite-link-invalid'
     })
   })
@@ -41,7 +41,7 @@ describe('InviteLinkInvalidDialogContent', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'g.close' }))
 
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'invite-link-invalid'
     })
   })

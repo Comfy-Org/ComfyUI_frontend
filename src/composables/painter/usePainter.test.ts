@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
@@ -486,6 +487,12 @@ describe('usePainter', () => {
       await expect(
         widgetOf('mask').serializeValue!(paintNode(), 0)
       ).rejects.toThrow(/missing 'name'/)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'painter.uploadMissingName'
+        })
+      ])
     })
 
     it('throws when the upload response body is not valid JSON', async () => {

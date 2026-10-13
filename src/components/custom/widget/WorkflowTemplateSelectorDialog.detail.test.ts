@@ -304,7 +304,6 @@ function renderDialog() {
   return render(WorkflowTemplateSelectorDialog, {
     props: { onClose: mocks.onClose },
     global: {
-      directives: { tooltip: {} },
       plugins: [i18n],
       stubs: {
         LeftSidePanel: {
@@ -330,7 +329,6 @@ function renderDialog() {
         },
         TemplateFilterControls: true,
         AsyncSearchInput: true,
-        AccessibleTooltip: { template: '<div><slot /></div>' },
         Tag: { props: ['label'], template: '<span>{{ label }}</span>' }
       }
     }

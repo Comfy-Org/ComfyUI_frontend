@@ -30,6 +30,10 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - Install `vi.stubGlobal()` and `vi.spyOn()` calls in `beforeEach` or in the
   test that needs them. Module-scope stubs and spies are removed before the
   first test runs.
+- `console.debug`, `error`, `info`, `log`, and `warn` are already spied before
+  every test, and output from passing tests is hidden. Assert with
+  `expect(console.error)` and configure with `vi.mocked(console.error)` instead
+  of calling `vi.spyOn(console, 'error')`.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
 
@@ -161,13 +165,42 @@ has finished. Vitest then reports the late `console.error` as an unhandled
 error - `Closing rpc while "onUserConsoleLog" was pending` - against whichever
 file happened to be running, and fails the run with every test passing.
 
-If you hit the guard, mock the module that issues the request. Stubbing `fetch`
-also works and replaces the guard for that test, but do it in a `beforeEach` or
-inside the test body. A `vi.stubGlobal` at module scope does stay in place by
-default, but nothing owns restoring it: any `vi.unstubAllGlobals()` - a cleanup
-hook, another test tidying up after itself, or enabling the `unstubGlobals`
-config option - drops it and puts the real `fetch` back without failing
-anything.
+If you hit the guard, mock the module that issues the request, or configure
+the global `fetch`. The guard is a `vi.fn`, so `mockReset` puts it back before
+every test. Configure `fetch` itself in a `beforeEach` or the test; do not
+install a separate `vi.fn` with `mockImplementation`. `@comfyorg/test-utils/fetch`
+answers requests by route and reads back what was sent:
+
+```ts
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+
+respondToFetch(TOKEN_URL, () => Response.json(token))
+respondToFetch(
+  { method: 'POST', url: /\/uploads$/ },
+  () => new Response(null, { status: 201 })
+)
+respondToFetch(TOKEN_URL, () => Promise.reject(new TypeError('offline')), {
+  times: 1
+})
+
+expect(fetch).toHaveBeenCalledTimes(2)
+expect(JSON.parse(String(fetchRequests(TOKEN_URL)[0].body))).toEqual({
+  workspace_id: 'ws-1'
+})
+```
+
+- Later routes are checked first. A request that matches no route, or only
+  used-up routes, reaches the guard and fails the test, so stub every request
+  the code makes.
+- The handler runs per call. Return real `Response` objects and build a new
+  one each time: a body can be read once.
+- A single call that ignores the URL can stay a one-liner:
+  `vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }))`.
+- Fakes that model behaviour (stateful route tables, abort-aware or delayed
+  responses) are plain functions passed to `vi.mocked(fetch).mockImplementation`.
+- Do not replace `fetch` with `vi.stubGlobal`, `vi.spyOn(globalThis, 'fetch')`,
+  or assignment; `comfy/no-redundant-fetch-stub` reports it. A test that needs
+  no network asserts `expect(fetch).not.toHaveBeenCalled()`.
 
 ## Component Testing
 

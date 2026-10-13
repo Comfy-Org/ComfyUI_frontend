@@ -7,8 +7,10 @@ import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
 import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import ModelLaunchHighlightSection from './ModelLaunchHighlightSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
+import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
 import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
 import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
 import type { ModelLaunchPage } from './types'
@@ -33,10 +35,7 @@ const routes = getRoutes(locale)
 
 const crumbs = [
   { label: t('breadcrumb.home'), href: routes.home },
-  {
-    label: t('models.breadcrumb.models'),
-    href: routes.models
-  },
+  { label: t('workshop.model.breadcrumb'), href: routes.workshop },
   { label: t(page.breadcrumbLabelKey) }
 ]
 
@@ -72,10 +71,19 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
     crumbs={crumbs}
     updated={t(page.breadcrumbUpdatedKey)}
     label={t('ui.breadcrumb')}
+    stackOnMobile={page.stackBreadcrumbOnMobile}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
   {sectionOrder.map((section) => {
     switch (section) {
+      case 'showcases':
+        return page.showcases?.map((showcase) => (
+          <ModelLaunchShowcaseSection
+            client:visible={{ rootMargin: '400px' }}
+            showcase={showcase}
+            locale={locale}
+          />
+        ))
       case 'gallery':
         return (
           page.gallery && (
@@ -127,6 +135,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
             <ModelLaunchFaqSection
               client:visible
               faq={page.faq}
+              locale={locale}
+            />
+          )
+        )
+      case 'highlight':
+        return (
+          page.highlight && (
+            <ModelLaunchHighlightSection
+              highlight={page.highlight}
               locale={locale}
             />
           )

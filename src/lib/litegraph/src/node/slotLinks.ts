@@ -7,7 +7,7 @@ import type { RerouteId } from '@/types/rerouteId'
 
 import type { LGraph } from '../LGraph'
 import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { slotFloatingLinks } from '../LLink'
 import type { LLink } from '../LLink'
 import { NodeSlotType } from '../types/globalEnums'

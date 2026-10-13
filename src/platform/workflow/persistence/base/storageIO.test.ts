@@ -421,9 +421,6 @@ describe('storageIO', () => {
         'Storage unavailable',
         'SecurityError'
       )
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const unregisterFailedFlush =
         isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
           throw flushError
@@ -437,13 +434,12 @@ describe('storageIO', () => {
 
       expect(successfulFlush).toHaveBeenCalledOnce()
       expect(localStorage.getItem('workflow')).toBeNull()
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Failed to flush pending workflow persistence',
         flushError
       )
       unregisterFailedFlush()
       unregisterSuccessfulFlush()
-      consoleWarnSpy.mockRestore()
     })
 
     it('resumes writes when a workspace transition is cancelled', async () => {

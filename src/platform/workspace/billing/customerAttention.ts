@@ -5,6 +5,7 @@ import type {
   BillingAuthenticationState,
   BillingOperationPhase
 } from '@/platform/workspace/api/workspaceApi'
+import type { ToastId } from '@/types/toastId'
 
 // Re-exported so both rails read one definition: a second copy that drifted
 // would reintroduce the give-up bug this predicate exists to prevent.
@@ -39,6 +40,11 @@ export function needsCustomerAttention(
 }
 
 export type ProgressToastKind = 'processing' | 'action'
+
+export interface ProgressToast {
+  id: ToastId
+  kind: ProgressToastKind
+}
 
 interface ProgressToastOperation {
   readonly actionUrl?: string | null

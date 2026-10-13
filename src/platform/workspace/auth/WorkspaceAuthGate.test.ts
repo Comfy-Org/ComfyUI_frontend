@@ -7,6 +7,7 @@ import type {
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
@@ -666,6 +667,24 @@ describe('WorkspaceAuthGate', () => {
         error: new Error('Workspace init failed'),
         heading: "Couldn't load your workspace",
         retry: true
+      },
+      {
+        name: 'sso off, session revoked',
+        sso: false,
+        error: new SessionRevokedError(
+          'This session was signed out; sign in again'
+        ),
+        heading: "Couldn't load your workspace",
+        retry: false
+      },
+      {
+        name: 'sso on, session revoked',
+        sso: true,
+        error: new SessionRevokedError(
+          'This session was signed out; sign in again'
+        ),
+        heading: "Couldn't load your workspace",
+        retry: false
       }
     ])(
       '$name: shows "$heading" with sign-out',

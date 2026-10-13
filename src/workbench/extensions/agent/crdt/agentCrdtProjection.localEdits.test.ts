@@ -315,7 +315,7 @@ describe('AgentCrdtProjection after the host rejects a human batch', () => {
     const kept = createRegisteredNode('TestNote')
     graph.add(kept)
 
-    expect(hostRejects([addNodeOp(refused, [20])])).toEqual([])
+    hostRejects([addNodeOp(refused, [20])])
 
     expect(nodeIds(graph).live).toEqual([String(source.id), String(kept.id)])
     destroy()
@@ -343,7 +343,7 @@ describe('AgentCrdtProjection after the host rejects a human batch', () => {
           removed_links: []
         }
       ])
-    ).toEqual([source.id])
+    ).toMatchObject({ createdNodeIds: [source.id] })
 
     expect(nodeIds(graph).live).toEqual([String(source.id)])
     expect(graph.getNodeById(source.id)?.widgets?.[0]?.value).toBe(55)

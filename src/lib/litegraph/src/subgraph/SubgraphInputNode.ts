@@ -8,11 +8,13 @@ import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   ISlotType,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'

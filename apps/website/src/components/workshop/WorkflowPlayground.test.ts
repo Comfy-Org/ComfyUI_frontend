@@ -214,15 +214,15 @@ describe('WorkflowPlayground API tab analytics', () => {
 })
 
 describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
+  // The ways out of the page live in the page header, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the page header', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+      props: { model, scope: 'anonymous' }
     })
 
     const panel = screen.getByRole('tabpanel', { name: 'Playground' })

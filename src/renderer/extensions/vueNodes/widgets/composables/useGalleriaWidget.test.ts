@@ -28,7 +28,7 @@ function createMockNode(): {
 }
 
 function createGalleriaSpec(images?: string[]): InputSpec {
-  return { type: 'GALLERIA', name: 'gallery', images } as InputSpec
+  return { type: 'GALLERIA', name: 'gallery', images }
 }
 
 describe('useGalleriaWidget', () => {

@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 import { createGraphThumbnail } from './graphThumbnailRenderer'
@@ -9,11 +10,13 @@ const workflowThumbnails = ref<Map<string, string>>(new Map())
 
 export const useWorkflowThumbnail = () => {
   /**
-   * Capture a thumbnail of the canvas
+   * Capture a thumbnail of the given graph
    */
-  const createMinimapPreview = (): Promise<string | null> => {
+  const createMinimapPreview = (
+    graph: LGraph | null | undefined
+  ): Promise<string | null> => {
     try {
-      const thumbnailDataUrl = createGraphThumbnail()
+      const thumbnailDataUrl = createGraphThumbnail(graph)
       return Promise.resolve(thumbnailDataUrl)
     } catch (error) {
       console.error('Failed to capture canvas thumbnail:', error)
@@ -22,10 +25,13 @@ export const useWorkflowThumbnail = () => {
   }
 
   /**
-   * Store a thumbnail for a workflow
+   * Store a thumbnail of the given graph for a workflow
    */
-  const storeThumbnail = async (workflow: ComfyWorkflow) => {
-    const thumbnail = await createMinimapPreview()
+  const storeThumbnail = async (
+    workflow: ComfyWorkflow,
+    graph: LGraph | null | undefined
+  ) => {
+    const thumbnail = await createMinimapPreview(graph)
     if (thumbnail) {
       // Clean up existing thumbnail if it exists
       const existingThumbnail = workflowThumbnails.value.get(workflow.key)

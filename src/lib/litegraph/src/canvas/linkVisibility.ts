@@ -1,5 +1,5 @@
 import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '../interfaces'
+import type { IContextMenuValue } from '../types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'

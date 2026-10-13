@@ -1,32 +1,13 @@
-import { computed } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 /**
  * Dialog migration regression net: when callers in `dialogService` open a
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  const billing = useBillingContext()
-  billing.canAccessSubscriptionFeatures = computed(() => true)
-  billing.isTeamPlan = computed(() => false)
-  billing.tier = computed(() => 'STANDARD')
-  billing.type = computed(() => 'legacy')
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-})
-
-vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false
-}))
-
-vi.mock(import('@/composables/billing/useBillingContext'))
-
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -158,14 +139,6 @@ describe('dialogService Reka renderer opt-in', () => {
     await expect(result).resolves.toBeNull()
   })
 
-  it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
-    useDialogService().showBillingComingSoonDialog()
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
-    expect(args.dialogComponentProps?.size).toBe('sm')
-    expect(args.dialogComponentProps?.contentClass).toBe('max-w-[360px]')
-  })
-
   it("showExecutionErrorDialog() sets renderer 'reka' and size 'lg'", () => {
     useDialogService().showExecutionErrorDialog({
       exception_type: 'RuntimeError',
@@ -184,16 +157,6 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('lg')
-  })
-
-  it("showTopUpCreditsDialog() sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
-    await useDialogService().showTopUpCreditsDialog()
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
-    expect(args.dialogComponentProps?.headless).toBe(true)
-    expect(args.dialogComponentProps?.pt).toBeUndefined()
-    expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
-    expect(args.dialogComponentProps?.contentClass).toContain('bg-transparent')
   })
 
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {

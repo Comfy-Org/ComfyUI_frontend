@@ -1,94 +1,28 @@
-import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
-import { useLitegraphService } from '@/services/litegraphService'
+import type {
+  ExecutedWsMessage,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type { WorkflowQueueIntent } from '@/platform/telemetry/types'
 import { useCommandStore } from '@/stores/commandStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import type { ComfyApp } from '@/types/comfy'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
+import { $el as _$el } from './ui/utils'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
+export const $el = _$el
 
 type Position2D = {
   x: number
   y: number
-}
-
-type Props = {
-  parent?: HTMLElement
-  $?: (el: HTMLElement) => void
-  dataset?: DOMStringMap
-  style?: Partial<CSSStyleDeclaration>
-  for?: string
-  textContent?: string
-  [key: string]: unknown
-}
-
-type Children = Element[] | Element | string | string[]
-
-type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
-  ? HTMLElementTagNameMap[K]
-  : HTMLElement
-
-export function $el<TTag extends string>(
-  tag: TTag,
-  propsOrChildren?: Children | Props,
-  children?: Children
-): ElementType<TTag> {
-  const split = tag.split('.')
-  const element = document.createElement(split.shift() as string)
-  if (split.length > 0) {
-    element.classList.add(...split)
-  }
-
-  if (propsOrChildren) {
-    if (typeof propsOrChildren === 'string') {
-      propsOrChildren = { textContent: propsOrChildren }
-    } else if (propsOrChildren instanceof Element) {
-      propsOrChildren = [propsOrChildren]
-    }
-    if (Array.isArray(propsOrChildren)) {
-      element.append(...propsOrChildren)
-    } else {
-      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
-
-      if (rest.for) {
-        element.setAttribute('for', rest.for)
-      }
-
-      if (style) {
-        Object.assign(element.style, style)
-      }
-
-      if (dataset) {
-        Object.assign(element.dataset, dataset)
-      }
-
-      Object.assign(element, rest)
-      if (children) {
-        element.append(...(Array.isArray(children) ? children : [children]))
-      }
-
-      if (parent) {
-        parent.append(element)
-      }
-
-      if (cb) {
-        cb(element)
-      }
-    }
-  }
-  return element as ElementType<TTag>
 }
 
 function dragElement(dragEl: HTMLElement): () => void {
@@ -236,6 +170,15 @@ function dragElement(dragEl: HTMLElement): () => void {
   return restorePos
 }
 
+export interface LegacyMenuHost {
+  resetView(): void
+  restoreOutputs(
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
+  ): void
+  trackRunButton(intent: WorkflowQueueIntent): void
+  enterFocusMode(): void
+}
+
 class ComfyList {
   private _type: string
   private _text: string
@@ -243,7 +186,13 @@ class ComfyList {
   element: HTMLDivElement
   button?: HTMLButtonElement
 
-  constructor(text: string, type?: string, reverse?: boolean) {
+  constructor(
+    private readonly app: ComfyApp,
+    private readonly host: LegacyMenuHost,
+    text: string,
+    type?: string,
+    reverse?: boolean
+  ) {
     this._text = text
     this._type = type || text.toLowerCase()
     this._reverse = reverse || false
@@ -294,9 +243,9 @@ class ComfyList {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
                     const workflow = await extractWorkflow(job)
-                    await app.loadGraphData(workflow, true, false)
+                    await this.app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      useNodeOutputStore().restoreOutputs(job.outputs)
+                      this.host.restoreOutputs(job.outputs)
                     }
                   }
                 }),
@@ -356,6 +305,7 @@ class ComfyList {
 
 export class ComfyUI {
   app: ComfyApp
+  private readonly host: LegacyMenuHost
   dialog: _ComfyDialog
   settings: ComfySettingsDialog
   batchCount: number
@@ -370,15 +320,16 @@ export class ComfyUI {
   restoreMenuPosition = () => {}
   loadFile = () => {}
 
-  constructor(app: ComfyApp) {
+  constructor(app: ComfyApp, host: LegacyMenuHost) {
     this.app = app
+    this.host = host
     this.dialog = new ComfyDialog()
     this.settings = new ComfySettingsDialog(app)
 
     this.batchCount = 1
     this.lastQueueSize = 0
-    this.queue = new ComfyList('Queue')
-    this.history = new ComfyList('History', 'history', true)
+    this.queue = new ComfyList(app, host, 'Queue')
+    this.history = new ComfyList(app, host, 'History', 'history', true)
 
     api.addEventListener('status', () => {
       void this.queue.update()
@@ -399,10 +350,10 @@ export class ComfyUI {
         const file = fileInput.files?.[0]
         if (file) {
           try {
-            await app.handleFile(file, 'file_button')
+            await this.app.handleFile(file, 'file_button')
           } catch (error) {
             console.error('Failed to load file:', error)
-            app.showErrorOnFileLoad(file)
+            this.app.showErrorOnFileLoad(file)
           } finally {
             fileInput.value = ''
           }
@@ -437,7 +388,7 @@ export class ComfyUI {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          void app.queuePrompt(0, this.batchCount, {
+          void this.app.queuePrompt(0, this.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         } else {
@@ -475,7 +426,7 @@ export class ComfyUI {
               $el('button.comfy-close-menu-btn', {
                 textContent: '\u00d7',
                 onclick: () => {
-                  useWorkspaceStore().focusMode = true
+                  this.host.enterFocusMode()
                 }
               })
             ])
@@ -488,9 +439,9 @@ export class ComfyUI {
             const workflowQueueIntent = {
               trigger_source: 'legacy_ui'
             } as const
-            useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
+            this.host.trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            void app.queuePrompt(0, this.batchCount, {
+            void this.app.queuePrompt(0, this.batchCount, {
               intent: workflowQueueIntent
             })
           }
@@ -601,9 +552,9 @@ export class ComfyUI {
               const workflowQueueIntent = {
                 trigger_source: 'legacy_ui'
               } as const
-              useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
+              this.host.trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              void app.queuePrompt(-1, this.batchCount, {
+              void this.app.queuePrompt(-1, this.batchCount, {
                 intent: workflowQueueIntent
               })
             }
@@ -653,13 +604,13 @@ export class ComfyUI {
           id: 'comfy-refresh-button',
           textContent: 'Refresh',
           onclick: () => {
-            void app.refreshComboInNodes().catch(() => {})
+            void this.app.refreshComboInNodes().catch(() => {})
           }
         }),
         $el('button', {
           id: 'comfy-clipspace-button',
           textContent: 'Clipspace',
-          onclick: () => app.openClipspace()
+          onclick: () => this.app.openClipspace()
         }),
         $el('button', {
           id: 'comfy-clear-button',
@@ -669,8 +620,8 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
-              useLitegraphService().resetView()
+              this.app.clean()
+              this.host.resetView()
               api.dispatchCustomEvent('graphCleared')
             }
           }
@@ -683,8 +634,8 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Load default workflow?')
             ) {
-              useLitegraphService().resetView()
-              await app.loadGraphData()
+              this.host.resetView()
+              await this.app.loadGraphData()
             }
           }
         }),
@@ -692,7 +643,7 @@ export class ComfyUI {
           id: 'comfy-reset-view-button',
           textContent: 'Reset View',
           onclick: async () => {
-            useLitegraphService().resetView()
+            this.host.resetView()
           }
         })
       ]
@@ -715,9 +666,9 @@ export class ComfyUI {
       queueRemaining == 0 &&
       this.autoQueueEnabled &&
       (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
-      !app.lastExecutionError
+      !this.app.lastExecutionError
     ) {
-      void app.queuePrompt(0, this.batchCount, {
+      void this.app.queuePrompt(0, this.batchCount, {
         intent: { trigger_source: 'auto_queue' }
       })
       this.graphHasChanged = false

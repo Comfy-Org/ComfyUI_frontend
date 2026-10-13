@@ -1,0 +1,793 @@
+{
+  "boundaries": {
+    "zones": [
+      {
+        "name": "audio/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/audio/**",
+          "src/composables/useWaveAudioPlayer.ts",
+          "src/composables/useWaveAudioPlayer.test.ts"
+        ]
+      },
+      {
+        "name": "audio/infrastructure",
+        "patterns": [
+          "src/services/audioService.ts",
+          "src/services/audioService.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts"
+        ]
+      },
+      {
+        "name": "audio/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/audio/**",
+          "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
+          "src/components/common/WaveAudioPlayer.vue",
+          "src/components/common/WaveAudioPlayer.test.ts",
+          "src/components/common/WaveAudioPlayer.stories.ts"
+        ]
+      },
+      {
+        "name": "audio/integration",
+        "patterns": [
+          "src/extensions/core/uploadAudio.ts",
+          "src/extensions/core/uploadAudio.test.ts"
+        ]
+      },
+      {
+        "name": "bounding-boxes/domain",
+        "patterns": [
+          "src/types/boundingBoxes.ts",
+          "src/composables/boundingBoxes/boundingBoxesUtil.ts",
+          "src/composables/boundingBoxes/boundingBoxesUtil.test.ts"
+        ]
+      },
+      {
+        "name": "bounding-boxes/application",
+        "patterns": [
+          "src/composables/boundingBoxes/useBoundingBoxes.ts",
+          "src/composables/boundingBoxes/useBoundingBoxes.test.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.test.ts"
+        ]
+      },
+      {
+        "name": "bounding-boxes/presentation",
+        "patterns": ["src/components/boundingBoxes/**"]
+      },
+      {
+        "name": "bounding-boxes/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.test.ts",
+          "src/extensions/core/createBoundingBoxes.ts",
+          "src/extensions/core/createBoundingBoxes.test.ts",
+          "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts",
+          "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts"
+        ]
+      },
+      {
+        "name": "cloud/domain",
+        "patterns": [
+          "src/platform/cloud/onboarding/sso/ssoEntryQuery.ts",
+          "src/platform/cloud/onboarding/sso/ssoErrorMessages.ts",
+          "src/platform/cloud/onboarding/sso/ssoSignInState.ts",
+          "src/platform/cloud/onboarding/sso/ssoSignInState.test.ts",
+          "src/platform/cloud/onboarding/survey/surveySchema.ts",
+          "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
+          "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
+          "src/platform/cloud/onboarding/utils/**",
+          "src/platform/cloud/subscription/constants/**",
+          "src/platform/cloud/subscription/utils/billingPlanTelemetry.ts",
+          "src/platform/cloud/subscription/utils/billingPlanTelemetry.test.ts",
+          "src/platform/cloud/subscription/utils/cancellationSurvey.ts",
+          "src/platform/cloud/subscription/utils/creditsProgress.ts",
+          "src/platform/cloud/subscription/utils/creditsProgress.test.ts",
+          "src/platform/cloud/subscription/utils/planCreditGrant.ts",
+          "src/platform/cloud/subscription/utils/planCreditGrant.test.ts",
+          "src/platform/cloud/subscription/utils/retentionOffer.ts",
+          "src/platform/cloud/subscription/utils/retentionOffer.test.ts",
+          "src/platform/cloud/subscription/utils/subscriptionCancellationTelemetry.ts",
+          "src/platform/cloud/subscription/utils/subscriptionTierRank.ts",
+          "src/platform/cloud/subscription/utils/subscriptionTierRank.test.ts",
+          "src/platform/cloud/subscription/utils/tierBenefits.ts",
+          "src/platform/cloud/subscription/utils/tierBenefits.test.ts",
+          "src/platform/distribution/cloudPreviewUtil.ts",
+          "src/platform/distribution/cloudPreviewUtil.test.ts",
+          "src/config/subscriptionPricesConfig.ts"
+        ]
+      },
+      {
+        "name": "cloud/application",
+        "patterns": [
+          "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
+          "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
+          "src/platform/cloud/onboarding/composables/useCloudAuthPage.ts",
+          "src/platform/cloud/onboarding/composables/useFreeTierOnboarding.ts",
+          "src/platform/cloud/onboarding/composables/useFreeTierOnboarding.test.ts",
+          "src/platform/cloud/onboarding/composables/usePostAuthRedirect.ts",
+          "src/platform/cloud/onboarding/composables/usePostAuthRedirect.test.ts",
+          "src/platform/cloud/onboarding/composables/useSsoSignIn.ts",
+          "src/platform/cloud/onboarding/sso/ssoReentry.ts",
+          "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
+          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts",
+          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
+          "src/platform/cloud/subscription/composables/**",
+          "src/platform/cloud/subscription/launchCancellationFlow.ts",
+          "src/platform/cloud/subscription/launchCancellationFlow.test.ts",
+          "src/platform/cloud/notification/composables/**",
+          "src/platform/auth/session/cloudWebSessionStore.ts",
+          "src/platform/auth/session/cloudIdentityBoot.ts"
+        ]
+      },
+      {
+        "name": "cloud/infrastructure",
+        "patterns": [
+          "src/platform/cloud/oauth/oauthApi.ts",
+          "src/platform/cloud/oauth/oauthApi.test.ts",
+          "src/platform/cloud/oauth/oauthState.ts",
+          "src/platform/cloud/oauth/oauthState.test.ts",
+          "src/platform/cloud/onboarding/auth.ts",
+          "src/platform/cloud/onboarding/auth.test.ts",
+          "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
+          "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
+          "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
+          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
+          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
+          "src/platform/auth/cloudApiAuthProvider.ts",
+          "src/platform/telemetry/providers/cloud/**"
+        ]
+      },
+      {
+        "name": "cloud/presentation",
+        "patterns": [
+          "src/platform/cloud/oauth/OAuthConsentView.vue",
+          "src/platform/cloud/oauth/OAuthConsentView.test.ts",
+          "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
+          "src/platform/cloud/onboarding/CloudAuthTimeoutView.vue",
+          "src/platform/cloud/onboarding/CloudForgotPasswordView.vue",
+          "src/platform/cloud/onboarding/CloudForgotPasswordView.test.ts",
+          "src/platform/cloud/onboarding/CloudLoginView.vue",
+          "src/platform/cloud/onboarding/CloudLoginView.test.ts",
+          "src/platform/cloud/onboarding/CloudSignupView.vue",
+          "src/platform/cloud/onboarding/CloudSignupView.test.ts",
+          "src/platform/cloud/onboarding/CloudSorryContactSupportView.vue",
+          "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue",
+          "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.test.ts",
+          "src/platform/cloud/onboarding/CloudSurveyView.vue",
+          "src/platform/cloud/onboarding/CloudSurveyView.test.ts",
+          "src/platform/cloud/onboarding/UserCheckView.vue",
+          "src/platform/cloud/onboarding/UserCheckView.test.ts",
+          "src/platform/cloud/onboarding/components/**",
+          "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
+          "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.test.ts",
+          "src/platform/cloud/onboarding/composables/useProgressBarPainter.ts",
+          "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
+          "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
+          "src/platform/cloud/onboarding/constants/**",
+          "src/platform/cloud/onboarding/skeletons/**",
+          "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue",
+          "src/platform/cloud/onboarding/survey/DynamicSurveyField.test.ts",
+          "src/platform/cloud/onboarding/survey/DynamicSurveyForm.vue",
+          "src/platform/cloud/onboarding/survey/DynamicSurveyForm.test.ts",
+          "src/platform/cloud/subscription/components/**",
+          "src/platform/cloud/notification/components/**",
+          "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue",
+          "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts",
+          "src/components/topbar/CloudBadge.vue",
+          "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
+          "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts"
+        ]
+      },
+      {
+        "name": "cloud/integration",
+        "patterns": [
+          "src/platform/cloud/onboarding/desktopLoginRedemption.ts",
+          "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts",
+          "src/platform/cloud/onboarding/onboardingCloudRoutes.ts",
+          "src/platform/cloud/onboarding/onboardingCloudRoutes.test.ts",
+          "src/platform/telemetry/initTelemetry.ts",
+          "src/extensions/core/cloudBadges.ts",
+          "src/extensions/core/cloudFeedbackTopbarButton.ts",
+          "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
+          "src/extensions/core/cloudRemoteConfig.ts",
+          "src/extensions/core/cloudSessionCookie.ts"
+        ]
+      },
+      {
+        "name": "extension-manager/domain",
+        "patterns": [
+          "src/workbench/extensions/manager/types/compatibility.types.ts",
+          "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
+          "src/workbench/extensions/manager/utils/**"
+        ]
+      },
+      {
+        "name": "extension-manager/application",
+        "patterns": [
+          "src/workbench/extensions/manager/types/comfyManagerTypes.ts",
+          "src/workbench/extensions/manager/composables/**",
+          "src/workbench/extensions/manager/stores/**"
+        ]
+      },
+      {
+        "name": "extension-manager/infrastructure",
+        "patterns": [
+          "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+          "src/workbench/extensions/manager/services/**"
+        ]
+      },
+      {
+        "name": "extension-manager/presentation",
+        "patterns": [
+          "src/workbench/extensions/manager/types/importFailedTypes.ts",
+          "src/workbench/extensions/manager/components/**"
+        ]
+      },
+      {
+        "name": "glsl-preview/domain",
+        "patterns": [
+          "src/renderer/glsl/glslUtils.ts",
+          "src/renderer/glsl/glslUtils.test.ts"
+        ]
+      },
+      {
+        "name": "glsl-preview/application",
+        "patterns": [
+          "src/renderer/glsl/glslPreviewUtils.ts",
+          "src/renderer/glsl/useGLSLPreview.ts",
+          "src/renderer/glsl/useGLSLPreview.test.ts",
+          "src/renderer/glsl/glslPreviewStoreContract.test.ts",
+          "src/renderer/glsl/useGLSLUniforms.ts",
+          "src/renderer/glsl/useGLSLUniforms.test.ts",
+          "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts"
+        ]
+      },
+      {
+        "name": "glsl-preview/infrastructure",
+        "patterns": [
+          "src/renderer/glsl/useGLSLRenderer.ts",
+          "src/renderer/glsl/useGLSLRenderer.test.ts",
+          "src/renderer/glsl/sharedGLContext.ts",
+          "src/renderer/glsl/sharedGLContext.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts"
+        ]
+      },
+      {
+        "name": "image-compositor/application",
+        "patterns": [
+          "src/renderer/extensions/compositor/components/types.ts",
+          "src/renderer/extensions/compositor/composables/**"
+        ]
+      },
+      {
+        "name": "image-compositor/presentation",
+        "patterns": [
+          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts"
+        ]
+      },
+      {
+        "name": "image-compositor/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+          "src/extensions/core/imageCompositor.ts",
+          "src/extensions/core/imageCompositor.test.ts",
+          "src/lib/litegraph/src/widgets/CompositorWidget.ts"
+        ]
+      },
+      {
+        "name": "image-crop/application",
+        "patterns": [
+          "src/composables/useImageCrop.ts",
+          "src/composables/useImageCrop.test.ts"
+        ]
+      },
+      {
+        "name": "image-crop/presentation",
+        "patterns": ["src/components/imagecrop/**"]
+      },
+      {
+        "name": "image-crop/integration",
+        "patterns": [
+          "src/extensions/core/imageCrop.ts",
+          "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/domain",
+        "patterns": ["src/extensions/core/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/application",
+        "patterns": [
+          "src/composables/maskeditor/**",
+          "src/stores/maskEditorStore.ts",
+          "src/stores/maskEditorDataStore.ts",
+          "src/stores/maskEditorStore.test.ts",
+          "src/stores/maskEditorDataStore.test.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/presentation",
+        "patterns": ["src/components/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/integration",
+        "patterns": [
+          "src/extensions/core/maskeditor.ts",
+          "src/extensions/core/maskeditor.test.ts"
+        ]
+      },
+      {
+        "name": "minimap/domain",
+        "patterns": ["src/renderer/extensions/minimap/types.ts"]
+      },
+      {
+        "name": "minimap/application",
+        "patterns": ["src/renderer/extensions/minimap/composables/**"]
+      },
+      {
+        "name": "minimap/infrastructure",
+        "patterns": [
+          "src/renderer/extensions/minimap/data/**",
+          "src/renderer/extensions/minimap/minimapCanvasRenderer.ts",
+          "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
+          "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts"
+        ]
+      },
+      {
+        "name": "minimap/presentation",
+        "patterns": [
+          "src/renderer/extensions/minimap/MiniMap.vue",
+          "src/renderer/extensions/minimap/MiniMapPanel.vue"
+        ]
+      },
+      {
+        "name": "node-templates/integration",
+        "patterns": [
+          "src/extensions/core/nodeTemplates.ts",
+          "src/extensions/core/nodeTemplates.test.ts"
+        ]
+      },
+      {
+        "name": "painter/application",
+        "patterns": ["src/composables/painter/**"]
+      },
+      {
+        "name": "painter/presentation",
+        "patterns": ["src/components/painter/**"]
+      },
+      {
+        "name": "painter/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+          "src/extensions/core/painter.ts",
+          "src/lib/litegraph/src/widgets/PainterWidget.ts"
+        ]
+      },
+      {
+        "name": "webcam-capture/integration",
+        "patterns": ["src/extensions/core/webcamCapture.ts"]
+      },
+      {
+        "name": "workflow-templates/domain",
+        "patterns": [
+          "src/platform/workflow/templates/types/**",
+          "src/platform/workflow/templates/schemas/**",
+          "src/platform/workflow/templates/utils/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/application",
+        "patterns": [
+          "src/platform/workflow/templates/composables/**",
+          "src/platform/workflow/templates/services/**",
+          "src/platform/workflow/templates/stores/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/infrastructure",
+        "patterns": ["src/platform/workflow/templates/repositories/**"]
+      },
+      {
+        "name": "workflow-templates/presentation",
+        "patterns": ["src/components/templates/**"]
+      },
+      {
+        "name": "unclassified",
+        "patterns": ["src/**"]
+      }
+    ],
+    "rules": [
+      {
+        "from": "audio/application",
+        "allow": ["audio/application", "audio/infrastructure", "unclassified"]
+      },
+      {
+        "from": "audio/infrastructure",
+        "allow": ["audio/application", "audio/infrastructure", "unclassified"]
+      },
+      {
+        "from": "audio/presentation",
+        "allow": ["audio/application", "audio/presentation", "unclassified"]
+      },
+      {
+        "from": "audio/integration",
+        "allow": [
+          "audio/application",
+          "audio/infrastructure",
+          "audio/presentation",
+          "audio/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bounding-boxes/domain",
+        "allow": ["bounding-boxes/domain", "unclassified"]
+      },
+      {
+        "from": "bounding-boxes/application",
+        "allow": [
+          "bounding-boxes/domain",
+          "bounding-boxes/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bounding-boxes/presentation",
+        "allow": [
+          "bounding-boxes/domain",
+          "bounding-boxes/application",
+          "bounding-boxes/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "bounding-boxes/integration",
+        "allow": [
+          "bounding-boxes/domain",
+          "bounding-boxes/application",
+          "bounding-boxes/presentation",
+          "bounding-boxes/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "cloud/domain",
+        "allow": ["cloud/domain", "unclassified"]
+      },
+      {
+        "from": "cloud/application",
+        "allow": [
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "cloud/infrastructure",
+        "allow": [
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "cloud/presentation",
+        "allow": [
+          "cloud/domain",
+          "cloud/application",
+          "cloud/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "cloud/integration",
+        "allow": [
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "cloud/presentation",
+          "cloud/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-manager/domain",
+        "allow": ["extension-manager/domain", "unclassified"]
+      },
+      {
+        "from": "extension-manager/application",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-manager/infrastructure",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-manager/presentation",
+        "allow": [
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "glsl-preview/domain",
+        "allow": ["glsl-preview/domain", "unclassified"]
+      },
+      {
+        "from": "glsl-preview/application",
+        "allow": [
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "glsl-preview/infrastructure",
+        "allow": [
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compare/application",
+        "allow": ["image-compare/application", "unclassified"]
+      },
+      {
+        "from": "image-compare/presentation",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compare/integration",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "image-compare/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/application",
+        "allow": ["image-compositor/application", "unclassified"]
+      },
+      {
+        "from": "image-compositor/presentation",
+        "allow": [
+          "image-compositor/application",
+          "image-compositor/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/integration",
+        "allow": [
+          "image-compositor/application",
+          "image-compositor/presentation",
+          "image-compositor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/application",
+        "allow": ["image-crop/application", "unclassified"]
+      },
+      {
+        "from": "image-crop/presentation",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/integration",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "image-crop/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/domain",
+        "allow": ["mask-editor/domain", "unclassified"]
+      },
+      {
+        "from": "mask-editor/application",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/presentation",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/integration",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "mask-editor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "minimap/domain",
+        "allow": ["minimap/domain", "unclassified"]
+      },
+      {
+        "from": "minimap/application",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "minimap/infrastructure",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "minimap/presentation",
+        "allow": [
+          "minimap/domain",
+          "minimap/application",
+          "minimap/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-templates/integration",
+        "allow": ["node-templates/integration", "unclassified"]
+      },
+      {
+        "from": "painter/application",
+        "allow": ["painter/application", "unclassified"]
+      },
+      {
+        "from": "painter/presentation",
+        "allow": ["painter/application", "painter/presentation", "unclassified"]
+      },
+      {
+        "from": "painter/integration",
+        "allow": [
+          "painter/application",
+          "painter/presentation",
+          "painter/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "webcam-capture/integration",
+        "allow": ["webcam-capture/integration", "unclassified"]
+      },
+      {
+        "from": "workflow-templates/domain",
+        "allow": ["workflow-templates/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-templates/application",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/infrastructure",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/presentation",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "unclassified",
+        "allow": [
+          "audio/application",
+          "audio/infrastructure",
+          "audio/presentation",
+          "audio/integration",
+          "bounding-boxes/domain",
+          "bounding-boxes/application",
+          "bounding-boxes/presentation",
+          "bounding-boxes/integration",
+          "cloud/domain",
+          "cloud/application",
+          "cloud/infrastructure",
+          "cloud/presentation",
+          "cloud/integration",
+          "extension-manager/domain",
+          "extension-manager/application",
+          "extension-manager/infrastructure",
+          "extension-manager/presentation",
+          "glsl-preview/domain",
+          "glsl-preview/application",
+          "glsl-preview/infrastructure",
+          "minimap/domain",
+          "minimap/application",
+          "minimap/infrastructure",
+          "minimap/presentation",
+          "node-templates/integration",
+          "webcam-capture/integration",
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      }
+    ]
+  }
+}

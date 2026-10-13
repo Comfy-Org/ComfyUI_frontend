@@ -1,79 +1,32 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <div class="max-h-192 rounded-sm border p-4">
-      <Chart
-        :type="chartType"
-        :data="chartData"
-        :options="chartOptions"
-        :aria-label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
-      />
-    </div>
-  </div>
+  <Chart
+    class="max-h-192"
+    :type="chartType"
+    :data="chartData"
+    :label="`${widget.name || $t('g.chart')} - ${chartType} ${$t('g.chartLowercase')}`"
+  />
 </template>
 
 <script setup lang="ts">
 import type { ChartData } from 'chart.js'
-import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
+import Chart from '@/components/ui/chart/Chart.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 
-const value = defineModel<ChartData>({ required: true })
+const value = defineModel<Partial<ChartData> | null>({ required: true })
 
-const props = defineProps<{
-  widget: SimplifiedWidget<ChartData, ChartWidgetOptions>
+const { widget } = defineProps<{
+  widget: SimplifiedWidget<Partial<ChartData> | null, ChartWidgetOptions>
 }>()
 
-const chartType = computed(() => props.widget.options?.type ?? 'line')
+const chartType = computed(() => widget.options?.type ?? 'line')
 
-const chartData = computed(() => value.value || { labels: [], datasets: [] })
-
-const chartOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      labels: {
-        color: '#FFF',
-        usePointStyle: true,
-        pointStyle: 'circle'
-      }
-    }
-  },
-  scales: {
-    x: {
-      ticks: {
-        color: '#9FA2BD'
-      },
-      grid: {
-        display: true,
-        color: '#9FA2BD',
-        drawTicks: false,
-        drawOnChartArea: true,
-        drawBorder: false
-      },
-      border: {
-        display: true,
-        color: '#9FA2BD'
-      }
-    },
-    y: {
-      ticks: {
-        color: '#9FA2BD'
-      },
-      grid: {
-        display: false,
-        drawTicks: false,
-        drawOnChartArea: false,
-        drawBorder: false
-      },
-      border: {
-        display: true,
-        color: '#9FA2BD'
-      }
-    }
-  }
+const chartData = computed<ChartData>(() => ({
+  ...value.value,
+  labels: value.value?.labels ?? [],
+  datasets: value.value?.datasets ?? []
 }))
 </script>

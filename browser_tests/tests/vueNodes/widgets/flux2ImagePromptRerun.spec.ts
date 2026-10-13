@@ -43,9 +43,7 @@ function getPromptBox(comfyPage: ComfyPage): Locator {
   return getNode(comfyPage).getByRole('textbox', { name: 'prompt' })
 }
 
-/** One full generation of the node the way an API node runs it. */
-async function runGeneration(
-  comfyPage: ComfyPage,
+async function startGeneration(
   exec: ExecutionHelper,
   ws: WebSocketRoute,
   nodeId: string
@@ -55,6 +53,15 @@ async function runGeneration(
   exec.executing(jobId, nodeId)
   exec.nodeRunning(jobId, nodeId, 0, 1)
   ws.send(progressTextFrame(nodeId, RUNNING_STATUS))
+  return jobId
+}
+
+async function finishGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  jobId: string,
+  nodeId: string
+) {
   exec.executed(jobId, nodeId, {
     images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
   })
@@ -64,6 +71,17 @@ async function runGeneration(
   await expect(
     getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
   ).toBeVisible()
+}
+
+/** One full generation of the node the way an API node runs it. */
+async function runGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  ws: WebSocketRoute,
+  nodeId: string
+) {
+  const jobId = await startGeneration(exec, ws, nodeId)
+  await finishGeneration(comfyPage, exec, jobId, nodeId)
 }
 
 /** Prompt widget identity as the widget store and litegraph see it. */
@@ -152,16 +170,21 @@ test.describe(
       expect(after.autogrowInputs).toEqual(before.autogrowInputs)
     })
 
-    test('completed generations remove progress text from the node and widget store', async ({
+    test('progress text shows while the node runs and is removed when the generation completes', async ({
       comfyPage,
       getWebSocket
     }) => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
+      const progressText = getNode(comfyPage).getByText('Time elapsed: 3s')
 
-      await runGeneration(comfyPage, exec, ws, nodeId)
+      const jobId = await startGeneration(exec, ws, nodeId)
+      await expect(progressText).toBeVisible()
 
+      await finishGeneration(comfyPage, exec, jobId, nodeId)
+
+      await expect(progressText).toBeHidden()
       expect(await readPromptWidget(comfyPage)).toMatchObject({
         liteWidgetNames: expect.not.arrayContaining(['$$node-text-preview']),
         storeHasProgressText: false

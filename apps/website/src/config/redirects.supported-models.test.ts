@@ -1,0 +1,200 @@
+import { describe, expect, it } from 'vitest'
+
+import publishedLocalModels from './__fixtures__/published-local-models.json' with { type: 'json' }
+import publishedPartnerModelPages from './__fixtures__/published-partner-model-pages.json' with { type: 'json' }
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { localModelAliases, localModelPath, localModels } from './local-models'
+import { models } from './models'
+import { modelsUrlKind } from './models-url-registry'
+import { partnerModelHubSlugs } from './partner-model-redirects'
+import {
+  retiredLocalModelPages,
+  siteRedirects,
+  slugGroups,
+  toVercelRedirects
+} from './redirects'
+
+const OLD = '/p/supported-models'
+const VERCEL_SOURCE_LIMIT = 2048
+
+const vercelRedirects = toVercelRedirects(siteRedirects)
+
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** Vercel's first-match lookup, for literal sources and one `:slug(a|b)` group. */
+function resolve(path: string) {
+  for (const { source, destination, permanent } of vercelRedirects) {
+    const group = /^(.*):slug\(([^)]+)\)(.*)$/.exec(source)
+    if (!group) {
+      if (source.includes(':'))
+        throw new Error(`resolve() cannot match the pattern ${source}`)
+      if (source === path) return { destination, permanent }
+      continue
+    }
+    const [, before, slugs, after] = group
+    const match = new RegExp(
+      `^${escapeRegExp(before)}(${slugs})${escapeRegExp(after)}$`
+    ).exec(path)
+    if (match)
+      return { destination: destination.replace(':slug', match[1]), permanent }
+  }
+  return undefined
+}
+
+const bothSlashForms = (path: string) => [path, `${path}/`]
+
+const expected = new Map<string, string>([
+  ...[OLD, `${OLD}/`].map((path) => [path, '/hub/models/local/'] as const),
+  [`${OLD}.md`, '/hub/models/local.md'],
+  [`${OLD}/llms.txt`, '/hub/models/local/llms.txt'],
+  ...localModels.flatMap(({ slug }) => [
+    ...bothSlashForms(`${OLD}/${slug}`).map(
+      (path) => [path, localModelPath(slug)] as const
+    ),
+    [`${OLD}/${slug}.md`, markdownTwinPath(localModelPath(slug))] as const
+  ]),
+  ...localModelAliases.flatMap(({ slug, canonicalSlug = '' }) =>
+    bothSlashForms(`${OLD}/${slug}`).map(
+      (path) => [path, localModelPath(canonicalSlug)] as const
+    )
+  ),
+  ...Object.entries(publishedPartnerModelPages).flatMap(([slug, page]) => [
+    ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
+    [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
+  ]),
+  ...Object.entries(retiredLocalModelPages).flatMap(([slug, page]) => [
+    ...bothSlashForms(`${OLD}/${slug}`).map((path) => [path, page] as const),
+    [`${OLD}/${slug}.md`, markdownTwinPath(page)] as const
+  ])
+])
+
+const partnerSlugs = models
+  .filter((model) => model.directory === 'partner_nodes')
+  .map(({ slug }) => slug)
+
+const localSlugs = new Set(
+  [...localModels, ...localModelAliases].map(({ slug }) => slug)
+)
+
+function landsOnBuiltPage(destination: string): boolean {
+  if (destination === '/hub/models.md') return true
+  if (destination.endsWith('.md')) {
+    const page = destination.slice(0, -'.md'.length)
+    return (
+      modelsUrlKind(destination) === 'reserved' ||
+      ['model', 'local'].includes(modelsUrlKind(page) ?? '')
+    )
+  }
+  return ['local', 'model', 'hub', 'reserved'].includes(
+    modelsUrlKind(destination) ?? ''
+  )
+}
+
+describe('/p/supported-models redirects', () => {
+  it('send every published address to its new page permanently, in one hop', () => {
+    const wrong = [...expected].filter(([path, destination]) => {
+      const hop = resolve(path)
+      return (
+        hop?.destination !== destination ||
+        !hop.permanent ||
+        resolve(destination) !== undefined ||
+        !landsOnBuiltPage(destination)
+      )
+    })
+    expect(wrong).toEqual([])
+  })
+
+  it.for([
+    'stability-ai',
+    'dreamshaper-8-pruned',
+    'wan2-1-vae-fp32',
+    'hailuo-minimax',
+    'wan2-2-lightning-i2v-a14b-4steps-lora-high-fp16',
+    'wan2-2-lightning-i2v-a14b-4steps-lora-low-fp16',
+    'v1-5-pruned-emaonly-fp16',
+    'z-image-turbo-fun-controlnet-union-2-1',
+    'lightx2v-i2v-14b-480p-cfg-step-distill-rank128-bf16',
+    'ltxv-api',
+    'gemma-2-2b-it-text_encoders',
+    'lllite-inpainting-v2',
+    'minimax-h3-ref2va-int8-convrot',
+    'wan2-2-i2v-lightx2v-4steps-lora-v1-lightx2v-4-steps-lora-v1-low-noise',
+    'minimax-h3-ref2va-pruned-int8_convrot',
+    'not-a-model'
+  ])('leave the retired %s a 404', (slug) => {
+    expect(
+      [...bothSlashForms(`${OLD}/${slug}`), `${OLD}/${slug}.md`].map(resolve)
+    ).toEqual([undefined, undefined, undefined])
+  })
+
+  it('emit no slash form for a markdown or llms.txt address', () => {
+    expect(
+      vercelRedirects
+        .map(({ source }) => source)
+        .filter((source) => /\.(md|txt)\/$/.test(source))
+    ).toEqual([])
+  })
+
+  it('send every partner page somewhere, and keep the rows of retired ones', () => {
+    expect(
+      partnerSlugs.filter((slug) => !(slug in partnerModelHubSlugs))
+    ).toEqual([])
+  })
+
+  it('pin every partner redirect to a destination listed outside its table', () => {
+    expect(Object.keys(partnerModelHubSlugs).sort()).toEqual(
+      Object.keys(publishedPartnerModelPages).sort()
+    )
+  })
+
+  it('never send a live file page elsewhere', () => {
+    expect(
+      [
+        ...Object.keys(partnerModelHubSlugs),
+        ...Object.keys(retiredLocalModelPages)
+      ].filter((slug) => localSlugs.has(slug))
+    ).toEqual([])
+  })
+
+  it('list every exact row before the file-page patterns', () => {
+    const sources = vercelRedirects.map(({ source }) => source)
+    const firstPattern = sources.findIndex((source) => source.includes(':'))
+    const lastExact = sources.findLastIndex(
+      (source) =>
+        (source === OLD ||
+          source.startsWith(`${OLD}/`) ||
+          source.startsWith(`${OLD}.`)) &&
+        !source.includes(':')
+    )
+    expect(firstPattern).toBeGreaterThan(lastExact)
+  })
+
+  it(`keep each source under Vercel's ${VERCEL_SOURCE_LIMIT}-character limit`, () => {
+    expect(
+      vercelRedirects.filter(
+        ({ source }) => source.length > VERCEL_SOURCE_LIMIT
+      )
+    ).toEqual([])
+  })
+
+  it('keep or redirect every published file page, so a data refresh cannot drop one', () => {
+    const built = new Set(localModels.map(({ slug }) => slug))
+    expect(
+      publishedLocalModels.filter(
+        (slug) => !built.has(slug) && !(slug in retiredLocalModelPages)
+      )
+    ).toEqual([])
+  })
+})
+
+describe('slugGroups', () => {
+  const long = 'x'.repeat(1901)
+  it.for<[string, string[], string[]]>([
+    ['no slugs', [], []],
+    ['short slugs', ['a', 'b'], ['a|b']],
+    ['an over-long first slug', [long, 'a'], [long, 'a']]
+  ])('emit no empty group for %s', ([, slugs, groups]) => {
+    expect(slugGroups(slugs)).toEqual(groups)
+  })
+})

@@ -1,3 +1,5 @@
+import type { SkillReference } from './skillReference'
+
 export interface WorkflowReferenceMetadata {
   id: string
   name: string
@@ -12,6 +14,7 @@ export interface WorkflowReference extends WorkflowReferenceMetadata {
 export interface PromptSnapshot {
   text: string
   workflowReferences: WorkflowReference[]
+  skillReference?: SkillReference
 }
 
 export type WorkflowReferenceOption =

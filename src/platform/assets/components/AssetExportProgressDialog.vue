@@ -3,8 +3,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -45,6 +48,10 @@ const footerLabel = computed(() => {
   return t('exportToast.allExportsCompleted')
 })
 
+const announcement = computed(() =>
+  isInProgress.value ? t('exportToast.exportingAssets') : footerLabel.value
+)
+
 const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
@@ -54,12 +61,6 @@ const footerIconClass = computed(() => {
     return 'icon-[lucide--circle-x] text-muted-foreground'
   return 'icon-[lucide--check-circle] text-jade-600'
 })
-
-const tooltipConfig = computed(() => ({
-  value: footerLabel.value,
-  disabled: isExpanded.value,
-  pt: { root: { class: 'z-10000!' } }
-}))
 
 function progressPercent(job: AssetExport): number {
   return Math.round(job.progress * 100)
@@ -72,7 +73,7 @@ function closeDialog() {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -192,10 +193,12 @@ function closeDialog() {
         class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <i
-            v-tooltip.top="tooltipConfig"
-            :class="cn('size-4 shrink-0', footerIconClass)"
-          />
+          <Tooltip :disabled="isExpanded">
+            <TooltipTrigger as-child>
+              <i :class="cn('size-4 shrink-0', footerIconClass)" />
+            </TooltipTrigger>
+            <TooltipContent>{{ footerLabel }}</TooltipContent>
+          </Tooltip>
           <span
             :class="
               cn(
@@ -260,5 +263,5 @@ function closeDialog() {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

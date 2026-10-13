@@ -339,10 +339,6 @@
     "name": "Mostrar atualizações de versão",
     "tooltip": "Mostrar atualizações para novos modelos e grandes novos recursos."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Atraso de tolerância de clique do ponteiro",
-    "tooltip": "Após pressionar um botão do ponteiro, este é o tempo máximo (em milissegundos) em que o movimento do ponteiro pode ser ignorado.\n\nAjuda a evitar que objetos sejam movidos acidentalmente se o ponteiro for movido ao clicar."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Tolerância de movimento do clique do ponteiro (distância máxima)",
     "tooltip": "Se o ponteiro se mover mais do que esta distância enquanto um botão estiver pressionado, será considerado arrastar (em vez de clicar).\n\nAjuda a evitar que objetos sejam movidos acidentalmente se o ponteiro for movido ao clicar."

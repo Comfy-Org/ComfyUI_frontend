@@ -146,6 +146,9 @@ jobs:
   deploy-production:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment:
+      name: website-production
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -209,9 +212,6 @@ jobs:
         run: |
           URL=$(vercel deploy --prebuilt --prod --archive=tgz)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Add deployment URL to summary
-        run: echo "**Production:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify IndexNow of changed pages
         continue-on-error: true

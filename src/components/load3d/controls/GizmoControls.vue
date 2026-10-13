@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col">
     <Button
-      v-tooltip.right="{ value: t('load3d.gizmo.toggle'), showDelay: 300 }"
+      :tooltip="t('load3d.gizmo.toggle')"
+      tooltip-side="right"
       variant="textonly"
       size="icon"
       :class="cn('rounded-full', gizmoEnabled && 'ring-2 ring-white/50')"
@@ -13,10 +14,8 @@
 
     <template v-if="gizmoEnabled">
       <Button
-        v-tooltip.right="{
-          value: t('load3d.gizmo.translate'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.gizmo.translate')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         :class="
@@ -32,10 +31,8 @@
       </Button>
 
       <Button
-        v-tooltip.right="{
-          value: t('load3d.gizmo.rotate'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.gizmo.rotate')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         :class="
@@ -48,10 +45,8 @@
       </Button>
 
       <Button
-        v-tooltip.right="{
-          value: t('load3d.gizmo.scale'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.gizmo.scale')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         :class="
@@ -64,10 +59,8 @@
       </Button>
 
       <Button
-        v-tooltip.right="{
-          value: t('load3d.gizmo.reset'),
-          showDelay: 300
-        }"
+        :tooltip="t('load3d.gizmo.reset')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         class="rounded-full"

@@ -286,6 +286,7 @@ export class CameraAngleViewport {
     const background = this.viewport.sceneManager.getCurrentBackgroundInfo()
     renderInsetPreview({
       renderer: this.viewport.renderer,
+      view: this.viewport.rendererView,
       canvas,
       scene: this.viewport.sceneManager.scene,
       camera: this.subject.getSubjectCamera(),

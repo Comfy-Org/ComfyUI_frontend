@@ -5,8 +5,8 @@ export const AshbyJobPostingSchema = z.object({
   department: z.string().optional(),
   location: z.string().optional(),
   isListed: z.boolean(),
-  jobUrl: z.string().url(),
-  applyUrl: z.string().url().optional()
+  jobUrl: z.url(),
+  applyUrl: z.url().optional()
 })
 
 export const AshbyJobBoardResponseSchema = z.object({

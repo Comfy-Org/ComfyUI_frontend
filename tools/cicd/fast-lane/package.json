@@ -1,0 +1,15 @@
+{
+  "name": "@comfyorg/fast-lane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Path-scoped policy approval and merge automation for package delivery lanes",
+  "type": "module",
+  "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "vitest": "catalog:"
+  }
+}

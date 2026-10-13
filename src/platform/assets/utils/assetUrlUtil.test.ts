@@ -5,7 +5,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
   getAssetSubfolder,
-  getAssetUrl
+  getAssetUrl,
+  getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -76,6 +77,49 @@ describe('getAssetUrl', () => {
 
   it('omits the subfolder param for an asset at the type root', () => {
     expect(getAssetUrl(createAsset())).not.toContain('subfolder')
+  })
+})
+
+describe('getAssetViewUrl', () => {
+  it("builds the asset's own file URL from loader_path, not its preview URL", () => {
+    const asset = createAsset({
+      name: 'sky.exr',
+      tags: ['hdr', 'output'],
+      loader_path: 'renders/sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
+  })
+
+  it('omits the subfolder for a file at the root of its input folder', () => {
+    const asset = createAsset({
+      name: 'sky.hdr',
+      tags: ['input'],
+      loader_path: 'sky.hdr'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.hdr&type=input'
+    )
+  })
+
+  it.for([
+    { guard: 'a root tag', tags: [], loader_path: 'renders/sky.exr' },
+    { guard: 'a loader_path', tags: ['output'], loader_path: undefined }
+  ])('falls back to getAssetUrl without $guard', ({ tags, loader_path }) => {
+    const asset = createAsset({
+      name: 'sky.exr',
+      tags,
+      loader_path,
+      preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
   })
 })
 

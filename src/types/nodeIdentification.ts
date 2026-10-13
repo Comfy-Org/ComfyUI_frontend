@@ -1,8 +1,36 @@
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const ENCODED_ROOT_LOCATOR_PREFIX = '~root:'
+const ENCODED_SUBGRAPH_LOCATOR_PREFIX = '~subgraph:'
+
+interface ParsedNodeLocatorId {
+  subgraphUuid: string | null
+  localNodeId: NodeId
+}
+
+function decodeNodeId(value: string): NodeId | null {
+  try {
+    const decoded = decodeURIComponent(value)
+    return encodeURIComponent(decoded) === value ? toNodeId(decoded) : null
+  } catch {
+    return null
+  }
+}
+
+function parseEncodedSubgraphLocator(id: string): ParsedNodeLocatorId | null {
+  const encodedLocator = id.slice(ENCODED_SUBGRAPH_LOCATOR_PREFIX.length)
+  const separatorIndex = encodedLocator.indexOf(':')
+  if (separatorIndex === -1) return null
+
+  const subgraphUuid = encodedLocator.slice(0, separatorIndex)
+  if (!UUID_PATTERN.test(subgraphUuid)) return null
+
+  const localNodeId = decodeNodeId(encodedLocator.slice(separatorIndex + 1))
+  return localNodeId !== null ? { subgraphUuid, localNodeId } : null
+}
 
 /**
  * A globally unique identifier for nodes that maintains consistency across
@@ -68,9 +96,18 @@ export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
  * @param id The NodeLocatorId to parse
  * @returns The subgraph UUID and local node ID, or null if invalid
  */
-export function parseNodeLocatorId(
-  id: string
-): { subgraphUuid: string | null; localNodeId: NodeId } | null {
+export function parseNodeLocatorId(id: string): ParsedNodeLocatorId | null {
+  if (id.startsWith(ENCODED_ROOT_LOCATOR_PREFIX)) {
+    const localNodeId = decodeNodeId(
+      id.slice(ENCODED_ROOT_LOCATOR_PREFIX.length)
+    )
+    return localNodeId !== null ? { subgraphUuid: null, localNodeId } : null
+  }
+
+  if (id.startsWith(ENCODED_SUBGRAPH_LOCATOR_PREFIX)) {
+    return parseEncodedSubgraphLocator(id)
+  }
+
   const parts = id.split(':')
 
   if (parts.length === 1) {
@@ -95,50 +132,32 @@ export function parseNodeLocatorId(
  * Create a NodeLocatorId from components
  * @param subgraphUuid The UUID of the immediate containing subgraph
  * @param localNodeId The local node ID within that subgraph
- * @returns A properly formatted NodeLocatorId
+ * @returns A locator that encodes local IDs that are not plain segments, or
+ * `null` when the containing subgraph ID is not a UUID
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
-): NodeLocatorId | null {
-  const nodeId = requireNodeIdSegment(localNodeId)
-  if (!nodeId) return null
-  if (subgraphUuid && !UUID_PATTERN.test(subgraphUuid)) return null
-
-  if (!subgraphUuid) return String(nodeId) as NodeLocatorId
-
-  return `${subgraphUuid}:${nodeId}` as NodeLocatorId
-}
-
-/**
- * Create a `NodeLocatorId` from components, tolerating a colon inside a
- * root-graph local id.
- *
- * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
- * the delimiter between the subgraph UUID and the local id. That is the
- * right contract for a node that really lives in a subgraph, but it is too
- * strict for a root-graph node (no `subgraphUuid`) whose raw id itself
- * contains colons for reasons that have nothing to do with locator-id
- * encoding (comfy-multi-player's `insert_workflow` remapped ids, e.g.
- * `insert:<opId>:root:node:<originalId>`, PM-1580). There is no subgraph
- * UUID to disambiguate such an id from, so nothing is lost by keeping it
- * whole rather than rejecting it outright.
- */
-export function createLeafNodeLocatorId(
-  subgraphUuid: string | null,
   localNodeId: SerializedNodeId
 ): NodeLocatorId | null {
-  const strictNodeId = requireNodeIdSegment(localNodeId)
-  if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
-  if (subgraphUuid) return null
+  const nodeId = requireNodeIdSegment(localNodeId)
+  if (subgraphUuid && !UUID_PATTERN.test(subgraphUuid)) return null
 
-  const bareNodeId = parseNodeId(localNodeId)
-  return bareNodeId ? (String(bareNodeId) as NodeLocatorId) : null
+  if (nodeId) {
+    if (!subgraphUuid) return String(nodeId) as NodeLocatorId
+
+    return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+  }
+
+  const encodedNodeId = encodeURIComponent(String(localNodeId))
+  return subgraphUuid
+    ? (`${ENCODED_SUBGRAPH_LOCATOR_PREFIX}${subgraphUuid}:${encodedNodeId}` as NodeLocatorId)
+    : (`${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId)
 }
+
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse

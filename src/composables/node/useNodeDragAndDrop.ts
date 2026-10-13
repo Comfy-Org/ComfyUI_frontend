@@ -3,6 +3,7 @@ import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { withHdrImageType } from '@/utils/eventUtils'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -51,7 +52,7 @@ export const useNodeDragAndDrop = <T>(
     const { dataTransfer } = e
     if (!dataTransfer) return false
 
-    const droppedFiles = Array.from(dataTransfer.files)
+    const droppedFiles = Array.from(dataTransfer.files, withHdrImageType)
     const [files, rejectedFiles] = partition(droppedFiles, fileFilter)
     const rejectedFilesClaimed = handleRejectedFiles(rejectedFiles)
     if (files.length) {

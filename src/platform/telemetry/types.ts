@@ -14,7 +14,8 @@
 
 import {
   AUTH_TELEMETRY_EVENT,
-  SESSION_TELEMETRY_EVENT
+  SESSION_TELEMETRY_EVENT,
+  SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
@@ -28,11 +29,12 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
   AuthMethod,
+  SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
@@ -246,6 +248,14 @@ export interface OnboardingTourNudgeMetadata {
 export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
+
+export type InAppSurveyStage = 'shown' | 'sent' | 'dismissed'
+
+export interface InAppSurveyEvent {
+  surveyId: string
+  responses?: Record<string, string>
+  properties?: Record<string, string>
+}
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -682,6 +692,8 @@ export type AgentConsentOfferExit =
   | 'card_already_seen'
   /** Panel activation owns consent timing, so the automatic offer is dropped. */
   | 'activation_opened_panel'
+  /** The bounded panel-discovery window is complete and the panel is closed. */
+  | 'activation_window_complete'
   /** The one-shot auto-show key for this scope is already burned. */
   | 'already_offered'
   /** The first-run startup probe rejected. */
@@ -872,6 +884,17 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+export type AgentStarterPromptAssignment = NonNullable<
+  GetFeaturesResponses[200]['agent-starter-prompt-set']
+>
+interface AgentStarterPromptExperimentMetadata {
+  /**
+   * Assignment of the prompt set that rendered. Optional consumers omit it
+   * for QA overrides, unsupported locales, and surfaces rendered before
+   * authenticated config.
+   */
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
+}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -879,31 +902,37 @@ export type AgentStarterPromptId =
  * `$feature/agent-free-use-message-placement`, and a translation layer between
  * the two is one more place for the arms to drift apart.
  */
-export type AgentFreeUsePlacement =
-  | 'top-banner'
-  | 'near-composer'
-  | 'above-input'
-  | 'inside-input'
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
-  placement: 'control' | AgentFreeUsePlacement
-  '$feature/agent-free-use-message-placement': 'control' | AgentFreeUsePlacement
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
 /**
- * Interactions with the notice itself. The experiment's primary outcome and
- * guardrails are all read off events that already exist — `agent_panel_opened`,
- * `agent_message_sent`, `agent_panel_closed`, node edits and run events — split
- * by the PostHog variant property. This event adds only what those cannot say:
- * whether the notice was actually on screen in its assigned arm, and what the
- * viewer did with it.
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
  */
 export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
-export interface AgentStarterPromptClickedMetadata extends Record<
+export interface AgentCreditTransitionNoticeMetadata extends Record<
   string,
   unknown
 > {
+  action: 'shown' | 'dismissed'
+}
+export interface AgentStarterPromptClickedMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -933,7 +962,12 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    */
   draft_was_empty: boolean
 }
-export interface AgentMessageSentMetadata extends Record<string, unknown> {
+export interface AgentStarterPromptExposureMetadata
+  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
+export interface AgentMessageSentMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -981,6 +1015,56 @@ export interface AgentAttachButtonClickedMetadata extends Record<
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentGraphProjectionStage =
+  | 'received_no_graph'
+  | 'applied'
+  | 'applied_deferred'
+  | 'discarded'
+  | 'reverted'
+
+/**
+ * Projection telemetry for agent and actorless frames and for reverted human
+ * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
+ * identifier is sent.
+ */
+export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
+  /**
+   * First non-empty op id of the frame, or of the rejected batch on
+   * `reverted`. Not necessarily creator-owned: `reverted` carries the first
+   * rejected HUMAN op id. `null` when the frame carried no op ids.
+   */
+  op_id: string | null
+  /** How many non-empty op ids it carried; `op_id` is the first of them. */
+  op_count: number
+  sequence: number
+  /**
+   * - `received_no_graph` — delivered, nothing applied yet (no graph bound).
+   * - `applied` — this frame applied. If earlier no-graph frames were still
+   *   collected, the counts are the whole batch's, as on `applied_deferred`.
+   * - `applied_deferred` — a batch flush applied this earlier no-graph frame.
+   *   The counts are the WHOLE batch's and are repeated across its frames, so
+   *   they must not be attributed to this `op_id` alone.
+   * - `discarded` — the collected changes were thrown away without applying
+   *   (own-echo discard, `doc_reset`, `schema_error`, scope disposal, follower
+   *   replacement, rebind). All counts are zero: nothing reached the canvas, so
+   *   the size of what was dropped is deliberately not reported under a count a
+   *   dashboard would read as applied work.
+   * - `reverted` — the host rejected a human batch and the document state it
+   *   claimed was put back on the canvas. The counts are that revert's.
+   */
+  stage: AgentGraphProjectionStage
+  added_count: number
+  /**
+   * Newly reported document deletes. Excludes entries already reported on an
+   * earlier pending frame, and replace-mode `removeAbsent` removals.
+   */
+  removed_count: number
+  /**
+   * Apply steps that threw, plus reported degradations that did not throw
+   * (an unresolved link, a subgraph definition that failed to register).
+   */
+  apply_failure_count: number
 }
 export type AgentStopMethod = 'button' | 'escape'
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
@@ -1319,6 +1403,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1352,9 +1437,13 @@ export interface TelemetryProvider {
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
+  trackInAppSurvey?(stage: InAppSurveyStage, event: InAppSurveyEvent): void
 
   // Onboarding coachmark tour events
   trackOnboardingTour?(
@@ -1440,6 +1529,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptExposure?(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1447,6 +1539,7 @@ export interface TelemetryProvider {
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentGraphProjection?(metadata: AgentGraphProjectionMetadata): void
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
@@ -1505,6 +1598,11 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
   UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
+  SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
+  SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
+  SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
@@ -1536,6 +1634,11 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // PostHog API surveys rendered by the app
+  IN_APP_SURVEY_SHOWN: 'survey shown',
+  IN_APP_SURVEY_SENT: 'survey sent',
+  IN_APP_SURVEY_DISMISSED: 'survey dismissed',
 
   // Onboarding Coachmarks
   ONBOARDING_TOUR_NOT_STARTED: 'app:onboarding_tour_not_started',
@@ -1615,11 +1718,14 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
@@ -1705,6 +1811,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | WebSessionTelemetryEvent['properties']
+  | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
@@ -1747,4 +1854,5 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata

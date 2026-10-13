@@ -11,7 +11,7 @@ import type {
   ImageRef
 } from '@/stores/maskEditorDataStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -55,7 +55,7 @@ export function useMaskEditorSaver() {
 
       updateNodeWithServerReferences(sourceNode, outputData)
 
-      app.canvas.setDirty(true)
+      useApp().canvas.setDirty(true)
     } catch (error) {
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
@@ -270,7 +270,7 @@ export function useMaskEditorSaver() {
     const mainImg = await loadImageFromUrl(dataUrl)
     node.imgs = [mainImg]
 
-    app.canvas.setDirty(true)
+    useApp().canvas.setDirty(true)
   }
 
   function updateNodeWithServerReferences(

@@ -58,13 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>
@@ -99,10 +100,8 @@ async function onCreate() {
     await workspaceStore.createWorkspace(name)
   } catch (error) {
     console.error('[CreateWorkspaceDialog] Failed to create workspace:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     loading.value = false

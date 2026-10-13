@@ -86,7 +86,7 @@ export function useNodeResize(
       : { x: 0, y: 0 }
 
     // Track shift key state and sync to canvas for snap preview
-    const stopShiftSync = trackShiftKey(event)
+    const stopShiftSync = trackShiftKey(event.shiftKey)
 
     // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)

@@ -4,7 +4,12 @@ import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 
 import { useCurrentUser } from './useCurrentUser'
 
@@ -23,6 +28,8 @@ describe('useCurrentUser', () => {
     Object.assign(mockApiKeyState, { isAuthenticated: false })
     mockApiKeyState.currentUser = null
   })
+
+  afterEach(() => stopDesktopHostSession())
 
   it('treats a key-only session as an API-key login', () => {
     Object.assign(mockApiKeyState, { isAuthenticated: true })
@@ -51,6 +58,46 @@ describe('useCurrentUser', () => {
     expect(isApiKeyLogin.value).toBe(false)
     expect(isLoggedIn.value).toBe(true)
     expect(resolvedUserInfo.value).toEqual({ id: 'firebase-user' })
+  })
+
+  it('gives the Desktop host account precedence over a stored API key', async () => {
+    await startDesktopHostSession({
+      getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => ({ status: 'signed_in', userId: 'host-user' }),
+      signOut: async () => ({ status: 'signed_out' }),
+      onChanged: () => () => {}
+    })
+    Object.assign(mockApiKeyState, { isAuthenticated: true })
+    mockApiKeyState.currentUser = fromPartial<
+      NonNullable<typeof mockApiKeyState.currentUser>
+    >({ id: 'key-user' })
+
+    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
+
+    expect(isApiKeyLogin.value).toBe(false)
+    expect(isLoggedIn.value).toBe(true)
+    expect(resolvedUserInfo.value).toEqual({ id: 'host-user' })
+  })
+
+  it('shows a Desktop host account by its email, without repeating it as the name', async () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      email: 'sso@example.com'
+    } as const
+    await startDesktopHostSession({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      onChanged: () => () => {}
+    })
+
+    const { userDisplayName, userEmail } = useCurrentUser()
+
+    expect(userEmail.value).toBe('sso@example.com')
+    expect(userDisplayName.value).toBeUndefined()
   })
 
   it('reads a Firebase-only login entirely from Firebase', () => {

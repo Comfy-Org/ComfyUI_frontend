@@ -63,6 +63,18 @@
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
+        <Button
+          v-if="desktopHostSso"
+          type="button"
+          class="h-10"
+          variant="secondary"
+          data-testid="desktop-host-sso"
+          @click="signInWithDesktopHost"
+        >
+          <i class="mr-2 icon-[lucide--building-2] size-5" aria-hidden="true" />
+          {{ t('auth.sso.continueWithSso') }}
+        </Button>
+
         <template v-if="ssoAllowed">
           <Button
             type="button"
@@ -175,6 +187,7 @@ import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -183,6 +196,10 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import {
+  isDesktopHostSessionActive,
+  requestDesktopHostSignIn
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
@@ -201,6 +218,17 @@ const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
 const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
+const desktopHostSso = isDesktopHostSessionActive()
+
+const signInWithDesktopHost = async () => {
+  const toast = useToast()
+  toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
+  if (await requestDesktopHostSignIn()) {
+    onSuccess()
+    return
+  }
+  toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
+}
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,

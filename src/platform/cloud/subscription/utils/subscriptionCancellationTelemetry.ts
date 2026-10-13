@@ -74,10 +74,6 @@ export function createCancelFlowReporter(
       confirmed = true
       operationFollows = options.operationFollows
     },
-    hasConfirmed: () => confirmed,
-    sessionFailed() {
-      operationFollows = false
-    },
     abandoned() {
       if (confirmed) return
       telemetry?.trackBillingEvent({

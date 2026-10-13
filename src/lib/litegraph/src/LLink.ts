@@ -22,16 +22,9 @@ import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { Reroute } from './Reroute'
-import type {
-  CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LinkNetwork,
-  LinkSegment,
-  Point,
-  ReadonlyLinkNetwork
-} from './interfaces'
+import type { CanvasColour, ISlotType, LinkSegment, Point } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
 import { toRaw } from 'vue'
 

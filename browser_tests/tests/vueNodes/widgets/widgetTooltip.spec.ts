@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import {
   routeObjectInfoFromSetupApi,
   setStringInputTooltip
@@ -59,7 +60,7 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
       .first()
     await widget.hover()
 
-    const tooltipText = comfyPage.vueNodes.getVisibleWidgetTooltip()
+    const tooltipText = new Tooltip(comfyPage.page).open
     await expect(tooltipText).toBeVisible()
 
     // Behavioral check: whitespace-pre-line preserves the blank-line separator,

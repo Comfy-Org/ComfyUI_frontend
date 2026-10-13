@@ -11,7 +11,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { CheckoutTierKey } from '@/composables/billing/types'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 

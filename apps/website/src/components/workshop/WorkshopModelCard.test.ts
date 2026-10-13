@@ -46,7 +46,7 @@ describe('WorkshopModelCard', () => {
       'Black Forest Labs'
     )
     expect(screen.getByTestId('model-card-task').textContent).toBe(
-      'Image to Image'
+      'Image to image'
     )
     expect(screen.queryByText(/credits|\$/)).toBeNull()
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
@@ -67,7 +67,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     expect(screen.getByRole('link')).toHaveAccessibleName(
-      'Black Forest Labs Flux Image to Image'
+      'Black Forest Labs Flux Image to image'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
   })
@@ -90,7 +90,7 @@ describe('WorkshopModelCard', () => {
     await nextTick()
     expect(screen.getByTestId('tag-overflow')).toBeTruthy()
     expect(screen.getByRole('link')).toHaveAccessibleName(
-      'Black Forest Labs Flux Image to Image'
+      'Black Forest Labs Flux Image to image'
     )
     expect(screen.queryByRole('button')).toBeNull()
   })
@@ -98,7 +98,7 @@ describe('WorkshopModelCard', () => {
   it('names a hub card with its kind badge after the provider', () => {
     render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
     expect(screen.getByRole('link')).toHaveAccessibleName(
-      'Black Forest Labs Models Flux Image to Image'
+      'Black Forest Labs Models Flux Image to image'
     )
   })
 

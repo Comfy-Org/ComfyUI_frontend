@@ -87,25 +87,22 @@ function stubCloud(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input)
-      sent.push(recordRequest(url, init))
-      const body = url.endsWith('/api/auth/token')
-        ? mintBody('jwt-1')
-        : url.endsWith('/api/billing/balance')
-          ? {
-              amount_micros: 211,
-              currency: 'usd',
-              effective_balance_micros: 211
-            }
-          : init?.credentials === 'include'
-            ? perUser
-            : anonymous
-      return new Response(JSON.stringify(body))
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const url = String(input)
+    sent.push(recordRequest(url, init))
+    const body = url.endsWith('/api/auth/token')
+      ? mintBody('jwt-1')
+      : url.endsWith('/api/billing/balance')
+        ? {
+            amount_micros: 211,
+            currency: 'usd',
+            effective_balance_micros: 211
+          }
+        : init?.credentials === 'include'
+          ? perUser
+          : anonymous
+    return new Response(JSON.stringify(body))
+  })
   return sent
 }
 

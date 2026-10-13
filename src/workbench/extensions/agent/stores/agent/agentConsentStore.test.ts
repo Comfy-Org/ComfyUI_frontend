@@ -331,7 +331,7 @@ describe('agentConsentStore', () => {
     )
     const store = useAgentConsentStore()
     await expect(store.accept()).resolves.toBe(true)
-    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
+    expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(accountApi.set).toHaveBeenCalledOnce()
   })
 

@@ -6,6 +6,7 @@ import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.

@@ -11,6 +11,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
@@ -82,12 +83,7 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
-)
+vi.mock(import('@/services/hdrViewerService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -204,6 +200,33 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
+  it('inspects an HDR output in the HDR viewer', async () => {
+    useAssetsStore().outputAssets.items = [
+      {
+        ...folderAsset,
+        name: 'sky.exr',
+        loader_path: 'renders/sky.exr',
+        preview_url: '/api/assets/sky-preview/content'
+      }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\/view\?filename=sky\.exr&type=output&subfolder=renders$/
+      )
+    )
+  })
+
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
     useAssetsStore().outputAssets.items = [asset]

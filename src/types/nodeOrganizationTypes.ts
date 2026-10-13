@@ -59,10 +59,10 @@ export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
 }
 
 export interface NodeSection {
+  /** Tree of nodes in this section */
+  tree: TreeNode<ComfyNodeDefImpl>
   /** Filter category identifier */
   category?: NodeCategoryId
   /** Section title (i18n key) for tabs that don't use category-based labels */
   title?: string
-  /** Tree of nodes in this section */
-  tree: TreeNode
 }

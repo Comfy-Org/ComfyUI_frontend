@@ -1,0 +1,23 @@
+{
+  "id": "webcam-capture",
+  "capability": "Webcam capture",
+  "description": "Camera stream setup, frame capture, preview, and capture-on-queue upload for the webcam capture node.",
+  "modules": [
+    { "path": "src/extensions/core/webcamCapture.ts", "role": "integration" }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Stream readiness, permissions, capture, and queued upload preserve webcam node behavior",
+      "checks": ["browser_tests/tests/webcamCapture.spec.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension remains the host integration seam for the webcam capture node.",
+    "Captured frames continue to upload through the shared temporary upload service."
+  ],
+  "deepImports": "inventory"
+}

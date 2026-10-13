@@ -143,7 +143,7 @@
                 >
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -201,7 +201,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -302,7 +302,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"

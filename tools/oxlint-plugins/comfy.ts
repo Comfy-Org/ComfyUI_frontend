@@ -31,8 +31,11 @@ import type {
 } from './restrictedSyntax'
 import type {
   noImportActual as NoImportActual,
+  noMockedInExpect as NoMockedInExpect,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy as NoRedundantConsoleSpy,
+  noRedundantFetchStub as NoRedundantFetchStub,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
   noRedundantVitestCleanup as NoRedundantVitestCleanup
 } from './vitestCleanup'
@@ -98,14 +101,20 @@ const {
 }
 const {
   noImportActual,
+  noMockedInExpect,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy,
+  noRedundantFetchStub,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
   noImportActual: typeof NoImportActual
+  noMockedInExpect: typeof NoMockedInExpect
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
+  noRedundantConsoleSpy: typeof NoRedundantConsoleSpy
+  noRedundantFetchStub: typeof NoRedundantFetchStub
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
   noRedundantVitestCleanup: typeof NoRedundantVitestCleanup
 }
@@ -125,6 +134,7 @@ export default {
     'no-es2023-array-copy-method': noEs2023ArrayCopyMethod,
     'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
+    'no-mocked-in-expect': noMockedInExpect,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
@@ -134,6 +144,8 @@ export default {
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-statically-disabled-test': noStaticallyDisabledTest,
+    'no-redundant-console-spy': noRedundantConsoleSpy,
+    'no-redundant-fetch-stub': noRedundantFetchStub,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-relative-packages': noRelativePackages,

@@ -171,6 +171,27 @@ describe('ensureFresh', () => {
     }
   )
 
+  it('carries the organization an sso_required refusal names', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(403, {
+          code: 'sso_required',
+          message: 'x',
+          organization_id: 'org_acme'
+        })
+      )
+    })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(result).toStrictEqual({
+      status: 'error',
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme',
+      httpStatus: 403
+    })
+  })
+
   it.for([
     [
       'a network throw',

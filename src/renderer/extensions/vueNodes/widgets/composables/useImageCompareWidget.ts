@@ -4,7 +4,7 @@ import type {
   ImageCompareInputSpec,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IImageCompareWidget => {

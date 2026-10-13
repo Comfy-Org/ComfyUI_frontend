@@ -24,7 +24,7 @@
     <div
       class="relative aspect-square overflow-hidden p-0"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
       <div
@@ -146,9 +146,7 @@
         </div>
         <div v-if="showOutputCount" class="shrink-0">
           <Button
-            v-tooltip.top.pt:pointer-events-none="
-              $t('mediaAsset.actions.seeMoreOutputs')
-            "
+            :tooltip="$t('mediaAsset.actions.seeMoreOutputs')"
             :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"
@@ -177,6 +175,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { startAssetDrag } from '../utils/assetDragUtil'
@@ -256,11 +255,16 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
 const previewKind = computed((): PreviewKind => {
+  if (asset?.preview_url && isHdr.value) return 'image'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(
+  () => isPreviewableMediaType(fileKind.value) || isHdr.value
+)
 
 // Get filename without extension
 const fileName = computed(() => {

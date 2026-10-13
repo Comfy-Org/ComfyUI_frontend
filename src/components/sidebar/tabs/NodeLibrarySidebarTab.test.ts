@@ -9,6 +9,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
@@ -162,6 +163,37 @@ describe('NodeLibrarySidebarTab', () => {
 
     await leaf?.handleClick?.(new MouseEvent('click'))
     expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('offers delete only on user blueprint rows', async () => {
+    const blueprint = fromPartial<ComfyNodeDefImpl>({
+      name: 'SubgraphBlueprint.Mine',
+      display_name: 'Mine'
+    })
+    vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+    vi.mocked(useSubgraphStore().isUserBlueprint).mockImplementation(
+      (name) => name === blueprint.name
+    )
+    mockOrganizeNodes.mockReturnValue({
+      key: 'root',
+      label: 'Root',
+      children: [
+        { key: 'blueprint', label: 'Mine', leaf: true, data: blueprint },
+        { key: 'leaf', label: 'Leaf', leaf: true, data: mockNode }
+      ]
+    })
+
+    renderComponent()
+    await nextTick()
+
+    const root = getRoot()
+    const blueprintRow = root.children?.[0]
+    const nodeRow = root.children?.[1]
+    expect(nodeRow?.handleDelete).toBeUndefined()
+    await blueprintRow?.handleDelete?.call(blueprintRow)
+    expect(useSubgraphStore().deleteBlueprint).toHaveBeenCalledWith(
+      blueprint.name
+    )
   })
 
   it('closes node help when the panel unmounts', () => {

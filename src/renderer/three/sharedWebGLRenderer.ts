@@ -1,5 +1,12 @@
 import * as THREE from 'three'
 
+import type { FxaaResolve } from './highPrecisionOutput'
+import {
+  createFxaaResolve,
+  createHighPrecisionTarget,
+  ensureTargetSize
+} from './highPrecisionOutput'
+
 export type RendererViewState = {
   toneMapping: THREE.ToneMapping
   toneMappingExposure: number
@@ -35,6 +42,8 @@ export type SharedRendererHandle = {
 
 let sharedRenderer: THREE.WebGLRenderer | null = null
 let viewCount = 0
+let sharedHighPrecisionTarget: THREE.WebGLRenderTarget | null = null
+let sharedFxaaResolve: FxaaResolve | null = null
 
 function createSharedRenderer(): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
@@ -58,6 +67,10 @@ export function acquireSharedRenderer(): SharedRendererHandle {
       viewCount--
       if (viewCount > 0 || sharedRenderer !== renderer) return
       sharedRenderer = null
+      sharedHighPrecisionTarget?.dispose()
+      sharedHighPrecisionTarget = null
+      sharedFxaaResolve?.dispose()
+      sharedFxaaResolve = null
       renderer.forceContextLoss()
       renderer.domElement.dispatchEvent(
         new Event('webglcontextlost', { bubbles: true, cancelable: true })
@@ -75,4 +88,23 @@ export function ensureRendererSize(
   const size = renderer.getSize(new THREE.Vector2())
   if (size.width >= width && size.height >= height) return
   renderer.setSize(Math.max(size.width, width), Math.max(size.height, height))
+}
+
+export function ensureSharedHighPrecisionTarget(
+  width: number,
+  height: number
+): THREE.WebGLRenderTarget {
+  sharedHighPrecisionTarget ??= createHighPrecisionTarget()
+  ensureTargetSize(sharedHighPrecisionTarget, width, height)
+  return sharedHighPrecisionTarget
+}
+
+export function resolveHighPrecisionTarget(
+  renderer: THREE.WebGLRenderer,
+  source: THREE.WebGLRenderTarget,
+  width: number,
+  height: number
+): void {
+  sharedFxaaResolve ??= createFxaaResolve()
+  sharedFxaaResolve.render(renderer, source, width, height)
 }

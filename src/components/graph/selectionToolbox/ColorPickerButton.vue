@@ -1,10 +1,7 @@
 <template>
   <div class="relative">
     <Button
-      v-tooltip.top="{
-        value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 1000
-      }"
+      :tooltip="localizedCurrentColorName ?? t('color.noColor')"
       data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
@@ -28,22 +25,25 @@
         type="single"
         @update:model-value="applyColorName"
       >
-        <ToggleGroupItem
+        <TextTooltip
           v-for="option in colorOptions"
           :key="option.name"
-          :value="option.name"
-          :aria-label="option.localizedName"
-          class="px-1 py-2"
+          :text="option.localizedName"
         >
-          <i
-            v-tooltip.top="option.localizedName"
-            class="pi pi-circle-fill"
-            :style="{
-              color: isLightTheme ? option.value.light : option.value.dark
-            }"
-            :data-testid="option.name"
-          />
-        </ToggleGroupItem>
+          <ToggleGroupItem
+            :value="option.name"
+            :aria-label="option.localizedName"
+            class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
+          >
+            <i
+              class="pi pi-circle-fill"
+              :style="{
+                color: isLightTheme ? option.value.light : option.value.dark
+              }"
+              :data-testid="option.name"
+            />
+          </ToggleGroupItem>
+        </TextTooltip>
       </ToggleGroup>
     </div>
   </div>
@@ -57,6 +57,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,

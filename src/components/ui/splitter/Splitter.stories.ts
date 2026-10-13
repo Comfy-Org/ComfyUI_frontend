@@ -4,11 +4,11 @@ import SplitterGroup from './SplitterGroup.vue'
 import SplitterPanel from './SplitterPanel.vue'
 import SplitterResizeHandle from './SplitterResizeHandle.vue'
 
-const meta = {
+const meta: Meta<typeof SplitterGroup> = {
   title: 'Components/Splitter',
   component: SplitterGroup,
   tags: ['autodocs']
-} satisfies Meta<typeof SplitterGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

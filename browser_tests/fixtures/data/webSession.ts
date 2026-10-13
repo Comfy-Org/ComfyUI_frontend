@@ -33,6 +33,7 @@ export const WEB_SESSION: WebSessionResponse = {
     email: CLOUD_SELF_EMAIL,
     email_verified: true
   },
+  has_personal_workspace: true,
   csrf_token: WEB_SESSION_CSRF_TOKEN,
   expires_at: '2099-01-01T00:00:00Z',
   absolute_expires_at: '2099-01-02T00:00:00Z'

@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -141,7 +141,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Load favorited widgets from the current workflow's extra data.
    */
   function loadFromWorkflow() {
-    const graph = app.rootGraphOrUndefined
+    const graph = useApp().rootGraphOrUndefined
     if (!graph) return
 
     try {
@@ -168,7 +168,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Marks the workflow as modified.
    */
   function saveToWorkflow() {
-    const graph = app.rootGraphOrUndefined
+    const graph = useApp().rootGraphOrUndefined
     if (!graph) return
 
     try {
@@ -192,7 +192,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Returns null if the node or widget no longer exists.
    */
   function resolveWidget(id: FavoritedWidgetId): FavoritedWidget {
-    const graph = app.rootGraphOrUndefined
+    const graph = useApp().rootGraphOrUndefined
     if (!graph) {
       return { ...id, node: null, widget: null, label: id.widgetName }
     }

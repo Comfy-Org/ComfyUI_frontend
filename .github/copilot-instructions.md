@@ -35,3 +35,5 @@ Follow Vue 3 style guide and naming conventions
 Use Vite for fast development and building
 
 Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
+
+Do not write code comments. The only exception is curt JSDoc on an exported API. Put rationale in the commit message or PR description.

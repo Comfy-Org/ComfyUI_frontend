@@ -16,7 +16,7 @@
       <li v-for="(item, index) in items" :key="index">
         <label class="flex cursor-pointer items-center gap-3">
           <img
-            v-if="!failedThumbnails.has(index)"
+            v-if="item.thumbnailUrl && !failedThumbnails.has(index)"
             data-testid="output-thumbnail"
             :src="item.thumbnailUrl"
             alt=""
@@ -67,7 +67,7 @@ import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 
 interface ExportItem {
   name: string
-  thumbnailUrl: string
+  thumbnailUrl?: string
 }
 
 const { items, onExport, onCancel } = defineProps<{

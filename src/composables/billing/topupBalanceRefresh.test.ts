@@ -131,7 +131,6 @@ describe('watchForTopupBalanceUpdate', () => {
   })
 
   it('keeps polling when a refresh rejects', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(useAuthStore().fetchBalance).mockRejectedValue(
       new Error('network')
     )

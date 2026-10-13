@@ -1,55 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-// Override the global @sparkjsdev/spark mock from vitest.setup.ts (the real
-// PlyReader pulls in WASM that doesn't run under Node) with a thin stub
-// driven by per-test fixtures — see `mockNextParseHeader` below. Keeping the
-// PLY-format parsing out of the test file because (a) it would be a parallel
-// implementation that can drift from sparkjs, and (b) sparkjs's PlyReader
-// already has its own coverage. We're only testing what isGaussianSplatPLY
-// does with the parsed result.
-type StubProperty = { isList: boolean; type: string }
-type StubElement = {
-  name: string
-  count: number
-  properties: Record<string, StubProperty>
-}
-
-const {
-  nextHeaderResultMock,
-  resetParseHeaderMock,
-  mockNextParseHeader,
-  mockNextParseHeaderError
-} = vi.hoisted(() => {
-  let next: { elements?: Record<string, StubElement>; error?: Error } = {}
-  return {
-    nextHeaderResultMock: () => next,
-    resetParseHeaderMock: () => {
-      next = {}
-    },
-    mockNextParseHeader: (elements: Record<string, StubElement>) => {
-      next = { elements }
-    },
-    mockNextParseHeaderError: (error: Error) => {
-      next = { error }
-    }
-  }
-})
-
-vi.mock(import('@sparkjsdev/spark'), () => ({
-  PlyReader: fromAny(
-    class {
-      elements: Record<string, StubElement> = {}
-      constructor(_: unknown) {}
-      parseHeader(): Promise<void> {
-        const { elements, error } = nextHeaderResultMock()
-        if (error) return Promise.reject(error)
-        this.elements = elements ?? {}
-        return Promise.resolve()
-      }
-    }
-  )
-}))
+import { describe, expect, it } from 'vitest'
 
 import {
   isGaussianSplatPLY,
@@ -57,44 +6,39 @@ import {
   parseASCIIPLY
 } from '@/scripts/metadata/ply'
 
-const FLOAT = { isList: false, type: 'float' }
-const UCHAR = { isList: false, type: 'uchar' }
-const vertex = (
-  props: Record<string, StubProperty>
-): Record<string, StubElement> => ({
-  vertex: { name: 'vertex', count: 1, properties: props }
-})
-const GAUSSIAN_SPLAT_PROPS = {
-  x: FLOAT,
-  y: FLOAT,
-  z: FLOAT,
-  f_dc_0: FLOAT,
-  f_dc_1: FLOAT,
-  f_dc_2: FLOAT,
-  opacity: FLOAT,
-  scale_0: FLOAT,
-  scale_1: FLOAT,
-  scale_2: FLOAT,
-  rot_0: FLOAT,
-  rot_1: FLOAT,
-  rot_2: FLOAT,
-  rot_3: FLOAT
-}
-const POINT_CLOUD_PROPS = {
-  x: FLOAT,
-  y: FLOAT,
-  z: FLOAT,
-  red: UCHAR,
-  green: UCHAR,
-  blue: UCHAR
-}
-const DC_ONLY_PROPS = {
-  x: FLOAT,
-  y: FLOAT,
-  z: FLOAT,
-  f_dc_0: FLOAT,
-  f_dc_1: FLOAT,
-  f_dc_2: FLOAT
+const SPLAT_PROPERTIES = [
+  'x',
+  'y',
+  'z',
+  'f_dc_0',
+  'f_dc_1',
+  'f_dc_2',
+  'opacity',
+  'scale_0',
+  'scale_1',
+  'scale_2',
+  'rot_0',
+  'rot_1',
+  'rot_2',
+  'rot_3'
+]
+
+function binaryPLYHeader(
+  elements: Record<string, string[]>,
+  format = 'binary_little_endian',
+  comments: string[] = []
+): ArrayBuffer {
+  const lines = [
+    'ply',
+    `format ${format} 1.0`,
+    ...comments.map((comment) => `comment ${comment}`)
+  ]
+  for (const [name, properties] of Object.entries(elements)) {
+    lines.push(`element ${name} 1`)
+    lines.push(...properties.map((property) => `property float ${property}`))
+  }
+  lines.push('end_header', '')
+  return createPLYBuffer(lines.join('\r\n'))
 }
 
 function createPLYBuffer(content: string): ArrayBuffer {
@@ -149,31 +93,56 @@ end_header`
   })
 
   describe('isGaussianSplatPLY', () => {
-    beforeEach(resetParseHeaderMock)
-
-    it('detects a 3DGS PLY by scale_0..2 + rot_0..3 properties on the vertex element', async () => {
-      mockNextParseHeader(vertex(GAUSSIAN_SPLAT_PROPS))
-      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(true)
-    })
-
-    it('returns false for a point-cloud PLY with no scale/rot properties', async () => {
-      mockNextParseHeader(vertex(POINT_CLOUD_PROPS))
-      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
-    })
-
-    it('returns false when only the f_dc_* DC term is present (no scale/rot)', async () => {
-      mockNextParseHeader(vertex(DC_ONLY_PROPS))
-      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
-    })
-
-    it('returns false when parseHeader rejects (malformed / unsupported PLY)', async () => {
-      mockNextParseHeaderError(new Error('Failed to read header'))
-      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
-    })
-
-    it('returns false when the vertex element is missing entirely', async () => {
-      mockNextParseHeader({})
-      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
+    it.for([
+      {
+        name: 'a 3DGS vertex element',
+        buffer: binaryPLYHeader({ vertex: SPLAT_PROPERTIES }),
+        expected: true
+      },
+      {
+        name: 'a 3DGS header whose comment mentions end_header',
+        buffer: binaryPLYHeader(
+          { vertex: SPLAT_PROPERTIES },
+          'binary_little_endian',
+          ['the end_header token below terminates this file']
+        ),
+        expected: true
+      },
+      {
+        name: 'a point cloud without scale/rot',
+        buffer: binaryPLYHeader({ vertex: ['x', 'y', 'z', 'red', 'green'] }),
+        expected: false
+      },
+      {
+        name: 'only the f_dc_* DC term',
+        buffer: binaryPLYHeader({ vertex: SPLAT_PROPERTIES.slice(0, 7) }),
+        expected: false
+      },
+      {
+        name: 'splat properties on a non-vertex element',
+        buffer: binaryPLYHeader({
+          vertex: ['x', 'y', 'z'],
+          face: SPLAT_PROPERTIES
+        }),
+        expected: false
+      },
+      {
+        name: 'an ASCII PLY',
+        buffer: binaryPLYHeader({ vertex: SPLAT_PROPERTIES }, 'ascii'),
+        expected: false
+      },
+      {
+        name: 'a header without end_header',
+        buffer: createPLYBuffer('ply\nformat binary_little_endian 1.0\n'),
+        expected: false
+      },
+      {
+        name: 'a non-PLY buffer',
+        buffer: new ArrayBuffer(0),
+        expected: false
+      }
+    ])('returns $expected for $name', ({ buffer, expected }) => {
+      expect(isGaussianSplatPLY(buffer)).toBe(expected)
     })
   })
 

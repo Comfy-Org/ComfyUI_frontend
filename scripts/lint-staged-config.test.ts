@@ -95,6 +95,24 @@ describe('lint-staged config', () => {
     expect(commands.some((command) => command.includes('eslint '))).toBe(false)
   })
 
+  it.for([
+    ['src/stores/appStore.ts', ['pnpm lint:server-facts --staged']],
+    ['src/styles.css', []]
+  ] as const)(
+    'runs the server-fact gate only when code is staged: %s',
+    async ([fileName, expected]) => {
+      const lintStaged = await freshConfig()
+
+      const commands = [lintStaged([fileName])].flat()
+
+      expect(
+        commands.filter(
+          (command) => command === 'pnpm lint:server-facts --staged'
+        )
+      ).toEqual(expected)
+    }
+  )
+
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
 

@@ -12,8 +12,11 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/nodeReplacement/types'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
@@ -23,7 +26,6 @@ import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
-import type { MissingNodeType } from '@/types/comfy'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -418,7 +420,7 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
 }
 
 export function useNodeReplacement() {
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
@@ -527,20 +529,16 @@ export function useNodeReplacement() {
       }
 
       if (replacedTypes.length > 0) {
-        toastStore.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('nodeReplacement.replacedAllNodes', {
+        toast.success(t('g.success'), {
+          description: t('nodeReplacement.replacedAllNodes', {
             count: replacedTypes.length
           }),
-          life: 3000
+          duration: 3000
         })
       }
       if (replacementFailed) {
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error', 'Error'),
-          detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+        toast.error(t('g.error'), {
+          description: t('nodeReplacement.replaceFailed')
         })
       }
     } catch (error) {
@@ -549,10 +547,8 @@ export function useNodeReplacement() {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error', 'Error'),
-        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
       })
       return replacedTypes
     } finally {

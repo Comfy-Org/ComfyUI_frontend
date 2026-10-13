@@ -8,6 +8,7 @@ import { ComfyUI } from './ui'
 vi.mock(import('./app'))
 
 type SetStatusHost = {
+  app: typeof app
   queueSize: { textContent: string }
   lastQueueSize: number
   batchCount: number
@@ -19,6 +20,7 @@ type SetStatusHost = {
 
 function createHost(overrides: Partial<SetStatusHost> = {}): SetStatusHost {
   return {
+    app,
     queueSize: { textContent: '' },
     lastQueueSize: 0,
     batchCount: 1,

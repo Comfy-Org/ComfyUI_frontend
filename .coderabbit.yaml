@@ -5,6 +5,8 @@ reviews:
   profile: assertive
   high_level_summary: false
   request_changes_workflow: true
+  path_filters:
+    - '!apps/website/**'
   # Without this, a review that never happened (rate limit, internal error)
   # still reports green, so an unreviewed PR is indistinguishable from a
   # cleanly reviewed one.
@@ -111,7 +113,7 @@ reviews:
         Treat `docs/guidance/storybook.md` as required review context.
     - path: 'src/lib/litegraph/**'
       instructions: |
-        Treat `docs/adr/README.md` as required review context. For widget
+        Treat the ADRs in `docs/adr/` as required review context. For widget
         serialization changes, also read
         `docs/WIDGET_SERIALIZATION.md`.
     - path: 'src/workbench/extensions/agent/**'

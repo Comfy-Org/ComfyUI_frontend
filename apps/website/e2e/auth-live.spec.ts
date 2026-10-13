@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
+import { AuthToasts } from './fixtures/authToasts'
 import { test } from './fixtures/blockExternalMedia'
 import {
   WORKSHOP_EMAIL,
@@ -76,7 +77,9 @@ test.describe('Live email sign-in', () => {
     await page.getByLabel('Password', { exact: true }).fill('wrong-password')
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
-    await expect(page.getByText('Invalid login credentials')).toBeVisible()
+    await expect(
+      new AuthToasts(page).withText('Invalid login credentials')
+    ).toBeVisible()
     await expect(page).toHaveURL(/\/login\/(?:[?#].*)?$/)
   })
 
@@ -155,7 +158,9 @@ test.describe('Live forgot-password', () => {
     await page.getByLabel('Email').fill(WORKSHOP_EMAIL)
     await page.getByRole('button', { name: 'Send reset link' }).click()
 
-    await expect(page.getByText('Password reset email sent')).toBeVisible()
+    await expect(
+      new AuthToasts(page).withText('Password reset email sent')
+    ).toBeVisible()
     await expect(page).toHaveURL('/login/', { timeout: 10_000 })
   })
 
@@ -187,7 +192,7 @@ test.describe('Live forgot-password', () => {
     await page.getByRole('button', { name: 'Send reset link' }).click()
 
     await expect(
-      page.getByText('Password reset email sent'),
+      new AuthToasts(page).withText('Password reset email sent'),
       'the cloud app shows success even on this failure to avoid confirming account existence'
     ).toBeVisible()
   })

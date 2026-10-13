@@ -104,22 +104,12 @@ describe('indexing policy', () => {
     '/agent/',
     '/zh-CN/agent',
     '/zh-CN/agent/',
-    '/p/supported-models/grok-imagine',
+    '/hub/models/local/',
+    '/hub/models/local/4x-ultrasharp/',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(false)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(false)
-  })
-
-  it('derives model redirect exclusions from canonical model metadata', () => {
-    expect(
-      isExcludedFromSitemap('https://comfy.org/p/supported-models/qwen-3-8b/')
-    ).toBe(true)
-    expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/zh-CN/p/supported-models/grok-image/'
-      )
-    ).toBe(true)
   })
 
   it.for([

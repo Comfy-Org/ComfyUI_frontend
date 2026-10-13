@@ -51,6 +51,38 @@ describe('AssetExportProgressDialog', () => {
     store.exportList[0].exportName = 'bundle.zip'
     await nextTick()
 
-    expect(screen.getByText('All exports completed')).toBeVisible()
+    expect(
+      screen.getByText('All exports completed', { selector: 'span' })
+    ).toBeVisible()
   })
+
+  it('renders only while an export is tracked', async () => {
+    render(AssetExportProgressDialog, { global: { plugins: [i18n] } })
+    expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+    useAssetExportStore().trackExport('task-export-1')
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+  })
+})
+
+describe('AssetExportProgressDialog announcements', () => {
+  it.for([
+    { status: 'running', announcement: 'Exporting Assets' },
+    { status: 'failed', announcement: '1 export failed' },
+    { status: 'completed', announcement: 'All exports completed' }
+  ] as const)(
+    'announces "$announcement" when the export is $status',
+    async ({ status, announcement }) => {
+      const store = renderDialog()
+
+      store.exportList[0].status = status
+      await nextTick()
+
+      expect(
+        screen.getByText(announcement, { selector: '[role="status"]' })
+      ).toBeInTheDocument()
+    }
+  )
 })

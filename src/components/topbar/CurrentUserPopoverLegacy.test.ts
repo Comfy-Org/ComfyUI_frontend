@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
@@ -41,7 +41,7 @@ afterAll(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -193,15 +193,15 @@ describe('CurrentUserPopoverLegacy', () => {
   })
 
   describe('credits help icon (FE-617)', () => {
-    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
-      renderComponent()
+    it('shows unified-credits help on hover', async () => {
+      const { user } = renderComponent()
 
-      const helpButton = screen.getByTestId('credits-info-button')
-      expect(helpButton).toBeInTheDocument()
-      expect(helpButton.tagName).toBe('BUTTON')
-      expect(helpButton).toHaveAttribute(
-        'aria-label',
-        enMessages.credits.unified.tooltip
+      const helpButton = screen.getByRole('button', {
+        name: /We've unified payments across Comfy/
+      })
+      await user.hover(helpButton)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })
   })
@@ -250,7 +250,7 @@ describe('CurrentUserPopoverLegacy', () => {
     await user.click(screen.getByTestId('add-credits-button'))
 
     expect(
-      useDialogService().showTopUpCreditsDialog
+      useBillingDialogs().showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -445,6 +445,16 @@ describe('CurrentUserPopoverLegacy', () => {
       await user.click(trigger)
       await user.click(screen.getByText('Test User'))
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+    })
+
+    it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      screen.getByTestId('workspace-switcher-trigger').focus()
+      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('tooltip')).toBeNull()
     })
 
     it('keeps credits visible but hides top-up for workspace members', () => {

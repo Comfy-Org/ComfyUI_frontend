@@ -15,7 +15,10 @@ import { z } from 'zod'
 
 import { COMFY_CLIENT } from './requestAuth.js'
 import { timedSignal } from './requestTimeout.js'
-import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired.js'
+import {
+  SSO_REQUIRED_SERVER_CODE,
+  ssoRequiredOrganizationId
+} from './ssoRequired.js'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
@@ -100,7 +103,12 @@ export function classifyWebSessionFailure(
       : status === 403
         ? (FORBIDDEN_CODES[serverCode] ?? 'SESSION_REQUEST_REFUSED')
         : 'SESSION_REQUEST_REFUSED'
-  return failure(byServerCode, status, serverCode)
+  const refusal = failure(byServerCode, status, serverCode)
+  const organizationId =
+    byServerCode === 'SSO_REQUIRED'
+      ? ssoRequiredOrganizationId(body)
+      : undefined
+  return organizationId === undefined ? refusal : { ...refusal, organizationId }
 }
 
 interface Answered {

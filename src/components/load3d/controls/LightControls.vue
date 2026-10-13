@@ -17,20 +17,23 @@
       />
     </div>
     <div v-else-if="showIntensityControl" class="relative">
-      <Button
-        ref="triggerRef"
-        v-tooltip.right="{
-          value: $t('load3d.lightIntensity'),
-          showDelay: 300
-        }"
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="$t('load3d.lightIntensity')"
-        @click="toggleLightIntensity"
-      >
-        <i class="icon-[lucide--sun] text-lg text-base-foreground" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            ref="triggerRef"
+            size="icon"
+            variant="textonly"
+            class="rounded-full"
+            :aria-label="$t('load3d.lightIntensity')"
+            @click="toggleLightIntensity"
+          >
+            <i class="icon-[lucide--sun] size-5 text-base-foreground" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{{
+          $t('load3d.lightIntensity')
+        }}</TooltipContent>
+      </Tooltip>
       <div
         v-show="showLightIntensity"
         ref="panelRef"
@@ -54,6 +57,9 @@ import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   HDRIConfig,

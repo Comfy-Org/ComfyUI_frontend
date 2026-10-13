@@ -1,21 +1,11 @@
 import { useDialogStore } from '@/stores/dialogStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 
 import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogContent.vue'
-
-const mockToastAdd = vi.fn()
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -158,9 +148,13 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.type(getPhraseInput(), 'I understand')
     await user.click(getChangePlanButton())
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'boom',
+        kind: 'error',
+        title: 'Failed to change plan'
+      })
+    ])
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 

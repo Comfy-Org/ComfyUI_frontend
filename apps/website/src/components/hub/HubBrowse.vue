@@ -8,10 +8,10 @@ import { useHubStore } from '@/composables/useHubStore'
 import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import {
   USE_CASES,
-  filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
 } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import { workshopModels as defaultWorkshopModels } from '@/config/workshop-browse-content'
 import { groupModels } from '@/config/model-family'
 import hubTemplates from '@/data/hubTemplates.json'
@@ -217,7 +217,7 @@ const hrefFor = (template: HubTemplate) =>
   partnerModelFor(template, models)?.href ?? hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
-  const matches = filterWorkshopModels(scoped.value.models, {
+  const matches = searchWorkshopModels(scoped.value.models, {
     query: store.searchQuery.value
   })
   const order = store.sortBy.value

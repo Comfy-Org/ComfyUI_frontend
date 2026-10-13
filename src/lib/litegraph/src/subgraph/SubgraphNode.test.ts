@@ -287,7 +287,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('preserves a promoted widget when re-resolution fails', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
     })
@@ -317,7 +316,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('declines promotion when an empty widget name cannot be registered', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [
         { name: '', type: 'STRING' },
@@ -357,7 +355,6 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('clears an existing promotion when registration is later declined', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })

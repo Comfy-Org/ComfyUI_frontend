@@ -7,7 +7,6 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 
@@ -73,7 +72,7 @@ describe('useLitegraphSettings', () => {
       const canvasStore = useCanvasStore()
       canvasStore.canvas = createCanvas(vi.fn())
       useSettingStore().settingValues['Comfy.Graph.CanvasInfo'] = canvasInfo
-      useAgentNodeSelectionStore().isActive = picking
+      canvasStore.isPickingNodes = picking
 
       scope.run(useLitegraphSettings)
       await nextTick()
@@ -86,16 +85,15 @@ describe('useLitegraphSettings', () => {
     const draw = vi.fn()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
-    const agentNodeSelectionStore = useAgentNodeSelectionStore()
     canvasStore.canvas = createCanvas(draw)
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     scope.run(useLitegraphSettings)
 
-    agentNodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = false
     await nextTick()
-    agentNodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(canvasStore.canvas.show_info).toBe(false)

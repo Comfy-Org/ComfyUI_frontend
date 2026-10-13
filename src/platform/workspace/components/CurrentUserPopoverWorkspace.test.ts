@@ -1,12 +1,11 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -15,6 +14,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import enMessages from '@/locales/en/main.json'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -73,7 +77,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -125,10 +130,7 @@ function renderComponent(
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [getActivePinia()!, PrimeVue, i18n],
-      directives: {
-        tooltip: Tooltip
-      },
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
@@ -240,6 +242,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('dismisses the keyboard-opened workspace name tooltip on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent('team')
+
+    await user.tab()
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Team Workspace'
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
   it('keeps account actions available without workspace context', () => {
     renderComponent('personal', true)
 
@@ -252,6 +269,39 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  describe('with a Desktop host session', () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      workspaceId: 'ws-1'
+    } as const
+    const hostBridge = (canSwitch: boolean): DesktopHostAuthBridge => ({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      ...(canSwitch && { switchWorkspace: async () => signedIn }),
+      onChanged: () => () => {}
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it.for([
+      { name: 'offers the switcher when Desktop can switch', canSwitch: true },
+      { name: 'shows a fixed workspace on an older Desktop', canSwitch: false }
+    ])('$name', async ({ canSwitch }) => {
+      await startDesktopHostSession(hostBridge(canSwitch))
+      renderComponent('team')
+
+      expect(screen.queryByTestId('workspace-switcher-trigger') !== null).toBe(
+        canSwitch
+      )
+      expect(screen.queryByTestId('workspace-context-row') !== null).toBe(
+        !canSwitch
+      )
+    })
   })
 
   it('exposes the full workspace name on hover', async () => {
@@ -284,7 +334,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
     await user.click(screen.getByTestId('stub-create-workspace'))
 
-    expect(useDialogService().showCreateWorkspaceDialog).toHaveBeenCalled()
+    expect(useWorkspaceDialogs().showCreateWorkspaceDialog).toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
     expect(
       screen.queryByTestId('workspace-switcher-panel')
@@ -416,7 +466,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('add-credits-button'))
 
     expect(
-      useDialogService().showTopUpCreditsDialog
+      useBillingDialogs().showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 

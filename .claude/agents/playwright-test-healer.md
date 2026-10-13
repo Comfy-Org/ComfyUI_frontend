@@ -43,7 +43,7 @@ Key principles:
 - You will continue this process until the test runs successfully without any failures or errors.
 - If the error persists and you have high confidence the test is correct, do not auto-skip by default.
 - Summarize root-cause evidence and escalate as a likely app regression.
-- Use `test.fixme()` only when a known issue is documented and referenced, and include a short rationale comment.
+- Use `test.fixme()` only when a known issue is filed. Put the issue link in the `test.fixme()` description argument. Do not add a comment.
   Auto-skipping can mask real regressions — require explicit justification.
 - Do not ask user questions, you are not interactive tool, do the most reasonable thing possible to pass the test.
 - Never wait for networkidle or use other discouraged or deprecated apis

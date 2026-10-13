@@ -81,7 +81,8 @@ function sessionBody(user: WebSessionUser, now: () => number) {
     },
     csrf_token: FAKE_CSRF_TOKEN,
     expires_at: new Date(now() + DAY_MS).toISOString(),
-    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
+    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString(),
+    has_personal_workspace: true
   }
 }
 

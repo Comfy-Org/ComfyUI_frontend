@@ -13,6 +13,7 @@ import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -247,15 +248,12 @@ function installFetchRecorder(features: Record<string, unknown>) {
   }
   vi.stubGlobal('WebSocket', RecordingWebSocket)
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      pending.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    pending.push(request)
+    return respond(request)
+  })
 
   return {
     all,
@@ -446,6 +444,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
   })
 
   afterEach(() => {

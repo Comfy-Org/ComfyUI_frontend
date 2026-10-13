@@ -13,7 +13,7 @@ const PATH = '/ltx-2.5'
 const ZH_PATH = '/zh-CN/ltx-2.5'
 const HERO_TITLE = t('ltx.hero.title', {}, { locale: 'en' })
 const MODELS_HEADING = t('ltx.models.heading', {}, { locale: 'en' })
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const REVIEWS_HEADING = t('ltx.reviews.heading', {}, { locale: 'en' })
 const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', {}, { locale: 'en' })
 const MCP_ROUTE = getRoutes('en').mcp
@@ -103,7 +103,7 @@ test.describe('LTX 2.5 page — link targets', () => {
         name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

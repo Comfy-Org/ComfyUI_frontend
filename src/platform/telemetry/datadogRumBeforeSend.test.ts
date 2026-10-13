@@ -1,5 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { RumErrorEvent } from '@datadog/browser-rum'
+import type {
+  RumActionEvent,
+  RumErrorEvent,
+  RumLongTaskEvent,
+  RumResourceEvent,
+  RumViewEvent
+} from '@datadog/browser-rum'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
@@ -13,7 +19,11 @@ function createErrorEvent(
 ): RumErrorEvent {
   return fromPartial<RumErrorEvent>({
     type: 'error',
-    error: { message, source, stack }
+    error: { message, source, stack },
+    view: {
+      url: 'https://user:secret@example.com/view?token=private',
+      referrer: 'https://user:secret@example.com/referrer?token=private'
+    }
   })
 }
 
@@ -66,6 +76,16 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('keeps the primary reported error event', () => {
+    const event = createErrorEvent(
+      '[Reported error]: canvas_layout_listener_failed',
+      undefined,
+      'custom'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps the reported copy of an assertion failure', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
@@ -80,6 +100,133 @@ describe('rumBeforeSend', () => {
     const event = createErrorEvent('Application failed', undefined, 'console')
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('redacts URL secrets from kept error messages and stacks', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = createErrorEvent(
+      `failed ${secretUrl}`,
+      `at load (${secretUrl})`
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.error.message).toBe('failed https://example.com/model.glb')
+    expect(event.error.stack).toBe('at load (https://example.com/model.glb)')
+  })
+
+  it('drops errors when unmodifiable cause fields contain URL metadata', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: 'failed',
+        source: 'source',
+        causes: [
+          {
+            message: `cause ${secretUrl}`,
+            source: 'source',
+            type: 'Error'
+          }
+        ]
+      },
+      view: { url: 'https://example.com/' }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('redacts URL secrets from error resources, page URLs, and event context', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumErrorEvent>({
+      type: 'error',
+      error: {
+        message: 'failed',
+        source: 'source',
+        resource: { url: secretUrl },
+        handling_stack: `at ${secretUrl}`
+      },
+      view: { url: secretUrl, referrer: secretUrl },
+      context: { model: { source: secretUrl } }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.error.resource?.url).toBe('https://example.com/model.glb')
+    expect(event.error.handling_stack).toBe('at https://example.com/model.glb')
+    expect(event.view).toMatchObject({
+      url: 'https://example.com/model.glb',
+      referrer: 'https://example.com/model.glb'
+    })
+    expect(event.context?.model).toEqual({
+      source: 'https://example.com/model.glb'
+    })
+  })
+
+  it('redacts URL secrets from resource events', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumResourceEvent>({
+      type: 'resource',
+      resource: { url: secretUrl },
+      view: { url: secretUrl, referrer: secretUrl },
+      context: { model: { source: secretUrl } }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.resource.url).toBe('https://example.com/model.glb')
+    expect(event.view).toMatchObject({
+      url: 'https://example.com/model.glb',
+      referrer: 'https://example.com/model.glb'
+    })
+    expect(event.context).toEqual({
+      model: { source: 'https://example.com/model.glb' }
+    })
+  })
+
+  it('redacts URL secrets from long-task script sources and invokers', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumLongTaskEvent>({
+      type: 'long_task',
+      long_task: {
+        scripts: [{ source_url: secretUrl, invoker: secretUrl }]
+      },
+      view: { url: secretUrl, referrer: secretUrl }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.long_task.scripts).toEqual([
+      {
+        source_url: 'https://example.com/model.glb',
+        invoker: 'https://example.com/model.glb'
+      }
+    ])
+  })
+
+  it('redacts URL secrets from action targets', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumActionEvent>({
+      type: 'action',
+      action: { target: { name: `open ${secretUrl}` } },
+      view: { url: secretUrl, referrer: secretUrl }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.action.target?.name).toBe('open https://example.com/model.glb')
+  })
+
+  it('redacts URL secrets from the largest-contentful-paint resource', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
+    const event = fromPartial<RumViewEvent>({
+      type: 'view',
+      view: {
+        url: secretUrl,
+        referrer: secretUrl,
+        performance: { lcp: { resource_url: secretUrl } }
+      }
+    })
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.view.performance?.lcp?.resource_url).toBe(
+      'https://example.com/model.glb'
+    )
   })
 
   it('keeps the console copy while no reporter exists to replace it', () => {

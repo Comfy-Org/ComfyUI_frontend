@@ -1,0 +1,498 @@
+{
+  "id": "cloud",
+  "capability": "Cloud distribution",
+  "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, subscription plans and checkout, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, subscription, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
+  "modules": [
+    {
+      "path": "src/platform/cloud/oauth/oauthApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/oauth/oauthApi.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/oauth/oauthState.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/oauth/oauthState.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/oauth/OAuthConsentView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/oauth/OAuthConsentView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudAuthTimeoutView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudForgotPasswordView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudForgotPasswordView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudLoginView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudLoginView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSignupView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSignupView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSorryContactSupportView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSubscriptionRedirectView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSurveyView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/CloudSurveyView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/UserCheckView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/UserCheckView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/auth.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/auth.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/desktopLoginRedemption.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/onboardingCloudRoutes.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/onboardingCloudRoutes.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useCloudAuthPage.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useFreeTierOnboarding.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useFreeTierOnboarding.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/usePostAuthRedirect.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/usePostAuthRedirect.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useSsoSignIn.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useProgressBarPainter.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/constants/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/skeletons/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoEntryQuery.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoErrorMessages.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoSignInState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoSignInState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoReentry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/surveySchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/DynamicSurveyField.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/DynamicSurveyForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/survey/DynamicSurveyForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/onboarding/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/constants/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/billingPlanTelemetry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/billingPlanTelemetry.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/cancellationSurvey.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/creditsProgress.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/creditsProgress.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/planCreditGrant.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/planCreditGrant.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/retentionOffer.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/retentionOffer.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionCancellationTelemetry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionTierRank.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionTierRank.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/tierBenefits.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/tierBenefits.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/cloud/subscription/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/subscription/launchCancellationFlow.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/subscription/launchCancellationFlow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/subscription/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/cloud/notification/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/cloud/notification/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/distribution/cloudPreviewUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/distribution/cloudPreviewUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/session/cloudWebSessionStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/session/cloudIdentityBoot.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/cloudApiAuthProvider.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/providers/cloud/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/initTelemetry.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/config/subscriptionPricesConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CloudBadge.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/cloudBadges.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/cloudFeedbackTopbarButton.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/cloudRemoteConfig.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/cloudSessionCookie.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Cloud onboarding routes gate users through sign-in, survey, and post-auth redirects",
+      "checks": [
+        "src/platform/cloud/onboarding/onboardingCloudRoutes.test.ts",
+        "src/platform/cloud/onboarding/auth.test.ts",
+        "src/platform/cloud/onboarding/UserCheckView.test.ts",
+        "src/platform/cloud/onboarding/composables/usePostAuthRedirect.test.ts",
+        "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts"
+      ]
+    },
+    {
+      "name": "SSO and OAuth consent flows preserve request state across sign-in",
+      "checks": [
+        "src/platform/cloud/onboarding/sso/ssoSignInState.test.ts",
+        "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
+        "src/platform/cloud/oauth/oauthState.test.ts",
+        "src/platform/cloud/oauth/oauthApi.test.ts",
+        "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
+        "src/platform/cloud/oauth/OAuthConsentView.test.ts"
+      ]
+    },
+    {
+      "name": "Subscription plans, checkout, and cancellation follow tier policy",
+      "checks": [
+        "src/platform/cloud/subscription/constants/tierPricing.test.ts",
+        "src/platform/cloud/subscription/utils/subscriptionTierRank.test.ts",
+        "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
+        "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
+        "src/platform/cloud/subscription/utils/retentionOffer.test.ts",
+        "src/platform/cloud/subscription/composables/useSubscription.test.ts",
+        "src/platform/cloud/subscription/launchCancellationFlow.test.ts",
+        "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts"
+      ]
+    },
+    {
+      "name": "Cloud session and API auth adapters keep credential lifecycle behavior",
+      "checks": [
+        "src/platform/auth/webSessionFlagOn.test.ts",
+        "src/platform/auth/webSessionFlagOff.test.ts",
+        "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
+        "src/stores/bootstrapStore.test.ts"
+      ]
+    },
+    {
+      "name": "Cloud telemetry providers initialize only after store readiness and forward events",
+      "checks": [
+        "src/platform/telemetry/providers/cloud/storeReadinessGate.test.ts",
+        "src/platform/telemetry/providers/cloud/PostHogTelemetryProvider.test.ts",
+        "src/platform/telemetry/providers/cloud/MixpanelTelemetryProvider.test.ts",
+        "src/platform/telemetry/providers/cloud/SentryTelemetryProvider.test.ts"
+      ]
+    },
+    {
+      "name": "Cloud host surfaces wire into the run button, topbar, notifications, and previews",
+      "checks": [
+        "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
+        "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
+        "src/platform/cloud/notification/components/DesktopCloudNotificationController.test.ts",
+        "src/platform/distribution/cloudPreviewUtil.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md",
+    "docs/adr/AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md",
+    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md",
+    "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md",
+    "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md"
+  ],
+  "compatibilityPromises": [
+    "main.ts, router.ts, bootstrapStore, shared auth, billing, workspace, and telemetry code may continue importing cloud internals during inventory.",
+    "Cloud bootstrap extensions and onboarding routes remain the integration seams between the cloud distribution and the host app.",
+    "Dialog launchers that lazy-load presentation and views that call OAuth, onboarding, or checkout adapters directly remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

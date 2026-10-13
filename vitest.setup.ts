@@ -1,14 +1,45 @@
 import '@testing-library/jest-dom/vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, vi } from 'vitest'
-import 'vue'
+import { createRequire } from 'node:module'
+import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
+import { TooltipProvider } from 'reka-ui'
+import { shallowReactive } from 'vue'
+import type { Plugin } from 'vue'
 
 import './vitest.network.setup'
 
+import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
+
+const requireFromTestingLibrary = createRequire(
+  createRequire(import.meta.url).resolve('@testing-library/vue')
+)
+const { config }: { config: { global: { plugins: Plugin[] } } } =
+  requireFromTestingLibrary('@vue/test-utils')
+
+const testTooltipProviderProps = shallowReactive({
+  ...appTooltipProviderDefaults,
+  delayDuration: 0,
+  skipDelayDuration: 300,
+  disableClosingTrigger: undefined,
+  disabled: undefined
+})
+
+const appShellTooltipProvider: Plugin = {
+  install(app) {
+    const root = app._component
+    if (typeof root === 'function' || !root.setup) return
+    const setupRoot = root.setup
+    root.setup = (props, ctx) => {
+      TooltipProvider.setup?.(testTooltipProviderProps, ctx)
+      return setupRoot(props, ctx)
+    }
+  }
+}
+config.global.plugins.push(appShellTooltipProvider)
 
 beforeEach(({ task }) => {
   for (
@@ -52,6 +83,31 @@ vi.mock('@sparkjsdev/spark', async () => {
     }
   }
 })
+
+// Modules below `@/scripts/app` reach the singleton through `useApp()`. Route
+// it to whatever `@/scripts/app` resolves to in the current test file (the
+// real module, `__mocks__/app`, or an inline factory). The import is started
+// but not awaited here: the app module's import tree includes `useApp()`
+// callers, so awaiting it inside this factory would deadlock on itself.
+const appBridge = vi.hoisted(() => ({
+  loading: undefined as Promise<unknown> | undefined
+}))
+vi.mock('@/scripts/appInstance', () => {
+  let appModule: typeof import('@/scripts/app') | undefined
+  appBridge.loading = import('@/scripts/app').then((m) => {
+    appModule = m
+  })
+  return {
+    useApp: () => {
+      if (!appModule) throw new Error('@/scripts/app is still loading')
+      return appModule.app
+    }
+  }
+})
+// Settle before vitest.timer.setup.ts resets the document so the app's DOM
+// side effects are cleared like any other import-time DOM.
+beforeAll(() => appBridge.loading)
+beforeEach(() => appBridge.loading)
 
 // Augment Window interface for tests
 declare global {

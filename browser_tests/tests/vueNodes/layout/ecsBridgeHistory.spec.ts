@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
 
 test.describe(
@@ -78,6 +79,40 @@ test.describe(
         await comfyPage.keyboard.redo()
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
       })
+    })
+
+    test('preserves Redo after Undo normalizes a subgraph node size', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const title = 'Sampling with a long descriptive title for this workflow'
+      const rootBreadcrumb = comfyPage.page.getByTestId(
+        TestIds.breadcrumb.item('root')
+      )
+      await node.setTitle(title)
+      await rootBreadcrumb.click()
+      await comfyPage.vueNodes.enterSubgraph('11')
+
+      const stepsRow = comfyPage.vueNodes.getWidgetRowByLabel(title, 'steps')
+      const steps = stepsRow.getByRole('spinbutton')
+      await comfyPage.vueNodes.setInputNumberValue(stepsRow, '21')
+      await expect(steps).toHaveValue('21')
+      await rootBreadcrumb.click()
+      await comfyPage.vueNodes.enterSubgraph('11')
+
+      await comfyPage.command.executeCommand('Comfy.Undo')
+      await expect(steps).toHaveValue('20')
+      await rootBreadcrumb.click()
+
+      await comfyPage.command.executeCommand('Comfy.Redo')
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await expect(steps).toHaveValue('21')
     })
 
     test('preserves geometry through navigation, renderer toggle, and history', async ({

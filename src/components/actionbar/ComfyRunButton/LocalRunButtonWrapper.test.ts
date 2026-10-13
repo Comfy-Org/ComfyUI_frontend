@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -29,6 +29,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 vi.mock<unknown>(
   import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
@@ -120,7 +121,7 @@ describe('LocalRunButtonWrapper', () => {
       screen.getByRole('button', { name: 'Sign in to run' })
     )
 
-    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'Partner A',
       'Partner B'
     ])

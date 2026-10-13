@@ -273,3 +273,9 @@ export type SettingPanelType =
   | 'workspace'
   | 'workspace-allowlist'
   | 'workspace-members'
+
+export interface SettingDialogProps {
+  onClose: () => void
+  defaultPanel?: SettingPanelType
+  scrollToSettingId?: string
+}

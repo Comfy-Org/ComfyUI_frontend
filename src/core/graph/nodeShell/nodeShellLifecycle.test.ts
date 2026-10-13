@@ -19,7 +19,6 @@ describe('node shell registration', () => {
     graph.add(first)
     const duplicate = new LGraphNode('duplicate')
     duplicate.id = first.id
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     graph.add(duplicate)
 
@@ -31,10 +30,16 @@ describe('node shell registration', () => {
         .getGraphNodesFor(graph.id, graph.id)
         .map(({ id }) => id)
     ).toEqual([first.id, duplicate.id])
-    expect(warn).toHaveBeenCalledOnce()
-    expect(warn.mock.calls[0][0]).toContain(`Node id ${first.id} `)
-    expect(warn.mock.calls[0][0]).toContain(`reminted as ${duplicate.id}`)
-    expect(warn.mock.calls[0][0]).toContain(`root graph ${graph.rootGraph.id}`)
+    expect(console.warn).toHaveBeenCalledOnce()
+    expect(vi.mocked(console.warn).mock.calls[0][0]).toContain(
+      `Node id ${first.id} `
+    )
+    expect(vi.mocked(console.warn).mock.calls[0][0]).toContain(
+      `reminted as ${duplicate.id}`
+    )
+    expect(vi.mocked(console.warn).mock.calls[0][0]).toContain(
+      `root graph ${graph.rootGraph.id}`
+    )
   })
 })
 

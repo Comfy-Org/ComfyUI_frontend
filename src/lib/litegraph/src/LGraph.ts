@@ -73,7 +73,10 @@ import {
   withGraphIntentSource
 } from './graphIntents'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
-import { normalizeWidgetsView } from './node/widgetsView'
+import {
+  captureWidgetRestorationSlots,
+  normalizeWidgetsView
+} from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -133,9 +136,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
   MethodNames,
   OptionalProps,
@@ -143,6 +143,8 @@ import type {
   Positionable,
   Size
 } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork } from './types/linkNetwork'
 import { LiteGraph, SubgraphNode } from './litegraph'
 import {
   alignOutsideContainer,
@@ -3300,6 +3302,7 @@ export class LGraph
             const requestedId = toNodeId(n_info.id)
             node.id = requestedId
             // add before configure, otherwise configure cannot create links
+            captureWidgetRestorationSlots(node)
             this.add(node, true)
             if (node.id !== requestedId) {
               recordUnambiguousRemint(

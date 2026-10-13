@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SsoDiscovery } from './sso'
-import { discoverSso, readSsoError, ssoStartUrl } from './sso'
+import {
+  discoverSso,
+  readSsoError,
+  ssoRequiredOrganizationId,
+  ssoStartUrl
+} from './sso'
 
 const ORIGIN = 'https://cloud.comfy.org'
 
@@ -159,8 +164,89 @@ describe('ssoStartUrl', () => {
     expect(startParams(returnTo).get('return_to')).toBe('/')
   })
 
+  it.for([
+    {
+      name: 'keeps a URL on the calling app',
+      returnTo: 'https://billing.example/checkout?plan=pro',
+      expected: 'https://billing.example/checkout?plan=pro'
+    },
+    {
+      name: 'drops an API route on the calling app',
+      returnTo: 'https://billing.example/api/status',
+      expected: '/'
+    },
+    {
+      name: 'drops a URL on another origin',
+      returnTo: 'https://evil.example/x',
+      expected: '/'
+    }
+  ])('$name', ({ returnTo, expected }) => {
+    const params = new URL(
+      ssoStartUrl({
+        email: 'a@acme.com',
+        returnTo,
+        origin: ORIGIN,
+        appOrigin: 'https://billing.example'
+      })
+    ).searchParams
+    expect(params.get('return_to')).toBe(expected)
+  })
+
   it('keeps an app path that only starts with "api"', () => {
     expect(startParams('/apiary').get('return_to')).toBe('/apiary')
+  })
+
+  it.for<{
+    name: string
+    email?: string
+    expected: Record<string, string>
+  }>([
+    {
+      name: 'with the email as a hint',
+      email: 'alice@comfy.org',
+      expected: {
+        email: 'alice@comfy.org',
+        organization: 'org_meta',
+        return_to: '/x'
+      }
+    },
+    {
+      name: 'without an email',
+      expected: { organization: 'org_meta', return_to: '/x' }
+    }
+  ])('targets a named organization $name', ({ email, expected }) => {
+    const url = new URL(
+      ssoStartUrl({
+        organizationId: 'org_meta',
+        email,
+        returnTo: '/x',
+        origin: ORIGIN
+      })
+    )
+
+    expect(Object.fromEntries(url.searchParams)).toEqual(expected)
+  })
+})
+
+describe('ssoRequiredOrganizationId', () => {
+  const refusal = { code: 'sso_required', message: 'x' }
+
+  it.for<[string, unknown, string | undefined]>([
+    [
+      'a named organization',
+      { ...refusal, organization_id: 'org_meta' },
+      'org_meta'
+    ],
+    ['a refusal without one', refusal, undefined],
+    ['an empty organization', { ...refusal, organization_id: '' }, undefined],
+    [
+      'a non-string organization',
+      { ...refusal, organization_id: 7 },
+      undefined
+    ],
+    ['no body', undefined, undefined]
+  ])('reads %s', ([, body, expected]) => {
+    expect(ssoRequiredOrganizationId(body)).toBe(expected)
   })
 })
 

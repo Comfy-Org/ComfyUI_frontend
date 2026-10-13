@@ -22,11 +22,11 @@ const mobileRow2Logos = logos.slice(6)
     <!-- Single row on desktop -->
     <div data-testid="social-proof-desktop" class="hidden w-max gap-2 md:flex">
       <div
-        v-for="copy in 2"
+        v-for="copy in 4"
         :key="copy"
         class="flex shrink-0 animate-marquee items-center gap-2"
         style="--marquee-gap: 0.5rem"
-        :aria-hidden="copy === 2 ? 'true' : undefined"
+        :aria-hidden="copy > 1 ? 'true' : undefined"
       >
         <div
           v-for="logo in logos"

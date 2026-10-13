@@ -28,7 +28,7 @@ function renderGroup(isOriginalMaterial: boolean) {
   const config: LightConfig = { intensity: 5 }
   return render(LightMenuGroup, {
     props: { config, isOriginalMaterial },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
 }
 
@@ -62,7 +62,7 @@ describe('LightMenuGroup', () => {
     }
     render(LightMenuGroup, {
       props: { config, isOriginalMaterial: true },
-      global: { plugins: [i18n], directives: { tooltip: () => {} } }
+      global: { plugins: [i18n] }
     })
     const user = userEvent.setup()
 

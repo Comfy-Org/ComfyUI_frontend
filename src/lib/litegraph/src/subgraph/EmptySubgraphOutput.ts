@@ -1,7 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { INodeOutputSlot, Point } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { zeroUuid } from '@/utils/uuid'
 

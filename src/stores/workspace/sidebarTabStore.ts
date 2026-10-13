@@ -1,18 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
-import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
-import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
-import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t, te } from '@/i18n'
-import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
-import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
 import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
@@ -75,21 +65,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       versionAdded: '1.3.9',
       category: 'view-controls' as const,
       function: async () => {
-        const settingStore = useSettingStore()
-
-        // The asset browser cannot function without backend asset support, so
-        // the browser routing requires both the user preference and the server
-        // capability; without the capability the preference is inert and the
-        // tab opens the sidebar tree.
-        if (
-          tab.id === 'model-library' &&
-          settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
-          useFeatureFlags().flags.assetsEnabled
-        ) {
-          await openModelLibraryBrowser()
-          return
-        }
-
+        if (await tab.onToggle?.()) return
         toggleSidebarTab(tab.id)
       },
       active: () => activeSidebarTab.value?.id === tab.id,
@@ -113,62 +89,12 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     }
   }
 
-  /**
-   * Register the core sidebar tabs.
-   */
-  const registerCoreSidebarTabs = () => {
-    const settingStore = useSettingStore()
-    const jobHistoryTabId = 'job-history'
-    const syncJobHistoryTab = (enabled: boolean) => {
-      const hasJobHistoryTab = sidebarTabs.value.some(
-        (tab) => tab.id === jobHistoryTabId
-      )
-      if (enabled && !hasJobHistoryTab) {
-        registerSidebarTab(useJobHistorySidebarTab(), { prepend: true })
-      } else if (!enabled && hasJobHistoryTab) {
-        unregisterSidebarTab(jobHistoryTabId)
-      }
-    }
-
-    syncJobHistoryTab(settingStore.get('Comfy.Queue.QPOV2'))
-    watch(
-      () => settingStore.get('Comfy.Queue.QPOV2'),
-      (enabled) => syncJobHistoryTab(enabled)
-    )
-
-    registerSidebarTab(useAssetsSidebarTab())
-    registerSidebarTab(useNodeLibrarySidebarTab())
-    registerSidebarTab(useModelLibrarySidebarTab())
-    registerSidebarTab(useWorkflowsSidebarTab())
-    registerSidebarTab(useAppsSidebarTab())
-
-    const menuStore = useMenuItemStore()
-
-    menuStore.registerCommands(
-      ['View'],
-      [
-        'Workspace.ToggleBottomPanel',
-        'Comfy.BrowseTemplates',
-        'Workspace.ToggleFocusMode',
-        'Comfy.ToggleCanvasInfo',
-        'Comfy.Canvas.ToggleMinimap',
-        'Comfy.Canvas.ToggleLinkVisibility'
-      ]
-    )
-
-    menuStore.registerCommands(
-      ['View'],
-      ['Comfy.Canvas.ZoomIn', 'Comfy.Canvas.ZoomOut', 'Comfy.Canvas.FitView']
-    )
-  }
-
   return {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
     registerSidebarTab,
-    unregisterSidebarTab,
-    registerCoreSidebarTabs
+    unregisterSidebarTab
   }
 })

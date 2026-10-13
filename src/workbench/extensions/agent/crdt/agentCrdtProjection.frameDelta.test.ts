@@ -31,7 +31,7 @@ function setup() {
 }
 
 describe('AgentCrdtProjection frame node delta', () => {
-  it('keeps reporting the document nodes still pending for a graph while none is bound', () => {
+  it('reports each pending document node change once while no graph is bound', () => {
     const { host, follower, projection } = setup()
     nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
     nodesMap(host).set('4', new Y.Map([['type', 'Note']]))
@@ -50,7 +50,7 @@ describe('AgentCrdtProjection frame node delta', () => {
 
     expect(projection.applyFrame(second)).toEqual({
       applied: false,
-      nodes: { added: ['4'], removed: ['3'] }
+      nodes: { added: [], removed: ['3'] }
     })
     expect(projection.discardPending(WORKFLOW_ID)).toEqual({
       added: ['4'],

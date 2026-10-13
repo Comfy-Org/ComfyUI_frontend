@@ -33,10 +33,12 @@ function makeViewportStub() {
     cameraManager: { activeCamera: new THREE.PerspectiveCamera() },
     controlsManager: { controls: { enabled: true } },
     viewHelperManager: { visibleViewHelper: vi.fn() },
-    renderer: {
+    rendererView: {
       setViewport: vi.fn(),
       setScissor: vi.fn(),
-      setScissorTest: vi.fn(),
+      setScissorTest: vi.fn()
+    },
+    renderer: {
       setClearColor: vi.fn(),
       clear: vi.fn(),
       render: vi.fn()

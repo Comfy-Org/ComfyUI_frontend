@@ -1,3 +1,3 @@
 import { z } from 'zod'
 
-export const CloudNodesEnvelopeSchema = z.record(z.unknown())
+export const CloudNodesEnvelopeSchema = z.record(z.string(), z.unknown())
