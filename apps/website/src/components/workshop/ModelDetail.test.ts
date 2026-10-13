@@ -474,9 +474,18 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
 
-  it('does not offer a generic docs link for an undocumented provider', async () => {
+  it('links the Router docs for an undocumented provider', async () => {
     await mountDetail()
-    expect(screen.queryByTestId('model-docs-link')).toBeNull()
+    const link = screen.getByTestId('model-docs-link')
+    expect(link.getAttribute('href')).toBe(
+      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
+    )
+    expect(link.textContent).toContain('Router docs')
+  })
+
+  it('offers one docs link in the API section', async () => {
+    await mountDetail()
+    expect(screen.queryByTestId('api-docs')).toBeNull()
   })
 
   it.for(['json', 'example'])(

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
 
+import { externalLinks } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -20,14 +21,13 @@ const { t } = translationsFor(locale)
       {{ t('workshop.model.tabs.api') }}
     </h2>
     <a
-      v-if="docsHref"
-      :href="docsHref"
+      :href="docsHref ?? externalLinks.docsComfyRouter"
       target="_blank"
       rel="noopener noreferrer"
       class="inline-flex shrink-0 items-center gap-1.5 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
       data-testid="model-docs-link"
     >
-      {{ t('workshop.hub.docs') }}
+      {{ t(docsHref ? 'workshop.hub.docs' : 'workshop.api.docs') }}
       <span class="sr-only">{{ t('workshop.workflow.opensInNewTab') }}</span>
       <ArrowUpRight class="size-4" aria-hidden="true" />
     </a>

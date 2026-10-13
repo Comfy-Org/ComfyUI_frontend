@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { apiKeysLink, externalLinks } from '@/config/routes'
+import { apiKeysLink } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
 import { formForContract } from '@/config/workshop-contract'
@@ -342,20 +341,6 @@ const facts = computed(() => [
             )
           }}
         </p>
-
-        <a
-          :href="externalLinks.docsComfyRouter"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
-          data-testid="api-docs"
-        >
-          {{ t('workshop.api.docs') }}
-          <span class="sr-only">{{
-            t('workshop.workflow.opensInNewTab')
-          }}</span>
-          <ArrowUpRight class="size-4" aria-hidden="true" />
-        </a>
       </div>
     </div>
   </section>
