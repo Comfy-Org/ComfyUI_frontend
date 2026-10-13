@@ -2,6 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -9,6 +11,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
@@ -64,6 +67,135 @@ describe('useAgentDockMount', () => {
     await nextTick()
 
     expect(store.reportedExhaustionIdentity).toBeNull()
+  })
+
+  it('re-arms the credit-transition notice after scoped funds refill while closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+  })
+
+  it('waits for a fresh scoped balance after the billing identity changes', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    let finishRefresh: (() => void) | undefined
+    const fetchStatus = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishRefresh = resolve
+        })
+    )
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatus,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+
+    accountId.value = 'account-b'
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(fetchStatus).toHaveBeenCalledOnce()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    finishRefresh?.()
+    await nextTick()
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      false
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
+    )
+  })
+
+  it('refreshes billing when the panel reopens', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const fetchStatus = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatus,
+      type: computed(() => 'workspace')
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    store.isOpen = true
+    await nextTick()
+
+    expect(fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('returns an inert mount on non-cloud distributions', () => {

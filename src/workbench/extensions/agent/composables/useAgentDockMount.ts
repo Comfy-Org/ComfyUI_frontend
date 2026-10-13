@@ -4,6 +4,8 @@ import { computed, defineAsyncComponent, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { useBillingIdentity } from './useBillingIdentity'
+
 interface AgentDockMount {
   docked: ComputedRef<boolean>
   DockedAgentPanel: Component | null
@@ -25,7 +27,7 @@ export function useAgentDockMount(): AgentDockMount {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
-  const { subscription } = useBillingContext()
+  const { subscription, fetchStatus, type } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -37,6 +39,49 @@ export function useAgentDockMount(): AgentDockMount {
       if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
     },
     { immediate: true }
+  )
+
+  const billingIdentity = useBillingIdentity()
+  let identityRefreshEpoch = 0
+  let refreshingIdentity: string | null = null
+
+  watch(billingIdentity, (identity, previousIdentity) => {
+    if (identity === previousIdentity) return
+    const refreshEpoch = ++identityRefreshEpoch
+    refreshingIdentity = identity
+    void fetchStatus()
+      .then(() => {
+        if (
+          refreshEpoch !== identityRefreshEpoch ||
+          billingIdentity.value !== identity
+        )
+          return
+        refreshingIdentity = null
+        const scopedHasFunds = subscription.value?.agentScopedHasFunds
+        if (scopedHasFunds !== undefined)
+          agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
+      })
+      .catch(() => {
+        if (refreshEpoch === identityRefreshEpoch) refreshingIdentity = null
+      })
+  })
+
+  watch(
+    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
+    ([identity, scopedHasFunds]) => {
+      if (scopedHasFunds === undefined || refreshingIdentity === identity)
+        return
+      agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => agentPanelStore.isOpen,
+    (isOpen, wasOpen) => {
+      if (!isOpen || wasOpen || type.value !== 'workspace') return
+      void fetchStatus().catch(() => undefined)
+    }
   )
 
   return {
