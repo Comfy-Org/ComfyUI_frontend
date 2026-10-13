@@ -14,7 +14,7 @@ import {
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import type { SwapImage } from '@/lib/workshop/hand-product-swap/examples'
 import HandSwapProducts from './HandSwapProducts.vue'
-import HandSwapSeedBar from './HandSwapSeedBar.vue'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 
 const {
   hand,
@@ -84,7 +84,7 @@ const resolutionValue = computed({
           aria-hidden="true"
         />
       </CinematicMenu>
-      <HandSwapSeedBar
+      <EditorSeedField
         v-model="seed"
         :label="hc('swap.seed', locale)"
         :shuffle-label="hc('swap.seed.shuffle', locale)"
