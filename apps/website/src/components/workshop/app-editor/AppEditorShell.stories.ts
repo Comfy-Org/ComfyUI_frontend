@@ -258,9 +258,7 @@ const meta: Meta<
         >
           <EditorEmpty
             v-if="stage.kind === 'empty'"
-            title="Try an example"
-            hint="Each one loads a photo ready to try."
-            upload="Or upload your photo in the panel"
+            title="Start with an example"
             :examples="[{ id: 'pier', image: EXAMPLE.url, label: 'The pier' }]"
             @example="stage = { kind: 'editing', source: EXAMPLE }"
           />

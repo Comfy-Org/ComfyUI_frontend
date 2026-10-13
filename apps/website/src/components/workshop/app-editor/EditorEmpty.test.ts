@@ -5,9 +5,7 @@ import { describe, expect, it } from 'vitest'
 import EditorEmpty from './EditorEmpty.vue'
 
 const props = {
-  title: 'Try an example',
-  hint: 'Each one loads a photo ready to try.',
-  upload: 'Or upload your photo in the panel',
+  title: 'Start with an example',
   examples: [
     { id: 'pier', image: '/pier.jpg', label: 'Pier' },
     { id: 'cafe', image: '/cafe.jpg', label: 'Cafe', result: 'Night' }
