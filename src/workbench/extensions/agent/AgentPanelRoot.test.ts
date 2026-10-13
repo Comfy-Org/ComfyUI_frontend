@@ -267,7 +267,6 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 })
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 vi.mock(import('./crdt/devPanelLog'), { spy: true })
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
@@ -290,12 +289,14 @@ import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
+import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
 const docOpMinterDeps = vi.hoisted(() => ({
   current: null as DocOpMinterDeps | null
 }))
 vi.mock(import('./crdt/docOpMinter'), { spy: true })
+vi.mock(import('./crdt/restoreOpMinter'), { spy: true })
 
 // The mock replaces the real `attachDocOpMinter` body entirely. It only
 // captures `deps` for assertions below — it must NOT reproduce any of that
@@ -12128,7 +12129,6 @@ describe('AgentPanelRoot agent socket identity', () => {
   })
 
   afterEach(() => {
-    useAgentPanelStore().enabled = false
     Object.assign(appMock, { isGraphReady: undefined })
   })
 
@@ -12183,32 +12183,43 @@ describe('AgentPanelRoot agent socket identity', () => {
     expect(subscribeAttempts()).toEqual(['wf-42'])
   })
 
-  it('does not mint a canvas edit until the identity resolves and the subscribe has gone out', async () => {
-    let resolveIdentity!: (response: Response) => void
-    mockMessagesEndpoint('wf-42')
-    respondToFetch(
-      /\/agent\/identity$/,
-      () =>
-        new Promise<Response>((resolve) => {
-          resolveIdentity = resolve
-        })
-    )
-    agentSocket.send.mockReturnValue(false)
-    bindActiveTab('wf-42')
-    useAgentPanelStore().enabled = true
+  it.for([
+    {
+      minter: 'canvas edit',
+      isDocBound: () => docOpMinterDeps.current?.isDocBound()
+    },
+    {
+      minter: 'restored node',
+      isDocBound: () =>
+        vi.mocked(attachRestoreOpMinter).mock.lastCall?.[0].isDocBound()
+    }
+  ])(
+    'does not mint a $minter until the identity resolves and the subscribe has gone out',
+    async ({ isDocBound }) => {
+      let resolveIdentity!: (response: Response) => void
+      mockMessagesEndpoint('wf-42')
+      respondToFetch(
+        /\/agent\/identity$/,
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveIdentity = resolve
+          })
+      )
+      agentSocket.send.mockReturnValue(false)
+      bindActiveTab('wf-42')
+      useAgentPanelStore().enabled = true
 
-    await renderAndSend('first message')
-    const minter = docOpMinterDeps.current
-    assert.exists(minter)
-    expect(minter.isDocBound()).toBe(false)
+      await renderAndSend('first message')
+      expect(isDocBound()).toBe(false)
 
-    resolveIdentity(identityResponse())
-    await vi.waitFor(() => expect(subscribeAttempts()).toEqual(['wf-42']))
-    expect(minter.isDocBound()).toBe(false)
+      resolveIdentity(identityResponse())
+      await vi.waitFor(() => expect(subscribeAttempts()).toEqual(['wf-42']))
+      expect(isDocBound()).toBe(false)
 
-    agentSocket.send.mockReturnValue(true)
-    agentSocket.open()
+      agentSocket.send.mockReturnValue(true)
+      agentSocket.open()
 
-    await vi.waitFor(() => expect(minter.isDocBound()).toBe(true))
-  })
+      await vi.waitFor(() => expect(isDocBound()).toBe(true))
+    }
+  )
 })

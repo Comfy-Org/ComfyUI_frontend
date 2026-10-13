@@ -4,11 +4,9 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { DocResetFrame } from '@comfyorg/ingest-types'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   agentTest as test,
   bootAgentApp,
@@ -92,8 +90,6 @@ test.describe(
       const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       hostSocket.answerSubscribesWith(() => [host.subscribed()])
       await hostSocket.install()
-      const send = (frame: AgentWsEvent | HostFrame): void =>
-        hostSocket.send(frame)
 
       await bootAgentApp(page, true, {
         settings: {
@@ -136,7 +132,7 @@ test.describe(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_B_ID))
       ).toBeVisible()
 
-      send({
+      hostSocket.send({
         type: 'agent_tool_call',
         data: {
           tool_call_id: 'call-print',
@@ -148,7 +144,7 @@ test.describe(
         }
       })
 
-      send({
+      hostSocket.send({
         type: 'doc_reset',
         data: {
           v: 1,

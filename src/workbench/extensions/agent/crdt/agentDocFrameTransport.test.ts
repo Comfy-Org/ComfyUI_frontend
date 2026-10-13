@@ -14,13 +14,6 @@ function received(
 }
 
 describe('createAgentDocFrameTransport', () => {
-  it('sends outbound doc frames on the shared socket verbatim', () => {
-    const fake = createFakeAgentSocket()
-
-    expect(fake.transport.send('{"type":"doc_subscribe","data":{}}')).toBe(true)
-    expect(fake.send).toHaveBeenCalledWith('{"type":"doc_subscribe","data":{}}')
-  })
-
   it.for([
     'doc_update',
     'doc_subscribed',
@@ -49,7 +42,7 @@ describe('createAgentDocFrameTransport', () => {
   it('reports each time the shared socket opens, so a dropped subscribe can be re-driven', () => {
     const fake = createFakeAgentSocket()
     const connected = vi.fn()
-    fake.transport.onConnected(connected)
+    fake.transport.onSocketOpen(connected)
 
     fake.open()
     fake.drop()
