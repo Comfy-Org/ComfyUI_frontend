@@ -261,21 +261,22 @@ describe('ImagePreview', () => {
   })
 
   it('downloads the original file, not the preview-format variant', async () => {
-    renderImagePreview({
-      imageUrls: ['/api/view?filename=render.exr&type=output&preview=webp;90']
-    })
+    const previewUrl = '/api/view?filename=out.png&type=output&preview=webp;90'
+    renderImagePreview({ imageUrls: [previewUrl] })
     const user = userEvent.setup()
 
-    const downloadButton = screen.getByRole('button', {
-      name: 'Download image'
-    })
-    await user.click(downloadButton)
+    await user.click(screen.getByRole('button', { name: 'Download image' }))
 
-    const url = new URL(vi.mocked(downloadFile).mock.calls[0][0])
+    expect(downloadFile).toHaveBeenCalledOnce()
+    const url = new URL(
+      vi.mocked(downloadFile).mock.calls[0][0],
+      window.location.href
+    )
     expect(url.pathname).toBe('/api/view')
-    expect(url.searchParams.get('filename')).toBe('render.exr')
+    expect(url.searchParams.get('filename')).toBe('out.png')
     expect(url.searchParams.get('type')).toBe('output')
     expect(url.searchParams.has('preview')).toBe(false)
+    expect(screen.getByTestId('main-image')).toHaveAttribute('src', previewUrl)
   })
 
   it('switches images when navigation dots are clicked', async () => {
