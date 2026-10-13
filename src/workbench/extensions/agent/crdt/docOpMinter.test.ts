@@ -1575,6 +1575,31 @@ describe('attachDocOpMinter', () => {
     }
   )
 
+  it('omits bookkeeping supplied by a custom node serializer when minting', async () => {
+    const node = new TestSource()
+    const serialize = node.serialize.bind(node)
+    node.serialize = () => ({
+      ...serialize(),
+      [NODE_INCARNATION_KEY]: '0',
+      [OPAQUE_WIDGETS_KEY]: [37],
+      [WIDGET_FORM_KEY]: { kind: 'positional' },
+      extension_payload: { owner: 'custom-node' }
+    })
+    graph.add(node)
+    await afterFlush()
+
+    expect(minted).toHaveLength(1)
+    const [operation] = minted
+    assert(operation.op === 'add_node')
+    expect(operation.node).toMatchObject({
+      type: 'TestSource',
+      extension_payload: { owner: 'custom-node' }
+    })
+    expect(operation.node).not.toHaveProperty(NODE_INCARNATION_KEY)
+    expect(operation.node).not.toHaveProperty(OPAQUE_WIDGETS_KEY)
+    expect(operation.node).not.toHaveProperty(WIDGET_FORM_KEY)
+  })
+
   it('does not mint an active-graph widget write without a live widget', async () => {
     emitGraphIntent({
       type: 'set_widget',

@@ -44,6 +44,7 @@ import {
 
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -113,7 +114,7 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
-  } = serialized
+  } = omitDocumentBookkeeping(serialized)
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   return named && !node.isVirtualNode
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
