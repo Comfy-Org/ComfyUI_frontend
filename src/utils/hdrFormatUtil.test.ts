@@ -1,7 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
   getHdrPreviewUrl,
+  getImageFileUrl,
   getImageFilenameFromUrl,
   isHdrImageFilename,
   isHdrImageUrl,
@@ -71,6 +73,36 @@ describe('getHdrPreviewUrl', () => {
     { url: undefined, expected: undefined }
   ])('maps $url to $expected', ({ url, expected }) => {
     expect(getHdrPreviewUrl(url)).toBe(expected)
+  })
+})
+
+describe('getImageFileUrl', () => {
+  function image(src: string, fileUrl?: string) {
+    return fromPartial<HTMLImageElement>({
+      src,
+      baseURI: window.location.origin,
+      dataset: fileUrl ? { fileUrl } : {}
+    })
+  }
+
+  it.for([
+    {
+      name: 'the shown image',
+      img: () => image('/api/view?filename=a.png&preview=webp'),
+      expected: '/api/view?filename=a.png'
+    },
+    {
+      name: 'the file behind a stored preview',
+      img: () =>
+        image(
+          '/api/assets/p1/content?disposition=inline',
+          '/api/view?filename=a.exr&preview=webp'
+        ),
+      expected: '/api/view?filename=a.exr'
+    }
+  ])('resolves $name without the preview format', ({ img, expected }) => {
+    const url = getImageFileUrl(img())
+    expect(`${url.pathname}${url.search}`).toBe(expected)
   })
 })
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { chatgptImage25Page } from '@/data/chatgptImage25'
+import { fishAudioPage } from '@/data/fishAudio'
 import { flux3Page } from '@/data/flux3'
 import { geminiOmniPage } from '@/data/geminiOmni'
 import { ltxPage } from '@/data/ltx'
@@ -36,6 +37,7 @@ import type {
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'fishAudio', page: fishAudioPage },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'chatgptImage25', page: chatgptImage25Page },

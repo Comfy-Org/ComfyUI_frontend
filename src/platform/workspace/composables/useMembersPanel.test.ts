@@ -1096,8 +1096,7 @@ describe('useMembersPanel', () => {
         mockMaxSeats.value = maxSeats
         mockOccupiedSeats.value = occupiedSeats
         const panel = await setup()
-        expect(panel.isInviteDisabled.value).toBe(false)
-        expect(panel.inviteTooltip.value).toBeNull()
+        expect(panel.showInviteButton.value).toBe(true)
         panel.handleInviteMember()
         expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
         expect(
@@ -1110,19 +1109,19 @@ describe('useMembersPanel', () => {
       mockMaxSeats.value = 0
       mockOccupiedSeats.value = 1000
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('keeps the invite button enabled from backend capacity without a team plan', async () => {
       mockIsTeamPlan.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('keeps invites live while a cancellation is scheduled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
       expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
@@ -1135,7 +1134,7 @@ describe('useMembersPanel', () => {
         endDate: '2027-01-15T00:00:00Z'
       }
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
       expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
@@ -1149,7 +1148,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(true)
       expect(panel.showInviteButton.value).toBe(false)
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(false)
       panel.handleInviteMember()
       expect(
         useWorkspaceDialogs().showInviteMemberDialog
@@ -1280,7 +1279,7 @@ describe('useMembersPanel', () => {
         expect(panel.isPlanEnded.value).toBe(true)
         expect(panel.isSalesManagedPlan.value).toBe(true)
         expect(panel.showInviteButton.value).toBe(canInvite)
-        expect(panel.isInviteDisabled.value).toBe(!canInvite)
+        expect(panel.showInviteButton.value).toBe(canInvite)
         expect(panel.uiConfig.value.showMembersList).toBe(true)
         panel.handleInviteMember()
         expect(
@@ -1313,7 +1312,7 @@ describe('useMembersPanel', () => {
       }
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(true)
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('hides the invite button for workspace members', async () => {
@@ -1340,7 +1339,7 @@ describe('useMembersPanel', () => {
       const member = createMember({ id: 'member-1' })
 
       expect(panel.showInviteButton.value).toBe(false)
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(false)
       expect(panel.permissions.value.canViewPendingInvites).toBe(true)
       expect(panel.showViewTabs.value).toBe(true)
       expect(panel.uiConfig.value.showPendingTab).toBe(true)
@@ -1395,7 +1394,7 @@ describe('useMembersPanel', () => {
     it('honors the resolved invitation capability while billing is initializing', async () => {
       mockIsInitialized.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       panel.handleInviteMember()
       expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
@@ -1502,7 +1501,6 @@ describe('useMembersPanel', () => {
     mount: setup,
     read: (panel) => ({
       showInviteButton: panel.showInviteButton.value,
-      isInviteDisabled: panel.isInviteDisabled.value,
       canInviteMembers: panel.permissions.value.canInviteMembers
     })
   })
