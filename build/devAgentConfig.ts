@@ -65,12 +65,6 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
     )
   }
 
-  if (env.VITE_AGENT_STANDALONE === 'true' && env.DISTRIBUTION === 'cloud') {
-    throw new Error(
-      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud: the standalone agent harness is never a cloud distribution.'
-    )
-  }
-
   if (url) {
     const { protocol, hostname } = new URL(url)
     const loopback = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(
