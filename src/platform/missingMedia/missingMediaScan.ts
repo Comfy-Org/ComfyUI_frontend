@@ -1,5 +1,4 @@
 import { groupBy } from 'es-toolkit'
-import { toValue } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -8,7 +7,7 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
+import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -24,7 +23,6 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   collectAllNodes,
   getExecutionIdByNode,
@@ -33,10 +31,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { encodeParams } from '@/utils/requestUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -189,31 +184,11 @@ export async function verifyMediaCandidates(
 ): Promise<void> {
   if (signal?.aborted) return
   const pending = candidates.filter((c) => c.isMissing === undefined)
-  const { assetsEnabled } = useFeatureFlags().flags
-  const assetsStore = useAssetsStore()
-
-  async function resolveCandidate(annotatedName: string) {
-    const { filepath: name } = parseAnnotatedPath(annotatedName)
-    const assetMatches = (asset: AssetItem) =>
-      name === (asset.hash || asset.name)
-    if (
-      toValue(assetsStore.inputAssets.items).some(assetMatches) ||
-      toValue(assetsStore.outputAssets.items).some(assetMatches)
-    )
-      return false
-
-    if (!assetsEnabled) return undefined
-
-    const query = encodeParams({ limit: 1, hash: name })
-    const resp = await api.fetchApi(`/assets?${query}`, { signal })
-    const json = await resp.json().catch(() => {})
-    const parseResult = assetResponseSchema.safeParse(json)
-    return parseResult.success ? !parseResult.data.assets.length : undefined
-  }
   const results = await Promise.allSettled(
     Object.entries(groupBy(pending, (p) => p.name)).map(
       async ([name, candidates]) => {
-        const isMissing = await resolveCandidate(name)
+        const asset = await resolveWidgetValueAsset(name, { signal })
+        const isMissing = asset === undefined ? undefined : asset === null
         for (const candidate of candidates) candidate.isMissing = isMissing
       }
     )
