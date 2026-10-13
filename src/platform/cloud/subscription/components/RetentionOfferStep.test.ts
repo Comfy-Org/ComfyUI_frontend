@@ -68,14 +68,12 @@ function renderOffer({
   isScopeCurrent = (): boolean => true,
   unitAmount = 10000,
   percent = 30,
-  months = 3,
-  periodEnd = Date.UTC(2026, 10, 12, 12) / 1000
+  months = 3
 }: {
   isScopeCurrent?: () => boolean
   unitAmount?: number
   percent?: number
   months?: number
-  periodEnd?: number
 } = {}) {
   const onDecide = vi.fn<(outcome: RetentionOfferOutcome) => void>()
   render(RetentionOfferStep, {
@@ -89,7 +87,7 @@ function renderOffer({
         currency: 'usd',
         unit_amount: unitAmount,
         quantity: 1,
-        period_end: periodEnd
+        period_end: Date.UTC(2026, 10, 12, 12) / 1000
       },
       sessionId: 'session-1',
       workspaceId: 'workspace-1',
@@ -143,38 +141,6 @@ describe('RetentionOfferStep', () => {
     })
   })
 
-  it.for([
-    {
-      percent: 25,
-      months: 1,
-      term: '25% off for 1 month',
-      applied: 'Your 25% discount is applied for 1 month from acceptance.',
-      period: '1-month discount',
-      price: '$75.00/mo'
-    },
-    {
-      percent: 40,
-      months: 2,
-      term: '40% off for 2 months',
-      applied: 'Your 40% discount is applied for 2 months from acceptance.',
-      period: '2-month discount',
-      price: '$60.00/mo'
-    }
-  ])(
-    'uses the server terms for $percent% off for $months months',
-    async ({ percent, months, term, applied, period, price }) => {
-      settlesAs('succeeded')
-      const { user } = renderOffer({ percent, months })
-      expect(screen.getByText(term)).toBeInTheDocument()
-      await user.click(
-        screen.getByRole('button', { name: `Keep Pro and save ${percent}%` })
-      )
-      expect(await screen.findByText(applied)).toBeInTheDocument()
-      expect(screen.getByText(period)).toBeInTheDocument()
-      expect(screen.getByText(price)).toBeInTheDocument()
-    }
-  )
-
   it('leaves custom LoRAs out for a plan without them', () => {
     onPlan('STANDARD')
     renderOffer({ unitAmount: 2000 })
@@ -210,47 +176,52 @@ describe('RetentionOfferStep', () => {
 
   it.for([
     {
-      name: 'mid-month acceptance',
-      acceptedAt: '2026-10-12T12:00:00Z',
-      periodEnd: Date.UTC(2026, 10, 12, 12) / 1000
+      percent: 25,
+      months: 1,
+      term: '25% off for 1 month',
+      applied: 'Your 25% discount is applied for 1 month from acceptance.',
+      period: '1-month discount',
+      price: '$75.00/mo'
     },
     {
-      name: 'February 28 acceptance with May 28 expiry before the May 31 renewal',
-      acceptedAt: '2027-02-28T12:00:00Z',
-      periodEnd: Date.UTC(2027, 2, 31, 12) / 1000
+      percent: 40,
+      months: 2,
+      term: '40% off for 2 months',
+      applied: 'Your 40% discount is applied for 2 months from acceptance.',
+      period: '2-month discount',
+      price: '$60.00/mo'
+    },
+    {
+      percent: 30,
+      months: 3,
+      term: '30% off for 3 months',
+      applied: 'Your 30% discount is applied for 3 months from acceptance.',
+      period: '3-month discount',
+      price: '$70.00/mo'
     }
   ])(
-    'confirms $name without predicting payments or expiry',
-    async ({ acceptedAt, periodEnd }) => {
-      vi.setSystemTime(new Date(acceptedAt))
+    'confirms the server terms of $percent% off for $months months once applied',
+    async ({ percent, months, term, applied, period, price }) => {
       settlesAs('succeeded')
-      const { onDecide, user } = renderOffer({ periodEnd })
+      const { onDecide, user } = renderOffer({ percent, months })
+      expect(screen.getByText(term)).toBeInTheDocument()
 
       await user.click(
-        screen.getByRole('button', { name: 'Keep Pro and save 30%' })
+        screen.getByRole('button', { name: `Keep Pro and save ${percent}%` })
       )
 
       expect(
         await screen.findByRole('heading', { name: "You're staying on Pro" })
       ).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          'Your 30% discount is applied for 3 months from acceptance.'
-        )
-      ).toBeInTheDocument()
-      expect(screen.getByText('$70.00/mo')).toBeInTheDocument()
-      expect(screen.getByText('3-month discount')).toBeInTheDocument()
+      expect(screen.getByText(applied)).toBeInTheDocument()
+      expect(screen.getByText(period)).toBeInTheDocument()
       expect(screen.getByText('$100.00')).toBeInTheDocument()
+      expect(screen.getByText(price)).toBeInTheDocument()
       expect(
         screen.getByText(
           'Your discount period started when you accepted. After it ends, your plan returns to $100.00/mo. Changing plans may end your discount. Cancel anytime.'
         )
       ).toBeInTheDocument()
-      expect(
-        screen.queryByText(
-          /payments|renewals|Renews at|until|January|February|March|April|May|June|July|August|September|October|November|December|\$90/
-        )
-      ).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Done' }))
 

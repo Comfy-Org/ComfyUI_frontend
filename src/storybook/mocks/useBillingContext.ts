@@ -73,7 +73,7 @@ export function useBillingContext(): BillingContext {
     isTeamPlan: computed(() => state.value.isTeamPlan),
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
-    tier: computed(() => state.value.subscription?.tier ?? null),
+    tier: computed(() => null),
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
