@@ -78,7 +78,6 @@
       "select": "Select an option",
       "maxFiles": "Select no more than {count} files.",
       "invalidJson": "This JSON does not match what the model expects.",
-      "runNext": "Run model — sign-in coming next",
       "codeLanguage": "Code language",
       "copy": "Copy code",
       "copied": "Copied",

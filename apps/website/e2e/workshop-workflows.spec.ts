@@ -478,7 +478,9 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
   await page.goto('/hub/workflows/extend-image-borders/')
 
   const run = page.getByTestId('workflow-run-footer')
-  await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
+  await expect(
+    run.getByRole('link', { name: 'Run', exact: true })
+  ).toBeVisible()
   await page
     .getByRole('heading', { name: 'Input', exact: true })
     .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))

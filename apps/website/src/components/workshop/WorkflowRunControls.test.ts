@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import type { WorkflowState } from '@/config/workshop-workflow-state'
@@ -24,6 +25,30 @@ const states = {
 } satisfies Record<string, WorkflowState>
 
 describe('WorkflowRunControls', () => {
+  it('labels Run for a signed-out visitor and sends them to sign in and come back', async () => {
+    history.replaceState(null, '', '/hub/workflows/remove-background/?tab=api')
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    render(WorkflowRunControls, {
+      props: {
+        state: { phase: 'idle' },
+        signedIn: false,
+        canStart: true,
+        statusLabel: ''
+      }
+    })
+    const destination =
+      '/login/?returnTo=%2Fhub%2Fworkflows%2Fremove-background%2F%3Ftab%3Dapi'
+    const run = await screen.findByRole('link', { name: 'Run' })
+    await vi.waitFor(() => expect(run.getAttribute('href')).toBe(destination))
+
+    await userEvent.setup().click(run)
+
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledExactlyOnceWith(destination)
+    )
+  })
+
   // A turning loader on the button says the page is still watching the run.
   it.for([
     { phase: 'active' as const, spinners: 1, reconnects: 0 },
