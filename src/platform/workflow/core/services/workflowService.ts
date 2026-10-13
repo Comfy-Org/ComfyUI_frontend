@@ -710,7 +710,13 @@ export const useWorkflowService = () => {
     shareId?: string,
     options: { isCurrent?: () => boolean } = {}
   ): Promise<boolean> => {
+    const graphState = useApp().rootGraphOrUndefined?.state
     if (!(await activateLoadedWorkflow(value, workflowData, shareId, options)))
+      return false
+    if (
+      graphState !== useApp().rootGraphOrUndefined?.state ||
+      options.isCurrent?.() === false
+    )
       return false
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
@@ -724,11 +730,8 @@ export const useWorkflowService = () => {
     shareId?: string,
     options: { isCurrent?: () => boolean } = {}
   ): Promise<boolean> => {
+    const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
-    const openCurrentWorkflow = (workflow: ComfyWorkflow) =>
-      options.isCurrent
-        ? workflowStore.openWorkflow(workflow, options)
-        : workflowStore.openWorkflow(workflow)
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
@@ -776,8 +779,13 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow = await openCurrentWorkflow(existingWorkflow)
-          if (!loadedWorkflow || options.isCurrent?.() === false) return false
+          const loadedWorkflow =
+            await workflowStore.openWorkflow(existingWorkflow)
+          if (
+            graphState !== useApp().rootGraphOrUndefined?.state ||
+            options.isCurrent?.() === false
+          )
+            return false
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -812,14 +820,22 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await openCurrentWorkflow(tempWorkflow)
-      if (!loadedWorkflow || options.isCurrent?.() === false) return false
+      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (
+        graphState !== useApp().rootGraphOrUndefined?.state ||
+        options.isCurrent?.() === false
+      )
+        return false
       activateRunErrors(loadedWorkflow)
       return true
     }
 
-    const loadedWorkflow = await openCurrentWorkflow(value)
-    if (!loadedWorkflow || options.isCurrent?.() === false) return false
+    const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (
+      graphState !== useApp().rootGraphOrUndefined?.state ||
+      options.isCurrent?.() === false
+    )
+      return false
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId

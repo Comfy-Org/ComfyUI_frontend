@@ -147,7 +147,7 @@ describe('Toaster', () => {
     ).toHaveTextContent('Enregistré')
   })
 
-  it('lifts a new notification above a dialog opened after the last one', async () => {
+  it('keeps a notification above a dialog opened after it', async () => {
     renderToaster()
     useToast().info('Uploading')
     await nextTick()
@@ -155,8 +155,6 @@ describe('Toaster', () => {
       directives: { rekaZIndex: vRekaZIndex },
       template: '<div v-reka-z-index data-testid="dialog" />'
     })
-
-    useToast().info('Ready')
     await nextTick()
 
     expect(

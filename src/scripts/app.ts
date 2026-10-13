@@ -95,6 +95,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -129,6 +130,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
   ComfyApp as IComfyApp,
   ComfyExtension,
+  ComfyWidgetConstructor,
+  CustomComfyWidgetConstructor,
   LoadGraphDataOptions,
   QueuePromptOptions
 } from '@/types/comfy'
@@ -145,9 +148,11 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -190,7 +195,6 @@ import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -494,8 +498,10 @@ export class ComfyApp implements IComfyApp {
   /**
    * @deprecated Use useWidgetStore().widgets instead
    */
-  get widgets(): Record<string, CustomComfyWidgetConstructor> &
-    typeof ComfyWidgets {
+  get widgets(): Record<
+    string,
+    ComfyWidgetConstructor | CustomComfyWidgetConstructor
+  > {
     const widgetStore = useWidgetStore()
     return Object.assign(
       Object.fromEntries(widgetStore.widgets.entries()),
@@ -550,7 +556,15 @@ export class ComfyApp implements IComfyApp {
 
   constructor() {
     this.vueAppReady = false
-    this.ui = new ComfyUI(this)
+    this.ui = new ComfyUI(this, {
+      resetView: () => useLitegraphService().resetView(),
+      restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
+      trackRunButton: (intent) =>
+        useRunButtonTelemetry().trackRunButton(intent),
+      enterFocusMode: () => {
+        useWorkspaceStore().focusMode = true
+      }
+    })
     this.api = api
     // Dummy placeholder elements before GraphCanvas is mounted.
     this.bodyTop = $el('div.comfyui-body-top')
