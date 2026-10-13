@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -360,14 +361,17 @@ function disownsWorkflow(error: unknown): boolean {
   return (
     error instanceof AgentApiError &&
     error.status === 403 &&
-    zDisownedWorkflowError.safeParse(error.body).success
+    zDisownedWorkflowError.safeParse(pendingServerFact('BE-20403', error.body))
+      .success
   )
 }
 
 function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
-  const parsed = zTurnInProgressError.safeParse(error.body)
+  const parsed = zTurnInProgressError.safeParse(
+    pendingServerFact('BE-20403', error.body)
+  )
   return parsed.success ? parsed.data : undefined
 }
 
@@ -1033,14 +1037,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
     localStorage.setItem(threadStorageKey, ack.thread_id)
-    if (ack.workflow_id !== undefined) {
+    const { workflow_id: workflowId } = pendingServerFact('BE-20403', ack)
+    if (workflowId !== undefined) {
       const boundAtAck = boundWorkflowId.value
-      bindWorkflow(ack.workflow_id)
+      bindWorkflow(workflowId)
       const shouldAdopt =
         wfContext?.id !== undefined ||
-        (ack.workflow_id !== boundAtAck &&
-          bindingStore.tabPathFor(ack.workflow_id) === undefined)
-      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext, boundAtAck)
+        (workflowId !== boundAtAck &&
+          bindingStore.tabPathFor(workflowId) === undefined)
+      if (shouldAdopt) workflow?.adopted(workflowId, wfContext, boundAtAck)
     }
     const turnId = toTurnId(ack.message_id)
     conversationStore.recordUser(

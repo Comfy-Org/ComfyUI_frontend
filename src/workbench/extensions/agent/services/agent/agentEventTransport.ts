@@ -325,16 +325,6 @@ export function createAgentEventTransport(
     return true
   }
 
-  /**
-   * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
-   * part; returns `false` for any other kind, mirroring `ingest`'s early
-   * `return` for that case.
-   *
-   * That `false` reaches a live turn and still shows the user nothing, while
-   * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. Generated-contract
-   * kinds without a client renderer are tagged separately from unknown input.
-   */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') {
       reportUndeliverableAsk(
@@ -351,8 +341,8 @@ export function createAgentEventTransport(
     const part: RunApprovalPart = {
       type: 'runApproval',
       askId: data.ask_id,
-      workflowId: data.context?.workflow_id || undefined,
-      workflowName: data.context?.workflow_name || undefined
+      workflowId: data.context.workflow_id || undefined,
+      workflowName: data.context.workflow_name || undefined
     }
     message.parts.push(part)
     return true

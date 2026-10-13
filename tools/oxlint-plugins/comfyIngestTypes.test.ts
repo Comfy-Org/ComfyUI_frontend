@@ -1,7 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { RuleTester } from 'oxlint/plugins-dev'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { noAgentIngestPassthrough } from './comfyIngestTypes'
 
 // Run Oxlint's Node entrypoint directly; the .bin shim is a .cmd file on Windows
 // and cannot be spawned as a bare executable.
@@ -309,4 +312,57 @@ describe('comfy/no-duplicate-ingest-type', () => {
   it('covers browser_tests fixtures, which have their own overrides block', () => {
     expect(reported(path.join(PROBE_DIR, 'probe.ts'))).toContain('Plan')
   })
+})
+
+RuleTester.describe = describe
+RuleTester.it = it
+
+const agentFilename = path.resolve(
+  'src/workbench/extensions/agent/schemas/probe.ts'
+)
+const generatedImport =
+  "import { zAgentMessage as generated } from '@comfyorg/ingest-types/zod'"
+
+new RuleTester({
+  languageOptions: { parserOptions: { lang: 'ts' } }
+}).run('no-agent-ingest-passthrough', noAgentIngestPassthrough, {
+  valid: [
+    {
+      filename: agentFilename,
+      code: `${generatedImport}; generated.pick({ id: true })`
+    },
+    {
+      filename: agentFilename,
+      code: `${generatedImport}; function local(generated) { return generated.passthrough() }`
+    },
+    {
+      filename: agentFilename,
+      code: "import { z } from 'zod'; z.object({ text: z.string() }).passthrough()"
+    },
+    {
+      filename: path.resolve('src/schemas/probe.ts'),
+      code: `${generatedImport}; generated.passthrough()`
+    }
+  ],
+  invalid: [
+    'generated.passthrough()',
+    "generated['passthrough']()",
+    'generated.pick({ id: true }).extend({ text: z.string() }).passthrough()',
+    'const alias = generated; const projected = alias.pick({ id: true }); projected.passthrough()',
+    'z.object({ message: generated }).passthrough()',
+    'z.object({ ...generated.shape }).passthrough()',
+    'z.union([generated, z.object({})]).passthrough()'
+  ]
+    .map((expression) => ({
+      filename: agentFilename,
+      code: `${generatedImport}; ${expression}`,
+      errors: [{ message: /Use the generated ingest schema/ }]
+    }))
+    .concat([
+      {
+        filename: agentFilename,
+        code: "import * as schemas from '@comfyorg/ingest-types/zod'; schemas.zAgentMessage.passthrough()",
+        errors: [{ message: /Use the generated ingest schema/ }]
+      }
+    ])
 })

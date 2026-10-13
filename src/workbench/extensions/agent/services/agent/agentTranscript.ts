@@ -1,3 +1,5 @@
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import {
   toTurnId,
@@ -115,7 +117,10 @@ function parseUserAttachments(
   for (const entry of refs) {
     if (!resolved.has(entry.key)) resolved.set(entry.key, entry)
   }
-  const rawAttachments: unknown = content?.attachments
+  const rawAttachments: unknown = pendingServerFact(
+    'BE-20403',
+    content?.attachments
+  )
   let postedNames: string[] | undefined
   if (Array.isArray(rawAttachments)) {
     const entries: unknown[] = rawAttachments
@@ -193,25 +198,12 @@ function toolCallPartState(
   return inProgress && isLive ? 'streaming' : 'done'
 }
 
-/**
- * `undefined` while the call is still genuinely in progress (matching the
- * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, `success` and the older `ok` success alias
- * both count as success. `'ok'` is a reload-only legacy alias, not something
- * the live path ever produces or recognizes: `zAgentToolCallData.status` in
- * `agentApiSchema.ts` is `z.enum(['running', 'success', 'error'])`, and the
- * live resolver (`resolveToolCallState` in `agentEventTransport.ts`) only
- * checks `status === 'success'` — it only ever appears on rows persisted
- * before that alias was retired. Everything else, including a restored
- * `pending`/`running` call that had no live transport to finish it, reads as
- * failure rather than being rendered as if it succeeded.
- */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'success' || status === 'ok'
+  return status === 'success'
 }
 
 /** A parsed tool-call entry, carrying the raw persisted `status` alongside
@@ -264,18 +256,6 @@ function toolPartOptionalFields(
   }
 }
 
-/**
- * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
- * picking only the fields this function actually reads (`id`/`tool_call_id`,
- * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
- * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
- * which are never read) can't sink an otherwise-usable entry. Maps a valid
- * entry onto the same `ToolPart` the live WebSocket path builds from
- * `agent_tool_call` events, so a reloaded transcript renders through the
- * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_name`, wrong types, ...) or for a live
- * row's id-only entry (see `isLiveEntryMissingToolCallId`).
- */
 function parseToolCallEntry(
   entry: unknown,
   isLive: boolean
@@ -296,9 +276,9 @@ function parseToolCallEntry(
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
-    skill,
     duration_ms: rawDuration
   } = parsed.data
+  const { skill } = pendingServerFact('BE-20138', parsed.data)
   if (isLiveEntryMissingToolCallId(isLive, toolCallId)) return undefined
   const state = toolCallPartState(status, isLive)
   const ok = toolCallOk(status, state)
@@ -307,12 +287,6 @@ function parseToolCallEntry(
     status,
     part: {
       type: 'tool',
-      // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-      // this row's own `id` — prefer it so a restored part matches a live
-      // frame that arrives for it later. Falls back to `id` only for rows
-      // recorded before `tool_call_id` existed; `||`, not `??`, so an empty
-      // string (as genuinely id-less as a missing field) falls back too
-      // instead of colliding every empty-`tool_call_id` entry on `''`.
       callId: toolCallId || id,
       name: toolName,
       state,
@@ -321,17 +295,11 @@ function parseToolCallEntry(
   }
 }
 
-/**
- * A persisted assistant row's `tool_calls` entries are parsed through
- * `parseToolCallEntry`. A repeated `id` within the list is deduped, keeping
- * the last entry's data at the first entry's position, matching how the
- * live path updates a part in place rather than appending.
- */
 function parseToolCalls(
   content: Record<string, unknown> | undefined,
   isLive: boolean
 ): ParsedToolCall[] | undefined {
-  const raw = content?.tool_calls
+  const raw = pendingServerFact('BE-20138', content?.tool_calls)
   if (!Array.isArray(raw)) return undefined
   const parsedByCallId = new Map<string, ParsedToolCall>()
   for (const entry of raw as unknown[]) {
@@ -422,11 +390,6 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * A row's `pending_ask` carries a `run_approval` context only while that row
- * is still mid-ask; this reads it into the flat shape the `runApproval` part
- * renders, or `undefined` once the ask is resolved or absent.
- */
 function pendingRunApproval(
   row: AgentMessages[number]
 ): { askId: string; workflowId?: string; workflowName?: string } | undefined {
@@ -434,8 +397,8 @@ function pendingRunApproval(
   if (ask?.kind !== 'run_approval') return undefined
   return {
     askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
+    workflowId: ask.context.workflow_id || undefined,
+    workflowName: ask.context.workflow_name || undefined
   }
 }
 
@@ -484,7 +447,7 @@ interface UserRowUpdate {
 function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
   const referenceUpdate = parseUserWorkflowReferences(
     text,
-    row.content?.workflow_references
+    pendingServerFact('BE-20403', row.content?.workflow_references)
   )
   const prompt = parseSkillReferenceText(
     referenceUpdate?.text ?? text,
@@ -599,7 +562,8 @@ export function normalizeAgentTranscript(
     const turnId = row.turn_id as TurnId
     rowIds.add(row.id)
     recordTurnOrder(turnId, seenTurns, turnOrder)
-    const text = typeof row.content?.text === 'string' ? row.content.text : ''
+    const rawText = pendingServerFact('BE-20403', row.content?.text)
+    const text = typeof rawText === 'string' ? rawText : ''
     if (row.role === 'user') {
       const workflowId = recordUserRow(
         row,
