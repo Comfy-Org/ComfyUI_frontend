@@ -5658,9 +5658,25 @@
       "detail": "Replaced {target}",
       "audio": "original sound"
     },
-    "empty": {
-      "title": "Start with a video",
-      "hint": "Upload a clip of 5 seconds or more. If it runs longer than 15 seconds, we use the first 15 and you can pick another part."
+    "examples": {
+      "title": "Try an example",
+      "hint": "Each one loads a clip, a character and who to replace. Or upload your own video in the panel.",
+      "road": {
+        "place": "Desert road",
+        "character": "Robot"
+      },
+      "office": {
+        "place": "Office",
+        "character": "Astronaut"
+      },
+      "square": {
+        "place": "Town square",
+        "character": "Knight"
+      },
+      "kitchen": {
+        "place": "Kitchen",
+        "character": "Pirate chef"
+      }
     },
     "error": {
       "swap": "The swap did not finish. Try again, or try a shorter part."

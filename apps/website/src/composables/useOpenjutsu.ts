@@ -11,11 +11,13 @@ import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engin
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import {
+  SWAP_SIZES,
   SWAP_TRIM_LIMITS,
   resultSize,
   swapCanvas,
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
+import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
@@ -95,7 +97,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     () => range.value && swapSeconds(range.value.seconds)
   )
   /** The quality of the next run; a sharper one costs more. */
-  const size = ref<SwapSize>('768p')
+  const size = ref<SwapSize>(SWAP_SIZES[0])
   const canvas = computed(
     () =>
       trim.value && swapCanvas(trim.value.width, trim.value.height, size.value)
@@ -163,6 +165,33 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   )
   function takeCharacter(file: File) {
     character.value = file
+  }
+
+  /** The example being fetched, so its card can show it is on its way. */
+  const loadingExample = ref<SwapExample['id']>()
+  async function fileFrom(url: string) {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new File([blob], url.split('/').at(-1) ?? 'example', {
+      type: blob.type
+    })
+  }
+  /** Loads an example's clip, character and words, on the default settings. */
+  async function takeExample(example: SwapExample) {
+    loadingExample.value = example.id
+    try {
+      const [clip, image] = await Promise.all([
+        fileFrom(example.video),
+        fileFrom(example.character)
+      ])
+      character.value = image
+      target.value = example.target
+      size.value = SWAP_SIZES[0]
+      seed.value = undefined
+      await takeVideo(clip)
+    } finally {
+      loadingExample.value = undefined
+    }
   }
 
   // --- takes
@@ -449,6 +478,8 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     removeVideo,
     restoreVideo,
     takeCharacter,
+    loadingExample,
+    takeExample,
     generate,
     cancel,
     reuse

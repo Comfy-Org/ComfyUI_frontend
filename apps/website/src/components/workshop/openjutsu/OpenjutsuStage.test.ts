@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
+import { SWAP_EXAMPLES } from '@/lib/workshop/openjutsu/examples'
 import type { SwapTake } from '@/lib/workshop/openjutsu/take'
 import OpenjutsuStage from './OpenjutsuStage.vue'
 
@@ -39,15 +40,27 @@ const showing = (current: SwapTake) => ({
 })
 
 describe('OpenjutsuStage', () => {
-  it('asks for a video before there is one, and hands the pick over', async () => {
+  it('offers the examples before there is a video, and hands the pick over', async () => {
     const { emitted } = render(OpenjutsuStage, {
       props: { ...editing, videoUrl: undefined }
     })
-    const file = new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
 
-    expect(screen.getByText('Start with a video')).toBeVisible()
-    await userEvent.upload(screen.getByLabelText('Upload video'), file)
-    expect(emitted('video')).toEqual([[file]])
+    expect(screen.getByText('Try an example')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: /Office/ }))
+
+    expect(emitted('example')).toEqual([[SWAP_EXAMPLES[1]]])
+  })
+
+  it('holds the examples while one is loading', () => {
+    render(OpenjutsuStage, {
+      props: { ...editing, videoUrl: undefined, loadingExample: 'office' }
+    })
+
+    expect(screen.getByRole('button', { name: /Office/ })).toHaveAttribute(
+      'aria-busy',
+      'true'
+    )
+    expect(screen.getByRole('button', { name: /Kitchen/ })).toBeDisabled()
   })
 
   it('plays the clip in the site player before any take', () => {

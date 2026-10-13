@@ -45,6 +45,7 @@ const {
   canGenerate,
   priceNote,
   session,
+  loadingExample,
   trimming,
   trimOpen,
   trimInitial
@@ -105,8 +106,9 @@ onBeforeUnmount(() =>
       :sample
       :view
       :locale
+      :loading-example="loadingExample"
       @select="selected = $event"
-      @video="swap.takeVideo"
+      @example="swap.takeExample"
       @cancel="swap.cancel"
       @reuse="swap.reuse"
     />

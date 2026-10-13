@@ -6,6 +6,7 @@ import type { VideoTrim } from '@/components/workshop/video-trim/VideoTrimDialog
 import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { signIn } from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
 import type { ReshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { SWAP_EXAMPLES } from '@/lib/workshop/openjutsu/examples'
 import { sampleTransport } from '@/lib/workshop/openjutsu/sample-transport'
 import { openjutsuTransport } from '@/lib/workshop/openjutsu/transport-config'
 import type { VideoFacts } from '@/lib/workshop/video-trim/filmstrip'
@@ -137,6 +138,31 @@ describe('useOpenjutsu', () => {
       expect(swap.video.value).toBe(clip)
     }
   )
+
+  it('loads an example with its clip, character and words, on the default settings', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url: string) =>
+          new Response(new Blob([url], { type: 'application/octet-stream' }))
+      )
+    )
+    const swap = start()
+    swap.size.value = '480p'
+    swap.seed.value = 7
+
+    const loading = swap.takeExample(SWAP_EXAMPLES[0])
+    expect(swap.loadingExample.value).toBe('road')
+    await loading
+
+    expect(swap.video.value?.name).toBe('road.mp4')
+    expect(swap.character.value?.name).toBe('robot.jpg')
+    expect(swap.target.value).toBe('the man in the red jacket')
+    expect(swap.size.value).toBe('768p')
+    expect(swap.seed.value).toBeUndefined()
+    expect(swap.loadingExample.value).toBeUndefined()
+    vi.unstubAllGlobals()
+  })
 
   it('takes the video out and puts it back as it was', async () => {
     const swap = await ready()

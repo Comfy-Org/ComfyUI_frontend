@@ -7,6 +7,7 @@ import type { EditorView } from '@/components/workshop/app-editor/view'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapCanvas, SwapWindow } from '@/lib/workshop/openjutsu/clip'
+import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
 import type { StageCompare, SwapTake } from '@/lib/workshop/openjutsu/take'
 import { loopWindow, stageSource } from '@/lib/workshop/openjutsu/take'
 import OpenjutsuCompare from './OpenjutsuCompare.vue'
@@ -32,6 +33,7 @@ const {
   rendering,
   sample,
   view,
+  loadingExample,
   locale = 'en'
 } = defineProps<{
   videoUrl?: string
@@ -47,13 +49,15 @@ const {
   sample: boolean
   /** How a finished take is shown. */
   view: EditorView
+  /** The example being fetched, while there is no video yet. */
+  loadingExample?: SwapExample['id']
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   select: [id: string]
-  video: [file: File]
+  example: [example: SwapExample]
   cancel: []
   reuse: [id: string]
 }>()
@@ -105,8 +109,9 @@ const elapsedSeconds = computed(() => {
   >
     <OpenjutsuEmptyStage
       v-if="!videoUrl"
+      :loading="loadingExample"
       :locale
-      @video="emit('video', $event)"
+      @example="emit('example', $event)"
     />
     <template v-else>
       <OpenjutsuTakes

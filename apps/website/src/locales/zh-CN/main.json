@@ -5051,9 +5051,25 @@
       "detail": "已替换{target}",
       "audio": "原始声音"
     },
-    "empty": {
-      "title": "从一段视频开始",
-      "hint": "上传 5 秒或更长的视频。超过 15 秒时，我们使用前 15 秒，你也可以另选片段。"
+    "examples": {
+      "title": "试试示例",
+      "hint": "每个示例都会载入一段视频、一个角色和要替换的人。也可以在面板中上传你自己的视频。",
+      "road": {
+        "place": "沙漠公路",
+        "character": "机器人"
+      },
+      "office": {
+        "place": "办公室",
+        "character": "宇航员"
+      },
+      "square": {
+        "place": "小镇广场",
+        "character": "骑士"
+      },
+      "kitchen": {
+        "place": "厨房",
+        "character": "海盗厨师"
+      }
     },
     "error": {
       "swap": "替换未完成。请重试，或换一个更短的片段。"
