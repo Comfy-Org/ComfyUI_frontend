@@ -96,9 +96,12 @@ export function doorArt(
   const workflow = firstWithStill(WORKFLOW_CANDIDATES, (slug) =>
     catalogue.workflows.find((item) => item.slug === slug)
   )
-  const app = APP_CANDIDATES.find(({ key }) =>
-    catalogue.apps.some((item) => item.key === key)
-  )
+  const app = APP_CANDIDATES.flatMap((candidate) => {
+    const listed = catalogue.apps.find((item) => item.key === candidate.key)
+    return listed
+      ? [{ ...candidate, image: stillOf(listed.thumbnail) ?? candidate.image }]
+      : []
+  }).at(0)
   return {
     ...(model && {
       models: {

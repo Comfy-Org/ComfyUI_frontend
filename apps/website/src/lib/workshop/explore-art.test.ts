@@ -64,7 +64,7 @@ describe('door art', () => {
       },
       workflows: { src: '/bottle.webp' },
       apps: {
-        src: '/images/cinematic-studio/train.jpg',
+        src: '/reshoot.jpg',
         control: 'workshop.explore.doorAppControlRotation',
         value: '35°'
       }
@@ -85,6 +85,33 @@ describe('door art', () => {
       src: '/row.png',
       prompt: 'workshop.explore.doorModelPromptRowboat'
     })
+  })
+
+  it.for([
+    [
+      'its cover poster',
+      { url: '/studio.mp4', kind: 'video', poster: '/studio.jpg' },
+      '/studio.jpg'
+    ],
+    ['its still cover', { url: '/studio.webp', kind: 'image' }, '/studio.webp'],
+    [
+      'the studio scene when its cover has no still',
+      { url: '/studio.mp4', kind: 'video' },
+      '/images/cinematic-studio/neon-street.jpg'
+    ],
+    [
+      'the studio scene without a cover',
+      undefined,
+      '/images/cinematic-studio/neon-street.jpg'
+    ]
+  ] as const)('fronts the app door with %s', ([, cover, src]) => {
+    expect(
+      doorArt({
+        models: [],
+        workflows: [],
+        apps: [app('apps/cinematic-studio', cover)]
+      }).apps?.src
+    ).toBe(src)
   })
 
   it('names a model without the task its card already shows', () => {
