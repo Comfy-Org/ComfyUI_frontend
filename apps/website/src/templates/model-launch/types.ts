@@ -215,6 +215,10 @@ interface ModelLaunchBeforeAfterTab {
   caption: LocalizedText
   beforeSrc: string
   afterSrc: string
+  // Still painted while the clips decode and on no-JS first paint — same rule
+  // as the gallery's posterSrc. Optional only until per-clip posters reach
+  // the CDN for every launch that ships this section.
+  posterSrc?: string
 }
 
 export interface ModelLaunchBeforeAfter {

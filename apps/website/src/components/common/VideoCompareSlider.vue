@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import {
   COMPARE_MAX,
   COMPARE_MIN,
@@ -19,6 +20,7 @@ const {
   beforeLabel,
   afterLabel,
   sliderLabel,
+  posterSrc,
   class: className
 } = defineProps<{
   beforeSrc: string
@@ -26,6 +28,8 @@ const {
   beforeLabel: string
   afterLabel: string
   sliderLabel: string
+  /** Still painted while the clips decode and on no-JS first paint. */
+  posterSrc?: string
   class?: HTMLAttributes['class']
 }>()
 
@@ -36,6 +40,44 @@ const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
 const isMounted = useMounted()
+
+// WCAG 2.2.2 (Pause, Stop, Hide): the clips loop forever, so a visitor must
+// be able to stop them. Under prefers-reduced-motion they never start
+// (paused on their first frame, like the launch hero); everyone else gets a
+// play/pause toggle.
+const shouldAutoplay = computed(() => !prefersReducedMotion())
+const isPlaying = ref(true)
+
+function pauseClips() {
+  beforeVideo.value?.pause()
+  afterVideo.value?.pause()
+}
+
+function playClips() {
+  void beforeVideo.value?.play().catch(() => undefined)
+  void afterVideo.value?.play().catch(() => undefined)
+}
+
+watch(
+  shouldAutoplay,
+  (autoplay) => {
+    if (autoplay) {
+      if (isPlaying.value) playClips()
+    } else {
+      isPlaying.value = false
+      pauseClips()
+      if (beforeVideo.value) beforeVideo.value.currentTime = 0
+      if (afterVideo.value) afterVideo.value.currentTime = 0
+    }
+  },
+  { immediate: true }
+)
+
+function togglePlayback() {
+  isPlaying.value = !isPlaying.value
+  if (isPlaying.value) playClips()
+  else pauseClips()
+}
 
 function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
@@ -96,7 +138,9 @@ function syncAfterToBefore() {
       :key="beforeSrc"
       data-testid="video-compare-before"
       :src="isMounted ? beforeSrc : undefined"
-      autoplay
+      :autoplay="shouldAutoplay"
+      :poster="posterSrc"
+      preload="metadata"
       loop
       muted
       playsinline
@@ -109,7 +153,9 @@ function syncAfterToBefore() {
       :key="afterSrc"
       data-testid="video-compare-after"
       :src="isMounted ? afterSrc : undefined"
-      autoplay
+      :autoplay="shouldAutoplay"
+      :poster="posterSrc"
+      preload="metadata"
       loop
       muted
       playsinline
@@ -128,6 +174,40 @@ function syncAfterToBefore() {
     >
       {{ afterLabel }}
     </span>
+
+    <button
+      type="button"
+      data-testid="video-compare-toggle"
+      :aria-pressed="String(!isPlaying)"
+      :aria-label="
+        isPlaying
+          ? `Pause ${beforeLabel} and ${afterLabel} comparison`
+          : `Play ${beforeLabel} and ${afterLabel} comparison`
+      "
+      class="absolute right-4 bottom-4 flex size-9 cursor-pointer items-center justify-center rounded-full bg-transparency-ink-t80 text-primary-warm-white shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
+      @pointerdown.stop
+      @click.stop="togglePlayback"
+    >
+      <svg
+        v-if="isPlaying"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        class="size-4"
+      >
+        <rect x="6" y="5" width="4" height="14" rx="1" />
+        <rect x="14" y="5" width="4" height="14" rx="1" />
+      </svg>
+      <svg
+        v-else
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        class="size-4"
+      >
+        <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86Z" />
+      </svg>
+    </button>
 
     <div
       role="slider"

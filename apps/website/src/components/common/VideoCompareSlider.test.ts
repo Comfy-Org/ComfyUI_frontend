@@ -6,6 +6,15 @@ import { renderToString } from 'vue/server-renderer'
 
 import VideoCompareSlider from './VideoCompareSlider.vue'
 
+const reducedMotion = vi.hoisted(() => ({ enabled: false }))
+vi.mock('@/composables/useReducedMotion', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/composables/useReducedMotion')>()
+  return {
+    ...original,
+    prefersReducedMotion: () => reducedMotion.enabled
+  }
+})
+
 const props = {
   beforeSrc: 'before.webm',
   afterSrc: 'after.webm',
@@ -136,5 +145,71 @@ describe('VideoCompareSlider', () => {
     beforeVideo.dispatchEvent(new Event('timeupdate'))
 
     expect(play).toHaveBeenCalledOnce()
+  })
+
+  describe('playback control (WCAG 2.2.2)', () => {
+    it('does not autoplay under prefers-reduced-motion and parks both clips on their first frame', async () => {
+      reducedMotion.enabled = true
+      try {
+        const { beforeVideo, afterVideo } = await renderSlider()
+        await waitFor(() => expect(beforeVideo).toHaveAttribute('src', 'before.webm'))
+
+        expect(beforeVideo.hasAttribute('autoplay')).toBe(false)
+        expect(afterVideo.hasAttribute('autoplay')).toBe(false)
+        expect(beforeVideo.currentTime).toBe(0)
+        expect(afterVideo.currentTime).toBe(0)
+      } finally {
+        reducedMotion.enabled = false
+      }
+    })
+
+    it('autoplays when motion is not reduced', async () => {
+      const { beforeVideo } = await renderSlider()
+      await waitFor(() => expect(beforeVideo).toHaveAttribute('src', 'before.webm'))
+
+      expect(beforeVideo.hasAttribute('autoplay')).toBe(true)
+    })
+
+    it('pauses and resumes both clips from the toggle', async () => {
+      const user = userEvent.setup()
+      const { beforeVideo, afterVideo } = await renderSlider()
+      await waitFor(() => expect(beforeVideo).toHaveAttribute('src', 'before.webm'))
+      const pauseBefore = vi.spyOn(beforeVideo, 'pause').mockImplementation(() => undefined)
+      const pauseAfter = vi.spyOn(afterVideo, 'pause').mockImplementation(() => undefined)
+      const playBefore = vi.spyOn(beforeVideo, 'play').mockResolvedValue()
+      const playAfter = vi.spyOn(afterVideo, 'play').mockResolvedValue()
+
+      const toggle = screen.getByTestId('video-compare-toggle')
+      expect(toggle).toHaveAttribute('aria-pressed', 'false')
+      await user.click(toggle)
+
+      expect(toggle).toHaveAttribute('aria-pressed', 'true')
+      expect(pauseBefore).toHaveBeenCalledOnce()
+      expect(pauseAfter).toHaveBeenCalledOnce()
+
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute('aria-pressed', 'false')
+      expect(playBefore).toHaveBeenCalled()
+      expect(playAfter).toHaveBeenCalled()
+    })
+  })
+
+  describe('poster', () => {
+    it('paints the poster on both clips while they decode', async () => {
+      render(VideoCompareSlider, {
+        props: { ...props, posterSrc: 'poster.jpg' }
+      })
+      const beforeVideo = screen.getByTestId<HTMLVideoElement>('video-compare-before')
+      const afterVideo = screen.getByTestId<HTMLVideoElement>('video-compare-after')
+
+      expect(beforeVideo).toHaveAttribute('poster', 'poster.jpg')
+      expect(afterVideo).toHaveAttribute('poster', 'poster.jpg')
+    })
+
+    it('omits the poster attribute when no poster is provided', async () => {
+      const { beforeVideo } = await renderSlider()
+
+      expect(beforeVideo.hasAttribute('poster')).toBe(false)
+    })
   })
 })
