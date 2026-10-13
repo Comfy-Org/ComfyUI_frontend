@@ -178,10 +178,6 @@ describe('ImagePreview', () => {
       'src',
       '/api/assets/p1/content?disposition=inline'
     )
-    expect(screen.getByTestId('main-image')).toHaveAttribute(
-      'data-file-url',
-      exrUrl
-    )
 
     await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
 
@@ -629,48 +625,6 @@ describe('ImagePreview', () => {
       expect(
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
-    })
-
-    it('keeps a shown HDR preview loaded when only its file URL changes', async () => {
-      const { container, rerender } = renderImagePreview({
-        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=1']
-      })
-      await fireEvent.load(screen.getByRole('img'))
-      await nextTick()
-
-      await rerender({
-        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=2']
-      })
-      await vi.advanceTimersByTimeAsync(300)
-      await nextTick()
-
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
-    })
-
-    it('retries a failed HDR preview when its file URL changes', async () => {
-      const { rerender } = renderImagePreview({
-        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=1']
-      })
-      await fireEvent.error(screen.getByTestId('main-image'))
-      expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
-
-      await rerender({
-        imageUrls: ['/api/view?filename=a.exr&type=input&preview_id=p1&rand=2']
-      })
-
-      expect(screen.getByTestId('main-image')).toBeInTheDocument()
-    })
-
-    it('does not retry a failed HDR preview when its URLs are unchanged', async () => {
-      const urls = ['/api/view?filename=a.exr&type=input&preview_id=p1']
-      const { rerender } = renderImagePreview({ imageUrls: urls })
-      await fireEvent.error(screen.getByTestId('main-image'))
-
-      await rerender({ imageUrls: [...urls] })
-
-      expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
     })
 
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {

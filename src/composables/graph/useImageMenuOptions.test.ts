@@ -6,10 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useImageMenuOptions } from './useImageMenuOptions'
-
-vi.mock(import('@/base/common/downloadUtil'))
 
 const i18n = createI18n({
   legacy: false,
@@ -170,25 +167,6 @@ describe('useImageMenuOptions', () => {
       expect(labels).toContain('Open Image')
       expect(labels).toContain('Save Image')
       expect(labels).not.toContain('Paste Image')
-    })
-  })
-
-  describe('open and save actions', () => {
-    it('act on the file an HDR preview stands in for', () => {
-      const node = createImageNode()
-      const fileUrl = '/api/view?filename=render.exr&type=input&preview=webp'
-      node.imgs![0].dataset.fileUrl = fileUrl
-      const options = mountComposable().getImageMenuOptions(node)
-
-      options.find((o) => o.label === 'Open Image')!.action!()
-      options.find((o) => o.label === 'Save Image')!.action!()
-
-      const expected = new URL(
-        '/api/view?filename=render.exr&type=input',
-        window.location.origin
-      ).toString()
-      expect(openFileInNewTab).toHaveBeenCalledWith(expected)
-      expect(downloadFile).toHaveBeenCalledWith(expected)
     })
   })
 

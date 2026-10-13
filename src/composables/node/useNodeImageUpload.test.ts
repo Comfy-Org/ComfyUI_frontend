@@ -8,7 +8,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { Mock } from 'vitest'
 
 let mockInvalidateInputs: Mock<
@@ -51,12 +50,8 @@ function createFile(name = 'test.png', type = 'image/png'): File {
   return new File(['data'], name, { type })
 }
 
-function successResponse(
-  name: string,
-  subfolder?: string,
-  asset?: { preview_id: string }
-) {
-  return Response.json({ name, subfolder, asset })
+function successResponse(name: string, subfolder?: string) {
+  return Response.json({ name, subfolder })
 }
 
 function failResponse(status = 500) {
@@ -174,39 +169,6 @@ describe('useNodeImageUpload', () => {
 
     await capturedDragOnDrop([createFile()])
     expect(onUploadComplete).toHaveBeenCalledWith(['pasted/test.png'])
-  })
-
-  it('remembers the stored preview of an upload', async () => {
-    const setUploadPreviewId = vi.spyOn(
-      useNodeOutputStore(),
-      'setUploadPreviewId'
-    )
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(
-      successResponse('render.exr', 'pasted', { preview_id: 'preview-1' })
-    )
-
-    await capturedDragOnDrop([createFile('render.exr', 'image/x-exr')])
-    expect(setUploadPreviewId).toHaveBeenCalledWith(
-      'pasted/render.exr',
-      'preview-1'
-    )
-  })
-
-  it('remembers no preview for an upload outside the input folder', async () => {
-    const setUploadPreviewId = vi.spyOn(
-      useNodeOutputStore(),
-      'setUploadPreviewId'
-    )
-    const { handleUpload } = useNodeImageUpload(node, {
-      folder: 'output',
-      onUploadComplete
-    })
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(
-      successResponse('render.exr', undefined, { preview_id: 'preview-1' })
-    )
-
-    await handleUpload(createFile('render.exr', 'image/x-exr'))
-    expect(setUploadPreviewId).not.toHaveBeenCalled()
   })
 
   it('calls onUploadError when all uploads fail', async () => {

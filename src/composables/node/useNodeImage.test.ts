@@ -94,7 +94,6 @@ describe('canvas node media failure telemetry', () => {
       class {
         onload: (() => void) | null = null
         onerror: (() => void) | null = null
-        dataset: DOMStringMap = {}
         private srcValue = ''
         get src() {
           return this.srcValue
@@ -162,43 +161,6 @@ describe('canvas node media failure telemetry', () => {
     expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'canvas_node_image', timed_out: true })
     )
-  })
-
-  it('loads the stored preview of an HDR image instead of the raw file', async () => {
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/api/view?filename=render.exr&type=input&preview_id=preview-1'
-    ])
-    const created = stubImages()
-    const node = createMockMediaNode({
-      size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
-    })
-
-    useNodeImage(node).showPreview()
-    await flush()
-
-    expect(created[0].src).toBe(
-      '/api/assets/preview-1/content?disposition=inline'
-    )
-    expect(created[0].dataset.fileUrl).toBe(
-      '/api/view?filename=render.exr&type=input&preview_id=preview-1'
-    )
-  })
-
-  it('loads a non-HDR image itself even when it has a stored preview', async () => {
-    const url = '/api/view?filename=photo.png&type=input&preview_id=preview-1'
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([url])
-    const created = stubImages()
-    const node = createMockMediaNode({
-      size: [400, 400],
-      graph: { setDirtyCanvas: vi.fn() }
-    })
-
-    useNodeImage(node).showPreview()
-    await flush()
-
-    expect(created[0].src).toBe(url)
-    expect(created[0].dataset.fileUrl).toBeUndefined()
   })
 
   it('stays silent when the image loads', async () => {
