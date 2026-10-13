@@ -16,7 +16,7 @@ const execFileAsync = promisify(execFile)
 const agentDataDir = mkdtempSync(join(tmpdir(), 'vite-agent-config-'))
 afterAll(() => rmSync(agentDataDir, { force: true, recursive: true }))
 const printAgentConfig =
-  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host })))"
+  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host, proxyCredential: config.define?.['import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL'] })))"
 
 describe('dev agent proxy transport', () => {
   it.for([
@@ -190,7 +190,11 @@ describe('dev agent comfy credential', () => {
         'X-Comfy-Agent-Session': 'test-session-token',
         'X-API-KEY': 'comfyui-test-key'
       }
-      expect(JSON.parse(stdout)).toEqual({ headers, workflowsHeaders: headers })
+      expect(JSON.parse(stdout)).toEqual({
+        headers,
+        workflowsHeaders: headers,
+        proxyCredential: '"true"'
+      })
     }
   )
 })

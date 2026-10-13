@@ -1,12 +1,20 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
-import { describe, expect, it, vi } from 'vitest'
+vi.mock(import('@/scripts/api'))
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthCredential, AuthHeader } from '@/types/authTypes'
 
-import { agentSocketToken, ensureSignedIn, withAgentAuth } from './agentAuth'
+import { agentSocketParams, ensureSignedIn, withAgentAuth } from './agentAuth'
+
+beforeEach(() => {
+  distribution.isCloud = false
+})
 
 function userHeader(header: AuthHeader | null): void {
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue(header)
@@ -56,16 +64,14 @@ describe('withAgentAuth', () => {
     }
   )
 
-  it('reports the credential fetchApi attached on top of its own', async () => {
-    userHeader({ Authorization: 'Bearer id-token' })
-    const reported: AuthCredential[] = []
+  it('leaves a cloud request to fetchApi, never attaching the personal token', async () => {
+    distribution.isCloud = true
+    userHeader({ Authorization: 'Bearer personal-id-token' })
 
-    const init = await withAgentAuth({
-      onAuthCredential: (kind: AuthCredential) => reported.push(kind)
-    })
-    init.onAuthCredential('session-cookie')
+    const init = await withAgentAuth({ method: 'GET' })
 
-    expect(reported).toEqual(['session-cookie'])
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
+    expect(init.redirect).toBeUndefined()
   })
 
   it('sends nothing and leaves the redirect policy alone for a signed-out user', async () => {
@@ -79,28 +85,45 @@ describe('withAgentAuth', () => {
   })
 })
 
-describe('agentSocketToken', () => {
+describe('agentSocketParams', () => {
   it.for<{ label: string; header: AuthHeader; token: string }>([
     {
       label: 'a bearer token',
-      header: { Authorization: 'Bearer workspace-jwt' },
-      token: 'workspace-jwt'
+      header: { Authorization: 'Bearer id-token' },
+      token: 'id-token'
     },
     {
       label: 'an API key',
       header: { 'X-API-KEY': 'comfyui-key' },
       token: 'comfyui-key'
     }
-  ])('passes $label as the socket token', async ({ header, token }) => {
-    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(header)
+  ])(
+    'passes the user credential as the token off-cloud: $label',
+    async ({ header, token }) => {
+      userHeader(header)
 
-    expect(await agentSocketToken()).toBe(token)
-  })
+      expect((await agentSocketParams()).get('token')).toBe(token)
+    }
+  )
 
   it('connects without a token when signed out', async () => {
-    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
+    userHeader(null)
 
-    expect(await agentSocketToken()).toBeUndefined()
+    expect((await agentSocketParams()).has('token')).toBe(false)
+  })
+
+  it('authenticates a cloud socket the way /ws does, never with the personal token', async () => {
+    distribution.isCloud = true
+    userHeader({ Authorization: 'Bearer personal-id-token' })
+    vi.mocked(api.addSocketAuth).mockImplementation(async (params) => {
+      params.set('workspace_id', 'ws-1')
+      return true
+    })
+
+    const params = await agentSocketParams()
+
+    expect(params.get('workspace_id')).toBe('ws-1')
+    expect(params.has('token')).toBe(false)
   })
 })
 
@@ -144,14 +167,14 @@ describe('ensureSignedIn', () => {
   })
 
   it.for([
-    { mode: 'development', standalone: 'true', asks: false },
-    { mode: 'development', standalone: '', asks: true },
-    { mode: 'production', standalone: 'true', asks: true }
+    { mode: 'development', proxyCredential: 'true', asks: false },
+    { mode: 'development', proxyCredential: '', asks: true },
+    { mode: 'production', proxyCredential: 'true', asks: true }
   ])(
-    'asks a signed-out user to sign in: $asks (mode $mode, standalone "$standalone")',
-    async ({ mode, standalone, asks }) => {
+    'asks a signed-out user to sign in: $asks (mode $mode, proxy credential "$proxyCredential")',
+    async ({ mode, proxyCredential, asks }) => {
       vi.stubEnv('MODE', mode)
-      vi.stubEnv('VITE_AGENT_STANDALONE', standalone)
+      vi.stubEnv('VITE_DEV_AGENT_PROXY_CREDENTIAL', proxyCredential)
       userHeader(null)
 
       await ensureSignedIn()

@@ -120,7 +120,7 @@ import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmis
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import {
-  agentSocketToken,
+  agentSocketParams,
   ensureSignedIn,
   hasAgentCredential
 } from './services/agent/agentAuth'
@@ -213,7 +213,7 @@ const rest = createAgentRestClient()
 
 const events = createAgentEventSource({
   endpoint: api.apiURL('/agent/events'),
-  getToken: agentSocketToken
+  getAuthParams: agentSocketParams
 })
 
 const docTransport = createAgentDocFrameTransport(events)

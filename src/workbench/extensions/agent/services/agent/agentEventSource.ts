@@ -9,7 +9,7 @@ export interface AgentEventSocket extends AgentEventSource {
 
 interface AgentEventSourceOptions {
   endpoint: string
-  getToken: () => Promise<string | undefined>
+  getAuthParams: () => Promise<URLSearchParams>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   /** Jitter source in [0, 1); the delay is scaled into [50%, 100%]. */
@@ -18,7 +18,7 @@ interface AgentEventSourceOptions {
 
 export function createAgentEventSource({
   endpoint,
-  getToken,
+  getAuthParams,
   reconnectDelayMs = 1000,
   maxReconnectDelayMs = 30_000,
   random = Math.random
@@ -31,10 +31,10 @@ export function createAgentEventSource({
   let connecting = false
   let failedConnects = 0
 
-  function eventUrl(token: string | undefined): string {
+  function eventUrl(authParams: URLSearchParams): string {
     const url = new URL(endpoint, window.location.href)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    if (token) url.searchParams.set('token', token)
+    for (const [name, value] of authParams) url.searchParams.set(name, value)
     return url.toString()
   }
 
@@ -62,11 +62,11 @@ export function createAgentEventSource({
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    let token: string | undefined
+    let authParams: URLSearchParams
     try {
-      token = await getToken()
+      authParams = await getAuthParams()
     } catch {
-      token = undefined
+      authParams = new URLSearchParams()
     } finally {
       connecting = false
     }
@@ -75,7 +75,7 @@ export function createAgentEventSource({
       return
     }
     if (listeners.size === 0) return
-    open(eventUrl(token))
+    open(eventUrl(authParams))
   }
 
   function open(url: string): void {
