@@ -40,6 +40,7 @@ import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -190,7 +191,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Individual mode: Show all menu options
 
   // Inspect
-  if (isPreviewableMediaType(fileKind)) {
+  if (isPreviewableMediaType(fileKind) || isHdrImageFilename(asset.name)) {
     items.push({
       label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',

@@ -265,6 +265,21 @@ describe('MediaAssetCard', () => {
     ).toHaveAttribute('src', previewUrl)
   })
 
+  it('inspects an HDR asset on double click', async () => {
+    const user = userEvent.setup()
+    const hdrAsset = {
+      ...asset,
+      name: 'sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    }
+    const { emitted } = renderCard({ loading: false, asset: hdrAsset })
+    const preview = await screen.findByRole('img', { name: 'sky.exr' })
+
+    await user.dblClick(preview)
+
+    expect(emitted().zoom).toEqual([[hdrAsset]])
+  })
+
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
     const { container, emitted } = renderCard({
