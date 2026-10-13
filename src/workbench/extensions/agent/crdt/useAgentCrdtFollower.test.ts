@@ -234,7 +234,6 @@ function reportedTeardownErrors(): unknown[] {
     .map(([cause]) => cause)
 }
 
-// The agent's one socket; its open edge is the follower's reconnect signal.
 let agentSocket = createFakeAgentSocket()
 
 function dispatchFrame(type: string, detail: unknown): void {
@@ -518,7 +517,6 @@ describe('useAgentCrdtFollower', () => {
 
       expect(status().terminal).toBe('refused')
       expect(status().connected).toBe(false)
-      // Intent is untouched: the root still knows which document it wanted.
       expect(status().workflowId).toBe('wf-1')
 
       dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
@@ -566,8 +564,6 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    // Three unanswered subscribes spend the silent budget (frames at 0 s,
-    // 15 s and 30 s); the lifecycle gives up at 45 s and nothing will arrive.
     it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
@@ -584,8 +580,6 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    // A reconnect reopens recovery of the same document with a fresh budget,
-    // so the old verdict no longer holds while that attempt is in flight.
     it('a reconnect clears a terminal refusal while the new subscribe is in flight', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {
@@ -2846,7 +2840,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  // A transport whose socket-open subscription fails to detach.
   function transportFailingToStop(
     failure: unknown
   ): AgentCrdtFollowerOptions['transport'] {

@@ -28,7 +28,6 @@ async function trackWebSocket(
         ws.send(message)
       })
     } else {
-      // onClose disables Playwright's default page-server close forwarding, so register it only without a server.
       ws.onClose(() => {
         if (current === ws) current = undefined
       })

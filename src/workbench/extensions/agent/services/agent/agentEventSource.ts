@@ -9,7 +9,6 @@ export interface AgentEventSocket extends AgentEventSource {
 
 interface AgentEventSourceOptions {
   endpoint: string
-  // Browsers cannot set WebSocket headers, so the credential rides ?token=.
   getToken: () => Promise<string | undefined>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
@@ -30,8 +29,6 @@ export function createAgentEventSource({
   let reconnectTimer: number | null = null
   let connectGeneration = 0
   let connecting = false
-  // Reset by the first frame a socket delivers, not by its open: a server
-  // that accepts the upgrade and then closes still backs off.
   let failedConnects = 0
 
   function eventUrl(token: string | undefined): string {

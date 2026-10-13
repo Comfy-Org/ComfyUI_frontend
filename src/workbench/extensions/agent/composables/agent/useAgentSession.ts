@@ -346,7 +346,6 @@ function consumeStopPendingAck() {
   return pending
 }
 
-// Firebase ID tokens expire after one hour.
 const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
 function parseAdmissionError(error: unknown) {
@@ -492,8 +491,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     'first_open'
   )
 
-  // A running turn can outlive the credential it started with, so the user's
-  // header is re-presented to the agent while any turn is live.
   useIntervalFn(() => {
     if (conversationStore.liveTurns().length === 0) return
     rest.refreshCredential().catch((error: unknown) =>
@@ -1264,8 +1261,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  // Sent without a workflow, the server would fall back to the thread's
-  // previous one and edit a tab the user is not looking at.
   function rejectUnattributableTarget(
     text: string,
     origin: WorkflowTurnContext | undefined,

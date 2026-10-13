@@ -8,7 +8,6 @@ export const AGENT_SOCKET_URL = /\/api\/agent\/events(?:\?|$)/
 
 export const AGENT_FRAME_HANDLED_EVENT = 'agent-socket-frame-handled'
 
-// A routed socket cannot report delivery: this listener runs before the panel's, so it announces on the next task.
 export async function announceHandledAgentFrames(page: Page): Promise<void> {
   await page.addInitScript(
     ({ urlPattern, eventName }) => {

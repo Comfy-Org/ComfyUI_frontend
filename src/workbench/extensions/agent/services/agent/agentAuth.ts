@@ -8,7 +8,6 @@ interface AgentRequestInit extends RequestInit {
   onAuthCredential?: (credential: AuthCredential) => void
 }
 
-// Refuses redirects: fetch strips Authorization on a cross-origin redirect, but not X-API-KEY.
 export async function withAgentAuth<T extends AgentRequestInit>(
   init: T
 ): Promise<T & RequestInit> {

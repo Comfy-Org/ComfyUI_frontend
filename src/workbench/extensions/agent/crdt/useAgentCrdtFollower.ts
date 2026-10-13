@@ -94,7 +94,6 @@ interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
-/** Why nothing will arrive for the followed document until a confirm, reconnect or retarget. */
 type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 interface ProjectionFrameId {
@@ -867,8 +866,6 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   bridge.addEventListener('doc_reseed_result', onReseedResult)
-  // Every open resubscribes: the server drops a closed socket's follows, and a
-  // subscribe sent while connecting was dropped.
   const stopTransportConnected = transport.onConnected(onSocketOpen)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
