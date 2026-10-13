@@ -497,6 +497,28 @@ describe('composer asset tray', () => {
     )
   })
 
+  it('leaves invalid videos out of @ asset mentions', async () => {
+    const { store, editor } = setup()
+    store.addAttachment(asset)
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    await userEvent.type(editor, '@')
+    expect(screen.getByRole('menuitem', { name: asset.name })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'bad.mov' })
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard('bad')
+    expect(
+      screen.queryByRole('menuitem', { name: 'bad.mov' })
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.queryByTestId('asset-reference-chip')).not.toBeInTheDocument()
+  })
+
   it('allows repeated asset mentions, deletes only one, and sends the attachment once', async () => {
     const { store, editor, send } = setup()
     store.addAttachment(asset)

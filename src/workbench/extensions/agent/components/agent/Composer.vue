@@ -178,7 +178,8 @@ const {
   workflows: () => eligibleWorkflows.value,
   skills: () => skills.packs,
   skillsEnabled: () => skills.enabled,
-  assets: () => composer.attachments.value,
+  assets: () =>
+    composer.attachments.value.filter((item) => !item.validationError),
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),

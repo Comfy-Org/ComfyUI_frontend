@@ -116,6 +116,18 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
         enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
       )
     ).toHaveCount(0)
+    await agentPanel.composer.press('End')
+    await agentPanel.composer.pressSequentially(' @')
+    await expect(
+      agentPanel.root.getByRole('menuitem', {
+        name: enMessages.agent.nodes,
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(
+      agentPanel.root.getByRole('menuitem', { name: 'renamed.mp4' })
+    ).toHaveCount(0)
+    await agentPanel.composer.press('Escape')
     await agentPanel
       .attachmentChip('renamed.mp4')
       .getByRole('button', {
