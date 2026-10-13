@@ -1,10 +1,5 @@
 import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
-import {
-  countByUseCase,
-  modalityOf,
-  USE_CASES,
-  useCasesFor
-} from '@/config/models-catalogue'
+import { modalityOf, useCasesFor } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
@@ -15,6 +10,7 @@ export const MODEL_TABS = [
   'audio',
   '3d',
   'edit',
+  'upscale',
   'llm'
 ] as const
 export type ModelTab = (typeof MODEL_TABS)[number]
@@ -28,6 +24,7 @@ export const modelTabLabelKey: Record<ModelTab, TranslationKey> = {
   audio: 'workshop.explorer.tabs.audio',
   '3d': 'workshop.explorer.tabs.3d',
   edit: 'workshop.explorer.tabs.edit',
+  upscale: 'workshop.explorer.tabs.upscale',
   llm: 'workshop.explorer.tabs.llm'
 }
 
@@ -37,11 +34,19 @@ interface TabUseCase {
 }
 
 /** The tasks a tab splits into; a tab that is already one task has none. */
-const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
-  all: USE_CASES.map((useCase) => ({
-    useCase,
-    labelKey: useCaseLabelKey[useCase]
-  })),
+export const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
+  all: (
+    [
+      'generate-images',
+      'edit-images',
+      'generate-videos',
+      'animate-images',
+      'edit-videos',
+      'audio',
+      '3d',
+      'text'
+    ] as const
+  ).map((useCase) => ({ useCase, labelKey: useCaseLabelKey[useCase] })),
   image: [
     { useCase: 'generate-images', labelKey: 'workshop.useCaseOption.generate' },
     { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.edit' }
@@ -66,11 +71,7 @@ const TAB_OF_USE_CASE: Record<UseCase, ModelTab> = {
   'generate-videos': 'video',
   'animate-images': 'video',
   'edit-videos': 'video',
-  upscale: 'all',
   audio: 'audio',
-  characters: 'all',
-  product: 'all',
-  tools: 'all',
   '3d': '3d',
   text: 'llm'
 }
@@ -145,26 +146,11 @@ export function hostedInTab(model: WorkshopModel, tab: ModelTab): boolean {
       return true
     case 'edit':
       return hostedEdits(model)
+    case 'upscale':
+      return hasCapability(model, ['upscale'])
     default:
       return (model.modalities ?? [modalityOf(model)]).includes(
         MEDIA_OF_TAB[tab]
       )
   }
-}
-
-export interface UseCaseChoice extends TabUseCase {
-  readonly count: number
-}
-
-/** The Best-for choices a tab offers over these items, each that lists one. */
-export function useCaseChoices(
-  models: readonly WorkshopModel[],
-  tab: ModelTab
-): UseCaseChoice[] {
-  const counts = countByUseCase(
-    models.filter((model) => hostedInTab(model, tab))
-  )
-  return (tabUseCases[tab] ?? [])
-    .filter(({ useCase }) => counts[useCase] > 0)
-    .map((entry) => ({ ...entry, count: counts[entry.useCase] }))
 }

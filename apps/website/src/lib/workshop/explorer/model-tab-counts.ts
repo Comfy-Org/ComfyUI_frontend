@@ -16,7 +16,7 @@ const MODEL_TAB_GROUPS: readonly ModelTabGroup[] = [
   },
   {
     titleKey: 'workshop.explorer.tabs.groups.task',
-    tabs: ['edit']
+    tabs: ['edit', 'upscale']
   }
 ]
 

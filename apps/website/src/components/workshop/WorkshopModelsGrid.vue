@@ -23,6 +23,7 @@ import type {
 } from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
+  countByUseCase,
   sortWorkshopModels
 } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
@@ -40,12 +41,15 @@ import {
   parseAccess
 } from '@/lib/workshop/explorer/model-access'
 import { useCompareSelection } from '@/lib/workshop/explorer/compare-selection'
-import { hostedInTab, useCaseChoices } from '@/lib/workshop/explorer/model-tabs'
-import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
+import type { ModelTab } from '@/lib/workshop/explorer/model-tabs'
 import {
-  useCatalogueType,
-  writeParam
-} from '@/lib/workshop/explorer/catalogue-type'
+  hostedInTab,
+  tabForUseCases,
+  tabUseCases,
+  useCasesInTab
+} from '@/lib/workshop/explorer/model-tabs'
+import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
+import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
@@ -59,6 +63,7 @@ import {
   RESOLUTION_PARAM,
   RESOLUTIONS
 } from '@/lib/workshop/resolution'
+import { USE_CASE_PARAM, parseUseCases } from '@/lib/workshop/use-case-address'
 import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
@@ -83,6 +88,7 @@ const {
 const { t } = translationsFor(locale)
 
 const query = ref('')
+const selectedUseCases = ref<UseCase[]>([])
 const selectedAccess = ref<ModelAccess[]>([])
 const selectedResolution = ref<Resolution>()
 const legacyModalities = ref<string[]>([])
@@ -90,13 +96,9 @@ const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const tabCounts = computed(() => modelTabCounts(models))
-const {
-  tab,
-  selectedUseCases,
-  readAddress: readTypeAddress,
-  selectTab,
-  keepOffered
-} = useCatalogueType(() => tabCounts.value)
+const { tab, readAddress: readTab } = useModelTab(
+  (named) => (tabCounts.value.get(named) ?? 0) > 0
+)
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
 const MODELS_PAGE_SIZE = 48
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
@@ -105,7 +107,12 @@ let scrollReady = false
 function readAddress(search: string) {
   const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
-  readTypeAddress(search)
+  const opened = parseUseCases(search)
+  readTab(search)
+  const implied = tabForUseCases(opened, tab.value)
+  if ((tabCounts.value.get(implied) ?? 0) > 0) tab.value = implied
+  selectedUseCases.value =
+    tab.value === 'all' ? opened : useCasesInTab(opened, tab.value)
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
@@ -113,9 +120,25 @@ function readAddress(search: string) {
   selectedResolution.value = parseResolution(search)
 }
 
+function selectTab(next: ModelTab) {
+  tab.value = next
+  selectedUseCases.value =
+    next === 'all' ? [] : useCasesInTab(selectedUseCases.value, next)
+}
+
+function writeParam(name: string, value: string) {
+  const url = new URL(location.href)
+  if (value) url.searchParams.set(name, value)
+  else url.searchParams.delete(name)
+  if (url.href !== location.href) history.replaceState(history.state, '', url)
+}
 watch(selectedAccess, (value) => writeParam(ACCESS_PARAM, value.join(',')))
+watch(selectedUseCases, (value) => writeParam(USE_CASE_PARAM, value.join(',')))
 watch(selectedResolution, (value) => writeParam(RESOLUTION_PARAM, value ?? ''))
 
+// A browser can restore this page from its cache with a shelf still open, so
+// coming back from a model would land on that shelf rather than on the
+// catalogue the address names. The address is the truth on every show.
 function onPageShow(event: PageTransitionEvent) {
   if (!event.persisted) return
   readAddress(location.search)
@@ -143,20 +166,38 @@ watch(compareOpen, () => window.scrollTo({ top: 0 }))
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
 
-const useCaseOptions = computed<FacetMenuOption<UseCase>[]>(() =>
-  useCaseChoices(
-    models.filter((model) =>
-      offersAccess(accessFor(model), selectedAccess.value)
-    ),
-    tab.value
-  ).map(({ useCase, labelKey, count }) => ({
-    value: useCase,
-    label: t(labelKey),
-    count
-  }))
-)
+const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  const counts = countByUseCase(
+    models.filter(
+      (model) =>
+        hostedInTab(model, tab.value) &&
+        offersAccess(accessFor(model), selectedAccess.value)
+    )
+  )
+  return (tabUseCases[tab.value] ?? [])
+    .filter(({ useCase }) => counts[useCase] > 0)
+    .map(({ useCase, labelKey }) => ({
+      value: useCase,
+      label: t(labelKey),
+      count: counts[useCase]
+    }))
+})
 
-watch(useCaseOptions, keepOffered)
+watch(selectedUseCases, (selected) => {
+  if (tab.value !== 'all') return
+  const implied = tabForUseCases(selected, 'all')
+  if (implied !== 'all' && (tabCounts.value.get(implied) ?? 0) > 0)
+    tab.value = implied
+})
+
+watch(useCaseOptions, (options) => {
+  if (tab.value === 'all') return
+  const offered = selectedUseCases.value.filter((useCase) =>
+    options.some((option) => option.value === useCase)
+  )
+  if (offered.length !== selectedUseCases.value.length)
+    selectedUseCases.value = offered
+})
 
 const legacyFiltered = computed(
   () =>

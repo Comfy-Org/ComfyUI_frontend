@@ -339,52 +339,10 @@ describe('countByUseCase', () => {
       'generate-videos': 1,
       'animate-images': 0,
       'edit-videos': 0,
-      upscale: 1,
-      audio: 0,
-      characters: 0,
-      product: 0,
-      tools: 0,
       '3d': 0,
+      audio: 0,
       text: 0
     })
-  })
-
-  it.for([
-    { category: 'image-to-image', useCase: 'edit-images' },
-    { category: 'image-to-video', useCase: 'animate-images' },
-    { category: 'reference-to-video', useCase: 'generate-videos' },
-    { category: 'video-to-video', useCase: 'edit-videos' },
-    { category: 'upscale', useCase: 'upscale' },
-    { category: 'audio', useCase: 'audio' },
-    { category: 'characters', useCase: 'characters' },
-    { category: 'product', useCase: 'product' },
-    { category: 'tools', useCase: 'tools' }
-  ] as const)(
-    'files a $category workflow under $useCase',
-    ({ category, useCase }) => {
-      const workflow: WorkshopModel = {
-        type: 'CLOUD',
-        workflowId: category,
-        slug: `workflows/${category}`,
-        href: `/hub/workflows/${category}/`,
-        name: category,
-        workflowCount: 0,
-        capabilities: [],
-        category,
-        useCases: ['edit-images']
-      }
-      expect(useCasesFor(workflow)).toEqual([useCase])
-    }
-  )
-
-  it('adds Upscale & restore to a model that upscales, after its own use case', () => {
-    expect(
-      useCasesFor({
-        ...fixture[0],
-        useCases: ['edit-images'],
-        capabilities: ['Upscale']
-      })
-    ).toEqual(['edit-images', 'upscale'])
   })
 
   it('counts a model in every explicit editorial use case', () => {

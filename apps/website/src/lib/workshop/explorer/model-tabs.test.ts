@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { useCasesFor } from '@/config/models-catalogue'
 import { workshopModels } from '@/config/workshop-browse-content'
 import type { ModelTab } from './model-tabs'
 import { hostedInTab, MODEL_TABS, parseModelTab } from './model-tabs'
@@ -18,7 +17,8 @@ describe('category tabs over the real catalogue', () => {
     { tab: 'image', hosted: 'bfl--flux-2-max--generate-images' },
     { tab: 'video', hosted: 'bfl--flux-3-text-to-video--generate-videos' },
     { tab: 'audio', hosted: 'elevenlabs--text-to-dialogue--audio' },
-    { tab: 'edit', hosted: 'beeble--switchx-image-edit--edit-images' }
+    { tab: 'edit', hosted: 'beeble--switchx-image-edit--edit-images' },
+    { tab: 'upscale', hosted: 'wavespeed--flashvsr--edit-videos' }
   ] as const)('$tab holds models of that kind', (row) => {
     expect(hostedSlugs(row.tab)).toContain(row.hosted)
   })
@@ -29,12 +29,10 @@ describe('category tabs over the real catalogue', () => {
     )
   })
 
-  it('files models that upscale under Upscale & restore, and only those', () => {
-    const upscaling = hosted
-      .filter((model) => useCasesFor(model).includes('upscale'))
-      .map((model) => model.slug)
-    expect(upscaling).toContain('wavespeed--flashvsr--edit-videos')
-    expect(upscaling).not.toContain('bfl--flux-2-max--generate-images')
+  it('leaves models that do not upscale out of the upscale tab', () => {
+    expect(hostedSlugs('upscale')).not.toContain(
+      'bfl--flux-2-max--generate-images'
+    )
   })
 
   it('lists every hosted model under All', () => {

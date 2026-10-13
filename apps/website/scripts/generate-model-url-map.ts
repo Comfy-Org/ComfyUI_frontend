@@ -40,11 +40,7 @@ const TASK_WORDS_BY_USE_CASE: Readonly<Record<UseCase, readonly string[]>> = {
     'video-continuation'
   ],
   'edit-videos': ['video-edit', 'video-to-video', 'audio-to-video'],
-  upscale: [],
   audio: ['text-to-speech', 'text-to-dialogue'],
-  characters: [],
-  product: [],
-  tools: [],
   '3d': [],
   text: []
 }

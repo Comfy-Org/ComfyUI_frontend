@@ -213,11 +213,7 @@
       "3d": "3D",
       "audio": "Audio & speech",
       "text": "Text",
-      "more": "More categories",
-      "upscale": "Upscale & restore",
-      "characters": "Characters & game assets",
-      "product": "Product & ads",
-      "tools": "Control & tools"
+      "more": "More categories"
     },
     "useCaseOption": {
       "generate": "Generate",
@@ -765,6 +761,7 @@
         "audio": "Audio",
         "3d": "3D",
         "edit": "Edit",
+        "upscale": "Upscale",
         "llm": "LLM",
         "groups": {
           "type": "Type",
@@ -849,6 +846,7 @@
           "audio": "Audio models",
           "3d": "3D models",
           "edit": "Edit models",
+          "upscale": "Upscale models",
           "llm": "Language models"
         },
         "access": {

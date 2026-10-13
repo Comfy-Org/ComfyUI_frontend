@@ -248,53 +248,14 @@ export const USE_CASES = [
   'generate-videos',
   'animate-images',
   'edit-videos',
-  'upscale',
-  'audio',
-  'characters',
-  'product',
-  'tools',
+  'text',
   '3d',
-  'text'
+  'audio'
 ] as const
 export type UseCase = (typeof USE_CASES)[number]
 
-/** The Best-for use case each workflow category, current or retired, stands for. */
-export const WORKFLOW_CATEGORY_USE_CASE: Readonly<
-  Record<string, UseCase | undefined>
-> = {
-  'image-to-image': 'edit-images',
-  cleanup: 'edit-images',
-  'image-to-video': 'animate-images',
-  videos: 'animate-images',
-  'reference-to-video': 'generate-videos',
-  'video-to-video': 'edit-videos',
-  upscale: 'upscale',
-  audio: 'audio',
-  characters: 'characters',
-  product: 'product',
-  tools: 'tools'
-}
-
 export function useCaseFor(model: WorkshopModel): UseCase | undefined {
   return useCasesFor(model)[0]
-}
-
-export function useCasesFor(model: WorkshopModel): readonly UseCase[] {
-  const categoryUseCase =
-    model.type === 'CLOUD' || model.type === 'SERVERLESS'
-      ? WORKFLOW_CATEGORY_USE_CASE[model.category ?? '']
-      : undefined
-  if (categoryUseCase) return [categoryUseCase]
-  const declared = declaredUseCases(model)
-  return upscales(model) && !declared.includes('upscale')
-    ? [...declared, 'upscale']
-    : declared
-}
-
-function upscales(model: WorkshopModel): boolean {
-  return model.capabilities.some(
-    (capability) => capability.toLowerCase() === 'upscale'
-  )
 }
 
 const MODALITY_USE_CASES: Readonly<
@@ -316,7 +277,7 @@ const MODALITY_USE_CASES: Readonly<
   text: { byInput: {}, fallback: 'text' }
 }
 
-function declaredUseCases(model: WorkshopModel): readonly UseCase[] {
+export function useCasesFor(model: WorkshopModel): readonly UseCase[] {
   if (model.useCases?.length) return model.useCases
   if (!model.modality) return []
   const rule = MODALITY_USE_CASES[model.modality]

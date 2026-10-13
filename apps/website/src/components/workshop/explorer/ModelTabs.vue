@@ -3,6 +3,7 @@ import {
   AudioLines,
   BookOpen,
   Box,
+  Columns2,
   Image,
   LayoutGrid,
   Pencil,
@@ -33,12 +34,10 @@ import {
 const {
   panelId,
   counts,
-  label,
   locale = 'en'
 } = defineProps<{
   panelId: string
   counts: ModelTabCounts
-  label?: string
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -57,6 +56,7 @@ const icon: Record<ModelTab, Component> = {
   audio: AudioLines,
   '3d': Box,
   edit: Pencil,
+  upscale: Columns2,
   llm: BookOpen
 }
 
@@ -81,7 +81,7 @@ function onKeydown(event: KeyboardEvent) {
     <div
       ref="list"
       role="tablist"
-      :aria-label="label ?? t('workshop.explorer.tabs.label')"
+      :aria-label="t('workshop.explorer.tabs.label')"
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       :class="SIDEBAR_LIST"
       data-testid="model-tabs"

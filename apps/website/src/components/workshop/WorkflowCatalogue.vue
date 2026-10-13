@@ -6,26 +6,23 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   Modality,
   SortOrder,
-  UseCase,
   WorkflowWorkshopModel
 } from '@/config/models-catalogue'
-import {
-  MODALITIES,
-  sortWorkshopModels,
-  useCasesFor
-} from '@/config/models-catalogue'
+import { MODALITIES, sortWorkshopModels } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { usePagedList } from '@/composables/usePagedList'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
-import { useCatalogueType } from '@/lib/workshop/explorer/catalogue-type'
-import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
-import { hostedInTab, useCaseChoices } from '@/lib/workshop/explorer/model-tabs'
-import BestForMenu from '@/components/workshop/models-hub/BestForMenu.vue'
-import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
+import {
+  ALL_WORKFLOWS,
+  categoryAddress,
+  categoryFromAddress,
+  workflowCategories
+} from '@/lib/workshop/workflow-categories'
 import CatalogueShowMore from './CatalogueShowMore.vue'
+import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
@@ -47,6 +44,7 @@ const { t } = translationsFor(locale)
 
 const TAB_PANEL_ID = 'workflow-category-panel'
 const query = ref('')
+const category = ref(ALL_WORKFLOWS)
 const inputs = ref<Modality[]>([])
 const outputs = ref<Modality[]>([])
 const runsOn = ref<string[]>([])
@@ -54,9 +52,9 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 
-const tabCounts = computed(() => modelTabCounts(models))
-const { tab, selectedUseCases, readAddress, selectTab, keepOffered } =
-  useCatalogueType(() => tabCounts.value)
+const categories = computed(() =>
+  workflowCategories(models, locale === 'zh-CN' ? locale : 'en')
+)
 
 function knownMedia(values: readonly string[]): Modality[] {
   return MODALITIES.filter((media) => values.includes(media))
@@ -66,7 +64,7 @@ onMounted(() => {
   const search = initialSearch ?? location.search
   const params = new URLSearchParams(search)
   query.value = params.get('q') ?? ''
-  readAddress(search)
+  category.value = categoryFromAddress(search, models)
   inputs.value = knownMedia(params.getAll('input'))
   outputs.value = knownMedia(params.getAll('output'))
   runsOn.value = params
@@ -74,6 +72,13 @@ onMounted(() => {
     .filter((name) => models.some((model) => model.models?.includes(name)))
 })
 
+watch(category, (value) => {
+  const next = categoryAddress(location.href, value)
+  if (next !== location.href) history.replaceState(history.state, '', next)
+})
+
+// Categories lead in their editorial order and each keeps its own
+// recommended order, so All reads as the categories one after another.
 const ordered = computed(() =>
   [...models].sort(
     (a, b) =>
@@ -81,27 +86,10 @@ const ordered = computed(() =>
       (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
   )
 )
-const inTab = computed(() =>
-  ordered.value.filter((model) => hostedInTab(model, tab.value))
-)
-
-const useCaseOptions = computed<FacetMenuOption<UseCase>[]>(() =>
-  useCaseChoices(models, tab.value).map(({ useCase, labelKey, count }) => ({
-    value: useCase,
-    label: t(labelKey),
-    count
-  }))
-)
-watch(useCaseOptions, keepOffered)
-
 const inCategory = computed(() =>
-  selectedUseCases.value.length
-    ? inTab.value.filter((model) =>
-        useCasesFor(model).some((useCase) =>
-          selectedUseCases.value.includes(useCase)
-        )
-      )
-    : inTab.value
+  category.value === ALL_WORKFLOWS
+    ? ordered.value
+    : ordered.value.filter((model) => model.category === category.value)
 )
 
 function startsFrom(model: WorkflowWorkshopModel, chosen: Modality[]) {
@@ -225,7 +213,7 @@ function clearFilters() {
 
 function clear() {
   query.value = ''
-  selectTab('all')
+  category.value = ALL_WORKFLOWS
   clearFilters()
 }
 </script>
@@ -235,16 +223,15 @@ function clear() {
     class="flex flex-col lg:flex-row lg:items-start lg:gap-10"
     data-testid="workflow-catalogue"
   >
-    <div class="max-lg:contents lg:sticky lg:top-26 lg:w-58 lg:shrink-0">
-      <ModelTabs
-        :model-value="tab"
+    <div class="max-lg:contents lg:sticky lg:top-26 lg:w-70 lg:shrink-0">
+      <WorkflowCategoryTabs
+        v-model="category"
+        :categories
+        :total="models.length"
         :panel-id="TAB_PANEL_ID"
-        :counts="tabCounts"
-        :label="t('workshop.catalogue.categoriesLabel')"
         :locale
         class="max-lg:order-1"
         data-design-decision="workflows-sidebar"
-        @update:model-value="selectTab"
       />
     </div>
 
@@ -264,12 +251,6 @@ function clear() {
             kind="workflows"
             compact
             class="min-w-0 flex-1"
-          />
-          <BestForMenu
-            v-if="useCaseOptions.length"
-            v-model="selectedUseCases"
-            :options="useCaseOptions"
-            :locale
           />
           <WorkshopFilterMenu
             ref="filterMenu"
@@ -296,7 +277,7 @@ function clear() {
       <div
         :id="TAB_PANEL_ID"
         role="tabpanel"
-        :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
+        :aria-labelledby="`${TAB_PANEL_ID}-${category}`"
         class="max-lg:order-2"
       >
         <WorkshopFilterChips

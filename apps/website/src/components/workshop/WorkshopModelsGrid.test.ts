@@ -232,8 +232,7 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
     expect(await offeredUseCases(user)).toEqual([
       'best-for-edit-images',
-      'best-for-generate-videos',
-      'best-for-upscale'
+      'best-for-generate-videos'
     ])
 
     await chooseTab(user, 'Video')
@@ -643,8 +642,7 @@ describe('WorkshopModelsGrid', () => {
 
       expect(await offeredUseCases(userEvent.setup())).toEqual([
         'best-for-edit-images',
-        'best-for-generate-videos',
-        'best-for-upscale'
+        'best-for-generate-videos'
       ])
     })
 

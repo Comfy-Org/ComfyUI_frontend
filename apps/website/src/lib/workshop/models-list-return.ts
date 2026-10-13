@@ -24,6 +24,7 @@ export const tabListKey: Record<Exclude<ModelTab, 'all'>, TranslationKey> = {
   audio: 'workshop.modelsHub.back.tab.audio',
   '3d': 'workshop.modelsHub.back.tab.3d',
   edit: 'workshop.modelsHub.back.tab.edit',
+  upscale: 'workshop.modelsHub.back.tab.upscale',
   llm: 'workshop.modelsHub.back.tab.llm'
 }
 

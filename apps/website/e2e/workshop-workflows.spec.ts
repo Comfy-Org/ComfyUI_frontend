@@ -110,16 +110,17 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.ok()).toBe(true)
     expect(response.headers()['content-type']).toContain(type)
   }
-  for (const { search, useCase, shows, hides } of [
+  const categories = page.getByRole('tablist', { name: 'Workflow categories' })
+  for (const { search, tab, shows, hides } of [
     {
       search: '?category=product',
-      useCase: 'product',
+      tab: 'Product & ads',
       shows: /Put your product in a new scene/,
       hides: /Change a material/
     },
     {
       search: '?category=cleanup',
-      useCase: 'edit-images',
+      tab: 'Image to image',
       shows: /Change a material/,
       hides: /Remove an image background/
     }
@@ -128,9 +129,10 @@ test('workflow launch groups lead to the existing shared form', async ({
     await expect(
       page.getByRole('heading', { level: 1, name: 'Workflows' })
     ).toBeVisible()
-    await expect(page).toHaveURL(new RegExp(`[?&]useCase=${useCase}(&|$)`))
-    await expect(page).not.toHaveURL(/category=/)
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(categories.getByRole('tab', { name: tab })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
     const filtered = page.getByTestId('workflow-grid')
     await expect(filtered.getByRole('link', { name: shows })).toBeVisible()
     await expect(filtered.getByRole('link', { name: hides })).toHaveCount(0)
@@ -257,7 +259,7 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   await expect(trigger).toBeFocused()
 })
 
-test('workflow search and Best for share the mobile controls @mobile', async ({
+test('workflow search and categories share the mobile controls @mobile', async ({
   page,
   context
 }) => {
@@ -265,10 +267,11 @@ test('workflow search and Best for share the mobile controls @mobile', async ({
   await page.goto('/hub/')
   await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
-  await page.getByTestId('best-for-menu').click()
-  await page.getByTestId('best-for-upscale').click()
-  await page.keyboard.press('Escape')
-  await expect(page).toHaveURL('/hub/workflows/?useCase=upscale')
+  await page
+    .getByRole('tablist', { name: 'Workflow categories' })
+    .getByRole('tab', { name: 'Upscale & restore' })
+    .click()
+  await expect(page).toHaveURL('/hub/workflows/?category=upscale')
   await expect(
     page.getByTestId('workflow-grid').getByTestId('workshop-model-card')
   ).toHaveCount(6)
@@ -469,14 +472,9 @@ const tabletToolbars = [640, 700, 768].flatMap((width) => [
   },
   {
     width,
-    half: 'Workflows with a use case selected',
-    path: '/hub/workflows/?useCase=upscale',
-    controls: [
-      'workshop-search',
-      'best-for-menu',
-      'workshop-filter',
-      'workshop-sort'
-    ]
+    half: 'Workflows with a category selected',
+    path: '/hub/workflows/?category=upscale',
+    controls: ['workshop-search', 'workshop-filter', 'workshop-sort']
   }
 ])
 

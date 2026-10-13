@@ -110,27 +110,16 @@ async function choose(
 
 beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
-async function bestFor(user: ReturnType<typeof userEvent.setup>) {
-  if (!screen.queryByRole('menu'))
-    await user.click(screen.getByRole('button', { name: /^Best for/ }))
-  return screen.findByRole('menu')
-}
-
-function selectedTab() {
-  return within(sidebar())
-    .getAllByRole('tab')
-    .find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.tab
-}
-
-describe('WorkflowCatalogue type sidebar and Best for', () => {
-  it('lists what the workflows output, then Edit under Task, with counts and nothing empty', () => {
+describe('WorkflowCatalogue categories', () => {
+  it('lists All and every category with a workflow, in editorial order, with counts', () => {
     render(WorkflowCatalogue, { props: { models } })
 
     const shown = [
       { id: 'all', name: 'All', count: '5' },
-      { id: 'image', name: 'Image', count: '2' },
-      { id: 'video', name: 'Video', count: '3' },
-      { id: 'edit', name: 'Edit', count: '1' }
+      { id: 'image-to-image', name: 'image-to-image label', count: '1' },
+      { id: 'image-to-video', name: 'image-to-video label', count: '2' },
+      { id: 'upscale', name: 'upscale label', count: '1' },
+      { id: 'audio', name: 'audio label', count: '1' }
     ]
     const tabs = within(sidebar()).getAllByRole('tab')
     expect(tabs.map((tab) => tab.dataset.tab)).toEqual(
@@ -140,15 +129,18 @@ describe('WorkflowCatalogue type sidebar and Best for', () => {
       expect(tabs[index]).toHaveAccessibleName(name)
       expect(tabs[index]).toHaveTextContent(count)
     }
-    expect(sidebar()).toHaveTextContent('Task')
-    expect(selectedTab()).toBe('all')
+    expect(
+      within(sidebar()).getByRole('tab', { name: /^All/ })
+    ).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('names the sidebar in Chinese on the Chinese page', () => {
+  it('names the categories in Chinese on the Chinese page', () => {
     render(WorkflowCatalogue, { props: { models, locale: 'zh-CN' } })
 
     expect(
-      within(sidebar('工作流分类')).getByRole('tab', { name: '视频' })
+      within(sidebar('工作流分类')).getByRole('tab', {
+        name: 'image-to-video 标签'
+      })
     ).toBeTruthy()
   })
 
@@ -169,91 +161,52 @@ describe('WorkflowCatalogue type sidebar and Best for', () => {
     ])
   })
 
-  it.for([
-    { tab: 'Image', shows: ['inpaint', 'restore'] },
-    { tab: 'Video', shows: ['animate', 'connect', 'talk'] },
-    { tab: 'Edit', shows: ['inpaint'] }
-  ])(
-    'narrows to $shows on the $tab type and lets go of it from All',
-    async ({ tab, shows }) => {
-      const user = userEvent.setup()
-      render(WorkflowCatalogue, { props: { models } })
-
-      await user.click(within(sidebar()).getByRole('tab', { name: tab }))
-      expect(listed()).toEqual(shows)
-
-      await user.click(within(sidebar()).getByRole('tab', { name: 'All' }))
-      expect(listed()).toEqual(ALL)
-      expect(location.search).toBe('')
-    }
-  )
-
-  it('offers the Best-for use cases that list a workflow, in the shared order', async () => {
-    const user = userEvent.setup()
-    render(WorkflowCatalogue, { props: { models } })
-
-    expect(
-      within(await bestFor(user))
-        .getAllByRole('menuitemcheckbox')
-        .map((item) => [item.dataset.testid, item.textContent.trim()])
-    ).toEqual([
-      ['best-for-edit-images', 'Edit images1'],
-      ['best-for-animate-images', 'Animate images2'],
-      ['best-for-upscale', 'Upscale & restore1'],
-      ['best-for-audio', 'Audio & speech1']
-    ])
-  })
-
-  it('narrows to a Best-for use case and keeps it in the address', async () => {
+  it('narrows to a category, keeps it in the address, and lets go of it from All', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
 
     await user.click(
-      within(await bestFor(user)).getByRole('menuitemcheckbox', {
-        name: 'Animate images 2'
-      })
+      within(sidebar()).getByRole('tab', { name: /^image-to-video/ })
     )
-
     expect(listed()).toEqual(['animate', 'connect'])
-    expect(new URLSearchParams(location.search).get('useCase')).toBe(
-      'animate-images'
-    )
-    expect(selectedTab()).toBe('video')
-    expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
+    expect(location.search).toBe('?category=image-to-video')
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+
+    await user.click(within(sidebar()).getByRole('tab', { name: /^All/ }))
+    expect(listed()).toEqual(ALL)
+    expect(location.search).toBe('')
   })
 
   it.for([
-    { search: '?useCase=upscale', useCase: 'upscale', shows: ['restore'] },
-    { search: '?category=upscale', useCase: 'upscale', shows: ['restore'] },
+    { search: '?category=upscale', opens: 'upscale', shows: ['restore'] },
     {
-      search: '?category=image-to-image',
-      useCase: 'edit-images',
+      search: '?category=cleanup',
+      opens: 'image-to-image',
       shows: ['inpaint']
     },
-    { search: '?category=cleanup', useCase: 'edit-images', shows: ['inpaint'] },
     {
       search: '?category=videos',
-      useCase: 'animate-images',
+      opens: 'image-to-video',
       shows: ['animate', 'connect']
     },
     {
       search: '?category=unknown&category=audio',
-      useCase: 'audio',
+      opens: 'audio',
       shows: ['talk']
     },
-    { search: '?category=unknown', useCase: null, shows: ALL }
-  ])(
-    'opens $search on the $useCase use case',
-    async ({ search, useCase, shows }) => {
-      history.replaceState(null, '', `/hub/workflows/${search}`)
-      render(WorkflowCatalogue, { props: { models } })
+    { search: '?category=unknown', opens: 'all', shows: ALL }
+  ])('opens $search on $opens', async ({ search, opens, shows }) => {
+    history.replaceState(null, '', `/hub/workflows/${search}`)
+    render(WorkflowCatalogue, { props: { models } })
 
-      await waitFor(() => expect(listed()).toEqual(shows))
-      const address = new URLSearchParams(location.search)
-      expect(address.get('useCase')).toBe(useCase)
-      expect(address.has('category')).toBe(false)
-    }
-  )
+    await waitFor(() =>
+      expect(screen.getByTestId(`workflow-category-${opens}`)).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    )
+    expect(listed()).toEqual(shows)
+  })
 
   it('shows twelve workflows at a time and starts again when a search narrows them', async () => {
     const many = Array.from({ length: 20 }, (_, index) =>
@@ -316,15 +269,12 @@ describe('WorkflowCatalogue filters', () => {
     }
   )
 
-  it('offers no media choice that every workflow in the use case shares', async () => {
+  it('offers no media choice that every workflow in the category shares', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await user.click(
-      within(await bestFor(user)).getByRole('menuitemcheckbox', {
-        name: 'Animate images 2'
-      })
+      within(sidebar()).getByRole('tab', { name: /^image-to-video/ })
     )
-    await user.keyboard('{Escape}')
     const dialog = await openFilters(user)
 
     expect(within(dialog).queryByRole('tablist')).toBeNull()
@@ -363,7 +313,7 @@ describe('WorkflowCatalogue filters', () => {
     expect(listed()).toEqual(['connect', 'restore'])
   })
 
-  it('lets go of every filter from the chips and keeps the search and use case', async () => {
+  it('lets go of every filter from the chips and keeps the search and category', async () => {
     history.replaceState(null, '', '/hub/workflows/?q=image&category=videos')
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
@@ -381,16 +331,15 @@ describe('WorkflowCatalogue filters', () => {
     expect(listed()).toEqual(['animate', 'connect'])
   })
 
-  it('clears the search, type and filters from an empty list', async () => {
+  it('clears the search, category and filters from an empty list', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
-    await user.click(within(sidebar()).getByRole('tab', { name: 'Video' }))
+    await user.click(within(sidebar()).getByRole('tab', { name: /^audio/ }))
     await user.type(screen.getByRole('searchbox'), 'nothing like this')
     expect(listed()).toEqual([])
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(listed()).toEqual(ALL)
     expect(screen.getByRole('searchbox')).toHaveValue('')
-    expect(selectedTab()).toBe('all')
   })
 })
