@@ -94,11 +94,12 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue: stringModelValue,
   dropdownItems,
-  widget: () => props.widget,
+  locatorId: props.widget.nodeLocatorId,
+  modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadSubfolder: () => props.uploadSubfolder,
+  widget: () => props.widget
 })
 
 const mediaPlaceholder = computed(() => {

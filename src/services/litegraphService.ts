@@ -71,6 +71,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -694,13 +695,10 @@ export const useLitegraphService = () => {
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
-        // If this node has images then we add an open in new tab item
         let img
         if (this.imageIndex != null) {
-          // An image is selected so select that
           img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
         }
         if (img) {
@@ -708,8 +706,7 @@ export const useLitegraphService = () => {
             {
               content: 'Open Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 void openFileInNewTab(url.toString())
               }, 'preview')
             },
@@ -717,8 +714,7 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
               }, 'preview')
@@ -735,7 +731,6 @@ export const useLitegraphService = () => {
         }
       })
 
-      // prevent conflict of clipspace content
       if (!ComfyApp.clipspace_return_node) {
         options.push({
           content: 'Copy (Clipspace)',
