@@ -18,7 +18,7 @@
       <div
         v-if="!isOverlay"
         data-testid="agent-panel-resize-handle"
-        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+        class="absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-highlight data-[resizing=true]:bg-highlight"
         :data-resizing="isResizing"
         @pointerdown="onResizeStart"
         @lostpointercapture="isResizing = false"
