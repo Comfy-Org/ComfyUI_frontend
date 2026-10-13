@@ -290,7 +290,6 @@ export class AgentFollowerHostSocket {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
       this.send(this.host.subscribeRefused(this.refuseReason))
-      this.subscribes += 1
       this.resolveSubscribed?.()
       return
     }
@@ -356,7 +355,11 @@ export class AgentFollowerHostSocket {
     }
   }
 
-  /** Rises once per follower subscribe, after the catch-up frame was sent. */
+  /**
+   * Rises once per subscribe the host accepted, after its answer was sent.
+   * A custom answer from {@link answerSubscribesWith} may carry no catch-up;
+   * refused subscribes count only in {@link refusedSubscribeCount}.
+   */
   subscribeCount(): number {
     return this.subscribes
   }

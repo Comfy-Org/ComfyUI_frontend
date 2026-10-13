@@ -66,6 +66,35 @@ describe('AgentFollowerHostSocket transport', () => {
   })
 })
 
+describe('AgentFollowerHostSocket subscribe counts', () => {
+  it('counts a refused subscribe only as refused, then the accepted retry as a subscribe', async () => {
+    const host = new HostDoc(
+      WORKFLOW_ID,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+    const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+    await hostSocket.install()
+    hostSocket.refuseSubscribes('overloaded', 1)
+    const subscribe = {
+      type: 'doc_subscribe',
+      data: { workflow_id: WORKFLOW_ID, state_vector_b64: 'AA==' }
+    }
+
+    emitClientFrame(subscribe)
+
+    expect(sentFrames().map((frame) => frame.type)).toEqual(['doc_subscribed'])
+    expect(hostSocket.refusedSubscribeCount()).toBe(1)
+    expect(hostSocket.subscribeCount()).toBe(0)
+
+    emitClientFrame(subscribe)
+
+    expect(hostSocket.refusedSubscribeCount()).toBe(1)
+    expect(hostSocket.subscribeCount()).toBe(1)
+  })
+})
+
 describe('AgentFollowerHostSocket human doc_ops handling', () => {
   it('answers a malformed doc_ops batch with ok:false and never reaches the applier', async () => {
     const host = new HostDoc(
