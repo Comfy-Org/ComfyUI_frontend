@@ -28,28 +28,28 @@ reviews:
     docstrings:
       mode: 'off'
     custom_checks:
-      - name: End-to-end regression coverage for fixes
+      - name: End-to-end test suggestion for user-facing changes
         mode: warning
         instructions: |
           Use only PR metadata already available in the review context:
             - the PR title
             - commit subjects in this PR
-            - The files changed in this PR relative to the PR base (equivalent to `base...head`)
-            - the PR description.
+            - the files changed in this PR relative to the PR base (equivalent to `base...head`)
+            - the diff content.
           Do not rely on shell commands.
           Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR.
-          If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
+          If the changed-file list is unavailable, mark the check inconclusive instead of guessing.
+
+          This check encourages a Playwright test; it never requires one.
 
           Fail if all of the following are true:
-          1. The PR title and/or any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
-          2. The PR changes files under `src/` or `packages/` related to the main frontend application but the PR does not change at least one file under `browser_tests/`.
-          3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
+          1. The diff fixes a bug or adds or changes a feature in the main frontend application under `src/` or `packages/`. A `fix`-style title or commit subject is only a hint: confirm it against the diff.
+          2. A reasonable person could describe, in one or two plain-language sentences, the feature or a user-visible way to trigger the bug.
+          3. The PR does not add or update a spec under `browser_tests/` that exercises that feature or trigger.
 
-          Do not fail if the changes are exclusively in `apps/website` (that package has its own check, "Website end-to-end regression coverage", because its Playwright specs live in `apps/website/e2e/` rather than `browser_tests/`), just documentation changes, or changes related to CI processes.
-          The goal is to make sure that fixes include End-to-End regression tests. Do not insist on tests when the PR is not fixing a bug.
+          Pass when the change is exclusively in `apps/website` (it has its own check, "Website end-to-end regression coverage"), documentation, tests, tooling, or CI. Also pass when the bug can only be reached through contrived fixtures or internal state a user cannot produce.
 
-          Pass otherwise.
-          When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.
+          When failing, say this is a suggestion, not a merge requirement. Describe the feature or trigger in one sentence, then outline the test as bullets with exactly one action or expectation per bullet. Suggest extending an existing spec under `browser_tests/` when the changed files point to one.
 
       - name: Website end-to-end regression coverage
         mode: error
@@ -66,7 +66,7 @@ reviews:
 
           This check applies ONLY when the PR changes website runtime files under `apps/website/src/` or `apps/website/public/`. If no such files changed, pass immediately — that includes PRs touching only `apps/website/e2e/`, tooling, config, or CI.
 
-          Changes confined to `packages/` are deliberately out of scope here, even though the website consumes those packages: the generic "End-to-end regression coverage for fixes" check already requires a `browser_tests/` regression test for them. Do not demand a second website-specific test for a shared-package change.
+          Changes confined to `packages/` are deliberately out of scope here, even though the website consumes those packages: the generic "End-to-end test suggestion for user-facing changes" check covers them. Do not demand a website-specific test for a shared-package change.
 
           Fail if all of the following are true:
           1. The diff itself changes observable website runtime behavior — fixes a user-visible bug, adds a page or route, or changes an interactive flow, form, or navigation. A `fix`/`bugfix`/`hotfix` style title or commit subject is only a hint: confirm it against the diff, and never treat the wording alone as qualifying.
