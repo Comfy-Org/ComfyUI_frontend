@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { ProviderModelRow } from '@/config/models-page-data'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { getLogoPath } from '@/lib/hub/model-logos'
 import { splitPriceLabel } from '@/lib/workshop/price-label'
+import ProviderMark from './ProviderMark.vue'
 
 const {
   provider,
@@ -16,7 +18,11 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const logo = getLogoPath(provider)
+interface Cell {
+  readonly key: string
+  readonly value?: string
+  readonly unit?: string
+}
 
 function durationLabel({
   min,
@@ -28,6 +34,22 @@ function durationLabel({
     ? t('workshop.model.providerTable.durationOne', { n: max })
     : t('workshop.model.providerTable.durationRange', { min, max })
 }
+
+function cellsOf(row: ProviderModelRow): Cell[] {
+  const price = row.price ? splitPriceLabel(row.price) : undefined
+  return [
+    { key: 'price', value: price?.amount, unit: price?.per },
+    { key: 'resolution', value: row.resolution },
+    {
+      key: 'duration',
+      value: row.duration ? durationLabel(row.duration) : undefined
+    }
+  ]
+}
+
+const tableRows = computed(() =>
+  rows.map((row) => ({ row, cells: cellsOf(row) }))
+)
 
 const COLUMNS = [
   'workshop.model.providerTable.model',
@@ -71,7 +93,7 @@ const COLUMNS = [
         </thead>
         <tbody>
           <tr
-            v-for="row in rows"
+            v-for="{ row, cells } in tableRows"
             :key="row.slug"
             class="relative border-t border-transparency-white-t8 transition-colors hover:bg-hub-surface"
             data-testid="provider-model-row"
@@ -81,40 +103,20 @@ const COLUMNS = [
                 :href="row.href"
                 class="flex items-center gap-3 text-content-bright outline-none after:absolute after:inset-0 focus-visible:after:ring-3 focus-visible:after:ring-primary-comfy-yellow/50"
               >
-                <span
-                  class="grid size-7 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-xs font-semibold"
-                  aria-hidden="true"
-                >
-                  <span
-                    v-if="logo"
-                    class="size-3.5 bg-current mask-contain mask-center mask-no-repeat"
-                    :style="{ maskImage: `url(${logo})` }"
-                  />
-                  <template v-else>{{
-                    provider.charAt(0).toUpperCase()
-                  }}</template>
-                </span>
+                <ProviderMark :provider />
                 {{ row.name }}
               </a>
             </th>
-            <td class="px-5 py-4 whitespace-nowrap text-primary-warm-white">
-              <template v-if="row.price">
-                {{ splitPriceLabel(row.price).amount
-                }}<span class="text-primary-warm-gray">{{
-                  splitPriceLabel(row.price).per
-                }}</span>
+            <td
+              v-for="cell in cells"
+              :key="cell.key"
+              class="px-5 py-4 whitespace-nowrap text-primary-warm-white"
+            >
+              <template v-if="cell.value">
+                {{ cell.value
+                }}<span class="text-primary-warm-gray">{{ cell.unit }}</span>
               </template>
               <span v-else class="text-primary-warm-gray">—</span>
-            </td>
-            <td class="px-5 py-4 whitespace-nowrap text-primary-warm-white">
-              <span v-if="!row.resolution" class="text-primary-warm-gray"
-                >—</span
-              >
-              <template v-else>{{ row.resolution }}</template>
-            </td>
-            <td class="px-5 py-4 whitespace-nowrap text-primary-warm-white">
-              <span v-if="!row.duration" class="text-primary-warm-gray">—</span>
-              <template v-else>{{ durationLabel(row.duration) }}</template>
             </td>
           </tr>
         </tbody>
