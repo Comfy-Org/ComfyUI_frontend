@@ -35,12 +35,14 @@ const completeBundle = () => ({
   fidelity: { complete: true, level: 'full', reasons: [] }
 })
 
-describe('parseAgentReplayBundle', () => {
+describe('parseAgentReplayBundle complete bundles', () => {
   it('accepts a complete v1 evidence bundle', () => {
     const input = completeBundle()
-    expect(parseAgentReplayBundle(input)).toMatchObject({ ok: true })
+    expect(parseAgentReplayBundle(input)).toEqual({ ok: true, bundle: input })
   })
+})
 
+describe('parseAgentReplayBundle basic validation', () => {
   it('returns a typed result for an unknown version', () => {
     expect(
       parseAgentReplayBundle({
@@ -76,7 +78,9 @@ describe('parseAgentReplayBundle', () => {
       reason: 'invalid_bundle'
     })
   })
+})
 
+describe('parseAgentReplayBundle workflow validation', () => {
   it('rejects entries that move backward in time', () => {
     const input = completeBundle()
     input.entries.push({
@@ -90,5 +94,48 @@ describe('parseAgentReplayBundle', () => {
       ok: false,
       reason: 'invalid_bundle'
     })
+  })
+
+  it('rejects duplicate workflow snapshots', () => {
+    const input = completeBundle()
+    input.workflows.push({ ...input.workflows[0] })
+    expect(parseAgentReplayBundle(input)).toMatchObject({
+      ok: false,
+      reason: 'invalid_bundle'
+    })
+  })
+
+  it('rejects document frames that do not advance within a workflow', () => {
+    const input = completeBundle()
+    input.entries.push({
+      kind: 'doc_frame',
+      at_ms: 30,
+      workflow_id: 'workflow-1',
+      seq: 1,
+      frame: { type: 'doc_update' }
+    })
+    expect(parseAgentReplayBundle(input)).toMatchObject({
+      ok: false,
+      reason: 'invalid_bundle'
+    })
+  })
+
+  it('allows independently increasing document frames for each workflow', () => {
+    const input = completeBundle()
+    input.workflows.push({
+      workflow_id: 'workflow-2',
+      workflow: { nodes: [], links: [] },
+      initial_doc_seq: 0
+    })
+    input.entries.push({
+      kind: 'doc_frame',
+      at_ms: 30,
+      workflow_id: 'workflow-2',
+      seq: 1,
+      frame: { type: 'doc_update' }
+    })
+    ;(input.final_graph_digests as Record<string, string>)['workflow-2'] =
+      'b'.repeat(64)
+    expect(parseAgentReplayBundle(input)).toEqual({ ok: true, bundle: input })
   })
 })

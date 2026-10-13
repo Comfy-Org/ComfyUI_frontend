@@ -55,66 +55,117 @@ const zReplayEntry = z.discriminatedUnion('kind', [
   })
 ])
 
-const zAgentReplayBundleV1 = z
-  .object({
-    schema_version: z.literal(AGENT_REPLAY_BUNDLE_VERSION),
-    replay_id: z.string().uuid(),
-    thread_id: z.string().uuid(),
-    target: z.enum(['cloud', 'local']),
-    environment: z.enum(['local', 'test', 'staging', 'production']),
-    captured_at: zIsoDate,
-    expires_at: zIsoDate,
-    builds: z.object({
-      cloud: z.string().min(1).optional(),
-      frontend: z.string().min(1),
-      comfyui: z.string().min(1).optional()
-    }),
-    workflows: z.array(zWorkflowSnapshot).min(1),
-    node_definitions: z.record(z.string(), zJsonObject),
-    entries: z.array(zReplayEntry).min(1),
-    final_graph_digests: z.record(
-      z.string(),
-      z.string().regex(/^[a-f0-9]{64}$/)
-    ),
-    fidelity: zAgentReplayFidelity
-  })
-  .superRefine((bundle, ctx) => {
-    if (Date.parse(bundle.expires_at) <= Date.parse(bundle.captured_at))
+const zAgentReplayBundleShape = z.object({
+  schema_version: z.literal(AGENT_REPLAY_BUNDLE_VERSION),
+  replay_id: z.string().uuid(),
+  thread_id: z.string().uuid(),
+  target: z.enum(['cloud', 'local']),
+  environment: z.enum(['local', 'test', 'staging', 'production']),
+  captured_at: zIsoDate,
+  expires_at: zIsoDate,
+  builds: z.object({
+    cloud: z.string().min(1).optional(),
+    frontend: z.string().min(1),
+    comfyui: z.string().min(1).optional()
+  }),
+  workflows: z.array(zWorkflowSnapshot).min(1),
+  node_definitions: z.record(z.string(), zJsonObject),
+  entries: z.array(zReplayEntry).min(1),
+  final_graph_digests: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)),
+  fidelity: zAgentReplayFidelity
+})
+
+type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleShape>
+
+function validateReplayBundle(
+  bundle: AgentReplayBundleV1,
+  ctx: z.RefinementCtx
+) {
+  validateReplayExpiry(bundle, ctx)
+  const workflows = validateWorkflows(bundle, ctx)
+  validateEntries(bundle, workflows, ctx)
+  validateDigests(bundle, workflows, ctx)
+}
+
+function validateReplayExpiry(
+  bundle: AgentReplayBundleV1,
+  ctx: z.RefinementCtx
+) {
+  if (Date.parse(bundle.expires_at) <= Date.parse(bundle.captured_at))
+    ctx.addIssue({
+      code: 'custom',
+      path: ['expires_at'],
+      message: 'expires_at must be after captured_at'
+    })
+}
+
+function validateWorkflows(bundle: AgentReplayBundleV1, ctx: z.RefinementCtx) {
+  const workflows = new Set<string>()
+  for (const [
+    index,
+    { workflow_id: workflowId }
+  ] of bundle.workflows.entries()) {
+    if (workflows.has(workflowId))
       ctx.addIssue({
         code: 'custom',
-        path: ['expires_at'],
-        message: 'expires_at must be after captured_at'
+        path: ['workflows', index, 'workflow_id'],
+        message: 'workflow snapshots must have unique workflow_id values'
       })
+    workflows.add(workflowId)
+  }
+  return workflows
+}
 
-    const workflows = new Set(
-      bundle.workflows.map(({ workflow_id }) => workflow_id)
-    )
-    for (const [index, entry] of bundle.entries.entries())
-      if (entry.kind === 'doc_frame' && !workflows.has(entry.workflow_id))
+function validateEntries(
+  bundle: AgentReplayBundleV1,
+  workflows: Set<string>,
+  ctx: z.RefinementCtx
+) {
+  const lastDocumentSequence = new Map<string, number>()
+  for (const [index, entry] of bundle.entries.entries()) {
+    if (entry.kind === 'doc_frame') {
+      if (!workflows.has(entry.workflow_id))
         ctx.addIssue({
           code: 'custom',
           path: ['entries', index, 'workflow_id'],
           message: 'doc frame references an unknown workflow'
         })
-
-    for (let index = 1; index < bundle.entries.length; index++)
-      if (bundle.entries[index].at_ms < bundle.entries[index - 1].at_ms)
+      const lastSequence = lastDocumentSequence.get(entry.workflow_id)
+      if (lastSequence !== undefined && entry.seq <= lastSequence)
         ctx.addIssue({
           code: 'custom',
-          path: ['entries', index, 'at_ms'],
-          message: 'replay entries must be ordered by at_ms'
+          path: ['entries', index, 'seq'],
+          message: 'document frame sequences must increase per workflow'
         })
+      lastDocumentSequence.set(entry.workflow_id, entry.seq)
+    }
 
-    for (const workflowId of Object.keys(bundle.final_graph_digests))
-      if (!workflows.has(workflowId))
-        ctx.addIssue({
-          code: 'custom',
-          path: ['final_graph_digests', workflowId],
-          message: 'digest references an unknown workflow'
-        })
-  })
+    if (index === 0) continue
+    if (bundle.entries[index].at_ms < bundle.entries[index - 1].at_ms)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['entries', index, 'at_ms'],
+        message: 'replay entries must be ordered by at_ms'
+      })
+  }
+}
 
-type AgentReplayBundleV1 = z.infer<typeof zAgentReplayBundleV1>
+function validateDigests(
+  bundle: AgentReplayBundleV1,
+  workflows: Set<string>,
+  ctx: z.RefinementCtx
+) {
+  for (const workflowId of Object.keys(bundle.final_graph_digests))
+    if (!workflows.has(workflowId))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['final_graph_digests', workflowId],
+        message: 'digest references an unknown workflow'
+      })
+}
+
+const zAgentReplayBundleV1 =
+  zAgentReplayBundleShape.superRefine(validateReplayBundle)
 
 export type AgentReplayBundleResult =
   | { ok: true; bundle: AgentReplayBundleV1 }
