@@ -94,7 +94,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     epoch: number
     ready: boolean
   } | null>(null)
-  const billingRefreshes = new Map<string, Promise<void>>()
+  const billingRefreshes = new Map<string, Promise<boolean>>()
   let creditTransitionRefreshEpoch = 0
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
@@ -404,17 +404,25 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function refreshBillingStatus(
-    identity: string,
-    fetchStatus: () => Promise<void>
-  ): Promise<void> {
-    const existing = billingRefreshes.get(identity)
+    key: string,
+    fetchStatus: () => Promise<boolean>
+  ): Promise<boolean> {
+    const existing = billingRefreshes.get(key)
     if (existing) return existing
-    const refresh = fetchStatus().finally(() => {
-      if (billingRefreshes.get(identity) === refresh) {
-        billingRefreshes.delete(identity)
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<boolean>((resolve) => {
+      timeoutId = setTimeout(() => resolve(false), 15_000)
+    })
+    const refresh = Promise.race([
+      Promise.resolve().then(fetchStatus),
+      timeout
+    ]).finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (billingRefreshes.get(key) === refresh) {
+        billingRefreshes.delete(key)
       }
     })
-    billingRefreshes.set(identity, refresh)
+    billingRefreshes.set(key, refresh)
     return refresh
   }
 
@@ -435,7 +443,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       computed<Readonly<CreditTransitionNoticeState> | null>(
         () => creditTransitionNotice.value
       ),
-    creditTransitionRefresh: computed(() => creditTransitionRefresh.value),
+    creditTransitionRefresh: computed<Readonly<{
+      identity: string
+      epoch: number
+      ready: boolean
+    }> | null>(() => creditTransitionRefresh.value),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,

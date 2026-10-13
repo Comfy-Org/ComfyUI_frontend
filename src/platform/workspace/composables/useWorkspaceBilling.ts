@@ -365,7 +365,19 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(): Promise<void> {
+  function adoptStatus(
+    status: BillingStatusResponse,
+    workspaceId: string | undefined
+  ): void {
+    seatCapacity.value = seatCapacityFrom(status)
+    statusData.value = status
+    if (workspaceId && status.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
+    }
+    adoption = resumePendingOperation(status)
+  }
+
+  async function fetchStatusFresh(): Promise<boolean> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -377,14 +389,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
-        return
+        return false
 
-      seatCapacity.value = seatCapacityFrom(status)
-      statusData.value = status
-      if (workspaceId && status.billing_rail) {
-        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
-      }
-      adoption = resumePendingOperation(status)
+      adoptStatus(status, workspaceId)
+      return true
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
@@ -394,6 +402,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     } finally {
       if (requestId === latestBillingReadIds.status) isLoading.value = false
     }
+  }
+
+  async function fetchStatus(): Promise<void> {
+    await fetchStatusFresh()
   }
 
   async function fetchBalance(): Promise<void> {
@@ -870,6 +882,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

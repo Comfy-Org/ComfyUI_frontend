@@ -105,6 +105,8 @@ export interface BalanceInfo {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: () => Promise<void>
+  /** True only when this call's status response was adopted for the active billing scope. */
+  fetchStatusFresh?: () => Promise<boolean>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,
