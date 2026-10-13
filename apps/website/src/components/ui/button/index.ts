@@ -20,7 +20,7 @@ export const buttonVariants = cva(
         secondary:
           'bg-primary-warm-white text-primary-comfy-ink uppercase hover:bg-white active:scale-[0.97] active:bg-primary-comfy-canvas',
         secondaryOutline:
-          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink active:scale-[0.97] active:border-primary-comfy-canvas active:bg-primary-comfy-canvas',
+          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink active:scale-[0.97] active:border-primary-comfy-canvas active:bg-primary-comfy-canvas active:text-primary-comfy-ink',
         ghost:
           'bg-transparency-white-t8 text-primary-warm-white uppercase hover:bg-transparency-white-t20 active:scale-[0.97]',
         link: "h-auto justify-start px-0 py-1 text-base text-primary-comfy-yellow uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
