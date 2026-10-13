@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { VirtualTryOn } from '@/composables/useVirtualTryOn'
 import type { Locale } from '@/i18n/translations'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
-import { TRY_ON_PERSON } from '@/lib/workshop/virtual-try-on/mock-run'
+import { TRY_ON_PEOPLE } from '@/lib/workshop/virtual-try-on/mock-run'
 import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import VirtualTryOnWorkspace from './VirtualTryOnWorkspace.vue'
@@ -29,14 +29,14 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!person"
     :title="vc('tryOn.empty.title', locale)"
-    :examples="[
-      {
-        id: 'balcony',
-        image: TRY_ON_PERSON.url,
-        label: vc('tryOn.empty.example', locale),
-        fit: 'contain'
-      }
-    ]"
+    :examples="
+      TRY_ON_PEOPLE.map(({ id, image }) => ({
+        id,
+        image: image.url,
+        label: vc(`tryOn.examples.${id}` as const, locale),
+        fit: 'contain' as const
+      }))
+    "
     data-testid="try-on-empty"
     @example="tryOn.useExample"
   />

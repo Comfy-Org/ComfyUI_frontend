@@ -225,4 +225,15 @@ describe('VirtualTryOnStudio', () => {
     await user.click(screen.getByRole('button', { name: 'Undo remove person' }))
     expect(within(panel()).getByText('motel-balcony.jpg')).toBeVisible()
   })
+
+  it('offers four people to start from', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(VirtualTryOnStudio)
+    const empty = within(screen.getByTestId('try-on-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'City sidewalk' }))
+
+    expect(within(panel()).getByText('city-sidewalk.jpg')).toBeVisible()
+  })
 })

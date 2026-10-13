@@ -35,7 +35,10 @@ const copy = {
     en: 'Start with an example',
     'zh-CN': '从示例开始'
   },
-  'tryOn.empty.example': { en: 'Motel balcony', 'zh-CN': '汽车旅馆阳台' },
+  'tryOn.examples.balcony': { en: 'Motel balcony', 'zh-CN': '汽车旅馆阳台' },
+  'tryOn.examples.sidewalk': { en: 'City sidewalk', 'zh-CN': '城市人行道' },
+  'tryOn.examples.studio': { en: 'Sunlit studio', 'zh-CN': '阳光工作室' },
+  'tryOn.examples.park': { en: 'Park walk', 'zh-CN': '公园散步' },
   'tryOn.person.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'

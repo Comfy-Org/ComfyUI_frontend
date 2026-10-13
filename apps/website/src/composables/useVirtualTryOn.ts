@@ -14,7 +14,7 @@ import {
   EXAMPLE_GARMENTS,
   UPLOAD_FABRIC
 } from '@/lib/workshop/virtual-try-on/garments'
-import { TRY_ON_PERSON, runTryOn } from '@/lib/workshop/virtual-try-on/mock-run'
+import { TRY_ON_PEOPLE, runTryOn } from '@/lib/workshop/virtual-try-on/mock-run'
 import { useSnapshotHistory } from './useSnapshotHistory'
 
 export interface TryOnImage {
@@ -115,8 +115,9 @@ export function useVirtualTryOn(locale: Locale = 'en') {
     person.value = next
   }
 
-  function useExample() {
-    showPerson(TRY_ON_PERSON)
+  function useExample(id: string = TRY_ON_PEOPLE[0].id) {
+    const example = TRY_ON_PEOPLE.find((option) => option.id === id)
+    if (example) showPerson(example.image)
   }
 
   function removePerson() {

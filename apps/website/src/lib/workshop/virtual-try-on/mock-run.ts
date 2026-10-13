@@ -36,6 +36,21 @@ export const TRY_ON_PERSON = {
   height: 720
 } as const
 
+const person = (id: string, name: string) => ({
+  url: `/images/apps/virtual-try-on/people/${id}.jpg`,
+  name,
+  width: 600,
+  height: 900
+})
+
+/** The people offered to start from; only the first has prepared try-ons. */
+export const TRY_ON_PEOPLE = [
+  { id: 'balcony', image: TRY_ON_PERSON },
+  { id: 'sidewalk', image: person('sidewalk', 'city-sidewalk.jpg') },
+  { id: 'studio', image: person('studio', 'sunlit-studio.jpg') },
+  { id: 'park', image: person('park', 'park-walk.jpg') }
+] as const
+
 /**
  * How far along a run is after `elapsedMs`. The mock reads it off the
  * clock: queued at first, then running towards 99% until it answers. The
