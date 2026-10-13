@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.57.0",
+  "version": "1.58.0",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "build:dist": "vite build --config vite.config.mts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",

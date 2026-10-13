@@ -27,7 +27,7 @@
         @click="handleGridClick(index)"
       >
         <div
-          v-if="!isHdrPlaceholder(imageUrls[index])"
+          v-if="!isHdrPlaceholder(index)"
           class="pointer-events-none relative size-full"
         >
           <img
@@ -37,11 +37,7 @@
             draggable="false"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
-            @error="onGridImageError"
-          />
-          <i
-            v-if="isHdrImageUrl(imageUrls[index])"
-            class="absolute top-1 left-1 icon-[lucide--sun] size-4 text-base-foreground drop-shadow-sm"
+            @error="((failedHdrPreviews[index] = true), onGridImageError())"
           />
         </div>
         <div
@@ -94,13 +90,13 @@
       </div>
       <!-- Loading State -->
       <div
-        v-if="showLoader && !imageError && !isHdrPlaceholder(currentImageUrl)"
+        v-if="showLoader && !imageError && !isHdrPlaceholder(currentIndex)"
         class="size-full"
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <button
-        v-if="!imageError && isHdrPlaceholder(currentImageUrl)"
+        v-if="!imageError && isHdrPlaceholder(currentIndex)"
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
@@ -116,9 +112,11 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !isHdrPlaceholder(currentImageUrl)"
+        v-if="!imageError && !isHdrPlaceholder(currentIndex)"
+        :key="currentImageUrl"
         data-testid="main-image"
         :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
@@ -188,7 +186,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentImageUrl)"
+      v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentIndex)"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -301,6 +299,7 @@ const { retryKey: gridRetryKey, onError: onGridImageError } = useLoadRetry(
 )
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const failedHdrPreviews = ref<boolean[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -313,8 +312,9 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 watch(retryKey, () => startDelayedLoader())
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
-const isHdrPlaceholder = (url: string | undefined) =>
-  isHdrImageUrl(url) && !getHdrPreviewUrl(url)
+const isHdrPlaceholder = (index: number) =>
+  isHdrImageUrl(imageUrls[index]) &&
+  (!getHdrPreviewUrl(imageUrls[index]) || !!failedHdrPreviews.value[index])
 
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const currentHdrPreviewUrl = computed(() =>
@@ -342,24 +342,24 @@ const gridCols = computed(() => {
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
-    // Only reset state if URLs actually changed (not just array reference)
+    const key = (url: string) =>
+      imageError.value ? url : (getHdrPreviewUrl(url) ?? url)
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => url !== oldUrls[i])
+      newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
     if (!urlsChanged) return
 
-    // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
 
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
+    failedHdrPreviews.value = []
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
@@ -391,6 +391,10 @@ function updateAspectRatio(event: Event, index: number) {
 function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
+  if (currentHdrPreviewUrl.value) {
+    failedHdrPreviews.value[currentIndex.value] = true
+    return
+  }
   imageError.value = true
   actualDimensions.value = null
 
@@ -454,7 +458,7 @@ async function openImageInGallery(index: number) {
 
 function handleGridClick(index: number) {
   const url = imageUrls[index]
-  if (isHdrPlaceholder(url)) {
+  if (isHdrPlaceholder(index)) {
     openHdrViewer(url)
     return
   }
