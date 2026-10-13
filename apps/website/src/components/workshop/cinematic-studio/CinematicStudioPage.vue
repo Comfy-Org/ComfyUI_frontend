@@ -2,6 +2,7 @@
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useMounted } from '@vueuse/core'
+import type { Component } from 'vue'
 import {
   computed,
   onBeforeUnmount,
@@ -55,8 +56,25 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot', 'paparazzi-me'] as const
-const EDITOR_APPS: readonly WorkshopAppId[] = ['paparazzi-me']
+/** A full-screen editor app: its page and its name in the review menu. */
+interface EditorApp {
+  readonly id: WorkshopAppId
+  readonly studio: Component
+  readonly label: (locale: Locale) => string
+}
+
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'paparazzi-me',
+    studio: PaparazziStudio,
+    label: (locale) => pc('paparazzi.title', locale)
+  }
+]
+const APPS: readonly WorkshopAppId[] = [
+  'studio',
+  'reshoot',
+  ...EDITOR_APPS.map(({ id }) => id)
+]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -92,15 +110,16 @@ watch(
     })
   }
 )
-const editorShown = computed(
+const editorApp = computed(() => EDITOR_APPS.find(({ id }) => id === app.value))
+const appEditorShown = computed(
   () =>
     mounted.value &&
     workshopEnabled.value &&
     studioEnabled.value &&
     layout.value !== 'hub' &&
-    EDITOR_APPS.includes(app.value)
+    editorApp.value !== undefined
 )
-watch(editorShown, (shown) =>
+watch(appEditorShown, (shown) =>
   document.documentElement.toggleAttribute('data-workshop-editor', shown)
 )
 onBeforeUnmount(() =>
@@ -122,10 +141,7 @@ const appOptions = computed(() =>
       id: 'reshoot',
       label: t('reshoot.title')
     },
-    {
-      id: 'paparazzi-me',
-      label: pc('paparazzi.title', locale)
-    }
+    ...EDITOR_APPS.map(({ id, label }) => ({ id, label: label(locale) }))
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -193,7 +209,7 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
-    <PaparazziStudio v-else-if="app === 'paparazzi-me'" :layout :locale />
+    <component :is="editorApp.studio" v-else-if="editorApp" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
@@ -205,7 +221,7 @@ function pickApp(id: string) {
       v-if="reviewing"
       :app
       :layout
-      :editor="editorShown"
+      :editor="appEditorShown"
       :apps="appOptions"
       :layouts="layoutOptions"
       :app-heading="t('cinematic.ux.app')"
