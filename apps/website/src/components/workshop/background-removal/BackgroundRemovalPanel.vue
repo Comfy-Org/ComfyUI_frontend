@@ -98,6 +98,22 @@ const model = computed({
 
     <BackgroundRemovalAdvanced :cutout :locale />
 
+    <CinematicMenu
+      v-if="setup.mode === 'replace'"
+      v-model="model"
+      :options="models"
+      :heading="brc('cutout.replace.model', locale)"
+      side="top"
+      tooltip
+      :trigger-class="FORMAT_TRIGGER_CLASS"
+    >
+      <Cpu class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+      <span class="min-w-0 flex-1 truncate text-left">
+        {{ modelName(setup.replace.model, locale) }}
+      </span>
+      <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+    </CinematicMenu>
+
     <div :class="cn('grid gap-2', setup.mode === 'replace' && 'grid-cols-2')">
       <CinematicMenu
         v-model="format"
@@ -116,26 +132,7 @@ const model = computed({
           aria-hidden="true"
         />
       </CinematicMenu>
-      <template v-if="setup.mode === 'replace'">
-        <CinematicMenu
-          v-model="model"
-          :options="models"
-          :heading="brc('cutout.replace.model', locale)"
-          side="top"
-          tooltip
-          :trigger-class="FORMAT_TRIGGER_CLASS"
-        >
-          <Cpu class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
-          <span class="min-w-0 flex-1 truncate text-left">
-            {{ modelName(setup.replace.model, locale) }}
-          </span>
-          <ChevronDown
-            class="size-3.5 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </CinematicMenu>
-        <BackgroundRemovalSeed :cutout :locale class="col-span-2" />
-      </template>
+      <BackgroundRemovalSeed v-if="setup.mode === 'replace'" :cutout :locale />
     </div>
   </fieldset>
 </template>
