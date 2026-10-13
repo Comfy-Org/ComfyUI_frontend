@@ -356,14 +356,11 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
-const primaryActionTooltip = computed(() =>
+const primaryActionLabel = computed(() =>
   running.value ? t('agent.stop') : t('agent.send')
 )
 const primaryActionVariant = computed(() =>
   running.value ? 'secondary' : 'inverted'
-)
-const primaryActionDisabled = computed(
-  () => !running.value && (workflowSelecting || !composer.canSend.value)
 )
 const sendBlockedReason = computed(() => {
   const invalid = composer.attachments.value.filter(
@@ -376,6 +373,18 @@ const sendBlockedReason = computed(() => {
     invalid.length
   )
 })
+const primaryActionTooltip = computed(
+  () => sendBlockedReason.value ?? primaryActionLabel.value
+)
+const primaryActionAriaDisabled = computed(() =>
+  sendBlockedReason.value ? true : undefined
+)
+const primaryActionDisabled = computed(
+  () =>
+    !running.value &&
+    !sendBlockedReason.value &&
+    (workflowSelecting || !composer.canSend.value)
+)
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
 )
@@ -645,21 +654,21 @@ defineExpose({
         <div class="flex items-center gap-1">
           <RunModePopover />
           <Button
-            :tooltip="sendBlockedReason ?? primaryActionTooltip"
+            :tooltip="primaryActionTooltip"
             type="button"
             :variant="primaryActionVariant"
             size="icon"
-            :aria-label="primaryActionTooltip"
-            :aria-disabled="!!sendBlockedReason || undefined"
+            :aria-label="primaryActionLabel"
+            :aria-disabled="primaryActionAriaDisabled"
             :aria-description="sendBlockedReason"
-            :disabled="primaryActionDisabled && !sendBlockedReason"
+            :disabled="primaryActionDisabled"
             class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-base-foreground"
             @click="onPrimaryAction"
           >
             <i-lucide:square v-if="running" class="size-4" />
             <i-lucide:arrow-up v-else class="size-4" />
             <template #tooltip>
-              {{ sendBlockedReason ?? primaryActionTooltip }}
+              {{ primaryActionTooltip }}
               <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>
