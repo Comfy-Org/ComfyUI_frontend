@@ -12183,6 +12183,20 @@ describe('AgentPanelRoot agent socket identity', () => {
     expect(subscribeAttempts()).toEqual(['wf-42'])
   })
 
+  it('looks the identity up once when the backend rejects the credential', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const identity = vi.fn(async () => json(401, { error: 'unauthorized' }))
+    mockMessagesEndpoint('wf-42')
+    respondToFetch(/\/agent\/identity$/, identity)
+    bindActiveTab('wf-42')
+    useAgentPanelStore().enabled = true
+
+    await renderAndSend('first message')
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(identity).toHaveBeenCalledOnce()
+  })
+
   it.for([
     {
       minter: 'canvas edit',

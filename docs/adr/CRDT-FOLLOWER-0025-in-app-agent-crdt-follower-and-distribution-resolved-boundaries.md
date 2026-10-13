@@ -181,7 +181,8 @@ one applier, and it is not in the frontend.
 
 **Distribution boundaries.** _Superseded 2026-10-12 except for its first and
 last rules: one follower with no distribution checks in its apply path or
-rendering, and auth never reduced to `isCloud`._ Keep one branch and one follower implementation,
+rendering, and Local and Desktop stay authenticated surfaces (the amendment's
+one `isCloud` credential branch replaces delegating to `authStore.getAuthHeader()`)._ Keep one branch and one follower implementation,
 with surface differences isolated behind a small distribution-resolved boundary
 (rejecting both separate per-surface branches and distribution checks scattered
 through the follower core). Introduce a narrow agent connection/configuration
@@ -381,17 +382,21 @@ described above is not needed:
 - **Identity from the backend.** Ops carry `human:<user_id>:<tab>` with the id
   from `GET /api/agent/identity`. The Firebase uid is not the backend user id
   for identity-mapped accounts.
-- **Credential, one `isCloud` branch.** In the cloud, agent requests
-  authenticate exactly as `fetchApi` and `/ws` do: the socket takes
-  `api.addSocketAuth` params (the session cookie with `workspace_id`, or the
-  cloud token). Ingest prefers a header credential over the session cookie, so
-  adding the user's own header there would move a request out of its
-  workspace. Off-cloud, `fetchApi` attaches nothing, so REST requests carry the
-  user's auth header (`getUserAuthHeader`), the hand-off `queuePrompt` makes for
-  partner nodes, and the socket carries the same credential as `?token=`.
-- **Development exception.** A signed-out send skips the sign-in dialog only
-  when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`, which Vite exposes as
-  `VITE_DEV_AGENT_PROXY_CREDENTIAL`.
+- **Credential, one `isCloud` branch.** In the cloud, agent REST requests
+  authenticate through `fetchApi` alone, and the socket takes the auth params
+  `/ws` uses (`api.socketAuthParams`: the session cookie with `workspace_id`,
+  or the cloud token; no socket when no one is signed in). Ingest prefers a
+  header credential over the session cookie, so adding the user's own header
+  there would move a request out of its workspace. Off-cloud, `fetchApi`
+  attaches nothing, so REST requests carry the user's personal auth header
+  (`getUserAuthHeader`) and the socket carries the same credential as
+  `?token=`; a running turn re-sends it. Whether off-cloud agent calls should
+  bill the active team workspace, as `queuePrompt` does with
+  `getWorkspaceAuthToken`, is still open.
+- **Development exception.** In development mode, a signed-out send skips the
+  sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
+  tells the browser so with the build-time flag
+  `VITE_DEV_AGENT_PROXY_CREDENTIAL`; the token itself stays in the proxy.
 
 Rejected: the distribution-resolved connection module above, an
 `AGENT_BASE_URL` resolving same-origin ingest in the cloud and the agent
