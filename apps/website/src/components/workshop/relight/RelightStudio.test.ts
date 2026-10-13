@@ -6,7 +6,9 @@ import RelightStudio from './RelightStudio.vue'
 
 vi.mock(import('@/lib/workshop/relight/render-image'), () => ({
   renderRelitImage: vi.fn(() => Promise.resolve(undefined)),
-  renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined)),
+  renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined))
+}))
+vi.mock(import('@/lib/workshop/load-image'), () => ({
   loadImage: vi.fn(() => Promise.resolve(undefined))
 }))
 
