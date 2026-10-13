@@ -31,6 +31,8 @@ Each production deploy records a `website-production` GitHub deployment for its 
 immutable Vercel URL. To roll back, use Vercel's Instant Rollback on the last good production
 deployment (dashboard or `vercel rollback <url>`). Vercel then stops assigning new production
 deployments, so once the fix has merged, use Undo Rollback (or `vercel promote <url>`) on it.
+Operators without Vercel access run the `Release: Website Rollback` workflow from `main` with the
+`rollback` or `restore` operation instead.
 
 ## Evidence to record
 

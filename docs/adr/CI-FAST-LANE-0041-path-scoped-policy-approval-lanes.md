@@ -33,7 +33,7 @@ Introduce path-scoped delivery lanes, starting with the website:
   current head, and stays eligible only while the label remains applied.
 - CodeRabbit skips `apps/website/**` for the trial; human change requests still block the lane.
 - Production deploys record a GitHub deployment for their commit; rollback uses Vercel's Instant
-  Rollback.
+  Rollback, from the dashboard or the manual `Release: Website Rollback` workflow.
 
 ### Alternatives not chosen
 
@@ -51,9 +51,9 @@ Introduce path-scoped delivery lanes, starting with the website:
   withdraw the same pull request at once. Runs are grouped per pull request instead.
 - **Website-scoped lint and typecheck jobs.** The full typecheck (about 6 minutes) finishes before
   the website unit and browser suites, so scoping it does not shorten the time to merge.
-- **A deployment marker, staged promotion, and a rollback workflow.** The GitHub deployment record
-  and Vercel's deployment history already tie production to a commit, and Vercel's Instant Rollback
-  restores a known deployment.
+- **A deployment marker and staged promotion.** The GitHub deployment record and Vercel's deployment
+  history already tie production to a commit, and Vercel's Instant Rollback restores a known
+  deployment.
 
 ## Consequences
 
