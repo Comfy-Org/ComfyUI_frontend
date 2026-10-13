@@ -297,27 +297,31 @@ function upscales(model: WorkshopModel): boolean {
   )
 }
 
+const MODALITY_USE_CASES: Readonly<
+  Record<
+    Modality,
+    {
+      readonly byInput: Partial<Record<TaskInput, UseCase>>
+      readonly fallback: UseCase
+    }
+  >
+> = {
+  image: { byInput: { image: 'edit-images' }, fallback: 'generate-images' },
+  video: {
+    byInput: { image: 'animate-images', video: 'edit-videos' },
+    fallback: 'generate-videos'
+  },
+  '3d': { byInput: {}, fallback: '3d' },
+  audio: { byInput: {}, fallback: 'audio' },
+  text: { byInput: {}, fallback: 'text' }
+}
+
 function declaredUseCases(model: WorkshopModel): readonly UseCase[] {
   if (model.useCases?.length) return model.useCases
+  if (!model.modality) return []
+  const rule = MODALITY_USE_CASES[model.modality]
   const input = model.task ? splitTask(model.task)?.input : undefined
-  switch (model.modality) {
-    case 'image':
-      return [input === 'image' ? 'edit-images' : 'generate-images']
-    case 'video':
-      return [
-        input === 'image'
-          ? 'animate-images'
-          : input === 'video'
-            ? 'edit-videos'
-            : 'generate-videos'
-      ]
-    case '3d':
-    case 'audio':
-    case 'text':
-      return [model.modality]
-    default:
-      return []
-  }
+  return [(input && rule.byInput[input]) ?? rule.fallback]
 }
 
 // Example tags that say what a model can do beyond its use case. Tags that
