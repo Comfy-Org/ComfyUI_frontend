@@ -73,6 +73,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     :inert="agentNodeSelectionStore.isActive"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -224,6 +225,12 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -488,6 +495,7 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 

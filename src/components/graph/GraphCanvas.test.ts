@@ -1,7 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,6 +19,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -219,6 +229,34 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+})
+
+describe('GraphCanvas canvas parent', () => {
+  it('keeps title-editor touches within the canvas parent used by extensions', async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial({ devices: [] })
+    )
+    await mountGraphCanvas({
+      TitleEditor: { template: '<input aria-label="Node title" />' }
+    })
+    // oxlint-disable-next-line testing-library/no-node-access -- Extensions use this canvas ID.
+    const canvas = document.getElementById('graph-canvas')
+    assert.exists(canvas)
+    // oxlint-disable-next-line testing-library/no-node-access -- Canvas-parent listeners are the compatibility contract under test.
+    const parent = canvas.parentElement
+    assert.exists(parent)
+    const receivedTouch = vi.fn()
+    parent.addEventListener('touchstart', receivedTouch, true)
+    onTestFinished(() =>
+      parent.removeEventListener('touchstart', receivedTouch, true)
+    )
+
+    await fireEvent.touchStart(
+      screen.getByRole('textbox', { name: 'Node title' })
+    )
+
+    expect(receivedTouch).toHaveBeenCalledOnce()
   })
 })
 
