@@ -263,13 +263,11 @@ describe('ModelsCatalogue', () => {
       })
     })
 
-    it('shows Popular right now across every format with no task chips', async () => {
+    it('shows Popular across every format with no task chips', async () => {
       renderExplore()
 
       const popular = within(await screen.findByTestId('explore-results'))
-      expect(
-        popular.getByRole('heading', { name: 'Popular right now' })
-      ).toBeVisible()
+      expect(popular.getByRole('heading', { name: 'Popular' })).toBeVisible()
       expect(popular.queryByRole('group')).toBeNull()
       expect(popular.queryAllByRole('button')).toEqual([])
       expect(resultNames()).toHaveLength(4)
@@ -293,7 +291,7 @@ describe('ModelsCatalogue', () => {
       {
         query: '',
         kinds: ['app', 'workflow', 'workflow', 'model', 'model'],
-        heading: 'Popular right now'
+        heading: 'Popular'
       }
     ])(
       'tags every result with its format: "$query"',
@@ -371,9 +369,7 @@ describe('ModelsCatalogue', () => {
       expect(screen.getByTestId('explore-search')).toHaveValue('')
       expect(screen.getByTestId('explore-doors')).toBeVisible()
       expect(screen.getByTestId('explore-community')).toBeVisible()
-      expect(
-        screen.getByRole('heading', { name: 'Popular right now' })
-      ).toBeVisible()
+      expect(screen.getByRole('heading', { name: 'Popular' })).toBeVisible()
     })
 
     it.for([

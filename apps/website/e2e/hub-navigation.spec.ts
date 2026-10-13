@@ -294,13 +294,11 @@ for (const width of [1440, 1360, 1280, 1024, 390]) {
   })
 }
 
-test('Popular right now shows every format with no task chips', async ({
-  page
-}) => {
+test('Popular shows every format with no task chips', async ({ page }) => {
   await page.goto('/hub/')
   const popular = page.getByTestId('explore-results')
   await expect(
-    popular.getByRole('heading', { name: 'Popular right now' })
+    popular.getByRole('heading', { name: 'Popular', exact: true })
   ).toBeVisible()
   await expect(popular.getByTestId('explore-kind')).not.toHaveCount(0)
   await expect(popular.getByRole('group')).toHaveCount(0)

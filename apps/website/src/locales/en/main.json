@@ -709,7 +709,7 @@
       "subtitle": "Start with an app, go deeper with a workflow, or build with a model.",
       "searchLabel": "Search the Hub",
       "searchPlaceholder": "Try “relight”, “upscale” or a model name",
-      "popularTitle": "Popular right now",
+      "popularTitle": "Popular",
       "resultsFor": "Results for “{query}”",
       "empty": "Nothing matches yet.",
       "clear": "Clear search",
