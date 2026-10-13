@@ -9,6 +9,7 @@ import type { ModelLaunchListItem } from './types'
 import PlayPauseButton from '@/components/common/PlayPauseButton.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { translationsFor } from '@/i18n/translations'
+import { formatClock } from '@/utils/formatClock'
 
 const {
   locale = 'en',
@@ -40,13 +41,9 @@ useEventListener(audioEl, 'play', () => {
 
 const title = computed(() => item.title[locale] || item.title.en)
 
-const durationLabel = computed(() => {
-  if (!clipSeconds.value) return ''
-  const secs = Math.floor(clipSeconds.value)
-  const m = String(Math.floor(secs / 60)).padStart(2, '0')
-  const s = String(secs % 60).padStart(2, '0')
-  return `${m}:${s}`
-})
+const durationLabel = computed(() =>
+  clipSeconds.value ? formatClock(clipSeconds.value) : ''
+)
 
 const metaLabels = computed(() =>
   (item.meta ?? []).map((label) => label[locale] || label.en)
