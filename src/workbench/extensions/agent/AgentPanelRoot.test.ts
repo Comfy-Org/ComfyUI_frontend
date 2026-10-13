@@ -288,6 +288,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
@@ -327,7 +328,7 @@ beforeEach(() => {
   })
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
   vi.mocked(resolveAgentIdentity).mockReturnValue({
-    userId: ref('account-a'),
+    state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),
     stop: () => {}
   })
@@ -10141,6 +10142,36 @@ describe('AgentPanelRoot workflow binding', () => {
       return bodies
     }
 
+    function subscribedWorkflowIds(): unknown[] {
+      return socketSend.mock.calls
+        .map(
+          ([frame]) =>
+            JSON.parse(String(frame)) as {
+              type: string
+              data: { workflow_id?: unknown }
+            }
+        )
+        .filter(({ type }) => type === 'doc_subscribe')
+        .map(({ data }) => data.workflow_id)
+    }
+
+    it('seeds the draft again once the follower has given up on a refused document', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: false,
+        code: 'schema_version_mismatch'
+      })
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
+    })
+
     it('keeps withholding the draft across an ordinary reconnect', async () => {
       const bodies = await bindAndSettle()
       ws.emit('doc_subscribed', {
@@ -10160,7 +10191,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     it('withholds the draft for a bound document while the agent identity is still pending', async () => {
       vi.mocked(resolveAgentIdentity).mockReturnValue({
-        userId: ref<string | null>(null),
+        state: ref<AgentIdentityState>({ status: 'pending' }),
         reset: vi.fn(),
         stop: () => {}
       })
@@ -10170,6 +10201,59 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('withholds the draft while the agent identity lookup is unavailable and still retrying', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state: ref<AgentIdentityState>({ status: 'unavailable' }),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('starts the follower without seeding a draft once an unavailable identity lookup resolves', async () => {
+      const state = ref<AgentIdentityState>({ status: 'unavailable' })
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state,
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+      await sendFromComposer('second message')
+      ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+      expect(subscribedWorkflowIds()).toEqual([])
+
+      state.value = { status: 'resolved', userId: 'account-a' }
+
+      await vi.waitFor(() => expect(subscribedWorkflowIds()).toEqual(['wf-42']))
+      await sendFromComposer('third message')
+      expect(bodies.slice(1)).toEqual([
+        expect.not.objectContaining({ draft: expect.anything() }),
+        expect.not.objectContaining({ draft: expect.anything() })
+      ])
+    })
+
+    it('seeds the draft again once the agent identity lookup is rejected', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state: ref<AgentIdentityState>({ status: 'rejected' }),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
     })
   })
 
@@ -12079,7 +12163,10 @@ describe('AgentPanelRoot agent socket', () => {
     async ({ before, after }) => {
       const reset = vi.fn()
       vi.mocked(resolveAgentIdentity).mockReturnValue({
-        userId: ref('account-a'),
+        state: ref<AgentIdentityState>({
+          status: 'resolved',
+          userId: 'account-a'
+        }),
         reset,
         stop: () => {}
       })

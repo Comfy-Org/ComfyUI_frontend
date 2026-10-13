@@ -46,13 +46,19 @@ describe('resolveAgentIdentity', () => {
       .mockResolvedValueOnce({ userId: 'account-b' })
     const identity = harness(getIdentity)
     await flush()
-    expect(identity.userId.value).toBe('account-a')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'account-a'
+    })
 
     identity.reset()
-    expect(identity.userId.value).toBeNull()
+    expect(identity.state.value).toEqual({ status: 'pending' })
     await flush()
 
-    expect(identity.userId.value).toBe('account-b')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'account-b'
+    })
   })
 
   it('discards a lookup that was still in flight for the previous account', async () => {
@@ -73,7 +79,10 @@ describe('resolveAgentIdentity', () => {
     finishStale({ userId: 'account-a' })
     await flush()
 
-    expect(identity.userId.value).toBe('account-b')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'account-b'
+    })
   })
 
   it('reports a failed lookup and retries it on its own while the socket stays open', async () => {
@@ -87,12 +96,15 @@ describe('resolveAgentIdentity', () => {
     const identity = harness(getIdentity)
     await flush()
     expect(identity.onFailure).toHaveBeenCalledWith(failure)
-    expect(identity.userId.value).toBeNull()
+    expect(identity.state.value).toEqual({ status: 'pending' })
 
     await vi.advanceTimersByTimeAsync(1_000 + 2_000)
 
     expect(getIdentity).toHaveBeenCalledTimes(3)
-    expect(identity.userId.value).toBe('local-user')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'local-user'
+    })
   })
 
   it('retries at once when the socket connects again after a failure', async () => {
@@ -107,7 +119,10 @@ describe('resolveAgentIdentity', () => {
     await flush()
 
     expect(getIdentity).toHaveBeenCalledTimes(2)
-    expect(identity.userId.value).toBe('local-user')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'local-user'
+    })
   })
 
   it('doubles the retry delay per failure up to the cap, so a hard failure cannot spin', async () => {
@@ -133,7 +148,10 @@ describe('resolveAgentIdentity', () => {
     await flush()
 
     expect(getIdentity).toHaveBeenCalledOnce()
-    expect(identity.userId.value).toBe('local-user')
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'local-user'
+    })
   })
 
   it('restarts the backoff on reset', async () => {
@@ -156,6 +174,53 @@ describe('resolveAgentIdentity', () => {
     await vi.advanceTimersByTimeAsync(30_000)
 
     expect(getIdentity).toHaveBeenCalledOnce()
+  })
+
+  it('reports the lookup unavailable once its backoff reaches the cap, and keeps retrying', async () => {
+    const failure = new Error('identity route down')
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockRejectedValueOnce(failure)
+      .mockRejectedValueOnce(failure)
+      .mockRejectedValueOnce(failure)
+      .mockRejectedValueOnce(failure)
+      .mockRejectedValueOnce(failure)
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValue({ userId: 'local-user' })
+    const identity = harness(getIdentity)
+
+    await vi.advanceTimersByTimeAsync(1_000 + 2_000 + 4_000 + 8_000)
+    expect(getIdentity).toHaveBeenCalledTimes(5)
+    expect(identity.state.value).toEqual({ status: 'pending' })
+
+    await vi.advanceTimersByTimeAsync(16_000)
+    expect(getIdentity).toHaveBeenCalledTimes(6)
+    expect(identity.state.value).toEqual({ status: 'unavailable' })
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'local-user'
+    })
+  })
+
+  it('settles a failure that is not retryable as rejected until reset', async () => {
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockRejectedValueOnce(new Error('unauthorized'))
+      .mockResolvedValue({ userId: 'account-b' })
+    const identity = harness(getIdentity, () => false)
+    await flush()
+    expect(identity.state.value).toEqual({ status: 'rejected' })
+
+    identity.reset()
+    expect(identity.state.value).toEqual({ status: 'pending' })
+    await flush()
+
+    expect(identity.state.value).toEqual({
+      status: 'resolved',
+      userId: 'account-b'
+    })
   })
 
   it('reports nothing for a lookup that fails after stop()', async () => {

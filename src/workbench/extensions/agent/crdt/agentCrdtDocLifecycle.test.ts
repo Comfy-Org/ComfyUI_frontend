@@ -414,6 +414,7 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(resubscribe).toHaveBeenCalledTimes(6)
+    expect(lifecycle.refusalIsFinal()).toBe(true)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(devEvents().map(({ kind }) => kind)).toEqual([
@@ -660,5 +661,44 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
     expect(onGaveUp).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('AgentCrdtDocLifecycle refusalIsFinal', () => {
+  it('is not final while a retry is scheduled', () => {
+    const { lifecycle } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSubscribeRefused()
+
+    expect(lifecycle.refusalIsFinal()).toBe(false)
+  })
+
+  it('is final after a permanent refusal', () => {
+    const { lifecycle } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(lifecycle.refusalIsFinal()).toBe(true)
+  })
+
+  it('is final when nothing is bound to retry', () => {
+    const { lifecycle, retarget } = wire()
+    retarget(null)
+
+    lifecycle.onSubscribeRefused()
+
+    expect(lifecycle.refusalIsFinal()).toBe(true)
+  })
+
+  it('is not final for a stale permanent refusal behind a confirm', () => {
+    const { lifecycle } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeConfirmed()
+
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(lifecycle.refusalIsFinal()).toBe(false)
   })
 })
