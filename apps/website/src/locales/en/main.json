@@ -5455,7 +5455,8 @@
     "seed": {
       "label": "Seed",
       "random": "Random",
-      "help": "Leave empty for a new seed every take; enter a number to fix it."
+      "help": "Leave empty for a new seed every take; enter a number to fix it.",
+      "shuffle": "New seed"
     },
     "prompt": {
       "dialogue": "The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.",

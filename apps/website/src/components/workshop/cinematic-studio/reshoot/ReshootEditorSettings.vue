@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
-import { Clock } from '@lucide/vue'
+import { Clock, Dices } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
+import EditorIconButton from '@/components/workshop/app-editor/EditorIconButton.vue'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import type { DepthState } from '@/composables/useReshoot'
 import type {
@@ -67,6 +68,10 @@ function onSeed(event: Event) {
   seed.value = Number.isFinite(value)
     ? Math.max(0, Math.floor(value))
     : undefined
+}
+
+function shuffleSeed() {
+  seed.value = Math.floor(Math.random() * 1_000_000_000)
 }
 
 const rejected = ref<string>()
@@ -151,7 +156,7 @@ async function choose(file: File) {
     </section>
     <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale>
       <div
-        class="col-span-2 flex h-10 items-center rounded-xl border border-transparency-white-t8 px-3 hover:border-transparency-white-t20"
+        class="col-span-2 flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3 hover:border-transparency-white-t20"
       >
         <label for="reshoot-seed" class="sr-only">
           {{ t('reshoot.seed.label') }}
@@ -166,6 +171,11 @@ async function choose(file: File) {
           :title="t('reshoot.seed.help')"
           class="h-8 min-w-0 flex-1 bg-transparent text-sm text-primary-warm-white tabular-nums outline-none placeholder:text-primary-warm-gray"
           @change="onSeed"
+        />
+        <EditorIconButton
+          :icon="Dices"
+          :label="t('reshoot.seed.shuffle')"
+          @click="shuffleSeed"
         />
       </div>
     </ReshootFormat>

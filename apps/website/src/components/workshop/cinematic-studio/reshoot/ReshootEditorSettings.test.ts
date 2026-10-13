@@ -87,6 +87,17 @@ describe('ReshootEditorSettings', () => {
     expect(emitted('update:seed')).toEqual([[42]])
   })
 
+  it('rolls a new seed with the dice', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    const { emitted } = render(ReshootEditorSettings, { props })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: t('reshoot.seed.shuffle') })
+    )
+
+    expect(emitted('update:seed')).toEqual([[500000000]])
+  })
+
   it('picks the size from the format bar', async () => {
     const { emitted } = render(ReshootEditorSettings, { props })
 
