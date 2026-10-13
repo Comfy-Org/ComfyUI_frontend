@@ -13,7 +13,7 @@ export const fishAudioPage: ModelLaunchPage = {
   breadcrumbLabelKey: 'fishAudio.breadcrumb.model',
   breadcrumbUpdatedKey: 'fishAudio.breadcrumb.updated',
   hero: {
-    videoSrc: 'https://media.comfy.org/website/fish-audio/fish-audio-hero.mp4',
+    videoSrc: 'https://media.comfy.org/website/fish-audio/fish-audio-hero2.mp4',
     posterSrc: HERO_POSTER_SRC,
     mobileFallbackImageSrc: HERO_POSTER_SRC,
     titleKey: 'fishAudio.hero.titleModel',
