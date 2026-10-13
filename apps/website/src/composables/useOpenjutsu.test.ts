@@ -67,8 +67,7 @@ function start() {
 /** A page with everything a run needs, and its price read. */
 async function ready() {
   const swap = start()
-  await swap.takeVideo(clip)
-  swap.editTrim()
+  swap.takeVideo(clip)
   swap.confirmTrim(trimmed)
   swap.takeCharacter(hero)
   swap.target.value = 'the man'
@@ -91,7 +90,11 @@ describe('useOpenjutsu', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(swap.missing.value).toBe('video')
 
-    await swap.takeVideo(clip)
+    swap.takeVideo(clip)
+    expect(swap.missing.value, 'not in use until its part is chosen').toBe(
+      'video'
+    )
+    swap.confirmTrim(trimmed)
     expect(swap.video.value).toBe(clip)
     expect(swap.missing.value).toBe('character')
 
@@ -104,16 +107,33 @@ describe('useOpenjutsu', () => {
     expect(swap.canGenerate.value).toBe(true)
   })
 
+  it.for([{ seconds: 8 }, { seconds: 20 }])(
+    "opens the trim on a visitor's own $seconds s video before using it",
+    ({ seconds }) => {
+      vi.mocked(readVideoFacts).mockResolvedValue(facts(seconds))
+      const swap = start()
+
+      swap.takeVideo(clip)
+
+      expect(swap.trimOpen.value).toBe(true)
+      expect(swap.trimming.value).toBe(clip)
+      expect(swap.video.value).toBeUndefined()
+    }
+  )
+
   it.for([
     { seconds: 8, range: { start: 0, seconds: 8 }, trimmed: false },
     { seconds: 20, range: { start: 0, seconds: 15 }, trimmed: true }
   ])(
-    'uses a $seconds s video at once, from its start up to 15 s',
+    "uses an example's $seconds s clip at once, from its start up to 15 s",
     async ({ seconds, range, trimmed }) => {
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(new Blob(['x']))
+      )
       vi.mocked(readVideoFacts).mockResolvedValue(facts(seconds))
       const swap = start()
 
-      await swap.takeVideo(clip)
+      await swap.takeExample(SWAP_EXAMPLES[0])
 
       expect(swap.trimOpen.value).toBe(false)
       expect(swap.range.value).toEqual(range)
@@ -140,12 +160,11 @@ describe('useOpenjutsu', () => {
   )
 
   it('loads an example with its clip, character and words, on the default settings', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async (url: string) =>
-          new Response(new Blob([url], { type: 'application/octet-stream' }))
-      )
+    vi.mocked(fetch).mockImplementation(
+      async (url) =>
+        new Response(
+          new Blob([String(url)], { type: 'application/octet-stream' })
+        )
     )
     const swap = start()
     swap.size.value = '480p'
@@ -161,7 +180,6 @@ describe('useOpenjutsu', () => {
     expect(swap.size.value).toBe('768p')
     expect(swap.seed.value).toBeUndefined()
     expect(swap.loadingExample.value).toBeUndefined()
-    vi.unstubAllGlobals()
   })
 
   it('takes the video out and puts it back as it was', async () => {

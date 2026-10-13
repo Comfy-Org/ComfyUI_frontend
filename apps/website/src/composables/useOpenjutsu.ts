@@ -124,11 +124,19 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   let videoRequest = 0
   /**
-   * A new video is used from its start, cut to the longest part a run takes.
-   * One that cannot be read or is too short opens the trim dialog, which says
-   * why.
+   * A visitor's own video opens the trim dialog first, whatever its length:
+   * they choose the part, and with it what the run costs.
    */
-  async function takeVideo(file: File) {
+  function takeVideo(file: File) {
+    videoRequest += 1
+    openTrim(file)
+  }
+  /**
+   * An example's clip is used from its start, cut to the longest part a run
+   * takes. One that cannot be read or is too short opens the trim dialog,
+   * which says why.
+   */
+  async function useWholeClip(file: File) {
     const request = ++videoRequest
     const url = URL.createObjectURL(file)
     const facts = await readVideoFacts(url, new AbortController().signal)
@@ -189,7 +197,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       target.value = example.target
       size.value = SWAP_SIZES[0]
       seed.value = undefined
-      await takeVideo(clip)
+      await useWholeClip(clip)
     } finally {
       loadingExample.value = undefined
     }
