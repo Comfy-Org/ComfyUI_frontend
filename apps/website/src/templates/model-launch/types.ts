@@ -123,13 +123,14 @@ export interface ModelLaunchListItem {
   id: string
   title: LocalizedText
   description: LocalizedText
-  meta: readonly LocalizedText[]
+  meta?: readonly LocalizedText[]
   href: string
   audioSources?: readonly { src: string; type: string }[]
 }
 
 export interface ModelLaunchList {
   headingKey: TranslationKey
+  ctaKey?: TranslationKey
   items: readonly ModelLaunchListItem[]
 }
 

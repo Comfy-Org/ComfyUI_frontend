@@ -10,9 +10,14 @@ import PlayPauseButton from '@/components/common/PlayPauseButton.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { translationsFor } from '@/i18n/translations'
 
-const { locale = 'en', item } = defineProps<{
+const {
+  locale = 'en',
+  item,
+  ctaLabel
+} = defineProps<{
   item: ModelLaunchListItem
   locale?: Locale
+  ctaLabel?: string
 }>()
 const { t } = translationsFor(locale)
 
@@ -43,10 +48,9 @@ const durationLabel = computed(() => {
   return `${m}:${s}`
 })
 
-const trailingLabels = computed(() => [
-  ...item.meta.map((label) => label[locale] || label.en),
-  ...(durationLabel.value ? [durationLabel.value] : [])
-])
+const metaLabels = computed(() =>
+  (item.meta ?? []).map((label) => label[locale] || label.en)
+)
 </script>
 
 <template>
@@ -100,21 +104,43 @@ const trailingLabels = computed(() => [
         {{ item.description[locale] || item.description.en }}
       </p>
       <p
-        class="mt-3 flex flex-wrap gap-x-6 text-sm text-primary-warm-gray tabular-nums md:hidden"
+        class="mt-3 flex flex-wrap items-center gap-x-6 text-sm text-primary-warm-gray tabular-nums md:hidden"
       >
-        <span v-for="label in trailingLabels" :key="label">{{ label }}</span>
+        <span v-for="label in metaLabels" :key="label">{{ label }}</span>
+        <a
+          v-if="ctaLabel"
+          :href="item.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-bold tracking-wider text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-80"
+        >
+          {{ ctaLabel }}
+        </a>
+        <span v-if="durationLabel">{{ durationLabel }}</span>
       </p>
     </div>
 
     <div
-      class="hidden shrink-0 items-start gap-12 pt-1.5 text-base text-primary-warm-gray tabular-nums md:flex lg:gap-20"
+      class="hidden shrink-0 items-center gap-12 pt-1 text-base text-primary-warm-gray tabular-nums md:flex lg:gap-16"
     >
       <span
-        v-for="label in trailingLabels"
+        v-for="label in metaLabels"
         :key="label"
         class="min-w-16 text-right"
       >
         {{ label }}
+      </span>
+      <a
+        v-if="ctaLabel"
+        :href="item.href"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-sm font-bold tracking-wider text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-80"
+      >
+        {{ ctaLabel }}
+      </a>
+      <span v-if="durationLabel" class="min-w-12 text-right">
+        {{ durationLabel }}
       </span>
     </div>
 

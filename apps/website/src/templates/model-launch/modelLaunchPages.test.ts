@@ -129,6 +129,7 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     ...showcaseKeys(page.showcases ?? []),
     page.gallery?.headingKey,
     page.list?.headingKey,
+    page.list?.ctaKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
     page.comparison?.headingKey,
@@ -185,7 +186,7 @@ function expectListItemsLocalized(items: readonly ModelLaunchListItem[]) {
   for (const item of items) {
     expectLocalized(item.title, item.id, 'title')
     expectLocalized(item.description, item.id, 'description')
-    for (const [index, label] of item.meta.entries()) {
+    for (const [index, label] of (item.meta ?? []).entries()) {
       expectLocalized(label, item.id, `meta ${index}`)
     }
   }

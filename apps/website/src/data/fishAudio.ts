@@ -75,6 +75,7 @@ export const fishAudioPage: ModelLaunchPage = {
   },
   list: {
     headingKey: 'fishAudio.nodes.heading',
+    ctaKey: 'fishAudio.nodes.cta',
     items: [
       {
         id: 'text-to-speech',
@@ -87,10 +88,6 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN':
             '写下台词，在文本中用情绪提示标出表演方式，并在 S2.1 Pro 上一次运行最多五个声音。'
         },
-        meta: [
-          { en: 'S2.1 Pro and S1', 'zh-CN': 'S2.1 Pro 与 S1' },
-          { en: 'Premium', 'zh-CN': '高级' }
-        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
         audioSources: [
           {
@@ -110,10 +107,6 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN':
             '用 1 到 20 段录音生成一个私有声音，每段以 10 到 30 秒为佳，然后直接接入 Text to Speech，无需等待训练。'
         },
-        meta: [
-          { en: '1 to 20 recordings', 'zh-CN': '1 到 20 段录音' },
-          { en: 'Free', 'zh-CN': '免费' }
-        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_voice_clone_tts',
         audioSources: [
           {
@@ -133,10 +126,6 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN':
             '转写 80 多种语言的音频并自动检测语言，以 JSON 返回文本、语言代码和可选的逐词时间戳。'
         },
-        meta: [
-          { en: '80+ languages', 'zh-CN': '80 多种语言' },
-          { en: 'Premium', 'zh-CN': '高级' }
-        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_speech_to_text',
         audioSources: [
           {
@@ -155,10 +144,6 @@ export const fishAudioPage: ModelLaunchPage = {
           en: 'Pick a curated voice from the Fish Audio library for your script.',
           'zh-CN': '从 Fish Audio 声音库中为你的台词挑选精选声音。'
         },
-        meta: [
-          { en: 'Curated voices', 'zh-CN': '精选声音' },
-          { en: 'Free', 'zh-CN': '免费' }
-        ],
         href: 'https://cloud.comfy.org/?template=api_fishaudio_text_to_speech',
         audioSources: [
           {

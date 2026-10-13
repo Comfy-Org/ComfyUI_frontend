@@ -30,6 +30,7 @@ const { t } = translationsFor(locale)
         :key="item.id"
         :item
         :locale
+        :cta-label="list.ctaKey ? t(list.ctaKey) : undefined"
       />
     </ul>
   </section>
