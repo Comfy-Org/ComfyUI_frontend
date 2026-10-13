@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ModelLaunchGallery } from './types'
 
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 
 const gallery: ModelLaunchGallery = {

@@ -10,7 +10,7 @@ import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -106,11 +106,13 @@ let currentItem: Ref<JobListItem | null>
 const mountJobMenu = (onInspectAsset?: (item: JobListItem) => void) =>
   useJobMenu(() => currentItem.value, onInspectAsset)
 
-const findActionEntry = (entries: MenuEntry[], key: string) =>
-  entries.find(
-    (entry): entry is Extract<MenuEntry, { kind?: 'item' }> =>
-      entry.key === key && entry.kind !== 'divider'
-  )
+const findActionEntry = (entries: MenuItem[], key: string) =>
+  entries.find((entry) => entry.key === key && !entry.separator)
+
+const runCommand = (entry: MenuItem | undefined) => {
+  if (!entry || entry.separator || !entry.command) return
+  return entry.command({ originalEvent: new Event('click'), item: entry })
+}
 
 describe('useJobMenu', () => {
   beforeEach(() => {
@@ -204,6 +206,16 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).toHaveBeenCalledWith('job-99')
   })
 
+  it('does not pass the menu command event as the selected job', async () => {
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(createJobItem({ id: 'job-99' }))
+
+    const entry = findActionEntry(jobMenuEntries.value, 'copy-id')
+    await entry?.command?.({ originalEvent: new Event('click'), item: entry })
+
+    expect(copyToClipboardMock).toHaveBeenCalledWith('job-99')
+  })
+
   it('ignores copy job id when no selection', async () => {
     const { copyJobId } = mountJobMenu()
 
@@ -260,7 +272,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'copy-error')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(copyToClipboardMock).toHaveBeenCalledWith('Something went wrong')
   })
@@ -292,7 +304,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledTimes(1)
     expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledWith(
@@ -314,7 +326,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
     expect(useDialogService().showErrorDialog).toHaveBeenCalledExactlyOnceWith(
@@ -334,9 +346,9 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const copyEntry = findActionEntry(jobMenuEntries.value, 'copy-error')
-    await copyEntry?.onClick?.()
+    await runCommand(copyEntry)
     const reportEntry = findActionEntry(jobMenuEntries.value, 'report-error')
-    await reportEntry?.onClick?.()
+    await runCommand(reportEntry)
 
     expect(copyToClipboardMock).not.toHaveBeenCalled()
     expect(useDialogService().showErrorDialog).not.toHaveBeenCalled()
@@ -425,7 +437,7 @@ describe('useJobMenu', () => {
 
       await nextTick()
       const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-      await entry?.onClick?.()
+      await runCommand(entry)
 
       expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledWith(
         nodeDefStoreMock.nodeDefsByName[expectedNode],
@@ -457,7 +469,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
   })
@@ -479,7 +491,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
   })
@@ -502,7 +514,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await expect(entry?.onClick?.()).resolves.toBeUndefined()
+    await expect(runCommand(entry)).resolves.toBeUndefined()
 
     expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalled()
   })
@@ -518,7 +530,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
   })
@@ -536,7 +548,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'download')
-    void entry?.onClick?.()
+    void runCommand(entry)
 
     expect(downloadFileMock).toHaveBeenCalledWith('https://asset')
   })
@@ -552,7 +564,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'download')
-    void entry?.onClick?.()
+    void runCommand(entry)
 
     expect(downloadFileMock).not.toHaveBeenCalled()
   })
@@ -570,7 +582,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(useDialogService().prompt).not.toHaveBeenCalled()
     expect(downloadBlobMock).toHaveBeenCalledTimes(1)
@@ -594,7 +606,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(useDialogService().prompt).toHaveBeenCalledWith({
       title: expect.stringContaining('workflowService.exportWorkflow'),
@@ -621,7 +633,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(downloadBlobMock).toHaveBeenCalledExactlyOnceWith(
       'existing.json',
@@ -642,7 +654,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(downloadBlobMock).not.toHaveBeenCalled()
   })
@@ -658,7 +670,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'delete')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(queueStoreMock.update).not.toHaveBeenCalled()
   })
@@ -670,7 +682,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'delete')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(queueStoreMock.delete).toHaveBeenCalledWith(taskRef)
   })
@@ -681,7 +693,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'delete')
-    await entry?.onClick?.()
+    await runCommand(entry)
 
     expect(queueStoreMock.delete).not.toHaveBeenCalled()
   })
@@ -697,7 +709,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
-    expect(inspectEntry?.onClick).toBeUndefined()
+    expect(inspectEntry?.command).toBeUndefined()
     expect(inspectEntry?.disabled).toBe(true)
   })
 
@@ -768,7 +780,7 @@ describe('useJobMenu', () => {
       'cancel-job'
     ])
     const cancelEntry = findActionEntry(jobMenuEntries.value, 'cancel-job')
-    await cancelEntry?.onClick?.()
+    await runCommand(cancelEntry)
 
     expect(cancelJobMock).toHaveBeenCalledWith('job-1')
     expect(queueStoreMock.update).toHaveBeenCalled()

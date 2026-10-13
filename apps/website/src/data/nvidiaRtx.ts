@@ -2,7 +2,7 @@ import type {
   ModelLaunchBeforeAfter,
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
 const nvidiaRtxLinks = {
   download: 'https://comfy.org/download/',
@@ -60,6 +60,7 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   metaDescriptionKey: 'nvidiaRtx.meta.description',
   breadcrumbLabelKey: 'nvidiaRtx.breadcrumb.model',
   breadcrumbUpdatedKey: 'nvidiaRtx.breadcrumb.updated',
+  stackBreadcrumbOnMobile: true,
   hero: {
     layout: 'media-first',
     mediaOutline: 'gray',

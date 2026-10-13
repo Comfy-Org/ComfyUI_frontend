@@ -48,7 +48,7 @@ async function renderResult(options: FakeBillingClientOptions = {}) {
 }
 
 describe('ResultView', () => {
-  it('recovers what the scope is waiting on and shows where it stands', async () => {
+  it('recovers what the scope is waiting on and says it is still checking while the server settles', async () => {
     const fake = await renderResult({
       recover: {
         status: 'ok',
@@ -56,15 +56,17 @@ describe('ResultView', () => {
       }
     })
 
-    const step = await screen.findByRole('region', { name: 'Review payment' })
-    expect(fake.recover).toHaveBeenCalledOnce()
-    expect(step).toHaveAttribute('data-billing-step', 'preview')
-    expect(
-      screen.getByRole('link', { name: 'Return to ComfyUI' })
-    ).toHaveAttribute(
-      'href',
-      'https://testcloud.comfy.org/?billing_result=pending&billing_ref=op_1'
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('link', { name: 'Return to ComfyUI' })
+      ).toHaveAttribute(
+        'href',
+        'https://testcloud.comfy.org/?billing_result=pending&billing_ref=op_1'
+      )
     )
+    expect(fake.recover).toHaveBeenCalledOnce()
+    expect(screen.getByText('Checking on your payment…')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Review payment' })).toBeNull()
   })
 
   it('says the recovery failed rather than that no payment exists', async () => {

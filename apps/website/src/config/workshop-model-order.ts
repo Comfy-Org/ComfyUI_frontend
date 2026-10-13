@@ -1,4 +1,4 @@
-import orderJson from '../content/workshop-model-order.json'
+import orderJson from '@/content/workshop-model-order.json'
 import { workshopModelOrderSchema } from './workshop-model-order.schema'
 
 const order = workshopModelOrderSchema.parse(orderJson)

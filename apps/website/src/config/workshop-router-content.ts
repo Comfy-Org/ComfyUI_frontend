@@ -1,4 +1,4 @@
-import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 import type {
   GeneratedExample,
   RouterWorkshopModel,

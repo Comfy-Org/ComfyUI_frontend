@@ -208,7 +208,14 @@ test.describe(
           name: enMessages.agent.consent.title
         })
       ).toHaveCount(0)
+      await expect(agentPanel.composer).toHaveText('')
       await expect.poll(() => postedMessages).toHaveLength(1)
+      expect(JSON.parse(postedMessages[0])).toMatchObject({
+        content: 'Build a product photo workflow',
+        client_message_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        )
+      })
     })
   }
 )

@@ -4,22 +4,23 @@ import { ChevronRight, Maximize2 } from '@lucide/vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 import type { ModelLaunchGallery } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
-import Badge from '../../components/ui/badge/Badge.vue'
-import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
-import Dialog from '../../components/ui/dialog/Dialog.vue'
-import DialogContent from '../../components/ui/dialog/DialogContent.vue'
-import DialogTitle from '../../components/ui/dialog/DialogTitle.vue'
-import IconButton from '../../components/ui/icon-button/IconButton.vue'
-import { t } from '../../i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const showCardMeta = gallery.cardMeta !== 'none'
 const showCardLink = gallery.ctaVariant !== 'none'
@@ -65,7 +66,7 @@ const { stop } = useIntersectionObserver(
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(gallery.headingKey, locale) }}
+        {{ t(gallery.headingKey) }}
       </h2>
     </div>
 
@@ -93,9 +94,7 @@ const { stop } = useIntersectionObserver(
           :is="card.expandable ? 'button' : 'div'"
           data-testid="gallery-card-media"
           :type="card.expandable ? 'button' : undefined"
-          :aria-label="
-            card.expandable ? t('player.fullscreen', locale) : undefined
-          "
+          :aria-label="card.expandable ? t('player.fullscreen') : undefined"
           :class="
             cn(
               'group relative block w-full overflow-hidden bg-black/40',
@@ -192,8 +191,8 @@ const { stop } = useIntersectionObserver(
             <Badge :variant="card.tier === 'free' ? 'accent' : 'callout'">
               {{
                 card.tier === 'free'
-                  ? t('modelLaunch.tagFree', locale)
-                  : t('modelLaunch.tagPremium', locale)
+                  ? t('modelLaunch.tagFree')
+                  : t('modelLaunch.tagPremium')
               }}
             </Badge>
             <span class="text-xs text-primary-warm-gray">
@@ -242,8 +241,8 @@ const { stop } = useIntersectionObserver(
           <CopyTextButton
             class="-mr-2 -mb-2"
             :value="card.prompt[locale] || card.prompt.en"
-            :label="t('modelLaunch.copyPrompt', locale)"
-            :copied-label="t('ui.copied', locale)"
+            :label="t('modelLaunch.copyPrompt')"
+            :copied-label="t('ui.copied')"
           />
         </div>
       </article>
@@ -255,7 +254,7 @@ const { stop } = useIntersectionObserver(
     >
       <DialogContent
         v-if="expandedImage"
-        :close-label="t('gallery.detail.close', locale)"
+        :close-label="t('gallery.detail.close')"
         class="max-h-[95vh] w-[calc(100%-1rem)] max-w-none overflow-visible border-0 bg-transparent p-0 sm:max-w-none sm:p-0 lg:p-0"
       >
         <DialogTitle class="sr-only">
@@ -280,7 +279,7 @@ const { stop } = useIntersectionObserver(
         class="uppercase"
         @click="mobileExpanded = true"
       >
-        {{ t('modelLaunch.loadMore', locale) }}
+        {{ t('modelLaunch.loadMore') }}
       </BrandButton>
     </div>
   </section>

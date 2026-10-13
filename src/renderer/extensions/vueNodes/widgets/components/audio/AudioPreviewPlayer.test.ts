@@ -1,20 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
-
-const mockToastAdd = vi.fn()
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
@@ -30,19 +20,45 @@ function renderPlayer(modelValue?: string) {
   return render(AudioPreviewPlayer, {
     props: {
       modelValue,
-      hideWhenEmpty: false
+      hideWhenEmpty: false,
+      showOptionsButton: true
     },
     global: {
       plugins: [i18n],
-      components: { Button },
-      stubs: {
-        TieredMenu: true
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }
 
 describe('AudioPreviewPlayer', () => {
+  it('changes playback speed through the options menu', async () => {
+    renderPlayer('http://example.com/audio.mp3')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    const speedMenu = await screen.findByRole('menuitem', {
+      name: 'g.playbackSpeed'
+    })
+    expect(
+      within(speedMenu).getByTestId('menu-item-submenu-indicator')
+    ).toBeVisible()
+    await user.keyboard('{ArrowDown}{ArrowRight}{End}')
+    const doubleSpeed = await screen.findByRole('menuitemradio', {
+      name: 'g.2x'
+    })
+    await waitFor(() => expect(doubleSpeed).toHaveFocus())
+    await user.keyboard('{Enter}')
+
+    await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    await user.keyboard('{ArrowDown}{ArrowRight}')
+    expect(
+      await screen.findByRole('menuitemradio', { name: 'g.2x' })
+    ).toBeChecked()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'g.1x' })
+    ).not.toBeChecked()
+  })
+
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
       renderPlayer('http://example.com/audio.mp3')
@@ -78,13 +94,11 @@ describe('AudioPreviewPlayer', () => {
       renderPlayer('http://example.com/audio.mp3')
       await user.click(screen.getByRole('button', { name: 'g.downloadAudio' }))
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'error'
+          kind: 'error'
         })
       )
-
-      vi.mocked(downloadFile).mockReset()
     })
   })
 })

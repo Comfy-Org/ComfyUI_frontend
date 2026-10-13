@@ -7,10 +7,10 @@
         :model-value="gizmoEnabled ? 'on' : 'off'"
         @update:model-value="(v) => (gizmoEnabled = v === 'on')"
       >
-        <ToggleGroupItem value="off" size="sm">
+        <ToggleGroupItem value="off" size="sm" class="flex-1">
           {{ $t('g.off') }}
         </ToggleGroupItem>
-        <ToggleGroupItem value="on" size="sm">
+        <ToggleGroupItem value="on" size="sm" class="flex-1">
           {{ $t('g.on') }}
         </ToggleGroupItem>
       </ToggleGroup>
@@ -27,13 +27,13 @@
             }
           "
         >
-          <ToggleGroupItem value="translate">
+          <ToggleGroupItem value="translate" class="flex-1">
             {{ $t('load3d.gizmo.translate') }}
           </ToggleGroupItem>
-          <ToggleGroupItem value="rotate">
+          <ToggleGroupItem value="rotate" class="flex-1">
             {{ $t('load3d.gizmo.rotate') }}
           </ToggleGroupItem>
-          <ToggleGroupItem value="scale">
+          <ToggleGroupItem value="scale" class="flex-1">
             {{ $t('load3d.gizmo.scale') }}
           </ToggleGroupItem>
         </ToggleGroup>

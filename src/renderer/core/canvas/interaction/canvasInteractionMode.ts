@@ -1,7 +1,7 @@
 import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/litegraph'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 export function createCanvasInteractionMode(): CanvasInteractionModeReader {
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
-  return { isSelectOnly: () => agentNodeSelectionStore.isActive }
+  const canvasStore = useCanvasStore()
+  return { isSelectOnly: () => canvasStore.isPickingNodes }
 }

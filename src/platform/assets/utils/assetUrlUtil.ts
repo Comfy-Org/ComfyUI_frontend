@@ -4,6 +4,7 @@
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
@@ -32,6 +33,19 @@ export function getAssetUrl(
   if (subfolder) {
     params.set('subfolder', subfolder)
   }
+  return api.apiURL(`/view?${params}`)
+}
+
+/** `/view` URL of the asset's own file, not its preview. */
+export function getAssetViewUrl(asset: AssetItem): string {
+  const root = asset.tags.find(isResultItemType)
+  if (!asset.loader_path || !root) return getAssetUrl(asset)
+  const slash = asset.loader_path.lastIndexOf('/')
+  const params = new URLSearchParams({
+    filename: asset.loader_path.slice(slash + 1),
+    type: root
+  })
+  if (slash > 0) params.set('subfolder', asset.loader_path.slice(0, slash))
   return api.apiURL(`/view?${params}`)
 }
 

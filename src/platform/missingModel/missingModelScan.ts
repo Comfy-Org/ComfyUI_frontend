@@ -1,12 +1,18 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { MissingModelCandidate, MissingModelViewModel } from './types'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
+import type { MissingModelCandidate } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
   promotedInputWidgets
@@ -30,9 +36,7 @@ import {
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
@@ -103,10 +107,6 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
-function isInactiveMode(mode: number | undefined): boolean {
-  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
-}
-
 interface ModelWidgetScanTarget {
   executionId: NodeExecutionId
   nodeType: string
@@ -160,7 +160,7 @@ export function scanAllModelCandidates(
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    if (isInactiveMode(node.mode)) continue
+    if (isInactiveWorkflowNodeMode(node.mode)) continue
 
     candidates.push(
       ...scanNodeModelCandidates(
@@ -405,7 +405,7 @@ export function enrichWithEmbeddedMetadata(
     else candidatesByKey.set(nameKey, [c])
   }
 
-  const deduped: ModelFile[] = []
+  const deduped: DeclaredModelFile[] = []
   const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
     const dedupeKey = `${model.name}::${model.directory}`
@@ -435,8 +435,9 @@ export function enrichWithEmbeddedMetadata(
 function collectEmbeddedModels(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: MissingModelWorkflowData
-): ModelFile[] {
-  const result: ModelFile[] = []
+): DeclaredModelFile[] {
+  // Node entries only name a model; enrichment fills each field where present.
+  const result: DeclaredModelFile[] = []
   const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
 
   for (const node of allNodes) {
@@ -451,23 +452,6 @@ function collectEmbeddedModels(
   if (graphData.models?.length) result.push(...graphData.models)
 
   return result
-}
-
-function isNodeAndAncestorsActive(
-  node: ReturnType<typeof flattenWorkflowNodes>[number],
-  nodesById: ReadonlyMap<
-    string,
-    ReturnType<typeof flattenWorkflowNodes>[number]
-  >
-): boolean {
-  if (isInactiveMode(node.mode)) return false
-
-  for (const ancestorId of getParentExecutionIds(String(node.id))) {
-    const ancestor = nodesById.get(ancestorId)
-    if (isInactiveMode(ancestor?.mode)) return false
-  }
-
-  return true
 }
 
 interface AssetVerifier {
@@ -551,30 +535,4 @@ function isAssetInstalled(
     const f = normalizePath(getAssetFilename(a))
     return f === normalizedName || f.endsWith('/' + normalizedName)
   })
-}
-
-export function groupCandidatesByName(
-  candidates: MissingModelCandidate[]
-): MissingModelViewModel[] {
-  const map = new Map<string, MissingModelViewModel>()
-  for (const c of candidates) {
-    const existing = map.get(c.name)
-    if (existing) {
-      if (c.nodeId) {
-        existing.referencingNodes.push({
-          nodeId: c.nodeId,
-          widgetName: c.widgetName
-        })
-      }
-    } else {
-      map.set(c.name, {
-        name: c.name,
-        representative: c,
-        referencingNodes: c.nodeId
-          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
-          : []
-      })
-    }
-  }
-  return Array.from(map.values())
 }

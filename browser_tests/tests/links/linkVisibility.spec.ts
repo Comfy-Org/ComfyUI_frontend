@@ -1,9 +1,56 @@
+import { toRerouteId } from '@/types/rerouteId'
+
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/linkVisibilityFixture'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
 })
+
+test(
+  'undoes and redoes hiding a shared reroute segment in one step',
+  { tag: '@canvas' },
+  async ({ comfyPage, linkVisibility }) => {
+    await comfyPage.workflow.loadWorkflow('reroute/shared-hidden-links')
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+
+    await linkVisibility.hideRerouteSegment(toRerouteId(2))
+
+    const hidden = { '33': { hidden: true }, '34': { hidden: true } }
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation
+      )
+      .toEqual(hidden)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+    await comfyPage.keyboard.undo()
+
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+      )
+      .toEqual({})
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(1)
+
+    await comfyPage.keyboard.redo()
+
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation
+      )
+      .toEqual(hidden)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+    await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
+  }
+)
 
 test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

@@ -62,13 +62,6 @@ vi.mock<unknown>(
     })
   })
 )
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn(), remove: vi.fn(), removeGroup: vi.fn() })
-  })
-)
-
 const CREDENTIAL: AccountCredential = {
   token: 'workspace-jwt',
   expiresAt: Date.now() + 60 * 60 * 1000,
@@ -160,7 +153,9 @@ const CAPABILITIES = {
     can_change_seats: false,
     can_downgrade_to_personal: false,
     can_invite_members: false,
+    can_manage_members: false,
     can_reactivate: true,
+    can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
     can_top_up: true
   },
@@ -274,7 +269,7 @@ beforeEach(() => {
     ['GET', CAPABILITIES_ROUTE, { status: 200, body: CAPABILITIES }],
     ['GET', PAYMENT_METHODS_ROUTE, { status: 200, body: PAYMENT_METHODS }]
   ])
-  vi.stubGlobal('fetch', server.fetchImpl)
+  vi.mocked(fetch).mockImplementation(server.fetchImpl)
   const session = useWorkspaceAuthStore().getUnifiedSessionClient()
   vi.spyOn(session, 'getSnapshot').mockReturnValue(SNAPSHOT)
   vi.spyOn(session, 'ensureFresh').mockResolvedValue({

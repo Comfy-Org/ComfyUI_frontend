@@ -7,7 +7,6 @@ export async function expectRenderedTextUnclipped(
 ) {
   const clipping = await text.evaluate(
     (element, target) => {
-      if (!target) throw new Error('Expected screenshot target to be attached')
       const range = document.createRange()
       range.selectNodeContents(element)
       const laidOut = range.getBoundingClientRect()

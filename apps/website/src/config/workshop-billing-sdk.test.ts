@@ -1,3 +1,4 @@
+import { fetchRequests } from '@comfyorg/test-utils/fetch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -34,7 +35,9 @@ const CLOUD_BODIES: Readonly<Record<string, unknown>> = {
       can_change_seats: false,
       can_downgrade_to_personal: false,
       can_invite_members: false,
+      can_manage_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: true
     },
@@ -55,7 +58,7 @@ const CLOUD_BODIES: Readonly<Record<string, unknown>> = {
 }
 
 function stubCloudFetch() {
-  const fetchCloud = vi.fn<typeof fetch>((input) => {
+  vi.mocked(fetch).mockImplementation((input) => {
     const body = CLOUD_BODIES[String(input)]
     return Promise.resolve(
       body === undefined
@@ -63,8 +66,6 @@ function stubCloudFetch() {
         : new Response(JSON.stringify(body))
     )
   })
-  vi.stubGlobal('fetch', fetchCloud)
-  return fetchCloud
 }
 
 async function loadBillingSdk() {
@@ -72,20 +73,12 @@ async function loadBillingSdk() {
 }
 
 async function openHostedCheckout() {
-  const fetchCloud = stubCloudFetch()
+  stubCloudFetch()
   const { workshopTopupCommand } = await loadBillingSdk()
-  const result = await workshopTopupCommand().createHostedTopupCheckout({
+  return workshopTopupCommand().createHostedTopupCheckout({
     amountCents: 5_000,
     returnUrl: RETURN_URL
   })
-  return { fetchCloud, result }
-}
-
-function requestTo(calls: readonly Parameters<typeof fetch>[], url: string) {
-  const call = calls.find(([target]) => String(target) === url)
-  if (call === undefined) throw new Error(`no request to ${url}`)
-  const body: unknown = JSON.parse(String(call[1]?.body))
-  return { init: call[1] ?? {}, headers: new Headers(call[1]?.headers), body }
 }
 
 beforeEach(async () => {
@@ -115,18 +108,18 @@ describe('workshopTopupCommand', () => {
   })
 
   it('posts the hosted checkout to Cloud under one authorized idempotency key', async () => {
-    const { fetchCloud, result } = await openHostedCheckout()
+    const result = await openHostedCheckout()
 
     expect(result).toMatchObject({
       status: 'ok',
       url: CHECKOUT.checkout_url,
       sessionId: CHECKOUT.session_id
     })
-    const checkout = requestTo(fetchCloud.mock.calls, CHECKOUT_URL)
-    expect(checkout.init.method).toBe('POST')
+    const [checkout] = fetchRequests(CHECKOUT_URL)
+    expect(checkout.method).toBe('POST')
     expect(checkout.headers.get('Authorization')).toBe('Bearer workspace-jwt')
     expect(checkout.headers.get('Idempotency-Key')).toEqual(expect.any(String))
-    expect(checkout.body).toEqual({
+    expect(JSON.parse(String(checkout.body))).toEqual({
       amount_cents: 5_000,
       return_url: RETURN_URL,
       idempotency_key: checkout.headers.get('Idempotency-Key')
@@ -136,7 +129,7 @@ describe('workshopTopupCommand', () => {
   it('mints for the workspace the session currently holds', async () => {
     await openHostedCheckout()
 
-    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
+    expect(workshopSessionClient.ensureFresh).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'ws-1' })
     )

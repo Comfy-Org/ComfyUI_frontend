@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "code langue",
-        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "modèle",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "augmentation de similarité"
-      },
-      "model_speed": {
-        "name": "vitesse"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "utiliser le speaker boost"
       },
       "output_format": {
         "name": "format de sortie",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Génère une image avec FLUX 3 à partir d’un prompt, ou modifie et combine jusqu’à 10 images de référence. Faites référence aux images dans le prompt en tant qu’image 1, image 2, et ainsi de suite.",
+    "display_name": "Image Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "« auto » suit la première image de référence ou choisit un ratio à partir du prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Boîtes facultatives provenant de Créer des boîtes englobantes, qui placent des objets ou du texte dans la sortie. Les positions sont relatives au canevas ; utilisez donc le ratio de la sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permet au modèle d’effectuer des recherches sur le prompt sur le Web et dans les images avant de générer."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, jusqu’à 10 au total, d’au moins 256x256 pixels chacune."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce qu’il faut générer ou la modification à effectuer. Le prompt est interprété et développé avant la génération."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Taille de sortie selon le ratio choisi : 0.75K correspond à environ 0,6 mégapixel, 1K à 1 MP, 1.5K à 2,4 MP, 2K à 4,2 MP, 4K à 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération ; 0 est le niveau le plus strict."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine permettant de déterminer si le nœud doit être réexécuté ; FLUX 3 choisit sa propre graine, les résultats réels sont donc non déterministes quelle que soit cette valeur."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "rapport d'aspect",
-        "tooltip": "Le rapport d'aspect de la vidéo générée."
+        "tooltip": "Ratio de la vidéo de sortie. Ignoré lorsqu’une image d’entrée est fournie ; la vidéo reprend le ratio de l’image."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "invite",
-        "tooltip": "Description textuelle de la vidéo souhaitée. Facultative pour grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
+        "tooltip": "Description textuelle de la vidéo souhaitée. Facultatif pour les modèles grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "La résolution de la vidéo de sortie. Le 1080p est uniquement disponible pour grok-imagine-video-1.5."
+        "tooltip": "Résolution de la vidéo de sortie. Le 1080p n’est pas disponible pour grok-imagine-video."
       },
       "seed": {
         "name": "graine",
@@ -7759,6 +7796,67 @@
       },
       "1": {
         "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "Anime une image en vidéo avec des dialogues et du son synchronisés à l’aide de HeyGen Video 1.0. L’image est utilisée comme première image.",
+    "display_name": "HeyGen Video 1.0 Image vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Génère une vidéo avec des dialogues et du son synchronisés à partir d’une invite textuelle à l’aide de HeyGen Video 1.0. Connectez éventuellement jusqu’à 12 images, vidéos et extraits audio de référence, et mentionnez-les dans l’invite sous la forme {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "rapport_largeur_hauteur"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifie ou combine jusqu’à 5 images selon une invite textuelle à l’aide d’Ideogram 4.5. Effectue un nouveau rendu de l’image entière et peut modifier sa taille ou son rapport largeur/hauteur ; utilisez Ideogram 4.5 Modification précise pour que les pixels non modifiés restent inchangés.",
+    "display_name": "Ideogram 4.5 Modifier",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Génère des images à l'aide de P-Image, le modèle texte-vers-image rapide d'Ideogram. Excellente typographie et photoréalisme ; prend en charge les légendes JSON structurées Ideogram 4.0 pour un texte, des couleurs et une mise en page exacts.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Le prompt à partir duquel l'image a réellement été générée (la légende structurée réécrite si prompt_upsampling a été utilisé, sinon votre prompt). Réutilisez-le avec prompt_upsampling sur OFF et la même graine pour reproduire cette image."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifie une image selon une invite textuelle à l’aide de la modification précise d’Ideogram 4.5 : seuls les éléments demandés par l’invite changent, les pixels non modifiés restent identiques et la sortie conserve la taille de l’image 1 (les images de plus de ~4 MP sont d’abord réduites). Accepte jusqu’à 4 images de référence.",
+    "display_name": "Ideogram 4.5 Modification précise",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Génère des images à partir d’une invite textuelle à l’aide d’Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 Texte vers image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La légende structurée à partir de laquelle l’image a été générée. Renvoyez-la avec magic_prompt défini sur « off » et la même graine pour reproduire l’image."
       }
     }
   },
@@ -18320,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "value": {
@@ -22211,7 +22409,7 @@
   "SeedNode": {
     "display_name": "Graine",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "seed": {

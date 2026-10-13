@@ -17,6 +17,10 @@
     :quote-is-current
     :is-applying-promotion-code
     :embedded-checkout-enabled
+    :payment-cancelable
+    :canceling-payment
+    :cancel-payment-error
+    @cancel-payment="emit('cancelPayment')"
     @confirm="emit('confirm', $event)"
     @back="emit('back')"
     @apply-promotion-code="emit('applyPromotionCode', $event)"
@@ -58,7 +62,10 @@ const {
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  paymentCancelable = false,
+  cancelingPayment = false,
+  cancelPaymentError = null
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -75,6 +82,9 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  paymentCancelable?: boolean
+  cancelingPayment?: boolean
+  cancelPaymentError?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -82,6 +92,7 @@ const emit = defineEmits<{
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  cancelPayment: []
 }>()
 
 const { locale, t, te } = useI18n()

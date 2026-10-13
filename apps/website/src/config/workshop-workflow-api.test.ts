@@ -284,6 +284,62 @@ describe('Workshop workflow HTTP client', () => {
       status: 429
     },
     {
+      label: 'exhausted free-tier allowance sent as 429',
+      response: () =>
+        Response.json(
+          {
+            error: {
+              message:
+                "You've used all your free generations. Upgrade to keep creating.",
+              type: 'FREE_TIER_EXHAUSTED'
+            }
+          },
+          { status: 429 }
+        ),
+      code: 'insufficient_credits',
+      status: 429
+    },
+    {
+      label: 'temporarily unavailable free tier sent as 429',
+      response: () =>
+        Response.json(
+          {
+            error: {
+              message: 'Free tier unavailable',
+              type: 'FREE_TIER_UNAVAILABLE'
+            }
+          },
+          { status: 429 }
+        ),
+      code: 'insufficient_credits',
+      status: 429
+    },
+    {
+      label: 'partner node payment requirement sent as 429',
+      response: () =>
+        Response.json(
+          {
+            error: {
+              message: 'Partner node payment required',
+              type: 'PARTNER_NODE_PAYMENT_REQUIRED'
+            }
+          },
+          { status: 429 }
+        ),
+      code: 'insufficient_credits',
+      status: 429
+    },
+    {
+      label: 'workspace queue limit',
+      response: () =>
+        Response.json(
+          { error: { message: 'Queue full', type: 'QUEUE_LIMIT' } },
+          { status: 429 }
+        ),
+      code: 'rate_limited',
+      status: 429
+    },
+    {
       label: 'genuine rate limit',
       response: () =>
         Response.json(

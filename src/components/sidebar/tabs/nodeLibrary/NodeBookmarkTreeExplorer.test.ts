@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   TreeExplorerDragAndDropData,
   TreeExplorerNode,
@@ -109,24 +110,6 @@ vi.mock<unknown>(import('@/components/common/CustomizationDialog.vue'), () => ({
 vi.mock<unknown>(import('@/components/node/NodePreview.vue'), () => ({
   default: { name: 'NodePreview', template: '<div />' }
 }))
-
-vi.mock<unknown>(
-  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'),
-  () => ({
-    default: { name: 'NodeTreeFolder', template: '<div />', props: ['node'] }
-  })
-)
-
-vi.mock<unknown>(
-  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'),
-  () => ({
-    default: {
-      name: 'NodeTreeLeaf',
-      template: '<div />',
-      props: ['node', 'openNodeHelp']
-    }
-  })
-)
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
@@ -238,6 +221,29 @@ describe('NodeBookmarkTreeExplorer', () => {
         mockFolderNodeDef
       )
     })
+
+    it.for([
+      { userBlueprint: false, deletes: false },
+      { userBlueprint: true, deletes: true }
+    ])(
+      'offers blueprint delete on a leaf when user blueprint is $userBlueprint',
+      async ({ userBlueprint, deletes }) => {
+        vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(
+          undefined
+        )
+        vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(
+          userBlueprint
+        )
+        const root = await renderAndGetRoot()
+        const leafNode = root.children?.[0]?.children?.[0]
+
+        await leafNode?.handleDelete?.call(leafNode)
+
+        expect(
+          vi.mocked(useSubgraphStore().deleteBlueprint).mock.calls
+        ).toEqual(deletes ? [[mockLeafNodeDef.name]] : [])
+      }
+    )
 
     it('is a no-op when node data is missing', async () => {
       const root = await renderAndGetRoot()

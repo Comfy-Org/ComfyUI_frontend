@@ -261,7 +261,7 @@ describe('WidgetPainter', () => {
         screen.getByTestId('painter-color-row')
       ).getByDisplayValue('#000000')
       // <input type="color"> has no userEvent equivalent — fire input directly
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.input(colorInput, { target: { value: '#ff0000' } })
       expect(brushColor.value.toLowerCase()).toBe('#ff0000')
     })
@@ -304,7 +304,7 @@ describe('WidgetPainter', () => {
       const bgInput = within(
         screen.getByTestId('painter-bg-color-row')
       ).getByDisplayValue('#ffffff')
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.input(bgInput, { target: { value: '#00ff00' } })
       expect(backgroundColor.value.toLowerCase()).toBe('#00ff00')
     })
