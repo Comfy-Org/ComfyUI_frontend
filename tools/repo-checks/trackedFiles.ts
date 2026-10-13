@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -8,14 +8,14 @@ const repoRoot = path.resolve(
   '../..'
 )
 
-/** Paths tracked by git that match the pathspecs, relative to the repository root. */
+/** Paths tracked by git that match the pathspecs and still exist, relative to the repository root. */
 export function trackedFiles(...pathspecs: string[]): string[] {
   return execFileSync('git', ['ls-files', '-z', '--', ...pathspecs], {
     cwd: repoRoot,
     encoding: 'utf8'
   })
     .split('\0')
-    .filter(Boolean)
+    .filter((file) => file && existsSync(path.join(repoRoot, file)))
 }
 
 /** Reads a tracked file by its repository-relative path. */

@@ -19,6 +19,14 @@ vi.mock(import('./api'), () => ({ fetchUser }))
 vi.doMock('./store', () => ({ useStore: () => state }))
 fetchUser.mockResolvedValue(null)
 `
+    },
+    {
+      name: 'hoisted state read by a hoisted factory passed to vi.mock by name',
+      code: `
+const state = vi.hoisted(() => ({ fn: vi.fn() }))
+const make = vi.hoisted(() => () => ({ fn: state.fn }))
+vi.mock('./x', make)
+`
     }
   ],
   invalid: [

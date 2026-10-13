@@ -19,6 +19,7 @@ export const b = a
 const c = 1
 export { c, pkg }
 export function d() {}
+export default b
 export type { Contract } from '@comfyorg/ingest-types'
 export * from 'vue'
 `
@@ -41,12 +42,18 @@ export * as ns from './ns'
       ]
     },
     {
-      name: 'an imported binding exported again',
+      name: 'an imported binding exported again, by name or as the default',
       code: `
 import { a, b } from '@/lib/a'
+import c from './c'
 export { a, b as renamed }
+export default c
 `,
-      errors: [{ messageId: 'reexport' }, { messageId: 'reexport' }]
+      errors: [
+        { messageId: 'reexport' },
+        { messageId: 'reexport' },
+        { messageId: 'reexport' }
+      ]
     }
   ]
 })

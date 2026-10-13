@@ -52,6 +52,14 @@ export const noReexports: Rule = {
           })
         }
       },
+      ExportDefaultDeclaration(node) {
+        const { declaration } = node
+        if (declaration.type !== 'Identifier') return
+        reportsIfImported.push({
+          name: declaration.name,
+          report: () => context.report({ node, messageId: 'reexport' })
+        })
+      },
       'Program:exit'() {
         for (const { name, report } of reportsIfImported) {
           if (sourceImports.has(name)) report()

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readTracked, trackedFiles } from './trackedFiles'
 
 const NPM_COMMAND =
-  /(?<![\w./@-])(?:npm\s+(?:add|ci|exec|i|install|run|start|test)\b|npx\s)/
+  /(?<![\w./@-])(?:npm(?:\s+--?[\w-]+(?:=\S+|\s+(?!-)\S+)?)*\s+(?:add|ci|exec|i|install|run|start|test)\b|npx\s)/
 
 const AGENT_TOOLING_PREFIXES = ['.agents/', '.claude/']
 
@@ -18,6 +18,8 @@ describe('documentation package manager', () => {
     ['npm install @comfyorg/shared-frontend-utils', [1]],
     ['run `npm run build` first', [1]],
     ['npx playwright test', [1]],
+    ['npm --prefix packages/foo install', [1]],
+    ['npm -w @comfyorg/website run build', [1]],
     ['pnpm install\npnpm exec playwright test\npnpx vitest', []],
     ['the npm registry hosts it', []],
     ['@scope/npm install-helper', []]

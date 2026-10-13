@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "apps/website/src/components/auth/AuthEmailForm.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "apps/website/src/components/auth/AuthSignIn.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -24,89 +19,13 @@
       "count": 1
     }
   },
-  "apps/website/src/components/product/local/MobileDownloadEmailForm.vue": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/workshop/WorkshopSearchPanel.test.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/model-family.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-playground.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "apps/website/src/content/customers.content.test.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "apps/website/src/lib/workshop/model-summary.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 3
-    }
-  },
   "apps/website/src/templates/events/EventsDirectoryRow.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
-  "packages/account-core/src/core/importGuard.test.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
   "packages/account-core/src/vueBoundary.test.ts": {
     "regexp/no-dupe-disjunctions": {
-      "count": 1
-    },
-    "regexp/no-super-linear-backtracking": {
-      "count": 3
-    }
-  },
-  "packages/account-ui/src/billing/checkout/inviteEmails.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "packages/shared-frontend-utils/src/templateSearch.ts": {
-    "regexp/no-useless-lazy": {
-      "count": 1
-    }
-  },
-  "scripts/bundle-categories.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
-  "scripts/check-adrs.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 6
-    },
-    "regexp/no-useless-lazy": {
-      "count": 1
-    }
-  },
-  "scripts/cicd/backport-token-scopes.test.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 5
-    }
-  },
-  "scripts/cicd/release-slack-changelog.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 4
-    }
-  },
-  "scripts/i18n/protected-tokens.ts": {
-    "regexp/no-super-linear-backtracking": {
       "count": 1
     }
   },
@@ -151,11 +70,6 @@
     }
   },
   "src/components/load3d/modelThumbnail.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/maskeditor/MaskEditorContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -288,11 +202,6 @@
       "count": 3
     }
   },
-  "src/composables/node/useNodePricing.test.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 12
-    }
-  },
   "src/composables/painter/usePainter.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
@@ -326,9 +235,6 @@
   "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
-    },
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
     }
   },
   "src/core/graph/subgraph/promotionUtils.ts": {
@@ -789,11 +695,6 @@
       "count": 1
     }
   },
-  "src/platform/skills/types.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 1
-    }
-  },
   "src/platform/telemetry/providers/host/HostTelemetrySink.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -802,9 +703,6 @@
   "src/platform/telemetry/redactTelemetryUrls.ts": {
     "regexp/no-dupe-characters-character-class": {
       "count": 13
-    },
-    "regexp/no-super-linear-backtracking": {
-      "count": 4
     }
   },
   "src/platform/telemetry/utils/surveyNormalization.ts": {
@@ -857,11 +755,6 @@
       "count": 1
     }
   },
-  "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 1
-    }
-  },
   "src/platform/workflow/templates/services/templateInputService.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -879,11 +772,6 @@
   },
   "src/platform/workspace/billing/customerAttention.ts": {
     "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/billing/openHostedBillingTab.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -1122,11 +1010,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts": {
-    "regexp/no-useless-lazy": {
-      "count": 2
-    }
-  },
   "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -1251,11 +1134,6 @@
   "src/scripts/metadata/avif.ts": {
     "comfy/no-new-error-throw": {
       "count": 3
-    }
-  },
-  "src/scripts/pnginfo.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 4
     }
   },
   "src/scripts/ui/menu/index.ts": {
@@ -1466,11 +1344,6 @@
   "src/workbench/extensions/agent/stores/agent/agentRunModeStore.ts": {
     "comfy/no-reexports": {
       "count": 1
-    }
-  },
-  "tools/test-recorder/src/transform/rules.ts": {
-    "regexp/no-super-linear-backtracking": {
-      "count": 3
     }
   },
   "vite.config.mts": {
