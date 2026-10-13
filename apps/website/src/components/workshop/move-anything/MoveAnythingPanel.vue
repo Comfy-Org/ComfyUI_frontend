@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ChevronDown, Dices, Gauge } from '@lucide/vue'
-import { computed, useId } from 'vue'
+import { ChevronDown, Gauge } from '@lucide/vue'
+import { computed } from 'vue'
 
 import type { MoveImage, useMoveAnything } from '@/composables/useMoveAnything'
 import type { Locale } from '@/i18n/translations'
 import { mc } from '@/lib/workshop/move-anything/copy'
-import EditorIconButton from '@/components/workshop/app-editor/EditorIconButton.vue'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
 import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
@@ -21,7 +21,6 @@ const {
 }>()
 
 const { quality, seed, prompt, phase } = move
-const seedId = useId()
 
 const qualities = [
   {
@@ -45,16 +44,6 @@ const qualityValue = computed({
 const qualityLabel = computed(
   () => qualities.find((option) => option.id === quality.value)?.label
 )
-
-function onSeed(event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const value = Math.round(Number(event.target.value))
-  if (Number.isFinite(value) && value >= 0) seed.value = value
-}
-
-function shuffleSeed() {
-  seed.value = Math.floor(Math.random() * 1_000_000_000)
-}
 </script>
 
 <template>
@@ -108,27 +97,11 @@ function shuffleSeed() {
           aria-hidden="true"
         />
       </CinematicMenu>
-      <div
-        class="flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3 hover:border-transparency-white-t20"
-      >
-        <label :for="seedId" class="sr-only">{{
-          mc('move.seed', locale)
-        }}</label>
-        <input
-          :id="seedId"
-          :value="seed"
-          type="number"
-          min="0"
-          step="1"
-          class="h-8 min-w-0 flex-1 bg-transparent px-1 text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
-          @change="onSeed"
-        />
-        <EditorIconButton
-          :icon="Dices"
-          :label="mc('move.seed.shuffle', locale)"
-          @click="shuffleSeed"
-        />
-      </div>
+      <EditorSeedField
+        v-model="seed"
+        :label="mc('move.seed', locale)"
+        :shuffle-label="mc('move.seed.shuffle', locale)"
+      />
     </div>
   </fieldset>
 </template>
