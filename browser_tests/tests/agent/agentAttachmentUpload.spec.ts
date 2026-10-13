@@ -64,11 +64,14 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
 })
 
 test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
-  test('rejects text renamed as video from the file picker', async ({
+  test('retains an invalid video across reopening and blocks Send until removal', async ({
     comfyPage,
     agentPanel
   }) => {
     await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    await agentPanel.composer.fill('Describe this video')
+    await expect(agentPanel.sendButton).toBeEnabled()
     await agentPanel.fileInput.setInputFiles({
       name: 'renamed.mp4',
       mimeType: 'video/mp4',
@@ -76,14 +79,45 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await expect(
+      agentPanel.attachmentChip('renamed.mp4').getByRole('status', {
+        name: enMessages.agent.attachmentInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        )
+      })
+    ).toBeVisible()
+    await expect(agentPanel.sendButton).toBeDisabled()
+    await agentPanel.composer.press('Enter')
+    await expect(agentPanel.composer).toHaveText('Describe this video')
+    await agentPanel.closeButton.click()
+    await agentPanel.open()
+    await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
+    await expect(
+      comfyPage.page.getByRole('tooltip', {
+        name: enMessages.agent.attachmentInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        ),
+        exact: true
+      })
+    ).toBeVisible()
+    await expect(agentPanel.sendButton).toBeDisabled()
+    await expect(
       comfyPage.toast.withText(
         enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
       )
-    ).toBeVisible()
+    ).toHaveCount(0)
+    await agentPanel
+      .attachmentChip('renamed.mp4')
+      .getByRole('button', {
+        name: enMessages.agent.removeAsset.replace('{name}', 'renamed.mp4')
+      })
+      .click()
     await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
+    await expect(agentPanel.sendButton).toBeEnabled()
   })
 
-  test('rejects text renamed as video from drag and drop', async ({
+  test('shows an inline error for text renamed as video from drag and drop', async ({
     comfyPage,
     agentPanel
   }) => {
@@ -103,10 +137,22 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     }
 
     await expect(
-      comfyPage.toast.withText(
-        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
-      )
+      agentPanel.attachmentChip('renamed.mp4').getByRole('status', {
+        name: enMessages.agent.attachmentInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        )
+      })
     ).toBeVisible()
-    await expect(agentPanel.attachmentChip('renamed.mp4')).toHaveCount(0)
+    await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
+    await expect(
+      comfyPage.page.getByRole('tooltip', {
+        name: enMessages.agent.attachmentInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        ),
+        exact: true
+      })
+    ).toBeVisible()
   })
 })

@@ -5707,7 +5707,7 @@
     },
     "addFromAssets": "Drag in asset from asset panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
-    "attachmentInvalidVideo": "{name} is not a valid video file. Choose another file.",
+    "attachmentInvalidVideo": "{name} isn’t a valid video file. Remove it and try another file.",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",

@@ -71,4 +71,52 @@ describe('attachment validation staging', () => {
       ])
     )
   })
+
+  it('keeps invalid files visible and blocks a mixed batch until they are removed', async () => {
+    const store = useAgentComposerStore()
+    const onSend = vi.fn()
+    const onError = vi.fn()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const composer = useComposer({
+      onSend,
+      onStop: vi.fn(),
+      isRunning: () => false
+    })
+    const attachment = useAttachment({
+      validate: (file) => file.name === 'notes.txt',
+      upload,
+      onError,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    composer.setText('Describe these files')
+    const files = [
+      new File(['text'], 'bad.mp4'),
+      new File(['text'], 'bad.mov'),
+      new File(['text'], 'notes.txt')
+    ]
+    await attachment.addFiles(files)
+    attachment.cancelAllUploads()
+    expect(store.attachments).toMatchObject([
+      { name: 'bad.mp4', uploading: false, validationError: 'invalid-video' },
+      { name: 'bad.mov', uploading: false, validationError: 'invalid-video' },
+      { name: 'notes.txt', ref: 'notes.txt', uploading: false }
+    ])
+    expect(upload).toHaveBeenCalledExactlyOnceWith(
+      files[2],
+      expect.any(AbortSignal)
+    )
+    expect(onError).not.toHaveBeenCalled()
+    composer.submit()
+    expect(onSend).not.toHaveBeenCalled()
+    store.removeAttachment(store.attachments[0].id)
+    composer.submit()
+    expect(onSend).not.toHaveBeenCalled()
+    store.removeAttachment(store.attachments[0].id)
+    composer.submit()
+    expect(onSend).toHaveBeenCalledExactlyOnceWith('Describe these files', [
+      expect.objectContaining({ name: 'notes.txt' })
+    ])
+  })
 })

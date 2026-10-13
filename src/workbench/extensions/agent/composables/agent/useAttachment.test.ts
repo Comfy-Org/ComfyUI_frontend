@@ -364,7 +364,7 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
-  it('skips an invalid file and uploads the rest of the batch', async () => {
+  it('marks an invalid file and uploads the rest of the batch', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const registry = chipRegistry()
     const invalid = fileOfSize('renamed.mp4', 1024, 'video/mp4')
@@ -380,12 +380,17 @@ describe('useAttachment', () => {
       addFiles([invalid, fileOfSize('cat.png', 1024)])
     ).resolves.toBe(true)
 
-    expect(registry.chips.map(({ name, ref }) => ({ name, ref }))).toEqual([
-      { name: 'cat.png', ref: 'cat.png' }
+    expect(registry.chips).toMatchObject([
+      {
+        name: 'renamed.mp4',
+        ref: '',
+        uploading: false,
+        validationError: 'invalid-video'
+      },
+      { name: 'cat.png', ref: 'cat.png', uploading: false }
     ])
-    expect(onError).toHaveBeenCalledExactlyOnceWith(
-      'renamed.mp4 is not a valid video file. Choose another file.'
-    )
+    expect(onError).not.toHaveBeenCalled()
+    expect(upload).toHaveBeenCalledOnce()
   })
 
   it.for([true, false])(
@@ -721,7 +726,7 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
-  it('warns once and removes a deferred file that fails validation', async () => {
+  it('retains a deferred file that fails validation without a duplicate warning', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
     const registry = chipRegistry()
@@ -736,10 +741,14 @@ describe('useAttachment', () => {
     await expect(
       addDeferredFile(invalid.name, async () => invalid)
     ).resolves.toBe('failed')
-    expect(onError).toHaveBeenCalledExactlyOnceWith(
-      'renamed.mp4 is not a valid video file. Choose another file.'
-    )
-    expect(registry.chips).toEqual([])
+    expect(onError).not.toHaveBeenCalled()
+    expect(registry.chips).toMatchObject([
+      {
+        name: 'renamed.mp4',
+        uploading: false,
+        validationError: 'invalid-video'
+      }
+    ])
     expect(upload).not.toHaveBeenCalled()
   })
 

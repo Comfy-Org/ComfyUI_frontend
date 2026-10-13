@@ -422,7 +422,7 @@ describe('AttachmentChip', () => {
     })
     const status = screen.getByRole('status')
     const errorMessage =
-      'bad.mov is not a valid video file. Choose another file.'
+      'bad.mov isn’t a valid video file. Remove it and try another file.'
     expect(screen.queryByText('bad.mov')).not.toBeInTheDocument()
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     expect(status).toHaveAccessibleName(errorMessage)

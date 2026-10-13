@@ -3304,18 +3304,16 @@ describe('AgentPanelRoot attach flow', () => {
       new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
     )
 
-    await vi.waitFor(() =>
-      expect(useToast().toasts).toContainEqual(
-        expect.objectContaining({
-          kind: 'warning',
-          title: i18n.global.t('agent.attachmentInvalidVideo', {
-            name: 'renamed.mp4'
-          })
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
         })
-      )
-    )
+      })
+    ).toBeVisible()
     expect(uploaded).toEqual([])
-    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('refuses a text file renamed to mp4 from drag and drop', async () => {
@@ -3329,18 +3327,16 @@ describe('AgentPanelRoot attach flow', () => {
       dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [renamed] })
     ).toBe(true)
 
-    await vi.waitFor(() =>
-      expect(useToast().toasts).toContainEqual(
-        expect.objectContaining({
-          kind: 'warning',
-          title: i18n.global.t('agent.attachmentInvalidVideo', {
-            name: 'renamed.mp4'
-          })
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
         })
-      )
-    )
+      })
+    ).toBeVisible()
     expect(uploaded).toEqual([])
-    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -3754,7 +3750,7 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('warns once when a URI-only asset drop resolves to an invalid video', async () => {
+  it('keeps an invalid URI-only asset visible and blocks Send until removal', async () => {
     respondToFetch({}, () => json(200, agentThreadList()))
     respondToFetch(
       /\/api\/view/,
@@ -3776,18 +3772,21 @@ describe('AgentPanelRoot attach flow', () => {
       })
     ).toBe(true)
 
-    await vi.waitFor(() =>
-      expect(
-        useToast().toasts.filter(
-          ({ title }) =>
-            title ===
-            i18n.global.t('agent.attachmentInvalidVideo', {
-              name: 'renamed.mp4'
-            })
-        )
-      ).toHaveLength(1)
+    expect(
+      await screen.findByRole('status', {
+        name: 'renamed.mp4 isn’t a valid video file. Remove it and try another file.'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    await userEvent.type(screen.getByRole('textbox'), 'Describe these files')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    await userEvent.keyboard('{Enter}')
+    expect(fetchRequests(/\/messages$/)).toEqual([])
+    expect(useToast().toasts).toEqual([])
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove renamed.mp4' })
     )
-    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
   })
 

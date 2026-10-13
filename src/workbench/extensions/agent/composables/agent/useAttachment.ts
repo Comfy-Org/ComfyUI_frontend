@@ -256,10 +256,11 @@ export function useAttachment(options: UseAttachmentOptions) {
         const valid = await options.validate(file)
         if (cancelled.has(id)) return 'cancelled'
         if (!valid) {
-          options.onError?.(
-            i18n.global.t('agent.attachmentInvalidVideo', { name: file.name })
-          )
-          options.remove(id)
+          options.update(id, {
+            name: file.name,
+            uploading: false,
+            validationError: 'invalid-video'
+          })
           return 'failed'
         }
       }
