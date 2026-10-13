@@ -38,7 +38,8 @@ const WORKSHOP_ONLY_ROUTES = [
   {
     pattern: '/zh-CN/checkout-return',
     entrypoint: entry('checkout-return.astro')
-  }
+  },
+  { pattern: '/darkroom', entrypoint: entry('darkroom.astro') }
 ]
 
 export function modelsBuildRoutes(enabled: boolean) {

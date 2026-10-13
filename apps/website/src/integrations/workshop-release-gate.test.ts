@@ -148,7 +148,8 @@ describe('Workshop release output', () => {
       '/checkout-opening',
       '/zh-CN/checkout-opening',
       '/checkout-return',
-      '/zh-CN/checkout-return'
+      '/zh-CN/checkout-return',
+      '/darkroom'
     ])
     for (const routes of [disabled, enabled]) {
       expect(routes[0].entrypoint).toContain('/routes/models/index.astro')
@@ -168,7 +169,7 @@ describe('Workshop release output', () => {
     await expect(
       buildDone(builtModelsRoutes(modelsBuildRoutes(true)))
     ).rejects.toThrow(
-      'Missing: none. Workshop-only: /checkout-opening, /zh-CN/checkout-opening, /checkout-return, /zh-CN/checkout-return.'
+      'Missing: none. Workshop-only: /checkout-opening, /zh-CN/checkout-opening, /checkout-return, /zh-CN/checkout-return, /darkroom.'
     )
   })
 

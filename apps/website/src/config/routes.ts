@@ -59,7 +59,8 @@ const baseRoutes = {
   hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
   cinematicStudio: '/hub/apps/cinematic-studio/',
-  reshoot: '/hub/apps/reshoot/'
+  reshoot: '/hub/apps/reshoot/',
+  darkroom: '/darkroom/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -87,8 +88,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
-// English only. Every locale links the one catalogue.
+// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot,
+// darkroom: English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -111,6 +112,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
+  'darkroom',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])

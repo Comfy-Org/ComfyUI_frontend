@@ -62,6 +62,7 @@ describe('isWorkshopRoute', () => {
     expect(isWorkshopRoute('/models/local/')).toBe(false)
     expect(isWorkshopRoute('/models/showcase/')).toBe(true)
     expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)
+    expect(isWorkshopRoute('/darkroom/')).toBe(true)
     expect(isWorkshopRoute('/models')).toBe(true)
     expect(isWorkshopRoute('/hub/models')).toBe(false)
     expect(isWorkshopRoute('/hub/models/')).toBe(false)

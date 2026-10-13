@@ -22,6 +22,7 @@ export const NOINDEX_ROUTES = [
   '/forgot-password',
   '/models/showcase',
   '/cinematic-studio',
+  '/darkroom',
   ...hubAppSlugs.map((slug) => hubAppHref(slug).replace(/\/$/, '')),
   '/checkout-opening',
   '/checkout-return',
