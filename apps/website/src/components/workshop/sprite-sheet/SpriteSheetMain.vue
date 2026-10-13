@@ -18,12 +18,14 @@ const { image } = sprite
   <EditorEmpty
     v-if="!image"
     :title="spc('sprite.empty.title', locale)"
-    :meta="spc('sprite.empty.meta', locale)"
-    :upload-label="spc('sprite.empty.upload', locale)"
-    :example-label="spc('sprite.empty.example', locale)"
-    :example-image="SPRITE_EXAMPLE.url"
+    :examples="[
+      {
+        id: 'explorer',
+        image: SPRITE_EXAMPLE.url,
+        label: spc('sprite.empty.example', locale)
+      }
+    ]"
     data-testid="sprite-empty"
-    @file="sprite.useFile"
     @example="sprite.useExample"
   />
   <SpriteSheetWorkspace v-else :sprite :locale />

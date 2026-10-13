@@ -23,7 +23,12 @@ const { image } = sprite
       )
     "
   >
-    <img :src="image?.url" alt="" class="size-full object-contain" />
+    <img
+      v-if="image"
+      :src="image.url"
+      alt=""
+      class="size-full object-contain"
+    />
   </span>
   <span class="min-w-0 flex-1 truncate text-[13px] text-primary-warm-white">{{
     setupSummary(sprite, locale)

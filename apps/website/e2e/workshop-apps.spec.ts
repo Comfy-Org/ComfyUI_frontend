@@ -273,15 +273,11 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   await page.goto('/hub/apps/sprite-sheet/')
   const app = page.getByTestId('sprite-sheet')
   await expect(app.getByTestId('sprite-empty')).toBeVisible()
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Explorer' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Sprite sheet settings'
   })
-  await expect(
-    panel.getByRole('button', {
-      name: 'Replace the character: explorer.webp'
-    })
-  ).toBeVisible()
+  await expect(panel.getByText('explorer.webp')).toBeVisible()
 
   await panel.getByRole('textbox', { name: 'Animation' }).fill('dancing')
   await panel.getByTestId('sprite-picker-style').click()

@@ -9,22 +9,23 @@ const copy = {
   'sprite.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
   'sprite.panel.collapse': { en: 'Hide settings', 'zh-CN': '隐藏设置' },
   'sprite.empty.title': {
-    en: 'Drop a character to animate',
-    'zh-CN': '拖入一个角色来制作动画'
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
   },
-  'sprite.empty.meta': {
-    en: 'PNG, JPG or WebP. A transparent PNG works best.',
-    'zh-CN': 'PNG、JPG 或 WebP。透明背景的 PNG 效果最好。'
-  },
-  'sprite.empty.upload': { en: 'Choose a character', 'zh-CN': '选择角色' },
-  'sprite.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
+  'sprite.empty.upload': { en: 'Upload character', 'zh-CN': '上传角色' },
+  'sprite.empty.example': { en: 'Explorer', 'zh-CN': '探险家' },
   'sprite.character.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'
   },
-  'sprite.character.changeLabel': {
-    en: 'Replace the character',
-    'zh-CN': '替换角色'
+  'sprite.character.hint': {
+    en: 'A transparent PNG works best',
+    'zh-CN': '透明背景的 PNG 效果最好'
+  },
+  'sprite.character.remove': { en: 'Remove character', 'zh-CN': '移除角色' },
+  'sprite.character.restore': {
+    en: 'Undo remove character',
+    'zh-CN': '撤销移除角色'
   },
   'sprite.animation': { en: 'Animation', 'zh-CN': '动画' },
   'sprite.animation.placeholder': {

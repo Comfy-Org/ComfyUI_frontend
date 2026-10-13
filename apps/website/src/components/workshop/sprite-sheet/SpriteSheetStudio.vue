@@ -10,6 +10,7 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import SpriteSheetDocks from './SpriteSheetDocks.vue'
 import SpriteSheetHistory from './SpriteSheetHistory.vue'
@@ -27,7 +28,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const sprite = useSpriteSheet()
-const { image, phase, setup } = sprite
+const { image, removed, phase, setup } = sprite
 const panel = computed(() => layout !== 'e')
 const wide = useMediaQuery('(min-width: 1024px)')
 const download = useResultDownload(phase, ({ result }) => {
@@ -64,6 +65,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ spc('sprite.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !image"
+        :label="spc('sprite.character.restore', locale)"
+        @undo="sprite.restoreImage"
+      />
       <SpriteSheetTrays v-if="!panel" :sprite :locale />
       <SpriteSheetPicker v-else-if="wide" :sprite :locale />
     </template>
@@ -73,13 +79,13 @@ const panelLabels = {
     <template v-if="phase.kind !== 'done'" #history>
       <SpriteSheetHistory :sprite :locale />
     </template>
-    <template v-if="panel && image" #panel>
+    <template v-if="panel" #panel>
       <SpriteSheetPanel :sprite :inline="!wide" :locale />
     </template>
-    <template v-if="panel && image" #panel-peek>
+    <template v-if="panel" #panel-peek>
       <SpriteSheetSummary :sprite :locale />
     </template>
-    <template v-if="panel && image" #panel-footer>
+    <template v-if="panel" #panel-footer>
       <SpriteSheetRun :sprite :locale block />
     </template>
   </AppEditorShell>

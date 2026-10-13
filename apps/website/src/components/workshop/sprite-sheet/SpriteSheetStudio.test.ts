@@ -38,7 +38,7 @@ beforeEach(() => {
 async function openExample(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(SpriteSheetStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.click(screen.getByRole('button', { name: 'Explorer' }))
   return user
 }
 
@@ -175,37 +175,25 @@ describe('SpriteSheetStudio', () => {
       })
     )
 
+    expect(await within(panel()).findByText('knight.png')).toBeVisible()
+  })
+
+  it('shows the character at the top of the panel, removable with the X and back from the tray', async () => {
+    const user = await openExample()
+    const remove = within(panel()).getAllByRole('button')[0]
+    expect(remove).toHaveAccessibleName('Remove character')
+    expect(within(panel()).getByText('explorer.webp')).toBeVisible()
+
+    await user.click(remove)
     expect(
-      await within(panel()).findByRole('button', {
-        name: 'Replace the character: knight.png'
-      })
-    ).toBeInTheDocument()
-  })
+      within(panel()).getByRole('button', { name: /Upload character/ })
+    ).toBeVisible()
+    expect(screen.getByTestId('sprite-empty')).toBeVisible()
 
-  it('shows the character alone at the top of the panel, replaceable but never removable', async () => {
-    await openExample()
-    const source = within(panel()).getAllByRole('button')[0]
-
-    expect(source).toHaveAccessibleName('Replace the character: explorer.webp')
-    expect(within(panel()).queryByRole('button', { name: /Remove/ })).toBeNull()
-  })
-
-  it('replaces the character with an image dropped on its tile', async () => {
-    await openExample()
-    const file = new File(['png'], 'robot.png', { type: 'image/png' })
-
-    await fireEvent.drop(
-      within(panel()).getByRole('button', {
-        name: 'Replace the character: explorer.webp'
-      }),
-      { dataTransfer: { files: [file] } }
+    await user.click(
+      screen.getByRole('button', { name: 'Undo remove character' })
     )
-
-    expect(
-      await within(panel()).findByRole('button', {
-        name: 'Replace the character: robot.png'
-      })
-    ).toBeInTheDocument()
+    expect(within(panel()).getByText('explorer.webp')).toBeVisible()
   })
 
   it('replaces the character with an image chosen from the tile', async () => {
@@ -214,11 +202,7 @@ describe('SpriteSheetStudio', () => {
 
     await user.upload(screen.getByTestId('sprite-character-file'), file)
 
-    expect(
-      await within(panel()).findByRole('button', {
-        name: 'Replace the character: wizard.png'
-      })
-    ).toBeInTheDocument()
+    expect(await within(panel()).findByText('wizard.png')).toBeVisible()
   })
 
   it('opens every setting as a tray in the bottom composer', async () => {
@@ -248,9 +232,6 @@ describe('SpriteSheetStudio', () => {
     screenIsWide(false)
     const user = await openExample()
 
-    await user.click(
-      within(panel()).getByRole('button', { name: 'Pixel · Walk · 8 frames' })
-    )
     await user.click(within(panel()).getByRole('button', { name: /Style/ }))
 
     expect(screen.queryByRole('dialog', { name: 'Style' })).toBeNull()

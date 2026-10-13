@@ -44,6 +44,7 @@ const revocable = (url: string | undefined, keep?: string) =>
  */
 export function useSpriteSheet() {
   const image = shallowRef<SpriteImage>()
+  const removed = shallowRef<SpriteImage>()
   const setup = shallowRef<SpriteSetup>(DEFAULT_SETUP)
   const past = shallowRef<SpriteSetup[]>([])
   const future = shallowRef<SpriteSetup[]>([])
@@ -79,6 +80,7 @@ export function useSpriteSheet() {
     pendingUrl = undefined
     run?.abort()
     leaveResult({ kind: 'editing' })
+    removed.value = undefined
     image.value = next
     if (ownUrl) URL.revokeObjectURL(ownUrl)
     ownUrl = own
@@ -161,6 +163,21 @@ export function useSpriteSheet() {
     void generate()
   }
 
+  function removeImage() {
+    if (!image.value) return
+    run?.abort()
+    run = undefined
+    leaveResult({ kind: 'editing' })
+    removed.value = image.value
+    image.value = undefined
+  }
+
+  function restoreImage() {
+    if (!removed.value) return
+    image.value = removed.value
+    removed.value = undefined
+  }
+
   function cancel() {
     run?.abort()
     run = undefined
@@ -190,6 +207,9 @@ export function useSpriteSheet() {
 
   return {
     image,
+    removed,
+    removeImage,
+    restoreImage,
     setup,
     phase,
     tray,

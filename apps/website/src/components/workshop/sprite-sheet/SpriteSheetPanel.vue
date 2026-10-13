@@ -38,14 +38,15 @@ const seed = computed({
     data-testid="sprite-panel"
   >
     <EditorSourceTile
-      v-if="image"
       kind="image"
-      :src="image.url"
-      :name="image.name"
+      :src="image?.url"
+      :caption="image?.name"
       :add-label="spc('sprite.empty.upload', locale)"
-      :change-label="spc('sprite.character.changeLabel', locale)"
+      :hint="spc('sprite.character.hint', locale)"
+      :remove-label="spc('sprite.character.remove', locale)"
       input-test-id="sprite-character-file"
       @file="sprite.useFile"
+      @remove="sprite.removeImage"
     />
 
     <section>
