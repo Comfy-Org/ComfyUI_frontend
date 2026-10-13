@@ -5560,3 +5560,74 @@ export const zGetWebsocketQuery = z.object({
   workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
+
+export const zSiteSubmission = z.object({
+  uid: z.string(),
+  share_id: z.string(),
+  version_id: z.string(),
+  title: z.string(),
+  owner_uid: z.string(),
+  description: z.string(),
+  listed: z.boolean(),
+  submitted_at: z.string().datetime()
+})
+
+export const zContentPublicationEvent = z.object({
+  id: z.string(),
+  action: z.enum(['PUBLISH', 'REVERT', 'APPROVE', 'REJECT']),
+  target_id: z.string(),
+  previous_id: z.string().optional(),
+  actor_uid: z.string(),
+  created_at: z.string().datetime()
+})
+
+export const zContentCatalogRecord = z.object({
+  uid: z.string(),
+  revision: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  edit_version: z.string(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  slug: z.string(),
+  enabled: z.boolean(),
+  visibility: z.enum(['PUBLIC', 'STAFF']),
+  visible_from: z.string().datetime().optional(),
+  deleted: z.boolean(),
+  data: z.record(z.string(), z.unknown())
+})
+
+export const zContentCatalogProjection = z.object({
+  revision_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  items: z.array(zContentCatalogRecord)
+})
+
+export const zContentCatalogReview = z.object({
+  draft: zContentCatalogProjection,
+  live: zContentCatalogProjection,
+  previous_live_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  can_edit: z.boolean(),
+  can_apply: z.boolean(),
+  history: z.array(zContentPublicationEvent)
+})

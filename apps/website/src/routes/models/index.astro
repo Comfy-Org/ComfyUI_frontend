@@ -7,10 +7,24 @@ import { pageContext } from '@/utils/jsonLd'
 import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
 import { modelsByProvider } from './models-directory'
+import {
+  cmsEnabled,
+  loadSiteCatalog,
+  catalogUnavailable
+} from '@/lib/cms/catalog'
 
-const { title, description } = modelsHubMeta(workshopModels)
+const catalog = cmsEnabled()
+  ? await loadSiteCatalog(Astro.locals.site)
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
+const liveModels = catalog?.ok
+  ? catalog.models.filter((model) => model.routerId !== undefined)
+  : workshopModels
+
+const { title, description } = modelsHubMeta(liveModels)
 const directory = modelsByProvider(
-  workshopModels,
+  liveModels,
   Astro.locals.t('workshop.filter.other')
 )
 const { siteUrl, url } = pageContext(
@@ -41,7 +55,7 @@ const jsonLd = modelsHubJsonLd({
     section="models"
     heading={Astro.locals.t('workshop.catalogue.heading')}
     client:load
-    transition:persist="hub-catalogue"
+    transition:persist={cmsEnabled() ? undefined : 'hub-catalogue'}
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
@@ -65,7 +79,7 @@ const jsonLd = modelsHubJsonLd({
           </h2>
           <span class="text-sm text-primary-warm-gray tabular-nums">
             {Astro.locals.t('workshop.catalogue.directoryCount', {
-              count: workshopModels.length
+              count: liveModels.length
             })}
           </span>
         </div>

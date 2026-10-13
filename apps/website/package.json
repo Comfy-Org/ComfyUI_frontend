@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:cms": "tsx scripts/cms-mock/start.ts",
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "dev:crossview-proxy": "tsx scripts/crossview-dev-proxy.ts",
     "build": "astro build",
@@ -62,6 +63,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
+    "@astrojs/vercel": "catalog:",
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
@@ -123,6 +125,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "undici": "catalog:",
+    "uuid": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:"
   }

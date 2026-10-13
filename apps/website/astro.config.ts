@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
+import vercel from '@astrojs/vercel'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
@@ -14,6 +15,28 @@ import { sitemapAlternates } from './src/lib/hreflang'
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  adapter: process.env.SITE_CATALOG_API_URL ? vercel() : undefined,
+  security: {
+    checkOrigin: true,
+    allowedDomains: process.env.SITE_CATALOG_API_URL
+      ? (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
+          .split(',')
+          .filter(Boolean)
+          .map((origin) => {
+            const url = new URL(origin)
+            return {
+              hostname: url.hostname,
+              protocol: url.protocol.slice(0, -1),
+              port: url.port
+            }
+          })
+      : []
+  },
+  server: {
+    allowedHosts: process.env.SITE_CATALOG_PREVIEW_HOST
+      ? [process.env.SITE_CATALOG_PREVIEW_HOST]
+      : []
+  },
   prefetch: { prefetchAll: true },
   // Astro 7 changed the compressHTML default to JSX-style whitespace stripping.
   // Keep the v6 HTML-aware behavior so inline spacing across the site is unchanged.
@@ -42,10 +65,25 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    // gsap ships ESM files in a package Node reads as CommonJS, which the
+    // Vercel function cannot import by name; bundle it into server output.
+    ...(process.env.SITE_CATALOG_API_URL
+      ? { ssr: { noExternal: ['gsap'] } }
+      : {}),
     define: {
       __VUE_I18N_LEGACY_API__: false,
       __VUE_I18N_FULL_INSTALL__: false,
-      __INTLIFY_PROD_DEVTOOLS__: false
+      __INTLIFY_PROD_DEVTOOLS__: false,
+      // The Hub admin demo is chosen when the preview is built, and a Vercel
+      // function does not see build-only variables, so the choice is baked in.
+      ...(process.env.SITE_CATALOG_DEMO === '1'
+        ? {
+            'process.env.SITE_CATALOG_DEMO': JSON.stringify('1'),
+            'process.env.SITE_CATALOG_API_URL': JSON.stringify(
+              process.env.SITE_CATALOG_API_URL
+            )
+          }
+        : {})
     },
     optimizeDeps: {
       // Leaflet only reaches the graph through a dynamic import inside an

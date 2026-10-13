@@ -17,6 +17,11 @@ import { modelTitle } from '@/lib/workshop/model-title'
 import { pageContext } from '@/utils/jsonLd'
 import { modelPageJsonLd } from '@/utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from './model-page'
+import {
+  cmsEnabled,
+  loadSiteCatalog,
+  catalogUnavailable
+} from '@/lib/cms/catalog'
 
 interface Props {
   id: string
@@ -33,7 +38,20 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
         props: { id: slug }
       }))
 
-const page = await prepareModelPage(Astro.props.id)
+const catalog = cmsEnabled()
+  ? await loadSiteCatalog(Astro.locals.site)
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
+const current = catalog?.ok
+  ? catalog.projection.items.find(
+      (item) => item.slug === Astro.url.pathname.replace(/\/$/, '')
+    )
+  : undefined
+if (catalog?.ok && !current) return new Response('Not found', { status: 404 })
+const id = current ? current.data.slug : Astro.props.id
+if (typeof id !== 'string') return new Response('Not found', { status: 404 })
+const page = await prepareModelPage(id, 'en', catalog?.ok ? catalog : undefined)
 if (page.kind === 'redirect')
   throw new Error(`${Astro.props.id} is an alias, not a page`)
 const { model } = page

@@ -121,3 +121,4 @@ matrix-proof/
 browser_tests/fixtures/data/agent/conversations/recordings/
 apps/website/acceptance-results/
 apps/website/acceptance-report/
+cms-*-smoke.png

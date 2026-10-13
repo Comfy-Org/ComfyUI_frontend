@@ -1,0 +1,79 @@
+---
+import type { ContentCatalogReview } from '@comfyorg/ingest-types'
+import RollbackButton from '@/components/cms/RollbackButton.vue'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
+import type { Locale } from '@/i18n/translations'
+import { formatUtc } from '@/lib/cms/format'
+
+interface Props {
+  review: ContentCatalogReview
+  csrf: string
+  locale: Locale
+}
+const { review, csrf, locale } = Astro.props
+const t = Astro.locals.t
+const revertTarget = review.history.find(
+  (event) => event.action === 'PUBLISH' || event.action === 'REVERT'
+)
+const restorable = (event: (typeof review.history)[number]) =>
+  (event.action === 'PUBLISH' || event.action === 'REVERT') &&
+  /^\d+$/.test(event.target_id)
+---
+
+<div class="grid gap-5">
+  <PageHeader
+    title={t('cmsAdmin.history.title')}
+    description={t('cmsAdmin.history.help')}
+  />
+  {review.history.length === 0 && <p
+    class="rounded-lg border border-dashed border-admin-line px-6 py-14 text-center text-xs text-admin-muted"
+  >
+    {t('cmsAdmin.history.empty')}
+  </p>}
+  {review.history.length > 0 && <ol
+    class="overflow-hidden rounded-lg border border-admin-line"
+  >
+    {review.history.map((event) => {
+      const current = event === revertTarget
+      return <li
+        class:list={[
+          'flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 border-b border-admin-hover px-4 py-2 text-sm last:border-b-0',
+          current && 'bg-admin-hover'
+        ]}
+      >
+        <div class="grid min-w-0 flex-1 gap-1">
+          <p class="flex flex-wrap items-center gap-3">
+            {t(`cmsAdmin.history.action.${event.action}`)}
+            {current && (
+              <StatusLabel
+                tone="success"
+                label={t('cmsAdmin.history.liveNow')}
+              />
+            )}
+          </p>
+          <p class="text-xs text-admin-muted">
+            <time datetime={event.created_at}>
+              {formatUtc(event.created_at, locale)}
+            </time
+            >{' '} · {t('cmsAdmin.history.by', { actor: event.actor_uid })}
+            {(event.action === 'PUBLISH' || event.action === 'REVERT') &&
+              ` · ${t('cmsAdmin.history.revision', { revision: event.target_id })}`}
+            {event.action === 'REVERT' &&
+              event.previous_id &&
+              ` · ${t('cmsAdmin.history.restored', { revision: event.previous_id })}`}
+          </p>
+        </div>
+        {!current && review.can_apply && restorable(event) && (
+          <RollbackButton
+            client:load
+            csrf={csrf}
+            liveId={review.live.revision_id}
+            targetRevision={Number(event.target_id)}
+            locale={locale}
+          />
+        )}
+      </li>
+    })}
+  </ol>}
+</div>

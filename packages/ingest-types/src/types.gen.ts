@@ -16242,3 +16242,59 @@ export type GetWebsocketErrors = {
 }
 
 export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]
+
+export type ContentPublicationEvent = {
+  id: string
+  action: 'PUBLISH' | 'REVERT' | 'APPROVE' | 'REJECT'
+  target_id: string
+  previous_id?: string
+  actor_uid: string
+  created_at: string
+}
+
+export type ContentCatalogReview = {
+  draft: ContentCatalogProjection
+  live: ContentCatalogProjection
+  previous_live_id?: number
+  can_edit: boolean
+  can_apply: boolean
+  history: Array<ContentPublicationEvent>
+}
+
+export type ContentCatalogRecord = {
+  uid: string
+  /**
+   * Integer revision supplying this entity; may precede the requested catalog revision.
+   */
+  revision: number
+  edit_version: string
+  kind: 'MODEL' | 'WORKFLOW' | 'APP'
+  /**
+   * Canonical website pathname; identity is always UID.
+   */
+  slug: string
+  enabled: boolean
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+  deleted: boolean
+  data: {
+    [key: string]: unknown
+  }
+}
+
+export type ContentCatalogProjection = {
+  revision_id: number
+  generation: number
+  items: Array<ContentCatalogRecord>
+}
+
+export type SiteSubmission = {
+  uid: string
+  share_id: string
+  version_id: string
+  title: string
+  owner_uid: string
+  description: string
+  listed: boolean
+  submitted_at: string
+}

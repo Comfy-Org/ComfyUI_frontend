@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
-import { useMounted } from '@vueuse/core'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { useEventListener, useMounted } from '@vueuse/core'
+import type { Component } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
@@ -14,15 +22,32 @@ import type { Locale } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '@/scripts/posthog'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
+import CinematicAppDetail from './CinematicAppDetail.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
+import CinematicStudioEditor from './CinematicStudioEditor.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import VirtualTryOnStudio from '@/components/workshop/virtual-try-on/VirtualTryOnStudio.vue'
+import { vc } from '@/lib/workshop/virtual-try-on/copy'
+import BackgroundRemovalStudio from '@/components/workshop/background-removal/BackgroundRemovalStudio.vue'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import RelightStudio from '@/components/workshop/relight/RelightStudio.vue'
+import { lc } from '@/lib/workshop/relight/copy'
+import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnythingStudio.vue'
+import { mc } from '@/lib/workshop/move-anything/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -46,12 +71,75 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot'] as const
+/** A full-screen editor app: its page and its name in the review menu. */
+interface EditorApp {
+  readonly id: WorkshopAppId
+  readonly studio: Component
+  readonly label: (locale: Locale) => string
+}
+
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'move-anything',
+    studio: MoveAnythingStudio,
+    label: (locale) => mc('move.title', locale)
+  },
+  {
+    id: 'relight',
+    studio: RelightStudio,
+    label: (locale) => lc('relight.title', locale)
+  },
+  {
+    id: 'hand-product-swap',
+    studio: HandSwapStudio,
+    label: (locale) => hc('swap.title', locale)
+  },
+  {
+    id: 'sprite-sheet',
+    studio: SpriteSheetStudio,
+    label: (locale) => spc('sprite.title', locale)
+  },
+  {
+    id: 'paparazzi-me',
+    studio: PaparazziStudio,
+    label: (locale) => pc('paparazzi.title', locale)
+  },
+  {
+    id: 'background-removal',
+    studio: BackgroundRemovalStudio,
+    label: (locale) => brc('cutout.title', locale)
+  },
+  {
+    id: 'virtual-try-on',
+    studio: VirtualTryOnStudio,
+    label: (locale) => vc('tryOn.title', locale)
+  }
+]
+const APPS: readonly WorkshopAppId[] = [
+  'studio',
+  'reshoot',
+  ...EDITOR_APPS.map(({ id }) => id)
+]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
+const fullscreen = useWorkshopFlag('workshop-cinematic-fullscreen-enabled')
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
+const trying = ref(false)
+const starter = ref<string>()
+const fullscreenStudio = computed(
+  () => fullscreen.value && app.value === 'studio' && layout.value === 'd'
+)
+const editorShown = computed(() => fullscreenStudio.value && trying.value)
+const studioApp = computed(() =>
+  apps.find((candidate) => candidate.appId === 'studio')
+)
+const detailShown = computed(() => fullscreenStudio.value && !trying.value)
+const detailBack = computed(() => ({
+  href: workshopAppHref('studio', locale),
+  label: t('cinematic.detail.backToApp')
+}))
 const shownApps = computed(() =>
   apps.filter((candidate) => isWorkshopModelShown(candidate))
 )
@@ -82,6 +170,33 @@ watch(
     })
   }
 )
+const editorApp = computed(() => EDITOR_APPS.find(({ id }) => id === app.value))
+const appEditorShown = computed(
+  () =>
+    mounted.value &&
+    workshopEnabled.value &&
+    studioEnabled.value &&
+    layout.value !== 'hub' &&
+    editorApp.value !== undefined
+)
+const fullScreen = computed(
+  () => appEditorShown.value || (mounted.value && editorShown.value)
+)
+// Cleared before a switch renders and set after it, so a page that marks
+// itself full screen while mounted is never undone by the switch.
+watch(fullScreen, (shown) => {
+  if (!shown) document.documentElement.removeAttribute('data-workshop-editor')
+})
+watch(
+  fullScreen,
+  (shown) => {
+    if (shown) document.documentElement.setAttribute('data-workshop-editor', '')
+  },
+  { flush: 'post' }
+)
+onBeforeUnmount(() =>
+  document.documentElement.removeAttribute('data-workshop-editor')
+)
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({
     id: option.id,
@@ -97,11 +212,14 @@ const appOptions = computed(() =>
     {
       id: 'reshoot',
       label: t('reshoot.title')
-    }
+    },
+    ...EDITOR_APPS.map(({ id, label }) => ({ id, label: label(locale) }))
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
 )
+
+const TRY_PARAM = 'try'
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
@@ -110,7 +228,24 @@ onMounted(() => {
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
   if (requestedApp) showApp(requestedApp)
+  readTry(params)
 })
+
+function readTry(params: URLSearchParams) {
+  trying.value = params.has(TRY_PARAM)
+  starter.value = params.get(TRY_PARAM) || undefined
+}
+
+useEventListener('popstate', () =>
+  readTry(new URLSearchParams(window.location.search))
+)
+
+function tryApp(shot?: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set(TRY_PARAM, shot ?? '')
+  window.history.pushState(window.history.state, '', url)
+  readTry(url.searchParams)
+}
 
 function showApp(id: WorkshopAppId) {
   app.value = id
@@ -165,6 +300,23 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
+    <CinematicAppDetail
+      v-else-if="detailShown && studioApp"
+      :app="studioApp"
+      :apps="shownApps"
+      :models
+      :locale
+      @try="tryApp"
+    />
+    <CinematicStudioEditor
+      v-else-if="editorShown"
+      :models
+      :show-credits="false"
+      :back="detailBack"
+      :starter
+      :locale
+    />
+    <component :is="editorApp.studio" v-else-if="editorApp" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
@@ -176,6 +328,7 @@ function pickApp(id: string) {
       v-if="reviewing"
       :app
       :layout
+      :editor="editorShown || appEditorShown"
       :apps="appOptions"
       :layouts="layoutOptions"
       :app-heading="t('cinematic.ux.app')"

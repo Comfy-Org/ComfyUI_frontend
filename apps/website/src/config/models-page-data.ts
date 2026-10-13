@@ -33,7 +33,7 @@ const workflowDetailSchema = generatedModelSchema
     form: formForWorkflow(model.workflow)
   }))
 
-const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
+export const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
