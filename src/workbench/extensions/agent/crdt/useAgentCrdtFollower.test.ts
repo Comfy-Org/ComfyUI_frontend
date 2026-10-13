@@ -594,6 +594,32 @@ describe('useAgentCrdtFollower', () => {
       expect(status().workflowId).toBe('wf-1')
       unmount()
     })
+
+    it('marks the same permanent refusal terminal again after a reconnect', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      refuseForGood()
+      agentSocket.open()
+
+      refuseForGood()
+
+      expect(status().terminal).toBe('refused')
+      unmount()
+    })
+
+    it('reports a refusal terminal once the retry budget is spent', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      for (let attempt = 0; attempt < 6; attempt++) {
+        refuse()
+        vi.advanceTimersByTime(500 * 2 ** attempt)
+      }
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+      expect(status().terminal).toBeNull()
+
+      refuse()
+
+      expect(status().terminal).toBe('refused')
+      unmount()
+    })
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
