@@ -1,3 +1,6 @@
+import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
+import { zAgentRunApprovalContext } from '@comfyorg/ingest-types/zod'
+
 import type {
   AgentMessages,
   RenderedAskKind,
@@ -125,6 +128,23 @@ export function settleResolution(
   next: AskUserResolution = { status: 'retired', selected: [] }
 ): AskUserResolution {
   return shown === undefined || supersedes(next, shown) ? next : shown
+}
+
+/**
+ * The resolution an `agent_ask_resolved` frame reports: the answer the server
+ * committed, whoever gave it, so this client's own free text is never shown
+ * in its place.
+ */
+export function toAskResolution({
+  status,
+  selected,
+  other_text: otherText
+}: AgentAskResolvedData): AskUserResolution {
+  if (status !== 'answered') return { status: 'closed', selected: [] }
+  if (selected === null) return { status: 'answered', selected: [] }
+  return otherText
+    ? { status: 'answered', selected, otherText }
+    : { status: 'answered', selected }
 }
 
 /** The generic `ask_user` question: a prompt plus every option the agent offered. */
@@ -261,12 +281,15 @@ const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
 > = {
-  run_approval: (ask) => ({
-    type: 'runApproval',
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }),
+  run_approval: (ask) => {
+    const context = zAgentRunApprovalContext.safeParse(ask.context).data
+    return {
+      type: 'runApproval',
+      askId: ask.ask_id,
+      workflowId: context?.workflow_id || undefined,
+      workflowName: context?.workflow_name || undefined
+    }
+  },
   ask_user: toAskUserPart
 }
 
@@ -275,7 +298,7 @@ export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
 }
 
 /**
- * The card for an ask, by its explicit kind. An unknown or missing kind maps to
+ * The card for an ask, by its explicit kind. An unknown kind maps to
  * nothing: a privileged ask that lost its discriminator must not render as a
  * generic chooser.
  */

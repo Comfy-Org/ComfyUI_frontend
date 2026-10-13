@@ -47,6 +47,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import { toAskResolution } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -1771,10 +1772,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.retireAsk(
         event.data.ask_id,
         event.data.thread_id,
-        conversationStore.settledAskResolution(
-          event.data.status === 'answered',
-          { selected: event.data.selected }
-        )
+        toAskResolution(event.data)
       )
       onAskResolved?.(event.data.ask_id)
     }

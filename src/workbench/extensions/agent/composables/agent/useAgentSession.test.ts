@@ -2108,6 +2108,36 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
+    it('shows the free text the server committed, not the text this tab sent', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', {
+        selected: [],
+        other_text: 'a LoRA'
+      })
+
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: [],
+            other_text: 'a ControlNet'
+          }
+        })
+      )
+
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'a ControlNet'
+        }
+      })
+    })
+
     it('reads as answered, naming nothing, when the frame names no selection', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })

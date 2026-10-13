@@ -1,9 +1,11 @@
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
+  zAgentAskResolvedData,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
   zAgentMessage as zGeneratedAgentMessage,
+  zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
@@ -13,6 +15,7 @@ import {
 import type {
   AgentAnswerAccepted,
   AgentAnswerRequest,
+  AgentAskKind,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -53,37 +56,23 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
   workflow_id?: string
 }
 
-const zAgentAskOption = z
-  .object({
-    id: z.string(),
-    label: z.string(),
-    description: z.string().optional()
-  })
-  .passthrough()
-
 /** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
-export const RENDERED_ASK_KINDS = ['run_approval', 'ask_user'] as const
+export const RENDERED_ASK_KINDS = [
+  'run_approval',
+  'ask_user'
+] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
-const zAgentPendingAsk = z
-  .object({
-    message_id: z.string(),
-    ask_id: z.string(),
-    kind: z.string().optional(),
-    context: z
-      .object({
-        workflow_id: z.string().optional(),
-        workflow_name: z.string().optional()
-      })
-      .passthrough()
-      .optional(),
-    prompt: z.string(),
-    options: z.array(zAgentAskOption),
-    min_selections: z.number().int(),
-    max_selections: z.number().int(),
-    allow_other: z.boolean()
-  })
-  .passthrough()
+/**
+ * The generated pending ask with `kind` and `context` left open, so an ask of
+ * a kind this client predates still parses and renders the stand-in notice
+ * instead of failing the frame or the whole transcript. Each card parses its
+ * own kind's `context` with the generated schema.
+ */
+const zAgentPendingAsk = zAgentPendingAskBase.extend({
+  kind: z.string(),
+  context: z.unknown().optional()
+})
 
 export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
   ({ mode, credit_limit }, ctx) => {
@@ -351,15 +340,7 @@ const zAgentAskEvent = z.object({
 
 const zAgentAskResolvedEvent = z.object({
   type: z.literal('agent_ask_resolved'),
-  data: z
-    .object({
-      thread_id: z.string(),
-      message_id: z.string(),
-      ask_id: z.string(),
-      status: z.enum(['answered', 'cancelled', 'expired']),
-      selected: z.array(z.string()).nullable()
-    })
-    .passthrough()
+  data: zAgentAskResolvedData
 })
 
 export const zAgentWsEvent = z.discriminatedUnion('type', [

@@ -1,3 +1,5 @@
+import { zAgentAskKind } from '@comfyorg/ingest-types/zod'
+
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
@@ -10,11 +12,11 @@ import type {
 } from './agentMessageParts'
 import {
   askIdOf,
-  isRenderedAskKind,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
-  toAskPart
+  toAskPart,
+  toAskResolution
 } from './agentMessageParts'
 import type {
   UndeliverableAskContext,
@@ -342,8 +344,8 @@ export function createAgentEventTransport(
    * An ask that cannot be rendered still parks the server waiting for an
    * answer nothing on screen can give — the same dead-panel outcome as an ask
    * dropped in routing, so it is reported the same way. Generated-contract
-   * kinds the card refuses (an `ask_user` with nothing to choose) are tagged
-   * separately from unknown input.
+   * kinds with no card here, or whose card refuses the ask (an `ask_user`
+   * with nothing to choose), are tagged separately from unknown input.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     const shown = message.parts.some((part) => askIdOf(part) === data.ask_id)
@@ -351,7 +353,9 @@ export function createAgentEventTransport(
     if (!toAskPart(data))
       reportUndeliverableAsk(
         data,
-        isRenderedAskKind(data.kind) ? 'unrendered-kind' : 'unknown-kind'
+        zAgentAskKind.safeParse(data.kind).success
+          ? 'unrendered-kind'
+          : 'unknown-kind'
       )
     dropDraft()
     closeOpenText()
@@ -377,10 +381,11 @@ export function createAgentEventTransport(
   function handleAskResolvedEvent(
     data: AgentAskResolvedEvent['data']
   ): boolean {
-    const parts = retireAskParts(message.parts, data.ask_id, {
-      status: data.status === 'answered' ? 'answered' : 'closed',
-      selected: data.selected ?? []
-    })
+    const parts = retireAskParts(
+      message.parts,
+      data.ask_id,
+      toAskResolution(data)
+    )
     if (parts === message.parts) return false
     message.parts = parts
     return true

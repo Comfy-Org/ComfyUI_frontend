@@ -688,6 +688,23 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
+  it('reports a contract kind this panel has no card for as unrendered', () => {
+    const message = drive([runApproval('paused-1', 'paused')])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'paused-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'paused'
+        })
+      })
+    )
+  })
+
   it('reports an unknown ask kind once with a bounded tag', () => {
     const unknownKind = 'x'.repeat(100)
     const message = drive([

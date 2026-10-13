@@ -502,26 +502,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * The resolution a card shows once the server settles it, read only from
-     * what the frame reports: its selection is the committed answer, whoever
-     * gave it. This client's own free text is never echoed; when the frame
-     * names no selection the card just reads as answered.
-     */
-    function settledAskResolution(
-      answered: boolean,
-      settled: Pick<AgentAnswerRequest, 'other_text'> & {
-        selected: string[] | null
-      }
-    ): AskUserResolution {
-      if (!answered) return { status: 'closed', selected: [] }
-      const { selected, other_text: otherText } = settled
-      if (selected === null) return { status: 'answered', selected: [] }
-      return otherText
-        ? { status: 'answered', selected, otherText }
-        : { status: 'answered', selected }
-    }
-
-    /**
      * The resolution for an answer the server accepted (202). A 202 also
      * comes back for a later answer while the server keeps the first, so it
      * confirms the ask was answered but not with what.
@@ -1365,7 +1345,6 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering,
       recordAskSelection,
       submittedAskSelection,
-      settledAskResolution,
       commitAsk,
       retireAsk,
       startTurn,

@@ -1,3 +1,4 @@
+import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
@@ -10,7 +11,8 @@ import {
   isRenderedAskKind,
   retireAskParts,
   toAskOrNoticePart,
-  toAskPart
+  toAskPart,
+  toAskResolution
 } from './agentMessageParts'
 
 type AskInput = Parameters<typeof toAskPart>[0]
@@ -211,7 +213,7 @@ describe('toAskOrNoticePart', () => {
   })
 
   it('stands a notice in for an ask it cannot render', () => {
-    expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
+    expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({
       type: 'askUnavailable',
       askId: 'turn-1:call-1'
     })
@@ -339,5 +341,47 @@ describe('retireAskParts', () => {
 
   it('returns the same array when no part belongs to the ask', () => {
     expect(retireAskParts(parts, 'missing')).toBe(parts)
+  })
+})
+
+describe('toAskResolution', () => {
+  const frame = {
+    thread_id: 'th',
+    message_id: 'turn-1',
+    ask_id: 'turn-1:call-1'
+  }
+
+  it.for<{
+    name: string
+    data: Pick<AgentAskResolvedData, 'status' | 'selected' | 'other_text'>
+    expected: AskUserResolution
+  }>([
+    {
+      name: 'a cancelled ask',
+      data: { status: 'cancelled', selected: null },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'an expired ask',
+      data: { status: 'expired', selected: null },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'an answer naming no selection',
+      data: { status: 'answered', selected: null },
+      expected: { status: 'answered', selected: [] }
+    },
+    {
+      name: 'the committed ids',
+      data: { status: 'answered', selected: ['oil'] },
+      expected: { status: 'answered', selected: ['oil'] }
+    },
+    {
+      name: 'the committed free text',
+      data: { status: 'answered', selected: [], other_text: 'watercolor' },
+      expected: { status: 'answered', selected: [], otherText: 'watercolor' }
+    }
+  ])('reads $name off the frame', ({ data, expected }) => {
+    expect(toAskResolution({ ...frame, ...data })).toEqual(expected)
   })
 })
