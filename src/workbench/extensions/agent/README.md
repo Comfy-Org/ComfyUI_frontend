@@ -47,8 +47,9 @@ Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
 without saving; failed loads or saves keep the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the new
 scope. Desktop/Local sign-in continuation authenticates before saving; this
-branch currently mounts the Agent extension only in Cloud builds (FE-1931 owns
-the remaining distribution entry points).
+branch mounts the Agent extension in Cloud builds and in builds with
+`VITE_AGENT_STANDALONE=true` (the local agent harness, in any distribution);
+FE-1931 owns the remaining Local and Desktop product entry points.
 
 ## First-use tour
 
