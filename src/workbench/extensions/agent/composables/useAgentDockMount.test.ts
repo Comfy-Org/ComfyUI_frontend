@@ -210,6 +210,41 @@ describe('useAgentDockMount', () => {
     expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
   })
 
+  it('queues one fresh read when reopened during an in-flight read', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    let finishFirst: ((adopted: boolean) => void) | undefined
+    const fetchStatusFresh = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishFirst = resolve
+          })
+      )
+      .mockResolvedValue(true)
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      fetchStatusFresh,
+      type: computed(() => 'workspace')
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    useAgentDockMount()
+    store.isOpen = true
+    await nextTick()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    store.isOpen = false
+    await nextTick()
+    store.isOpen = true
+    await nextTick()
+    expect(fetchStatusFresh).toHaveBeenCalledOnce()
+
+    finishFirst?.(true)
+    await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledTimes(2))
+  })
+
   it('waits for the winning billing read across concurrent dock hosts', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const accountId = ref('account-a')

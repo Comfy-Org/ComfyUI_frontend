@@ -118,8 +118,9 @@ export function useAgentDockMount(): AgentDockMount {
       if (fetchStatusFresh === undefined) return
       void agentPanelStore
         .refreshBillingStatus(
-          `${type.value}:${identity}:reopen`,
-          fetchStatusFresh
+          `${type.value}:${identity}:reopen:${agentPanelStore.panelOpenEpoch}`,
+          fetchStatusFresh,
+          true
         )
         .catch((error: unknown) => {
           reportError(error, {

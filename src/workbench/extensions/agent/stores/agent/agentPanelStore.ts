@@ -93,7 +93,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     ready: boolean
   } | null>(null)
   const billingRefreshes = new Map<string, Promise<boolean>>()
+  const panelOpenEpoch = ref(0)
+  let latestBillingRefresh: Promise<boolean> | undefined
   let creditTransitionRefreshEpoch = 0
+  watch(isOpen, (open, wasOpen) => {
+    if (open && !wasOpen) panelOpenEpoch.value += 1
+  })
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -398,24 +403,29 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function refreshBillingStatus(
     key: string,
-    fetchStatus: () => Promise<boolean>
+    fetchStatus: () => Promise<boolean>,
+    afterCurrent = false
   ): Promise<boolean> {
     const existing = billingRefreshes.get(key)
     if (existing) return existing
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-    const timeout = new Promise<boolean>((resolve) => {
-      timeoutId = setTimeout(() => resolve(false), 15_000)
-    })
-    const refresh = Promise.race([
-      Promise.resolve().then(fetchStatus),
-      timeout
-    ]).finally(() => {
-      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    const previous = afterCurrent ? latestBillingRefresh : undefined
+    const start = () =>
+      new Promise<boolean>((resolve, reject) => {
+        const timeoutId = setTimeout(() => resolve(false), 15_000)
+        Promise.resolve()
+          .then(fetchStatus)
+          .then(resolve, reject)
+          .finally(() => clearTimeout(timeoutId))
+      })
+    const pending = previous ? previous.catch(() => false).then(start) : start()
+    const refresh = pending.finally(() => {
       if (billingRefreshes.get(key) === refresh) {
         billingRefreshes.delete(key)
       }
+      if (latestBillingRefresh === refresh) latestBillingRefresh = undefined
     })
     billingRefreshes.set(key, refresh)
+    latestBillingRefresh = refresh
     return refresh
   }
 
@@ -439,6 +449,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       epoch: number
       ready: boolean
     }> | null>(() => creditTransitionRefresh.value),
+    panelOpenEpoch: computed(() => panelOpenEpoch.value),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
