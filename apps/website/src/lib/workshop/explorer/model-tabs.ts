@@ -37,7 +37,7 @@ interface TabUseCase {
 }
 
 /** The tasks a tab splits into; a tab that is already one task has none. */
-export const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
+const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
   all: USE_CASES.map((useCase) => ({
     useCase,
     labelKey: useCaseLabelKey[useCase]
