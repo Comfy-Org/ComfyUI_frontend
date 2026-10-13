@@ -1,4 +1,5 @@
-import type { LocaleObject, LocaleValue } from './locale-tree'
+import type { LocalizeHref, MessageGroup } from './config'
+import type { LocaleLeafEntry, LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves, pathKey } from './locale-tree'
 
 type ViolationCode = keyof typeof violationDescriptions
@@ -7,13 +8,17 @@ export interface TokenViolation {
   path: string[]
   code: ViolationCode
   token: string
+  group?: MessageGroup
 }
 
 interface TokenCheckOptions {
   strict?: boolean
   localeCode?: string
-  groups?: readonly (readonly string[][])[]
+  localizeHref?: LocalizeHref
+  groups?: readonly MessageGroup[]
 }
+
+type Localize = (href: string) => string
 
 interface ProtectedToken {
   text: string
@@ -59,12 +64,22 @@ const protectedLiteralPatterns = [
   /\b\d+k\+\d+\b/g,
   new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
 ]
-const interpolationPattern = /\{(?:[A-Za-z_][A-Za-z0-9_$-]*|\d+|'[^']*')\}/g
-const literalInterpolationPattern = /\{'[^']*'\}/g
+const placeholderContent = String.raw`[A-Za-z_][A-Za-z0-9_$-]*|\d+|'[^']*'`
+const interpolationPattern = new RegExp(
+  String.raw`\{(?:${placeholderContent})\}`,
+  'g'
+)
 const linkedMessagePattern = /@[.:]/
-const literalOrLinkedTokenPattern =
-  /\{'[^']*'\}|@(?:\.[A-Za-z_][A-Za-z0-9_$]*)?:(?:\{(?:[A-Za-z_][A-Za-z0-9_$-]*|\d+|'[^']*')\}|[^\s{}@|()]+)/g
+const literalOrLinkedTokenPattern = new RegExp(
+  String.raw`\{'[^']*'\}|@(?:\.[A-Za-z_][A-Za-z0-9_$]*)?:(?:\{(?:${placeholderContent})\}|[^\s{}@|()]+)`,
+  'g'
+)
 const urlPattern = /\]\((https?:\/\/[^\s)]+)\)|https?:\/\/[\w\-./?=&#%~:@+,;]+/g
+const linkPattern = new RegExp(
+  `${htmlTagPattern.source}|${urlPattern.source}`,
+  'gi'
+)
+const hrefAttributePattern = /(\shref\s*=\s*)(["']?)([^"'\s>]+)\2/gi
 
 function pluralForms(value: string): string[] {
   const forms: string[] = []
@@ -109,25 +124,29 @@ function tagIdentity(tag: HtmlTag): string {
   return `<${[tag.name, ...attributes].join(' ')}${tag.selfClosing ? '/' : ''}>`
 }
 
-function unlocalizedHref(href: string, localeCode: string): string | undefined {
-  const origin = href.startsWith('https://comfy.org/')
-    ? 'https://comfy.org'
-    : ''
-  const path = href.slice(origin.length)
-  const prefix = `/${localeCode}`
-  if (!path.startsWith(`${prefix}/`)) return undefined
-  const unprefixed = path.slice(prefix.length)
-  return unprefixed.startsWith('//') ? undefined : `${origin}${unprefixed}`
+/** Rewrites every href, Markdown link and bare URL through `localize`. */
+export function localizeLinks(value: string, localize: Localize): string {
+  return value.replace(linkPattern, (match, markdownTarget?: string) => {
+    if (match.startsWith('<'))
+      return match.replace(
+        hrefAttributePattern,
+        (_, prefix: string, quote: string, href: string) =>
+          `${prefix}${quote}${localize(href)}${quote}`
+      )
+    if (markdownTarget) return `](${localize(markdownTarget)})`
+    const url = match.replace(/[.,;:]+$/, '')
+    return `${localize(url)}${match.slice(url.length)}`
+  })
 }
 
-function htmlToken(text: string, localeCode?: string): ProtectedToken {
+function htmlToken(text: string, localize?: Localize): ProtectedToken {
   const tag = parseHtmlTag(text)
   if (!tag) return { text, identity: text }
   const identity = tagIdentity(tag)
-  if (localeCode === undefined || tag.closing) return { text, identity }
+  if (localize === undefined || tag.closing) return { text, identity }
   const attributes = tag.attributes.map(([name, value]): [string, string] => [
     name,
-    (name === 'href' && unlocalizedHref(value, localeCode)) || value
+    name === 'href' ? localize(value) : value
   ])
   const localizedIdentity = tagIdentity({ ...tag, attributes })
   return localizedIdentity === identity
@@ -138,7 +157,7 @@ function htmlToken(text: string, localeCode?: string): ProtectedToken {
 function formTokens(
   form: string,
   strict: boolean,
-  localeCode?: string
+  localize?: Localize
 ): ProtectedToken[] {
   const literalTokens = [
     ...protectedLiteralPatterns,
@@ -149,19 +168,15 @@ function formTokens(
   const linkedTokens = [...form.matchAll(literalOrLinkedTokenPattern)]
     .filter(([text]) => text.startsWith('@'))
     .map(([text]) => ({ text, identity: text }))
-  const htmlTokens = strict ? protectedHtmlTokens(form, localeCode) : []
+  const htmlTokens = strict ? protectedHtmlTokens(form, localize) : []
   const urlTokens = strict
     ? [...form.replace(htmlTagPattern, ' ').matchAll(urlPattern)].map(
-        ([match, target]) => {
+        ([match, target]): ProtectedToken => {
           const text = target || match.replace(/[.,;:]+$/, '')
-          return {
-            text,
-            identity: text,
-            localizedIdentity:
-              localeCode === undefined
-                ? undefined
-                : unlocalizedHref(text, localeCode)
-          }
+          const localizedIdentity = localize?.(text)
+          return localizedIdentity === undefined || localizedIdentity === text
+            ? { text, identity: text }
+            : { text, identity: text, localizedIdentity }
         }
       )
     : []
@@ -170,12 +185,12 @@ function formTokens(
 
 function protectedHtmlTokens(
   form: string,
-  localeCode?: string
+  localize?: Localize
 ): ProtectedToken[] {
   const optionalSpans: boolean[] = []
   return htmlTags(form).flatMap((text) => {
     const tag = parseHtmlTag(text)
-    if (localeCode !== undefined && tag?.name === 'span' && !tag.selfClosing) {
+    if (localize !== undefined && tag?.name === 'span' && !tag.selfClosing) {
       if (tag.closing) {
         if (optionalSpans.pop()) return []
       } else {
@@ -184,7 +199,7 @@ function protectedHtmlTokens(
         if (optional) return []
       }
     }
-    return [htmlToken(text, localeCode)]
+    return [htmlToken(text, localize)]
   })
 }
 
@@ -213,11 +228,11 @@ function countFormTokens(
 function countTokens(
   forms: readonly string[],
   strict: boolean,
-  localeCode?: string
+  localize?: Localize
 ): Map<string, TokenCount> {
   const counts = new Map<string, TokenCount>()
   for (const form of forms) {
-    const formCounts = countFormTokens(formTokens(form, strict, localeCode))
+    const formCounts = countFormTokens(formTokens(form, strict, localize))
     for (const [identity, entry] of formCounts) {
       const required = strict ? entry.count : 1
       const existing = counts.get(identity)
@@ -272,8 +287,8 @@ function countDifferences(
   }
 
   for (const identity of targetRemaining.keys()) pair(identity, identity)
-  for (const [identity, { token }] of targetRemaining) {
-    if (token.localizedIdentity) pair(identity, token.localizedIdentity)
+  for (const [identity, { token }] of sourceRemaining) {
+    if (token.localizedIdentity) pair(token.localizedIdentity, identity)
   }
 
   return { missing: expand(sourceRemaining), added: expand(targetRemaining) }
@@ -283,7 +298,7 @@ function tokenDifferences(
   source: string,
   target: string,
   strict: boolean,
-  localeCode?: string
+  localize?: Localize
 ): TokenDifferences {
   const sourceForms = strict ? pluralForms(source) : [source]
   const targetForms = strict ? pluralForms(target) : [target]
@@ -291,14 +306,14 @@ function tokenDifferences(
     sourceForms.length === targetForms.length
       ? sourceForms.map((form, index) =>
           countDifferences(
-            countTokens([form], strict, localeCode),
-            countTokens([targetForms[index]], strict, localeCode)
+            countTokens([form], strict, localize),
+            countTokens([targetForms[index]], strict, localize)
           )
         )
       : [
           countDifferences(
-            countTokens(sourceForms, strict, localeCode),
-            countTokens(targetForms, strict, localeCode)
+            countTokens(sourceForms, strict, localize),
+            countTokens(targetForms, strict, localize)
           )
         ]
   return {
@@ -324,8 +339,8 @@ function markupProblems(value: string): string[] {
   })
 }
 
-function withoutLiterals(value: string): string {
-  return value.replace(literalInterpolationPattern, '')
+function withoutParsedTokens(value: string): string {
+  return value.replace(literalOrLinkedTokenPattern, '')
 }
 
 function changesPluralFormCount(source: string, target: string): boolean {
@@ -344,8 +359,8 @@ function addedMessageSyntax(
     ...(pluralForms(target).length > 1 && pluralForms(source).length === 1
       ? [{ code: 'added-plural-separator' as const, token: '|' }]
       : []),
-    ...(linkedMessagePattern.test(withoutLiterals(target)) &&
-    !linkedMessagePattern.test(withoutLiterals(source))
+    ...(linkedMessagePattern.test(withoutParsedTokens(target)) &&
+    !linkedMessagePattern.test(withoutParsedTokens(source))
       ? [{ code: 'added-linked-message' as const, token: '@' }]
       : [])
   ]
@@ -355,14 +370,13 @@ function stringViolations(
   source: string,
   target: string,
   path: string[],
-  { strict = false, localeCode }: TokenCheckOptions
+  { strict = false, localeCode, localizeHref }: TokenCheckOptions
 ): TokenViolation[] {
-  const { missing, added } = tokenDifferences(
-    source,
-    target,
-    strict,
-    localeCode
-  )
+  const localize =
+    localeCode === undefined
+      ? undefined
+      : (href: string) => localizeHref?.(href, localeCode) ?? href
+  const { missing, added } = tokenDifferences(source, target, strict, localize)
   function violation(code: ViolationCode, token = ''): TokenViolation {
     return { path, code, token }
   }
@@ -421,6 +435,7 @@ const violationDescriptions = {
   'added-linked-message': 'added linked message @',
   'malformed-markup': 'malformed HTML nesting at',
   'leaf-type-changed': 'leaf type changed',
+  'stale-group-member': 'message group lists a key missing from the source',
   'array-length-changed': 'array length changed',
   'leaf-value-changed': 'leaf value changed'
 }
@@ -433,7 +448,8 @@ function describeViolation({ code, token }: TokenViolation): string {
 }
 
 export function formatTokenViolation(violation: TokenViolation): string {
-  return `${violation.path.join('.')}: ${describeViolation(violation)}`
+  const paths = violation.group ?? [violation.path]
+  return `${paths.map((path) => path.join('.')).join(' + ')}: ${describeViolation(violation)}`
 }
 
 function groupedDescriptions(violations: readonly TokenViolation[]): string[] {
@@ -483,31 +499,49 @@ export function auditLocaleTokens(
     if (targetLeaf === undefined) return []
     return leafViolations(leaf.value, targetLeaf.value, leaf.path, options)
   })
-  const groupErrors = groups.flatMap((group): TokenViolation[] => {
-    if (!group.some((path) => sourceLeaves.has(pathKey(path)))) return []
-    const sourceValues = group.map(
-      (path) => sourceLeaves.get(pathKey(path))?.value
-    )
-    const targetValues = group.map(
-      (path) => targetLeaves.get(pathKey(path))?.value
-    )
-    if (
-      sourceValues.every((value) => typeof value === 'string') &&
-      targetValues.every((value) => typeof value === 'string')
-    ) {
-      return stringViolations(
-        sourceValues.join(' '),
-        targetValues.join(' '),
-        group[0] ?? [],
-        options
-      )
-    }
-    return group.flatMap((path, index): TokenViolation[] =>
-      typeof sourceValues[index] !== 'string' ||
-      typeof targetValues[index] !== 'string'
-        ? [{ path, code: 'leaf-type-changed', token: '' }]
-        : []
-    )
-  })
+  const groupErrors = groups.flatMap((group) =>
+    groupViolations(group, sourceLeaves, targetLeaves, options)
+  )
   return [...leafErrors, ...groupErrors]
+}
+
+function groupViolations(
+  group: MessageGroup,
+  sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>,
+  targetLeaves: ReadonlyMap<string, LocaleLeafEntry>,
+  options: TokenCheckOptions
+): TokenViolation[] {
+  const sourceValues = group.map(
+    (path) => sourceLeaves.get(pathKey(path))?.value
+  )
+  if (sourceValues.every((value) => value === undefined)) return []
+  const stale = group.filter((_, index) => sourceValues[index] === undefined)
+  if (stale.length > 0)
+    return stale.map(
+      (path): TokenViolation => ({
+        path: [...path],
+        code: 'stale-group-member',
+        token: ''
+      })
+    )
+  const targetValues = group.map(
+    (path) => targetLeaves.get(pathKey(path))?.value
+  )
+  if (
+    sourceValues.every((value) => typeof value === 'string') &&
+    targetValues.every((value) => typeof value === 'string')
+  ) {
+    return stringViolations(
+      sourceValues.join(' '),
+      targetValues.join(' '),
+      [...(group[0] ?? [])],
+      options
+    ).map((violation) => ({ ...violation, group }))
+  }
+  return group.flatMap((path, index): TokenViolation[] =>
+    typeof sourceValues[index] !== 'string' ||
+    typeof targetValues[index] !== 'string'
+      ? [{ path: [...path], code: 'leaf-type-changed', token: '' }]
+      : []
+  )
 }

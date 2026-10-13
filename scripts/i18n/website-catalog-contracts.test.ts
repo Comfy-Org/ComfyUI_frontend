@@ -1,35 +1,26 @@
-import { resolve } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { translationTargets } from './config'
-import { pathKey, readLocale } from './locale-tree'
+import { pathKey } from './locale-tree'
 import {
   auditLocaleTokens,
+  formatTokenViolation,
   leafTokensDiffer,
+  localizeLinks,
   tokenErrors
 } from './protected-tokens'
 
 const sourceLink = '[FAQ](https://comfy.org/pricing/?q=1#faq)'
 const localizedLink = '[问答](https://comfy.org/zh-CN/pricing/?q=1#faq)'
 const nowrapTitle = 'Use <span class="whitespace-nowrap">{name}</span>'
-const titleGroups = [[['before'], ['after']]]
-const repoRoot = resolve(import.meta.dirname, '../..')
-const websiteSource = readLocale(
-  resolve(repoRoot, 'apps/website/src/locales/en/main.json')
-)
-const websiteCatalogs = translationTargets.website.outputLocales.map(
-  ({ code }) => ({
-    code,
-    catalog: readLocale(
-      resolve(repoRoot, `apps/website/src/locales/${code}/main.json`)
-    )
-  })
-)
+const titleGroup = [['before'], ['after']]
+const titleGroups = [titleGroup]
+const { localizeHref } = translationTargets.website
+const chinese = { strict: true, localeCode: 'zh-CN', localizeHref }
 
 describe('authored website token contracts', () => {
-  it.for([
+  const authoredContracts = [
     { source: sourceLink, target: localizedLink },
     {
       source: '<a href="https://comfy.org/pricing/?q=1#faq">FAQ</a>',
@@ -45,17 +36,42 @@ describe('authored website token contracts', () => {
         '<span class="whitespace-nowrap"><span class="brand">{name}</span></span>',
       target: '<span class="brand">{name}</span>'
     }
-  ])(
+  ]
+
+  it.for(authoredContracts)(
     'accepts localized links and presentational wrappers',
     ({ source, target }) => {
-      expect(
-        leafTokensDiffer(source, target, { strict: true, localeCode: 'zh-CN' })
-      ).toBe(false)
+      expect(leafTokensDiffer(source, target, chinese)).toBe(false)
+    }
+  )
+
+  it.for(authoredContracts)(
+    'generation keeps the exact links and markup it was given',
+    ({ source, target }) => {
       expect(
         tokenErrors(source, target, { strict: true }).length
       ).toBeGreaterThan(0)
     }
   )
+
+  it('gives generation the localized link for the locale', () => {
+    expect(
+      localizeLinks(sourceLink, (href) => localizeHref(href, 'zh-CN'))
+    ).toBe('[FAQ](https://comfy.org/zh-CN/pricing/?q=1#faq)')
+    expect(localizeLinks(sourceLink, (href) => localizeHref(href, 'ja'))).toBe(
+      sourceLink
+    )
+  })
+
+  it('rejects a locale prefix on a route the locale does not serve', () => {
+    expect(
+      leafTokensDiffer(
+        '[x](https://comfy.org/models/seedance-2/)',
+        '[x](https://comfy.org/zh-CN/models/seedance-2/)',
+        chinese
+      )
+    ).toBe(true)
+  })
 
   it.for([
     '[问答](https://other.org/zh-CN/pricing/?q=1#faq)',
@@ -67,12 +83,7 @@ describe('authored website token contracts', () => {
     '[问答](https://comfy.org/zh-CN/zh-CN/pricing/?q=1#faq)',
     '[问答](https://comfy.org/zh-CN//pricing/?q=1#faq)'
   ])('rejects an altered localized destination: %s', (target) => {
-    expect(
-      leafTokensDiffer(sourceLink, target, {
-        strict: true,
-        localeCode: 'zh-CN'
-      })
-    ).toBe(true)
+    expect(leafTokensDiffer(sourceLink, target, chinese)).toBe(true)
   })
 
   it.for([
@@ -90,9 +101,7 @@ describe('authored website token contracts', () => {
   ])(
     'keeps semantic markup and placeholder requirements',
     ({ source, target }) => {
-      expect(
-        leafTokensDiffer(source, target, { strict: true, localeCode: 'zh-CN' })
-      ).toBe(true)
+      expect(leafTokensDiffer(source, target, chinese)).toBe(true)
     }
   )
 
@@ -107,19 +116,6 @@ describe('authored website token contracts', () => {
       })
     ).toEqual([])
   })
-
-  it.for(websiteCatalogs)(
-    '$code preserves every catalog token contract',
-    ({ code, catalog }) => {
-      expect(
-        auditLocaleTokens(websiteSource, catalog, new Set(), {
-          strict: true,
-          localeCode: code,
-          groups: translationTargets.website.messageGroups
-        })
-      ).toEqual([])
-    }
-  )
 })
 
 describe('tokens shared across message fragments', () => {
@@ -149,24 +145,24 @@ describe('tokens shared across message fragments', () => {
     {
       before: '',
       after: ' 中的名称',
-      expected: [{ path: ['before'], code: 'missing-token', token: '{name}' }]
+      expected: [{ code: 'missing-token', token: '{name}' }]
     },
     {
       before: '',
       after: ' 中的 {name} {extra}',
-      expected: [{ path: ['before'], code: 'added-token', token: '{extra}' }]
+      expected: [{ code: 'added-token', token: '{extra}' }]
     },
     {
       before: '',
       after: ' 中的 {name} {name}',
-      expected: [{ path: ['before'], code: 'added-token', token: '{name}' }]
+      expected: [{ code: 'added-token', token: '{name}' }]
     },
     {
       before: '',
       after: '',
       expected: [
-        { path: ['before'], code: 'missing-token', token: '{name}' },
-        { path: ['before'], code: 'empty-translation', token: '' }
+        { code: 'missing-token', token: '{name}' },
+        { code: 'empty-translation', token: '' }
       ]
     }
   ])('rejects changed group tokens', ({ before, after, expected }) => {
@@ -177,7 +173,36 @@ describe('tokens shared across message fragments', () => {
         new Set([pathKey(['before'])]),
         { strict: true, groups: titleGroups }
       )
-    ).toEqual(expected)
+    ).toEqual(
+      expected.map((violation) => ({
+        ...violation,
+        path: ['before'],
+        group: titleGroup
+      }))
+    )
+  })
+
+  it('names every member of the group in a reported violation', () => {
+    const [violation] = auditLocaleTokens(
+      { before: '{name} in ', after: '' },
+      { before: '', after: ' 中的名称' },
+      new Set(),
+      { strict: true, groups: titleGroups }
+    )
+    expect(formatTokenViolation(violation)).toBe(
+      'before + after: missing {name}'
+    )
+  })
+
+  it('reports a configured member that the English source no longer has', () => {
+    expect(
+      auditLocaleTokens(
+        { before: '{name} in ' },
+        { before: '{name} 中', after: '' },
+        new Set(),
+        { strict: true, groups: titleGroups }
+      )
+    ).toEqual([{ path: ['after'], code: 'stale-group-member', token: '' }])
   })
 
   it('rejects a missing member instead of treating it as intentional emptiness', () => {

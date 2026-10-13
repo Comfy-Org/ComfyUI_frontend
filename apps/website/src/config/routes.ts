@@ -5,7 +5,7 @@ import {
   normalizeRoute
 } from './locales'
 import type { Locale } from './locales'
-import type { AppWorkshopModel } from './models-catalogue'
+import type { WorkshopAppId } from './workshop-app-id'
 
 const baseRoutes = {
   home: '/',
@@ -192,9 +192,7 @@ export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
   ) as Routes
 }
 
-const workshopAppRepos: Readonly<
-  Partial<Record<AppWorkshopModel['appId'], string>>
-> = {
+const workshopAppRepos: Readonly<Partial<Record<WorkshopAppId, string>>> = {
   studio: 'https://github.com/Comfy-Org/comfy-cinematic-studio',
   reshoot: 'https://github.com/Comfy-Org/comfy-reshoot'
 }

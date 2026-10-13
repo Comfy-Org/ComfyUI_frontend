@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { LocalizeHref } from './config'
 import { pathKey } from './locale-tree'
 import type { TokenViolation } from './protected-tokens'
 import {
@@ -9,17 +10,20 @@ import {
   tokenErrors
 } from './protected-tokens'
 
+const prefixLocale: LocalizeHref = (href, localeCode) =>
+  href.startsWith('/') && !href.startsWith('//')
+    ? `/${localeCode}${href}`
+    : href
+
 function audit(
   source: string,
   target: string,
   options: { strict: boolean; localeCode?: string }
 ): Omit<TokenViolation, 'path'>[] {
-  return auditLocaleTokens(
-    { text: source },
-    { text: target },
-    new Set(),
-    options
-  ).map(({ code, token }) => ({ code, token }))
+  return auditLocaleTokens({ text: source }, { text: target }, new Set(), {
+    ...options,
+    localizeHref: prefixLocale
+  }).map(({ code, token }) => ({ code, token }))
 }
 
 const faqLink = '<a href="/pricing/#faq" class="underline">FAQ</a>'
@@ -329,10 +333,13 @@ describe('non-strict protected-token audit', () => {
       name: 'reports an introduced linked message',
       source: 'Send',
       target: 'Enviar @:g.cancel',
-      expected: [
-        { code: 'added-token', token: '@:g.cancel' },
-        { code: 'added-linked-message', token: '@' }
-      ]
+      expected: [{ code: 'added-token', token: '@:g.cancel' }]
+    },
+    {
+      name: 'reports an introduced malformed linked message',
+      source: 'Send',
+      target: 'Enviar @: g.cancel',
+      expected: [{ code: 'added-linked-message', token: '@' }]
     },
     {
       name: 'reports a placeholder renamed across plural forms',
@@ -439,13 +446,15 @@ describe('leafTokensDiffer', () => {
     expect(
       leafTokensDiffer(faqLink, localizedFaqLink, {
         strict: true,
-        localeCode: 'zh-CN'
+        localeCode: 'zh-CN',
+        localizeHref: prefixLocale
       })
     ).toBe(false)
     expect(
       leafTokensDiffer(faqLink, localizedFaqLink, {
         strict: true,
-        localeCode: 'ja'
+        localeCode: 'ja',
+        localizeHref: prefixLocale
       })
     ).toBe(true)
   })

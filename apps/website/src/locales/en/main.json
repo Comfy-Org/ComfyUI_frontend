@@ -94,7 +94,11 @@
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
         "titleUnbranded": "{name} API & Playground",
-        "titleApi": "{name} API - Comfy"
+        "titleApi": "{name} API - Comfy",
+        "units": {
+          "image": "image",
+          "run": "run"
+        }
       },
       "tabs": {
         "playground": "Playground",

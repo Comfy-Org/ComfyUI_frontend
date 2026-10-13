@@ -57,7 +57,7 @@ export function serializeLocale(locale: LocaleObject): string {
   return `${JSON.stringify(locale, null, 2)}\n`
 }
 
-export function pathKey(path: string[]): string {
+export function pathKey(path: readonly string[]): string {
   return JSON.stringify(path)
 }
 

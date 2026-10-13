@@ -7,10 +7,17 @@ export interface OutputLocale {
   guidance?: string
 }
 
+/** Message paths a template renders together; tokens may move between them. */
+export type MessageGroup = readonly (readonly string[])[]
+
+/** Maps an English href to the one a locale's copy should use. */
+export type LocalizeHref = (href: string, localeCode: string) => string
+
 export interface TranslationPipelineConfig {
   output: string
   strictProtectedTokens: boolean
-  messageGroups?: readonly (readonly string[][])[]
+  messageGroups?: readonly MessageGroup[]
+  localizeHref?: LocalizeHref
   model: string
   reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number

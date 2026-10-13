@@ -147,6 +147,44 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
 }
 
 describe('updateLocales generation', () => {
+  it('retranslates a message group together when its English placeholders change', async () => {
+    const repo = createCatalogRepo({
+      ...config,
+      outputLocales: config.outputLocales.filter(({ code }) => code === 'ja'),
+      messageGroups: [[['before'], ['after']]]
+    })
+    repo.recordEnglish({ 'main.json': { before: '{name} in ', after: '' } })
+    repo.writeCatalog('en/main.json', { before: '{model} in ', after: '' })
+    repo.writeCatalog('ja/main.json', { before: '', after: 'の{name}' })
+
+    expect((await repo.run(true)).status).toBe(0)
+
+    const translator = createTranslator(() => '{model}の')
+    expect((await repo.run(false, translator.translate)).status).toBe(0)
+    expect(repo.readCatalog('ja/main.json')).toEqual({
+      before: '{model}の',
+      after: ''
+    })
+  })
+
+  it('gives generation the link to the page the locale serves', async () => {
+    const repo = createCatalogRepo({
+      ...config,
+      outputLocales: config.outputLocales.filter(({ code }) => code === 'zh-CN')
+    })
+    repo.recordEnglish({ 'main.json': {} })
+    repo.writeCatalog('en/main.json', {
+      faq: 'See the [FAQ](https://comfy.org/pricing/#faq).'
+    })
+
+    const translator = createTranslator()
+    expect((await repo.run(false, translator.translate)).status).toBe(0)
+    expect(translator.sourcesByLocale()).toEqual({
+      'zh-CN': ['See the [FAQ](https://comfy.org/zh-CN/pricing/#faq).']
+    })
+    expect((await repo.run(true)).status).toBe(0)
+  })
+
   it('regenerates changed app copy even when the locale was edited, recording the English blob', async () => {
     const repo = createCatalogRepo(translationTargets.app)
     const english = { greeting: 'Hi {n}', title: '<b>{n}</b> and {n}' }
@@ -562,11 +600,11 @@ describe('protected-token baselines', () => {
     repo.recordEnglish({ 'main.json': source })
     repo.writeCatalog('en/main.json', source)
     repo.writeCatalog('ja/main.json', {
-      cta: '<a href="/ja/pricing">料金</a>を見る',
+      cta: '<a href="/pricing">料金</a>を見る',
       help: '<strong>聞く'
     })
     repo.writeCatalog('zh-CN/main.json', {
-      cta: '查看<a href="/pricing">价格</a>',
+      cta: '查看<a href="/zh-CN/pricing">价格</a>',
       help: '<strong>询问</strong>我们'
     })
 

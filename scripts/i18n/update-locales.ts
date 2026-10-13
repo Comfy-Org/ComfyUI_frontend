@@ -35,6 +35,7 @@ import {
   auditLocaleTokens,
   formatTokenViolation,
   leafTokensDiffer,
+  localizeLinks,
   protectedTokens
 } from './protected-tokens'
 import type { SourceManifest } from './source-manifest'
@@ -84,15 +85,19 @@ interface TranslationPlan {
 export function buildTranslationItems(
   filename: string,
   pendingLeaves: readonly LocaleLeafEntry[],
-  { strict = false }: { strict?: boolean } = {}
+  {
+    strict = false,
+    localize
+  }: { strict?: boolean; localize?: (href: string) => string } = {}
 ): TranslationPlan {
   const items: TranslationItem[] = []
   const refs = new Map<string, ItemRef>()
   function addItem(
     leaf: LocaleLeafEntry,
-    source: string,
+    english: string,
     indices: number[]
   ): void {
+    const source = localize ? localizeLinks(english, localize) : english
     const id = String(items.length + 1)
     const indexSuffix = indices.map((index) => `[${index}]`).join('')
     items.push({
@@ -254,6 +259,18 @@ function loadPlans(
           .map(([key]) => key)
       )
       const changes = diffLocaleSources(previous, source)
+      const invalidated = new Set(
+        [...changes.added, ...changes.modified].map(pathKey)
+      )
+      const modified = new Set(changes.modified.map(pathKey))
+      for (const group of config.messageGroups ?? []) {
+        const keys = group.map((path) => pathKey([...path]))
+        if (!keys.some((key) => invalidated.has(key))) continue
+        for (const key of keys.filter((key) => sourceLeaves.has(key))) {
+          invalidated.add(key)
+          modified.add(key)
+        }
+      }
       const summary = formatPruneSummary(
         filename,
         changes.deleted.length,
@@ -267,10 +284,8 @@ function loadPlans(
         previous,
         degraded: recorded === undefined,
         knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? []),
-        invalidated: new Set(
-          [...changes.added, ...changes.modified].map(pathKey)
-        ),
-        modified: new Set(changes.modified.map(pathKey)),
+        invalidated,
+        modified,
         excluded
       }
     })
@@ -301,7 +316,8 @@ function loadStates(
         (source, target) =>
           leafTokensDiffer(source, target, {
             strict: config.strictProtectedTokens,
-            localeCode: locale.code
+            localeCode: locale.code,
+            localizeHref: config.localizeHref
           })
       ).filter(
         (leaf) =>
@@ -349,7 +365,14 @@ function auditState(
   const actual = auditLocaleTokens(state.plan.source, output, skipped, {
     strict: config.strictProtectedTokens,
     localeCode: state.locale.code,
-    groups: config.messageGroups
+    localizeHref: config.localizeHref,
+    groups:
+      phase === 'output'
+        ? config.messageGroups
+        : config.messageGroups?.filter(
+            (group) =>
+              !group.some((path) => replaced.includes(pathKey([...path])))
+          )
   })
   const known = new Set<string>()
   const unexpected: typeof actual = []
@@ -524,12 +547,17 @@ async function translateStates(
     throw new Error(
       `Fix retained copy before generation:\n${preflight.join('\n')}`
     )
+  const { localizeHref } = config
   const tasks = states.map((state) => ({
     state,
     translation: buildTranslationItems(
       state.plan.filename,
       state.pendingLeaves,
-      { strict: config.strictProtectedTokens }
+      {
+        strict: config.strictProtectedTokens,
+        localize:
+          localizeHref && ((href) => localizeHref(href, state.locale.code))
+      }
     )
   }))
   const pending = tasks.reduce(

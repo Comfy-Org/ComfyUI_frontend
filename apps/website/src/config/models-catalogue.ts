@@ -3,6 +3,7 @@ import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
+import type { WorkshopAppId } from './workshop-app-id'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -169,7 +170,7 @@ export type AppWorkshopModel = WorkshopPresentation & {
   readonly type: 'APP'
   readonly href: string
   /** Which app page runs it: see `WorkshopAppEntry.app`. */
-  readonly appId: 'studio' | 'reshoot'
+  readonly appId: WorkshopAppId
   readonly routerId?: never
   readonly workflowId?: never
 }

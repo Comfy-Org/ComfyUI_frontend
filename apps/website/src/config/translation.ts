@@ -1,5 +1,8 @@
 import type { Locale } from './locales'
-import { DEFAULT_LOCALE, LOCALE_CODES } from './locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, isLocale } from './locales'
+import { localizeHref } from './routes'
+
+const siteOrigin = 'https://comfy.org'
 
 const languages = {
   'zh-CN': {
@@ -21,17 +24,24 @@ export const translationExclusions = [
   'minimaxLicense'
 ] as const
 
-const messageGroups: readonly (readonly string[][])[] = [
+const messageGroups = [
   [
     ['models', 'list', 'heroTitleBefore'],
     ['models', 'list', 'heroTitleAfter']
   ]
-]
+] as const
+
+function localizeSiteHref(href: string, localeCode: string): string {
+  if (!isLocale(localeCode)) return href
+  const origin = href.startsWith(`${siteOrigin}/`) ? siteOrigin : ''
+  return `${origin}${localizeHref(href.slice(origin.length), localeCode)}`
+}
 
 export const websiteTranslationConfig = {
   output: 'apps/website/src/locales',
   strictProtectedTokens: true,
   messageGroups,
+  localizeHref: localizeSiteHref,
   translationContext:
     'comfy.org marketing, product, support, and legal content',
   glossary: `Keep these names untranslated: Comfy, ComfyUI, Comfy Cloud, Comfy Desktop, Managed Builds, MiniMax, Flux, LTX, Wan, Seedance, LoRA, ControlNet, MCP, Hugging Face, Civitai.
