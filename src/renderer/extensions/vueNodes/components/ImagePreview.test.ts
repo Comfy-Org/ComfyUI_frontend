@@ -473,22 +473,6 @@ describe('ImagePreview', () => {
   })
 
   describe('grid view', () => {
-    it('hands the loaded image back to the node when the same URLs arrive again', async () => {
-      const sync = vi
-        .spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
-        .mockImplementation(() => {})
-      const urls = ['/api/view?filename=test.png&type=input']
-      const { rerender } = renderImagePreview({ imageUrls: urls, nodeId: '1' })
-      const image = screen.getByTestId('main-image')
-      await fireEvent.load(image)
-
-      await rerender({ imageUrls: [...urls], nodeId: '1' })
-      await nextTick()
-
-      expect(sync).toHaveBeenCalledTimes(2)
-      expect(sync).toHaveBeenLastCalledWith('1', image, 0)
-    })
-
     it('remounts a failed grid thumbnail when the same URLs arrive again', async () => {
       const { rerender } = renderImagePreview()
       const [thumbnail] = screen.getAllByRole('img')
@@ -631,6 +615,70 @@ describe('ImagePreview', () => {
   })
 
   describe('URL change detection', () => {
+    it('hands the loaded image back to the node when the same URLs arrive again', async () => {
+      const sync = vi
+        .spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+        .mockImplementation(() => {})
+      const urls = ['/api/view?filename=test.png&type=input']
+      const { rerender } = renderImagePreview({ imageUrls: urls, nodeId: '1' })
+      const image = screen.getByTestId('main-image')
+      await fireEvent.load(image)
+
+      await rerender({ imageUrls: [...urls], nodeId: '1' })
+      await nextTick()
+
+      expect(sync).toHaveBeenCalledTimes(2)
+      expect(sync).toHaveBeenLastCalledWith('1', image, 0)
+    })
+
+    it('does not hand back an image from earlier URLs', async () => {
+      const sync = vi
+        .spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+        .mockImplementation(() => {})
+      const { rerender } = renderImagePreview({
+        imageUrls: ['/api/view?filename=a.png&type=input'],
+        nodeId: '1'
+      })
+      await fireEvent.load(screen.getByTestId('main-image'))
+      const next = ['/api/view?filename=b.png&type=input']
+      await rerender({ imageUrls: next, nodeId: '1' })
+
+      await rerender({ imageUrls: [...next], nodeId: '1' })
+      await nextTick()
+
+      expect(sync).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not hand back the previous gallery image after the current one fails', async () => {
+      const sync = vi
+        .spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+        .mockImplementation(() => {})
+      const { rerender } = renderImagePreview({ nodeId: '1' })
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      await fireEvent.load(screen.getByTestId('main-image'))
+      const dots = screen.getAllByRole('button', { name: /^View image/ })
+      await user.click(dots[1])
+      await fireEvent.error(screen.getByTestId('main-image'))
+
+      await rerender({ imageUrls: [...defaultProps.imageUrls], nodeId: '1' })
+      await nextTick()
+
+      expect(sync).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows the loader again when a failed image is retried', async () => {
+      const urls = ['/api/view?filename=test.png&type=input']
+      const { container, rerender } = renderImagePreview({ imageUrls: urls })
+      await fireEvent.error(screen.getByTestId('main-image'))
+
+      await rerender({ imageUrls: [...urls] })
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
+
+      expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
+    })
+
     it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime

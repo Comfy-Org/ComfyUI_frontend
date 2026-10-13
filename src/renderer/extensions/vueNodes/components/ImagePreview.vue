@@ -361,6 +361,7 @@ watch(
       return
     }
 
+    loadedImage = undefined
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
@@ -400,6 +401,7 @@ function updateAspectRatio(event: Event, index: number) {
 }
 
 function handleImageError() {
+  loadedImage = undefined
   stopDelayedLoader()
   showLoader.value = false
   if (currentHdrPreviewUrl.value) {
