@@ -109,14 +109,14 @@ describe('modelMetaDescription', () => {
       expected: 'Recraft V4: Draws. Run it in your browser or call it via API.'
     },
     {
-      name: 'writes the Chinese price without English words',
+      name: 'keeps the pricing unit in the Chinese description',
       locale: 'zh-CN' as const,
       page: {
         model: { name: 'Recraft V4', provider: 'Recraft', summary: '绘图。' },
         priceEstimate: '~9.5 credits/Image'
       },
       expected:
-        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下约 ~9.5 积分。'
+        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下每 image 约 ~9.5 积分。'
     }
   ])('$name', ({ page, expected, locale }) => {
     expect(modelMetaDescription(page, locale)).toBe(expected)
