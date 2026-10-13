@@ -473,7 +473,7 @@ test.describe('Models catalog', () => {
     await expect(
       page
         .getByTestId('related-models')
-        .getByTestId('workshop-model-card')
+        .getByTestId('provider-model-row')
         .first()
     ).toBeVisible()
   })
@@ -618,34 +618,34 @@ test.describe('Models catalog', () => {
     ).toBeVisible()
   })
 
-  test('a model page sets itself beside a model with the same task', async ({
+  test("a model page ends with its provider's other models in a table, not a comparison", async ({
     page
   }) => {
     await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
-    const section = page.getByTestId('model-compare')
+    await expect(page.getByTestId('model-compare')).toHaveCount(0)
     await expect(
-      section.getByRole('heading', { level: 2, name: 'How it compares' })
+      page.getByRole('heading', { level: 2, name: 'How it compares' })
+    ).toHaveCount(0)
+    const table = page.getByTestId('related-models')
+    await expect(
+      table.getByRole('heading', { level: 2, name: /^More from / })
     ).toBeVisible()
-    const chips = section
-      .getByRole('group', { name: 'Compare with' })
-      .getByRole('button')
-    await expect(chips).toHaveCount(3)
-    await chips.nth(1).click()
-    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true')
-    const columns = section.getByRole('columnheader')
-    await expect(columns).toHaveCount(2)
-    await expect(columns.first()).toHaveAccessibleName(
-      'Seedream 5.0 Pro Text-to-Image'
-    )
-    await expect(columns.nth(1)).toHaveAccessibleName(
-      (await chips.nth(1).textContent())?.trim() ?? ''
-    )
+    await expect(table.getByRole('columnheader')).toHaveText([
+      'Model',
+      'Price',
+      'Resolution',
+      'Duration'
+    ])
+    const rows = table.getByTestId('provider-model-row')
+    await expect(rows.first()).toBeVisible()
     await expect(
-      section.getByRole('link', { name: 'Open full comparison' })
-    ).toHaveAttribute(
-      'href',
-      /^\/hub\/models\/\?compare=byteplus--seedream-5-pro--generate-images,[^,]+$/
-    )
+      rows.getByRole('link', { name: 'Seedream 5.0 Pro Text-to-Image' })
+    ).toHaveCount(0)
+    const first = rows.first().getByRole('link')
+    const href = await first.getAttribute('href')
+    expect(href).toMatch(/^\/hub\/models\/[^/]+\/$/)
+    await first.click()
+    await expect(page).toHaveURL(href ?? '')
   })
 
   test('the how-you-use-it filter offers only catalogue models', async ({

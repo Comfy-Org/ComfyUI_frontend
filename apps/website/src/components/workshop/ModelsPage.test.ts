@@ -581,9 +581,13 @@ describe('Models page entry', () => {
         ).toBeTruthy()
         expect(screen.getByTestId('model-detail')).toBeTruthy()
         expect(screen.getByTestId('model-tags')).toBeTruthy()
-        expect(screen.getByTestId('related-models').textContent).toContain(
-          'Browse all'
-        )
+        expect(
+          within(screen.getByTestId('related-models')).getByRole('heading', {
+            level: 2,
+            name: 'More from Black Forest Labs'
+          })
+        ).toBeTruthy()
+        expect(screen.queryByTestId('model-compare')).toBeNull()
         expect(
           within(screen.getByTestId('model-hero')).getByRole('link', {
             name: 'Generate images'

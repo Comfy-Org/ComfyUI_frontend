@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import type {
   RouterWorkshopModelDetail,
   WorkshopModel
 } from '@/config/models-catalogue'
+import type { ProviderModelRow } from '@/config/models-page-data'
 import { formForContract } from '@/config/workshop-contract'
 import { pagePaths } from '@/lib/workshop/page-paths'
 import { t } from '@/i18n/translations'
@@ -19,7 +18,7 @@ import CardRow from './CardRow.vue'
 import DetailTrail from './DetailTrail.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
-import ModelCompare from './model-detail/ModelCompare.vue'
+import ProviderModelsTable from './model-detail/ProviderModelsTable.vue'
 import ModelPaths from './model-detail/ModelPaths.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -34,13 +33,11 @@ interface ModelTag {
 const { page } = defineProps<{
   page: {
     model: RouterWorkshopModelDetail
-    related: readonly WorkshopModel[]
-    relatedHeading: string
+    providerModels: readonly ProviderModelRow[]
     successor?: WorkshopModel
     priceEstimate?: string
     useCaseLabel?: string
     workflows: readonly WorkshopModel[]
-    comparable?: readonly WorkshopModel[]
     shownTags: readonly ModelTag[]
     restTags: readonly ModelTag[]
     restTagCount: number
@@ -167,37 +164,11 @@ const restTags = computed(() =>
         </CardRow>
       </section>
 
-      <section
-        class="mt-24 border-t border-transparency-white-t8 pt-12"
-        data-testid="related-models"
-      >
-        <div class="mb-6 flex items-baseline justify-between gap-4">
-          <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-            {{ page.relatedHeading }}
-          </h2>
-          <Button
-            :href="routes.workshop"
-            variant="link"
-            :append-icon="ArrowRight"
-          >
-            <span class="sm:hidden">{{
-              t('workshop.model.browseAllShort')
-            }}</span>
-            <span class="max-sm:hidden">{{
-              t('workshop.model.browseAll')
-            }}</span>
-          </Button>
-        </div>
-        <ul
-          class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          <li v-for="other in page.related" :key="other.slug">
-            <WorkshopModelCard :model="other" />
-          </li>
-        </ul>
-      </section>
-
-      <ModelCompare :model="page.model" :candidates="page.comparable ?? []" />
+      <ProviderModelsTable
+        v-if="page.model.provider"
+        :provider="page.model.provider"
+        :rows="page.providerModels"
+      />
     </div>
   </div>
 </template>

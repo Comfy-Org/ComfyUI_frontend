@@ -1,11 +1,8 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
-import { sortWorkshopModels } from '@/config/models-catalogue'
-import { SAME_PROMPT_SAMPLES } from '@/data/compareSamePrompt'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { taskLabelFor } from '@/lib/workshop/task-label'
 import { accessBadgeKey, accessFor } from './model-access'
-import { sharesSamples } from './same-prompt'
 
 export const MAX_COMPARED = 4
 export const MIN_COMPARED = 2
@@ -73,34 +70,4 @@ export function comparedSearch(
   else params.delete(COMPARE_PARAM)
   const next = params.toString().replaceAll('%2C', ',')
   return next ? `?${next}` : ''
-}
-
-/**
- * The models a model page offers to compare with: others that do the same
- * task (the same input to the same output), those that answered a prompt this
- * model also answered first, then the most popular.
- */
-export function comparableWith(
-  model: WorkshopModel,
-  catalogue: readonly WorkshopModel[],
-  samples = SAME_PROMPT_SAMPLES,
-  limit = MAX_COMPARED - 1
-): WorkshopModel[] {
-  if (!canCompare(model) || !model.task) return []
-  const popular = sortWorkshopModels(
-    catalogue.filter(
-      (other) =>
-        other.slug !== model.slug &&
-        other.task === model.task &&
-        canCompare(other)
-    ),
-    'popular'
-  )
-  const sharing = popular.filter((other) =>
-    sharesSamples(samples, model.slug, other.slug)
-  )
-  return [
-    ...sharing,
-    ...popular.filter((other) => !sharing.includes(other))
-  ].slice(0, limit)
 }

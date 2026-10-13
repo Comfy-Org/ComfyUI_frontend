@@ -8,15 +8,6 @@ function compares(sample: SamePromptSample, slugs: readonly string[]) {
   return slugs.filter((slug) => slug in sample.images).length >= 2
 }
 
-/** Whether two models have answered at least one prompt in common. */
-export function sharesSamples(
-  samples: readonly SamePromptSample[],
-  a: string,
-  b: string
-): boolean {
-  return samples.some((sample) => compares(sample, [a, b]))
-}
-
 /** The prompt types with a prompt at least two compared models answered. */
 export function samePromptTypes(
   samples: readonly SamePromptSample[],

@@ -109,7 +109,6 @@
         "details": "Details"
       },
       "relatedProvider": "More from {provider}",
-      "browseAllShort": "Browse all",
       "versions": "{n} versions",
       "deprecated": "Deprecated",
       "deprecatedBody": "This model is being retired.",
@@ -128,7 +127,17 @@
         "cloud": "Open in Cloud",
         "api": "Use via API"
       },
-      "usedBy": "Workflows that use {name}"
+      "usedBy": "Workflows that use {name}",
+      "providerTable": {
+        "subtitle": "Compare {provider}'s other models. Price is the default setting; resolution and duration show the full range each model offers.",
+        "model": "Model",
+        "price": "Price",
+        "resolution": "Resolution",
+        "duration": "Duration",
+        "durationRange": "{min} – {max}s",
+        "durationOne": "{n}s",
+        "durationUpTo": "up to {max}s"
+      }
     },
     "title": "Models",
     "task": {
@@ -807,10 +816,7 @@
           "illustration": "Illustration",
           "typography": "Typography",
           "fusion": "Fusion & detail"
-        },
-        "howItCompares": "How it compares",
-        "compareWith": "Compare with",
-        "openFull": "Open full comparison"
+        }
       }
     },
     "modelsHub": {

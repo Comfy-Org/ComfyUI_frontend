@@ -6,7 +6,6 @@ import type {
 } from '@/config/models-catalogue'
 import {
   canCompare,
-  comparableWith,
   comparedSearch,
   compareRows,
   MAX_COMPARED,
@@ -111,58 +110,5 @@ describe('the compare address', () => {
     { search: '?compare=a,b', slugs: [], next: '' }
   ])('writes $slugs into $search as $next', ({ search, slugs, next }) => {
     expect(comparedSearch(search, slugs)).toBe(next)
-  })
-})
-
-describe('comparableWith', () => {
-  const textToImage = (slug: string, rank?: number) =>
-    hosted({ slug, name: slug, task: 'text-to-image', recommendedRank: rank })
-  const catalogue = [
-    textToImage('self', 1),
-    textToImage('third', 3),
-    textToImage('first', 1),
-    hosted({ slug: 'video', task: 'text-to-video' }),
-    textToImage('broken', 0),
-    textToImage('second', 2),
-    textToImage('fourth', 4)
-  ].map((model) =>
-    model.slug === 'broken'
-      ? { ...model, incompleteReason: 'missing-input-schema' as const }
-      : model
-  )
-
-  it('offers the three most popular comparable models with the same task', () => {
-    expect(
-      comparableWith(catalogue[0], catalogue).map((model) => model.slug)
-    ).toEqual(['first', 'second', 'third'])
-  })
-
-  it('puts the models that answered a prompt this one answered first', () => {
-    const samples = [
-      {
-        type: 'portraits' as const,
-        prompt: 'A fisherman',
-        source: 'magnific' as const,
-        images: { self: '/self.webp', fourth: '/fourth.webp' }
-      }
-    ]
-    expect(
-      comparableWith(catalogue[0], catalogue, samples).map(
-        (model) => model.slug
-      )
-    ).toEqual(['fourth', 'first', 'second'])
-  })
-
-  it.for([
-    ['a model with no task', hosted({ slug: 'self' })],
-    [
-      'a model that cannot be compared',
-      {
-        ...textToImage('self'),
-        incompleteReason: 'missing-input-schema' as const
-      }
-    ]
-  ] as const)('offers nothing for %s', ([, model]) => {
-    expect(comparableWith(model, catalogue)).toEqual([])
   })
 })
