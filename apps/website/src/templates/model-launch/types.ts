@@ -83,7 +83,7 @@ export type ModelLaunchMedia =
   | { kind: 'video'; src: string; posterSrc?: string }
   | { kind: 'image'; src: string }
 
-interface ModelLaunchGalleryCard {
+export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
@@ -107,7 +107,6 @@ export interface ModelLaunchGallery {
   ctaVariant?: 'muted' | 'accent' | 'none'
   cardMeta?: 'default' | 'none'
   mobileVisibleCards?: number
-  columns?: 2 | 3
   captionPlacement?: 'below' | 'overlay'
   cards: readonly ModelLaunchGalleryCard[]
 }

@@ -61,19 +61,6 @@ describe('ModelLaunchGallerySection', () => {
     }
   )
 
-  it.for([
-    { columns: undefined, gridClass: 'md:grid-cols-2' },
-    { columns: 3 as const, gridClass: 'md:grid-cols-3' }
-  ])('lays the cards out in columns=$columns', ({ columns, gridClass }) => {
-    render(ModelLaunchGallerySection, {
-      props: { gallery: { ...gallery, columns } }
-    })
-
-    expect(screen.getByTestId('model-launch-gallery-grid')).toHaveClass(
-      gridClass
-    )
-  })
-
   it('stretches a full-span card across the row at a 3:1 ratio on desktop', () => {
     const [first, second] = gallery.cards
     render(ModelLaunchGallerySection, {
