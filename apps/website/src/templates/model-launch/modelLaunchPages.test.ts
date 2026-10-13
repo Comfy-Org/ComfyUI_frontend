@@ -54,22 +54,31 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('gives every before/after tab a unique id, English copy, and playable clips', () => {
-    const tabs = page.beforeAfter?.tabs ?? []
+  it('gives the before/after section English copy and playable clips', () => {
+    const { beforeAfter } = page
+    if (beforeAfter === undefined) return
+
+    if ('src' in beforeAfter) {
+      expect(beforeAfter.src).toMatch(VIDEO_URL)
+      // A clip with no listed effects would leave the intro column hanging.
+      expect(beforeAfter.features.length).toBeGreaterThan(0)
+      expect(beforeAfter.features.filter((f) => !f.en)).toEqual([])
+      return
+    }
+
+    const { tabs } = beforeAfter
     // A page that defines the section but lists no tabs would render a
     // heading over an empty box.
-    expect(page.beforeAfter === undefined || tabs.length > 0).toBe(true)
+    expect(tabs.length).toBeGreaterThan(0)
     expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
 
-    const offenders = tabs.filter((tab) => {
-      const sources =
-        'beforeSrc' in tab ? [tab.beforeSrc, tab.afterSrc] : [tab.src]
-      return (
+    const offenders = tabs.filter(
+      (tab) =>
         !tab.label.en ||
         !tab.caption.en ||
-        !sources.every((src) => VIDEO_URL.test(src))
-      )
-    })
+        !VIDEO_URL.test(tab.beforeSrc) ||
+        !VIDEO_URL.test(tab.afterSrc)
+    )
 
     expect(offenders.map((tab) => tab.id)).toEqual([])
   })

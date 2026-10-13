@@ -30,15 +30,6 @@ function beforeAfterWith(chinese: boolean): ModelLaunchBeforeAfter {
         },
         beforeSrc: 'https://media.comfy.org/b-before.webm',
         afterSrc: 'https://media.comfy.org/b-after.webm'
-      },
-      {
-        id: 'side-by-side',
-        label: { en: 'Side by side', 'zh-CN': chinese ? '并排' : '' },
-        caption: {
-          en: 'Both states in one frame.',
-          'zh-CN': chinese ? '两种状态同框。' : ''
-        },
-        src: 'https://media.comfy.org/c-side-by-side.webm'
       }
     ]
   }
@@ -92,22 +83,55 @@ describe('ModelLaunchBeforeAfterSection', () => {
     )
   })
 
-  it('plays a single clip without the slider when a tab has one src', async () => {
-    const user = userEvent.setup()
-    render(ModelLaunchBeforeAfterSection, { props: { beforeAfter } })
+  it.for([
+    {
+      locale: 'en' as const,
+      features: [
+        'Sharpen: soft in, sharp out.',
+        'Denoise: grain in, clean out.'
+      ]
+    },
+    {
+      locale: 'zh-CN' as const,
+      features: ['锐化：输入柔和，输出锐利。', '降噪：输入噪点，输出干净。']
+    }
+  ])(
+    'plays one clip with its effects as bullets and no tabs or slider ($locale)',
+    async ({ locale, features }) => {
+      render(ModelLaunchBeforeAfterSection, {
+        props: {
+          locale,
+          beforeAfter: {
+            headingKey: 'nvidiaRtx.beforeAfter.heading',
+            bodyKey: 'nvidiaRtx.beforeAfter.body',
+            src: 'https://media.comfy.org/side-by-side.mp4',
+            features: [
+              {
+                en: 'Sharpen: soft in, sharp out.',
+                'zh-CN': '锐化：输入柔和，输出锐利。'
+              },
+              {
+                en: 'Denoise: grain in, clean out.',
+                'zh-CN': '降噪：输入噪点，输出干净。'
+              }
+            ]
+          }
+        }
+      })
 
-    await user.click(screen.getByRole('tab', { name: 'Side by side' }))
-    await screen.findByText('Both states in one frame.')
-
-    expect(screen.queryByRole('slider')).toBeNull()
-    expect(screen.queryByTestId('video-compare-before')).toBeNull()
-    await waitFor(() =>
-      expect(screen.getByTestId('video-single')).toHaveAttribute(
-        'src',
-        'https://media.comfy.org/c-side-by-side.webm'
+      expect(
+        screen.getAllByRole('listitem').map((item) => item.textContent.trim())
+      ).toEqual(features)
+      expect(screen.queryByRole('tab')).toBeNull()
+      expect(screen.queryByRole('slider')).toBeNull()
+      await waitFor(() =>
+        expect(screen.getByTestId('video-single')).toHaveAttribute(
+          'src',
+          'https://media.comfy.org/side-by-side.mp4'
+        )
       )
-    )
-  })
+    }
+  )
 
   it.for([
     {

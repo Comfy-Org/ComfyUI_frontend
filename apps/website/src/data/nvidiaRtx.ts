@@ -14,11 +14,10 @@ const nvidiaRtxLinks = {
   cloud: externalLinks.cloudCta('nvidia_rtx')
 } as const
 
-// Stand-in media until the NVIDIA RTX hero, gallery, and before/after clips
+// Stand-in media until the NVIDIA RTX hero and gallery images
 // reach media.comfy.org; swap these for the supplied files before this page
 // ships.
 const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
-const placeholderClipBase = 'https://media.comfy.org/website'
 
 const media = {
   vaporwave: { kind: 'image', src: `${placeholderMediaBase}/vaporwave.webp` },
@@ -37,35 +36,19 @@ const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 const beforeAfter: ModelLaunchBeforeAfter = {
   headingKey: 'nvidiaRtx.beforeAfter.heading',
   bodyKey: 'nvidiaRtx.beforeAfter.body',
-  tabs: [
+  src: 'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
+  features: [
     {
-      id: 'super-resolution',
-      label: { en: 'Super Resolution', 'zh-CN': '超分辨率' },
-      caption: {
-        en: 'Same clip, more resolution.',
-        'zh-CN': '同一段视频，更高的分辨率。'
-      },
-      beforeSrc: `${placeholderClipBase}/flux-3/card-1.webm`,
-      afterSrc: `${placeholderClipBase}/flux-3/card-2.webm`
+      en: 'Super Resolution: Same clip, more resolution.',
+      'zh-CN': '超分辨率：同一段视频，更高的分辨率。'
     },
     {
-      id: 'frame-generation',
-      label: { en: 'Frame Generation', 'zh-CN': '帧生成' },
-      caption: {
-        en: '15 fps in, 60 fps out.',
-        'zh-CN': '输入 15 fps，输出 60 fps。'
-      },
-      beforeSrc: `${placeholderClipBase}/cloud/ai-models/wan-22.webm`,
-      afterSrc: `${placeholderClipBase}/cloud/ai-models/gpt-image-2.webm`
+      en: 'Frame Generation: 15 fps in, 60 fps out.',
+      'zh-CN': '帧生成：输入 15 fps，输出 60 fps。'
     },
     {
-      id: 'sdr-to-hdr',
-      label: { en: 'SDR-to-HDR', 'zh-CN': 'SDR 转 HDR' },
-      caption: {
-        en: 'SDR in, HDR out. Best viewed on an HDR display.',
-        'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
-      },
-      src: 'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4'
+      en: 'SDR-to-HDR: SDR in, HDR out. Best viewed on an HDR display.',
+      'zh-CN': 'SDR 转 HDR：输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
     }
   ]
 }

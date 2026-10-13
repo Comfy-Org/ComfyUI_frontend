@@ -194,37 +194,38 @@ export interface ModelLaunchComparison {
   rows: readonly ModelLaunchComparisonRow[]
 }
 
-interface ModelLaunchBeforeAfterTabBase {
+interface ModelLaunchBeforeAfterTab {
   id: string
   label: LocalizedText
   // One line under the tabs, e.g. "15 fps in, 60 fps out."
   caption: LocalizedText
-}
-
-interface ModelLaunchClipPairTab extends ModelLaunchBeforeAfterTabBase {
   // Two renders of the same clip; the slider reveals `afterSrc` to the right
   // of the divider.
   beforeSrc: string
   afterSrc: string
 }
 
-interface ModelLaunchSingleClipTab extends ModelLaunchBeforeAfterTabBase {
-  // One clip that already shows both states side by side; plays without the
-  // slider.
-  src: string
-}
-
-type ModelLaunchBeforeAfterTab =
-  | ModelLaunchClipPairTab
-  | ModelLaunchSingleClipTab
-
-// A tabbed before/after video slider, e.g. the RTX Video effects on
-// /nvidia-rtx. Each tab swaps in its own clip pair and caption.
-export interface ModelLaunchBeforeAfter {
+interface ModelLaunchBeforeAfterBase {
   headingKey: TranslationKey
   bodyKey?: TranslationKey
+}
+
+// A tabbed before/after video slider. Each tab swaps in its own clip pair and
+// caption.
+export interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
   tabs: readonly ModelLaunchBeforeAfterTab[]
 }
+
+// One clip that already shows both states side by side, e.g. the RTX Video
+// effects on /nvidia-rtx, with the effects it covers listed under the intro.
+export interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
+  src: string
+  features: readonly LocalizedText[]
+}
+
+export type ModelLaunchBeforeAfter =
+  | ModelLaunchBeforeAfterTabs
+  | ModelLaunchBeforeAfterClip
 
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey

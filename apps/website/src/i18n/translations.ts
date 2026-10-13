@@ -7880,8 +7880,8 @@ Enterprise`
     'zh-CN': '一段视频，两种状态。'
   },
   'nvidiaRtx.beforeAfter.body': {
-    en: 'Source on one side, output on the other. Drag the line to compare them frame by frame.',
-    'zh-CN': '一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。'
+    en: 'Source on one side, output on the other.',
+    'zh-CN': '一侧是原始素材，另一侧是输出结果。'
   },
   'nvidiaRtx.gallery.heading': {
     en: 'Made on NVIDIA RTX',
