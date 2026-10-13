@@ -115,8 +115,6 @@
   --color-coach-scrim: rgb(0 0 0 / 0.6);
   --color-coach-ring: #fff;
 
-  --color-muted: var(--theme-text-muted);
-  --color-highlight: var(--theme-primary);
   --color-link: var(--color-blue-400);
   --color-node-accent: var(--color-blue-500);
 
@@ -460,6 +458,8 @@
 
 @theme inline {
   --color-backdrop: var(--backdrop);
+  --color-muted: var(--theme-text-muted);
+  --color-highlight: var(--theme-primary);
   --color-button-active-surface: var(--button-active-surface);
   --color-button-hover-surface: var(--button-hover-surface);
   --color-button-icon: var(--button-icon);
