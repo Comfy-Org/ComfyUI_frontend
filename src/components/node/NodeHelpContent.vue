@@ -242,7 +242,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(thead),
 .fallback-content thead {
-  border-bottom: 1px solid var(--theme-text);
+  border-bottom: 1px solid var(--base-foreground);
 }
 
 .markdown-content :deep(pre),
@@ -256,7 +256,7 @@ const outputList = computed(() =>
   code {
     background-color: transparent;
     padding: 0;
-    color: var(--theme-text);
+    color: var(--base-foreground);
   }
 }
 

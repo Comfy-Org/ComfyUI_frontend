@@ -34,7 +34,7 @@
             >
               {{ errors.name }}
             </small>
-            <small v-else :id="`${nameId}-help`" class="text-muted">
+            <small v-else :id="`${nameId}-help`" class="text-muted-foreground">
               {{ $t('skillPacks.nameHint') }}
             </small>
           </div>
@@ -59,7 +59,11 @@
             >
               {{ errors.description }}
             </small>
-            <small v-else :id="`${descriptionId}-help`" class="text-muted">
+            <small
+              v-else
+              :id="`${descriptionId}-help`"
+              class="text-muted-foreground"
+            >
               {{ $t('skillPacks.triggerLineHint') }}
             </small>
           </div>
@@ -85,9 +89,12 @@
             >
               {{ errors.body }}
             </small>
-            <small v-else :id="`${bodyId}-help`" class="text-muted">{{
-              bodySizeLabel
-            }}</small>
+            <small
+              v-else
+              :id="`${bodyId}-help`"
+              class="text-muted-foreground"
+              >{{ bodySizeLabel }}</small
+            >
           </div>
 
           <div
@@ -99,8 +106,8 @@
             <span class="text-sm font-medium text-destructive-background">
               {{ $t('skillPacks.atLimitTitle') }}
             </span>
-            <span class="text-sm text-muted">{{ budgetError }}</span>
-            <span class="text-sm text-muted">
+            <span class="text-sm text-muted-foreground">{{ budgetError }}</span>
+            <span class="text-sm text-muted-foreground">
               {{ $t('skillPacks.atLimitHint') }}
             </span>
           </div>

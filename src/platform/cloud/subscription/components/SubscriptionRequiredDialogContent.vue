@@ -130,7 +130,7 @@
           </div>
         </div>
 
-        <SubscriptionBenefits class="mt-6 text-muted" />
+        <SubscriptionBenefits class="mt-6 text-muted-foreground" />
       </div>
 
       <div class="flex flex-col pt-8">

@@ -4,7 +4,7 @@
     <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"
-        class="text-sm text-muted"
+        class="text-sm text-muted-foreground"
         :class="props.labelClass"
       >
         <slot name="name-prefix" />
