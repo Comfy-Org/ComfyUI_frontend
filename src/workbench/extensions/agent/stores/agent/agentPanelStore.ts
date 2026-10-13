@@ -434,7 +434,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       computed<Readonly<CreditTransitionNoticeState> | null>(
         () => creditTransitionNotice.value
       ),
-    creditTransitionRefresh: computed(() => creditTransitionRefresh.value),
+    creditTransitionRefresh: computed<Readonly<{
+      identity: string
+      epoch: number
+      ready: boolean
+    }> | null>(() => creditTransitionRefresh.value),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
