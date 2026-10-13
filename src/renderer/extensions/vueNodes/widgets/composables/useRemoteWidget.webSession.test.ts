@@ -118,16 +118,13 @@ const RESPONSES: Record<string, (workspaceId: string | null) => unknown> = {
 
 function installIngest() {
   const requests: IngestRequest[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const path = new URL(String(input), location.href).pathname
-      if (path !== '/api/features') requests.push(recordRequest(path, init))
-      const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
-      const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
-      return jsonResponse(body)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const path = new URL(String(input), location.href).pathname
+    if (path !== '/api/features') requests.push(recordRequest(path, init))
+    const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
+    const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
+    return jsonResponse(body)
+  })
   return requests
 }
 

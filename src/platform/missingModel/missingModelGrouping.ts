@@ -2,9 +2,9 @@ import { sumBy } from 'es-toolkit'
 
 import type {
   MissingModelCandidate,
-  MissingModelGroup
+  MissingModelGroup,
+  MissingModelViewModel
 } from '@/platform/missingModel/types'
-import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 
 const UNSUPPORTED = Symbol('unsupported')
 
@@ -53,4 +53,30 @@ export function groupMissingModelCandidates(
       models: groupCandidatesByName(groupCandidates),
       isAssetSupported
     }))
+}
+
+function groupCandidatesByName(
+  candidates: MissingModelCandidate[]
+): MissingModelViewModel[] {
+  const map = new Map<string, MissingModelViewModel>()
+  for (const c of candidates) {
+    const existing = map.get(c.name)
+    if (existing) {
+      if (c.nodeId) {
+        existing.referencingNodes.push({
+          nodeId: c.nodeId,
+          widgetName: c.widgetName
+        })
+      }
+    } else {
+      map.set(c.name, {
+        name: c.name,
+        representative: c,
+        referencingNodes: c.nodeId
+          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+          : []
+      })
+    }
+  }
+  return Array.from(map.values())
 }

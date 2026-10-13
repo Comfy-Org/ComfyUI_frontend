@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ContextMenuDivElement,
   IContextMenuValue
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,

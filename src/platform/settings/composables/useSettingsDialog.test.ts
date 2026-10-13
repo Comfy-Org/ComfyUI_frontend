@@ -1,5 +1,3 @@
-import { computed } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
@@ -18,27 +16,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'))
+import {
+  registerSettingDialogComponent,
+  useSettingsDialog
+} from '@/platform/settings/composables/useSettingsDialog'
 
-vi.mock(import('@/platform/telemetry'))
-
-beforeEach(() => {
-  const billing = useBillingContext()
-  Object.assign(billing, {
-    canAccessSubscriptionFeatures: computed(() => true),
-    isFreeTier: computed(() => false),
-    type: computed(() => 'legacy')
-  })
-  vi.mocked(useBillingContext).mockReturnValue(billing)
-})
-
-vi.mock(import('@/composables/billing/useBillingContext'))
-
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+const SettingDialogStub = { name: 'SettingDialogStub' }
 
 beforeEach(() => {
   useDialogStore().showDialog = showDialog
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  registerSettingDialogComponent(SettingDialogStub)
 })
 
 describe('useSettingsDialog', () => {
@@ -77,6 +65,12 @@ describe('useSettingsDialog', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.overlayClass).toBe('p-8')
+  })
+
+  it('show() opens the registered dialog component', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.component).toBe(SettingDialogStub)
   })
 
   it('show(panel) forwards defaultPanel to the dialog props', () => {

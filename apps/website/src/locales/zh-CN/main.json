@@ -300,7 +300,8 @@
       "troubleshooting": "常见原因："
     },
     "toast": {
-      "close": "关闭"
+      "close": "关闭",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "验证已过期。请重新完成验证。",
@@ -1749,6 +1750,8 @@
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "geminiOmni": "Gemini Omni 1.1 Flash",
+    "language": "语言",
+    "social": "关注 Comfy",
     "location": "美国旧金山",
     "ltx": "LTX 2.5",
     "minimaxH3": "MiniMax H3",
@@ -1771,7 +1774,8 @@
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
     "workflows": "工作流",
-    "modelCatalogue": "ComfyUI 模型"
+    "modelCatalogue": "ComfyUI 模型",
+    "changelog": "更新日志"
   },
   "g": {
     "error": "错误",
@@ -1784,18 +1788,10 @@
       "teamUsing": "团队使用",
       "using": "使用"
     },
-    "contact": {
-      "heading": "用 ComfyUI 创作了很酷的作品？<br><a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。",
-      "label": "联系"
-    },
     "detail": {
       "close": "关闭",
       "visitHub": "访问社区中心"
-    },
-    "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitleAfter": " 中构建、调整与创想",
-    "heroTitleBefore": "在 ",
-    "label": "画廊"
+    }
   },
   "geminiOmni": {
     "breadcrumb": {
@@ -1904,24 +1900,6 @@
     "banner": {
       "cta": "免费试用",
       "text": "Comfy Agent 现在可以在 ComfyUI 内部构建工作流。"
-    },
-    "cta": {
-      "heading": "Comfy 的全部内容，一处尽享。",
-      "primary": "打开 Comfy Cloud",
-      "secondary": "试用工作流"
-    },
-    "hero": {
-      "primary": "下载桌面版",
-      "secondary": "免费试用云端",
-      "title": "ComfyUI 全新内容",
-      "visualAlt": "Comfy"
-    },
-    "page": {
-      "description": "所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。",
-      "title": "发布：ComfyUI 的所有新内容"
-    },
-    "section": {
-      "title": "最新发布"
     }
   },
   "learning": {
@@ -2582,7 +2560,6 @@
     "comfyEnterprise": "Comfy 企业版",
     "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
@@ -2605,6 +2582,8 @@
     "featuredCommunityCtaAria": "观看产品摄影演示",
     "featuredCommunityTitle": "产品摄影",
     "featuredCompanyAlt": "Black Math 客户故事图片",
+    "featuredEnterpriseAlt": "MiniMax 商业授权视频",
+    "opensInNewTab": "在新标签页中打开",
     "featuredCompanyCtaAria": "观看 Black Math 客户故事",
     "featuredCompanyTitle": "客户故事：Black Math",
     "featuredProductsAlt": "Gemini Omni 1.1 Flash 视频：穴居人遇见未来",
@@ -2641,6 +2620,27 @@
     "upgrade": "升级",
     "upgradeToAddCredits": "升级以添加积分",
     "workshop": "Hub",
+    "hubModels": "模型",
+    "hubModelsDescription": "运行最新的 AI 模型",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "全部模型",
+    "hubWorkflows": "工作流",
+    "hubWorkflowsDescription": "针对任务的现成方案",
+    "hubImageToVideo": "图像转视频",
+    "hubVideoFromReferences": "参考生成视频",
+    "hubMotionTransfer": "运动迁移",
+    "hubEditSelectedRegion": "编辑选定区域",
+    "hubAllWorkflows": "全部工作流",
+    "hubApps": "应用",
+    "hubAppsDescription": "基于 Comfy 构建的完整工具",
+    "reshoot": "重拍",
+    "hubAllApps": "全部应用",
+    "featuredHubAlt": "Seedance 2.5 视频：动物们举着拼出 SEEDANCE 2.5 的气球穿过雨中街道",
+    "featuredHubCta": "立即试用",
+    "featuredHubCtaAria": "在 Hub 中试用 Seedance 2.5 参考生成视频",
     "workspaceSettings": "工作区设置",
     "workspaceSwitchError": "无法切换工作区。请检查网络连接后重试。",
     "workspaces": "工作区",
@@ -2649,7 +2649,19 @@
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
     "youtube": "YouTube",
-    "cinematicStudio": "电影工作室"
+    "cinematicStudio": "电影工作室",
+    "enterprise": "企业版",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "构建",
+    "teamBilling": "团队账单",
+    "commercialLicensing": "商业授权",
+    "contactSales": "联系销售",
+    "colCreate": "创作",
+    "colAutomate": "自动化",
+    "colBuild": "构建",
+    "colResources": "资源",
+    "colUpdates": "动态"
   },
   "payment": {
     "failed": {
@@ -3148,7 +3160,7 @@
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+      "subtitle": "在真实 GPU 上免费运行 5 次，新用户还可获得免费的 Comfy Agent 积分",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
     },
     "creditsLabel": "每月积分",
@@ -3169,15 +3181,21 @@
     },
     "comfyApi": {
       "heading": "Comfy API 定价",
-      "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
-      "metricColumn": "限制项",
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；构建、部署与并发限制取决于你的套餐。",
       "metric": {
-        "releases": "版本总数上限",
+        "builds": "构建版本总数上限",
         "deployments": "部署总数上限",
         "concurrency": "最大工作节点并发数（每个部署）"
       },
       "enterpriseNote": "企业版的限制由合同约定。",
-      "learnMore": "了解更多"
+      "learnMore": "了解更多",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "builds": "{count} 个构建版本",
+        "deployments": "{count} 个部署",
+        "concurrency": "每个部署最多 {count} 个 worker",
+        "notIncluded": "Comfy API 访问"
+      }
     },
     "feature": {
       "addCredits": "可随时增加积分",
@@ -3260,6 +3278,7 @@
         "eduYearlyPrice": "$26.25",
         "eduYearlyTotal": "$315",
         "estimate": "约可生成 670 个 5 秒视频*",
+        "everythingInStandardPlus": "包含标准版的全部功能，另加：",
         "label": "创作者版",
         "price": "$35",
         "yearlyCredits": "88,800",
@@ -3291,6 +3310,7 @@
         "eduYearlyPrice": "$75",
         "eduYearlyTotal": "$900",
         "estimate": "约可生成 1,915 个 5 秒视频*",
+        "everythingInCreatorPlus": "包含创作者版的全部功能，另加：",
         "label": "专业版",
         "price": "$100",
         "yearlyCredits": "253,200",
@@ -3307,6 +3327,7 @@
         "estimate": "约可生成 380 个 5 秒视频*",
         "label": "标准版",
         "price": "$20",
+        "whatsIncluded": "包含内容：",
         "yearlyCredits": "50,400",
         "yearlyEstimate": "约可生成 4,560 个 5 秒视频*",
         "yearlyPrice": "$16",
@@ -3332,6 +3353,45 @@
     "cycle": {
       "monthly": "按月",
       "yearly": "按年"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，新用户还可获得免费积分进行试用。",
+      "learnMore": "了解更多",
+      "limit": {
+        "availability": {
+          "title": "所有方案均可使用",
+          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有新用户免费积分或积分余额大于零即可。"
+        },
+        "credits": {
+          "title": "使用 Comfy Credits 计费",
+          "description": "免费积分用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
+        },
+        "runs": {
+          "title": "工作流运行",
+          "description": "Agent 运行的工作流与你自己运行的计费方式完全相同，不额外收费，并遵循你所在方案的运行时长和任务限制。"
+        },
+        "model": {
+          "title": "模型",
+          "description": "由 Comfy 为你选择模型，暂不支持使用你自己的 LLM 密钥。"
+        },
+        "queue": {
+          "title": "不限消息数量",
+          "description": "发送消息的数量没有上限。超出方案限额时，新任务会排队等待而不会失败。积分用完后，Agent 会暂停，直到你充值。"
+        }
+      },
+      "metric": {
+        "tasksPerMember": "每位成员同时运行的 Agent 任务数",
+        "requestsPerWorkspace": "每个工作区同时处理的 Agent 请求数"
+      },
+      "enterpriseNote": "Enterprise 方案享有更高的 Agent 限额。",
+      "cardTitle": "Comfy Agent",
+      "cardFeature": {
+        "sessionsPerWorkspace": "每个工作区可同时进行 {count} 个 Agent 会话"
+      }
+    },
+    "planLimits": {
+      "metricColumn": "限制"
     }
   },
   "privacy": {
@@ -3669,16 +3729,19 @@
     "badgeHow": "了解",
     "badgeWorks": "运行方式",
     "feature1": {
+      "cta": "下载 Desktop",
       "description": "在无限画布上连接节点，构建强大的 AI 管线。每个模型、参数和处理步骤都可见且可调整。",
       "title": "节点带来的可控性"
     },
     "feature2": {
-      "description": "如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。",
-      "title": "App 模式，工作流的简化视图"
+      "cta": "探索 Comfy Agent",
+      "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
+      "title": "Comfy Agent"
     },
     "feature3": {
-      "description": "浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。",
-      "title": "Comfy Workflows 上的社区工作流"
+      "cta": "探索 Comfy API",
+      "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
+      "title": "Comfy API"
     },
     "subtitle1": "在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。",
     "subtitle2": "从工作流模板开始，或从零构建。"
@@ -4352,7 +4415,15 @@
       "image": "图像",
       "label": "{input}转{output}",
       "text": "文本",
-      "video": "视频"
+      "video": "视频",
+      "output": {
+        "text": "文本",
+        "image": "图像",
+        "video": "视频",
+        "audio": "音频",
+        "3d": "3D",
+        "other": "其他"
+      }
     },
     "title": "模型",
     "useCase": {
@@ -4375,6 +4446,7 @@
       "comfyApp": "Comfy 应用",
       "customNodes": "需要自定义节点",
       "download": "下载工作流 JSON",
+      "downloadShort": "下载",
       "graph": "工作流",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
       "inputs": "输入",
@@ -4441,7 +4513,6 @@
       "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
       "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
       "explore": "探索更多可能"
     },
     "catalogue": {
@@ -4960,5 +5031,18 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "changelog": {
+    "meta": {
+      "title": "更新日志 - Comfy",
+      "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。"
+    },
+    "title": "更新日志",
+    "viewDocs": "查看文档",
+    "saved": "正在显示已保存的更新日志。无法加载最新更新。",
+    "unavailable": "无法加载更新日志。",
+    "loading": "正在加载最新更新日志…",
+    "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
+    "retry": "重试"
   }
 }

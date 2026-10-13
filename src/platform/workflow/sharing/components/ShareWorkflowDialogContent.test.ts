@@ -1,4 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,16 +12,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
 vi.mock(import('@/platform/telemetry'))
-
-const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => mockToast
-  })
-)
 
 vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
@@ -469,10 +460,9 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to load publish status'
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Failed to load publish status'
+      )
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -490,10 +480,8 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Publish failed'
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: 'Publish failed'
       })
     })
 

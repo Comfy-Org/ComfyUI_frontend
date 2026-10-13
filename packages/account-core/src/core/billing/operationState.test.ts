@@ -101,6 +101,21 @@ describe('reduceBillingOperation', () => {
     expect(polled(pending(), { status: 'succeeded' }).phase).toBe('succeeded')
   })
 
+  it('carries the plan the server reports for a pending operation, and drops it once the server stops reporting one', () => {
+    const plan = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    } as const
+
+    const next = polled(pending(), { plan })
+
+    expect(next).toMatchObject({ phase: 'pending', plan })
+    expect(polled(next, {})).not.toHaveProperty('plan')
+  })
+
   it('ignores a status that names another operation', () => {
     const state = pending()
 

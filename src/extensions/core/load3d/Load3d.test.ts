@@ -1397,7 +1397,6 @@ describe('Load3d', () => {
       exportGLBMock.mockRejectedValueOnce(new Error('boom'))
 
       setupForExport({ currentModel: model })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(ctx.load3d.exportModel('glb')).rejects.toThrow('boom')
 
@@ -1525,7 +1524,6 @@ describe('Load3d', () => {
     it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
         'Unsupported export format: xyz'
@@ -1557,7 +1555,6 @@ describe('Load3d', () => {
     it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       setupForExport({
         currentModel: new THREE.Object3D(),
         originalFileName: 'scene',

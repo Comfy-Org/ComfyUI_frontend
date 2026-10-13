@@ -16,22 +16,25 @@
           {{ copy.confirmPayment }}
         </h2>
       </div>
-      <CheckoutSubscribeSummary
-        :plan
-        :copy
-        :locale
-        :preview-data
-        :billing-cycle
-        :compact="usePaymentElement"
-      />
-      <CheckoutPromotionCode
-        v-if="embeddedCheckoutEnabled"
-        :applied-code="previewData?.promotion_code"
-        :disabled="interactionLocked"
-        :copy
-        @apply="emit('applyPromotionCode', $event)"
-        @invalidate="emit('invalidateQuote')"
-      />
+      <slot v-if="summaryReplaced" name="summary" />
+      <template v-else>
+        <CheckoutSubscribeSummary
+          :plan
+          :copy
+          :locale
+          :preview-data
+          :billing-cycle
+          :compact="usePaymentElement"
+        />
+        <CheckoutPromotionCode
+          v-if="embeddedCheckoutEnabled"
+          :applied-code="previewData?.promotion_code"
+          :disabled="interactionLocked"
+          :copy
+          @apply="emit('applyPromotionCode', $event)"
+          @invalidate="emit('invalidateQuote')"
+        />
+      </template>
       <CheckoutSavedMethods
         v-if="showSavedMethods && savedMethods"
         v-model:selected-method-id="selectedSavedMethodId"
@@ -71,7 +74,9 @@
 /**
  * The confirm step of a new subscription: the plan and today's charge on one
  * side, and the way to pay on the other — the card form, the saved methods
- * that stand in for it, or a hosted continuation the host opens.
+ * that stand in for it, or a hosted continuation the host opens. A host
+ * following a payment it did not quote here replaces the plan and charge
+ * through the `summary` slot and `summaryReplaced`.
  */
 import { computed, ref } from 'vue'
 
@@ -114,7 +119,8 @@ const {
   savedMethods = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  summaryReplaced = false
 } = defineProps<{
   plan: CheckoutPlan
   copy: CheckoutCopy
@@ -138,6 +144,8 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The host summarizes a payment it did not quote here in the `summary` slot. */
+  summaryReplaced?: boolean
 }>()
 
 const emit = defineEmits<{

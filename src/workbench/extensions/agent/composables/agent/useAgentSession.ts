@@ -1,8 +1,9 @@
 import { delay } from 'es-toolkit'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -49,7 +50,9 @@ import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
@@ -63,11 +66,10 @@ interface SessionNotice {
   text: string
 }
 
-interface SentAttachment {
-  ref: string
-  name: string
-  previewUrl?: string
-}
+type SentAttachment = Pick<
+  ComposerAttachment,
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+>
 
 interface SentTag {
   id: string
@@ -399,6 +401,50 @@ export function useAgentSession(deps: AgentSessionDeps) {
   clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
+  const sendGateStore = useAgentSendGateStore()
+  const skillPacks = useSkillPacksStore()
+  const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
+  watch(
+    () => skillPacks.scope,
+    () => {
+      for (const usage of skillTurnUsage.values()) {
+        usage.used = false
+        usage.scope = ''
+      }
+    },
+    { flush: 'sync' }
+  )
+
+  function pruneSkillTurns(): void {
+    const liveKeys = new Set(conversationStore.liveTurns().map(recoveryKey))
+    for (const key of skillTurnUsage.keys()) {
+      if (!liveKeys.has(key)) skillTurnUsage.delete(key)
+    }
+  }
+
+  function observeSkillTurn(turn: LiveTurn, scope = skillPacks.scope): void {
+    if (
+      !conversationStore
+        .liveTurns()
+        .some((live) => recoveryKey(live) === recoveryKey(turn))
+    )
+      return
+    const key = recoveryKey(turn)
+    const usage = skillTurnUsage.get(key) ?? { scope, used: false }
+    usage.used ||= conversationStore.turnUsesSkill(turn)
+    skillTurnUsage.set(key, usage)
+  }
+
+  function finishSkillTurn(turn: LiveTurn): void {
+    observeSkillTurn(turn)
+    const key = recoveryKey(turn)
+    const usage = skillTurnUsage.get(key)
+    skillTurnUsage.delete(key)
+    if (usage?.used && skillPacks.isCurrentScope(usage.scope)) {
+      void skillPacks.refreshPacksInBackground()
+    }
+  }
+
   const bindingStore = useAgentWorkflowTabBindingStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
@@ -819,6 +865,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (stoppedGeneration !== sessionGeneration) return
       loadGeneration++
       turnStartedAt.clear()
+      skillTurnUsage.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
     })
@@ -996,7 +1043,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     wfContext: WorkflowTurnContext | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    skillScope = skillPacks.scope
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1015,15 +1063,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
         name,
         previewUrl,
+        mediaUrl,
         ref
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
     )
     conversationStore.startTurn(turnId)
+    observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
     stopPendingActiveTurn()
@@ -1153,6 +1203,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): Promise<boolean> {
     const generation = loadGeneration
+    const skillScopeAtSend = skillPacks.scope
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
@@ -1181,7 +1232,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       accepted = true
       if (generation !== loadGeneration) return false
-      acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
+      acceptTurn(
+        ack,
+        text,
+        wfContext,
+        attachments,
+        tags,
+        workflowReferences,
+        skillScopeAtSend
+      )
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
@@ -1226,6 +1285,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
+    const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
     stopPendingAck = null
     try {
@@ -1241,6 +1301,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return sent
     } finally {
       sending.value = false
+      releaseSendGate()
       sendInFlight = false
     }
   }
@@ -1529,6 +1590,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
+    pruneSkillTurns()
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
@@ -1577,6 +1639,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return typeof messageId === 'string' ? toTurnId(messageId) : undefined
   }
 
+  function finishSkillTurnsFor(messageId: TurnId | null): void {
+    for (const turn of conversationStore.liveTurns())
+      if (turn.messageId === messageId) finishSkillTurn(turn)
+  }
+
   function handleMalformedEvent(
     type: string,
     raw: object,
@@ -1586,6 +1653,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     let reportedTurnId = turnId ?? conversationStore.activeTurnId
     let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
     if (type === 'agent_message_done') {
+      finishSkillTurnsFor(turnId ?? conversationStore.activeTurnId)
       if (turnId !== undefined) turnStartedAt.delete(turnId)
       if (turnId === undefined || turnId === conversationStore.activeTurnId) {
         forgetActiveTurnStartedAt()
@@ -1710,7 +1778,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       onAskResolved?.(event.data.ask_id)
     }
+    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+    if (event.type === 'agent_message_done') {
+      finishSkillTurn({
+        threadId: event.data.thread_id,
+        messageId: toTurnId(event.data.message_id)
+      })
+    }
     conversationStore.ingest(event)
+    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
     if (event.type === 'agent_active_tab') handleActiveTab(event)
     else if (event.type === 'agent_message_done') handleMessageDone(event)
   }
@@ -1746,6 +1822,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
+    observeSkillTurn(turn)
     const key = recoveryKey(turn)
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
@@ -1805,6 +1882,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
     switch (outcome.kind) {
       case 'terminal':
+        if (
+          outcome.parts?.some(
+            (part) => part.type === 'tool' && part.name === 'load_skill'
+          )
+        ) {
+          observeSkillTurn(turn)
+          const usage = skillTurnUsage.get(recoveryKey(turn))
+          if (usage) usage.used = true
+        }
+        finishSkillTurn(turn)
         conversationStore.settleTurn(turn, outcome.parts)
         markStoppedTurnReady(turn)
         return true
@@ -1863,11 +1950,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
+    skillTurnUsage.delete(recoveryKey(turn))
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
       return
     }
     conversationStore.reset()
+    pruneSkillTurns()
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null

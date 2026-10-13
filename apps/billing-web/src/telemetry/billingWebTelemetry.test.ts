@@ -428,6 +428,35 @@ describe('trackWebSessionEvent', () => {
   })
 })
 
+describe('trackSsoEvent', () => {
+  it('sends an SSO event to RUM and PostHog as is', async () => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'billing_web', flow_id: 'flow-1' }
+    } as const
+
+    telemetry.trackSsoEvent(event)
+
+    expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+})
+
 describe('startPostHog', () => {
   it('turns off every PostHog capture that would carry page text or a full URL', async () => {
     const telemetry = createBillingWebTelemetry()
