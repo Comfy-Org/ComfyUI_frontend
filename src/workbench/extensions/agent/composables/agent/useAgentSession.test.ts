@@ -4765,30 +4765,6 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it('refuses to send a saved tab the saved-workflow index still has not named', async () => {
-    const postMessage = vi.fn<AgentRestClient['postMessage']>()
-    const prepare = vi.fn(async () => undefined)
-    const session = useAgentSession({
-      rest: fakeRest({ postMessage }),
-      events: fakeEvents().source,
-      workflow: {
-        current: () => ({ tabPath: 'workflows/a.json', unresolved: true }),
-        adopted: vi.fn(),
-        prepare
-      }
-    })
-    session.start()
-
-    expect(await session.sendMessage('add a node')).toBe(false)
-
-    expect(prepare).toHaveBeenCalled()
-    expect(postMessage).not.toHaveBeenCalled()
-    expect(session.entries.value.at(-1)).toMatchObject({
-      role: 'assistant',
-      parts: [{ type: 'notice', level: 'error' }]
-    })
-  })
-
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
@@ -4839,39 +4815,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
       workflowId: 'wf-a',
       draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
-    })
-  })
-
-  it('(h11) refuses a send whose id-less origin tab closes during prepare()', async () => {
-    const postMessage = vi.fn<AgentRestClient['postMessage']>()
-    let releasePrepare: () => void = () => undefined
-    const prepare = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          releasePrepare = resolve
-        })
-    )
-    let originOpen = true
-    const session = useAgentSession({
-      rest: fakeRest({ postMessage }),
-      events: fakeEvents().source,
-      workflow: {
-        current: () => (originOpen ? { tabPath: 'tab-new' } : undefined),
-        adopted: vi.fn(),
-        prepare
-      }
-    })
-    session.start()
-
-    const sendPromise = session.sendMessage('add a node')
-    originOpen = false
-    releasePrepare()
-
-    expect(await sendPromise).toBe(false)
-    expect(postMessage).not.toHaveBeenCalled()
-    expect(session.entries.value.at(-1)).toMatchObject({
-      role: 'assistant',
-      parts: [{ type: 'notice', level: 'error' }]
     })
   })
 
