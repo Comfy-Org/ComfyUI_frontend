@@ -2390,10 +2390,10 @@
     "hero": {
       "titleModel": "Fish Audio Drama 3",
       "titleRest": " 现已登陆 Comfy",
-      "description": "2026 年 11 月 12 日前享 4 折优惠。这是 Fish Audio 迄今最富情感、最可控的模型。把多角色场景写成一段对话，再在同一个工作流中连同音频一起构建。",
+      "description": "首 30 天享 5 折优惠。这是 Fish Audio 迄今最富情感、最可控的模型。把多角色场景写成一段对话，再在同一个工作流中连同音频一起构建。",
       "badge1": "合作伙伴节点",
       "badge2": "多角色场景",
-      "badge3": "4 折优惠至 11 月 12 日",
+      "badge3": "首发半价",
       "secondaryCta": "查看文档"
     },
     "faq": {
@@ -2401,7 +2401,7 @@
     },
     "pricing": {
       "banner": {
-        "title": "首发优惠：Fish Audio Drama 3 享 4 折，截至 2026 年 11 月 12 日",
+        "title": "首发优惠：Fish Audio Drama 3 前 30 天半价",
         "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
         "cta": "免费试用"
       }

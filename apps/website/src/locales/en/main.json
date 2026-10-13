@@ -4404,10 +4404,10 @@
     "hero": {
       "titleModel": "Fish Audio Drama 3",
       "titleRest": " is now on Comfy",
-      "description": "Get 60% off until November 12, 2026. It's Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
+      "description": "Get 50% off for your first 30 days. Drama 3 is Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
       "badge1": "Partner node",
       "badge2": "Multi-character scenes",
-      "badge3": "60% off until Nov 12",
+      "badge3": "50% off at launch",
       "secondaryCta": "VIEW DOCS"
     },
     "faq": {
@@ -4415,7 +4415,7 @@
     },
     "pricing": {
       "banner": {
-        "title": "Launch offer: 60% off Fish Audio Drama 3 until November 12, 2026",
+        "title": "Launch offer: 50% off Fish Audio Drama 3 for your first 30 days",
         "subtitle": "5 free runs on real GPUs — no credit card required.",
         "cta": "TRY FREE"
       }

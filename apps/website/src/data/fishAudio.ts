@@ -111,8 +111,8 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': '首发优惠是什么？'
         },
         answer: {
-          en: `From October 13 to November 12, 2026, Drama 3 is 60% off in Comfy Cloud. The standard rate applies from November 13, and current rates are in the [Drama 3 docs](${DOCS_HREF}). Open [Comfy Cloud](${externalLinks.cloud}) to start.`,
-          'zh-CN': `2026 年 10 月 13 日至 11 月 12 日，Drama 3 在 Comfy Cloud 中享 4 折优惠，11 月 13 日起恢复标准价格，当前费率见 [Drama 3 文档](${DOCS_HREF})。打开 [Comfy Cloud](${externalLinks.cloud}) 即可开始。`
+          en: `Drama 3 is 50% off for your first 30 days in Comfy Cloud. Open [Comfy Cloud](${externalLinks.cloud}) to start.`,
+          'zh-CN': `Drama 3 在 Comfy Cloud 中前 30 天半价。打开 [Comfy Cloud](${externalLinks.cloud}) 即可开始。`
         }
       },
       {
