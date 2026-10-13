@@ -17,7 +17,7 @@ const {
 }>()
 
 const wide = useMediaQuery('(min-width: 768px)')
-const expanded = ref(false)
+const expanded = ref(true)
 let swipeFrom: number | undefined
 let swiped = false
 
