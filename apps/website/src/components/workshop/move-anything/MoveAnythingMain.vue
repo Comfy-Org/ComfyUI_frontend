@@ -36,8 +36,6 @@ const labels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="mc('move.empty.title', locale)"
-    :hint="mc('move.empty.meta', locale)"
-    :upload="mc('move.empty.uploadHint', locale)"
     :examples="[
       {
         id: 'kitten',

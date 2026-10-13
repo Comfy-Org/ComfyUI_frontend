@@ -5,15 +5,9 @@ import { appCopy } from '@/lib/workshop/app-copy'
 const copy = {
   'move.title': { en: 'Move anything', 'zh-CN': '随意移动' },
   'move.tools': { en: 'Move anything tools', 'zh-CN': '随意移动工具' },
-  'move.empty.title': { en: 'Try an example', 'zh-CN': '试试示例' },
-  'move.empty.meta': {
-    en: 'Each one loads a photo ready to rearrange. Up to 4 things per photo.',
-    'zh-CN':
-      '每个示例都会载入一张照片，直接就能重新摆放。每张照片最多 4 个物体。'
-  },
-  'move.empty.uploadHint': {
-    en: 'Or upload your photo in the panel',
-    'zh-CN': '或在面板中上传你的照片'
+  'move.empty.title': {
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
   },
   'move.empty.upload': { en: 'Upload photo', 'zh-CN': '上传照片' },
   'move.empty.example': { en: 'Kitten on a desk', 'zh-CN': '桌上的小猫' },
