@@ -30,6 +30,7 @@ export const DEV_EVENT_KINDS = [
   'doc_ops_result',
   'doc_ops_result_dropped',
   'human_ops_settled',
+  'mint_divergence',
   'doc_reset',
   'doc_nodes_changed',
   'schema_error',

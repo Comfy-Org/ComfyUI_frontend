@@ -482,7 +482,7 @@ function startAgentCrdtFollower(
   const settleHumanOps = (outcome: BatchOutcome) => {
     if (outcome.state === 'acknowledged') {
       trackAcknowledgedDeletes(outcome)
-      if (outcome.result.ok) recordDevEvent('human_ops_settled', outcome)
+      recordDevEvent('human_ops_settled', outcome)
     }
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
