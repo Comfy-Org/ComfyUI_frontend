@@ -8,7 +8,7 @@ export interface AgentEventSocket extends AgentEventSource {
 
 interface AgentEventSourceOptions {
   endpoint: string
-  getAuthParams: () => Promise<URLSearchParams>
+  getAuthParams: () => Promise<URLSearchParams | null>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   random?: () => number
@@ -60,7 +60,7 @@ export function createAgentEventSource({
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    let authParams: URLSearchParams
+    let authParams: URLSearchParams | null
     try {
       authParams = await getAuthParams()
     } catch {
@@ -72,7 +72,7 @@ export function createAgentEventSource({
       void connect()
       return
     }
-    if (listeners.size === 0) return
+    if (listeners.size === 0 || authParams === null) return
     open(eventUrl(authParams))
   }
 

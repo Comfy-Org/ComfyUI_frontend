@@ -811,7 +811,7 @@ export default defineConfig({
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
     __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
     'import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL': JSON.stringify(
-      devAgentConfig.proxy && process.env.DEV_AGENT_COMFY_TOKEN ? 'true' : ''
+      devAgentConfig.proxySuppliesCredential ? 'true' : ''
     )
   },
 

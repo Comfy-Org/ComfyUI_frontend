@@ -10,7 +10,11 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthCredential, AuthHeader } from '@/types/authTypes'
 
-import { agentSocketParams, ensureSignedIn, withAgentAuth } from './agentAuth'
+import {
+  agentSocketAuthParams,
+  ensureSignedIn,
+  withAgentAuth
+} from './agentAuth'
 
 beforeEach(() => {
   distribution.isCloud = false
@@ -53,7 +57,7 @@ describe('withAgentAuth', () => {
         headers: { 'Content-Type': 'application/json' },
         onAuthCredential: (kind) => reported.push(kind)
       })
-      init.onAuthCredential('none')
+      init.onAuthCredential?.('none')
 
       const headers = new Headers(init.headers)
       expect(headers.get(name)).toBe(value)
@@ -85,7 +89,7 @@ describe('withAgentAuth', () => {
   })
 })
 
-describe('agentSocketParams', () => {
+describe('agentSocketAuthParams', () => {
   it.for<{ label: string; header: AuthHeader; token: string }>([
     {
       label: 'a bearer token',
@@ -102,29 +106,32 @@ describe('agentSocketParams', () => {
     async ({ header, token }) => {
       userHeader(header)
 
-      expect((await agentSocketParams()).get('token')).toBe(token)
+      expect((await agentSocketAuthParams())?.get('token')).toBe(token)
     }
   )
 
   it('connects without a token when signed out', async () => {
     userHeader(null)
 
-    expect((await agentSocketParams()).has('token')).toBe(false)
+    expect((await agentSocketAuthParams())?.has('token')).toBe(false)
   })
 
-  it('authenticates a cloud socket the way /ws does, never with the personal token', async () => {
-    distribution.isCloud = true
-    userHeader({ Authorization: 'Bearer personal-id-token' })
-    vi.mocked(api.addSocketAuth).mockImplementation(async (params) => {
-      params.set('workspace_id', 'ws-1')
-      return true
-    })
+  it.for([
+    {
+      label: 'its auth params',
+      params: new URLSearchParams({ workspace_id: 'ws-1' })
+    },
+    { label: 'that no one can open it', params: null }
+  ])(
+    'takes the cloud socket auth from the /ws auth seam, reporting $label',
+    async ({ params }) => {
+      distribution.isCloud = true
+      userHeader({ Authorization: 'Bearer personal-id-token' })
+      vi.mocked(api.socketAuthParams).mockResolvedValue(params)
 
-    const params = await agentSocketParams()
-
-    expect(params.get('workspace_id')).toBe('ws-1')
-    expect(params.has('token')).toBe(false)
-  })
+      await expect(agentSocketAuthParams()).resolves.toBe(params)
+    }
+  )
 })
 
 describe('ensureSignedIn', () => {

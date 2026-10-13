@@ -4,11 +4,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@/types/authTypes'
 
-interface AgentRequestInit extends RequestInit {
-  onAuthCredential?: (credential: AuthCredential) => void
-}
+type AgentRequestInit = NonNullable<Parameters<typeof api.fetchApi>[1]>
 
 function credentialValue(header: AuthHeader): string {
   return 'X-API-KEY' in header
@@ -16,10 +14,9 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
-/** Off-cloud only: in the cloud `fetchApi` already authenticates the request. */
-export async function withAgentAuth<T extends AgentRequestInit>(
-  init: T
-): Promise<T & RequestInit> {
+export async function withAgentAuth(
+  init: AgentRequestInit
+): Promise<AgentRequestInit> {
   if (isCloud) return init
   const header = await useAuthStore().getUserAuthHeader()
   if (!header) return init
@@ -34,13 +31,9 @@ export async function withAgentAuth<T extends AgentRequestInit>(
   }
 }
 
-/** The agent socket authenticates as ComfyUI's `/ws` does in the cloud. */
-export async function agentSocketParams(): Promise<URLSearchParams> {
+export async function agentSocketAuthParams(): Promise<URLSearchParams | null> {
+  if (isCloud) return api.socketAuthParams()
   const params = new URLSearchParams()
-  if (isCloud) {
-    await api.addSocketAuth(params)
-    return params
-  }
   const header = await useAuthStore().getUserAuthHeader()
   if (header) params.set('token', credentialValue(header))
   return params
@@ -69,5 +62,5 @@ export async function ensureSignedIn(): Promise<boolean> {
   } catch {
     return false
   }
-  return (await authStore.getUserAuthHeader()) !== null
+  return hasAgentCredential() || (await authStore.getUserAuthHeader()) !== null
 }

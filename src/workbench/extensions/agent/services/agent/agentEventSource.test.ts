@@ -56,24 +56,24 @@ function lastSocket(): FakeSocket {
   return socket
 }
 
-function createSource({
-  getToken = async () => undefined,
-  ...options
-}: {
-  endpoint?: string
-  getToken?: () => Promise<string | undefined>
-  random?: () => number
-  maxReconnectDelayMs?: number
-} = {}) {
+function createSource(
+  options: {
+    endpoint?: string
+    getAuthParams?: () => Promise<URLSearchParams | null>
+    random?: () => number
+    maxReconnectDelayMs?: number
+  } = {}
+) {
   return createAgentEventSource({
     endpoint: '/api/agent/events',
-    getAuthParams: async () => {
-      const token = await getToken()
-      return new URLSearchParams(token === undefined ? {} : { token })
-    },
+    getAuthParams: async () => new URLSearchParams(),
     random: () => 1,
     ...options
   })
+}
+
+function tokenParams(token: string): URLSearchParams {
+  return new URLSearchParams({ token })
 }
 
 beforeEach(() => {
@@ -308,9 +308,11 @@ describe('createAgentEventSource reconnect backoff', () => {
 })
 
 describe('createAgentEventSource reconnect', () => {
-  it('drops the open socket and connects again with a freshly read token', async () => {
+  it('drops the open socket and connects again with a freshly read credential', async () => {
     const tokens = ['account-a', 'account-b']
-    const source = createSource({ getToken: async () => tokens.shift() })
+    const source = createSource({
+      getAuthParams: async () => tokenParams(tokens.shift() ?? '')
+    })
     source.subscribe(vi.fn())
     await connected()
     sockets()[0].open()
@@ -328,7 +330,10 @@ describe('createAgentEventSource reconnect', () => {
   it('opens the socket with the newer token when a reconnect lands while the first token is read', async () => {
     const pending: ((token: string) => void)[] = []
     const source = createSource({
-      getToken: () => new Promise((resolve) => pending.push(resolve))
+      getAuthParams: () =>
+        new Promise((resolve) =>
+          pending.push((token) => resolve(tokenParams(token)))
+        )
     })
 
     source.subscribe(vi.fn())
@@ -356,7 +361,9 @@ describe('createAgentEventSource reconnect', () => {
 describe('createAgentEventSource token', () => {
   it('presents the caller credential as ?token=, read afresh on every connect', async () => {
     const tokens = ['first', 'second']
-    const source = createSource({ getToken: async () => tokens.shift() })
+    const source = createSource({
+      getAuthParams: async () => tokenParams(tokens.shift() ?? '')
+    })
 
     source.subscribe(vi.fn())
     await connected()
@@ -369,20 +376,32 @@ describe('createAgentEventSource token', () => {
   })
 
   it.for([
-    { label: 'there is no credential', getToken: async () => undefined },
+    {
+      label: 'there is no credential',
+      getAuthParams: async () => new URLSearchParams()
+    },
     {
       label: 'the read fails',
-      getToken: async (): Promise<string | undefined> => {
+      getAuthParams: async (): Promise<URLSearchParams | null> => {
         throw new Error('token refresh failed')
       }
     }
-  ])('connects without a token when $label', async ({ getToken }) => {
-    const source = createSource({ getToken })
+  ])('connects without a token when $label', async ({ getAuthParams }) => {
+    const source = createSource({ getAuthParams })
 
     source.subscribe(vi.fn())
     await connected()
 
     expect(new URL(lastSocket().url).searchParams.has('token')).toBe(false)
+  })
+
+  it('opens nothing when no one can authenticate the socket', async () => {
+    const source = createSource({ getAuthParams: async () => null })
+
+    source.subscribe(vi.fn())
+    await connected()
+
+    expect(sockets()).toHaveLength(0)
   })
 
   it('carries every auth param onto the socket URL', async () => {
@@ -400,7 +419,7 @@ describe('createAgentEventSource token', () => {
   })
 
   it('opens nothing when the last listener leaves while the token is read', async () => {
-    const source = createSource({ getToken: async () => 't' })
+    const source = createSource({ getAuthParams: async () => tokenParams('t') })
 
     source.subscribe(vi.fn())()
     await connected()
@@ -409,7 +428,7 @@ describe('createAgentEventSource token', () => {
   })
 
   it('opens exactly one socket when a listener returns while the token is read', async () => {
-    const source = createSource({ getToken: async () => 't' })
+    const source = createSource({ getAuthParams: async () => tokenParams('t') })
 
     source.subscribe(vi.fn())()
     source.subscribe(vi.fn())
