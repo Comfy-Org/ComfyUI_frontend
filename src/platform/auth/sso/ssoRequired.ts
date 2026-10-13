@@ -110,8 +110,10 @@ function presentAccountOutsideOrganization(): boolean {
         surface: 'auth',
         errorType: 'failure_loading_sso_outside_organization_dialog'
       })
-      useToast().error(t('auth.sso.outsideOrganization.title'), {
-        description: t('auth.sso.outsideOrganization.body')
+      useToastStore().add({
+        severity: 'error',
+        summary: t('auth.sso.outsideOrganization.title'),
+        detail: t('auth.sso.outsideOrganization.body')
       })
     })
   return true
