@@ -891,16 +891,20 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         })
         try {
           failExamplePng = true
-          const runDone = comfyPage.runButton.click()
+          // Remount the widget so it requests the preview again. The widget
+          // only re-requests when its own source changes, so a run that leaves
+          // the source's outputs untouched would never retry the fetch.
+          await comfyPage.workflow.reloadAndWaitForApp()
+
+          const reloaded = comfyPage.vueNodes.getNodeLocator('2')
           await expect(
-            node.getByTestId('crop-empty-state'),
+            reloaded.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'
           ).toBeVisible({ timeout: 15_000 })
           await expect(
-            node.getByTestId('crop-overlay'),
+            reloaded.getByTestId('crop-overlay'),
             'crop overlay should hide when image fails'
           ).toHaveCount(0)
-          await runDone
         } finally {
           await comfyPage.page.unroute('**/api/view**')
         }
