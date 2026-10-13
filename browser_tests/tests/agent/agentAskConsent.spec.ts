@@ -3,10 +3,7 @@ import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type {
-  AgentPendingDeleteApproval,
-  AgentRunMode
-} from '@comfyorg/ingest-types'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -20,15 +17,15 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   ASK_USER_QUESTION,
-  askUserQuestionFrame
+  DELETE_APPROVAL_PROMPT,
+  askUserQuestionFrame,
+  deleteApprovalFrame
 } from '@e2e/fixtures/agentAskFrames'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
-// The agent's ask cards: run approval, ask_user and delete approval.
-//
-// The run approval contract (fire-2, PM-1494 / PM-1450, slack-18):
+// The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
 // holds the run; the panel's whole job is to show the card, send exactly the
 // answer the user picked, and never answer on its own. Three independent
@@ -121,31 +118,6 @@ const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/a
 
 const DELETE_ASK_ID = `${MESSAGE_ID}:call-delete`
 const DELETE_PATH = `/api/agent/threads/${THREAD_ID}/asks/${DELETE_ASK_ID}/answer`
-const DELETE_PROMPT = 'Delete the 2 nodes you added?'
-
-function deleteApproval(): AgentWsEvent {
-  const data = {
-    ...ids,
-    ask_id: DELETE_ASK_ID,
-    kind: 'delete_approval',
-    prompt: DELETE_PROMPT,
-    options: [
-      { id: 'delete', label: 'Delete' },
-      { id: 'keep', label: 'Keep' }
-    ],
-    min_selections: 1,
-    max_selections: 1,
-    allow_other: false,
-    context: {
-      action: 'delete_nodes',
-      nodes: [
-        { id: '12', type: 'KSampler', title: 'Hero sampler' },
-        { id: '13', type: 'VAEDecode' }
-      ]
-    }
-  } satisfies AgentPendingDeleteApproval & { thread_id: string }
-  return { type: 'agent_ask', data }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -425,8 +397,8 @@ test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
     })
 
     await test.step('the card lists the nodes it would delete', async () => {
-      send(deleteApproval())
-      await expect(panel.getByText(DELETE_PROMPT)).toBeVisible()
+      send(deleteApprovalFrame(ids, DELETE_ASK_ID))
+      await expect(panel.getByText(DELETE_APPROVAL_PROMPT)).toBeVisible()
       await expect(nodes.getByRole('listitem')).toHaveText([
         /Hero sampler\s*#12/,
         /VAEDecode\s*#13/
