@@ -8,46 +8,42 @@ Accepted
 
 ## Context
 
-Feature contributors edit English catalogs. App releases generate on version-bump
-branches; website generation follows English changes on main. Requiring complete
-coverage on every feature would require credentials before those changes could
-reach generation. Catalog validity, completeness, and linguistic quality have
-different proofs. German is generated without being a shipped app locale.
+Contributors edit English; releases generate on version-bump branches and website
+generation follows changes on main. Completeness on every feature would require
+credentials before changes could reach generation. German is generated but not
+shipped. Catalog validity, completeness, and copy quality need different proofs.
 
 ## Decision
 
-Every pull request and merge queue commit runs the shared offline validator.
-Invalid syntax, unsafe markup, broken protected tokens, and unreadable source
-provenance fail. Pending translations remain an explicit report, with English
-fallback permitted for ordinary features and website deploys.
+Every PR and merge queue commit runs the shared offline validator. Invalid syntax,
+unsafe markup, broken protected tokens, and unreadable provenance fail. Ordinary
+features and website deploys can use English fallback with pending work reported.
 
-Generated catalog delivery requires complete eligible coverage for the recorded
-English source. Manifest changes and known same-repository generation branches
-select this gate. App generation success checks every configured output locale.
-App version-bump branches and package version changes require the locales in the
-runtime registry; newly shipped app locales require their own completeness. New
-website locale definitions, expanded route allowlists, and added localized pages
-require completeness for the launched locales. Merge queue comparisons use the
-combined base/head changes rather than pull request branch metadata.
+Manifest changes and same-repository generation branches require complete
+eligible coverage for recorded English. Generation checks all configured outputs;
+app version-bump branches and version changes check the runtime registry. New
+app/website locales, expanded route allowlists, and added localized pages check
+the launched locales. Merge queues use combined base/head changes, since they
+lack PR branch metadata. Branch-creation pushes have no comparison range and
+retain ordinary integrity checks.
 
-The shared translation policy owns legal exclusions and intentional empties.
-Generation failures stay visible; completed files can be committed without
-claiming full success. A release gate can fail until generation triggers a retry.
+Shared policy owns legal exclusions and intentional empties. Failures stay
+visible; completed files can be committed without claiming full success. A
+release gate can fail until generation triggers fresh checks.
 
-Copy review compares changed translations with English, context, and terminology;
-human review owns meaning and product wording. It does not replace deterministic
-validation. Automated website translation PRs have an owner and pending status.
+Copy review compares translations with English, context, and terminology; human
+review owns meaning. It does not replace deterministic validation. Automatic
+website translation PRs have an owner and pending status.
 
 ## Alternatives
 
-- Completeness on every feature would block contributors on credentials and
-  prevent post-merge website generation from satisfying the gate.
-- A permanent missing-key baseline hides stale coverage and adds separate upkeep.
-- All generated locales as a release gate makes unpublished targets dependencies.
+- Every-feature completeness blocks post-merge generation on credentials.
+- Missing-key baselines hide stale coverage and add separate upkeep.
+- Releasing all generated locales makes unpublished targets dependencies.
 - Model approval cannot prove syntax, tokens, freshness, or completeness.
 
 ## Consequences
 
-English changes can ship while translations are reviewed. Generated catalogs,
-app releases, and locale launches have stricter gates. Publication metadata must
-remain statically readable; unsupported shapes fail instead of omitting a locale.
+English can ship while translations are reviewed; delivery has stricter gates.
+Metadata must be statically readable; unsupported shapes fail instead of omitting
+a locale.
