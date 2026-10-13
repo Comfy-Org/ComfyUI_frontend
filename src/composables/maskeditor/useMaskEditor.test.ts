@@ -64,14 +64,15 @@ describe('useMaskEditor', () => {
       )
     })
 
-    it('should configure modal dialog with maximizable and closable flags', () => {
+    it('keeps explicit dismissal available while disabling Escape dismissal', () => {
       useMaskEditor().openMaskEditor(nodeWithImage())
 
       expect(mockDialogStore.showDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           dialogComponentProps: expect.objectContaining({
             maximizable: true,
-            closable: true
+            closable: true,
+            dismissOnEscape: false
           })
         })
       )

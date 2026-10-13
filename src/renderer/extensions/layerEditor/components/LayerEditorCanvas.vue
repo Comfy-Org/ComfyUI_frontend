@@ -10,8 +10,6 @@
     @pointerup="session.onPointerUp"
     @pointerleave="session.onPointerLeave"
     @wheel.prevent="session.onWheel"
-    @keydown="session.onKeyDown"
-    @keyup="session.onKeyUp"
     @contextmenu.prevent
   >
     <div

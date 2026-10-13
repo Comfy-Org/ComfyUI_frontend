@@ -7,6 +7,7 @@ import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
   closable?: boolean
+  dismissOnEscape?: boolean
   dismissOnPointerDownOutside?: boolean
   /**
    * The header, body and footer components lay out and pad their own

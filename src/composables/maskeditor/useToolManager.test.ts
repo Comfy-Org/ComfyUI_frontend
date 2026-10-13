@@ -1,6 +1,6 @@
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBrushDrawing } from '@/composables/maskeditor/useBrushDrawing'
@@ -47,9 +47,7 @@ vi.mock(import('@/composables/maskeditor/useCoordinateTransform'), () => ({
 vi.mock(import('@/scripts/app'))
 
 const mockKeyboard = {
-  isKeyDown: vi.fn().mockReturnValue(false),
-  addListeners: vi.fn(),
-  removeListeners: vi.fn()
+  isPanning: ref(false)
 } satisfies Parameters<typeof useToolManager>[0]
 
 const mockPanZoom = {
@@ -118,7 +116,7 @@ describe('useToolManager', () => {
     mockStore.brushPreviewGradientVisible = false
     mockStore.isAdjustingBrush = false
     mockStore.isPanning = false
-    mockKeyboard.isKeyDown.mockReturnValue(false)
+    mockKeyboard.isPanning.value = false
   })
 
   afterEach(() => {
@@ -298,7 +296,7 @@ describe('useToolManager', () => {
 
     it('should start panning on left button + space held', async () => {
       const tm = setup()
-      mockKeyboard.isKeyDown.mockImplementation((k) => k === ' ')
+      mockKeyboard.isPanning.value = true
 
       await tm.handlePointerDown(pointerEvent({ buttons: 1 }))
 
@@ -436,7 +434,7 @@ describe('useToolManager', () => {
 
     it('should pan on left button + space drag', async () => {
       const tm = setup()
-      mockKeyboard.isKeyDown.mockImplementation((k) => k === ' ')
+      mockKeyboard.isPanning.value = true
 
       await tm.handlePointerMove(pointerEvent({ buttons: 1 }))
 

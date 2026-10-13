@@ -27,7 +27,8 @@ export function useMaskEditor() {
         flush: true,
         size: 'full',
         maximizable: true,
-        closable: true
+        closable: true,
+        dismissOnEscape: false
       }
     })
   }
