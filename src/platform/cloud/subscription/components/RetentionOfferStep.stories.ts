@@ -63,7 +63,7 @@ export const Applied: Story = {
     ).toBeVisible()
     await expect(
       canvas.getByText(
-        'Your 30% discount is applied for 3 calendar months from acceptance.'
+        'Your 30% discount is applied for 3 months from acceptance.'
       )
     ).toBeVisible()
   }

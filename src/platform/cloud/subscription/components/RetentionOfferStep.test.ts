@@ -124,9 +124,7 @@ describe('RetentionOfferStep', () => {
     expect(screen.getByText('30% off')).toBeInTheDocument()
     expect(screen.getByText('$70')).toBeInTheDocument()
     expect(screen.getByText('$100')).toBeInTheDocument()
-    expect(
-      screen.getByText('30% off for 3 calendar months')
-    ).toBeInTheDocument()
+    expect(screen.getByText('30% off for 3 months')).toBeInTheDocument()
     expect(
       screen.getByText(
         'Keep your 21,100 monthly credits, custom LoRAs, and everything else in Pro.'
@@ -149,18 +147,16 @@ describe('RetentionOfferStep', () => {
     {
       percent: 25,
       months: 1,
-      term: '25% off for 1 calendar month',
-      applied:
-        'Your 25% discount is applied for 1 calendar month from acceptance.',
+      term: '25% off for 1 month',
+      applied: 'Your 25% discount is applied for 1 month from acceptance.',
       period: '1-month discount',
       price: '$75.00/mo'
     },
     {
       percent: 40,
       months: 2,
-      term: '40% off for 2 calendar months',
-      applied:
-        'Your 40% discount is applied for 2 calendar months from acceptance.',
+      term: '40% off for 2 months',
+      applied: 'Your 40% discount is applied for 2 months from acceptance.',
       period: '2-month discount',
       price: '$60.00/mo'
     }
@@ -239,7 +235,7 @@ describe('RetentionOfferStep', () => {
       ).toBeInTheDocument()
       expect(
         screen.getByText(
-          'Your 30% discount is applied for 3 calendar months from acceptance.'
+          'Your 30% discount is applied for 3 months from acceptance.'
         )
       ).toBeInTheDocument()
       expect(screen.getByText('$70.00/mo')).toBeInTheDocument()
