@@ -3,7 +3,6 @@ import { expect, fn } from 'storybook/test'
 
 import { i18n } from '@/i18n'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
-import { resetRetentionOfferMock } from '@/storybook/mocks/useRetentionOffer'
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
 
@@ -30,7 +29,6 @@ const meta: Meta<typeof RetentionOfferStep> = {
   },
   beforeEach() {
     i18n.global.locale.value = 'en'
-    resetRetentionOfferMock()
     setBillingContextMock({
       subscription: {
         isActive: true,
@@ -45,6 +43,7 @@ const meta: Meta<typeof RetentionOfferStep> = {
         agentHasFunds: true
       }
     })
+    return () => setBillingContextMock({})
   }
 }
 
@@ -59,7 +58,7 @@ export const Applied: Story = {
       canvas.getByRole('button', { name: 'Keep Pro and save 30%' })
     )
     await expect(
-      canvas.getByRole('heading', { name: "You're staying on Pro" })
+      await canvas.findByRole('heading', { name: "You're staying on Pro" })
     ).toBeVisible()
     await expect(
       canvas.getByText(

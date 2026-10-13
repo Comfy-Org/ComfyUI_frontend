@@ -62,37 +62,29 @@
 
     <div v-else-if="phase === 'applied'" class="flex flex-col gap-5">
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 shadow-xs"
+        class="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 text-sm shadow-xs"
       >
-        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span class="flex items-center gap-2 text-base-foreground">
+        <span class="flex items-center gap-2 text-base-foreground">
+          {{ $t('subscription.retentionOffer.discountPeriod', { months }) }}
+          <Badge
+            variant="compact"
+            class="bg-base-foreground text-base-background"
+          >
+            {{ $t('subscription.retentionOffer.appliedBadge') }}
+          </Badge>
+        </span>
+        <span class="flex items-center gap-2">
+          <span class="text-muted-foreground line-through">
+            {{ regularAmount }}
+          </span>
+          <span class="text-base-foreground">
             {{
-              $t(
-                'subscription.retentionOffer.discountPeriod',
-                { months },
-                months
-              )
+              $t('subscription.retentionOffer.pricePerMonth', {
+                price: discountedMonthlyAmount
+              })
             }}
-            <Badge
-              variant="compact"
-              class="bg-base-foreground text-base-background"
-            >
-              {{ $t('subscription.retentionOffer.appliedBadge') }}
-            </Badge>
           </span>
-          <span class="flex items-center gap-2">
-            <span class="text-muted-foreground line-through">
-              {{ regularAmount }}
-            </span>
-            <span class="text-base-foreground">
-              {{
-                $t('subscription.retentionOffer.pricePerMonth', {
-                  price: discountedMonthlyAmount
-                })
-              }}
-            </span>
-          </span>
-        </div>
+        </span>
       </div>
       <p class="m-0 text-sm text-muted-foreground">
         {{
