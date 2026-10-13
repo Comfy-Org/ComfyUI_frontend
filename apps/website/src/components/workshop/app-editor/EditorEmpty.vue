@@ -9,6 +9,7 @@ interface EditorExample {
   readonly label: string
   readonly result?: string
   readonly thumb?: string
+  readonly fit?: 'cover' | 'contain'
 }
 
 /** The stage before anything is chosen: a card of examples to start from. */
@@ -46,7 +47,12 @@ const exampleName = (example: EditorExample) =>
             :src="example.image"
             alt=""
             loading="lazy"
-            class="size-full object-cover transition group-hover:scale-[1.02]"
+            :class="
+              cn(
+                'size-full transition group-hover:scale-[1.02]',
+                example.fit === 'contain' ? 'object-contain' : 'object-cover'
+              )
+            "
           />
           <img
             v-if="example.thumb"

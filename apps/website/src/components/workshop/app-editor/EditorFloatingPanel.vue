@@ -89,10 +89,7 @@ function toggle() {
         aria-hidden="true"
       />
     </button>
-    <div
-      v-if="$slots.footer"
-      class="shrink-0 border-t border-transparency-white-t8 p-3"
-    >
+    <div v-if="$slots.footer" class="shrink-0 p-3">
       <slot name="footer" />
     </div>
   </aside>
