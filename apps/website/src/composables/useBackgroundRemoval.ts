@@ -50,14 +50,15 @@ export function useBackgroundRemoval() {
     references.clear()
   }
 
-  const { image, useExample, useFile } = useEditorImage(() => {
-    run?.abort()
-    run = undefined
-    leaveResult({ kind: 'editing' })
-    history.reset(DEFAULT_SETUP)
-    releaseReferences()
-    touched.value = false
-  })
+  const { image, removed, useExample, useFile, remove, restore } =
+    useEditorImage(() => {
+      run?.abort()
+      run = undefined
+      leaveResult({ kind: 'editing' })
+      history.reset(DEFAULT_SETUP)
+      releaseReferences()
+      touched.value = false
+    })
 
   const missing = computed(() => missingInput(history.state.value))
   const canRun = computed(
@@ -104,6 +105,13 @@ export function useBackgroundRemoval() {
     }
   }
 
+  function removeImage() {
+    run?.abort()
+    run = undefined
+    leaveResult({ kind: 'editing' })
+    remove()
+  }
+
   function cancel() {
     run?.abort()
     run = undefined
@@ -122,6 +130,9 @@ export function useBackgroundRemoval() {
 
   return {
     image,
+    removed,
+    removeImage,
+    restoreImage: restore,
     setup: history.state,
     phase,
     tray,

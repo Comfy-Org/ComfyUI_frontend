@@ -77,14 +77,15 @@ const model = computed({
     data-testid="background-removal-panel"
   >
     <EditorSourceTile
-      v-if="image"
       kind="image"
-      :src="image.url"
-      :name="image.name"
+      :src="image?.url"
+      :caption="image?.name"
       :add-label="brc('cutout.empty.upload', locale)"
-      :change-label="brc('cutout.image.change', locale)"
+      :hint="brc('cutout.image.hint', locale)"
+      :remove-label="brc('cutout.image.remove', locale)"
       input-test-id="background-removal-file"
       @file="cutout.useFile"
+      @remove="cutout.removeImage"
     />
 
     <EditorSegmented

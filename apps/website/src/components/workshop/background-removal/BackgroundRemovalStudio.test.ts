@@ -31,7 +31,7 @@ beforeEach(() => {
 async function openExample(layout?: string) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   render(BackgroundRemovalStudio, { props: { layout } })
-  await user.click(screen.getByRole('button', { name: 'Try the example' }))
+  await user.click(screen.getByRole('button', { name: 'Potted plant' }))
   return user
 }
 
@@ -43,9 +43,7 @@ const undo = () => screen.getByRole('button', { name: 'Undo' })
 describe('BackgroundRemovalStudio', () => {
   it('removes the background from the panel and opens the result on Compare', async () => {
     const user = await openExample()
-    expect(
-      within(panel()).getByRole('button', { name: /^Change photo: / })
-    ).toBeVisible()
+    expect(within(panel()).getByText('potted-plant.jpg')).toBeVisible()
     expect(tile('Transparent')).toBeChecked()
     expect(undo()).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
@@ -259,19 +257,34 @@ describe('BackgroundRemovalStudio', () => {
     expect(tile('Transparent')).toBeEnabled()
   })
 
-  it('opens on phones as a sheet with a summary and the run button', async () => {
+  it('opens on phones as an open sheet that folds to a summary and the run button', async () => {
     screenIsWide(false)
     const user = await openExample()
+    expect(tile('Transparent')).toBeVisible()
+
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Hide settings' })
+    )
+
     expect(
       within(panel()).getByRole('button', { name: 'Transparent · PNG' })
     ).toHaveAttribute('aria-expanded', 'false')
     expect(within(panel()).getByTestId('background-removal-run')).toBeEnabled()
+  })
+
+  it('takes the photo out with the X and puts it back from the tray', async () => {
+    const user = await openExample()
 
     await user.click(
-      within(panel()).getByRole('button', { name: 'Show all settings' })
+      within(panel()).getByRole('button', { name: 'Remove photo' })
     )
+    expect(
+      within(panel()).getByRole('button', { name: /Upload photo/ })
+    ).toBeVisible()
+    expect(screen.getByTestId('background-removal-empty')).toBeVisible()
 
-    expect(tile('Transparent')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Undo remove photo' }))
+    expect(within(panel()).getByText('potted-plant.jpg')).toBeVisible()
   })
 
   it.for([
@@ -286,7 +299,11 @@ describe('BackgroundRemovalStudio', () => {
     'keeps undo and redo at the right end of the tools in layout $layout (wide: $wide)',
     async ({ layout, wide, tools }) => {
       screenIsWide(wide)
-      await openExample(layout)
+      const user = await openExample(layout)
+      if (!wide)
+        await user.click(
+          within(panel()).getByRole('button', { name: 'Hide settings' })
+        )
 
       const names = within(
         screen.getByRole('toolbar', { name: 'Background Removal tools' })

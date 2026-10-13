@@ -16,7 +16,6 @@ import {
 } from '@/lib/workshop/background-removal/mask'
 import { elapsedLabel } from '@/lib/workshop/elapsed'
 import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
-import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
 import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
 import EditorHint from '@/components/workshop/app-editor/EditorHint.vue'
 import BackgroundRemovalSubject from './BackgroundRemovalSubject.vue'
@@ -60,11 +59,10 @@ const filters = computed(() => {
 
 <template>
   <EditorFrame :width="image.width" :height="image.height">
-    <EditorDropZone
+    <div
       class="relative size-full overflow-hidden rounded-sm select-none"
       style="container-type: inline-size"
       data-testid="background-removal-stage"
-      @file="cutout.useFile"
     >
       <img
         :src="image.url"
@@ -105,6 +103,6 @@ const filters = computed(() => {
           <BackgroundRemovalSubject :url="image.url" />
         </span>
       </EditorBusy>
-    </EditorDropZone>
+    </div>
   </EditorFrame>
 </template>

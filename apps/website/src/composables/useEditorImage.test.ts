@@ -73,4 +73,21 @@ describe('useEditorImage', () => {
     scope.stop()
     expect(revoke).toHaveBeenCalledWith('blob:1')
   })
+
+  it('puts a removed photo back until another one is picked', () => {
+    const { editor, onPick } = setup()
+    editor.useExample(EXAMPLE)
+    onPick.mockClear()
+
+    editor.remove()
+    expect(editor.image.value).toBeUndefined()
+    editor.restore()
+
+    expect(editor.image.value).toEqual(EXAMPLE)
+    expect(onPick).not.toHaveBeenCalled()
+    editor.remove()
+    editor.useExample({ ...EXAMPLE, name: 'other.jpg' })
+    editor.restore()
+    expect(editor.image.value?.name).toBe('other.jpg')
+  })
 })

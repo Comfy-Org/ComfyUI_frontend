@@ -37,12 +37,14 @@ const resultLabels = computed(() => ({
   <EditorEmpty
     v-if="!image"
     :title="brc('cutout.empty.title', locale)"
-    :meta="brc('cutout.empty.meta', locale)"
-    :upload-label="brc('cutout.empty.upload', locale)"
-    :example-label="brc('cutout.empty.example', locale)"
-    :example-image="CUTOUT_EXAMPLE.url"
+    :examples="[
+      {
+        id: 'plant',
+        image: CUTOUT_EXAMPLE.url,
+        label: brc('cutout.empty.example', locale)
+      }
+    ]"
     data-testid="background-removal-empty"
-    @file="cutout.useFile"
     @example="cutout.useExample"
   />
   <EditorResult

@@ -12,16 +12,14 @@ const copy = {
   'cutout.panel.expand': { en: 'Show all settings', 'zh-CN': '显示全部设置' },
   'cutout.panel.collapse': { en: 'Hide settings', 'zh-CN': '收起设置' },
   'cutout.empty.title': {
-    en: 'Drop a photo to cut out',
-    'zh-CN': '拖入一张照片来抠图'
+    en: 'Start with an example',
+    'zh-CN': '从示例开始'
   },
-  'cutout.empty.meta': {
-    en: 'PNG, JPG or WebP. The subject is kept, the background goes.',
-    'zh-CN': 'PNG、JPG 或 WebP。保留主体，移除背景。'
-  },
-  'cutout.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
-  'cutout.image.change': { en: 'Change photo', 'zh-CN': '更换照片' },
-  'cutout.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
+  'cutout.empty.upload': { en: 'Upload photo', 'zh-CN': '上传照片' },
+  'cutout.image.hint': { en: 'PNG, JPG or WebP', 'zh-CN': 'PNG、JPG 或 WebP' },
+  'cutout.image.remove': { en: 'Remove photo', 'zh-CN': '移除照片' },
+  'cutout.image.restore': { en: 'Undo remove photo', 'zh-CN': '撤销移除照片' },
+  'cutout.empty.example': { en: 'Potted plant', 'zh-CN': '盆栽' },
   'cutout.hint': {
     en: 'Pick a background, then run',
     'zh-CN': '选择背景，然后运行'

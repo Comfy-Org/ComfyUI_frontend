@@ -11,16 +11,17 @@ export interface EditorImage {
 }
 
 /**
- * The photo an app editor works on: the worked example or a picked file,
- * whose object URL it releases once replaced. `onPick` runs before the old
- * one is released, so the page can reset around the new photo first.
+ * The photo an app editor works on, released once replaced. `onPick` runs
+ * first so the page can reset; a removed photo returns until the next pick.
  */
 export function useEditorImage(onPick: (next: EditorImage) => void) {
   const image = shallowRef<EditorImage>()
+  const removed = shallowRef<EditorImage>()
   let ownUrl: string | undefined
   let picks = 0
 
   function show(next: EditorImage, own?: string) {
+    removed.value = undefined
     image.value = next
     onPick(next)
     if (ownUrl) URL.revokeObjectURL(ownUrl)
@@ -40,11 +41,23 @@ export function useEditorImage(onPick: (next: EditorImage) => void) {
     else URL.revokeObjectURL(url)
   }
 
+  function remove() {
+    if (!image.value) return
+    removed.value = image.value
+    image.value = undefined
+  }
+
+  function restore() {
+    if (!removed.value) return
+    image.value = removed.value
+    removed.value = undefined
+  }
+
   tryOnScopeDispose(() => {
     picks += 1
     if (ownUrl) URL.revokeObjectURL(ownUrl)
     ownUrl = undefined
   })
 
-  return { image, useExample, useFile }
+  return { image, removed, useExample, useFile, remove, restore }
 }

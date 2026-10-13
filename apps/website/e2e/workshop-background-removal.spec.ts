@@ -41,7 +41,7 @@ test('removes the background of the example from the floating panel', async ({
   await expect(
     page.getByRole('navigation', { name: 'Main navigation' })
   ).toBeHidden()
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Potted plant' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Background Removal settings'
   })
@@ -77,7 +77,7 @@ test('replaces the background of the example with a described one', async ({
   await mockFlags(context, true)
   await page.goto('/hub/apps/background-removal/')
   const app = page.getByTestId('background-removal')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Potted plant' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Background Removal settings'
   })
@@ -118,7 +118,7 @@ test('adjusts the background live from the panel', async ({
   await mockFlags(context, true)
   await page.goto('/hub/apps/background-removal/')
   const app = page.getByTestId('background-removal')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Potted plant' }).click()
   const panel = app.getByRole('complementary', {
     name: 'Background Removal settings'
   })
@@ -150,7 +150,7 @@ test('removes the background from the bottom composer', async ({
   await mockFlags(context, true)
   await page.goto('/hub/apps/background-removal/?ux=e')
   const app = page.getByTestId('background-removal')
-  await app.getByRole('button', { name: 'Try the example' }).click()
+  await app.getByRole('button', { name: 'Potted plant' }).click()
   await expect(app.getByRole('complementary')).toHaveCount(0)
 
   await app.getByRole('button', { name: /Background/ }).click()
@@ -180,10 +180,11 @@ test('removes the background from the bottom sheet on phones @mobile', async ({
   await mockFlags(context, true)
   await page.goto('/hub/apps/background-removal/')
   const app = page.getByTestId('background-removal')
-  await app.getByRole('button', { name: 'Try the example' }).click()
   const sheet = app.getByRole('complementary', {
     name: 'Background Removal settings'
   })
+  await sheet.getByRole('button', { name: 'Hide settings' }).click()
+  await app.getByRole('button', { name: 'Potted plant' }).click()
 
   await sheet.getByRole('button', { name: 'Transparent · PNG' }).click()
   await sheet.getByRole('radio', { name: 'White' }).click()

@@ -10,6 +10,7 @@ import { cutoutFileName } from '@/lib/workshop/background-removal/contract'
 import { brc } from '@/lib/workshop/background-removal/copy'
 import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
 import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorUndoRemove from '@/components/workshop/app-editor/EditorUndoRemove.vue'
 import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import type { EditorView } from '@/components/workshop/app-editor/view'
 import BackgroundRemovalDocks from './BackgroundRemovalDocks.vue'
@@ -27,7 +28,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
 }>()
 
 const cutout = useBackgroundRemoval()
-const { image, phase } = cutout
+const { image, removed, phase } = cutout
 const view = ref<EditorView>('compare')
 const panel = computed(() => layout !== 'e')
 const download = useResultDownload(
@@ -66,6 +67,11 @@ const panelLabels = {
       <EditorAlert v-if="phase.kind === 'failed'">
         {{ brc('cutout.failed', locale) }}
       </EditorAlert>
+      <EditorUndoRemove
+        v-if="removed && !image"
+        :label="brc('cutout.image.restore', locale)"
+        @undo="cutout.restoreImage"
+      />
       <BackgroundRemovalTrays v-if="!panel" :cutout :locale />
     </template>
     <template #dock>
@@ -74,13 +80,13 @@ const panelLabels = {
     <template v-if="phase.kind !== 'done'" #history>
       <BackgroundRemovalHistory :cutout :locale />
     </template>
-    <template v-if="panel && image" #panel>
+    <template v-if="panel" #panel>
       <BackgroundRemovalPanel :cutout :locale />
     </template>
-    <template v-if="panel && image" #panel-peek>
+    <template v-if="panel" #panel-peek>
       <BackgroundRemovalSummary :cutout :locale />
     </template>
-    <template v-if="panel && image" #panel-footer>
+    <template v-if="panel" #panel-footer>
       <BackgroundRemovalRun :cutout :locale block />
     </template>
   </AppEditorShell>
