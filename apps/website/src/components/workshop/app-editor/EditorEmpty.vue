@@ -2,7 +2,7 @@
 import { LoaderCircle } from '@lucide/vue'
 
 /** One ready-made start: a picture of it and its name. */
-export interface EditorExample {
+interface EditorExample {
   readonly id: string
   readonly image: string
   readonly label: string
