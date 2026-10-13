@@ -185,7 +185,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
+    const graphState = useApp().rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
+    if (graphState !== useApp().rootGraphOrUndefined?.state) {
+      throw new DOMException('Workflow load was replaced', 'AbortError')
+    }
     activeWorkflow.value = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
