@@ -22,7 +22,8 @@ const { image } = sprite
       {
         id: 'explorer',
         image: SPRITE_EXAMPLE.url,
-        label: spc('sprite.empty.example', locale)
+        label: spc('sprite.empty.example', locale),
+        fit: 'contain'
       }
     ]"
     data-testid="sprite-empty"
