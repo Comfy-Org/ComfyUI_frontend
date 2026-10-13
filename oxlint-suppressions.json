@@ -191,7 +191,7 @@
   },
   "src/platform/auth/session/useSessionCookie.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 5
     }
   },
   "src/platform/cloud/oauth/oauthApi.ts": {
@@ -200,11 +200,6 @@
     }
   },
   "src/platform/cloud/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/subscription/launchCancellationFlow.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }
@@ -276,7 +271,7 @@
   },
   "src/platform/workspace/stores/teamWorkspaceStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 11
+      "count": 9
     }
   },
   "src/renderer/core/canvas/canvasStore.ts": {

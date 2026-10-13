@@ -1,4 +1,4 @@
-import en from '../locales/en/main.json' with { type: 'json' }
+import en from '@/locales/en/main.json' with { type: 'json' }
 
 type BlockType =
   | 'paragraph'

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import GlassCard from '../common/GlassCard.vue'
-import InlineCodeText from '../common/InlineCodeText.vue'
-import SectionHeader from '../common/SectionHeader.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import type { VideoTrack } from '../common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
+import GlassCard from '@/components/common/GlassCard.vue'
+import InlineCodeText from '@/components/common/InlineCodeText.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { VideoTrack } from '@/components/common/VideoPlayer.vue'
 
 type RowMedia =
   | { type: 'image'; src: string; alt?: string; fit?: 'cover' | 'contain' }

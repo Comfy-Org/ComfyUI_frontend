@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nextTick } from 'vue'
 
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import type * as CameraWidgetModule from './camera/CameraWidget'
 import { DRAG_MARGIN, FLOW } from './graphLayout'
 import HeroGraph from './HeroGraph.vue'

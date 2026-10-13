@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ModelStatus } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { ModelStatus } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   variant,

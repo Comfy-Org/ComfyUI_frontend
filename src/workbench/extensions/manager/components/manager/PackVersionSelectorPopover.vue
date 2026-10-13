@@ -37,16 +37,19 @@
         >
           <div class="flex items-center gap-2">
             <div v-if="option.value === 'nightly'" class="w-4"></div>
-            <i
+            <Tooltip
               v-else-if="option.hasConflict"
-              v-tooltip="{
-                value: option.conflictMessage,
-                showDelay: 300
-              }"
-              class="icon-[lucide--triangle-alert] text-warning-background"
-              role="img"
-              :aria-label="option.conflictMessage"
-            />
+              :disabled="!option.conflictMessage"
+            >
+              <TooltipTrigger as-child>
+                <i
+                  class="icon-[lucide--triangle-alert] text-warning-background"
+                  role="img"
+                  :aria-label="option.conflictMessage"
+                />
+              </TooltipTrigger>
+              <TooltipContent>{{ option.conflictMessage }}</TooltipContent>
+            </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>
             <PackStatusMessage
@@ -103,6 +106,9 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
@@ -221,6 +227,15 @@ const onNodePackChange = async () => {
   fetchedVersions.value = nodePack.id
     ? ((await registryService.getPackVersions(nodePack.id)) ?? [])
     : []
+  const installedVersion = nodePack.id
+    ? managerStore.getInstalledPackVersion(nodePack.id)
+    : undefined
+  if (
+    selectedVersion.value === installedVersion &&
+    installedVersion === latestActiveVersion.value?.version
+  ) {
+    selectedVersion.value = SelectedVersionValues.LATEST
+  }
   isLoadingVersions.value = false
 }
 

@@ -62,6 +62,18 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       'Unsaved Workflow'
     )
     await expect(thumbnailImg).toBeVisible()
+    const tab = await getTab(comfyPage, 0)
+    const popover = comfyPage.page.getByRole('dialog')
+    await expect(async () => {
+      const tabBox = await tab.boundingBox()
+      const popoverBox = await popover.boundingBox()
+      if (!tabBox || !popoverBox) throw new Error('Missing tab preview bounds')
+      expect(popoverBox.x).toBeLessThan(tabBox.x + tabBox.width)
+      expect(popoverBox.x + popoverBox.width).toBeGreaterThan(tabBox.x)
+      const gap = popoverBox.y - (tabBox.y + tabBox.height)
+      expect(gap).toBeGreaterThanOrEqual(0)
+      expect(gap).toBeLessThanOrEqual(16)
+    }).toPass({ timeout: 5000 })
   })
 
   test('Should not show thumbnail for active tab', async ({ comfyPage }) => {
@@ -79,7 +91,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   }) => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     const popover = await getTabPopover(comfyPage, 0)
-    await expect(popover).toHaveAttribute('aria-modal', 'false')
+    await expect(popover).not.toHaveAttribute('aria-modal', 'true')
 
     await comfyPage.page.keyboard.press('ControlOrMeta+s')
 

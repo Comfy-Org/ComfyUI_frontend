@@ -8,8 +8,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
@@ -97,6 +97,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const mockRail = vi.hoisted(() => ({
   enabled: false,
+  subscriptionRouteAvailable: true,
   openPaymentPortal: vi.fn(),
   cancelSubscription: vi.fn()
 }))
@@ -315,7 +316,8 @@ describe('useWorkspaceBilling', () => {
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
         hasFunds: true,
-        agentHasFunds: false
+        agentHasFunds: false,
+        agentScopedHasFunds: false
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
@@ -345,6 +347,27 @@ describe('useWorkspaceBilling', () => {
         await billing.fetchStatus()
 
         expect(billing.subscription.value?.agentHasFunds).toBe(expected)
+      }
+    )
+
+    it.for([
+      { scopedHasFunds: undefined, expected: undefined },
+      { scopedHasFunds: { agent: true }, expected: true },
+      { scopedHasFunds: { agent: false }, expected: false }
+    ])(
+      'maps scoped_has_funds $scopedHasFunds to the Agent-scoped balance $expected',
+      async ({ scopedHasFunds, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          has_funds: true,
+          scoped_effective_has_funds: { agent: true },
+          scoped_has_funds: scopedHasFunds
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscription.value?.agentScopedHasFunds).toBe(expected)
       }
     )
 
@@ -1130,10 +1153,10 @@ describe('useWorkspaceBilling', () => {
 
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
-        expect(useToastStore().messagesToAdd).toEqual([
+        expect(useToast().toasts).toEqual([
           expect.objectContaining({
-            severity: 'warn',
-            detail:
+            kind: 'warning',
+            description:
               "Couldn't open the billing page. Allow pop-ups for this site and try again."
           })
         ])
@@ -1452,25 +1475,36 @@ describe('useWorkspaceBilling', () => {
       expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
-    it('fires a started event before the cancel API call resolves', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-cancel',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
-        operation()
-      )
+    it.for([
+      { railEnabled: true, billingClient: 'sdk' },
+      { railEnabled: false, billingClient: 'legacy' }
+    ])(
+      'stamps the started event with the $billingClient client that will run the cancel',
+      async ({ railEnabled, billingClient }) => {
+        mockRail.enabled = railEnabled
+        mockRail.cancelSubscription.mockResolvedValue({
+          status: 'ok',
+          value: { operationObserved: true }
+        })
+        mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+          billing_op_id: 'op-cancel',
+          cancel_at: '2026-06-01T00:00:00Z'
+        })
+        vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+          operation()
+        )
 
-      const billing = setupBilling()
-      await billing.cancelSubscription()
+        await setupBilling().cancelSubscription()
 
-      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
-        operation: 'operation',
-        stage: 'started',
-        outcome: 'pending',
-        operation_type: 'cancel'
-      })
-    })
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+          operation: 'operation',
+          stage: 'started',
+          outcome: 'pending',
+          operation_type: 'cancel',
+          billing_client: billingClient
+        })
+      }
+    )
 
     it('fires billing telemetry directly when the initiating call fails before a billing_op_id exists', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue(
@@ -1487,6 +1521,7 @@ describe('useWorkspaceBilling', () => {
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
+        billing_client: 'legacy',
         failure_category: 'api_rejected',
         duration_ms: expect.any(Number)
       })
@@ -1567,13 +1602,15 @@ describe('useWorkspaceBilling', () => {
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
-        operation_type: 'cancel'
+        operation_type: 'cancel',
+        billing_client: 'legacy'
       })
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'cancel',
+        billing_client: 'legacy',
         duration_ms: expect.any(Number)
       })
     })

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { LoaderCircle } from '@lucide/vue'
 import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { formatElapsed } from '../../../config/workshop-run'
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
+import { formatElapsed } from '@/config/workshop-run'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 
 const LONG_WAIT_MS = 30_000
 

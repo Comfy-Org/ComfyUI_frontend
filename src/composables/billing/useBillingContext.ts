@@ -11,7 +11,6 @@ import {
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
@@ -22,7 +21,9 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  CancelRail,
   BillingState,
+  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
@@ -389,7 +390,9 @@ function useBillingContextInternal(): BillingContext {
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
     await waitForRoutingInSameWorkspace()
-    return activeContext.value.cancelSubscription(isScopeCurrent)
+    const rail: CancelRail = type.value === 'workspace' ? 'workspace' : 'legacy'
+    await activeContext.value.cancelSubscription(isScopeCurrent)
+    return rail
   }
 
   async function resubscribe(

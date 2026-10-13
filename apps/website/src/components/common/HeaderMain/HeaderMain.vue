@@ -10,26 +10,27 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import {
-  isHrefActive,
-  useCurrentPath
-} from '../../../composables/useCurrentPath.ts'
-import type { Locale } from '../../../i18n/translations.ts'
-import { translationsFor } from '../../../i18n/translations.ts'
-import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import type { WorkshopBuyCreditsTrigger } from '../../../config/workshop-buy-credits.ts'
-import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
-import { WORKSHOP_CREDITS_URL } from '../../../config/workshop-env.ts'
-import type { WorkshopAccountSource } from '../../../config/workshop-account-source.ts'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
+import type { Locale } from '@/i18n/translations.ts'
+import { translationsFor } from '@/i18n/translations.ts'
+import { externalLinks, getRoutes } from '@/config/routes.ts'
+import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
+import { WORKSHOP_CREDITS_URL } from '@/config/workshop-env.ts'
+import type { WorkshopAccountSource } from '@/config/workshop-account-source.ts'
 import {
   peekWorkshopAccountSource,
   resolveWorkshopAccountSource
-} from '../../../config/workshop-account-source.ts'
+} from '@/config/workshop-account-source.ts'
 import {
+  useWorkshopAppsEnabled,
   useWorkshopAuthFlag,
-  useWorkshopEnabled
-} from '../../../scripts/posthog.ts'
-import GitHubStarBadge from '../GitHubStarBadge.vue'
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog.ts'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
+import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
+import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
@@ -38,11 +39,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  hubApps = []
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  hubApps?: readonly HubApp[]
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
@@ -52,6 +55,16 @@ const mounted = useMounted()
 const showWorkshop = computed(
   () => mounted.value && workshopInBuild && workshopEnabled.value
 )
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const hubSections = computed<HubSections>(() => ({
+  workflows: showWorkshop.value && workflowsEnabled.value,
+  apps: showWorkshop.value && appsEnabled.value,
+  reshoot:
+    showWorkshop.value &&
+    appsEnabled.value &&
+    hubApps.some((app) => app.appId === 'reshoot' && isWorkshopModelShown(app))
+}))
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
@@ -60,16 +73,16 @@ const showAccount = computed(
 const HeaderAccount = defineAsyncComponent(async () => {
   const [source, firebaseHeader] = await Promise.all([
     resolveWorkshopAccountSource(),
-    import('../../workshop/HeaderAccount.vue')
+    import('@/components/workshop/HeaderAccount.vue')
   ])
   return source === 'session'
-    ? import('../../workshop/HeaderSessionAccount.vue')
+    ? import('@/components/workshop/HeaderSessionAccount.vue')
     : firebaseHeader
 })
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
     resolveWorkshopAccountSource(),
-    import('../../workshop/BuyCreditsDialog.vue')
+    import('@/components/workshop/BuyCreditsDialog.vue')
   ])
   return source === 'session' ? { render: () => null } : dialog
 })
@@ -232,7 +245,7 @@ const ctaButtons = computed(() =>
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
-      :workshop-in-build="showWorkshop"
+      :hub-sections
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -241,7 +254,7 @@ const ctaButtons = computed(() =>
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderMainMobile :locale :hub-sections />
     </div>
 
     <!-- Desktop CTA buttons -->

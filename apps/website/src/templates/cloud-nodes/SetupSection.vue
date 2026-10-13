@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { cloudNodesCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -1,16 +1,18 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -125,9 +127,9 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      useToastStore().addAlert(
-        error instanceof Error ? error.message : String(error)
-      )
+      useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
+      })
     }
   }
 
@@ -157,7 +159,7 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      useToastStore().addAlert(t('toastMessages.noTemplatesToExport'))
+      useToast().warning(t('toastMessages.noTemplatesToExport'))
       return
     }
 
@@ -405,7 +407,7 @@ const ext: ComfyExtension = {
                 data = JSON.parse(template.data)
               } catch (error) {
                 console.error('Failed to parse node template data', error)
-                useToastStore().addAlert(t('toastMessages.invalidTemplateData'))
+                useToast().warning(t('toastMessages.invalidTemplateData'))
                 return
               }
 

@@ -1,26 +1,28 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
-import { routeOf } from '../utils/hreflangRoutes'
-import { hubAppSlugs, hubModelAliases, hubModelSlugs } from './hub-models'
-import { modelPageUrls } from './model-urls'
-import { models } from './models'
+import { websiteRoot } from '@website/paths'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { routeOf } from '@/utils/hreflangRoutes'
+import hubAppNames from './hub-app-names.json' with { type: 'json' }
+import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
+import { hubModelAliases } from './hub-models'
+import { localModelPath, localModels } from './local-models'
+import { modelAliasUrls, modelPageUrls } from './model-urls'
 import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
   isInternalDestination,
+  linkStaleSources,
   siteRedirects,
   toVercelRedirects
 } from './redirects'
 import { getRoutes } from './routes'
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const pagesDir = join(appDir, 'src', 'pages')
+const pagesDir = join(websiteRoot, 'src', 'pages')
 
 const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -38,9 +40,7 @@ const builtPages = new Set([
     .map(({ pattern }) => pattern)
     .filter((pattern) => !pattern.includes('['))
     .map((pattern) => `${pattern}/`),
-  ...models
-    .filter((model) => !model.canonicalSlug)
-    .map((model) => `/p/supported-models/${model.slug}/`)
+  ...localModels.map((model) => localModelPath(model.slug))
 ])
 
 const pageExistsAt = (pathname: string) => builtPages.has(pathname)
@@ -52,7 +52,7 @@ const VercelConfigSchema = z.object({
 })
 
 const vercelConfig = VercelConfigSchema.parse(
-  JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8'))
+  JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8'))
 )
 
 const VERCEL_ROUTE_LIMIT = 2048
@@ -97,19 +97,25 @@ describe('the redirect list', () => {
     ).toEqual([])
   })
 
-  it('writes sources as literal paths without a trailing slash', () => {
+  it('writes sources as paths without a trailing slash, literal or with one slug group', () => {
     expect(
-      sources.filter((source) => !/^(\/[A-Za-z0-9._-]+)+$/.test(source))
+      sources.filter(
+        (source) =>
+          !/^(\/[A-Za-z0-9._-]+)+$/.test(source) &&
+          !/^\/p\/supported-models\/:slug\([a-z0-9|-]+\)(\.md)?$/.test(source)
+      )
     ).toEqual([])
   })
 
-  it('ends every internal destination with a trailing slash', () => {
+  it('ends every internal destination with a trailing slash, unless it is a file', () => {
     expect(
       siteRedirects
         .map(({ destination }) => destination)
         .filter(
           (destination) =>
-            isInternalDestination(destination) && !destination.endsWith('/')
+            isInternalDestination(destination) &&
+            !destination.endsWith('/') &&
+            !/\.(md|txt)$/.test(destination)
         )
     ).toEqual([])
   })
@@ -121,7 +127,13 @@ describe('the redirect list', () => {
   })
 
   it('reaches every destination in one hop', () => {
-    const sourceSet = new Set<string>(sources)
+    // A row that leaves its slash form to a page never redirects that form,
+    // so landing on the page is the last hop.
+    const sourceSet = new Set<string>(
+      siteRedirects
+        .filter(({ slashFormIsPageBecause }) => !slashFormIsPageBecause)
+        .map(({ source }) => source)
+    )
     expect(
       siteRedirects.filter(
         ({ destination }) =>
@@ -142,22 +154,9 @@ describe('generated Vercel rules', () => {
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
-      destination: '/p/supported-models/t5xxl-fp16/'
-    }
-  ])(
-    'send $source and $source/ to $destination permanently',
-    ({ source, destination }) => {
-      for (const form of [source, `${source}/`]) {
-        expect(find(form)).toEqual({
-          source: form,
-          destination,
-          permanent: true
-        })
-      }
-    }
-  )
-
-  it.for([
+      destination: '/hub/models/local/t5xxl-fp16/'
+    },
+    { source: '/p/supported-models', destination: '/hub/models/local/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -176,25 +175,22 @@ describe('generated Vercel rules', () => {
       destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
     }
   ])(
-    'send $source and $source/ to $destination temporarily until comfy-router#46 is live',
+    'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
       for (const form of [source, `${source}/`]) {
         expect(find(form)).toEqual({
           source: form,
           destination,
-          permanent: false
+          permanent: true
         })
       }
     }
   )
 
-  it('keeps only the listed rows and the old Models addresses temporary', () => {
+  it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects
-        .filter(
-          ({ source, permanent }) =>
-            !permanent && source !== '/models' && !source.startsWith('/models/')
-        )
+        .filter(({ permanent }) => !permanent)
         .map(({ source }) => source)
     ).toEqual([
       '/trust',
@@ -207,7 +203,19 @@ describe('generated Vercel rules', () => {
       '/minimax',
       '/minimax/',
       '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/zh-CN/minimax/',
+      '/gallery',
+      '/gallery/',
+      '/gallery.md',
+      '/zh-CN/gallery',
+      '/zh-CN/gallery/',
+      '/zh-CN/gallery.md',
+      '/launches',
+      '/launches/',
+      '/launches.md',
+      '/zh-CN/launches',
+      '/zh-CN/launches/',
+      '/zh-CN/launches.md'
     ])
   })
 
@@ -215,6 +223,22 @@ describe('generated Vercel rules', () => {
     expect(find('/login')?.permanent).toBe(false)
     expect(find('/login/')).toBeUndefined()
   })
+
+  it.for([
+    { source: '/about', destination: en.about },
+    { source: '/zh-CN/about', destination: zh.about }
+  ])(
+    'sends only $source to $destination permanently, never the page itself',
+    ({ source, destination }) => {
+      expect(find(source)).toEqual({
+        source,
+        destination,
+        permanent: true
+      })
+      expect(find(`${source}/`)).toBeUndefined()
+      expect(destination).toBe(`${source}/`)
+    }
+  )
 
   it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
     'leaves the destination %s unredirected',
@@ -225,22 +249,57 @@ describe('generated Vercel rules', () => {
   )
 })
 
+describe('the retired gallery and launches pages', () => {
+  it.for([
+    ['/gallery/', '/customers/'],
+    ['/zh-CN/gallery/', '/zh-CN/customers/'],
+    ['/launches/', '/events/'],
+    ['/zh-CN/launches/', '/zh-CN/events/'],
+    ['/gallery.md', '/customers.md'],
+    ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
+    ['/launches.md', '/events.md'],
+    ['/zh-CN/launches.md', '/zh-CN/events.md']
+  ])('sends %s to %s with a 307', ([source, destination]) => {
+    expect(
+      toVercelRedirects(siteRedirects).find((row) => row.source === source)
+    ).toEqual({ source, destination, permanent: false })
+  })
+})
+
+describe('link-stale sources', () => {
+  it('leave out a bare source whose slash form is a page', () => {
+    expect(linkStaleSources).not.toContain('/about')
+    expect(linkStaleSources).not.toContain('/zh-CN/about')
+    expect(linkStaleSources).not.toContain('/login')
+  })
+
+  it('keep both slash forms of an ordinary redirect', () => {
+    expect(linkStaleSources).toEqual(
+      expect.arrayContaining(['/career', '/career/', '/press', '/press/'])
+    )
+  })
+})
+
 describe('Astro redirects', () => {
-  it('cover every internal row whose slash form redirects, except old Models addresses', () => {
-    const isOldModelsAddress = (source: string) =>
-      source === '/models' || source.startsWith('/models/')
+  it('cover every internal row whose slash form redirects, except retired addresses', () => {
+    const isRetiredAddress = (source: string) =>
+      ['/models', '/p/supported-models'].some(
+        (root) =>
+          source === root ||
+          source.startsWith(`${root}/`) ||
+          source.startsWith(`${root}.`)
+      )
     expect(Object.keys(astroRedirects)).toEqual(
       siteRedirects
         .filter(
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
-            !isOldModelsAddress(source)
+            !/\.(md|txt)$/.test(source) &&
+            !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    const aliasCount = models.filter((model) => model.canonicalSlug).length
-    expect(Object.keys(astroRedirects)).toHaveLength(18 + aliasCount)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -249,6 +308,7 @@ describe('Astro redirects', () => {
       status: 307,
       destination: '/zh-CN/minimax-h3/'
     })
+    expect(astroRedirects['/gallery.md']).toBeUndefined()
     expect(astroRedirects['/career']).toEqual({
       status: 308,
       destination: '/careers/'
@@ -263,26 +323,52 @@ describe('Astro redirects', () => {
 
 describe('old Models addresses', () => {
   const vercelRedirects = toVercelRedirects(siteRedirects)
-  const oldPaths = [
-    '/models',
-    ...[...hubModelSlugs.keys(), ...hubModelAliases.keys(), ...hubAppSlugs].map(
-      (slug) => `/models/${slug}`
-    )
-  ].flatMap((path) => [path, `${path}/`])
+  const frozenDestinations: [string, string][] = [
+    ['/models', '/hub/models/'],
+    ...modelPageUrls.map(({ oldSlug, newSlug }): [string, string] => [
+      `/models/${oldSlug}`,
+      `/hub/models/${newSlug}/`
+    ]),
+    ...modelAliasUrls.map(({ alias, newSlug }): [string, string] => [
+      `/models/${alias}`,
+      `/hub/models/${newSlug}/`
+    ]),
+    ...hubWorkflowNames.map((name): [string, string] => [
+      `/models/workflows/${name}`,
+      `/hub/workflows/${name}/`
+    ]),
+    ...hubAppNames.map((name): [string, string] => [
+      `/models/apps/${name}`,
+      `/hub/apps/${name}/`
+    ])
+  ].flatMap(([path, destination]) => [
+    [path, destination],
+    [`${path}/`, destination]
+  ])
 
-  it('each redirect once, temporarily, to a page the site builds', () => {
-    const landsOnPage = (destination: string) =>
-      ['model', 'hub', 'app'].includes(modelsUrlKind(destination) ?? '')
-    expect(
-      oldPaths.filter((path) => {
-        const rows = vercelRedirects.filter(({ source }) => source === path)
-        return (
-          modelsUrlKind(path) !== 'alias' ||
-          rows.length !== 1 ||
-          rows[0].permanent ||
-          !landsOnPage(rows[0].destination)
+  it('each redirect once, permanently, to the page in the frozen URL tables', () => {
+    const served = (path: string) =>
+      vercelRedirects
+        .filter(({ source }) => source === path)
+        .map(({ permanent, destination }) =>
+          permanent ? destination : `temporary ${destination}`
         )
-      })
+    expect(
+      Object.fromEntries(
+        frozenDestinations.map(([path]) => [path, served(path)])
+      )
+    ).toEqual(
+      Object.fromEntries(
+        frozenDestinations.map(([path, destination]) => [path, [destination]])
+      )
+    )
+  })
+
+  it('each is an alias in the Models URL registry', () => {
+    expect(
+      frozenDestinations
+        .map(([path]) => path)
+        .filter((path) => modelsUrlKind(path) !== 'alias')
     ).toEqual([])
   })
 })

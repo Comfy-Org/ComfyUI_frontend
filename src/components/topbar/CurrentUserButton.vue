@@ -17,12 +17,7 @@
           )
         "
       >
-        <Skeleton
-          v-if="showWorkspaceSkeleton"
-          shape="circle"
-          width="32px"
-          height="32px"
-        />
+        <Skeleton v-if="showWorkspaceSkeleton" class="size-8 rounded-full" />
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
@@ -41,12 +36,8 @@
 
     <Popover
       ref="popover"
-      :show-arrow="false"
-      :pt="{
-        root: {
-          class: 'rounded-lg w-80'
-        }
-      }"
+      align="end"
+      content-class="w-80 overflow-visible p-0"
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
@@ -62,11 +53,11 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
-import Skeleton from 'primevue/skeleton'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

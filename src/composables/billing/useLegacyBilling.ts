@@ -4,7 +4,6 @@ import { t } from '@/i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -19,6 +18,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingState,
+  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 
@@ -232,7 +232,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    await rejectFailures(() => legacyManageSubscription())
+    await rejectFailures(() =>
+      legacyManageSubscription({ cancelSubscription: true })
+    )
   }
 
   async function resubscribe(options?: {

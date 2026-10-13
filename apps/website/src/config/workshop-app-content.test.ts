@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopAppHref } from '../lib/workshop/apps'
+import { workshopAppHref } from '@/lib/workshop/apps'
 import { appModels, appPagePaths } from './workshop-app-content'
 import {
   parseAppCatalog,

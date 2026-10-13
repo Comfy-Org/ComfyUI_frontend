@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchHero } from '../../templates/model-launch/types'
+import type { Locale } from '@/i18n/translations'
+import type { ModelLaunchHero } from '@/templates/model-launch/types'
 
-import { localizeHref } from '../../config/routes'
-import { minimaxLinks } from '../../data/minimax'
-import ModelLaunchHeroSection from '../../templates/model-launch/ModelLaunchHeroSection.vue'
+import { localizeHref } from '@/config/routes'
+import { minimaxLinks } from '@/data/minimax'
+import ModelLaunchHeroSection from '@/templates/model-launch/ModelLaunchHeroSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
