@@ -336,13 +336,14 @@ const gridCols = computed(() => {
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
-    const shownUrl = (url: string) => getHdrPreviewUrl(url) ?? url
+    const key = (url: string) =>
+      imageError.value ? url : (getHdrPreviewUrl(url) ?? url)
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => shownUrl(url) !== shownUrl(oldUrls[i]))
+      newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
-    if (!urlsChanged && !imageError.value) return
+    if (!urlsChanged) return
 
     // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {

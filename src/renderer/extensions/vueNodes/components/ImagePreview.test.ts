@@ -663,6 +663,16 @@ describe('ImagePreview', () => {
       expect(screen.getByTestId('main-image')).toBeInTheDocument()
     })
 
+    it('does not retry a failed HDR preview when its URLs are unchanged', async () => {
+      const urls = ['/api/view?filename=a.exr&type=input&preview_id=p1']
+      const { rerender } = renderImagePreview({ imageUrls: urls })
+      await fireEvent.error(screen.getByTestId('main-image'))
+
+      await rerender({ imageUrls: [...urls] })
+
+      expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    })
+
     it('should reset loading state when imageUrls prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
