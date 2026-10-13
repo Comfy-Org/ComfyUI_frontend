@@ -43,6 +43,8 @@ describe('EditorEmpty', () => {
     })
 
     const tile = screen.getByRole('button', { name: 'Hero' })
-    expect(within(tile).getByRole('presentation')).toHaveClass('object-contain')
+    expect(within(tile).getByRole('img', { hidden: true })).toHaveClass(
+      'object-contain'
+    )
   })
 })
