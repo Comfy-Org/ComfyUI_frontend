@@ -16,9 +16,9 @@ export const zResultItem = z.object({
 })
 export type ResultItem = z.infer<typeof zResultItem>
 
-// Backends write a bare `null` where an output file failed to upload, and newer
-// drops use a filename-less `{ status: 'unavailable', reason }` marker. Parsing
-// each element independently keeps one bad entry from discarding the whole array.
+// Output arrays can contain a bare `null` or a filename-less
+// `{ status: 'unavailable', reason }` marker. Parsing each element
+// independently keeps one bad entry from discarding the whole array.
 const zResultItemEntry = z.union([zResultItem, z.null()]).catch(null)
 
 // Uses .passthrough() because custom nodes can output arbitrary keys.

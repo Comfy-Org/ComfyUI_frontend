@@ -13,8 +13,8 @@ export type ViewableResultItem = {
 }
 
 /**
- * Output arrays can contain `null` (the output file failed to upload) or a
- * filename-less marker such as `{ status: 'unavailable', reason }`. Neither can
+ * Output arrays can contain `null` or a filename-less marker such as
+ * `{ status: 'unavailable', reason }`. Neither can
  * be turned into a `/view` request, so they must be skipped rather than
  * rendered. A present but unrecognized `type` is rejected rather than defaulted,
  * since `/view` would otherwise serve an unrelated file of the same name.
