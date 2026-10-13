@@ -42,3 +42,18 @@ export const MOVE_EXAMPLE = {
   width: 1043,
   height: 693
 } as const
+
+const photo = (id: string, name: string) => ({
+  url: `/images/apps/move-anything/examples/${id}.jpg`,
+  name,
+  width: 1200,
+  height: 800
+})
+
+/** The photos offered to start from; only the kitten has its things found for it. */
+export const MOVE_EXAMPLES = [
+  { id: 'kitten', image: MOVE_EXAMPLE },
+  { id: 'breakfast', image: photo('breakfast', 'breakfast-table.jpg') },
+  { id: 'toys', image: photo('toys', 'toys-on-a-rug.jpg') },
+  { id: 'desk', image: photo('desk', 'desk-lamp.jpg') }
+] as const

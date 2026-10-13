@@ -10,7 +10,10 @@ const copy = {
     'zh-CN': '从示例开始'
   },
   'move.empty.upload': { en: 'Upload photo', 'zh-CN': '上传照片' },
-  'move.empty.example': { en: 'Kitten on a desk', 'zh-CN': '桌上的小猫' },
+  'move.examples.kitten': { en: 'Kitten on a desk', 'zh-CN': '桌上的小猫' },
+  'move.examples.breakfast': { en: 'Breakfast table', 'zh-CN': '早餐桌' },
+  'move.examples.toys': { en: 'Toys on a rug', 'zh-CN': '地毯上的玩具' },
+  'move.examples.desk': { en: 'Desk with a lamp', 'zh-CN': '台灯书桌' },
   'move.tool.move': { en: 'Move', 'zh-CN': '移动' },
   'move.tool.smart': { en: 'Smart select', 'zh-CN': '智能选择' },
   'move.tool.box': { en: 'Box select', 'zh-CN': '框选' },

@@ -20,7 +20,11 @@ import type {
   MoveQuality,
   MoveResult
 } from '@/lib/workshop/move-anything/mock-run'
-import { MOVE_EXAMPLE, runMove } from '@/lib/workshop/move-anything/mock-run'
+import {
+  MOVE_EXAMPLE,
+  MOVE_EXAMPLES,
+  runMove
+} from '@/lib/workshop/move-anything/mock-run'
 
 export interface MoveImage {
   readonly url: string
@@ -88,11 +92,13 @@ export function useMoveAnything(locale: Locale = 'en') {
     ownUrl = undefined
   }
 
-  function useExample() {
+  function useExample(id: string = MOVE_EXAMPLES[0].id) {
+    const example = MOVE_EXAMPLES.find((option) => option.id === id)
+    if (!example) return
     pendingUrl = undefined
     releaseOwnUrl()
-    reset(MOVE_EXAMPLE)
-    scanExample()
+    reset(example.image)
+    if (example.image.url === MOVE_EXAMPLE.url) scanExample()
   }
 
   async function useFile(file: File) {

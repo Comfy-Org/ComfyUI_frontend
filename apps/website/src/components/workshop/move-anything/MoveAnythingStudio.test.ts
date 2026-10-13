@@ -366,6 +366,18 @@ describe('MoveAnythingStudio', () => {
     expect(await within(panel()).findByText('desk.png')).toBeVisible()
   })
 
+  it('offers four photos to start from, finding things only in the kitten', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(MoveAnythingStudio)
+    const empty = within(screen.getByTestId('move-empty'))
+    expect(empty.getAllByRole('button')).toHaveLength(4)
+
+    await user.click(empty.getByRole('button', { name: 'Toys on a rug' }))
+
+    expect(within(panel()).getByText('toys-on-a-rug.jpg')).toBeVisible()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('takes the photo out with the X and puts it back from the tray', async () => {
     screenIsWide(true)
     const user = await openExample()
