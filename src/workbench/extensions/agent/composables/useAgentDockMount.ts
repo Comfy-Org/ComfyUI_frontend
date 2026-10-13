@@ -27,7 +27,7 @@ export function useAgentDockMount(): AgentDockMount {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
-  const { subscription, fetchStatus, type } = useBillingContext()
+  const { subscription, fetchStatus, isLoading, type } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -42,37 +42,39 @@ export function useAgentDockMount(): AgentDockMount {
   )
 
   const billingIdentity = useBillingIdentity()
-  let identityRefreshEpoch = 0
-  let refreshingIdentity: string | null = null
-
   watch(billingIdentity, (identity, previousIdentity) => {
     if (identity === previousIdentity) return
-    const refreshEpoch = ++identityRefreshEpoch
-    refreshingIdentity = identity
-    void fetchStatus()
-      .then(() => {
-        if (
-          refreshEpoch !== identityRefreshEpoch ||
-          billingIdentity.value !== identity
-        )
-          return
-        refreshingIdentity = null
-        const scopedHasFunds = subscription.value?.agentScopedHasFunds
-        if (scopedHasFunds !== undefined)
-          agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
-      })
-      .catch(() => {
-        if (refreshEpoch === identityRefreshEpoch) refreshingIdentity = null
+    const refreshEpoch = agentPanelStore.beginCreditTransitionRefresh(identity)
+    void agentPanelStore
+      .refreshBillingStatus(identity, fetchStatus)
+      .catch(() => undefined)
+      .finally(() => {
+        agentPanelStore.completeCreditTransitionRefresh(identity, refreshEpoch)
+        observeFreshScopedFunds()
       })
   })
 
-  watch(
-    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
-    ([identity, scopedHasFunds]) => {
-      if (scopedHasFunds === undefined || refreshingIdentity === identity)
+  function observeFreshScopedFunds(): void {
+    const identity = billingIdentity.value
+    const refresh = agentPanelStore.creditTransitionRefresh
+    if (refresh?.identity === identity) {
+      if (!refresh.ready || isLoading.value) return
+      if (!agentPanelStore.claimCompletedCreditTransitionRefresh(identity))
         return
+    }
+    const scopedHasFunds = subscription.value?.agentScopedHasFunds
+    if (scopedHasFunds !== undefined)
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
-    },
+  }
+
+  watch(
+    [
+      billingIdentity,
+      () => subscription.value?.agentScopedHasFunds,
+      isLoading,
+      () => agentPanelStore.creditTransitionRefresh
+    ],
+    observeFreshScopedFunds,
     { immediate: true }
   )
 
@@ -80,7 +82,9 @@ export function useAgentDockMount(): AgentDockMount {
     () => agentPanelStore.isOpen,
     (isOpen, wasOpen) => {
       if (!isOpen || wasOpen || type.value !== 'workspace') return
-      void fetchStatus().catch(() => undefined)
+      void agentPanelStore
+        .refreshBillingStatus(billingIdentity.value, fetchStatus)
+        .catch(() => undefined)
     }
   )
 
