@@ -4,57 +4,85 @@ import { describe, expect, it } from 'vitest'
 
 import OpenjutsuPanel from './OpenjutsuPanel.vue'
 
-const models = { target: '', size: '768p' as const, videoUrl: 'blob:clip' }
+const models = { target: '', size: '768p' as const }
+const longClip = {
+  ...models,
+  videoUrl: 'blob:clip',
+  videoName: 'dance.mp4',
+  clipSeconds: 20,
+  trimmed: true
+}
 
 describe('OpenjutsuPanel', () => {
-  it('shows the part being swapped and opens the trim from it', async () => {
-    const { emitted } = render(OpenjutsuPanel, {
+  it.for([
+    { range: { start: 0, seconds: 15 }, note: 'Using the first 15 s' },
+    { range: { start: 4, seconds: 15 }, note: 'Using 4.0–19.0 s' }
+  ])(
+    'says "$note" under a long video and opens the trim from it',
+    async ({ range, note }) => {
+      const { emitted } = render(OpenjutsuPanel, {
+        props: { ...longClip, range }
+      })
+
+      expect(screen.getByTestId('openjutsu-part')).toHaveTextContent(note)
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Change the part used' })
+      )
+
+      expect(emitted('trim')).toHaveLength(1)
+    }
+  )
+
+  it('says nothing about the part when the whole video fits', () => {
+    render(OpenjutsuPanel, {
       props: {
-        ...models,
-        videoName: 'dance.mp4',
-        clipSeconds: 20,
-        range: { start: 2, seconds: 6 },
-        partSeconds: 6
+        ...longClip,
+        clipSeconds: 8,
+        trimmed: false,
+        range: { start: 0, seconds: 8 }
       }
     })
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'Trim: 2.0–8.0 s of 20.0 s'
-      })
-    )
+    expect(screen.queryByTestId('openjutsu-part')).toBeNull()
+  })
 
-    expect(emitted('trim')).toHaveLength(1)
+  it('names the video over its cover and takes it out with the ✕', async () => {
+    const { emitted } = render(OpenjutsuPanel, { props: longClip })
+
+    expect(screen.getByTestId('openjutsu-video-caption')).toHaveTextContent(
+      'dance.mp4 · 20 s'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Remove video' }))
+
+    expect(emitted('removeVideo')).toHaveLength(1)
   })
 
   it.for([
     {
       slot: 'video',
-      action: 'Change: dance.mp4',
+      prompt: 'Upload video',
       input: 'openjutsu-video-file',
       file: new File(['clip'], 'other.mp4', { type: 'video/mp4' })
     },
     {
       slot: 'character',
-      action: 'Add a character image',
+      prompt: 'Add a character image',
       input: 'openjutsu-character-file',
       file: new File(['face'], 'face.png', { type: 'image/png' })
     }
   ] as const)(
     'takes a new $slot from its upload',
-    async ({ slot, action, input, file }) => {
-      const { emitted } = render(OpenjutsuPanel, {
-        props: { ...models, videoName: 'dance.mp4' }
-      })
+    async ({ slot, prompt, input, file }) => {
+      const { emitted } = render(OpenjutsuPanel, { props: models })
 
-      expect(screen.getByRole('button', { name: action })).toBeVisible()
+      expect(screen.getByText(prompt)).toBeVisible()
       await userEvent.upload(screen.getByTestId(input), file)
 
       expect(emitted(slot)).toEqual([[file]])
     }
   )
 
-  it('keeps the chosen inputs without a way to empty them', () => {
+  it('keeps the chosen character without a way to empty it', () => {
     render(OpenjutsuPanel, {
       props: { ...models, characterUrl: 'blob:face', characterName: 'face.png' }
     })

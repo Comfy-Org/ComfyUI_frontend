@@ -5610,9 +5610,12 @@
     "signIn": "Sign in to run a swap.",
     "video": {
       "heading": "Video",
-      "drop": "Add the video to edit",
       "hint": "Any length. You pick 5–15 seconds of it; one continuous shot works best.",
-      "detail": "{seconds} s · swapping {used} s"
+      "detail": "{seconds} s · swapping {used} s",
+      "add": "Upload video",
+      "limits": "MP4 or MOV · up to 15 s is used",
+      "remove": "Remove video",
+      "restore": "Undo remove video"
     },
     "target": {
       "heading": "Who to replace",
@@ -5624,8 +5627,10 @@
       "placeholder": "Random seed"
     },
     "trim": {
-      "edit": "Trim",
-      "summary": "{from}–{to} s of {total} s"
+      "first": "Using the first {seconds} s",
+      "part": "Using {from}–{to} s",
+      "change": "Change",
+      "changeLabel": "Change the part used"
     },
     "needs": {
       "video": "Add a video to start",
@@ -5654,8 +5659,8 @@
       "audio": "original sound"
     },
     "empty": {
-      "title": "Your swapped video plays here",
-      "hint": "Add a video, pick 5 to 15 seconds of it, and add one character image."
+      "title": "Start with a video",
+      "hint": "Upload a clip of 5 seconds or more. If it runs longer than 15 seconds, we use the first 15 and you can pick another part."
     },
     "error": {
       "swap": "The swap did not finish. Try again, or try a shorter part."

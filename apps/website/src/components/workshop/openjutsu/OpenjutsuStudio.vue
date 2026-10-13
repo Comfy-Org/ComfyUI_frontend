@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Undo2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
@@ -25,6 +26,8 @@ const {
   video,
   videoUrl,
   clipSeconds,
+  trimmed,
+  removed,
   character,
   characterUrl,
   target,
@@ -116,6 +119,15 @@ onBeforeUnmount(() =>
       >
         {{ t('openjutsu.sample.banner') }}
       </p>
+      <button
+        v-if="removed && !videoUrl"
+        type="button"
+        class="pointer-events-auto flex h-9 cursor-pointer items-center gap-2 rounded-full border border-transparency-white-t8 bg-primary-comfy-ink-light/90 pr-3.5 pl-2.5 text-xs text-primary-warm-white transition hover:bg-primary-comfy-ink-light focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        @click="swap.restoreVideo"
+      >
+        <Undo2 class="size-4" aria-hidden="true" />
+        {{ t('openjutsu.video.restore') }}
+      </button>
     </template>
     <template #dock>
       <OpenjutsuResultDock
@@ -126,7 +138,7 @@ onBeforeUnmount(() =>
       />
     </template>
 
-    <template v-if="videoUrl" #panel>
+    <template #panel>
       <OpenjutsuPanel
         v-model:target="target"
         v-model:seed="seed"
@@ -135,18 +147,20 @@ onBeforeUnmount(() =>
         :video-name="video?.name"
         :clip-seconds="clipSeconds"
         :range
-        :part-seconds="partSeconds"
+        :trimmed
         :character-url="characterUrl"
         :character-name="character?.name"
         :locale
         @video="swap.takeVideo"
+        @remove-video="swap.removeVideo"
         @character="swap.takeCharacter"
         @trim="swap.editTrim"
       />
     </template>
-    <template v-if="videoUrl" #panel-peek>
+    <template #panel-peek>
       <span class="flex shrink-0 items-center gap-1">
         <video
+          v-if="videoUrl"
           :src="videoUrl"
           muted
           playsinline
@@ -170,7 +184,7 @@ onBeforeUnmount(() =>
       </span>
       <span class="shrink-0 text-xs text-primary-warm-gray">{{ size }}</span>
     </template>
-    <template v-if="videoUrl" #panel-footer>
+    <template #panel-footer>
       <OpenjutsuRun
         :gate
         :missing

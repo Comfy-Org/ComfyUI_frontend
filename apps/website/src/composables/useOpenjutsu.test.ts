@@ -8,6 +8,8 @@ import { signIn } from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixture
 import type { ReshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { sampleTransport } from '@/lib/workshop/openjutsu/sample-transport'
 import { openjutsuTransport } from '@/lib/workshop/openjutsu/transport-config'
+import type { VideoFacts } from '@/lib/workshop/video-trim/filmstrip'
+import { readVideoFacts } from '@/lib/workshop/video-trim/filmstrip'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useOpenjutsu } from './useOpenjutsu'
 
@@ -16,6 +18,7 @@ const backend = vi.hoisted(() => ({ noAccount: true }))
 vi.mock(import('@/config/workshop-session-state'))
 vi.mock(import('@/config/workshop-credits'))
 vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/lib/workshop/video-trim/filmstrip'))
 vi.mock(import('@/lib/workshop/openjutsu/transport-config'), () => ({
   OPENJUTSU_SAMPLE_MODE: true,
   get OPENJUTSU_NO_ACCOUNT() {
@@ -37,6 +40,12 @@ const trimmed: VideoTrim = {
   height: 1080
 }
 
+const facts = (duration: number): VideoFacts => ({
+  duration,
+  width: 1920,
+  height: 1080
+})
+
 let scenario: Scenario
 let transport: ReshootTransport
 
@@ -57,7 +66,8 @@ function start() {
 /** A page with everything a run needs, and its price read. */
 async function ready() {
   const swap = start()
-  swap.takeVideo(clip)
+  await swap.takeVideo(clip)
+  swap.editTrim()
   swap.confirmTrim(trimmed)
   swap.takeCharacter(hero)
   swap.target.value = 'the man'
@@ -69,6 +79,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   backend.noAccount = true
   scenario = 'free'
+  vi.mocked(readVideoFacts).mockResolvedValue(facts(20))
   transport = sampleTransport(() => scenario)
   vi.mocked(openjutsuTransport).mockReturnValue(transport)
 })
@@ -79,13 +90,7 @@ describe('useOpenjutsu', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(swap.missing.value).toBe('video')
 
-    swap.takeVideo(clip)
-    expect(swap.trimOpen.value).toBe(true)
-    expect(
-      swap.video.value,
-      'a video is not in use until trimmed'
-    ).toBeUndefined()
-    swap.confirmTrim(trimmed)
+    await swap.takeVideo(clip)
     expect(swap.video.value).toBe(clip)
     expect(swap.missing.value).toBe('character')
 
@@ -96,6 +101,54 @@ describe('useOpenjutsu', () => {
     swap.target.value = 'the man'
     expect(swap.missing.value).toBeUndefined()
     expect(swap.canGenerate.value).toBe(true)
+  })
+
+  it.for([
+    { seconds: 8, range: { start: 0, seconds: 8 }, trimmed: false },
+    { seconds: 20, range: { start: 0, seconds: 15 }, trimmed: true }
+  ])(
+    'uses a $seconds s video at once, from its start up to 15 s',
+    async ({ seconds, range, trimmed }) => {
+      vi.mocked(readVideoFacts).mockResolvedValue(facts(seconds))
+      const swap = start()
+
+      await swap.takeVideo(clip)
+
+      expect(swap.trimOpen.value).toBe(false)
+      expect(swap.range.value).toEqual(range)
+      expect(swap.trimmed.value).toBe(trimmed)
+    }
+  )
+
+  it.for([
+    { case: 'unreadable', read: undefined },
+    { case: 'too short', read: facts(3) }
+  ])(
+    'opens the trim on a $case video and keeps the one in use',
+    async ({ read }) => {
+      const swap = await ready()
+      const other = new File(['other'], 'other.mp4', { type: 'video/mp4' })
+      vi.mocked(readVideoFacts).mockResolvedValue(read)
+
+      await swap.takeVideo(other)
+
+      expect(swap.trimOpen.value).toBe(true)
+      expect(swap.trimming.value).toBe(other)
+      expect(swap.video.value).toBe(clip)
+    }
+  )
+
+  it('takes the video out and puts it back as it was', async () => {
+    const swap = await ready()
+
+    swap.removeVideo()
+    expect(swap.video.value).toBeUndefined()
+    expect(swap.missing.value).toBe('video')
+
+    swap.restoreVideo()
+    expect(swap.video.value).toBe(clip)
+    expect(swap.range.value).toEqual({ start: 2, seconds: 6 })
+    expect(swap.removed.value).toBeUndefined()
   })
 
   it('reads the part, the result size and the price from what was chosen', async () => {
@@ -110,18 +163,12 @@ describe('useOpenjutsu', () => {
     expect(swap.savedSize.value).toEqual({ width: 854, height: 480 })
   })
 
-  it('keeps the video in use while another is only being looked at', async () => {
+  it('reopens the trim on the video in use at the part chosen', async () => {
     const swap = await ready()
-    const other = new File(['other'], 'other.mp4', { type: 'video/mp4' })
-
-    swap.takeVideo(other)
-    expect(swap.video.value).toBe(clip)
-    expect(
-      swap.trimInitial.value,
-      'a new video opens untrimmed'
-    ).toBeUndefined()
 
     swap.editTrim()
+
+    expect(swap.trimming.value).toBe(clip)
     expect(swap.trimInitial.value).toEqual({ start: 2, end: 8 })
   })
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   initialTrim,
+  longerThanLimit,
   tooShortToTrim,
   trimEndTo,
   trimLength,
@@ -21,6 +22,20 @@ describe('tooShortToTrim', () => {
   ])('says whether a %f second video is too short: %s', ([seconds, short]) => {
     expect(tooShortToTrim(seconds, limits)).toBe(short)
   })
+})
+
+describe('longerThanLimit', () => {
+  it.for<[number, boolean]>([
+    [9, false],
+    [15.03, false],
+    [15.2, true],
+    [40, true]
+  ])(
+    'says whether a %f second video runs past the maximum: %s',
+    ([seconds, long]) => {
+      expect(longerThanLimit(seconds, limits)).toBe(long)
+    }
+  )
 })
 
 describe('initialTrim', () => {

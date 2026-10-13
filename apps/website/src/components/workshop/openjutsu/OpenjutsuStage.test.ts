@@ -45,8 +45,8 @@ describe('OpenjutsuStage', () => {
     })
     const file = new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
 
-    expect(screen.getByText('Your swapped video plays here')).toBeVisible()
-    await userEvent.upload(screen.getByLabelText('Add the video to edit'), file)
+    expect(screen.getByText('Start with a video')).toBeVisible()
+    await userEvent.upload(screen.getByLabelText('Upload video'), file)
     expect(emitted('video')).toEqual([[file]])
   })
 

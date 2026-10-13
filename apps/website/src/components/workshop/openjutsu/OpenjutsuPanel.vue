@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Maximize, Scissors } from '@lucide/vue'
+import { ChevronDown, Maximize } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
@@ -10,23 +10,25 @@ import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
 import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import OpenjutsuSeedField from './OpenjutsuSeedField.vue'
+import OpenjutsuVideoSlot from './OpenjutsuVideoSlot.vue'
 
-/** The panel's fields, in the order a run needs them, once a video is chosen. */
+/** The panel's fields, in the order a run needs them; the video slot is always first. */
 const {
   videoUrl,
   videoName,
   clipSeconds,
   range,
-  partSeconds,
+  trimmed = false,
   characterUrl,
   characterName,
   locale = 'en'
 } = defineProps<{
-  videoUrl: string
+  videoUrl?: string
   videoName?: string
   clipSeconds?: number
   range?: SwapWindow
-  partSeconds?: number
+  /** The video runs past the longest part, so only some of it is used. */
+  trimmed?: boolean
   characterUrl?: string
   characterName?: string
   locale?: Locale
@@ -35,6 +37,7 @@ const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   video: [file: File]
+  removeVideo: []
   character: [file: File]
   trim: []
 }>()
@@ -55,40 +58,33 @@ const sizeValue = computed({
   }
 })
 
-const partSummary = computed(() =>
-  clipSeconds === undefined || range === undefined || partSeconds === undefined
-    ? undefined
-    : t('openjutsu.trim.summary', {
-        from: range.start.toFixed(1),
-        to: (range.start + partSeconds).toFixed(1),
-        total: clipSeconds.toFixed(1)
-      })
+const caption = computed(() =>
+  clipSeconds === undefined
+    ? videoName
+    : `${videoName ?? ''} · ${Math.round(clipSeconds)} s`
 )
+const partNote = computed(() => {
+  if (!trimmed || !range) return undefined
+  return range.start < 0.05
+    ? t('openjutsu.trim.first', { seconds: Math.round(range.seconds) })
+    : t('openjutsu.trim.part', {
+        from: range.start.toFixed(1),
+        to: (range.start + range.seconds).toFixed(1)
+      })
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-3 pt-2">
-    <EditorSourceTile
-      kind="video"
+    <OpenjutsuVideoSlot
       :src="videoUrl"
-      :name="videoName"
-      :add-label="t('openjutsu.video.drop')"
-      :change-label="t('reshoot.clip.change')"
-      input-test-id="openjutsu-video-file"
+      :caption
+      :part-note="partNote"
+      :locale
       @file="emit('video', $event)"
-    >
-      <button
-        v-if="partSummary"
-        type="button"
-        class="flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/80 px-2.5 py-1 text-xs text-primary-warm-white tabular-nums transition hover:bg-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        data-testid="openjutsu-part"
-        @click="emit('trim')"
-      >
-        <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
-        <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
-        {{ partSummary }}
-      </button>
-    </EditorSourceTile>
+      @remove="emit('removeVideo')"
+      @trim="emit('trim')"
+    />
 
     <EditorSourceTile
       kind="image"

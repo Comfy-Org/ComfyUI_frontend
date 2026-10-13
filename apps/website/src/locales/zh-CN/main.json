@@ -5003,9 +5003,12 @@
     "signIn": "登录后即可开始替换。",
     "video": {
       "heading": "视频",
-      "drop": "添加要编辑的视频",
       "hint": "长度不限。从中选取 5–15 秒；单个连续镜头效果最好。",
-      "detail": "{seconds} 秒 · 替换其中 {used} 秒"
+      "detail": "{seconds} 秒 · 替换其中 {used} 秒",
+      "add": "上传视频",
+      "limits": "MP4 或 MOV · 最多使用 15 秒",
+      "remove": "移除视频",
+      "restore": "撤销移除视频"
     },
     "target": {
       "heading": "替换谁",
@@ -5017,8 +5020,10 @@
       "placeholder": "随机种子"
     },
     "trim": {
-      "edit": "裁剪",
-      "summary": "{from}–{to} 秒（共 {total} 秒）"
+      "first": "使用前 {seconds} 秒",
+      "part": "使用 {from}–{to} 秒",
+      "change": "更改",
+      "changeLabel": "更改使用的片段"
     },
     "needs": {
       "video": "先添加一段视频",
@@ -5047,8 +5052,8 @@
       "audio": "原始声音"
     },
     "empty": {
-      "title": "替换后的视频将在这里播放",
-      "hint": "添加视频并从中选取 5 到 15 秒，再添加一张角色图片。"
+      "title": "从一段视频开始",
+      "hint": "上传 5 秒或更长的视频。超过 15 秒时，我们使用前 15 秒，你也可以另选片段。"
     },
     "error": {
       "swap": "替换未完成。请重试，或换一个更短的片段。"
