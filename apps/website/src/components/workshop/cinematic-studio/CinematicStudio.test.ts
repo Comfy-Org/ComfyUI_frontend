@@ -75,8 +75,6 @@ function sent(call: Parameters<typeof router_render>) {
   return { values, prompt: String(values.prompt ?? ''), references }
 }
 
-const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
-
 /** A still left on the provider's storage, which sends no CORS header. */
 const PROVIDER_LINK =
   'https://ark-content-generation-v2-ap-southeast-1.tos-ap-southeast-1.volces.com/seedream/shot.jpeg'
@@ -167,8 +165,7 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
-    vi.stubGlobal('fetch', fetchData)
-    fetchData.mockImplementation(servePageData)
+    vi.mocked(fetch).mockImplementation(servePageData)
     window.history.replaceState(null, '', '/hub/apps/cinematic-studio/')
   })
 
@@ -249,7 +246,7 @@ describe('CinematicStudio', () => {
 
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)
-    expect(fetchData).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `/models/${encodeURIComponent(second.slug)}/page.json`
     )
   })
@@ -450,11 +447,13 @@ describe('CinematicStudio', () => {
     {
       name: 'a take whose model cannot load',
       prepare: () =>
-        fetchData.mockImplementation(async (input) =>
-          String(input).startsWith('blob:')
-            ? servePageData(input)
-            : new Response('unavailable', { status: 500 })
-        ),
+        vi
+          .mocked(fetch)
+          .mockImplementation(async (input) =>
+            String(input).startsWith('blob:')
+              ? servePageData(input)
+              : new Response('unavailable', { status: 500 })
+          ),
       act: async () => {},
       outcome: {
         status: 'failed',
@@ -499,7 +498,7 @@ describe('CinematicStudio', () => {
     async ({ page }) => {
       const requested = Promise.withResolvers<void>()
       const cancelled = Promise.withResolvers<void>()
-      fetchData.mockImplementation(async (input) => {
+      vi.mocked(fetch).mockImplementation(async (input) => {
         if (String(input).startsWith('blob:')) return servePageData(input)
         requested.resolve()
         await cancelled.promise
@@ -901,9 +900,7 @@ describe('CinematicStudio', () => {
         })
       )
 
-      await vi.waitFor(() =>
-        expect(vi.mocked(router_render)).toHaveBeenCalledTimes(3)
-      )
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(3))
       const [, , retry] = vi.mocked(router_render).mock.calls[2]
       if (settlement === 'pending') {
         expect(retry.idempotencyKey).toBe(first[1].key)
@@ -1054,7 +1051,7 @@ describe('CinematicStudio', () => {
   })
 
   it('keeps the scene unreferenced when a take can no longer be read', async () => {
-    fetchData.mockImplementation(async (input) =>
+    vi.mocked(fetch).mockImplementation(async (input) =>
       String(input).startsWith('blob:')
         ? Promise.reject(new TypeError('Revoked'))
         : servePageData(input)

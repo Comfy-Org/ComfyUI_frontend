@@ -105,6 +105,21 @@ export interface SwapNoteContext {
   readonly price?: number
 }
 
+/**
+ * What the shared gate says of an empty balance, so a run refused for credits
+ * is worded by the same rule as the Generate slot before it.
+ */
+const emptyBalanceGate = (role: SwapNoteContext['role']) =>
+  studioGate({
+    runEnabled: true,
+    modelRunnable: true,
+    mounted: true,
+    authAvailable: true,
+    sessionSettled: true,
+    role,
+    credits: 0
+  })
+
 /** Why a run did not finish, in the reader's words. */
 export function swapFailureNote(
   error: unknown,
@@ -114,7 +129,7 @@ export function swapFailureNote(
   const code = codeOf(error)
   if (code === 'insufficient_credits')
     return t(
-      context.role === 'member'
+      emptyBalanceGate(context.role) === 'memberNoCredits'
         ? 'workshop.error.memberNoCredits'
         : 'workshop.error.noCreditsCloud',
       { workspace: context.workspace ?? '' }

@@ -5,9 +5,11 @@ import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import KeybindingPanel from './KeybindingPanel.vue'
@@ -303,6 +305,30 @@ describe('KeybindingPanel', () => {
     )
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+  })
+
+  it('closes the reset-all confirmation when saving fails', async () => {
+    const user = userEvent.setup()
+    const saveError = new Error('offline')
+    vi.mocked(useSettingStore().setMany).mockRejectedValueOnce(saveError)
+    const errorHandler = vi.fn()
+    renderPanel()
+    render(GlobalDialog, {
+      global: { plugins: [testI18n], config: { errorHandler } }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Reset All' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Reset All' }))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+    expect(errorHandler).toHaveBeenCalledWith(
+      saveError,
+      expect.anything(),
+      expect.anything()
     )
   })
 

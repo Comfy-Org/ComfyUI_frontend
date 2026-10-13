@@ -40,7 +40,9 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       })
       await uploadReceived
       await expect(
-        panel.getByTestId('composer-asset-section').getByText('pending.mp4')
+        panel
+          .getByTestId('composer-asset-section')
+          .getByRole('group', { name: 'pending.mp4' })
       ).toBeVisible()
       await expect(send).toBeDisabled()
 
@@ -51,9 +53,9 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await openButton.click()
 
       await expect(composer).toHaveText('Keep this draft')
-      await expect(panel.getByText('pending.mp4', { exact: true })).toHaveCount(
-        0
-      )
+      await expect(
+        panel.getByRole('group', { name: 'pending.mp4' })
+      ).toHaveCount(0)
       await expect(send).toBeEnabled()
     } finally {
       releaseUpload()
