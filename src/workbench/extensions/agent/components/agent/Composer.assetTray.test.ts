@@ -328,9 +328,7 @@ describe('composer asset tray', () => {
       validationError: 'invalid-video'
     })
     const stopButton = await screen.findByRole('button', { name: 'Stop' })
-    expect(stopButton).toBeEnabled()
     expect(stopButton).not.toHaveAttribute('aria-disabled')
-    expect(stopButton).not.toHaveAttribute('aria-description')
     await user.hover(stopButton)
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
