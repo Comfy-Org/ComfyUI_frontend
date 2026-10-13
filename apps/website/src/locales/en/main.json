@@ -5659,8 +5659,8 @@
       "audio": "original sound"
     },
     "examples": {
-      "title": "Try an example",
-      "hint": "Each one loads a clip, a character and who to replace. Or upload your own video in the panel.",
+      "title": "Your video appears here",
+      "hint": "upload one in the panel or try an example",
       "road": {
         "place": "Desert road",
         "character": "Robot"
