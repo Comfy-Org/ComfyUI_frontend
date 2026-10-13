@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
@@ -18,6 +18,51 @@ const mount = (selected = model) =>
   })
 
 describe('WorkflowPage header', () => {
+  it('renders multi-paragraph body and expandable Q&A using authored copy, not HTML', async () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        models: [],
+        longDescription: 'First paragraph.\n\nSecond paragraph.',
+        faqs: [
+          {
+            id: 'first',
+            question: 'Can I customize it?',
+            answer: 'Yes, edit the downloaded JSON.'
+          }
+        ]
+      }
+    })
+    expect(
+      screen.getByRole('heading', { name: 'About this workflow' })
+    ).toBeVisible()
+    expect(screen.getByText('First paragraph.')).toBeVisible()
+    expect(screen.getByText('Second paragraph.')).toBeVisible()
+    const question = screen.getByRole('button', { name: 'Can I customize it?' })
+    question.click()
+    await waitFor(() =>
+      expect(screen.getByText('Yes, edit the downloaded JSON.')).toBeVisible()
+    )
+  })
+
+  it('does not show empty body or Q&A sections', () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        models: [],
+        longDescription: ' \n ',
+        faqs: [{ id: 'empty', question: ' ', answer: '' }]
+      }
+    })
+    expect(
+      screen.queryByRole('heading', { name: 'About this workflow' })
+    ).toBeNull()
+    expect(
+      screen.queryByRole('heading', { name: 'Questions & answers' })
+    ).toBeNull()
+  })
   it('sends the shelf it names to that shelf, filtered', () => {
     mount()
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
@@ -8,10 +9,24 @@ import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
-import { t } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
+const t = computed(
+  () => translationsFor(model.catalogDetails?.locale ?? 'en').t
+)
+const paragraphs = computed(() =>
+  (model.catalogDetails?.longDescription ?? '')
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+)
+const faqs = computed(() =>
+  (model.catalogDetails?.faqs ?? []).filter(
+    (faq) => faq.question.trim() && faq.answer.trim()
+  )
+)
 const emit = defineEmits<{ recovery: [active: boolean] }>()
 const { session } = useWorkshopSession()
 const scope = computed(() =>
@@ -81,6 +96,34 @@ const cloudHref = template
       :scope="scope"
       :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
+    />
+    <section
+      v-if="paragraphs.length"
+      class="mt-16 max-w-4xl"
+      aria-labelledby="workflow-about-heading"
+    >
+      <h2
+        id="workflow-about-heading"
+        class="mb-6 text-2xl font-light text-primary-comfy-canvas"
+      >
+        {{ t('cccWorkflow.about') }}
+      </h2>
+      <div class="space-y-5 text-base leading-relaxed text-primary-warm-gray">
+        <p
+          v-for="(paragraph, index) in paragraphs"
+          :key="index"
+          class="wrap-break-word whitespace-pre-line"
+        >
+          {{ paragraph }}
+        </p>
+      </div>
+    </section>
+    <FAQSplit01
+      v-if="faqs.length"
+      id="workflow-faq"
+      :heading="t('cccWorkflow.faq')"
+      :faqs
+      compact
     />
   </div>
 </template>

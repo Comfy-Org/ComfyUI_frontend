@@ -1,4 +1,5 @@
 import type { Model } from './models'
+import type { WorkflowCatalogDetails } from './workflow-catalog-details'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
@@ -153,6 +154,7 @@ export type RouterWorkshopModel = WorkshopPresentation & {
 }
 
 export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly catalogDetails?: WorkflowCatalogDetails
   readonly href: string
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number

@@ -1,4 +1,36 @@
 {
+  "cccWorkflow": {
+    "about": "关于此工作流",
+    "faq": "常见问答",
+    "runs": "运行次数",
+    "downloads": "下载次数",
+    "cloud": "Comfy Cloud",
+    "yes": "是",
+    "no": "否",
+    "output": { "image": "图像", "video": "视频", "audio": "音频", "3d": "3D", "text": "文本", "mixed": "混合输出" }
+  },
+  "cccChangeDetails": {
+    "parentNames": "相关内容：{names}",
+    "openFor": "打开{title}",
+    "openRecord": "打开记录",
+    "previewFor": "{title}的预览",
+    "unavailable": "暂无视觉预览",
+    "usedBy": "引用此媒体的内容 / 上传来源",
+    "uploadSource": "上传来源",
+    "noUses": "未找到当前引用或上传来源。",
+    "contextUnavailable": "此审核版本的引用信息暂不可用。",
+    "recordTitle": "目录记录",
+    "mediaName": "媒体名称",
+    "recordType": "类型",
+    "recordUID": "UID",
+    "version": "编辑版本",
+    "author": "署名作者",
+    "edit": "编辑内容",
+    "back": "返回变更列表",
+    "document": "内容 JSON",
+    "deleted": "此记录已标记为删除。",
+    "previousPreview": "上一 LIVE 版本的预览"
+  },
   "cccDemo": {
     "active": "已启用",
     "signInInstructions": "输入你的个人测试邀请码。有效期内可重复使用该邀请码登录。这是本地测试目录，不是你的正式 Comfy 账户。邀请码和会话可以被撤销。演示编辑使用明确标注的共享测试身份。",

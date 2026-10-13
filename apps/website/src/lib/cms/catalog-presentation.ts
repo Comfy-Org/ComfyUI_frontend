@@ -1,5 +1,6 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { jsonObject } from './editor-document'
+import { workflowCatalogDetailsSchema } from '@/config/workflow-catalog-details'
 
 export function catalogLanguageFallback(
   record: ContentCatalogRecord,
@@ -20,7 +21,7 @@ export function catalogLanguageFallback(
   const eligible =
     translated.success &&
     (preview || translated.data.review_state === 'reviewed')
-  const fields = ['title', 'description']
+  const fields = ['title', 'description', 'long_description']
     .filter(
       (field) =>
         typeof record.data[field] === 'string' &&
@@ -36,7 +37,8 @@ export function catalogLanguageFallback(
 export function catalogPresentation(
   record: ContentCatalogRecord,
   locale = 'en',
-  preview = false
+  preview = false,
+  resources: readonly ContentCatalogRecord[] = []
 ) {
   if (!['model', 'workflow', 'app'].includes(String(record.data.type)))
     return record.data
@@ -75,6 +77,81 @@ export function catalogPresentation(
     additionalProperties: false
   }
   const title = text('title', record.uid)
+  const faq = Array.isArray(local.faq) ? local.faq : d.faq
+  const catalogDetails = workflowCatalogDetailsSchema.safeParse({
+    locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
+    longDescription: text('long_description', '').trim() || undefined,
+    faqs: Array.isArray(faq)
+      ? faq.flatMap((raw, index) => {
+          const parsed = jsonObject.safeParse(raw)
+          if (!parsed.success) return []
+          const { question, answer } = parsed.data
+          return typeof question === 'string' &&
+            question.trim() &&
+            typeof answer === 'string' &&
+            answer.trim()
+            ? [
+                {
+                  id: `catalog-faq-${index}`,
+                  question: question.trim(),
+                  answer: answer.trim()
+                }
+              ]
+            : []
+        })
+      : [],
+    worksOnCloud:
+      typeof d.works_on_cloud === 'boolean' ? d.works_on_cloud : undefined,
+    outputType:
+      typeof d.output_type === 'string' && d.output_type.trim()
+        ? d.output_type
+        : undefined,
+    models: Array.isArray(d.model_uids)
+      ? d.model_uids.flatMap((uid) => {
+          if (typeof uid !== 'string' || !uid.trim()) return []
+          const resource = resources.find(
+            (candidate) =>
+              candidate.uid === uid &&
+              candidate.data.type === 'model' &&
+              !candidate.deleted
+          )
+          const translation = objectPresentation(
+            objectPresentation(resource?.data.translations)[locale]
+          )
+          const name =
+            typeof translation.title === 'string' &&
+            (preview || translation.review_state === 'reviewed')
+              ? translation.title
+              : resource?.data.title
+          const href = resource?.slug
+          return [
+            {
+              uid,
+              name: typeof name === 'string' && name.trim() ? name.trim() : uid,
+              ...(href && /^\/hub\/models\/[a-z0-9._-]+\/?$/.test(href)
+                ? {
+                    href: `${locale === 'en' ? '' : `/${locale}`}${href.replace(/\/$/, '')}/`
+                  }
+                : {})
+            }
+          ]
+        })
+      : [],
+    author:
+      typeof d.author_uid === 'string' && d.author_uid.trim()
+        ? d.author_uid.trim()
+        : undefined,
+    runs:
+      typeof d.runs === 'number' && Number.isSafeInteger(d.runs) && d.runs >= 0
+        ? d.runs
+        : undefined,
+    downloads:
+      typeof d.downloads === 'number' &&
+      Number.isSafeInteger(d.downloads) &&
+      d.downloads >= 0
+        ? d.downloads
+        : undefined
+  })
   const urls = jsonObject.safeParse(d.website_media)
   const hero = urls.success
     ? (urls.data['$.hero'] ?? urls.data['$.thumbnail'])
@@ -152,6 +229,9 @@ export function catalogPresentation(
     ...(d.type === 'workflow'
       ? {
           type: 'CLOUD',
+          ...(catalogDetails.success
+            ? { catalogDetails: catalogDetails.data }
+            : {}),
           workflowId: preserved.workflowId ?? workflowId,
           workflow: {
             ...objectPresentation(preserved.workflow),

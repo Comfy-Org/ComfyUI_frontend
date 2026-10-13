@@ -1,6 +1,21 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+Native CCC workflow pages reuse the workflow graph/details card and the site's
+FAQ accordion. `long_description` renders as escaped multi-paragraph text;
+`faq` renders complete question/answer pairs only. Empty sections and details
+are omitted, while explicit false Cloud compatibility and zero runs/downloads
+remain visible. Model links resolve exact `model_uids` against the selected
+catalog, not filenames or slugs; unresolved models display their UID without a
+guessed link. Public translations must be reviewed; Draft may preview machine
+translations. These optional CCC facts do not alter legacy workflow pages or
+enable the catalog in production.
+The review header reuses Mar's presentational `PageHeader` from PR #20640
+(source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`), with slots for the
+existing phase instructions and server-backed Next guard. Her button/sidebar
+palette remains in use; her sandbox publication/authentication transports are
+not merged into the real catalog, nor is the required yellow Preview warning
+replaced by a graphite bar.
 The local CCC review console has two phases: decide every pending change
 (including previously deferred work), then inspect the complete Final review.
 `Next` stays disabled while the authoritative, unfiltered unresolved count is

@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
 import { MODALITIES, USE_CASES } from './models-catalogue'
+import { workflowCatalogDetailsSchema } from './workflow-catalog-details'
 
 const presentationSchema = z.object({
   slug: z.string(),
@@ -46,6 +47,7 @@ export const routerModelSchema = presentationSchema.extend({
 })
 
 export const workflowModelSchema = presentationSchema.extend({
+  catalogDetails: workflowCatalogDetailsSchema.optional(),
   type: z.enum(['CLOUD', 'SERVERLESS']),
   workflowId: z.string(),
   routerId: z.never().optional(),

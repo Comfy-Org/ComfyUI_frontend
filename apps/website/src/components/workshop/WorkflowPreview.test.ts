@@ -43,6 +43,73 @@ beforeEach(() => {
 })
 
 describe('WorkflowPreview', () => {
+  it('shows CCC facts and linked models without inheriting stale template facts', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            worksOnCloud: false,
+            outputType: 'text',
+            runs: 0,
+            downloads: 4,
+            models: [
+              {
+                uid: 'model-uid',
+                name: 'Verified model',
+                href: '/hub/models/verified/'
+              }
+            ]
+          }
+        },
+        cloudHref
+      }
+    })
+    const details = screen.getByTestId('workflow-details')
+    expect(details).toHaveTextContent('Comfy CloudNo')
+    expect(details).toHaveTextContent('Text')
+    expect(details).toHaveTextContent('Runs0')
+    expect(details).toHaveTextContent('Downloads4')
+    expect(
+      screen.getByRole('link', { name: 'Verified model' })
+    ).toHaveAttribute('href', '/hub/models/verified/')
+    expect(screen.queryByRole('link', { name: 'Try in Cloud' })).toBeNull()
+    expect(details).not.toHaveTextContent(model.author ?? 'impossible-author')
+  })
+
+  it('hides the CCC details card entirely when there are no facts or models', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: { locale: 'en', faqs: [], models: [] }
+        }
+      }
+    })
+    expect(screen.queryByTestId('workflow-facts')).toBeNull()
+  })
+
+  it('localizes CCC details labels and preserves false and zero', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'zh-CN',
+            faqs: [],
+            models: [],
+            worksOnCloud: true,
+            runs: 0,
+            outputType: 'image'
+          }
+        }
+      }
+    })
+    expect(screen.getByTestId('workflow-details')).toHaveTextContent('运行次数')
+    expect(screen.getByTestId('workflow-details')).toHaveTextContent('图像')
+  })
   it('puts the graph beside the ways out and what it runs on', () => {
     render(WorkflowPreview, { props: { model, cloudHref } })
 

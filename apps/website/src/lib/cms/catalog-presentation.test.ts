@@ -1,5 +1,6 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
+import { detailSchema } from '@/config/models-page-data'
 import {
   catalogLanguageFallback,
   catalogPresentation
@@ -24,7 +25,15 @@ const record: ContentCatalogRecord = {
       type: 'object',
       properties: { quality: { type: 'number', enum: [1, 2], default: 1 } }
     },
-    inputs: { quality: { label: 'Quality', control: 'dropdown' } },
+    inputs: {
+      quality: {
+        label: 'Quality',
+        help: '',
+        hidden: false,
+        advanced: false,
+        control: 'dropdown'
+      }
+    },
     examples: [
       { name: 'example', title: 'Authored example', values: { quality: 2 } }
     ],
@@ -33,6 +42,131 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('carries authored workflow facts, descriptions and FAQ through the page decoder without changing identity', () => {
+    const modelUID = '00000000-0000-4000-8000-000000000099'
+    const authored = {
+      ...record,
+      data: {
+        ...record.data,
+        long_description: 'First paragraph.\n\nSecond paragraph.',
+        faq: [
+          { question: 'Can I edit it?', answer: 'Yes, download the workflow.' }
+        ],
+        works_on_cloud: false,
+        output_type: 'video',
+        runs: 0,
+        downloads: 12,
+        author_uid: modelUID,
+        model_uids: [modelUID]
+      }
+    }
+    const referenced = {
+      ...record,
+      uid: modelUID,
+      slug: '/hub/models/verified-model',
+      data: {
+        type: 'model',
+        title: 'Verified model',
+        translations: {
+          'zh-CN': { title: '已确认模型', review_state: 'reviewed' }
+        }
+      }
+    }
+    const decoded = detailSchema.parse(
+      catalogPresentation(authored, 'en', true, [referenced])
+    )
+    expect(decoded).toMatchObject({
+      catalogDetails: {
+        longDescription: 'First paragraph.\n\nSecond paragraph.',
+        faqs: [
+          { question: 'Can I edit it?', answer: 'Yes, download the workflow.' }
+        ],
+        worksOnCloud: false,
+        outputType: 'video',
+        runs: 0,
+        downloads: 12,
+        author: modelUID,
+        models: [
+          {
+            uid: modelUID,
+            name: 'Verified model',
+            href: '/hub/models/verified-model/'
+          }
+        ]
+      }
+    })
+    expect(
+      catalogPresentation(authored, 'zh-CN', false, [referenced])
+    ).toMatchObject({
+      catalogDetails: {
+        models: [
+          { name: '已确认模型', href: '/zh-CN/hub/models/verified-model/' }
+        ]
+      }
+    })
+  })
+
+  it('omits empty text and incomplete FAQ pairs, retaining zero and false', () => {
+    const empty = {
+      ...record,
+      data: {
+        ...record.data,
+        long_description: ' \n ',
+        faq: [
+          { question: '', answer: 'Answer' },
+          { question: 'Question', answer: ' ' }
+        ],
+        works_on_cloud: false,
+        runs: 0,
+        downloads: '',
+        author_uid: ' ',
+        model_uids: []
+      }
+    }
+    expect(catalogPresentation(empty)).toMatchObject({
+      catalogDetails: {
+        longDescription: undefined,
+        faqs: [],
+        models: [],
+        author: undefined,
+        worksOnCloud: false,
+        runs: 0,
+        downloads: undefined
+      }
+    })
+  })
+
+  it('requires reviewed body/FAQ translations in LIVE and never guesses missing model identity', () => {
+    const authored = {
+      ...record,
+      data: {
+        ...record.data,
+        long_description: 'Source body',
+        faq: [{ question: 'Source question', answer: 'Source answer' }],
+        model_uids: ['00000000-0000-4000-8000-000000000098'],
+        translations: {
+          'zh-CN': {
+            review_state: 'machine',
+            long_description: '译文',
+            faq: [{ question: '问题', answer: '回答' }]
+          }
+        }
+      }
+    }
+    expect(catalogPresentation(authored, 'zh-CN', false)).toMatchObject({
+      catalogDetails: {
+        longDescription: 'Source body',
+        faqs: [{ question: 'Source question' }],
+        models: [{ name: '00000000-0000-4000-8000-000000000098' }]
+      }
+    })
+    expect(catalogPresentation(authored, 'zh-CN', true)).toMatchObject({
+      catalogDetails: {
+        longDescription: '译文',
+        faqs: [{ question: '问题', answer: '回答' }]
+      }
+    })
+  })
   it('derives presentation without changing authored JSON, typed values or identity', () => {
     const before = JSON.stringify(record)
     const view = catalogPresentation(record, 'zh-CN', true)

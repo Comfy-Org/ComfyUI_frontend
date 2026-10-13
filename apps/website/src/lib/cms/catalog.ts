@@ -46,7 +46,12 @@ export async function loadSiteCatalog(
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return { ok: false, status: 503 } as const
   const presented = normalized.items.map((item) =>
-    catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
+    catalogPresentation(
+      item,
+      locale,
+      session?.preview?.view === 'DRAFT',
+      normalized.items
+    )
   )
   const models = z.array(modelSchema).safeParse(presented)
   const details = z

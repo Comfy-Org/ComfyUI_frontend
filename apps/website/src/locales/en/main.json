@@ -1,4 +1,36 @@
 {
+  "cccWorkflow": {
+    "about": "About this workflow",
+    "faq": "Questions & answers",
+    "runs": "Runs",
+    "downloads": "Downloads",
+    "cloud": "Comfy Cloud",
+    "yes": "Yes",
+    "no": "No",
+    "output": { "image": "Image", "video": "Video", "audio": "Audio", "3d": "3D", "text": "Text", "mixed": "Mixed outputs" }
+  },
+  "cccChangeDetails": {
+    "parentNames": "Content: {names}",
+    "openFor": "Open {title}",
+    "openRecord": "Open record",
+    "previewFor": "Preview of {title}",
+    "unavailable": "No visual preview available",
+    "usedBy": "Referenced by / uploaded from",
+    "uploadSource": "Upload source",
+    "noUses": "No current references or upload source found.",
+    "contextUnavailable": "Reference context is unavailable for this reviewed version.",
+    "recordTitle": "Catalog record",
+    "mediaName": "Media name",
+    "recordType": "Type",
+    "recordUID": "UID",
+    "version": "Edit version",
+    "author": "Credited author",
+    "edit": "Edit content",
+    "back": "Back to changes",
+    "document": "Content JSON",
+    "deleted": "This record is marked deleted.",
+    "previousPreview": "Preview of the previous LIVE value"
+  },
   "cccDemo": {
     "active": "Active",
     "signInInstructions": "Enter your personal tester invitation. You can reuse it to sign in until its expiry. This is the local test catalog, not your production Comfy account. Invitations and sessions can be revoked. Demo edits use a labeled shared fixture identity.",
