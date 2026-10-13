@@ -7828,7 +7828,7 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
-  // NVIDIA RTX landing page (/nvidia-rtx)
+  // NVIDIA VFX nodes landing page (/nvidia-vfx)
   'nvidiaRtx.meta.title': {
     en: 'Nvidia VFX Nodes for ComfyUI',
     'zh-CN': 'ComfyUI 的 Nvidia VFX 节点'

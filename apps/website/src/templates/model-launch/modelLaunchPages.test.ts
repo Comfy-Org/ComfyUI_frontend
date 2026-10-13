@@ -54,17 +54,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('gives the before/after section English copy and playable clips', () => {
+  it('gives every before/after tab a unique id, English copy, and a clip pair', () => {
     const { beforeAfter } = page
     if (beforeAfter === undefined) return
-
-    if ('src' in beforeAfter) {
-      expect(beforeAfter.src).toMatch(VIDEO_URL)
-      // A clip with no listed effects would leave the intro column hanging.
-      expect(beforeAfter.features.length).toBeGreaterThan(0)
-      expect(beforeAfter.features.filter((f) => !f.en)).toEqual([])
-      return
-    }
 
     const { tabs } = beforeAfter
     // A page that defines the section but lists no tabs would render a
@@ -212,6 +204,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   it('serves media matching its declared kind', () => {
     if (page.hero.videoSrc !== undefined) {
       expect(page.hero.videoSrc).toMatch(VIDEO_URL)
+    }
+    if (page.hero.mobileVideoSrc !== undefined) {
+      expect(page.hero.mobileVideoSrc).toMatch(VIDEO_URL)
     }
     if (page.hero.posterSrc !== undefined) {
       expect(page.hero.posterSrc).toMatch(HERO_STILL_URL)

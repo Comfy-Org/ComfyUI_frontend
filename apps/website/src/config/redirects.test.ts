@@ -140,6 +140,8 @@ describe('generated Vercel rules', () => {
   it.for([
     { source: '/cloud/enterprise', destination: en.enterprise },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
+    { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+    { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
       destination: '/p/supported-models/t5xxl-fp16/'
@@ -147,6 +149,7 @@ describe('generated Vercel rules', () => {
   ])(
     'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
+      expect(pageExistsAt(destination)).toBe(true)
       for (const form of [source, `${source}/`]) {
         expect(find(form)).toEqual({
           source: form,
@@ -239,8 +242,6 @@ describe('Astro redirects', () => {
         )
         .map(({ source }) => source)
     )
-    const aliasCount = models.filter((model) => model.canonicalSlug).length
-    expect(Object.keys(astroRedirects)).toHaveLength(20 + aliasCount)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'

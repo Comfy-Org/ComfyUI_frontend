@@ -84,65 +84,6 @@ describe('ModelLaunchBeforeAfterSection', () => {
 
   it.for([
     {
-      locale: 'en' as const,
-      features: [
-        'Sharpen: soft in, sharp out.',
-        'Denoise: grain in, clean out.'
-      ],
-      cta: 'After'
-    },
-    {
-      locale: 'zh-CN' as const,
-      features: ['锐化：输入柔和，输出锐利。', '降噪：输入噪点，输出干净。'],
-      cta: '处理后'
-    }
-  ])(
-    'plays one clip with its effects as bullets and no tabs or slider ($locale)',
-    async ({ locale, features, cta }) => {
-      render(ModelLaunchBeforeAfterSection, {
-        props: {
-          locale,
-          beforeAfter: {
-            headingKey: 'modelLaunch.beforeAfter.tabsLabel',
-            src: 'https://media.comfy.org/side-by-side.mp4',
-            features: [
-              {
-                en: 'Sharpen: soft in, sharp out.',
-                'zh-CN': '锐化：输入柔和，输出锐利。'
-              },
-              {
-                en: 'Denoise: grain in, clean out.',
-                'zh-CN': '降噪：输入噪点，输出干净。'
-              }
-            ],
-            cta: {
-              labelKey: 'modelLaunch.beforeAfter.after',
-              href: 'https://cloud.comfy.org/?ref=test'
-            }
-          }
-        }
-      })
-
-      expect(
-        screen.getAllByRole('listitem').map((item) => item.textContent.trim())
-      ).toEqual(features)
-      expect(screen.getByRole('link', { name: cta })).toHaveAttribute(
-        'href',
-        'https://cloud.comfy.org/?ref=test'
-      )
-      expect(screen.queryByRole('tab')).toBeNull()
-      expect(screen.queryByRole('slider')).toBeNull()
-      await waitFor(() =>
-        expect(screen.getByTestId('video-single')).toHaveAttribute(
-          'src',
-          'https://media.comfy.org/side-by-side.mp4'
-        )
-      )
-    }
-  )
-
-  it.for([
-    {
       copy: 'Chinese copy',
       chinese: true,
       tab: '锐化',

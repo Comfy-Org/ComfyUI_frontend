@@ -13,9 +13,8 @@ const nvidiaRtxLinks = {
   cloud: externalLinks.cloudCta('nvidia_rtx')
 } as const
 
-// Stand-in media until the NVIDIA RTX hero and gallery images
-// reach media.comfy.org; swap these for the supplied files before this page
-// ships.
+// Stand-in gallery images until the supplied files reach media.comfy.org;
+// swap these before this page ships.
 const placeholderMediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
 
 const media = {

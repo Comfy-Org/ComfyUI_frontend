@@ -205,29 +205,13 @@ interface ModelLaunchBeforeAfterTab {
   afterSrc: string
 }
 
-interface ModelLaunchBeforeAfterBase {
-  headingKey: TranslationKey
-  bodyKey?: TranslationKey
-}
-
 // A tabbed before/after video slider. Each tab swaps in its own clip pair and
 // caption.
-interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
+export interface ModelLaunchBeforeAfter {
+  headingKey: TranslationKey
+  bodyKey?: TranslationKey
   tabs: readonly ModelLaunchBeforeAfterTab[]
 }
-
-// One clip that already shows both states side by side, e.g. the RTX Video
-// effects on /nvidia-rtx, with the effects it covers listed under the intro.
-export interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
-  src: string
-  features: readonly LocalizedText[]
-  // A text link under the features, e.g. into the Comfy Cloud workflow.
-  cta?: ModelLaunchCta
-}
-
-export type ModelLaunchBeforeAfter =
-  | ModelLaunchBeforeAfterTabs
-  | ModelLaunchBeforeAfterClip
 
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey

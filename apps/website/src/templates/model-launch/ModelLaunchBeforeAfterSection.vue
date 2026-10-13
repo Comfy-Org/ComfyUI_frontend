@@ -6,7 +6,6 @@ import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchBeforeAfter } from './types'
 
 import VideoCompareSlider from '../../components/common/VideoCompareSlider.vue'
-import ModelLaunchClipShowcase from './ModelLaunchClipShowcase.vue'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', beforeAfter } = defineProps<{
@@ -14,22 +13,17 @@ const { locale = 'en', beforeAfter } = defineProps<{
   locale?: Locale
 }>()
 
-const tabs = computed(() => ('tabs' in beforeAfter ? beforeAfter.tabs : []))
-const activeId = ref(tabs.value[0]?.id ?? '')
+const activeId = ref(beforeAfter.tabs[0]?.id ?? '')
 const activeTab = computed(
-  () => tabs.value.find((tab) => tab.id === activeId.value) ?? tabs.value[0]
+  () =>
+    beforeAfter.tabs.find((tab) => tab.id === activeId.value) ??
+    beforeAfter.tabs[0]
 )
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
-    <ModelLaunchClipShowcase
-      v-if="'src' in beforeAfter"
-      :showcase="beforeAfter"
-      :locale
-    />
     <TabsRoot
-      v-else
       v-model="activeId"
       class="flex flex-col items-stretch gap-10 rounded-5xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8"
     >
@@ -52,7 +46,7 @@ const activeTab = computed(
             class="flex w-full max-w-full rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto sm:self-start"
           >
             <TabsTrigger
-              v-for="tab in tabs"
+              v-for="tab in beforeAfter.tabs"
               :key="tab.id"
               :value="tab.id"
               class="flex flex-1 cursor-pointer items-center justify-center rounded-xl px-1 py-2 text-center text-[10px]/tight font-bold tracking-normal text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider sm:whitespace-nowrap lg:px-2 lg:text-[11px] lg:tracking-normal xl:px-5 xl:text-xs xl:tracking-wider"
@@ -72,7 +66,7 @@ const activeTab = computed(
 
       <div class="w-full min-w-0 flex-1">
         <TabsContent
-          v-for="tab in tabs"
+          v-for="tab in beforeAfter.tabs"
           :key="tab.id"
           :value="tab.id"
           class="focus-visible:outline-none"
