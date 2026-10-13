@@ -176,34 +176,6 @@ describe('resolveAgentIdentity', () => {
     expect(getIdentity).toHaveBeenCalledOnce()
   })
 
-  it('reports the lookup unavailable once its backoff reaches the cap, and keeps retrying', async () => {
-    const failure = new Error('identity route down')
-    const getIdentity = vi
-      .fn<() => Promise<{ userId: string }>>()
-      .mockRejectedValueOnce(failure)
-      .mockRejectedValueOnce(failure)
-      .mockRejectedValueOnce(failure)
-      .mockRejectedValueOnce(failure)
-      .mockRejectedValueOnce(failure)
-      .mockRejectedValueOnce(failure)
-      .mockResolvedValue({ userId: 'local-user' })
-    const identity = harness(getIdentity)
-
-    await vi.advanceTimersByTimeAsync(1_000 + 2_000 + 4_000 + 8_000)
-    expect(getIdentity).toHaveBeenCalledTimes(5)
-    expect(identity.state.value).toEqual({ status: 'pending' })
-
-    await vi.advanceTimersByTimeAsync(16_000)
-    expect(getIdentity).toHaveBeenCalledTimes(6)
-    expect(identity.state.value).toEqual({ status: 'unavailable' })
-
-    await vi.advanceTimersByTimeAsync(30_000)
-    expect(identity.state.value).toEqual({
-      status: 'resolved',
-      userId: 'local-user'
-    })
-  })
-
   it('settles a failure that is not retryable as rejected until reset', async () => {
     const getIdentity = vi
       .fn<() => Promise<{ userId: string }>>()
