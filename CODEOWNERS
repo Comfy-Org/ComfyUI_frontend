@@ -1,39 +1,4 @@
-/src/platform/auth/                              @Comfy-Org/comfy_frontend_devs
-/src/platform/telemetry/                         @Comfy-Org/comfy_frontend_devs
-/src/platform/onboarding/                        @Comfy-Org/comfy_frontend_devs
-/src/platform/surveys/                           @Comfy-Org/comfy_frontend_devs
-/src/platform/secrets/                           @Comfy-Org/comfy_frontend_devs
-/src/platform/skills/                            @Comfy-Org/comfy_frontend_devs
-/src/platform/updates/                           @Comfy-Org/comfy_frontend_devs
-/src/platform/errorCatalog/                      @Comfy-Org/comfy_frontend_devs
-/src/platform/missingMedia/                      @Comfy-Org/comfy_frontend_devs
-/src/platform/missingModel/                      @Comfy-Org/comfy_frontend_devs
-/src/platform/nodeReplacement/                   @Comfy-Org/comfy_frontend_devs
-/src/platform/navigation/                        @Comfy-Org/comfy_frontend_devs
-/src/platform/remoteConfig/                      @Comfy-Org/comfy_frontend_devs
-/src/platform/support/                           @Comfy-Org/comfy_frontend_devs
-/src/platform/serverFacts/                       @Comfy-Org/comfy_frontend_devs
-/src/platform/tasks/                             @Comfy-Org/comfy_frontend_devs
-/src/composables/auth/                           @Comfy-Org/comfy_frontend_devs
-/src/composables/billing/                        @Comfy-Org/comfy_frontend_devs
-/src/stores/authStore.ts                         @Comfy-Org/comfy_frontend_devs
-/src/stores/authStore.test.ts                    @Comfy-Org/comfy_frontend_devs
-/src/stores/apiKeyAuthStore.ts                   @Comfy-Org/comfy_frontend_devs
-/src/stores/apiKeyAuthStore.integration.test.ts   @Comfy-Org/comfy_frontend_devs
-/src/stores/userStore.ts                         @Comfy-Org/comfy_frontend_devs
-/src/stores/userStore.test.ts                    @Comfy-Org/comfy_frontend_devs
-
-/src/platform/settings/                          @Comfy-Org/comfy_frontend_devs
-/src/platform/keybindings/                       @Comfy-Org/comfy_frontend_devs
-/src/platform/assets/                            @Comfy-Org/comfy_frontend_devs
-/src/platform/workflow/persistence/              @Comfy-Org/comfy_frontend_devs
-/src/platform/workflow/sharing/                  @Comfy-Org/comfy_frontend_devs
-/src/platform/workflow/deploy/                   @Comfy-Org/comfy_frontend_devs
-
-# Renderer extensions — fallback owner.
-# CODEOWNERS is last-match-wins, so this stays above the per-feature blocks
-# below and they continue to take precedence.
-/src/renderer/extensions/                         @Comfy-Org/comfy_frontend_devs
+/src/                                           @Comfy-Org/comfy_frontend_devs
 
 # Partner Nodes
 /src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88 @Comfy-Org/comfy_frontend_devs
@@ -176,83 +141,16 @@
 /docs/architecture/domains/records/glsl-preview.domain.json @jtydhr88 @christian-byrne @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/extension-manager.domain.json @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/minimap.domain.json @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/minimap/                 @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/bounding-boxes.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/audio.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/node-templates.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/webcam-capture.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/cloud.domain.json @Comfy-Org/comfy_frontend_devs
 
-/src/types/boundingBoxes.ts                       @Comfy-Org/comfy_frontend_devs
-/src/composables/boundingBoxes/                   @Comfy-Org/comfy_frontend_devs
-/src/components/boundingBoxes/                    @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/createBoundingBoxes.ts       @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/createBoundingBoxes.test.ts  @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts @Comfy-Org/comfy_frontend_devs
-
-/src/extensions/core/uploadAudio.ts               @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/uploadAudio.test.ts          @Comfy-Org/comfy_frontend_devs
-/src/services/audioService.ts                     @Comfy-Org/comfy_frontend_devs
-/src/services/audioService.test.ts                @Comfy-Org/comfy_frontend_devs
-/src/composables/useWaveAudioPlayer.ts            @Comfy-Org/comfy_frontend_devs
-/src/composables/useWaveAudioPlayer.test.ts       @Comfy-Org/comfy_frontend_devs
-/src/components/common/WaveAudioPlayer.vue        @Comfy-Org/comfy_frontend_devs
-/src/components/common/WaveAudioPlayer.test.ts    @Comfy-Org/comfy_frontend_devs
-/src/components/common/WaveAudioPlayer.stories.ts @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/nodeTemplates.ts             @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/nodeTemplates.test.ts        @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/webcamCapture.ts             @Comfy-Org/comfy_frontend_devs
-
-/src/platform/cloud/                             @Comfy-Org/comfy_frontend_devs
-/src/platform/telemetry/providers/cloud/          @Comfy-Org/comfy_frontend_devs
-/src/platform/telemetry/initTelemetry.ts          @Comfy-Org/comfy_frontend_devs
-/src/platform/distribution/cloudPreviewUtil.ts    @Comfy-Org/comfy_frontend_devs
-/src/platform/distribution/cloudPreviewUtil.test.ts @Comfy-Org/comfy_frontend_devs
-/src/config/subscriptionPricesConfig.ts           @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/topbar/CloudBadge.vue             @Comfy-Org/comfy_frontend_devs
-/src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue @Comfy-Org/comfy_frontend_devs
-/src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cloudBadges.ts               @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cloudFeedbackTopbarButton.ts  @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cloudFeedbackTopbarButton.test.ts @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cloudRemoteConfig.ts         @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cloudSessionCookie.ts        @Comfy-Org/comfy_frontend_devs
-
-/src/scripts/ui/settings.ts                      @Comfy-Org/comfy_frontend_devs
-/src/scripts/ui/settings.test.ts                 @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/setting/SettingItem.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/setting/KeybindingPanel.vue @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/setting/KeybindingPanel.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/dialog/content/setting/keybinding/ @Comfy-Org/comfy_frontend_devs
-/src/composables/useEditKeybindingDialog.ts       @Comfy-Org/comfy_frontend_devs
-/src/stores/assetsStore.ts                       @Comfy-Org/comfy_frontend_devs
-/src/stores/assetsStore.test.ts                  @Comfy-Org/comfy_frontend_devs
-/src/stores/assetDownloadStore.ts                @Comfy-Org/comfy_frontend_devs
-/src/stores/assetDownloadStore.test.ts            @Comfy-Org/comfy_frontend_devs
-/src/stores/assetExportStore.ts                  @Comfy-Org/comfy_frontend_devs
-/src/stores/assetExportStore.test.ts              @Comfy-Org/comfy_frontend_devs
-/src/stores/workspace/assetsSidebarBadgeStore.ts @Comfy-Org/comfy_frontend_devs
-/src/stores/workspace/assetsSidebarBadgeStore.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarTab.vue @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarTab.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarGridView.vue @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarGridView.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarListView.vue @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarListView.test.ts @Comfy-Org/comfy_frontend_devs
-/src/components/sidebar/tabs/AssetsSidebarListView.stories.ts @Comfy-Org/comfy_frontend_devs
-/src/composables/sidebarTabs/useAssetsSidebarTab.ts @Comfy-Org/comfy_frontend_devs
-/src/composables/sidebarTabs/useAssetsSidebarTab.test.ts @Comfy-Org/comfy_frontend_devs
-
 /docs/architecture/domains/records/viewport-3d.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/model-3d.domain.json @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/camera-authoring.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/light-authoring.domain.json @Comfy-Org/comfy_frontend_devs
-/src/renderer/three/                             @Comfy-Org/comfy_frontend_devs
-/src/composables/useViewportNodeWiring.ts         @Comfy-Org/comfy_frontend_devs
-/src/composables/useViewportNodeWiring.test.ts    @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/load3d.test.ts              @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/load3dLazy.test.ts          @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/load3dAdvanced.ts           @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -261,51 +159,6 @@
 /src/extensions/core/saveMesh.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/saveMesh.test.ts            @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/services/load3dService.test.ts              @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cameraInfo/                 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cameraInfo.ts               @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cameraAngle/                @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cameraAngle.ts              @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/cameraAngle.test.ts         @Comfy-Org/comfy_frontend_devs
-/src/components/cameraInfo/                      @Comfy-Org/comfy_frontend_devs
-/src/components/cameraAngle/                     @Comfy-Org/comfy_frontend_devs
-/src/composables/useCameraInfo.ts                @Comfy-Org/comfy_frontend_devs
-/src/composables/useCameraInfo.test.ts           @Comfy-Org/comfy_frontend_devs
-/src/composables/useCameraAngle.ts               @Comfy-Org/comfy_frontend_devs
-/src/composables/useCameraAngle.test.ts          @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/lightInfo/                  @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/lightInfo.ts                @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/lightInfo.test.ts           @Comfy-Org/comfy_frontend_devs
-/src/components/lightInfo/                       @Comfy-Org/comfy_frontend_devs
-/src/types/lightInfo.ts                          @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/LightInfoWidget.ts @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/LightInfoWidget.test.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts @Comfy-Org/comfy_frontend_devs
-
-/src/extensions/core/dynamicPrompts.ts            @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/dynamicPrompts.test.ts       @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/editAttention.ts            @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/editAttention.test.ts       @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/noteNode.ts                 @Comfy-Org/comfy_frontend_devs
-/src/lib/litegraph/src/widgets/MarkdownWidget.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/saveText.ts                 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/previewAny.ts               @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/previewAny.test.ts          @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/textPreviewWidgets.ts       @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/textPreviewWidgets.test.ts  @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.test.ts @Comfy-Org/comfy_frontend_devs
-/src/renderer/hdr/                               @Comfy-Org/comfy_frontend_devs
-/src/components/hdr/                             @Comfy-Org/comfy_frontend_devs
-/src/composables/useHdrViewer.ts                 @Comfy-Org/comfy_frontend_devs
-/src/services/hdrViewerService.ts                @Comfy-Org/comfy_frontend_devs
-/src/services/hdrViewerService.test.ts           @Comfy-Org/comfy_frontend_devs
-/src/utils/hdrFormatUtil.ts                      @Comfy-Org/comfy_frontend_devs
-/src/utils/hdrFormatUtil.test.ts                 @Comfy-Org/comfy_frontend_devs
 
 /docs/architecture/domains/records/agent.domain.json @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
 /docs/architecture/domains/records/authentication.domain.json @Comfy-Org/comfy_frontend_devs

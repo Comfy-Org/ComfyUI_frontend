@@ -370,6 +370,14 @@
     {
       "path": "src/platform/workspace/workspaceTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/storybook/mocks/teamWorkspaceStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/storybook/mocks/useWorkspaceUI.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

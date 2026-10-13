@@ -4,6 +4,42 @@
   "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
   "modules": [
     {
+      "path": "src/platform/auth/localWeb/accessTokenIdentity.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebTokenStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/pendingSignIn.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/composables/auth/**",
       "role": "application"
     },
@@ -226,6 +262,174 @@
     {
       "path": "src/stores/userStore.ts",
       "role": "application"
+    },
+    {
+      "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ApiNodesSignInContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ApiNodesSignInContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/CurrentUserMessage.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UserPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UserPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/ApiKeyForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/ApiKeyForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/PasswordFields.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignInForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignInForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignUpForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignUpForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.render.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/SignInContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/SignInContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/UpdatePasswordContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/header/ComfyOrgHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarLogoutIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/LoginButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/__tests__/authTokenPriority.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__tests__/stubAccountIdentityPort.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/hostWhitelist.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/hostWhitelist.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/config/firebase.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/firebase.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/turnstile.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/turnstile.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/schemas/signInSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/authTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/axios-augmentation.d.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/views/UserSelectView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/UserSelectView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/storybook/mocks/useCurrentUser.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -283,6 +487,46 @@
         "src/composables/auth/useTurnstile.test.ts",
         "src/stores/userStore.test.ts"
       ]
+    },
+    {
+      "name": "Sign-in dialog switches between sign-in, sign-up, and API key forms and guards sign-up with Turnstile",
+      "checks": [
+        "src/components/dialog/content/SignInContent.test.ts",
+        "src/components/dialog/content/signin/SignInForm.test.ts",
+        "src/components/dialog/content/signin/SignUpForm.test.ts",
+        "src/components/dialog/content/signin/ApiKeyForm.test.ts",
+        "src/components/dialog/content/signin/TurnstileWidget.test.ts",
+        "src/components/dialog/content/ApiNodesSignInContent.test.ts"
+      ]
+    },
+    {
+      "name": "Current user button, legacy popover, and user panel reflect the signed-in account",
+      "checks": [
+        "src/components/topbar/CurrentUserButton.test.ts",
+        "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+        "src/components/dialog/content/setting/UserPanel.test.ts"
+      ]
+    },
+    {
+      "name": "Auth header and token resolution prefer workspace, unified, Firebase, then API-key credentials",
+      "checks": ["src/stores/__tests__/authTokenPriority.test.ts"]
+    },
+    {
+      "name": "Partner nodes in the graph feed the run gate, and sign-in hosts are whitelisted",
+      "checks": [
+        "src/composables/node/usePartnerNodesInGraph.test.ts",
+        "src/composables/billing/usePartnerNodesRunGate.test.ts",
+        "src/utils/hostWhitelist.test.ts",
+        "src/stores/authStore.test.ts"
+      ]
+    },
+    {
+      "name": "Firebase and Turnstile configuration resolve per-environment keys with remote-config overrides",
+      "checks": ["src/config/firebase.test.ts", "src/config/turnstile.test.ts"]
+    },
+    {
+      "name": "Local multi-user select view lists users, creates a user, and routes after selection",
+      "checks": ["src/views/UserSelectView.test.ts"]
     }
   ],
   "adrs": [
