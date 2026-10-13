@@ -11,10 +11,13 @@ import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engin
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import {
+  SWAP_SIZES,
+  SWAP_TRIM_LIMITS,
   resultSize,
   swapCanvas,
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
+import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
@@ -35,6 +38,12 @@ import {
 } from '@/lib/workshop/openjutsu/transport-config'
 import type { SwapTake } from '@/lib/workshop/openjutsu/take'
 import { resolveSeed } from '@/lib/workshop/openjutsu/workflow'
+import { readVideoFacts } from '@/lib/workshop/video-trim/filmstrip'
+import {
+  initialTrim,
+  longerThanLimit,
+  tooShortToTrim
+} from '@/lib/workshop/video-trim/range'
 import { useWorkshopAuthFlag } from '@/scripts/posthog'
 
 /**
@@ -54,15 +63,17 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     return credential.session.token
   })
 
-  // --- the two inputs. A video becomes the one in use only once its part to
-  // swap is confirmed in the trim dialog; until then the earlier one stays.
+  // --- the two inputs. A video that fits a run is used as soon as it is
+  // read; any other waits in the trim dialog while the earlier one stays.
   const video = shallowRef<File>()
   const videoUrl = useObjectUrl(video)
-  /** What the trim dialog read of the video in use, with the part chosen. */
+  /** What was read of the video in use, with the part chosen. */
   const trim = shallowRef<VideoTrim>()
   /** The file the trim dialog is showing: a new pick, or the one in use. */
   const trimming = shallowRef<File>()
   const trimOpen = ref(false)
+  /** The video taken out last, kept so it can be put back. */
+  const removed = shallowRef<{ video: File; trim: VideoTrim }>()
   const character = shallowRef<File>()
   const characterUrl = useObjectUrl(character)
   const target = ref('')
@@ -70,6 +81,10 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   const seed = ref<number>()
 
   const clipSeconds = computed(() => trim.value?.duration)
+  /** The video runs past the longest part, so only some of it is used. */
+  const trimmed = computed(
+    () => !!trim.value && longerThanLimit(trim.value.duration, SWAP_TRIM_LIMITS)
+  )
   const range = computed<SwapWindow | undefined>(
     () =>
       trim.value && {
@@ -82,7 +97,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     () => range.value && swapSeconds(range.value.seconds)
   )
   /** The quality of the next run; a sharper one costs more. */
-  const size = ref<SwapSize>('768p')
+  const size = ref<SwapSize>(SWAP_SIZES[0])
   const canvas = computed(
     () =>
       trim.value && swapCanvas(trim.value.width, trim.value.height, size.value)
@@ -95,18 +110,52 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       resultSize(trim.value.width, trim.value.height, canvas.value)
   )
 
-  function takeVideo(file: File) {
+  function adoptVideo(file: File, next: VideoTrim) {
+    video.value = file
+    trim.value = next
+    removed.value = undefined
+    selected.value = 'source'
+  }
+  function openTrim(file: File) {
     trimming.value = file
     trimOpen.value = true
   }
+
+  let videoRequest = 0
+  /**
+   * A new video is used from its start, cut to the longest part a run takes.
+   * One that cannot be read or is too short opens the trim dialog, which says
+   * why.
+   */
+  async function takeVideo(file: File) {
+    const request = ++videoRequest
+    const url = URL.createObjectURL(file)
+    const facts = await readVideoFacts(url, new AbortController().signal)
+    URL.revokeObjectURL(url)
+    if (request !== videoRequest) return
+    if (!facts || tooShortToTrim(facts.duration, SWAP_TRIM_LIMITS))
+      return openTrim(file)
+    adoptVideo(file, {
+      ...initialTrim(facts.duration, SWAP_TRIM_LIMITS),
+      ...facts
+    })
+  }
   /** Reopens the trim dialog on the video in use, at the part chosen. */
   function editTrim() {
-    if (video.value) takeVideo(video.value)
+    if (video.value) openTrim(video.value)
   }
   function confirmTrim(next: VideoTrim) {
-    video.value = trimming.value
-    trim.value = next
+    if (trimming.value) adoptVideo(trimming.value, next)
+  }
+  function removeVideo() {
+    if (video.value && trim.value)
+      removed.value = { video: video.value, trim: trim.value }
+    video.value = undefined
+    trim.value = undefined
     selected.value = 'source'
+  }
+  function restoreVideo() {
+    if (removed.value) adoptVideo(removed.value.video, removed.value.trim)
   }
   /** The part to reopen the dialog on: only the video in use has one. */
   const trimInitial = computed(() =>
@@ -116,6 +165,33 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   )
   function takeCharacter(file: File) {
     character.value = file
+  }
+
+  /** The example being fetched, so its card can show it is on its way. */
+  const loadingExample = ref<SwapExample['id']>()
+  async function fileFrom(url: string) {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new File([blob], url.split('/').at(-1) ?? 'example', {
+      type: blob.type
+    })
+  }
+  /** Loads an example's clip, character and words, on the default settings. */
+  async function takeExample(example: SwapExample) {
+    loadingExample.value = example.id
+    try {
+      const [clip, image] = await Promise.all([
+        fileFrom(example.video),
+        fileFrom(example.character)
+      ])
+      character.value = image
+      target.value = example.target
+      size.value = SWAP_SIZES[0]
+      seed.value = undefined
+      await takeVideo(clip)
+    } finally {
+      loadingExample.value = undefined
+    }
   }
 
   // --- takes
@@ -373,6 +449,8 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     video,
     videoUrl,
     clipSeconds,
+    trimmed,
+    removed,
     character,
     characterUrl,
     target,
@@ -397,7 +475,11 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     takeVideo,
     editTrim,
     confirmTrim,
+    removeVideo,
+    restoreVideo,
     takeCharacter,
+    loadingExample,
+    takeExample,
     generate,
     cancel,
     reuse

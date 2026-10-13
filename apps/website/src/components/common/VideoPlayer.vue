@@ -339,6 +339,8 @@ function toggleFullscreen() {
       />
     </video>
 
+    <slot />
+
     <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
       overlay hero's scrim and content layers. -->
     <div

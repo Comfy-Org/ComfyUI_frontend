@@ -20,6 +20,11 @@ export function tooShortToTrim(duration: number, limits: TrimLimits): boolean {
   return duration < limits.min - LENGTH_TOLERANCE
 }
 
+/** Whether a video runs past the longest part, so only some of it can be kept. */
+export function longerThanLimit(duration: number, limits: TrimLimits): boolean {
+  return duration > limits.max + LENGTH_TOLERANCE
+}
+
 /** The limits as this video can meet them: never longer than the video. */
 function boundsFor(duration: number, limits: TrimLimits): TrimLimits {
   const max = Math.min(limits.max, duration)

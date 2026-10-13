@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapTake } from '@/lib/workshop/openjutsu/take'
 
-/** The strip under the stage: the source clip, then every take made from it. */
+/** The strip over the stage: the source clip, then every take made from it. */
 const {
   takes,
   selected,
@@ -26,9 +26,9 @@ const emit = defineEmits<{ select: [id: string] }>()
 
 const tileClass = (id: string) =>
   cn(
-    'grid aspect-video h-14 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
+    'grid aspect-video h-9 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none',
     id === selected
-      ? 'opacity-100 outline-2 outline-offset-2 outline-primary-warm-white'
+      ? 'opacity-100 outline-2 outline-offset-1 outline-primary-warm-white'
       : 'opacity-60 hover:opacity-100'
   )
 </script>
@@ -36,7 +36,7 @@ const tileClass = (id: string) =>
 <template>
   <nav
     :aria-label="t('reshoot.takes')"
-    class="flex max-w-full items-center gap-2 overflow-x-auto p-1"
+    class="pointer-events-auto flex max-w-full shrink-0 items-center gap-2 self-center overflow-x-auto rounded-xl border border-transparency-white-t8 bg-primary-comfy-ink-light/90 p-1.5 shadow-lg shadow-black/30 backdrop-blur-xl"
   >
     <button
       type="button"
@@ -47,7 +47,7 @@ const tileClass = (id: string) =>
     >
       <Film class="size-4" aria-hidden="true" />
     </button>
-    <span class="mx-1 h-8 w-px bg-transparency-white-t8" aria-hidden="true" />
+    <span class="h-5 w-px bg-transparency-white-t20" aria-hidden="true" />
     <button
       v-for="take in takes"
       :key="take.id"

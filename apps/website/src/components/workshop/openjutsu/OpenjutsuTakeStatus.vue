@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { CircleStop, LoaderCircle } from '@lucide/vue'
+import { CircleStop } from '@lucide/vue'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapTake } from '@/lib/workshop/openjutsu/take'
 import { stoppedNote, takeOverlay } from '@/lib/workshop/openjutsu/take'
 
 /** What sits over the player while a take renders, or after it stopped. */
-const { take, locale = 'en' } = defineProps<{
+const {
+  take,
+  elapsedSeconds,
+  locale = 'en'
+} = defineProps<{
   take?: SwapTake
+  /** How long the rendering take has been going. */
+  elapsedSeconds?: number
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -26,6 +32,11 @@ const PHASES = {
 } as const
 
 const overlay = computed(() => takeOverlay(take))
+const elapsed = computed(() => {
+  const seconds = Math.max(0, Math.floor(elapsedSeconds ?? 0))
+  const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+  return t('openjutsu.phase.elapsed', { time })
+})
 const stock = {
   cancelled: t('reshoot.take.cancelled'),
   failed: t('reshoot.error.failed')
@@ -33,49 +44,33 @@ const stock = {
 </script>
 
 <template>
-  <div
+  <EditorBusy
     v-if="take && overlay === 'progress'"
-    role="status"
-    class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-primary-comfy-ink/80 px-6 text-center"
-    data-testid="openjutsu-progress"
-  >
-    <LoaderCircle
-      class="size-7 text-primary-comfy-yellow motion-safe:animate-spin"
-      aria-hidden="true"
-    />
-    <p class="text-base font-semibold text-primary-warm-white">
-      {{ t(PHASES[take.phase ?? 'running']) }}
-    </p>
-    <p class="max-w-sm text-xs/relaxed text-primary-warm-gray">
-      {{ t('openjutsu.phase.note') }}
-    </p>
-    <Button
-      variant="outline"
-      size="sm"
-      class="rounded-full"
-      data-testid="openjutsu-cancel"
-      @click="emit('cancel')"
-    >
-      {{ t('reshoot.cancel') }}
-    </Button>
-  </div>
+    :title="t(PHASES[take.phase ?? 'running'])"
+    :detail="elapsed"
+    :cancel-label="t('reshoot.cancel')"
+    class="z-20"
+    @cancel="emit('cancel')"
+  />
   <div
     v-else-if="take && overlay === 'stopped'"
     role="alert"
-    class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-primary-comfy-ink/80 px-6 text-center"
-    data-testid="openjutsu-failed"
+    class="absolute inset-0 z-20 flex items-center justify-center rounded-sm bg-primary-comfy-ink/60 px-4"
   >
-    <CircleStop class="size-7 text-primary-comfy-canvas" aria-hidden="true" />
-    <p class="max-w-md text-sm text-primary-warm-white">
-      {{ stoppedNote(take, stock) }}
-    </p>
-    <Button
-      variant="outline"
-      size="sm"
-      class="rounded-full"
-      @click="emit('retry', take.id)"
+    <div
+      class="flex max-w-md flex-col items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light px-5 py-4 text-center"
     >
-      {{ t('openjutsu.take.retry') }}
-    </Button>
+      <CircleStop class="size-5 text-primary-comfy-canvas" aria-hidden="true" />
+      <p class="text-sm text-primary-warm-white">
+        {{ stoppedNote(take, stock) }}
+      </p>
+      <button
+        type="button"
+        class="h-8 rounded-full bg-transparency-white-t8 px-3.5 text-xs font-semibold text-primary-warm-white transition hover:bg-transparency-white-t20 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        @click="emit('retry', take.id)"
+      >
+        {{ t('openjutsu.take.retry') }}
+      </button>
+    </div>
   </div>
 </template>
