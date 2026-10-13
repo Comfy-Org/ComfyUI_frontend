@@ -14,6 +14,8 @@ interface AgentEventSourceOptions {
   random?: () => number
 }
 
+type AuthRead = { ok: true; params: URLSearchParams | null } | { ok: false }
+
 export function createAgentEventSource({
   endpoint,
   getAuthParams,
@@ -60,11 +62,11 @@ export function createAgentEventSource({
     if (listeners.size === 0 || socket !== null || connecting) return
     connecting = true
     const generation = connectGeneration
-    let authParams: URLSearchParams | null
+    let auth: AuthRead
     try {
-      authParams = await getAuthParams()
+      auth = { ok: true, params: await getAuthParams() }
     } catch {
-      authParams = new URLSearchParams()
+      auth = { ok: false }
     } finally {
       connecting = false
     }
@@ -72,8 +74,14 @@ export function createAgentEventSource({
       void connect()
       return
     }
-    if (listeners.size === 0 || authParams === null) return
-    open(eventUrl(authParams))
+    if (listeners.size === 0) return
+    if (!auth.ok) {
+      notifyStatus(false)
+      scheduleReconnect()
+      return
+    }
+    if (auth.params === null) return
+    open(eventUrl(auth.params))
   }
 
   function open(url: string): void {

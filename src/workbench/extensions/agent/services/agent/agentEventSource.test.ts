@@ -375,24 +375,55 @@ describe('createAgentEventSource token', () => {
     expect(new URL(sockets()[1].url).searchParams.get('token')).toBe('second')
   })
 
-  it.for([
-    {
-      label: 'there is no credential',
+  it('connects without a token when the read returns no credential', async () => {
+    const source = createSource({
       getAuthParams: async () => new URLSearchParams()
-    },
-    {
-      label: 'the read fails',
-      getAuthParams: async (): Promise<URLSearchParams | null> => {
-        throw new Error('token refresh failed')
-      }
-    }
-  ])('connects without a token when $label', async ({ getAuthParams }) => {
-    const source = createSource({ getAuthParams })
+    })
 
     source.subscribe(vi.fn())
     await connected()
 
     expect(new URL(lastSocket().url).searchParams.has('token')).toBe(false)
+  })
+
+  it('opens no socket while the auth read keeps rejecting', async () => {
+    const getAuthParams = vi.fn(async (): Promise<URLSearchParams | null> => {
+      throw new Error('token refresh failed')
+    })
+    const source = createSource({ getAuthParams })
+
+    source.subscribe(vi.fn())
+    await connected()
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000)
+
+    expect(getAuthParams).toHaveBeenCalledTimes(4)
+    expect(sockets()).toHaveLength(0)
+  })
+
+  it('opens the socket with the credential once a later auth read succeeds', async () => {
+    const reads: (() => Promise<URLSearchParams | null>)[] = [
+      async () => {
+        throw new Error('token refresh failed')
+      },
+      async () => tokenParams('recovered')
+    ]
+    const source = createSource({
+      getAuthParams: () => reads.shift()?.() ?? Promise.resolve(null)
+    })
+    const status = vi.fn()
+    source.onStatus(status)
+
+    source.subscribe(vi.fn())
+    await connected()
+    expect(sockets()).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(1000)
+    sockets()[0].open()
+
+    expect(
+      sockets().map((socket) => new URL(socket.url).searchParams.get('token'))
+    ).toEqual(['recovered'])
+    expect(status.mock.calls).toEqual([[false], [false], [true]])
   })
 
   it('opens nothing when no one can authenticate the socket', async () => {
