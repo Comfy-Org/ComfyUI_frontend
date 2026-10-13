@@ -40,16 +40,20 @@ function readEvent() {
 }
 
 function comparisonBase(event: z.infer<typeof eventSchema>, explicit?: string) {
-  const base = [
+  const selected = [
     explicit,
     event.merge_group?.base_sha,
     event.pull_request?.base.sha,
     event.before
   ].find((candidate) => candidate !== undefined)
-  if (!base || /^0+$/.test(base))
-    throw new Error(
+  const base = z
+    .string()
+    .min(1)
+    .refine(
+      (revision) => !/^0+$/.test(revision),
       'Catalog delivery requires a base revision (--base or event)'
     )
+    .parse(selected)
   return event.pull_request ? git('merge-base', base, 'HEAD') : base
 }
 
