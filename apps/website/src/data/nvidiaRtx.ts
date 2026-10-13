@@ -39,6 +39,10 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     layout: 'media-first',
     videoSrc:
       'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
+    mobileVideoSrc:
+      'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-mobile.mp4',
+    posterSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
+    mobileFallbackImageSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
     titleKey: 'nvidiaRtx.hero.title',
     titleSize: 'compact',
     descriptionKey: 'nvidiaRtx.hero.description',
@@ -61,7 +65,6 @@ export const nvidiaRtxPage: ModelLaunchPage = {
     headingKey: 'nvidiaRtx.gallery.heading',
     ctaVariant: 'none',
     cardMeta: 'none',
-    mobileVisibleCards: 3,
     cards: [
       {
         id: 'vaporwave-atmosphere',
