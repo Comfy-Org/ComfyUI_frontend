@@ -14,7 +14,8 @@ export async function resolveWidgetValueAsset(
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<AssetItem | null | undefined> {
   const { filepath: name } = parseAnnotatedPath(widgetValue)
-  const assetMatches = (asset: AssetItem) => name === (asset.hash || asset.name)
+  const assetMatches = (asset: AssetItem) =>
+    name === asset.hash || name === (asset.loader_path ?? asset.name)
   const assetsStore = useAssetsStore()
   const storedAsset =
     toValue(assetsStore.inputAssets.items).find(assetMatches) ??
@@ -23,9 +24,20 @@ export async function resolveWidgetValueAsset(
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
 
-  const query = encodeParams({ limit: 1, hash: name })
-  const resp = await api.fetchApi(`/assets?${query}`, { signal })
-  const json = await resp.json().catch(() => {})
-  const parseResult = assetResponseSchema.safeParse(json)
-  return parseResult.success ? (parseResult.data.assets[0] ?? null) : undefined
+  const lookup = async (params: Record<string, string | number>) => {
+    const resp = await api.fetchApi(`/assets?${encodeParams(params)}`, {
+      signal
+    })
+    const json = await resp.json().catch(() => {})
+    const parseResult = assetResponseSchema.safeParse(json)
+    return parseResult.success ? parseResult.data.assets : undefined
+  }
+  const byHash = await lookup({ limit: 1, hash: name })
+  const hashMatch = byHash?.find(assetMatches)
+  if (hashMatch) return hashMatch
+  const byName = await lookup({
+    name_contains: name.slice(name.lastIndexOf('/') + 1)
+  })
+  if (!byHash || !byName) return undefined
+  return byName.find(assetMatches) ?? null
 }
