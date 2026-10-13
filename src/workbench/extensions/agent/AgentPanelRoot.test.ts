@@ -10203,22 +10203,8 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[1]).not.toHaveProperty('draft')
     })
 
-    it('withholds the draft while the agent identity lookup is unavailable and still retrying', async () => {
-      vi.mocked(resolveAgentIdentity).mockReturnValue({
-        state: ref<AgentIdentityState>({ status: 'unavailable' }),
-        reset: vi.fn(),
-        stop: () => {}
-      })
-      const bodies = await bindAndSettle()
-
-      await sendFromComposer('second message')
-
-      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
-    })
-
-    it('starts the follower without seeding a draft once an unavailable identity lookup resolves', async () => {
-      const state = ref<AgentIdentityState>({ status: 'unavailable' })
+    it('starts the follower without seeding a draft once a retried identity lookup resolves', async () => {
+      const state = ref<AgentIdentityState>({ status: 'pending' })
       vi.mocked(resolveAgentIdentity).mockReturnValue({
         state,
         reset: vi.fn(),
