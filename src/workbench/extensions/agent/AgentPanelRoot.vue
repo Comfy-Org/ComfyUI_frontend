@@ -777,13 +777,8 @@ function followerOwnsDocument(documentId: string | undefined): boolean {
     documentId !== undefined &&
     boundWorkflowId.value === documentId &&
     crdtStatus.value.terminal === null &&
-    !agentIdentityGaveUp()
+    agentIdentity.state.value.status !== 'rejected'
   )
-}
-
-function agentIdentityGaveUp(): boolean {
-  const { status } = agentIdentity.state.value
-  return status === 'rejected' || status === 'unavailable'
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
