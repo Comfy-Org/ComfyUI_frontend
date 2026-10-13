@@ -369,7 +369,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-export const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
+const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
   zAgentWsEvent.options.map((option) => option.shape.type.value)
 )
 

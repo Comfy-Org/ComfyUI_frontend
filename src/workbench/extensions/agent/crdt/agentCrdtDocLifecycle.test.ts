@@ -414,7 +414,6 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(resubscribe).toHaveBeenCalledTimes(6)
-    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(devEvents().map(({ kind }) => kind)).toEqual([
@@ -425,6 +424,12 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
       'subscribe_retry',
       'subscribe_retry'
     ])
+
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(6)
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -442,7 +447,6 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
     expect(resubscribe).not.toHaveBeenCalled()
     expect(onGaveUp).toHaveBeenCalledTimes(1)
-    expect(lifecycle.shouldDeferSubscribe()).toBe(true)
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       GAVE_UP_REPORT
@@ -453,6 +457,11 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
         detail: { code: 'schema_version_mismatch', terminal: true }
       }
     ])
+
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('doc_not_found')
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(resubscribe).not.toHaveBeenCalled()
   })
 
   it('a different refusal code still retries with backoff', () => {
@@ -522,7 +531,6 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
       expect(resubscribe).not.toHaveBeenCalled()
       expect(onGaveUp).toHaveBeenCalledTimes(1)
-      expect(lifecycle.shouldDeferSubscribe()).toBe(true)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         GAVE_UP_REPORT
@@ -533,6 +541,11 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
           detail: { code, terminal: true }
         }
       ])
+
+      lifecycle.onSubscribeSent(WORKFLOW_ID)
+      lifecycle.onSubscribeRefused('doc_not_found')
+      vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+      expect(resubscribe).not.toHaveBeenCalled()
     }
   )
 
@@ -544,10 +557,14 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(resubscribe).not.toHaveBeenCalled()
-    expect(lifecycle.shouldDeferSubscribe()).toBe(true)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(devEvents()).toEqual([])
+
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('doc_not_found')
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(resubscribe).not.toHaveBeenCalled()
   })
 
   it('a reconnect does not re-notify a permanent refusal for the same workflow', () => {
@@ -605,7 +622,6 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
 
     // Attempt 2 confirms first - the channel is healthy again.
     lifecycle.onSubscribeConfirmed()
-    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
 
     // Attempt 1's answer finally lands, refusing permanently. It cannot be
     // answering attempt 2 (which already confirmed), so it must be
@@ -615,7 +631,6 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     expect(notified).toBe(false)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
-    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
     expect(devEvents()).toEqual([
       {
         kind: 'subscribe_ack_timeout',
