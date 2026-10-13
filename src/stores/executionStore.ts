@@ -115,12 +115,8 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-/**
- * Maximum number of entries retained in each per-job lookup map
- * ({@link jobIdToSessionWorkflowPath}, {@link jobIdToWorkflowId}); the oldest
- * are evicted first. ~0.65 MB at capacity (32 char GUID key + 50 char value).
- */
-export const MAX_SESSION_PATH_ENTRIES = 4000
+/** Maximum entries retained in each job-id lookup map; oldest evicted first. */
+export const MAX_JOB_LOOKUP_ENTRIES = 4000
 
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
@@ -1023,7 +1019,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
-    while (next.size > MAX_SESSION_PATH_ENTRIES) {
+    while (next.size > MAX_JOB_LOOKUP_ENTRIES) {
       const oldest = next.keys().next().value
       if (oldest !== undefined) {
         next.delete(oldest)
@@ -1035,8 +1031,10 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function setJobWorkflowId(jobId: JobId, workflowId: WorkflowId) {
     const map = jobIdToWorkflowId.value
+    // Re-insert so jobs still re-registered by queue polls are evicted last
+    map.delete(jobId)
     map.set(jobId, workflowId)
-    while (map.size > MAX_SESSION_PATH_ENTRIES) {
+    while (map.size > MAX_JOB_LOOKUP_ENTRIES) {
       const oldest = map.keys().next().value
       if (oldest === undefined) break
       map.delete(oldest)

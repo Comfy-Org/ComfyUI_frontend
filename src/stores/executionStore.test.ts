@@ -14,7 +14,7 @@ import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import {
   MAX_PROGRESS_JOBS,
-  MAX_SESSION_PATH_ENTRIES,
+  MAX_JOB_LOOKUP_ENTRIES,
   useExecutionStore
 } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -2768,16 +2768,51 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('jobIdToWorkflowId evicts the oldest jobs beyond its cap', () => {
-    for (let i = 0; i < MAX_SESSION_PATH_ENTRIES + 5; i++) {
+    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES + 5; i++) {
       store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
     }
 
-    expect(store.jobIdToWorkflowId.size).toBe(MAX_SESSION_PATH_ENTRIES)
+    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
     expect(store.jobIdToWorkflowId.has('job-4')).toBe(false)
     expect(store.jobIdToWorkflowId.get('job-5')).toBe('wf-5')
     expect(
-      store.jobIdToWorkflowId.get(`job-${MAX_SESSION_PATH_ENTRIES + 4}`)
-    ).toBe(`wf-${MAX_SESSION_PATH_ENTRIES + 4}`)
+      store.jobIdToWorkflowId.get(`job-${MAX_JOB_LOOKUP_ENTRIES + 4}`)
+    ).toBe(`wf-${MAX_JOB_LOOKUP_ENTRIES + 4}`)
+  })
+
+  it('jobIdToWorkflowId keeps re-registered jobs when evicting', () => {
+    store.registerJobWorkflowIdMapping('job-live', 'wf-live')
+    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES; i++) {
+      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
+      if (i % 100 === 0) {
+        store.registerJobWorkflowIdMapping('job-live', 'wf-live')
+      }
+    }
+
+    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.get('job-live')).toBe('wf-live')
+  })
+
+  it('storeJob respects the jobIdToWorkflowId cap', () => {
+    for (let i = 0; i < MAX_JOB_LOOKUP_ENTRIES; i++) {
+      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
+    }
+    const workflow = {
+      activeState: { id: 'wf-stored' },
+      path: '/workflows/stored.json'
+    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+
+    store.storeJob({
+      nodes: [],
+      id: 'job-stored',
+      promptOutput: {},
+      workflow,
+      mode: 'graph'
+    })
+
+    expect(store.jobIdToWorkflowId.size).toBe(MAX_JOB_LOOKUP_ENTRIES)
+    expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
+    expect(store.jobIdToWorkflowId.get('job-stored')).toBe('wf-stored')
   })
 
   it('ensureSessionWorkflowPath is idempotent and updates on change', () => {
