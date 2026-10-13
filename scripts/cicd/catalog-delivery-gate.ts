@@ -34,7 +34,10 @@ function run() {
     values.base ??
     event.merge_group?.base_sha ??
     event.pull_request?.base.sha ??
-    event.before
+    (process.env.GITHUB_EVENT_NAME === 'push' &&
+    /^0{40}$/.test(event.before ?? '')
+      ? 'HEAD'
+      : event.before)
   if (!base || /^0+$/.test(base))
     throw new Error(
       'Catalog delivery requires a base revision (--base or event)'

@@ -50,16 +50,24 @@ function repository() {
     base,
     write,
     git,
-    run(event?: object, failure = '0', command?: string) {
+    run(
+      event?: object,
+      failure = '0',
+      command?: string,
+      eventName = '',
+      explicitBase?: string
+    ) {
       const eventPath = join(root, 'event.json')
       if (event) writeFileSync(eventPath, JSON.stringify(event))
       const result = spawnSync(
         command ? 'bash' : process.execPath,
         command
           ? ['-c', command]
-          : event
-            ? [tsx, script]
-            : [tsx, script, '--base', base],
+          : explicitBase !== undefined
+            ? [tsx, script, '--base', explicitBase]
+            : event
+              ? [tsx, script]
+              : [tsx, script, '--base', base],
         {
           cwd: root,
           encoding: 'utf8',
@@ -68,6 +76,7 @@ function repository() {
             PATH: `${bin}:${process.env.PATH}`,
             GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
             GITHUB_EVENT_PATH: event ? eventPath : '',
+            GITHUB_EVENT_NAME: eventName,
             CATALOG_ARGS_FILE: argsFile,
             CATALOG_EXIT_STATUS: failure,
             CATALOG_NODE: process.execPath,
@@ -86,6 +95,37 @@ function repository() {
 }
 
 describe('catalog delivery command', () => {
+  it('allows branch-creation pushes without a comparison range', () => {
+    const repo = repository()
+    const result = repo.run({ before: '0'.repeat(40) }, '0', undefined, 'push')
+    expect(result.status).toBe(0)
+    expect(result.args).toBe('')
+    expect(result.output).toContain('English fallback')
+  })
+
+  it.for(['0'.repeat(40), 'missing-revision'])(
+    'rejects explicit invalid base %s',
+    (base) => {
+      const repo = repository()
+      const result = repo.run(
+        { before: '0'.repeat(40) },
+        '0',
+        undefined,
+        'push',
+        base
+      )
+      expect(result.status).toBe(1)
+      expect(result.args).toBe('')
+    }
+  )
+
+  it('rejects an absent pull request or queue comparison range', () => {
+    const repo = repository()
+    const result = repo.run({})
+    expect(result.status).toBe(1)
+    expect(result.args).toBe('')
+  })
+
   it('runs delivery readiness from the shared PR and queue action', () => {
     const action = z
       .object({
