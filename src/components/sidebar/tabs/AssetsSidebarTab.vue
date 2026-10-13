@@ -210,11 +210,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
-  getAssetSubfolder
+  getAssetSubfolder,
+  getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -222,6 +224,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
@@ -543,7 +546,9 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
       {
         label: t('mediaAsset.actions.inspect'),
         icon: 'icon-[lucide--zoom-in]',
-        visible: isPreviewableMediaType(getMediaTypeFromFilename(asset.name)),
+        visible:
+          isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
+          isHdrImageFilename(asset.name),
         command: () => handleZoomClick(asset)
       },
       {
@@ -618,6 +623,11 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
+  if (isHdrImageFilename(asset.name)) {
+    openHdrViewer(getAssetViewUrl(asset))
+    return
+  }
+
   const mediaType = getMediaTypeFromFilename(asset.name)
   if (!isPreviewableMediaType(mediaType)) {
     return
