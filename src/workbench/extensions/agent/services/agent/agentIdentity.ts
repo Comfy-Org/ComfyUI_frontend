@@ -11,16 +11,22 @@ interface AgentIdentityDeps {
   onFailure(error: unknown): void
 }
 
+/** Outcome of the identity lookup; `rejected` holds until `reset()`. */
+export type AgentIdentityState =
+  | { status: 'pending' }
+  | { status: 'resolved'; userId: string }
+  | { status: 'rejected' }
+
 interface ResolvedAgentIdentity {
   reset(): void
-  userId: Readonly<Ref<string | null>>
+  state: Readonly<Ref<AgentIdentityState>>
   stop(): void
 }
 
 export function resolveAgentIdentity(
   deps: AgentIdentityDeps
 ): ResolvedAgentIdentity {
-  const userId = ref<string | null>(null)
+  const state = ref<AgentIdentityState>({ status: 'pending' })
   let inFlight = false
   let stopped = false
   let failures = 0
@@ -43,18 +49,20 @@ export function resolveAgentIdentity(
   }
 
   async function attempt(): Promise<void> {
-    if (stopped || inFlight || userId.value !== null) return
+    if (stopped || inFlight || state.value.status !== 'pending') return
     cancelRetry()
     inFlight = true
     const started = generation
     try {
       const identity = await deps.getIdentity()
-      if (started === generation) userId.value = identity.userId
+      if (started === generation)
+        state.value = { status: 'resolved', userId: identity.userId }
     } catch (error) {
       if (started !== generation) return
       failures += 1
       deps.onFailure(error)
       if (deps.isRetryable(error)) scheduleRetry()
+      else state.value = { status: 'rejected' }
     } finally {
       if (started === generation) inFlight = false
     }
@@ -68,10 +76,10 @@ export function resolveAgentIdentity(
   void attempt()
 
   return {
-    userId: readonly(userId),
+    state: readonly(state),
     reset() {
       generation += 1
-      userId.value = null
+      state.value = { status: 'pending' }
       failures = 0
       inFlight = false
       cancelRetry()

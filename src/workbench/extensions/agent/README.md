@@ -20,7 +20,8 @@ The panel speaks one contract on the cloud and on the local agent:
 - **Identity, `GET /api/agent/identity`** (`services/agent/agentIdentity.ts`).
   Canvas ops carry `human:<user_id>:<tab>` with the id the backend reports,
   so the follower stays inactive until it answers. A failed lookup retries
-  with backoff, and at once when the socket connects again.
+  with backoff, and at once when the socket connects again. A rejected
+  credential is not retried until the account changes.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -88,5 +89,6 @@ each update. Human edits are minted into the shared op vocabulary and sent as
 While the follower holds the bound document, a turn sends no draft: the
 document is the source of truth and an unversioned draft would overwrite it.
 Once the follower gives up on that document (refused for good, every subscribe
-unanswered, or unreadable), turns seed the draft again; a reconnect retries the
-document and withholds it until that attempt settles.
+unanswered, or unreadable), or the identity lookup is rejected, turns seed the
+draft again; a reconnect retries the document and withholds it until that
+attempt settles.

@@ -288,6 +288,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
@@ -327,7 +328,7 @@ beforeEach(() => {
   })
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
   vi.mocked(resolveAgentIdentity).mockReturnValue({
-    userId: ref('account-a'),
+    state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),
     stop: () => {}
   })
@@ -10177,7 +10178,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     it('withholds the draft for a bound document while the agent identity is still pending', async () => {
       vi.mocked(resolveAgentIdentity).mockReturnValue({
-        userId: ref(null),
+        state: ref<AgentIdentityState>({ status: 'pending' }),
         reset: vi.fn(),
         stop: () => {}
       })
@@ -10187,6 +10188,22 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    it('seeds the draft again once the agent identity lookup is rejected for good', async () => {
+      vi.mocked(resolveAgentIdentity).mockReturnValue({
+        state: ref<AgentIdentityState>({ status: 'rejected' }),
+        reset: vi.fn(),
+        stop: () => {}
+      })
+      const bodies = await bindAndSettle()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
     })
   })
 
@@ -12096,7 +12113,10 @@ describe('AgentPanelRoot agent socket', () => {
     async ({ before, after }) => {
       const reset = vi.fn()
       vi.mocked(resolveAgentIdentity).mockReturnValue({
-        userId: ref('account-a'),
+        state: ref<AgentIdentityState>({
+          status: 'resolved',
+          userId: 'account-a'
+        }),
         reset,
         stop: () => {}
       })
