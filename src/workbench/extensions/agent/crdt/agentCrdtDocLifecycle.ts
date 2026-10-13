@@ -2,6 +2,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_ACK_TIMEOUT_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from './lifecycleTiming'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -64,41 +69,9 @@ function isNotifyingPermanentRefusalCode(code: string): boolean {
   return !SILENT_PERMANENT_REFUSAL_CODES.has(code)
 }
 
-/**
- * A `doc_subscribe` that left the transport and was never answered is retried
- * on the same lineage after this long. The ingest relay's own resync budget is
- * 15 s, so a shorter window would stack a duplicate subscribe behind a slow but
- * live catch-up.
- */
-export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
 // The third unanswered attempt is terminal: frames at 0 s, 15 s and 30 s,
 // give-up at 45 s. Silent attempts also count into the shared refusal budget.
 const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
-
-/**
- * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
- * delivers NO doc-scoped frame for this long gets ONE active probe - a
- * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
- * exactly the observed recovery on a stale one. A stale channel and an idle
- * workflow look identical passively, so expiry probes instead of alarming.
- */
-export const STALE_AFTER_MS = 30_000
-
-/**
- * PM-1405 RCA: a confirmed subscribe (`doc_subscribed: {ok: true}`) is not
- * itself the catch-up - the host sends the ack and the catch-up
- * `doc_update` as two separate frames, and the second can be acked-but-never
- * sent (an observed real anomaly, not a hypothetical). Relying on the
- * passive {@link STALE_AFTER_MS} heartbeat alone to notice leaves the canvas
- * with nothing to show for up to 30 real seconds. Probe again this much
- * sooner, once per catch-up-gap episode, right after the first confirmed
- * subscribe: a resubscribe is a no-op on a doc that had nothing to catch up
- * on, and the active repair on one whose catch-up went missing. A backend
- * that keeps acknowledging the resubscribe without ever minting content is a
- * valid state too, so this fast probe fires at most once per gap - see
- * `usedCatchUpGrace`.
- */
-export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
 
 // One nonce per page load (module scope = one per top-level navigation, since
 // a full reload re-evaluates the module). A tab duplicated mid-session

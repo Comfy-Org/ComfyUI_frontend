@@ -1,8 +1,10 @@
 import { api } from '@/scripts/api'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-import { isCrdtDebugEnabled } from './crdtDebugGate'
 import { wireLog } from './crdtLog'
 import type { DocFrameTransport } from './docFrameClient'
+
+const { flags } = useFeatureFlags()
 
 export const apiTransport: DocFrameTransport = {
   send(frame) {
@@ -25,7 +27,7 @@ export const apiTransport: DocFrameTransport = {
  * for a value nothing reads.
  */
 function traceableFrame(frame: string): Record<string, unknown> | null {
-  if (!isCrdtDebugEnabled()) return null
+  if (!flags.agentCrdtDebugEnabled) return null
   try {
     const parsed: unknown = JSON.parse(frame)
     return parsed !== null &&

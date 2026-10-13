@@ -21,11 +21,8 @@ import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import {
-  AgentCrdtDocLifecycle,
-  STALE_AFTER_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
+import { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS } from './lifecycleTiming'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'

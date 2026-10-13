@@ -1,25 +1,38 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { wireLog } from './crdtLog'
 import { clearDevEvents, devEvents } from './devPanelLog'
 
 describe('crdtLog', () => {
   beforeEach(() => {
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'info'
     clearDevEvents()
   })
 
-  it('keeps warnings visible when the debug instrument is opted out', () => {
-    setCrdtDebugEnabled(false)
+  it.for(['warn', 'info', 'debug', 'trace'] as const)(
+    'emits no %s events when the feature flag is off',
+    (level) => {
+      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
 
-    wireLog.warn('schema_error', 'schema rejected')
+      wireLog[level]('doc_update', 'updated')
 
-    expect(console.warn).toHaveBeenCalledWith(
-      '%c[crdt:wire]%c schema_error — schema rejected',
-      'color:#7dd3fc',
-      ''
-    )
-    expect(devEvents.value).toHaveLength(0)
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.info).not.toHaveBeenCalled()
+      expect(console.debug).not.toHaveBeenCalled()
+      expect(devEvents.value).toHaveLength(0)
+    }
+  )
+  it('applies the level setting to console output while retaining the transcript', () => {
+    wireLog.info('doc_update', 'updated')
+    wireLog.trace('ws_out', 'frame')
+    expect(console.info).toHaveBeenCalledOnce()
+    expect(console.debug).not.toHaveBeenCalled()
+    useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'trace'
+    wireLog.trace('ws_out', 'frame')
+    expect(console.debug).toHaveBeenCalledOnce()
+    expect(devEvents.value).toHaveLength(3)
   })
 })

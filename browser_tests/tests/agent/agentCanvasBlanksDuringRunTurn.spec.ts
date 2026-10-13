@@ -14,7 +14,7 @@ import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameC
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
-} from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+} from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import {
   agentTest as test,

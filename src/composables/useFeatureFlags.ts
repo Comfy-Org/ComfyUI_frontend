@@ -358,6 +358,12 @@ export function useFeatureFlags() {
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     },
+    get agentCrdtDebugEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.AGENT_CRDT_DEBUG,
+        remoteConfig.value['Comfy.Agent.CrdtDebug']
+      )
+    },
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,

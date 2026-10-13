@@ -7,12 +7,12 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const test = mergeTests(agentConversationTest, hostTelemetryFixture)
+test.use({ crdtDebugEnabled: true })
 
 const CASE = 'agent-rec-clear-workflow'
 
 async function enableCrdtDebugPanel(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
     localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   })
 }

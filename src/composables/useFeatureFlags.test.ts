@@ -45,6 +45,19 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
+  it.for([
+    { value: undefined, enabled: false },
+    { value: false, enabled: false },
+    { value: true, enabled: true }
+  ])(
+    'resolves CRDT diagnostics from the flag: $value',
+    ({ value, enabled }) => {
+      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': value }
+      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+      expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(enabled)
+    }
+  )
+
   describe('flags object', () => {
     it('should provide reactive readonly flags', () => {
       const { flags } = useFeatureFlags()

@@ -27,7 +27,7 @@ const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -64,9 +64,7 @@ const restore = () => screen.queryByTestId('crdt-dev-panel-restore')
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
     localStorage.clear()
-    // The gate caches its value, so clearing storage behind it is not enough
-    // to undo a previous test's dismissal.
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     reportError.mockClear()
   })
@@ -157,7 +155,7 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
     expect(restore()).toBeTruthy()
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('true')
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
 
     await user.click(restore()!)
 
@@ -166,7 +164,7 @@ describe('CrdtDevPanel', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe(
       'false'
     )
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
   })
 
   it('keeps the restore affordance across a remount', async () => {

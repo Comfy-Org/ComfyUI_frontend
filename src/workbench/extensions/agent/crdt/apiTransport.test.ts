@@ -6,7 +6,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
 import { api } from '@/scripts/api'
 
 import { createLoggedTransport } from './agentCrdtTransport'
-import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
@@ -48,7 +49,7 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('leaves the frame unparsed while the debug instrument is off', () => {
-    setCrdtDebugEnabled(false)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
     const parse = vi.spyOn(JSON, 'parse')
 
     expect(createLoggedTransport().send(frame)).toBe(true)
@@ -58,7 +59,7 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('records the parsed frame while the instrument is on', () => {
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
 
     expect(createLoggedTransport().send(frame)).toBe(true)
 
@@ -69,8 +70,8 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('redacts outbound frame content in both console and stored events', () => {
-    setCrdtDebugEnabled(true)
-    setCrdtLogLevel('trace')
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    useSettingStore().settingValues['Comfy.Agent.CrdtDebug.Level'] = 'trace'
     const sensitiveFrame = JSON.stringify({
       type: 'doc_ops',
       token: 'secret-token',
@@ -100,7 +101,7 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('keeps an unparsed outbound frame out of the buffer and the copied report', () => {
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     const transport = createLoggedTransport()
 
     expect(transport.send('not json')).toBe(true)

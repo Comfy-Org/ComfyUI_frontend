@@ -45,6 +45,7 @@ const defaultFlags: FeatureFlags = {
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
   assetsEnabled: false,
+  agentCrdtDebugEnabled: false,
   agentInAppExperienceEnabled: false
 }
 
