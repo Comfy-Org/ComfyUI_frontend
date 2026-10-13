@@ -32,7 +32,7 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['list', 'steps', 'pricing', 'faq'],
+  sectionOrder: ['list', 'steps', 'pricing', 'faq', 'highlight'],
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
@@ -287,12 +287,12 @@ export const fishAudioPage: ModelLaunchPage = {
     subtitleKey: 'fishAudio.runOptions.subtitle',
     ctaKey: 'fishAudio.runOptions.cta'
   },
+  highlight: {
+    titleKey: 'fishAudio.reviews.highlightTitle',
+    descriptionKey: 'fishAudio.reviews.highlightDescription',
+    ctaKey: 'fishAudio.reviews.highlightCta'
+  },
   reviews: {
-    headingKey: 'fishAudio.reviews.heading',
-    highlight: {
-      titleKey: 'fishAudio.reviews.highlightTitle',
-      descriptionKey: 'fishAudio.reviews.highlightDescription',
-      ctaKey: 'fishAudio.reviews.highlightCta'
-    }
+    headingKey: 'fishAudio.reviews.heading'
   }
 }
