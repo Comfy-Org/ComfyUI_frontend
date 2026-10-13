@@ -65,7 +65,7 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         en: 'SDR in, HDR out. Best viewed on an HDR display.',
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
       },
-      src: '/nvidia-rtx/sdr-to-hdr.mp4'
+      src: 'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4'
     }
   ]
 }
