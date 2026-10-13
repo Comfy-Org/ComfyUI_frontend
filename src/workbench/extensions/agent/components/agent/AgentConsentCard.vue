@@ -68,7 +68,10 @@ function choose(action: 'accept' | 'reject'): void {
     </Button>
   </DefineDocsLink>
 
-  <div ref="containerRef" class="dark-theme @container w-full max-w-[640px]">
+  <div
+    ref="containerRef"
+    class="dark-theme @container w-[min(640px,calc(100vw-2rem))]"
+  >
     <div
       data-testid="agent-consent-card"
       class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
