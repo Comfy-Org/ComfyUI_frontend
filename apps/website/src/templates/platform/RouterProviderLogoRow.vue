@@ -16,7 +16,7 @@ const mobileRow2Providers = providers.slice(Math.ceil(providers.length / 2))
   <section class="overflow-hidden">
     <ul
       v-if="!animated"
-      class="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 lg:grid lg:grid-cols-2 xl:flex xl:flex-nowrap xl:gap-x-20"
+      class="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 lg:gap-x-32 xl:flex-nowrap xl:gap-x-16"
       role="list"
     >
       <li

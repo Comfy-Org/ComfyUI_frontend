@@ -45,22 +45,27 @@ const supportedProviders = [
   {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
-    logoClass: 'h-8.25 w-auto'
+    logoClass: 'h-8.25 w-auto xl:h-6.5'
   },
   {
     name: 'fal',
     src: '/icons/router-providers/fal.svg',
-    logoClass: 'h-10 w-auto'
+    logoClass: 'h-10 w-auto xl:h-8.5'
   },
   {
     name: 'WaveSpeed',
     src: '/icons/router-providers/wavespeed.svg',
-    logoClass: 'h-9 w-auto'
+    logoClass: 'h-9 w-auto xl:h-7'
   },
   {
     name: 'Higgsfield',
     src: '/icons/router-providers/higgsfield.svg',
-    logoClass: 'h-10 w-auto'
+    logoClass: 'h-10 w-auto xl:h-8.5'
+  },
+  {
+    name: 'Pika',
+    src: '/icons/router-providers/pika-wordmark.svg',
+    logoClass: 'h-8 w-auto xl:h-7.5'
   }
 ]
 </script>
