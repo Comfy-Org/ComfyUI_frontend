@@ -168,11 +168,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  // The file's declared size/type and the failure's shape (status code,
-  // timeout, abort) are safe, bounded context. The caught error's own
-  // message/stack are not reported: they can carry a local file path (e.g. a
-  // dropped file's full source path), which is why this always reports a
-  // fresh synthetic Error rather than the original cause.
   function uploadFailureCause(cause: unknown): string {
     if (cause instanceof AgentApiError) return `http_${cause.status}`
     if (cause instanceof AgentResponseUnreadableError)
