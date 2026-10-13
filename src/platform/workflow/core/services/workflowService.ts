@@ -450,20 +450,20 @@ export const useWorkflowService = () => {
   /**
    * `workflowStore.openWorkflow` appends the tab before awaiting the file
    * fetch, so an activation that rejected mid-fetch leaves an unloaded tab
-   * behind. Only tabs the failed activation added are dropped, and never one
+   * behind. Only the tab the failed activation added is dropped, and never one
    * holding a draft: closing a workflow also removes its draft.
    */
-  const dropPhantomTabs = async (tabsOpenBefore: ReadonlySet<string>) => {
+  const dropPhantomTab = async (opened: ComfyWorkflow) => {
     const workflowStore = useWorkspaceStore().workflow
-    const phantoms = workflowStore.openWorkflows.filter(
-      (open) =>
-        !tabsOpenBefore.has(open.path) &&
-        !open.isLoaded &&
-        !workflowStore.isActive(open) &&
-        !workflowDraftStore.getDraft(open.path)
+    if (
+      opened.isLoaded ||
+      !workflowStore.isOpen(opened) ||
+      workflowStore.isActive(opened) ||
+      workflowDraftStore.getDraft(opened.path)
     )
+      return
     try {
-      for (const phantom of phantoms) await workflowStore.closeWorkflow(phantom)
+      await workflowStore.closeWorkflow(opened)
     } catch (error) {
       reportError(error, {
         surface: 'graph',
@@ -777,14 +777,14 @@ export const useWorkflowService = () => {
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const activeBefore = workflowStore.activeWorkflow
-    const tabsOpenBefore = new Set(
-      workflowStore.openWorkflows.map((open) => open.path)
-    )
+    let openedTab: ComfyWorkflow | undefined
     const graphState = useApp().rootGraphOrUndefined?.state
     const isSuperseded = () =>
       graphState !== useApp().rootGraphOrUndefined?.state
     try {
-      await activateLoadedWorkflow(value, workflowData, shareId)
+      await activateLoadedWorkflow(value, workflowData, shareId, (workflow) => {
+        if (!workflowStore.isOpen(workflow)) openedTab = workflow
+      })
       if (isSuperseded()) return
       useNodeOutputStore().restorePreviewsForWorkflow(
         workflowStore.activeWorkflow?.path
@@ -796,7 +796,7 @@ export const useWorkflowService = () => {
       const active = workflowStore.activeWorkflow
       if (!active || toRaw(active) === toRaw(activeBefore))
         await repaintAfterFailedActivation(active)
-      await dropPhantomTabs(tabsOpenBefore)
+      if (openedTab) await dropPhantomTab(openedTab)
       throw error
     }
   }
@@ -804,10 +804,15 @@ export const useWorkflowService = () => {
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    onOpen?: (workflow: ComfyWorkflow) => void
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
+    const openTab = (workflow: ComfyWorkflow) => {
+      onOpen?.(workflow)
+      return workflowStore.openWorkflow(workflow)
+    }
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
@@ -855,8 +860,7 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow =
-            await workflowStore.openWorkflow(existingWorkflow)
+          const loadedWorkflow = await openTab(existingWorkflow)
           if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
@@ -892,13 +896,13 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await openTab(tempWorkflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
-    const loadedWorkflow = await workflowStore.openWorkflow(value)
+    const loadedWorkflow = await openTab(value)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {

@@ -2541,6 +2541,28 @@ describe('useWorkflowService', () => {
       }
     )
 
+    it('keeps a tab another activation opened while this one was fetching', async () => {
+      const { unfetchable } = setUpRetainedWithUnfetchable()
+      const workflowStore = useWorkflowStore()
+      const concurrent = createUnfetchableWorkflow('workflows/concurrent.json')
+      workflowStore.attachWorkflow(concurrent)
+      vi.mocked(unfetchable.load).mockImplementationOnce(async () => {
+        workflowStore.openWorkflowsInBackground({
+          right: ['workflows/concurrent.json']
+        })
+        throw new Error('Failed to load file')
+      })
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(openPaths()).toEqual([
+        'workflows/retained.json',
+        'workflows/concurrent.json'
+      ])
+    })
+
     it('leaves a newer load in place when the rejected activation was superseded', async () => {
       const { unfetchable } = setUpRetainedWithUnfetchable()
       const graphState = vi

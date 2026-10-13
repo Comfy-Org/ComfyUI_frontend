@@ -434,6 +434,7 @@ export class ComfyApp implements IComfyApp {
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
   private readonly pendingGraphLoads = new Set<number>()
+  private builtGraphActivations = 0
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1191,6 +1192,7 @@ export class ComfyApp implements IComfyApp {
    * the built graph into the retained workflow's change tracker.
    */
   private async activateBuiltGraph(fileName: string) {
+    this.builtGraphActivations++
     ChangeTracker.isLoadingGraph = true
     try {
       await useWorkflowService().afterLoadNewGraph(
@@ -1198,8 +1200,14 @@ export class ComfyApp implements IComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
     } finally {
-      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
+      this.builtGraphActivations--
+      this.syncLoadingGraphGuard()
     }
+  }
+
+  private syncLoadingGraphGuard() {
+    ChangeTracker.isLoadingGraph =
+      this.pendingGraphLoads.size > 0 || this.builtGraphActivations > 0
   }
 
   async loadGraphData(
@@ -1228,8 +1236,7 @@ export class ComfyApp implements IComfyApp {
     ChangeTracker.isLoadingGraph = true
     const releaseGraphLoad = () => {
       this.pendingGraphLoads.delete(loadId)
-      if (this.pendingGraphLoads.size === 0)
-        ChangeTracker.isLoadingGraph = false
+      this.syncLoadingGraphGuard()
     }
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
@@ -1643,7 +1650,7 @@ export class ComfyApp implements IComfyApp {
         if (pendingLoadId <= loadId)
           this.pendingGraphLoads.delete(pendingLoadId)
       }
-      ChangeTracker.isLoadingGraph = this.pendingGraphLoads.size > 0
+      this.syncLoadingGraphGuard()
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined

@@ -1289,6 +1289,36 @@ describe('ComfyApp', () => {
         expect(ChangeTracker.isLoadingGraph).toBe(false)
       }
     )
+
+    it('keeps the graph-load guard until overlapping imports both finish activating', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      let finishFirst = () => {}
+      let failSecond = (_error: Error) => {}
+      mockWorkflowService.afterLoadNewGraph
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishFirst = resolve))
+        )
+        .mockImplementationOnce(
+          () => new Promise<void>((_, reject) => (failSecond = reject))
+        )
+
+      const firstImport = app.loadApiJson({}, 'first')
+      const secondImport = app.loadApiJson({}, 'second')
+      await vi.waitFor(() =>
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledTimes(2)
+      )
+      finishFirst()
+      await firstImport
+
+      expect(ChangeTracker.isLoadingGraph).toBe(true)
+
+      failSecond(new Error('Failed to load file'))
+      await expect(secondImport).rejects.toThrow('Failed to load file')
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+    })
   })
 
   describe('nodeOutputs', () => {
