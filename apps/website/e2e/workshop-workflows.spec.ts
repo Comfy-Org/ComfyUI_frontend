@@ -360,7 +360,11 @@ test('the workflows narrow by what they start from and what they make, from the 
 
   await page.getByTestId('workshop-filter').click()
   const dialog = page.getByRole('dialog', { name: 'Filters' })
-  await expect(dialog.getByRole('tab')).toHaveText(['Input', 'Output', 'Model'])
+  await expect(dialog.getByRole('tab')).toHaveText([
+    'Input',
+    'Output',
+    'Models'
+  ])
   await dialog.getByRole('tab', { name: 'Output' }).click()
   await dialog.getByRole('button', { name: 'Image 16' }).click()
   await expect(page.getByTestId('workshop-filter-chips')).toContainText(
@@ -370,7 +374,7 @@ test('the workflows narrow by what they start from and what they make, from the 
     'Showing 12 of 16'
   )
 
-  await expect(dialog.getByRole('tab')).toHaveText([/^Output/, 'Model'])
+  await expect(dialog.getByRole('tab')).toHaveText([/^Output/, 'Models'])
 
   await page.goto('/hub/workflows/?input=audio')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
