@@ -285,7 +285,7 @@ describe('rumBeforeSend', () => {
           ext: '/extensions/comfyui-foo/main.js',
           message: 'ReferenceError: broken',
           stack:
-            'ReferenceError: broken\n    at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
+            'ReferenceError: broken\n    at load (https://cloud.comfy.org/assets/app.js:12:3)'
         }
       ]
     }
