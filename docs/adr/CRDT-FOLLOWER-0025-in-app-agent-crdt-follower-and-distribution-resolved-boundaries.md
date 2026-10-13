@@ -311,6 +311,37 @@ reseed resets the lineage, another refusal cannot be answered until the
 replacement subscription is confirmed, the transport reconnects, or the user
 retargets. All other whole-graph sends remain rejected.
 
+## Amendment (2026-10-12): one agent socket on every backend
+
+This supersedes the "Today the follower uses `api.socket`" paragraph and the
+`/ws` risk bullet above. The follower no longer uses `api.socket`. Cloud ingest
+and the local agent now serve the same contract, so the connection module
+described above is not needed:
+
+- **One socket.** Agent events and document frames share
+  `/api/agent/events`. Its path comes from `api.apiURL`, as every agent REST
+  path does. The credential is sent as `?token=` because a browser cannot set
+  WebSocket headers. The transport has no distribution branch.
+- **Identity from the backend.** Ops carry `human:<user_id>:<tab>` with the id
+  from `GET /api/agent/identity`. The Firebase uid is not the backend user id
+  for identity-mapped accounts.
+- **Credential.** Agent REST requests carry the user's own auth header
+  (`getUserAuthHeader`), the same hand-off `queuePrompt` makes for partner
+  nodes, because a local build's `fetchApi` attaches none. In the cloud,
+  `fetchApi` still applies its workspace credential. The socket token comes
+  from `getAuthHeader()`.
+- **Development exception.** A signed-out send in a development standalone
+  build skips the sign-in dialog, because the dev proxy can supply a
+  credential (`DEV_AGENT_COMFY_TOKEN`). This is the only product-code branch
+  on development mode.
+
+Rejected: keeping `/ws` in the cloud and adding a second socket for the local
+agent. That would keep two transports and a distribution branch in the
+follower.
+
+The remaining risk is the agent socket itself. The Playwright agent suites
+serve both chat and document frames on `/api/agent/events`.
+
 ## Product gate and developer diagnostics (amended 2026-09-12)
 
 The runtime product flag, not a build flag, controls follower transport. The
