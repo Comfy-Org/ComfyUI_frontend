@@ -63,15 +63,31 @@ function bytesMatch(bytes: Uint8Array, offset: number, expected: string) {
 
 type VideoContainerCheck = (bytes: Uint8Array) => boolean
 
+const ISO_BASE_MEDIA_BOXES = [
+  'ftyp',
+  'moov',
+  'mdat',
+  'wide',
+  'free',
+  'skip',
+  'pnot'
+] as const
+const EBML_MAGIC = '\x1a\x45\xdf\xa3'
+
+function isIsoBaseMedia(bytes: Uint8Array) {
+  return ISO_BASE_MEDIA_BOXES.some((box) => bytesMatch(bytes, 4, box))
+}
+
+function isEbml(bytes: Uint8Array) {
+  return bytesMatch(bytes, 0, EBML_MAGIC)
+}
+
 const VIDEO_CONTAINER_CHECKS: Partial<Record<string, VideoContainerCheck>> = {
-  mp4: (bytes) => bytesMatch(bytes, 4, 'ftyp'),
-  m4v: (bytes) => bytesMatch(bytes, 4, 'ftyp'),
-  mov: (bytes) =>
-    ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'pnot'].some((atom) =>
-      bytesMatch(bytes, 4, atom)
-    ),
-  webm: (bytes) => bytesMatch(bytes, 0, '\x1a\x45\xdf\xa3'),
-  mkv: (bytes) => bytesMatch(bytes, 0, '\x1a\x45\xdf\xa3'),
+  mp4: isIsoBaseMedia,
+  m4v: isIsoBaseMedia,
+  mov: isIsoBaseMedia,
+  webm: isEbml,
+  mkv: isEbml,
   avi: (bytes) => bytesMatch(bytes, 0, 'RIFF') && bytesMatch(bytes, 8, 'AVI ')
 } satisfies Record<VideoExtension, VideoContainerCheck>
 

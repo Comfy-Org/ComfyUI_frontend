@@ -125,6 +125,20 @@ describe('isValidAgentAttachment', () => {
   )
 
   it.for([
+    { name: 'legacy.mp4', atom: 'moov' },
+    { name: 'legacy.mp4', atom: 'mdat' },
+    { name: 'legacy.m4v', atom: 'moov' },
+    { name: 'legacy.m4v', atom: 'mdat' }
+  ])(
+    'accepts $name beginning with $atom without ftyp',
+    async ({ name, atom }) => {
+      await expect(
+        isValidAgentAttachment(new File(['\0\0\0\x08', atom], name))
+      ).resolves.toBe(true)
+    }
+  )
+
+  it.for([
     { name: 'renamed.mp4', contents: 'not a video' },
     { name: 'renamed.m4v', contents: 'not a video' },
     { name: 'renamed.mov', contents: 'not a video' },
