@@ -1325,7 +1325,7 @@
       "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。",
       "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。",
       "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
-      "a4": "我们的 SOC 2 Type II 审计已完成，Type II 报告可应要求提供。安全文档和实时控制状态可在我们的 [信任中心](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看；在企业版咨询过程中，我们的团队也可以详细讲解安全要求。",
+      "a4": "SOC 2 Type II 审计已完成，Type II 报告可应要求提供。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
       "q1": "如何获取 MiniMax 商业许可？",
       "q2": "什么是前沿驻场创意人才？",
@@ -3127,7 +3127,7 @@
     "customers": {
       "enterprise": {
         "cta": "联系销售",
-        "description": "Managed Builds：在整个集群中提供经批准的检查点、经过审核的节点和部署治理。SOC 2 Type II 审计已完成。",
+        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 Type II 审计已完成。",
         "title": "企业"
       },
       "heading": "从一块 GPU 到一整座渲染农场",
@@ -3208,7 +3208,7 @@
         "q": "生成结果会保留多久？"
       },
       "7": {
-        "a": "我们的 SOC 2 Type II 审计已完成，报告可应要求提供。请联系我们获取安全文档。",
+        "a": "SOC 2 Type II 审计已完成，报告可应要求提供。欢迎联系我们了解安全文档。",
         "q": "平台通过 SOC 2 认证了吗？"
       },
       "8": {
@@ -3575,7 +3575,7 @@
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "新用户可在真实 GPU 上免费运行 5 次，并获得免费的 Comfy Agent 额度",
+      "subtitle": "在真实 GPU 上免费运行 5 次，新用户还可获得免费的 Comfy Agent 积分",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
     },
     "comfyApi": {
@@ -3594,7 +3594,7 @@
         "concurrency": "最大工作节点并发数（每个部署）",
         "deployments": "部署总数上限"
       },
-      "subtitle": "Comfy API 可让您将工作流部署为生产级 API。GPU 使用时间和存储空间按秒计费；构建、部署和并发限制取决于您的套餐。"
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；构建、部署与并发限制取决于你的套餐。"
     },
     "creditsLabel": "每月积分",
     "creditsLabelYearly": "年度积分",
@@ -4278,12 +4278,12 @@
     },
     "feature2": {
       "cta": "探索 Comfy Agent",
-      "description": "描述您的需求，Comfy Agent 会为您构建并运行工作流。",
+      "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
       "title": "Comfy Agent"
     },
     "feature3": {
       "cta": "探索 Comfy API",
-      "description": "只需一个 API，即可从您自己的应用运行 Comfy 工作流和模型。",
+      "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
       "title": "Comfy API"
     },
     "subtitle1": "在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。",
