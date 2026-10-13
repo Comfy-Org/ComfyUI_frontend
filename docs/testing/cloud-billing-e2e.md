@@ -40,6 +40,3 @@ are blocked in both browser routing and Playwright API clients.
 Use a dedicated sandbox account. Checkout recovery tests in #17481 additionally
 require a personal workspace with no paid plan or saved card. Those tests own
 the account preflight and direct API assertions.
-
-For cancellation discount semantics and the applied-expiry API follow-up, see
-[Cancellation retention offer](../architecture/cloud-retention-offer.md).
