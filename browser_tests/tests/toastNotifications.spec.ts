@@ -79,6 +79,19 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     )
   })
 
+  test('A toast raised before a dialog opens stays above it', async ({
+    comfyPage
+  }) => {
+    await triggerErrorToast(comfyPage)
+    await comfyPage.settingDialog.open()
+    const errorToast = comfyPage.toast.withText('Test execution error')
+
+    await comfyPage.toast.dismiss(errorToast)
+
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+    await expect(comfyPage.settingDialog.root).toBeVisible()
+  })
+
   for (const { dialog, open, closeButton } of [
     {
       dialog: 'Settings',
