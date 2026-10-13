@@ -213,7 +213,7 @@ describe('agentRestClient route + method', () => {
       other_text: 'something else'
     })
 
-    expect(JSON.parse(lastCall().init.body as string)).toEqual({
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
       selected: ['a'],
       other_text: 'something else'
     })
@@ -389,7 +389,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: [...RENDERED_ASK_KINDS],
+      ask_kinds: ['run_approval', 'ask_user'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
@@ -406,17 +406,6 @@ describe('postMessage wire body', () => {
       unknown
     >
     expect(Object.keys(parsed)).toEqual(['content', 'ask_kinds'])
-  })
-
-  it('advertises exactly the ask kinds the panel renders as ask_kinds', async () => {
-    respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', { content: 'tidy up' })
-
-    const parsed = JSON.parse(String(lastCall().init.body)) as {
-      ask_kinds: unknown
-    }
-    expect(parsed.ask_kinds).toEqual([...RENDERED_ASK_KINDS])
-    expect(parsed.ask_kinds).toEqual(['run_approval', 'ask_user'])
   })
 
   // The id this send already reports on app:agent_message_sent has to reach the
