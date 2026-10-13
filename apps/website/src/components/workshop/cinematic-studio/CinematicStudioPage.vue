@@ -2,7 +2,15 @@
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useEventListener, useMounted } from '@vueuse/core'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import type { Component } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
@@ -49,7 +57,19 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot'] as const
+/** A full-screen editor app: its page and its name in the review menu. */
+interface EditorApp {
+  readonly id: WorkshopAppId
+  readonly studio: Component
+  readonly label: (locale: Locale) => string
+}
+
+const EDITOR_APPS: readonly EditorApp[] = []
+const APPS: readonly WorkshopAppId[] = [
+  'studio',
+  'reshoot',
+  ...EDITOR_APPS.map(({ id }) => id)
+]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -100,6 +120,24 @@ watch(
     })
   }
 )
+const editorApp = computed(() => EDITOR_APPS.find(({ id }) => id === app.value))
+const appEditorShown = computed(
+  () =>
+    mounted.value &&
+    workshopEnabled.value &&
+    studioEnabled.value &&
+    layout.value !== 'hub' &&
+    editorApp.value !== undefined
+)
+const fullScreen = computed(
+  () => appEditorShown.value || (mounted.value && editorShown.value)
+)
+watch(fullScreen, (shown) =>
+  document.documentElement.toggleAttribute('data-workshop-editor', shown)
+)
+onBeforeUnmount(() =>
+  document.documentElement.removeAttribute('data-workshop-editor')
+)
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({
     id: option.id,
@@ -115,7 +153,8 @@ const appOptions = computed(() =>
     {
       id: 'reshoot',
       label: t('reshoot.title')
-    }
+    },
+    ...EDITOR_APPS.map(({ id, label }) => ({ id, label: label(locale) }))
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -218,6 +257,7 @@ function pickApp(id: string) {
       :starter
       :locale
     />
+    <component :is="editorApp.studio" v-else-if="editorApp" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
@@ -229,11 +269,11 @@ function pickApp(id: string) {
       v-if="reviewing"
       :app
       :layout
+      :editor="editorShown || appEditorShown"
       :apps="appOptions"
       :layouts="layoutOptions"
       :app-heading="t('cinematic.ux.app')"
       :layout-heading="t('cinematic.ux.heading')"
-      :editor="editorShown"
       @update:app="pickApp"
       @update:layout="pickLayout"
     />

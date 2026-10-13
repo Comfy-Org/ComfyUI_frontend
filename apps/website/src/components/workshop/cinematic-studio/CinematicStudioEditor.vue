@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -133,13 +125,9 @@ const panelLabels = computed(() => ({
 }))
 
 onMounted(() => {
-  document.documentElement.setAttribute('data-workshop-editor', '')
   const shot = findStarter(starter)
   if (shot) start(shot)
 })
-onBeforeUnmount(() =>
-  document.documentElement.removeAttribute('data-workshop-editor')
-)
 </script>
 
 <template>
