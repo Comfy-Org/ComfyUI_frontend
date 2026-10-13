@@ -107,6 +107,7 @@ const metaLabels = computed(() =>
         class="mt-3 flex flex-wrap items-center gap-x-6 text-sm text-primary-warm-gray tabular-nums md:hidden"
       >
         <span v-for="label in metaLabels" :key="label">{{ label }}</span>
+        <span v-if="durationLabel">{{ durationLabel }}</span>
         <a
           v-if="ctaLabel"
           :href="item.href"
@@ -116,7 +117,6 @@ const metaLabels = computed(() =>
         >
           {{ ctaLabel }}
         </a>
-        <span v-if="durationLabel">{{ durationLabel }}</span>
       </p>
     </div>
 
@@ -130,6 +130,9 @@ const metaLabels = computed(() =>
       >
         {{ label }}
       </span>
+      <span v-if="durationLabel" class="min-w-12 text-right">
+        {{ durationLabel }}
+      </span>
       <a
         v-if="ctaLabel"
         :href="item.href"
@@ -139,9 +142,6 @@ const metaLabels = computed(() =>
       >
         {{ ctaLabel }}
       </a>
-      <span v-if="durationLabel" class="min-w-12 text-right">
-        {{ durationLabel }}
-      </span>
     </div>
 
     <CopyTextButton
