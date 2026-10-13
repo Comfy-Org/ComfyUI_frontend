@@ -49,7 +49,11 @@ const beforeAfter: ModelLaunchBeforeAfter = {
       en: 'SDR-to-HDR: SDR in, HDR out. Best viewed on an HDR display.',
       'zh-CN': 'SDR 转 HDR：输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
     }
-  ]
+  ],
+  cta: {
+    labelKey: 'nvidiaRtx.beforeAfter.cta',
+    href: nvidiaRtxLinks.cloud
+  }
 }
 
 export const nvidiaRtxPage: ModelLaunchPage = {

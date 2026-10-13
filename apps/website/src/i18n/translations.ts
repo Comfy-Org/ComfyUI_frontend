@@ -7879,6 +7879,7 @@ Enterprise`
     en: 'One clip, two states.',
     'zh-CN': '一段视频，两种状态。'
   },
+  'nvidiaRtx.beforeAfter.cta': { en: 'TRY NOW', 'zh-CN': '立即试用' },
   'nvidiaRtx.gallery.heading': {
     en: 'Made on NVIDIA RTX',
     'zh-CN': '在 NVIDIA RTX 上创作'

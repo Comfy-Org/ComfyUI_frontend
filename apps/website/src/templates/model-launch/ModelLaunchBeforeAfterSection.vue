@@ -52,6 +52,19 @@ const activeTab = computed(
             {{ feature[locale] || feature.en }}
           </li>
         </ul>
+        <a
+          v-if="beforeAfter.cta"
+          :href="beforeAfter.cta.href"
+          :target="beforeAfter.cta.target"
+          :rel="
+            beforeAfter.cta.target === '_blank'
+              ? 'noopener noreferrer'
+              : undefined
+          "
+          class="mt-8 self-start rounded-sm text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        >
+          {{ t(beforeAfter.cta.labelKey, locale) }}
+        </a>
       </div>
       <div class="w-full min-w-0 flex-1">
         <video

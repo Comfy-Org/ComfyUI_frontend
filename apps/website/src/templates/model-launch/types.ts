@@ -221,6 +221,8 @@ interface ModelLaunchBeforeAfterTabs extends ModelLaunchBeforeAfterBase {
 interface ModelLaunchBeforeAfterClip extends ModelLaunchBeforeAfterBase {
   src: string
   features: readonly LocalizedText[]
+  // A text link under the features, e.g. into the Comfy Cloud workflow.
+  cta?: ModelLaunchCta
 }
 
 export type ModelLaunchBeforeAfter =
