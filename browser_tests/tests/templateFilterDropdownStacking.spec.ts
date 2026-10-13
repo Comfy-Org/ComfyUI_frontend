@@ -7,11 +7,6 @@ import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
-/**
- * End-to-end guard that the templates filter options are on top and clickable.
- * The lift itself is pinned in useModalLiftedZIndex.test.ts and
- * modalLayerStack.test.ts.
- */
 test.describe('Template filter dropdown stacking', () => {
   test.beforeEach(async ({ comfyPage, templateApi }) => {
     templateApi.configure(

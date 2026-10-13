@@ -1,5 +1,4 @@
 export const MODAL_Z_BASE = 1700
-/** Toasts stay above every modal layer, whichever opened first. */
 export const TOAST_Z_INDEX = 9999
 export const MODAL_LAYER_SELECTOR = '[data-modal-layer]'
 

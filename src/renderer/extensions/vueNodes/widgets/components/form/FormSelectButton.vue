@@ -68,7 +68,6 @@ const {
 
 const emit = defineEmits<Emits>()
 
-// Handle both string/number arrays and object arrays.
 const getOptionValue = (option: T, index: number): ModelValue => {
   if (typeof option !== 'object') {
     return option as ModelValue
@@ -85,7 +84,6 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   return value as ModelValue
 }
 
-// Resolve the option label for display.
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
     const labelField = optionLabel

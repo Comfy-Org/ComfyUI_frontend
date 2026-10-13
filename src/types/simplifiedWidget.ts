@@ -88,7 +88,6 @@ export interface SimplifiedWidget<
   /** Override for use with subgraph promoted asset widgets*/
   nodeType?: string
 
-  /** Widget options including filtered presentation props */
   options?: O
 
   /** Optional serialization method for custom value handling */

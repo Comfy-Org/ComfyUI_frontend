@@ -1,4 +1,3 @@
-/** Fill matches the social buttons. */
 export const CLOUD_AUTH_FIELD_CLASS =
   'h-11 rounded-2xl bg-transparency-white-t8 text-primary-warm-white placeholder:text-transparency-white-t40 xl:h-12 **:data-[slot=input-group-control]:placeholder:text-transparency-white-t40 **:data-[slot=input-group-button]:text-primary-comfy-canvas/70'
 
