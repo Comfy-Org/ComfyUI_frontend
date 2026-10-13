@@ -37,10 +37,6 @@
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
           />
-          <i
-            v-if="isHdrImageUrl(imageUrls[index])"
-            class="absolute top-1 left-1 icon-[lucide--sun] size-4 text-base-foreground drop-shadow-sm"
-          />
         </div>
         <div
           v-else
