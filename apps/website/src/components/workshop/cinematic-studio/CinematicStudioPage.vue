@@ -2,6 +2,7 @@
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useEventListener, useMounted } from '@vueuse/core'
+import type { Component } from 'vue'
 import {
   computed,
   onBeforeUnmount,
@@ -32,21 +33,21 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioEditor from './CinematicStudioEditor.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
-import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnythingStudio.vue'
-import RelightStudio from '@/components/workshop/relight/RelightStudio.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
-import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
-import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
-import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
-import BackgroundRemovalStudio from '@/components/workshop/background-removal/BackgroundRemovalStudio.vue'
 import VirtualTryOnStudio from '@/components/workshop/virtual-try-on/VirtualTryOnStudio.vue'
-import { mc } from '@/lib/workshop/move-anything/copy'
-import { lc } from '@/lib/workshop/relight/copy'
-import { hc } from '@/lib/workshop/hand-product-swap/copy'
-import { spc } from '@/lib/workshop/sprite-sheet/copy'
-import { pc } from '@/lib/workshop/paparazzi-me/copy'
-import { brc } from '@/lib/workshop/background-removal/copy'
 import { vc } from '@/lib/workshop/virtual-try-on/copy'
+import BackgroundRemovalStudio from '@/components/workshop/background-removal/BackgroundRemovalStudio.vue'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import RelightStudio from '@/components/workshop/relight/RelightStudio.vue'
+import { lc } from '@/lib/workshop/relight/copy'
+import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnythingStudio.vue'
+import { mc } from '@/lib/workshop/move-anything/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -70,25 +71,54 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = [
+/** A full-screen editor app: its page and its name in the review menu. */
+interface EditorApp {
+  readonly id: WorkshopAppId
+  readonly studio: Component
+  readonly label: (locale: Locale) => string
+}
+
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'move-anything',
+    studio: MoveAnythingStudio,
+    label: (locale) => mc('move.title', locale)
+  },
+  {
+    id: 'relight',
+    studio: RelightStudio,
+    label: (locale) => lc('relight.title', locale)
+  },
+  {
+    id: 'hand-product-swap',
+    studio: HandSwapStudio,
+    label: (locale) => hc('swap.title', locale)
+  },
+  {
+    id: 'sprite-sheet',
+    studio: SpriteSheetStudio,
+    label: (locale) => spc('sprite.title', locale)
+  },
+  {
+    id: 'paparazzi-me',
+    studio: PaparazziStudio,
+    label: (locale) => pc('paparazzi.title', locale)
+  },
+  {
+    id: 'background-removal',
+    studio: BackgroundRemovalStudio,
+    label: (locale) => brc('cutout.title', locale)
+  },
+  {
+    id: 'virtual-try-on',
+    studio: VirtualTryOnStudio,
+    label: (locale) => vc('tryOn.title', locale)
+  }
+]
+const APPS: readonly WorkshopAppId[] = [
   'studio',
   'reshoot',
-  'move-anything',
-  'relight',
-  'hand-product-swap',
-  'sprite-sheet',
-  'paparazzi-me',
-  'background-removal',
-  'virtual-try-on'
-] as const
-const EDITOR_APPS: readonly WorkshopAppId[] = [
-  'move-anything',
-  'relight',
-  'hand-product-swap',
-  'sprite-sheet',
-  'paparazzi-me',
-  'background-removal',
-  'virtual-try-on'
+  ...EDITOR_APPS.map(({ id }) => id)
 ]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
@@ -140,19 +170,25 @@ watch(
     })
   }
 )
+const editorApp = computed(() => EDITOR_APPS.find(({ id }) => id === app.value))
 const appEditorShown = computed(
   () =>
     mounted.value &&
     workshopEnabled.value &&
     studioEnabled.value &&
     layout.value !== 'hub' &&
-    EDITOR_APPS.includes(app.value)
+    editorApp.value !== undefined
 )
-watch(appEditorShown, (shown) => {
+const fullScreen = computed(
+  () => appEditorShown.value || (mounted.value && editorShown.value)
+)
+// Cleared before a switch renders and set after it, so a page that marks
+// itself full screen while mounted is never undone by the switch.
+watch(fullScreen, (shown) => {
   if (!shown) document.documentElement.removeAttribute('data-workshop-editor')
 })
 watch(
-  appEditorShown,
+  fullScreen,
   (shown) => {
     if (shown) document.documentElement.setAttribute('data-workshop-editor', '')
   },
@@ -177,34 +213,7 @@ const appOptions = computed(() =>
       id: 'reshoot',
       label: t('reshoot.title')
     },
-    {
-      id: 'move-anything',
-      label: mc('move.title', locale)
-    },
-    {
-      id: 'relight',
-      label: lc('relight.title', locale)
-    },
-    {
-      id: 'hand-product-swap',
-      label: hc('swap.title', locale)
-    },
-    {
-      id: 'sprite-sheet',
-      label: spc('sprite.title', locale)
-    },
-    {
-      id: 'paparazzi-me',
-      label: pc('paparazzi.title', locale)
-    },
-    {
-      id: 'background-removal',
-      label: brc('cutout.title', locale)
-    },
-    {
-      id: 'virtual-try-on',
-      label: vc('tryOn.title', locale)
-    }
+    ...EDITOR_APPS.map(({ id, label }) => ({ id, label: label(locale) }))
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
   )
@@ -291,17 +300,6 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
-    <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
-    <RelightStudio v-else-if="app === 'relight'" :layout :locale />
-    <HandSwapStudio v-else-if="app === 'hand-product-swap'" :layout :locale />
-    <SpriteSheetStudio v-else-if="app === 'sprite-sheet'" :layout :locale />
-    <PaparazziStudio v-else-if="app === 'paparazzi-me'" :layout :locale />
-    <BackgroundRemovalStudio
-      v-else-if="app === 'background-removal'"
-      :layout
-      :locale
-    />
-    <VirtualTryOnStudio v-else-if="app === 'virtual-try-on'" :layout :locale />
     <CinematicAppDetail
       v-else-if="detailShown && studioApp"
       :app="studioApp"
@@ -318,6 +316,7 @@ function pickApp(id: string) {
       :starter
       :locale
     />
+    <component :is="editorApp.studio" v-else-if="editorApp" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
