@@ -18,11 +18,11 @@ describe('ExploreDoors', () => {
         ])
     ).toEqual([
       [
-        'For developers',
+        'Run or call any model',
         'Call the latest models from your code. Try them here first.'
       ],
-      ['For ComfyUI users', 'Open the graph and change any step.'],
-      ['For creators', 'Upload, click, done. No nodes, no setup.']
+      ['Download and remix', 'Open the graph and change any step.'],
+      ['Make it in one click', 'Upload, click, done. No nodes, no setup.']
     ])
   })
 
