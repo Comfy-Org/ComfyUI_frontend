@@ -326,7 +326,7 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  shouldDeferSubscribe(): boolean {
+  private shouldDeferSubscribe(): boolean {
     return this.gaveUp || this.subscribeRetryTimer !== null
   }
 
