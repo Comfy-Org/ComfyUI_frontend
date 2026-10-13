@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
 import type {
-  agentSocketAuthParams as realAgentSocketParams,
+  agentSocketAuthParams as realAgentSocketAuthParams,
   ensureSignedIn as realEnsureSignedIn,
   hasAgentCredential as realHasAgentCredential,
   withAgentAuth as realWithAgentAuth
@@ -11,7 +11,7 @@ export const withAgentAuth = vi.fn<typeof realWithAgentAuth>(
   async (init) => init
 )
 
-export const agentSocketAuthParams = vi.fn<typeof realAgentSocketParams>(
+export const agentSocketAuthParams = vi.fn<typeof realAgentSocketAuthParams>(
   async () => new URLSearchParams()
 )
 
