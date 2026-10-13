@@ -12,7 +12,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
+import {
+  MAX_PROGRESS_JOBS,
+  MAX_SESSION_PATH_ENTRIES,
+  useExecutionStore
+} from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import {
@@ -2761,6 +2765,19 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
 
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToWorkflowId.size).toBe(1)
+  })
+
+  it('jobIdToWorkflowId evicts the oldest jobs beyond its cap', () => {
+    for (let i = 0; i < MAX_SESSION_PATH_ENTRIES + 5; i++) {
+      store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
+    }
+
+    expect(store.jobIdToWorkflowId.size).toBe(MAX_SESSION_PATH_ENTRIES)
+    expect(store.jobIdToWorkflowId.has('job-4')).toBe(false)
+    expect(store.jobIdToWorkflowId.get('job-5')).toBe('wf-5')
+    expect(
+      store.jobIdToWorkflowId.get(`job-${MAX_SESSION_PATH_ENTRIES + 4}`)
+    ).toBe(`wf-${MAX_SESSION_PATH_ENTRIES + 4}`)
   })
 
   it('ensureSessionWorkflowPath is idempotent and updates on change', () => {
