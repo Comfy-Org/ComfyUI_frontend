@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { LoaderCircle } from '@lucide/vue'
+import { ArrowRight, LoaderCircle } from '@lucide/vue'
 
-/** One ready-made start: a picture of it and its name. */
+import { cn } from '@comfyorg/tailwind-utils'
+
 interface EditorExample {
   readonly id: string
   readonly image: string
   readonly label: string
+  readonly result?: string
+  readonly thumb?: string
 }
 
-/**
- * The stage before anything is chosen: examples to start from. Uploading lives
- * in the panel, so the stage offers no upload of its own.
- */
+/** The stage before anything is chosen: the frame the result will fill, holding examples to start from. */
 const { title, hint, examples, loading } = defineProps<{
   title: string
   hint: string
   examples: readonly EditorExample[]
-  /** The example being fetched. */
   loading?: string
 }>()
 const emit = defineEmits<{ example: [id: string] }>()
@@ -24,45 +23,56 @@ const emit = defineEmits<{ example: [id: string] }>()
 
 <template>
   <section
-    class="my-auto flex w-full max-w-4xl flex-col gap-5 self-center rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light/80 p-5 backdrop-blur-sm sm:p-8"
+    class="my-auto flex w-full max-w-4xl flex-col gap-3 self-center rounded-2xl border border-dashed border-transparency-white-t20 p-4 sm:p-6"
   >
-    <div class="flex flex-col gap-1">
-      <h2 class="text-base font-medium text-primary-warm-white">
-        {{ title }}
-      </h2>
-      <p class="text-sm text-primary-warm-gray">{{ hint }}</p>
-    </div>
-    <ul class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <p class="text-sm text-primary-warm-white">
+      {{ title }}
+      <span class="text-primary-warm-gray">· {{ hint }}</span>
+    </p>
+    <ul :class="cn('grid gap-3', examples.length > 1 && 'sm:grid-cols-2')">
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
           :disabled="!!loading"
           :aria-busy="loading === example.id"
-          class="group flex w-full cursor-pointer flex-col gap-2 text-left focus-visible:outline-none disabled:cursor-default"
+          :aria-label="example.label"
+          class="group relative block aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-transparency-white-t8 text-left transition hover:border-primary-warm-white/50 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:cursor-default"
           @click="emit('example', example.id)"
         >
+          <img
+            :src="example.image"
+            alt=""
+            loading="lazy"
+            class="size-full object-cover transition group-hover:scale-[1.02]"
+          />
+          <img
+            v-if="example.thumb"
+            :src="example.thumb"
+            alt=""
+            loading="lazy"
+            class="absolute top-2.5 right-2.5 aspect-3/4 w-1/6 rounded-md border border-primary-warm-white/70 object-cover shadow-lg"
+          />
           <span
-            class="relative block aspect-video overflow-hidden rounded-xl border border-transparency-white-t8 transition group-hover:border-primary-warm-white/50 group-focus-visible:ring-3 group-focus-visible:ring-primary-comfy-yellow/50"
+            class="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-linear-to-t from-primary-comfy-ink/90 to-transparent px-3.5 pt-8 pb-3 text-sm text-primary-warm-white"
           >
-            <img
-              :src="example.image"
-              alt=""
-              loading="lazy"
-              class="size-full object-cover"
-            />
-            <span
-              v-if="loading === example.id"
-              class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
-            >
-              <LoaderCircle
-                class="size-6 text-primary-comfy-yellow motion-safe:animate-spin"
+            {{ example.label }}
+            <template v-if="example.result">
+              <ArrowRight
+                class="size-3.5 text-primary-warm-gray"
                 aria-hidden="true"
               />
-            </span>
+              {{ example.result }}
+            </template>
           </span>
-          <span class="text-sm text-primary-warm-white">{{
-            example.label
-          }}</span>
+          <span
+            v-if="loading === example.id"
+            class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
+          >
+            <LoaderCircle
+              class="size-6 text-primary-comfy-yellow motion-safe:animate-spin"
+              aria-hidden="true"
+            />
+          </span>
         </button>
       </li>
     </ul>
