@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "componentCount": 529,
+  "componentCount": 521,
   "documentedComponentCount": 69,
-  "missingStoryCount": 460,
+  "missingStoryCount": 452,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 276,
+    "page-local": 272,
     "reusable-candidate": 24,
-    "template-local": 124
+    "template-local": 120
   },
   "classifications": [
     {
@@ -79,11 +79,6 @@
     },
     {
       "source": "src/components/auth/AuthToast.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/blocks/HeroLivestream01.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -343,11 +338,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/gallery/ContactSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/gallery/GalleryCard.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -359,16 +349,6 @@
     },
     {
       "source": "src/components/gallery/GalleryItemAttribution.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/gallery/GallerySection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/gallery/HeroSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -479,11 +459,6 @@
     },
     {
       "source": "src/components/home/ProductShowcaseSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/home/VideoMaskScene.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1054,6 +1029,11 @@
     },
     {
       "source": "src/components/workshop/HighlightedCode.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/HubRowSeen.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1843,26 +1823,6 @@
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
-      "source": "src/templates/drops/CtaSection.vue",
-      "disposition": "template-local",
-      "reason": "Template-specific section; compose from cataloged blocks before promoting."
-    },
-    {
-      "source": "src/templates/drops/DropsSection.vue",
-      "disposition": "template-local",
-      "reason": "Template-specific section; compose from cataloged blocks before promoting."
-    },
-    {
-      "source": "src/templates/drops/HeroSection.vue",
-      "disposition": "template-local",
-      "reason": "Template-specific section; compose from cataloged blocks before promoting."
-    },
-    {
-      "source": "src/templates/drops/LaunchesHeroLogo.vue",
-      "disposition": "template-local",
-      "reason": "Template-specific section; compose from cataloged blocks before promoting."
-    },
-    {
       "source": "src/templates/events/EventVideoDialog.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
@@ -2328,7 +2288,6 @@
     "src/components/auth/AuthSignInPanel.vue",
     "src/components/auth/AuthSpinnerIcon.vue",
     "src/components/auth/AuthToast.vue",
-    "src/components/blocks/HeroLivestream01.vue",
     "src/components/blocks/PlayOverlay.vue",
     "src/components/blocks/WatchPageLayout.vue",
     "src/components/booking-confirmation/ResourceList.vue",
@@ -2380,12 +2339,9 @@
     "src/components/demos/DemoHeroSection.vue",
     "src/components/demos/DemoNavSection.vue",
     "src/components/demos/DemoTranscript.vue",
-    "src/components/gallery/ContactSection.vue",
     "src/components/gallery/GalleryCard.vue",
     "src/components/gallery/GalleryDetailModal.vue",
     "src/components/gallery/GalleryItemAttribution.vue",
-    "src/components/gallery/GallerySection.vue",
-    "src/components/gallery/HeroSection.vue",
     "src/components/hero/AngleNode.vue",
     "src/components/hero/ColorNode.vue",
     "src/components/hero/GraphLinks.vue",
@@ -2408,7 +2364,6 @@
     "src/components/home/ModelReleaseSection.vue",
     "src/components/home/ProductCardsSection.vue",
     "src/components/home/ProductShowcaseSection.vue",
-    "src/components/home/VideoMaskScene.vue",
     "src/components/home/WorkshopSection.vue",
     "src/components/hub/BrowseToolbar.vue",
     "src/components/hub/HubBrowse.vue",
@@ -2523,6 +2478,7 @@
     "src/components/workshop/HeaderSessionAccount.vue",
     "src/components/workshop/HeaderWorkspaceMenu.vue",
     "src/components/workshop/HighlightedCode.vue",
+    "src/components/workshop/HubRowSeen.vue",
     "src/components/workshop/ImageSourcePreview.vue",
     "src/components/workshop/ModelDetail.vue",
     "src/components/workshop/ModelPage.vue",
@@ -2680,10 +2636,6 @@
     "src/templates/cloud-nodes/ModelsSection.vue",
     "src/templates/cloud-nodes/SetupSection.vue",
     "src/templates/cloud-nodes/WhySection.vue",
-    "src/templates/drops/CtaSection.vue",
-    "src/templates/drops/DropsSection.vue",
-    "src/templates/drops/HeroSection.vue",
-    "src/templates/drops/LaunchesHeroLogo.vue",
     "src/templates/events/EventVideoDialog.vue",
     "src/templates/events/EventsAgendaView.vue",
     "src/templates/events/EventsCardsView.vue",
