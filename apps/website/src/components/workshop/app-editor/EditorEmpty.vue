@@ -1,55 +1,68 @@
 <script setup lang="ts">
-import { Upload } from '@lucide/vue'
+import { LoaderCircle } from '@lucide/vue'
 
-import EditorDropZone from './EditorDropZone.vue'
-import EditorUploadSlot from './EditorUploadSlot.vue'
+/** One ready-made start: a picture of it and its name. */
+interface EditorExample {
+  readonly id: string
+  readonly image: string
+  readonly label: string
+}
 
-const { title, meta, uploadLabel, exampleLabel, exampleImage } = defineProps<{
+/**
+ * The stage before anything is chosen: examples to start from. Uploading lives
+ * in the panel, so the stage offers no upload of its own.
+ */
+const { title, hint, examples, loading } = defineProps<{
   title: string
-  meta: string
-  uploadLabel: string
-  exampleLabel: string
-  exampleImage: string
+  hint: string
+  examples: readonly EditorExample[]
+  /** The example being fetched. */
+  loading?: string
 }>()
-const emit = defineEmits<{ file: [file: File]; example: [] }>()
+const emit = defineEmits<{ example: [id: string] }>()
 </script>
 
 <template>
-  <EditorDropZone
-    class="flex w-full max-w-120 flex-col items-center gap-5 self-center rounded-2xl border border-dashed border-transparency-white-t20 bg-primary-comfy-ink/70 px-6 py-8 text-center backdrop-blur-sm sm:px-10"
-    @file="emit('file', $event)"
-  >
-    <span
-      class="flex size-11 items-center justify-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
-    >
-      <Upload class="size-5" aria-hidden="true" />
-    </span>
-    <span class="flex flex-col gap-1">
-      <span class="text-base font-medium text-primary-warm-white">{{
-        title
-      }}</span>
-      <span class="text-xs text-primary-warm-gray">{{ meta }}</span>
-    </span>
-    <span class="flex flex-wrap items-center justify-center gap-2">
-      <EditorUploadSlot
-        input-test-id="editor-empty-file"
-        class="h-9 rounded-full bg-primary-warm-white px-4 text-xs font-semibold text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        @file="emit('file', $event)"
-      >
-        {{ uploadLabel }}
-      </EditorUploadSlot>
-      <button
-        type="button"
-        class="flex h-9 items-center gap-2 rounded-full bg-transparency-white-t8 pr-4 pl-1 text-xs text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        @click="emit('example')"
-      >
-        <img
-          :src="exampleImage"
-          alt=""
-          class="size-7 rounded-full object-cover"
-        />
-        {{ exampleLabel }}
-      </button>
-    </span>
-  </EditorDropZone>
+  <section class="my-auto flex w-full max-w-4xl flex-col gap-4 self-center">
+    <div class="flex flex-col gap-1">
+      <h2 class="text-base font-medium text-primary-warm-white">
+        {{ title }}
+      </h2>
+      <p class="text-sm text-primary-warm-gray">{{ hint }}</p>
+    </div>
+    <ul class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <li v-for="example in examples" :key="example.id">
+        <button
+          type="button"
+          :disabled="!!loading"
+          :aria-busy="loading === example.id"
+          class="group flex w-full cursor-pointer flex-col gap-2 text-left focus-visible:outline-none disabled:cursor-default"
+          @click="emit('example', example.id)"
+        >
+          <span
+            class="relative block aspect-video overflow-hidden rounded-xl border border-transparency-white-t8 transition group-hover:border-primary-warm-white/50 group-focus-visible:ring-3 group-focus-visible:ring-primary-comfy-yellow/50"
+          >
+            <img
+              :src="example.image"
+              alt=""
+              loading="lazy"
+              class="size-full object-cover"
+            />
+            <span
+              v-if="loading === example.id"
+              class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/60"
+            >
+              <LoaderCircle
+                class="size-6 text-primary-comfy-yellow motion-safe:animate-spin"
+                aria-hidden="true"
+              />
+            </span>
+          </span>
+          <span class="text-sm text-primary-warm-white">{{
+            example.label
+          }}</span>
+        </button>
+      </li>
+    </ul>
+  </section>
 </template>

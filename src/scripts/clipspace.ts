@@ -95,22 +95,27 @@ export function pasteFromClipspace(node: LGraphNode) {
       combinedImgSrc =
         clipspace.current.imgs[clipspace.current.combinedIndex].src
     }
-    if (clipspace.current.imgs && node.imgs) {
-      // Update node.images even if it's initially undefined (vueNodes mode)
-      if (clipspace.current.images) {
-        const images =
-          clipspace.current['img_paste_mode'] == 'selected'
-            ? [clipspace.current.images[clipspace.current['selectedIndex']]]
-            : clipspace.current.images
-        useNodeOutputStore().setNodeOutputImages(node, images)
+    const selectedImage =
+      clipspace.current.images?.[clipspace.current.selectedIndex]
+    if (clipspace.current.images) {
+      if (clipspace.current.img_paste_mode !== 'selected') {
+        useNodeOutputStore().setNodeOutputImages(node, clipspace.current.images)
+      } else if (selectedImage) {
+        useNodeOutputStore().setNodeOutputImages(node, [selectedImage])
       }
-
+    }
+    if (clipspace.current.imgs && node.imgs) {
       // deep-copy to cut link with clipspace
       if (clipspace.current['img_paste_mode'] == 'selected') {
-        const img = new Image()
-        img.src = clipspace.current.imgs[clipspace.current['selectedIndex']].src
-        node.imgs = [img]
-        node.imageIndex = 0
+        const selectedPreview = clipspace.current.imgs.at(
+          clipspace.current.selectedIndex
+        )
+        if (clipspace.current.selectedIndex >= 0 && selectedPreview) {
+          const img = new Image()
+          img.src = selectedPreview.src
+          node.imgs = [img]
+          node.imageIndex = 0
+        }
       } else {
         const imgs = []
         for (let i = 0; i < clipspace.current.imgs.length; i++) {
@@ -137,22 +142,20 @@ export function pasteFromClipspace(node: LGraphNode) {
     }
 
     if (node.widgets) {
-      if (clipspace.current.images) {
-        const clip_image =
-          clipspace.current.images[clipspace.current['selectedIndex']]
+      if (selectedImage) {
         const index = node.widgets.findIndex((obj) => obj.name === 'image')
         if (index >= 0) {
           if (
             node.widgets[index].type != 'image' &&
             typeof node.widgets[index].value == 'string' &&
-            clip_image.filename
+            selectedImage.filename
           ) {
             node.widgets[index].value =
-              (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
-              clip_image.filename +
-              (clip_image.type ? ` [${clip_image.type}]` : '')
+              (selectedImage.subfolder ? selectedImage.subfolder + '/' : '') +
+              selectedImage.filename +
+              (selectedImage.type ? ` [${selectedImage.type}]` : '')
           } else {
-            node.widgets[index].value = clip_image
+            node.widgets[index].value = selectedImage
           }
         }
       }
