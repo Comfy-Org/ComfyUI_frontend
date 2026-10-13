@@ -39,6 +39,7 @@ function focusAutofocusTarget(event: Event) {
   <DialogContent
     v-bind="forwarded"
     data-reka-dialog-content
+    :data-maximized="maximized || undefined"
     :class="
       cn(
         dialogContentVariants({ maximized, size, surface }),
