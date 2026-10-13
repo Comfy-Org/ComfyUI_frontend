@@ -153,7 +153,7 @@ describe('useAgentDockMount', () => {
     await nextTick()
 
     expect(fetchStatusFresh).toHaveBeenCalledOnce()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(store.billingRefreshPending).toBe(true)
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       false
     )
@@ -203,7 +203,7 @@ describe('useAgentDockMount', () => {
 
     store.isOpen = false
     await nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(store.billingRefreshPending).toBe(false))
     store.isOpen = true
     await nextTick()
 
@@ -280,7 +280,7 @@ describe('useAgentDockMount', () => {
     expect(fetchStatusFresh).toHaveBeenCalledOnce()
     subscription.value = { ...subscription.value, agentScopedHasFunds: false }
     finishRefresh?.(false)
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(store.billingRefreshPending).toBe(false))
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       false
     )
@@ -335,7 +335,7 @@ describe('useAgentDockMount', () => {
     accountId.value = 'account-b'
     await nextTick()
     await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await vi.waitFor(() => expect(store.billingRefreshPending).toBe(false))
     expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
       false
     )

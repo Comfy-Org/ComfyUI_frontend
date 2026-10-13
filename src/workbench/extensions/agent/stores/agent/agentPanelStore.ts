@@ -95,6 +95,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     ready: boolean
   } | null>(null)
   const billingRefreshes = new Map<string, Promise<boolean>>()
+  const billingRefreshCount = ref(0)
   const panelOpenEpoch = ref(0)
   let latestBillingRefresh: Promise<boolean> | undefined
   let creditTransitionRefreshEpoch = 0
@@ -411,17 +412,25 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function refreshBillingStatus(
     key: string,
     fetchStatus: () => Promise<boolean>,
-    afterCurrent = false
+    afterCurrent = false,
+    onLateError?: (error: unknown) => void
   ): Promise<boolean> {
     const existing = billingRefreshes.get(key)
     if (existing) return existing
     const previous = afterCurrent ? latestBillingRefresh : undefined
     const start = () =>
       new Promise<boolean>((resolve, reject) => {
-        const timeoutId = setTimeout(() => resolve(false), 15_000)
+        let timedOut = false
+        const timeoutId = setTimeout(() => {
+          timedOut = true
+          resolve(false)
+        }, 15_000)
         Promise.resolve()
           .then(fetchStatus)
-          .then(resolve, reject)
+          .then(resolve, (error: unknown) => {
+            if (timedOut) onLateError?.(error)
+            else reject(error)
+          })
           .finally(() => clearTimeout(timeoutId))
       })
     const pending = previous ? previous.catch(() => false).then(start) : start()
@@ -430,8 +439,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         billingRefreshes.delete(key)
       }
       if (latestBillingRefresh === refresh) latestBillingRefresh = undefined
+      billingRefreshCount.value -= 1
     })
     billingRefreshes.set(key, refresh)
+    billingRefreshCount.value += 1
     latestBillingRefresh = refresh
     return refresh
   }
@@ -459,6 +470,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       ready: boolean
     }> | null>(() => creditTransitionRefresh.value),
     panelOpenEpoch: computed(() => panelOpenEpoch.value),
+    billingRefreshPending: computed(() => billingRefreshCount.value > 0),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
