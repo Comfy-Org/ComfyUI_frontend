@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const logos = [
+import SocialProofLogo from '@/components/common/SocialProofLogo.vue'
+
+const { agencyPartners = false } = defineProps<{ agencyPartners?: boolean }>()
+
+const clientLogos = [
   'Amazon Studios',
   'Apple',
   'Autodesk',
@@ -12,6 +16,10 @@ const logos = [
   'Tencent',
   'Ubisoft'
 ]
+
+const logos = agencyPartners
+  ? [...clientLogos, 'Native Foreign', 'Black Math']
+  : clientLogos
 
 const mobileRow1Logos = logos.slice(0, 6)
 const mobileRow2Logos = logos.slice(6)
@@ -33,7 +41,7 @@ const mobileRow2Logos = logos.slice(6)
           :key="logo"
           class="flex h-20 w-50 shrink-0 items-center justify-center"
         >
-          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <SocialProofLogo :name="logo" />
         </div>
       </div>
     </div>
@@ -56,7 +64,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>
@@ -73,7 +81,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>

@@ -46,6 +46,7 @@ const ANALYTICS_EVENT = {
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
   vfxLinkClicked: 'website:vfx_link_clicked',
+  agencyLinkClicked: 'website:agency_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -73,6 +74,10 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.vfxLinkClicked
       properties: VfxLinkProperties
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agencyLinkClicked
+      properties: AgencyLinkProperties
     }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
@@ -131,9 +136,21 @@ type AnalyticsEvent =
 
 let initialized = false
 
+export type CampaignVertical =
+  | 'vfx'
+  | 'advertising'
+  | 'film-animation'
+  | 'architectural-visualization'
+
+interface AgencyLinkProperties extends VfxLinkProperties {
+  vertical: CampaignVertical
+  campaign_type: 'agency-led'
+  agency_partner?: 'black-math'
+}
+
 interface VfxLinkProperties {
   destination: string
-  placement: 'hero' | 'workflows' | 'studio' | 'page'
+  placement: 'hero' | 'workflows' | 'studio' | 'partners' | 'page'
 }
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
@@ -452,6 +469,10 @@ export function capturePageview(): void {
 
 export function captureVfxLinkClick(properties: VfxLinkProperties): void {
   captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
+}
+
+export function captureAgencyLinkClick(properties: AgencyLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.agencyLinkClicked, properties })
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {

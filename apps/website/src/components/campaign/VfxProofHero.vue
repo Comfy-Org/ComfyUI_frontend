@@ -10,12 +10,18 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { resolveTemplateLogos } from '@/lib/hub/model-logos'
 
-const { locale, primaryHref } = defineProps<{
+const {
+  locale,
+  agency = false,
+  primaryHref
+} = defineProps<{
   locale: Locale
+  agency?: boolean
   primaryHref: string
 }>()
 
 const { t } = translationsFor(locale)
+const heroKey = computed(() => (agency ? 'agency' : 'comfy'))
 const examples = [
   { id: 'upscale', workflow: vfxWorkflows[5] },
   {
@@ -40,11 +46,11 @@ const modelLogos = computed(() =>
   <HeroSplit01
     data-testid="vfx-proof-hero"
     :locale
-    :badge-text="t(`vfxV2.comfy.badge`).toLocaleUpperCase(locale)"
-    :title="t(`vfxV2.comfy.heroTitle`)"
-    :subtitle="t(`vfxV2.comfy.heroDescription`)"
+    :badge-text="t(`vfxV2.${heroKey}.badge`).toLocaleUpperCase(locale)"
+    :title="t(`vfxV2.${heroKey}.heroTitle`)"
+    :subtitle="t(`vfxV2.${heroKey}.heroDescription`)"
     :primary-cta="{
-      label: t(`vfxV2.comfy.primaryCta`),
+      label: t(`vfxV2.${heroKey}.primaryCta`),
       href: primaryHref
     }"
     :secondary-cta="{

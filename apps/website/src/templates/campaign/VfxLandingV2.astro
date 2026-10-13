@@ -1,6 +1,9 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import VfxProofHero from '@/components/campaign/VfxProofHero.vue'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import AgencyEngagementTimeline from '@/components/campaign/AgencyEngagementTimeline.vue'
 import VfxProductionPanel from '@/templates/campaign/VfxProductionPanel.astro'
 import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
 import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
@@ -16,6 +19,12 @@ import { getCustomerVideoStory } from '@/data/customerVideos'
 import { getRoutes, externalLinks } from '@/config/routes'
 import { pageContext } from '@/utils/jsonLd'
 
+interface Props {
+  agency?: boolean
+  partner?: 'black-math'
+}
+const { agency = false, partner } = Astro.props
+const blackMath = partner === 'black-math'
 const { locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
@@ -23,8 +32,35 @@ const { locale } = pageContext(
 )
 const { t } = Astro.locals
 const routes = getRoutes(locale)
-const prefix = 'vfxV2.comfy'
-const contactHref = `${routes.contact}?interest=vfx&landing_version=v2`
+const prefix = blackMath
+  ? 'blackMathVfx'
+  : agency
+    ? 'vfxV2.agency'
+    : 'vfxV2.comfy'
+const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2${blackMath ? '&agency_partner=black-math' : ''}`
+const metaTitle = t(
+  blackMath
+    ? 'blackMathVfx.metaTitle'
+    : agency
+      ? 'agency.vfx.metaTitle'
+      : 'vfx.meta.title'
+)
+const intakeNote = t(
+  blackMath ? 'blackMathVfx.intakeNote' : 'vfxV2.agency.intakeNote'
+)
+const workflowsHeading = t(
+  blackMath ? 'blackMathVfx.workflowsHeading' : 'vfxV2.workflows.heading'
+)
+const workflowsDescription = t(
+  blackMath
+    ? 'blackMathVfx.workflowsDescription'
+    : 'vfxV2.workflows.description'
+)
+const primaryLabelKey = blackMath
+  ? 'blackMathVfx.primaryCta'
+  : agency
+    ? 'vfxV2.agency.primaryCta'
+    : 'vfxV2.comfy.contactButton'
 const { examples } = vfxContent(locale)
 const previewExamples = examples.map((row) => ({
   ...row,
@@ -32,6 +68,9 @@ const previewExamples = examples.map((row) => ({
     row.media.type === 'video' ? { ...row.media, preview: true } : row.media
 }))
 const story = getCustomerVideoStory('black-math')
+const ogImage = blackMath
+  ? story.poster
+  : vfxWorkflows[5].template.thumbnails[0]
 const benefits = ([1, 2, 3, 4] as const).map((id) => ({
   id: `pipeline-${id}`,
   title: t(`vfxV2.pipeline.${id}.title`),
@@ -40,23 +79,79 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
 ---
 
 <BaseLayout
-  title={t('vfx.meta.title')}
+  title={metaTitle}
   description={t(`${prefix}.heroDescription`)}
-  ogImage={vfxWorkflows[5].template.thumbnails[0]}
+  ogImage={ogImage}
   hideAnnouncementBanner
 >
-  <div data-vfx-v2>
-    <VfxProofHero
-      locale={locale}
-      primaryHref="#workflows"
-      data-campaign-hero
-      client:load
-    />
-    <SocialProofBarSection />
+  <div
+    data-vfx-v2
+    data-agency-v2={agency ? 'vfx' : undefined}
+    data-agency-partner={partner}
+  >
+    {blackMath ? (
+      <HeroSplit01
+        locale={locale}
+        badgeLogoSrc="/images/agency-partners/black-math-stacked.png"
+        badgeLogoAlt={story.company}
+        badgeText={t('blackMathVfx.badge')}
+        title={t('blackMathVfx.heroTitle')}
+        subtitle={t('blackMathVfx.heroDescription')}
+        primaryCta={{ label: t('blackMathVfx.primaryCta'), href: contactHref }}
+        secondaryCta={{
+          label: t('blackMathVfx.secondaryCta'),
+          href: '#workflows'
+        }}
+        mediaWrapperClass="order-none lg:flex-[1.2]"
+        titleClass="text-3xl tracking-tight md:text-4xl lg:text-4xl"
+        subtitleClass="max-w-lg text-base"
+        class="lg:gap-12 lg:[&>div:first-child]:flex-[0.8]"
+        data-campaign-hero
+      >
+        <div slot="media">
+          <VideoPlayer
+            locale={locale}
+            src={story.videoSrc}
+            poster={story.poster}
+            tracks={[...story.captions]}
+            ariaLabel={t('vfx.proof.title')}
+            preview
+            client:load
+          />
+        </div>
+      </HeroSplit01>
+    ) : (
+      <VfxProofHero
+        locale={locale}
+        agency={agency}
+        primaryHref={agency ? contactHref : '#workflows'}
+        data-campaign-hero
+        client:load
+      />
+    )}
+    {agency && <p
+      class="mx-auto max-w-9xl px-6 pb-6 text-sm text-primary-comfy-canvas/70 lg:px-16"
+    >
+      {intakeNote}
+    </p>}
+    {!blackMath && <SocialProofBarSection agencyPartners={agency} />}
+    {agency && <div id="approach" class="scroll-mt-28">
+      {!blackMath && (
+        <SectionIntro01
+          heading={t('vfxV2.agency.examplesHeading')}
+          subtitle={t('vfxV2.agency.examplesDescription')}
+          class="pb-0 lg:pb-0"
+        />
+      )}
+      {!blackMath && (
+        <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
+      )}
+      <AgencyEngagementTimeline locale={locale} partner={partner} />
+    </div>}
     <div id="workflows" class="scroll-mt-28">
       <SectionIntro01
-        heading={t('vfxV2.workflows.heading')}
-        subtitle={t('vfxV2.workflows.description')}
+        heading={workflowsHeading}
+        subtitle={workflowsDescription}
         class="pb-0 lg:pb-0"
       />
       <FeaturedWorkflowsSection
@@ -115,7 +210,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         </div>
       </section>
     </div>
-    <div id="approach" class="scroll-mt-28">
+    {!agency && <div id="approach" class="scroll-mt-28">
       <BenefitsGrid01
         heading={t('vfxV2.pipeline.heading')}
         numbered={false}
@@ -157,7 +252,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         ]}
         client:visible
       />
-    </div>
+    </div>}
     <div id="studio" class="scroll-mt-28">
       <VfxProductionPanel locale={locale} contactHref={contactHref} />
       <div class="flex flex-wrap justify-center gap-4 px-6 pb-10">
@@ -175,17 +270,21 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         >
       </div>
     </div>
-    <SectionIntro01
-      heading={t('vfxV2.learning.heading')}
-      subtitle={t('vfxV2.learning.description')}
-      class="pb-0 lg:pb-0"
-    />
-    <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
+    {!agency && (
+      <>
+        <SectionIntro01
+          heading={t('vfxV2.learning.heading')}
+          subtitle={t('vfxV2.learning.description')}
+          class="pb-0 lg:pb-0"
+        />
+        <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
+      </>
+    )}
     <div class="[&_a]:uppercase">
       <CallToActionSection
         locale={locale}
         headingKey={`${prefix}.contactHeading`}
-        primaryLabelKey="vfxV2.comfy.contactButton"
+        primaryLabelKey={primaryLabelKey}
         primaryHref={contactHref}
       />
     </div>
@@ -193,13 +292,23 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
 </BaseLayout>
 
 <script>
-  import { mountVfxCampaign } from '@/scripts/vfx-campaign'
+  import { mountAgencyCampaign, mountVfxCampaign } from '@/scripts/vfx-campaign'
 
   let cleanup: (() => void) | undefined
   document.addEventListener('astro:page-load', () => {
     cleanup?.()
     const root = document.querySelector<HTMLElement>('[data-vfx-v2]')
-    cleanup = root ? mountVfxCampaign(root) : undefined
+    cleanup = root
+      ? root.dataset.agencyV2
+        ? mountAgencyCampaign(
+            root,
+            'vfx',
+            root.dataset.agencyPartner === 'black-math'
+              ? 'black-math'
+              : undefined
+          )
+        : mountVfxCampaign(root)
+      : undefined
   })
   document.addEventListener('astro:before-swap', () => cleanup?.())
 </script>

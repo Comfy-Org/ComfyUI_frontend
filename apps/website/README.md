@@ -665,3 +665,9 @@ the hosted script once, and renders the documented embed container.
 `/vfx/` and `/zh-CN/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
 
 Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.
+
+### Agency campaign drafts
+
+The agency branch contains four `/agency-led/<vertical>/` pages, VFX V2, the Black Math-only VFX variant, and Chinese twins. It adds no other Comfy-led vertical routes. Shared catalog data supplies labeled product demonstrations rather than agency portfolio claims.
+
+All agency routes are excluded from indexing and navigation. Comfy-first inquiry links carry `campaign_type=agency-led`, vertical interest and incoming UTMs; Black Math links also carry `agency_partner=black-math`. This records clicks, not confirmed CRM submission or agency handoff.

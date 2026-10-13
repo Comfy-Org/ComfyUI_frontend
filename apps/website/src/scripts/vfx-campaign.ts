@@ -1,9 +1,11 @@
-import { captureVfxLinkClick } from '@/scripts/posthog'
+import type { CampaignVertical } from '@/scripts/posthog'
+import { captureAgencyLinkClick, captureVfxLinkClick } from '@/scripts/posthog'
 import { campaignHref } from '@/utils/campaignHref'
 
 function linkPlacement(
   link: HTMLAnchorElement
 ): Parameters<typeof captureVfxLinkClick>[0]['placement'] {
+  if (link.closest('#agency-partners')) return 'partners'
   if (link.closest('#workflows')) return 'workflows'
   if (link.closest('#studio')) return 'studio'
   if (link.closest('[data-vfx-hero], [data-campaign-hero]')) return 'hero'
@@ -11,6 +13,28 @@ function linkPlacement(
 }
 
 export function mountVfxCampaign(root: HTMLElement): () => void {
+  return mountCampaign(root, captureVfxLinkClick)
+}
+
+export function mountAgencyCampaign(
+  root: HTMLElement,
+  vertical: CampaignVertical,
+  partner?: 'black-math'
+): () => void {
+  return mountCampaign(root, (properties) =>
+    captureAgencyLinkClick({
+      ...properties,
+      vertical,
+      campaign_type: 'agency-led',
+      ...(partner && { agency_partner: partner })
+    })
+  )
+}
+
+function mountCampaign(
+  root: HTMLElement,
+  captureClick: (properties: Parameters<typeof captureVfxLinkClick>[0]) => void
+): () => void {
   function onPlay(event: Event) {
     if (!(event.target instanceof HTMLVideoElement)) return
     for (const video of root.querySelectorAll('video')) {
@@ -40,7 +64,7 @@ export function mountVfxCampaign(root: HTMLElement): () => void {
       destination: new URL(link.href).pathname,
       placement: linkPlacement(link)
     }
-    captureVfxLinkClick(properties)
+    captureClick(properties)
     if (!anchor && card) {
       event.stopPropagation()
       window.open(link.href, '_blank', 'noopener')

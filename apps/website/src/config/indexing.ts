@@ -13,6 +13,12 @@ const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
 export const NOINDEX_ROUTES = [
+  '/agency-led/vfx',
+  '/agency-led/vfx/v2',
+  '/agency-led/vfx/black-math',
+  '/agency-led/advertising',
+  '/agency-led/film-animation',
+  '/agency-led/architectural-visualization',
   '/changelog',
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
   '/individual-submission',

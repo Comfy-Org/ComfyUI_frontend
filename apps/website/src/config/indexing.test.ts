@@ -91,6 +91,13 @@ describe('indexing policy', () => {
     '/checkout-return',
     '/zh-CN/checkout-return/',
     '/zh-CN/login',
+    '/agency-led/vfx/',
+    '/agency-led/vfx/v2/',
+    '/agency-led/vfx/black-math/',
+    '/zh-CN/agency-led/vfx/black-math/',
+    '/agency-led/advertising/',
+    '/agency-led/film-animation/',
+    '/agency-led/architectural-visualization/',
     '/platform/serverless-animation/'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)
