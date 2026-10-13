@@ -94,6 +94,25 @@ describe('SiteFooter', () => {
     }
   )
 
+  it.for([
+    ['en', '/fish-audio/'],
+    ['zh-CN', '/zh-CN/fish-audio/']
+  ] as const)(
+    'links the Fish Audio page last in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const last = models.at(-1)
+      expect(last?.textContent.trim()).toBe('Fish Audio')
+      expect(last?.getAttribute('href')).toBe(href)
+    }
+  )
+
   it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
