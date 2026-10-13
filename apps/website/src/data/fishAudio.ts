@@ -49,10 +49,11 @@ export const fishAudioPage: ModelLaunchPage = {
       },
       {
         id: 'find-the-node',
-        title: { en: 'Find Drama 3', 'zh-CN': '找到 Drama 3' },
+        title: { en: 'Select Drama 3', 'zh-CN': '选择 Drama 3' },
         description: {
-          en: 'Search the node library for Fish Audio under partner nodes',
-          'zh-CN': '在节点库的合作伙伴节点下搜索 Fish Audio'
+          en: 'Add the Fish Audio Text to Speech node from partner nodes and set model to drama-3',
+          'zh-CN':
+            '从合作伙伴节点中添加 Fish Audio Text to Speech 节点，并将 model 设为 drama-3'
         }
       },
       {
@@ -87,9 +88,9 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': 'Fish Audio Drama 3 是什么？'
         },
         answer: {
-          en: "Fish Audio's newest model, and the one it calls its most emotive and controllable yet. You write a multi-character scene and set the direction, and Drama 3 performs it as a single conversation. It runs as a partner node in Comfy Cloud from release day.",
+          en: "Fish Audio's newest model, and the one it calls its most emotive and controllable yet. You write a multi-character scene and set the direction, and Drama 3 performs it as a single conversation. It runs in the Fish Audio Text to Speech node, in Comfy Cloud and in local ComfyUI 0.39.3 or newer.",
           'zh-CN':
-            'Fish Audio 的最新模型，也是 Fish Audio 称为迄今最富情感、最可控的一款。你写下多角色场景并给出表演指示，Drama 3 会把它作为一段对话完整演绎。它从发布当天起即作为合作伙伴节点在 Comfy Cloud 中运行。'
+            'Fish Audio 的最新模型，也是 Fish Audio 称为迄今最富情感、最可控的一款。你写下多角色场景并给出表演指示，Drama 3 会把它作为一段对话完整演绎。它在 Fish Audio Text to Speech 节点中运行，支持 Comfy Cloud 和 0.39.3 及以上版本的本地 ComfyUI。'
         }
       },
       {
@@ -99,9 +100,8 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': '如何在 Comfy Cloud 中试用 Drama 3？'
         },
         answer: {
-          en: 'Open [Comfy Cloud](https://cloud.comfy.org/) and search the node library for Fish Audio under partner nodes. Add your voices, write the dialogue, and run it.',
-          'zh-CN':
-            '打开 [Comfy Cloud](https://cloud.comfy.org/)，在节点库的合作伙伴节点下搜索 Fish Audio。添加声音，写下对白，运行即可。'
+          en: `Open [Comfy Cloud](${externalLinks.cloud}) and search the Template Library for Fish Audio Drama 3, or add the Fish Audio Text to Speech node from partner nodes and set model to drama-3. Add your voices, write the dialogue, and run it.`,
+          'zh-CN': `打开 [Comfy Cloud](${externalLinks.cloud})，在模板库中搜索 Fish Audio Drama 3，或从合作伙伴节点中添加 Fish Audio Text to Speech 节点并将 model 设为 drama-3。添加声音，写下对白，运行即可。`
         }
       },
       {
@@ -111,9 +111,8 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': '首发优惠是什么？'
         },
         answer: {
-          en: 'Drama 3 is 50% off for your first 30 days in Comfy Cloud. Open [Comfy Cloud](https://cloud.comfy.org/) to start.',
-          'zh-CN':
-            'Drama 3 在 Comfy Cloud 中前 30 天半价。打开 [Comfy Cloud](https://cloud.comfy.org/) 即可开始。'
+          en: `From October 13 to November 12, 2026, Drama 3 is 60% off in Comfy Cloud. The standard rate applies from November 13, and current rates are in the [Drama 3 docs](${DOCS_HREF}). Open [Comfy Cloud](${externalLinks.cloud}) to start.`,
+          'zh-CN': `2026 年 10 月 13 日至 11 月 12 日，Drama 3 在 Comfy Cloud 中享 4 折优惠，11 月 13 日起恢复标准价格，当前费率见 [Drama 3 文档](${DOCS_HREF})。打开 [Comfy Cloud](${externalLinks.cloud}) 即可开始。`
         }
       },
       {
@@ -123,9 +122,9 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': '场景如何融入工作流？'
         },
         answer: {
-          en: 'Drama 3 is a partner node, so it runs inside a Comfy workflow like any other. Build the scene and its audio in one graph. Change a line, run again, and everything downstream picks up the new take.',
+          en: 'Drama 3 runs in the Fish Audio Text to Speech node, so it fits into a Comfy workflow like any other node. Build the scene and its audio in one graph. Change a line, run again, and everything downstream picks up the new take.',
           'zh-CN':
-            'Drama 3 是合作伙伴节点，因此和其他节点一样在 Comfy 工作流中运行。在同一个工作流中构建场景和它的音频。改一句台词，再运行一次，下游的每个环节都会用上新的演绎。'
+            'Drama 3 在 Fish Audio Text to Speech 节点中运行，因此和其他节点一样融入 Comfy 工作流。在同一个工作流中构建场景和它的音频。改一句台词，再运行一次，下游的每个环节都会用上新的演绎。'
         }
       },
       {
@@ -135,9 +134,9 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': 'Drama 3 是开源权重吗？'
         },
         answer: {
-          en: "No. Drama 3 is a partner node that runs through Fish Audio's API in Comfy Cloud, so there is nothing to download and no GPU to provision.",
+          en: "No. Drama 3 runs through Fish Audio's API, so there is nothing to download and no GPU to provision.",
           'zh-CN':
-            '不是。Drama 3 作为合作伙伴节点，通过 Fish Audio API 在 Comfy Cloud 中运行，无需下载任何内容，也无需配置 GPU。'
+            '不是。Drama 3 通过 Fish Audio API 运行，无需下载任何内容，也无需配置 GPU。'
         }
       },
       {
@@ -147,9 +146,9 @@ export const fishAudioPage: ModelLaunchPage = {
           'zh-CN': '其他 Fish Audio 节点有什么用？'
         },
         answer: {
-          en: 'Text to Speech runs S2.1 Pro and S1 with emotion cues in the text. Speech to Text transcribes audio with automatic language detection, and Instant Voice Clone makes a private voice from 1 to 20 recordings. Voice Selector is where you pick a voice from the Fish Audio library, and all four are in the [Fish Audio docs](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio).',
+          en: 'Text to Speech also runs S2.1 Pro and S1, which take emotion cues in the text. Speech to Text transcribes audio with automatic language detection, and Instant Voice Clone makes a private voice from 1 to 20 recordings. Voice Selector is where you pick a voice from the Fish Audio library, and all four are in the [Fish Audio docs](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio).',
           'zh-CN':
-            'Text to Speech 运行 S2.1 Pro 和 S1，支持在文本中加入情绪提示。Speech to Text 自动检测语言并转写音频，Instant Voice Clone 用 1 到 20 段录音生成私有声音。Voice Selector 用于从 Fish Audio 声音库中挑选声音。这四个节点都收录在 [Fish Audio 文档](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio)中。'
+            'Text to Speech 还可运行 S2.1 Pro 和 S1，支持在文本中加入情绪提示。Speech to Text 自动检测语言并转写音频，Instant Voice Clone 用 1 到 20 段录音生成私有声音。Voice Selector 用于从 Fish Audio 声音库中挑选声音。这四个节点都收录在 [Fish Audio 文档](https://docs.comfy.org/tutorials/partner-nodes/fishaudio/fish-audio)中。'
         }
       },
       {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { chatgptImage25Page } from '@/data/chatgptImage25'
+import { fishAudioPage } from '@/data/fishAudio'
 import { flux3Page } from '@/data/flux3'
 import { geminiOmniPage } from '@/data/geminiOmni'
 import { ltxPage } from '@/data/ltx'
@@ -10,7 +11,6 @@ import {
   qwenImage21AnnouncementPage,
   qwenImage21Page
 } from '@/data/qwenImage21'
-import { fishAudioPage } from '@/data/fishAudio'
 import { minimaxMusic3Page } from '@/data/minimaxMusic3'
 import { nanoBananaPage } from '@/data/nanoBanana'
 import { seedancePage } from '@/data/seedance'
@@ -27,7 +27,6 @@ import type {
   ModelLaunchGallery,
   ModelLaunchHero,
   ModelLaunchHighlight,
-  ModelLaunchListItem,
   ModelLaunchPage,
   ModelLaunchPricing,
   ModelLaunchShowcase,
@@ -57,8 +56,6 @@ const VIDEO_URL =
 const IMAGE_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
-const LIST_AUDIO_URL =
-  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(mp3|flac|m4a|ogg)$/
 const HERO_STILL_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const LOCALES = ['en', 'zh-CN'] as const
@@ -128,8 +125,6 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     ...heroKeys(page.hero),
     ...showcaseKeys(page.showcases ?? []),
     page.gallery?.headingKey,
-    page.list?.headingKey,
-    page.list?.ctaKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
     page.comparison?.headingKey,
@@ -179,16 +174,6 @@ function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
     expectLocalized(card.name, card.id, 'name')
     expectLocalized(card.note, card.id, 'note')
     expectLocalized(card.description, card.id, 'description')
-  }
-}
-
-function expectListItemsLocalized(items: readonly ModelLaunchListItem[]) {
-  for (const item of items) {
-    expectLocalized(item.title, item.id, 'title')
-    expectLocalized(item.description, item.id, 'description')
-    for (const [index, label] of (item.meta ?? []).entries()) {
-      expectLocalized(label, item.id, `meta ${index}`)
-    }
   }
 }
 
@@ -252,7 +237,6 @@ function outboundHrefs(page: ModelLaunchPage): string[] {
     ...heroHrefs(page.hero),
     ...sectionCtaHrefs(page),
     ...(page.gallery?.cards.map((card) => card.href) ?? []),
-    ...(page.list?.items.map((item) => item.href) ?? []),
     ...(page.showcases ?? []).map((showcase) => showcase.cta?.href)
   ].filter((href): href is string => href !== undefined)
 }
@@ -286,8 +270,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     const ids = [
       ...(page.showcases ?? []).flatMap((s) => s.cards.map((card) => card.id)),
       ...(page.gallery?.cards.map((card) => card.id) ?? []),
-      ...(page.audioGallery?.cards.map((card) => card.id) ?? []),
-      ...(page.list?.items.map((item) => item.id) ?? [])
+      ...(page.audioGallery?.cards.map((card) => card.id) ?? [])
     ]
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -302,7 +285,6 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expectShowcaseCardsLocalized(page.showcases ?? [])
     expectGalleryCardsLocalized(page.gallery?.cards ?? [])
     expectAudioCardsLocalized(page.audioGallery?.cards ?? [])
-    expectListItemsLocalized(page.list?.items ?? [])
     expectComparisonLocalized(page.comparison)
     expectFaqLocalized(page.faq?.items ?? [])
     expectStepsLocalized(page.steps?.items ?? [])
@@ -342,15 +324,6 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
-
-    const listAudioOffenders = (page.list?.items ?? []).filter(
-      (item) =>
-        item.audioSources !== undefined &&
-        (item.audioSources.length === 0 ||
-          item.audioSources.some((source) => !LIST_AUDIO_URL.test(source.src)))
-    )
-
-    expect(listAudioOffenders.map((item) => item.id)).toEqual([])
   })
 
   it('orders every optional section it defines', () => {
@@ -364,10 +337,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('lists a playable MP3 first in every audio source list', () => {
-    const offenders = [
-      ...(page.audioGallery?.cards ?? []),
-      ...(page.list?.items ?? []).filter((item) => item.audioSources)
-    ].filter((card) => card.audioSources?.[0]?.type !== 'audio/mpeg')
+    const offenders = (page.audioGallery?.cards ?? []).filter(
+      (card) => card.audioSources[0]?.type !== 'audio/mpeg'
+    )
 
     expect(offenders.map((card) => card.id)).toEqual([])
   })
