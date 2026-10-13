@@ -51,6 +51,12 @@ export function useAgentDockMount(): AgentDockMount {
     })
   }
 
+  function adoptTransitionBaseline(identity: string, epoch: number): void {
+    if (billingIdentity.value !== identity) return
+    agentPanelStore.completeCreditTransitionRefresh(identity, epoch)
+    observeFreshScopedFunds(identity)
+  }
+
   function refreshTransitionBaseline(identity: string, epoch: number): void {
     if (fetchStatusFresh === undefined || type.value === 'unknown') return
     const key = `${type.value}:${identity}:${epoch}`
@@ -59,12 +65,11 @@ export function useAgentDockMount(): AgentDockMount {
         key,
         fetchStatusFresh,
         false,
-        reportBillingRefreshError
+        reportBillingRefreshError,
+        () => adoptTransitionBaseline(identity, epoch)
       )
       .then((adopted) => {
-        if (!adopted || billingIdentity.value !== identity) return
-        agentPanelStore.completeCreditTransitionRefresh(identity, epoch)
-        observeFreshScopedFunds(identity)
+        if (adopted) adoptTransitionBaseline(identity, epoch)
       })
       .catch(reportBillingRefreshError)
   }

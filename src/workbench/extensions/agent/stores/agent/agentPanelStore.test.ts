@@ -630,4 +630,32 @@ describe('agentPanelStore width', () => {
       vi.useRealTimers()
     }
   })
+
+  it('reports an adopted refresh that arrives after the timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentPanelStore()
+      const onLateSuccess = vi.fn()
+      let finishRefresh: ((adopted: boolean) => void) | undefined
+      const refresh = store.refreshBillingStatus(
+        'late-success',
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishRefresh = resolve
+          }),
+        false,
+        undefined,
+        onLateSuccess
+      )
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(refresh).resolves.toBe(false)
+
+      finishRefresh?.(true)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(onLateSuccess).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
