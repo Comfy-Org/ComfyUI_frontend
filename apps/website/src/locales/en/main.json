@@ -125,7 +125,6 @@
       "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works.",
       "paths": {
         "label": "Ways to use this model",
-        "run": "Run here",
         "cloud": "Open in Cloud",
         "api": "Use via API"
       },

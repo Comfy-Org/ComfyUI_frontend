@@ -4185,7 +4185,6 @@
       "notSupported": "暂不支持运行",
       "paths": {
         "label": "使用此模型的方式",
-        "run": "在此运行",
         "cloud": "在 Cloud 中打开",
         "api": "通过 API 使用"
       },

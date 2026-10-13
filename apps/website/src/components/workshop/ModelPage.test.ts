@@ -74,7 +74,7 @@ describe('ModelPage', () => {
     ).toBe('/hub/models/')
   })
 
-  it('offers three ways to use the model under the summary', async () => {
+  it('leaves running to the playground and offers the API and Cloud under the summary', async () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     const scroll = vi
       .spyOn(Element.prototype, 'scrollIntoView')
@@ -87,20 +87,20 @@ describe('ModelPage', () => {
       within(paths)
         .getAllByRole('link')
         .map((link) => link.textContent.trim())
-    ).toEqual(['Run here', 'Use via API', 'Open in Cloud'])
-    const run = within(paths).getByRole('link', { name: 'Run here' })
-    const cloud = within(paths).getByRole('link', { name: 'Open in Cloud' })
+    ).toEqual(['Use via API', 'Open in Cloud'])
+    expect(screen.getByTestId('playground-section')).toBeTruthy()
+    const cloud = within(paths).getByRole('link', {
+      name: 'Open in Cloud'
+    })
     const api = within(paths).getByRole('link', { name: 'Use via API' })
-    expect(run.getAttribute('href')).toBe('#playground')
     expect(cloud.getAttribute('href')).toBe(WORKSHOP_CLOUD_BASE_URL)
     expect(cloud.getAttribute('target')).toBe('_blank')
+    expect(cloud.dataset.variant).toBe('ghost')
     expect(api.getAttribute('href')).toBe('#api')
+    expect(api.dataset.variant).toBe('outline')
 
-    const visitor = userEvent.setup()
-    await visitor.click(run)
-    await visitor.click(api)
+    await userEvent.setup().click(api)
     expect(scroll.mock.contexts).toEqual([
-      expect.objectContaining({ id: 'playground' }),
       expect.objectContaining({ id: 'api' })
     ])
   })
@@ -125,6 +125,9 @@ describe('ModelPage', () => {
         .getAllByRole('link')
         .map((link) => link.textContent.trim())
     ).toEqual(['Open in Cloud'])
+    expect(
+      within(paths).getByRole('link', { name: 'Open in Cloud' }).dataset.variant
+    ).toBe('default')
     expect(screen.queryByTestId('playground-section')).toBeNull()
   })
 

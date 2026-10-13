@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Code, Play } from '@lucide/vue'
+import { ArrowUpRight, Code } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -9,10 +9,9 @@ import { scrollToSection } from '@/lib/workshop/scroll-to-section'
 
 const { paths } = defineProps<{ paths: PagePaths }>()
 
-const secondaryPathClass = 'font-bold tracking-wider uppercase'
-function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
+function jumpToApi(event: MouseEvent) {
   event.preventDefault()
-  scrollToSection(section)
+  scrollToSection('api')
 }
 </script>
 
@@ -22,27 +21,14 @@ function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
     class="flex flex-wrap gap-2"
     data-testid="model-paths"
   >
-    <li v-if="paths.run">
-      <Button
-        href="#playground"
-        size="sm"
-        data-testid="model-path-run"
-        @click="jumpTo($event, 'playground')"
-      >
-        <template #prepend>
-          <Play class="size-3.5 fill-current" aria-hidden="true" />
-        </template>
-        {{ t('workshop.model.paths.run') }}
-      </Button>
-    </li>
     <li v-if="paths.api">
       <Button
         href="#api"
-        variant="ghost"
+        variant="outline"
         size="sm"
-        :class="secondaryPathClass"
+        class="border-primary-warm-white/70 text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink"
         data-testid="model-path-api"
-        @click="jumpTo($event, 'api')"
+        @click="jumpToApi"
       >
         <template #prepend>
           <Code aria-hidden="true" />
@@ -55,15 +41,15 @@ function jumpTo(event: MouseEvent, section: 'playground' | 'api') {
         :href="WORKSHOP_CLOUD_BASE_URL"
         target="_blank"
         rel="noopener"
-        variant="ghost"
+        :variant="paths.run ? 'ghost' : 'default'"
         size="sm"
-        :class="secondaryPathClass"
+        class="font-bold tracking-wider uppercase"
         data-testid="model-path-cloud"
       >
-        <template #prepend>
-          <Cloud aria-hidden="true" />
-        </template>
         {{ t('workshop.model.paths.cloud') }}
+        <template #append>
+          <ArrowUpRight aria-hidden="true" />
+        </template>
       </Button>
     </li>
   </ul>
