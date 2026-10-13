@@ -433,12 +433,21 @@ describe('ModelsCatalogue', () => {
               (id) => id === 'explore-use-cases' || id === 'explore-community'
             )
         ).toEqual(sections)
-        if (flag)
+        if (flag) {
+          const community = within(screen.getByTestId('explore-community'))
           expect(
-            within(screen.getByTestId('explore-community')).getByRole('link', {
-              name: 'Explore the gallery'
-            })
-          ).toHaveAttribute('href', '/gallery/')
+            community
+              .getAllByRole('link')
+              .map((link) => link.getAttribute('href'))
+              .filter((href) => href?.includes('/gallery'))
+          ).toEqual([])
+          expect(
+            community.getByRole('link', { name: 'Share yours' })
+          ).toHaveAttribute(
+            'href',
+            expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//)
+          )
+        }
       }
     )
 

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { useBoundingBoxesWidget } from './useBoundingBoxesWidget'
 
@@ -29,7 +28,7 @@ describe('useBoundingBoxesWidget', () => {
       type: 'BOUNDING_BOXES',
       name: 'editor_state',
       default: boxes
-    } as InputSpec)
+    })
     expect(node.addWidget).toHaveBeenCalledWith(
       'boundingboxes',
       'editor_state',
@@ -44,7 +43,7 @@ describe('useBoundingBoxesWidget', () => {
     useBoundingBoxesWidget()(node, {
       type: 'BOUNDING_BOXES',
       name: 'editor_state'
-    } as InputSpec)
+    })
     expect(node.addWidget).toHaveBeenCalledWith(
       'boundingboxes',
       'editor_state',
@@ -69,7 +68,7 @@ describe('useBoundingBoxesWidget', () => {
       type: 'BOUNDING_BOXES',
       name: 'editor_state',
       default: shared
-    } as InputSpec)
+    })
     const passed = node.addWidget.mock.calls[0][2] as typeof shared
     expect(passed).not.toBe(shared)
     expect(passed[0]).not.toBe(shared[0])

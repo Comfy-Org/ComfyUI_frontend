@@ -8,7 +8,11 @@ import { t } from '@/i18n/translations'
 import type { HubSections, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
 
-const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const ALL_SECTIONS: HubSections = {
+  workflows: true,
+  apps: true,
+  reshoot: true
+}
 
 function hubOf(navigation: NavItem[]): NavItem {
   const hub = navigation[0]
@@ -18,7 +22,7 @@ function hubOf(navigation: NavItem[]): NavItem {
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links the Hub catalogue from the Hub Models column and under Products > Create, for %s',
+    'links the Hub catalogue from the Hub Models column only, not under Products > Create, for %s',
     (locale) => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
@@ -34,21 +38,23 @@ describe('getMainNavigation', () => {
         label: t('nav.hubAllModels', {}, { locale }),
         href: catalogue
       })
-      expect(create?.items).toContainEqual({
-        label: t('nav.comfyWorkshop', {}, { locale }),
-        href: catalogue,
-        badge: 'new'
-      })
+      expect(create?.items.map((item) => item.href)).not.toContain(catalogue)
     }
   )
 
   it.for([
-    { sections: { workflows: false, apps: false }, headers: ['Models'] },
     {
-      sections: { workflows: true, apps: false },
+      sections: { workflows: false, apps: false, reshoot: false },
+      headers: ['Models']
+    },
+    {
+      sections: { workflows: true, apps: false, reshoot: false },
       headers: ['Models', 'Workflows']
     },
-    { sections: { workflows: false, apps: true }, headers: ['Models', 'Apps'] },
+    {
+      sections: { workflows: false, apps: true, reshoot: true },
+      headers: ['Models', 'Apps']
+    },
     { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
   ])(
     'opens the Hub as one column per section that is on, showing $headers',
@@ -133,14 +139,31 @@ describe('getMainNavigation', () => {
           {
             label: 'Cinematic Studio',
             href: '/hub/apps/cinematic-studio/',
-            newTab: true
+            newTab: undefined
           },
-          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+          {
+            label: 'Re-shoot',
+            href: '/hub/apps/reshoot/',
+            newTab: undefined
+          }
         ],
         allLink: { label: 'All apps', href: '/hub/apps/' }
       }
     ])
   })
+
+  it.for([
+    { reshoot: true, apps: ['Cinematic Studio', 'Re-shoot'] },
+    { reshoot: false, apps: ['Cinematic Studio'] }
+  ])(
+    'lists Re-shoot in the Apps column only when its flag is on: $reshoot',
+    ({ reshoot, apps }) => {
+      const hub = hubOf(getMainNavigation('en', { ...ALL_SECTIONS, reshoot }))
+      const appsColumn = hub.columns?.find((column) => column.header === 'Apps')
+
+      expect(appsColumn?.items.map((item) => item.label)).toEqual(apps)
+    }
+  )
 
   it('links every Hub entry to a page the site builds', () => {
     const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
@@ -203,7 +226,6 @@ describe('getMainNavigation', () => {
     ])
     expect(productsItem?.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Desktop',
-      'Browse Models',
       'Comfy Cloud',
       'Comfy Workflows'
     ])
@@ -211,15 +233,8 @@ describe('getMainNavigation', () => {
       'Developer Platform',
       'Comfy API',
       'Comfy Router',
-      'Builds',
-      'Managed Builds'
+      'Builds'
     ])
-    expect(productsItem?.columns?.[2].items).toContainEqual(
-      expect.objectContaining({
-        label: 'Managed Builds',
-        href: '/enterprise/managed-builds/'
-      })
-    )
     expect(productsItem?.columns?.[3].placement).toBe('footer')
     expect(productsItem?.columns?.[3].items.map((item) => item.label)).toEqual([
       'Docs',
@@ -243,7 +258,6 @@ describe('getMainNavigation', () => {
       expect(badgeOf(routes.platform)).toBe('new')
       expect(badgeOf(routes.platformComfyApi)).toBeUndefined()
       expect(badgeOf(routes.platformRouter)).toBe('new')
-      expect(badgeOf(routes.managedBuilds)).toBeUndefined()
     }
   )
 
@@ -262,11 +276,18 @@ describe('getMainNavigation', () => {
     expect(enterprise.columns?.[0].header).toBeUndefined()
     expect(enterprise.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Enterprise',
+      'Managed Builds',
       'Forward Deployed Creatives',
       'Team Billing',
       'Commercial Licensing',
       'Contact Sales'
     ])
+    expect(enterprise.columns?.[0].items).toContainEqual(
+      expect.objectContaining({
+        label: 'Managed Builds',
+        href: '/enterprise/managed-builds/'
+      })
+    )
     expect(enterprise.featured).toEqual(
       expect.objectContaining({
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
@@ -291,7 +312,7 @@ describe('getMainNavigation', () => {
       'Connect'
     ])
     expect(labels(0)).toEqual(['Events', 'Affiliates', 'Learning'])
-    expect(labels(2)).toEqual(['Customer Stories', 'Launches', 'Blog'])
+    expect(labels(2)).toEqual(['Customer Stories', 'Blog'])
     expect(company?.columns?.[3].placement).toBe('footer')
     expect(company?.columns?.[3].items).toContainEqual({
       label: 'Discord',

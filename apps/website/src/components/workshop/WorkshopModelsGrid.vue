@@ -50,6 +50,12 @@ import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import { shelfOf } from '@/lib/workshop/shelf-use-cases'
+import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
+import {
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import ModelsToolbarMenus from '@/components/workshop/models-hub/ModelsToolbarMenus.vue'
@@ -102,15 +108,26 @@ const MODELS_PAGE_SIZE = 48
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 let scrollReady = false
 
+const { submitSearch, quietly } = useHubCatalogueTracking('models', {
+  query,
+  resultsCount: () => visible.value.length,
+  filters: [
+    ['use_case', () => selectedUseCases.value],
+    ['sort', () => sort.value]
+  ]
+})
+
 function readAddress(search: string) {
-  const initial = parseCatalogSearch(search)
-  query.value = initial.query ?? ''
-  readTypeAddress(search)
-  legacyModalities.value = [...initial.modalities]
-  legacyProviders.value = [...initial.providers]
-  legacyCapabilities.value = [...initial.capabilities]
-  selectedAccess.value = parseAccess(search)
-  selectedResolution.value = parseResolution(search)
+  quietly(() => {
+    const initial = parseCatalogSearch(search)
+    query.value = initial.query ?? ''
+    readTypeAddress(search)
+    legacyModalities.value = [...initial.modalities]
+    legacyProviders.value = [...initial.providers]
+    legacyCapabilities.value = [...initial.capabilities]
+    selectedAccess.value = parseAccess(search)
+    selectedResolution.value = parseResolution(search)
+  })
 }
 
 watch(selectedAccess, (value) => writeParam(ACCESS_PARAM, value.join(',')))
@@ -272,6 +289,21 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
   )
   rememberListOnClick(list, model.href, event)
 }
+
+function openResult(model: WorkshopModel, event: MouseEvent) {
+  if (model.href) {
+    submitSearch()
+    captureHubItemClick(hubItemOf(model), {
+      surface: 'models',
+      source: 'results_grid',
+      position: shownFamilies.value.findIndex(
+        (family) => family.latest.slug === model.slug
+      ),
+      ...hubActiveQuery(query.value)
+    })
+  }
+  rememberModel(model, event)
+}
 </script>
 
 <template>
@@ -335,6 +367,7 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
               :locale
               compact
               class="min-w-0 flex-1 sm:min-w-48"
+              @submit="submitSearch"
             />
 
             <ModelsToolbarMenus
@@ -361,7 +394,7 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
                 :families="shownFamilies"
                 :compared="comparedSlugs"
                 :locale
-                @open="rememberModel"
+                @open="openResult"
                 @compare="toggleCompare"
               />
               <CatalogueShowMore

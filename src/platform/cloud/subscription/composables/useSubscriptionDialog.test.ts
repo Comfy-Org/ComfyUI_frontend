@@ -18,6 +18,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -64,6 +65,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -105,23 +107,11 @@ function recoveredOperation(
   }
 }
 
-function expectRekaPricingDialogProps(
-  dialogComponentProps: Record<string, unknown>
-) {
-  expect(dialogComponentProps).toMatchObject({
-    renderer: 'reka',
-    size: 'full',
-    dismissableMask: false
-  })
-  expect(dialogComponentProps).not.toHaveProperty('style')
-  expect(dialogComponentProps).not.toHaveProperty('pt')
-}
-
 beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
   )
-  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+  vi.mocked(useWorkspaceDialogs().showTeamWorkspacesDialog).mockImplementation(
     mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()
@@ -211,7 +201,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
-    it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
+    it('keeps the unified pricing dialog open on an outside click', () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
@@ -221,7 +211,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -359,7 +349,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).toHaveProperty('onChooseTeam')
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
       expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
@@ -413,7 +403,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
-    it('sizes the legacy workspace pricing dialog via Reka contentClass', () => {
+    it('keeps the legacy workspace pricing dialog open on an outside click', () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
@@ -424,10 +414,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expect(dialogComponentProps).toMatchObject({
-        modal: false
-      })
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
     })
 
     it('defaults an unsubscribed team workspace to the team tab', () => {

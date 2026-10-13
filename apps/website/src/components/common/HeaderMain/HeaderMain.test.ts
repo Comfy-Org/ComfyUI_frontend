@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
 import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import type { HubApp } from '@/data/mainNavigation'
 import {
   useWorkshopAppsEnabled,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
+  useWorkshopFlag,
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
@@ -21,9 +23,15 @@ vi.mock(import('@/config/workshop-account-source'), () => ({
 let flag = ref(false)
 let visibility = ref(false)
 
-function renderHeader(workshopInBuild = false) {
+const RESHOOT_FLAG = 'workshop-reshoot-app-enabled'
+const HUB_APPS: HubApp[] = [
+  { appId: 'studio' },
+  { appId: 'reshoot', flag: RESHOOT_FLAG }
+]
+
+function renderHeader(workshopInBuild = false, hubApps: HubApp[] = []) {
   return render(HeaderMain, {
-    props: { workshopInBuild },
+    props: { workshopInBuild, hubApps },
     global: {
       stubs: {
         HeaderAccount: defineComponent({
@@ -69,30 +77,74 @@ describe('HeaderMain workshop gating', () => {
     }
   )
 
+  async function openHubMenu() {
+    await userEvent.click(
+      within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+        name: /^Hub\b/i
+      })
+    )
+    return screen.findByTestId('nav-dropdown')
+  }
+
+  function setHubFlags(workflows: boolean, apps: boolean) {
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+      readonly(ref(workflows))
+    )
+    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(apps)))
+  }
+
   it.for([
-    { workflows: false, apps: false, headers: ['Models'] },
-    { workflows: true, apps: false, headers: ['Models', 'Workflows'] },
-    { workflows: true, apps: true, headers: ['Models', 'Workflows', 'Apps'] }
+    { enabled: true, workflows: false, apps: false, headers: ['Models'] },
+    {
+      enabled: true,
+      workflows: true,
+      apps: false,
+      headers: ['Models', 'Workflows']
+    },
+    {
+      enabled: true,
+      workflows: true,
+      apps: true,
+      headers: ['Models', 'Workflows', 'Apps']
+    },
+    { enabled: false, workflows: true, apps: true, headers: ['Models'] }
   ])(
-    'shows the Hub columns whose flags are on: $headers',
-    async ({ workflows, apps, headers }) => {
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        readonly(ref(workflows))
-      )
-      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(apps)))
-      renderHeader()
-      await userEvent.click(
-        within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
-          name: /^Hub\b/i
-        })
-      )
-      const menu = within(await screen.findByTestId('nav-dropdown'))
+    'shows the Hub columns whose flags are on (workshop $enabled): $headers',
+    async ({ enabled, workflows, apps, headers }) => {
+      visibility.value = enabled
+      setHubFlags(workflows, apps)
+      renderHeader(true)
+      const menu = within(await openHubMenu())
 
       expect(
         ['Models', 'Workflows', 'Apps'].filter((header) =>
           menu.queryByText(header, { exact: true })
         )
       ).toEqual(headers)
+    }
+  )
+
+  it.for([
+    { reshootFlag: true, apps: ['Cinematic Studio', 'Re-shoot'] },
+    { reshootFlag: false, apps: ['Cinematic Studio'] }
+  ])(
+    'lists Re-shoot under Apps only when its own flag is on: $reshootFlag',
+    async ({ reshootFlag, apps }) => {
+      visibility.value = true
+      setHubFlags(false, true)
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        readonly(ref(name === RESHOOT_FLAG && reshootFlag))
+      )
+      renderHeader(true, HUB_APPS)
+      const menu = within(await openHubMenu())
+
+      const appLinks = within(menu.getByRole('list', { name: 'Apps' }))
+
+      expect(
+        ['Cinematic Studio', 'Re-shoot'].filter((app) =>
+          appLinks.queryByRole('link', { name: new RegExp(`^${app}`) })
+        )
+      ).toEqual(apps)
     }
   )
 

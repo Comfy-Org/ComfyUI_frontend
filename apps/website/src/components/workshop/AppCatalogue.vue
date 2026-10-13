@@ -5,6 +5,7 @@ import { usePagedList } from '@/composables/usePagedList'
 import type { Locale } from '@/i18n/translations'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac, appMeta } from '@/lib/workshop/catalogue-apps'
+import { captureHubItemClick } from '@/scripts/hub-analytics'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
@@ -26,6 +27,14 @@ const cards = computed(() => [
   }))
 ])
 const { shown, total, hasMore, showMore } = usePagedList(cards)
+
+function openApp(app: CatalogueApp, position: number) {
+  if (app.href)
+    captureHubItemClick(
+      { kind: 'app', slug: app.key },
+      { surface: 'apps', source: 'results_grid', position }
+    )
+}
 </script>
 
 <template>
@@ -35,8 +44,8 @@ const { shown, total, hasMore, showMore } = usePagedList(cards)
       :aria-label="ac('apps', locale)"
       data-testid="app-grid"
     >
-      <li v-for="{ app, meta } in shown" :key="app.key">
-        <WorkshopAppCard :app :meta :locale />
+      <li v-for="({ app, meta }, index) in shown" :key="app.key">
+        <WorkshopAppCard :app :meta :locale @click="openApp(app, index)" />
       </li>
     </ul>
     <CatalogueShowMore

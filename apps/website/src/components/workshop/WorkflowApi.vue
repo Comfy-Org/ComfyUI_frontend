@@ -109,6 +109,7 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
               :href="keyHref"
               target="_blank"
               rel="noopener"
+              variant="outline"
               class="px-5"
               data-testid="api-get-key"
               @click="emit('getKey')"

@@ -3,13 +3,11 @@ import { join } from 'node:path'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { getWorkshopPageDetail } from '@/config/workshop-page-content'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import WorkflowPreview from './WorkflowPreview.vue'
-
-vi.mock(import('@/scripts/posthog'))
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')

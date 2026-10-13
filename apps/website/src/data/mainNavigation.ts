@@ -1,3 +1,4 @@
+import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -57,12 +58,20 @@ export type NavItem =
       activePathPrefix?: never
     }
 
+/** A built Hub app and the PostHog flag it is shown behind, if any. */
+export type HubApp = Pick<AppWorkshopModel, 'appId' | 'flag'>
+
 export type HubSections = {
   workflows: boolean
   apps: boolean
+  reshoot: boolean
 }
 
-export const NO_HUB_SECTIONS: HubSections = { workflows: false, apps: false }
+export const NO_HUB_SECTIONS: HubSections = {
+  workflows: false,
+  apps: false,
+  reshoot: false
+}
 
 export function getMainNavigation(
   locale: Locale,
@@ -141,10 +150,12 @@ export function getMainNavigation(
           items: [
             {
               label: t('nav.cinematicStudio'),
-              href: routes.cinematicStudio,
-              newTab: true
+              href: routes.cinematicStudio
             },
-            { label: t('nav.reshoot'), href: routes.reshoot, newTab: true }
+            ...when(hubSections.reshoot, {
+              label: t('nav.reshoot'),
+              href: routes.reshoot
+            })
           ],
           allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
         })
@@ -168,11 +179,6 @@ export function getMainNavigation(
           header: t('nav.colCreate'),
           items: [
             { label: t('nav.comfyLocal'), href: routes.download },
-            {
-              label: t('nav.comfyWorkshop'),
-              href: routes.workshop,
-              badge: 'new'
-            },
             { label: t('nav.comfyCloud'), href: routes.cloud },
             {
               label: t('nav.comfyHub'),
@@ -212,11 +218,7 @@ export function getMainNavigation(
               href: routes.platformRouter,
               badge: 'new'
             },
-            { label: t('nav.builds'), href: routes.platformBuilder },
-            {
-              label: t('nav.managedBuilds'),
-              href: routes.managedBuilds
-            }
+            { label: t('nav.builds'), href: routes.platformBuilder }
           ]
         },
         {
@@ -257,6 +259,10 @@ export function getMainNavigation(
             {
               label: t('nav.comfyEnterprise'),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
             },
             {
               label: t('nav.fdct'),
@@ -327,7 +333,6 @@ export function getMainNavigation(
               href: routes.customers,
               badge: 'new'
             },
-            { label: t('nav.launches'), href: routes.launches },
             {
               label: t('nav.blogs'),
               href: externalLinks.blog,

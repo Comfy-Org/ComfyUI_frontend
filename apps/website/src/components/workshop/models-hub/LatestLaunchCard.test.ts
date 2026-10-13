@@ -19,7 +19,7 @@ const launch: WorkshopModel = {
 
 function chips() {
   return screen
-    .getAllByText(/^(Text to Video|Run|API)$/)
+    .getAllByText(/^(Text to video|Run|API)$/)
     .map((chip) => chip.textContent.trim())
 }
 
@@ -45,7 +45,7 @@ describe('LatestLaunchCard', () => {
   it('shows only the task, without Run, API or its raw tags', () => {
     render(LatestLaunchCard, { props: { model: launch } })
 
-    expect(chips()).toEqual(['Text to Video'])
+    expect(chips()).toEqual(['Text to video'])
     expect(screen.queryByText('seedance-2.5')).toBeNull()
     expect(screen.queryByText('byteplus')).toBeNull()
   })

@@ -864,9 +864,6 @@ const showsRunMeta = computed(
 const policyMessage = computed(() =>
   refusesRealFaces(model.slug) ? t('workshop.error.policyRealFaces') : undefined
 )
-const memberWorkspace = computed(() =>
-  session.value?.role === 'member' ? session.value.workspace.name : undefined
-)
 
 function retry() {
   if (gate.value === 'ready') void run()
@@ -959,7 +956,9 @@ function retry() {
             compact
             :locale
             :policy-message
-            :member-workspace
+            :member-workspace="
+              session?.role === 'member' ? session.workspace.name : undefined
+            "
             @switch-personal="switchToPersonal"
             @buy-credits="requestWorkshopBuyCredits"
             @retry="retry"

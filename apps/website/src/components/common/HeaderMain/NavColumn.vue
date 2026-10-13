@@ -26,7 +26,7 @@ defineProps<{
         layout === 'row'
           ? 'flex items-center gap-8'
           : 'flex flex-col space-y-4',
-        column.description && 'w-60'
+        column.description && 'w-52'
       )
     "
   >

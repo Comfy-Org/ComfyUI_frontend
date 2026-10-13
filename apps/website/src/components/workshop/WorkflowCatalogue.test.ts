@@ -291,7 +291,7 @@ describe('WorkflowCatalogue filters', () => {
       within(dialog)
         .getAllByRole('tab')
         .map((tab) => tab.textContent.trim())
-    ).toEqual(['Input', 'Output', 'Model'])
+    ).toEqual(['Input', 'Output', 'Models'])
     expect(within(dialog).getByRole('searchbox')).toBeVisible()
     expect(within(dialog).getAllByRole('button', { pressed: false })).toEqual([
       within(dialog).getByRole('button', { name: 'Audio 1' })
@@ -328,7 +328,7 @@ describe('WorkflowCatalogue filters', () => {
     const dialog = await openFilters(user)
 
     expect(within(dialog).queryByRole('tablist')).toBeNull()
-    expect(within(dialog).getByRole('region', { name: 'Model' })).toBeTruthy()
+    expect(within(dialog).getByRole('region', { name: 'Models' })).toBeTruthy()
   })
 
   it('restores media and models from a shared address and drops what it does not know', async () => {

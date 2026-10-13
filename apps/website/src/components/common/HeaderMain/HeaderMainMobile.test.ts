@@ -7,7 +7,7 @@ import HeaderMainMobile from './HeaderMainMobile.vue'
 async function openMenu() {
   const user = userEvent.setup()
   render(HeaderMainMobile, {
-    props: { hubSections: { workflows: true, apps: true } }
+    props: { hubSections: { workflows: true, apps: true, reshoot: true } }
   })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user
@@ -56,20 +56,20 @@ describe('HeaderMainMobile', () => {
       '/hub/apps/reshoot/',
       '/hub/apps/'
     ])
-    expect(screen.getByRole('link', { name: 'Re-shoot' })).toHaveAttribute(
-      'target',
-      '_blank'
+    expect(screen.getByRole('link', { name: 'Re-shoot' })).not.toHaveAttribute(
+      'target'
     )
     expect(screen.getByRole('link', { name: 'All apps' })).not.toHaveAttribute(
       'target'
     )
   })
 
-  it('offers Browse Models under Products', async () => {
+  it('leaves the models catalogue out of Products', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Products\b/i }))
 
-    expect(screen.getByRole('link', { name: /^Browse Models\b/i })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Comfy Cloud' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /^Browse Models\b/i })).toBeNull()
   })
 
   it('names each icon-only social link under Company', async () => {
