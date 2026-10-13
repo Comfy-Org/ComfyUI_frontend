@@ -16,6 +16,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { TranslationPipelineConfig } from './config'
 import { translationTargets } from './config'
 import type { LocaleObject } from './locale-tree'
+import { serializeManifest } from './source-manifest'
 import type { TranslateBatch, TranslationItem } from './translate'
 import { updateLocales } from './update-locales'
 
@@ -95,7 +96,7 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
     ) {
       writeText(
         manifestFile,
-        json({
+        serializeManifest({
           version: 1,
           files: Object.fromEntries(
             Object.entries(files).map(([name, english]) => [
@@ -125,7 +126,11 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
           ])
       )
     },
-    async run(check: boolean, translateBatch?: TranslateBatch) {
+    async run(
+      check: boolean,
+      translateBatch?: TranslateBatch,
+      complete = false
+    ) {
       const output: string[] = []
       vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
         output.push(String(chunk))
@@ -136,6 +141,7 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
           repoRoot: root,
           config: target,
           check,
+          complete,
           translateBatch
         })
         return { status, output: output.join('') }
@@ -519,7 +525,7 @@ describe('protected-token baselines', () => {
   const japanese = { farewell: 'さようなら {name}', greeting: 'こんにちは' }
   const chinese = { farewell: '再见 {name}', greeting: '你好 {name}' }
 
-  it('baselines array leaves without exempting object subtrees', async () => {
+  it('rejects corruption in array leaves and object subtrees even if baselined', async () => {
     const repo = createCatalogRepo()
     const source = { group: { title: 'Hi {name}' }, list: ['Bye {name}'] }
     repo.recordEnglish(
@@ -535,11 +541,11 @@ describe('protected-token baselines', () => {
     const check = await repo.run(true)
 
     expect(check.status).toBe(1)
-    expect(check.output).toContain('1 protected-token violations')
+    expect(check.output).toContain('2 protected-token violations')
     expect(check.output).toContain('group.title: missing {name}')
   })
 
-  it('keeps baselined paths that still violate and drops healed ones', async () => {
+  it('rejects baselined corruption and drops repaired baselines after generation', async () => {
     const repo = createCatalogRepo()
     repo.recordEnglish(
       { 'main.json': english },
@@ -551,17 +557,23 @@ describe('protected-token baselines', () => {
     const translator = createTranslator()
 
     const before = await repo.run(true)
+    repo.writeCatalog('ja/main.json', {
+      ...japanese,
+      greeting: 'こんにちは {name}'
+    })
     const generation = await repo.run(false, translator.translate)
     const after = await repo.run(true)
 
-    expect(before.status).toBe(0)
+    expect(before.status).toBe(1)
     expect(generation.status).toBe(0)
     expect(translator.requests).toEqual([])
-    expect(repo.readCatalog('ja/main.json')).toEqual(japanese)
+    expect(repo.readCatalog('ja/main.json')).toEqual({
+      ...japanese,
+      greeting: 'こんにちは {name}'
+    })
     expect(repo.readManifest()).toEqual({
       version: 1,
-      files: { 'main.json': repo.blobId(english) },
-      knownViolations: { 'main.json': ['["greeting"]'] }
+      files: { 'main.json': repo.blobId(english) }
     })
     expect(after).toEqual({
       status: 0,
@@ -585,7 +597,7 @@ describe('protected-token baselines', () => {
     const translator = createTranslator()
 
     await expect(repo.run(false, translator.translate)).rejects.toThrow(
-      'Fix retained copy before generation:\nja/main.json: farewell: missing {name}'
+      'Fix retained copy before generation:\nja/main.json: farewell: missing {name}\nja/main.json: greeting: missing {name}'
     )
     expect(translator.requests).toEqual([])
     expect(repo.readTree()).toEqual(before)
@@ -653,7 +665,7 @@ describe('unusable source metadata', () => {
     }
   )
 
-  it('warns and skips token auditing in check, but refuses generation, when the recorded blob is missing', async () => {
+  it('refuses check and generation when the recorded source blob is unavailable', async () => {
     const repo = createCatalogRepo()
     seed(repo)
     const missing = repo.blobId({ greeting: 'Hello {name}' })
@@ -664,17 +676,180 @@ describe('unusable source metadata', () => {
     const before = repo.readTree()
     const translator = createTranslator()
 
-    const check = await repo.run(true)
-
-    expect(check.status).toBe(0)
-    expect(check.output).toContain(
-      `WARNING: main.json: the recorded English source (${missing}) is unavailable`
+    await expect(repo.run(true)).rejects.toThrow(
+      `Cannot read the recorded English source for main.json (${missing})`
     )
-    expect(check.output).not.toContain('missing {name}')
     await expect(repo.run(false, translator.translate)).rejects.toThrow(
       `Cannot read the recorded English source for main.json (${missing})`
     )
     expect(translator.requests).toEqual([])
+    expect(repo.readTree()).toEqual(before)
+  })
+})
+
+describe('catalog delivery gates', () => {
+  const japaneseOnly = {
+    ...config,
+    outputLocales: config.outputLocales.filter(({ code }) => code === 'ja')
+  }
+
+  it('allows English-only changes in ordinary PRs and rejects them at the delivery gate without writing or translating', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({ 'main.json': { greeting: 'Hi {name}' } })
+    repo.writeCatalog('en/main.json', {
+      greeting: 'Hello {user}',
+      added: 'New'
+    })
+    repo.writeCatalog('ja/main.json', { greeting: 'こんにちは {name}' })
+    const before = repo.readTree()
+    const translator = createTranslator()
+
+    expect(await repo.run(true, translator.translate)).toMatchObject({
+      status: 0,
+      output: expect.stringContaining(
+        'Catalog status: valid; translations pending'
+      )
+    })
+    expect(await repo.run(true, translator.translate, true)).toMatchObject({
+      status: 1,
+      output: expect.stringContaining('Complete catalogs are required')
+    })
+    expect(translator.requests).toEqual([])
+    expect(repo.readTree()).toEqual(before)
+  })
+
+  it('requires recorded current provenance even when all copy is retained', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({})
+    repo.writeCatalog('en/main.json', { title: 'Title' })
+    repo.writeCatalog('ja/main.json', { title: 'タイトル' })
+
+    expect((await repo.run(true)).status).toBe(0)
+    expect((await repo.run(true, undefined, true)).status).toBe(1)
+  })
+
+  it('audits outdated copy against recorded English while accepting already refreshed copy', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({ 'main.json': { greeting: 'Hi {name}' } })
+    repo.writeCatalog('en/main.json', { greeting: 'Hello {user}' })
+    repo.writeCatalog('ja/main.json', { greeting: 'こんにちは' })
+    expect((await repo.run(true)).status).toBe(1)
+
+    repo.writeCatalog('ja/main.json', { greeting: 'こんにちは {name}' })
+    expect((await repo.run(true)).status).toBe(0)
+
+    repo.writeCatalog('ja/main.json', { greeting: 'こんにちは {user}' })
+    expect((await repo.run(true)).status).toBe(0)
+    expect((await repo.run(true, undefined, true)).status).toBe(1)
+  })
+
+  it('requires empty source messages and metadata to be present in complete output', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    const english = { empty: '', metadata: 2 }
+    repo.recordEnglish({ 'main.json': english })
+    repo.writeCatalog('en/main.json', english)
+    repo.writeCatalog('ja/main.json', {})
+
+    expect((await repo.run(true)).status).toBe(0)
+    expect((await repo.run(true, undefined, true)).status).toBe(1)
+    repo.writeCatalog('ja/main.json', english)
+    expect((await repo.run(true, undefined, true)).status).toBe(0)
+  })
+
+  it('invalidates an entire message group when English changes while allowing valid outdated word order until generation', async () => {
+    const repo = createCatalogRepo({
+      ...japaneseOnly,
+      messageGroups: [[['before'], ['after']]]
+    })
+    repo.recordEnglish({ 'main.json': { before: '{name} in ', after: '' } })
+    repo.writeCatalog('en/main.json', { before: '{model} in ', after: '' })
+    repo.writeCatalog('ja/main.json', { before: '', after: 'の {name}' })
+
+    expect((await repo.run(true)).status).toBe(0)
+    expect((await repo.run(true, undefined, true)).status).toBe(1)
+
+    const translator = createTranslator(() => '{model} の ')
+    await repo.run(false, translator.translate)
+    expect(repo.readCatalog('ja/main.json')).toEqual({
+      before: '{model} の ',
+      after: ''
+    })
+    expect(translator.requests).toHaveLength(1)
+    expect((await repo.run(true, undefined, true)).status).toBe(0)
+  })
+
+  it('rejects corrupted outdated grouped copy even while translations are pending', async () => {
+    const repo = createCatalogRepo({
+      ...japaneseOnly,
+      messageGroups: [[['before'], ['after']]]
+    })
+    repo.recordEnglish({ 'main.json': { before: '{name} in ', after: '' } })
+    repo.writeCatalog('en/main.json', { before: '{model} in ', after: '' })
+    repo.writeCatalog('ja/main.json', { before: '', after: 'モデル' })
+
+    expect(await repo.run(true)).toMatchObject({
+      status: 1,
+      output: expect.stringContaining('missing {name}')
+    })
+  })
+
+  it('rejects prunable orphan files only in complete mode', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({ 'main.json': { title: 'Title' } })
+    repo.writeCatalog('en/main.json', { title: 'Title' })
+    repo.writeCatalog('ja/main.json', { title: 'タイトル' })
+    repo.writeCatalog('ja/orphan.json', { title: '古い' })
+
+    expect((await repo.run(true)).status).toBe(0)
+    expect((await repo.run(true, undefined, true)).status).toBe(1)
+  })
+
+  it('accepts complete eligible copy with legal fallback and intentional empty translations', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    const english = { title: 'Title', tos: { text: 'Legal' } }
+    repo.recordEnglish({ 'main.json': english })
+    repo.writeCatalog('en/main.json', english)
+    repo.writeCatalog('ja/main.json', { title: '' })
+
+    expect((await repo.run(true, undefined, true)).status).toBe(0)
+  })
+
+  it.for([
+    { label: 'English syntax', english: 'Hello {', japanese: 'こんにちは' },
+    { label: 'retained syntax', english: 'Hello', japanese: 'こんにちは {' },
+    {
+      label: 'unsafe markup',
+      english: 'Hello',
+      japanese: '<img onerror="bad()">'
+    }
+  ])('fails integrity with $label', async ({ english, japanese }) => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({ 'main.json': { title: english } })
+    repo.writeCatalog('en/main.json', { title: english })
+    repo.writeCatalog('ja/main.json', { title: japanese })
+    const translator = createTranslator()
+    const before = repo.readTree()
+
+    expect((await repo.run(true)).status).toBe(1)
+    await expect(repo.run(false, translator.translate)).rejects.toThrow(
+      /Fix (English catalogs|retained copy) before generation/
+    )
+    expect(translator.requests).toEqual([])
+    expect(repo.readTree()).toEqual(before)
+  })
+
+  it('rejects generated syntax before advancing source provenance', async () => {
+    const repo = createCatalogRepo(japaneseOnly)
+    repo.recordEnglish({ 'main.json': { title: 'Old' } })
+    repo.writeCatalog('en/main.json', { title: 'New' })
+    repo.writeCatalog('ja/main.json', { title: '古い' })
+    const before = repo.readTree()
+    const translator = createTranslator(() => '壊れた {')
+
+    await expect(repo.run(false, translator.translate)).rejects.toThrow(
+      'invalid message'
+    )
+    expect(translator.requests).toHaveLength(1)
     expect(repo.readTree()).toEqual(before)
   })
 })

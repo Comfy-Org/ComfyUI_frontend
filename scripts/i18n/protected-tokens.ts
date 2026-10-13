@@ -398,7 +398,7 @@ function stringViolations(
   ]
 }
 
-function leafViolations(
+export function leafViolations(
   source: LocaleValue,
   target: LocaleValue | undefined,
   path: string[],

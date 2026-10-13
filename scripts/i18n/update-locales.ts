@@ -11,9 +11,15 @@ import {
 import { dirname, join, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import { isEqual } from 'es-toolkit'
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 
-import type { OutputLocale, TranslationPipelineConfig } from './config'
+import { auditCatalogSafety } from './catalog-validation'
+import type {
+  MessageGroup,
+  OutputLocale,
+  TranslationPipelineConfig
+} from './config'
 import { translationTargets } from './config'
 import { partitionLocale } from './locale-retention'
 import type {
@@ -26,6 +32,8 @@ import {
   collectLeaves,
   collectPendingLeaves,
   diffLocaleSources,
+  getLeaf,
+  isTranslatableLeaf,
   parseLocale,
   pathKey,
   rebuildLocale,
@@ -35,6 +43,7 @@ import {
   auditLocaleTokens,
   formatTokenViolation,
   leafTokensDiffer,
+  leafViolations,
   localizeLinks,
   protectedTokens
 } from './protected-tokens'
@@ -55,8 +64,7 @@ interface SourcePlan {
   source: LocaleObject
   sourceLeaves: Map<string, LocaleLeafEntry>
   previous: LocaleObject
-  degraded: boolean
-  knownViolationKeys: ReadonlySet<string>
+  recorded: boolean
   invalidated: Set<string>
   modified: Set<string>
   excluded: Set<string>
@@ -217,7 +225,6 @@ function loadPlans(
   outputDir: string,
   manifest: SourceManifest,
   config: TranslationPipelineConfig,
-  check: boolean,
   readCatalog: (file: string, required?: boolean) => LocaleObject
 ): SourcePlan[] {
   const entryDir = join(outputDir, 'en')
@@ -234,15 +241,11 @@ function loadPlans(
         : undefined
       const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
       if (recorded === undefined) {
-        if (!check)
-          throw new Error(
-            `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (fetch-depth: 0 with filter: blob:none).`
-          )
-        print(
-          `WARNING: ${filename}: the recorded English source (${hash}) is unavailable in this clone; changed-string detection is skipped for this check.`
+        throw new Error(
+          `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (fetch-depth: 0 with filter: blob:none).`
         )
       }
-      const previous = recorded ?? source
+      const previous = recorded
       const sourceLeaves = collectLeaves(source)
       const policy = config.existingCopy
       const excluded = new Set(
@@ -282,8 +285,7 @@ function loadPlans(
         source,
         sourceLeaves,
         previous,
-        degraded: recorded === undefined,
-        knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? []),
+        recorded: hash !== undefined,
         invalidated,
         modified,
         excluded
@@ -343,6 +345,78 @@ function loadStates(
   )
 }
 
+function auditChangedLeaf(
+  state: LocaleFileState,
+  output: LocaleObject,
+  config: TranslationPipelineConfig,
+  key: string
+) {
+  const leaf = state.plan.sourceLeaves.get(key)
+  if (!leaf) return []
+  const previous = getLeaf(state.plan.previous, leaf.path)
+  const target = getLeaf(output, leaf.path)
+  if (previous === undefined || target === undefined) return []
+  const options = {
+    strict: config.strictProtectedTokens,
+    localeCode: state.locale.code,
+    localizeHref: config.localizeHref
+  }
+  const oldErrors = leafViolations(previous, target, leaf.path, options)
+  return leafTokensDiffer(leaf.value, target, options) ? oldErrors : []
+}
+
+function groupMessage(catalog: LocaleObject, group: MessageGroup) {
+  const values = group.map((path) => getLeaf(catalog, [...path]))
+  return values.every((value) => typeof value === 'string')
+    ? values.join(' ')
+    : undefined
+}
+
+function auditChangedGroup(
+  state: LocaleFileState,
+  output: LocaleObject,
+  config: TranslationPipelineConfig,
+  group: MessageGroup
+) {
+  const current = groupMessage(state.plan.source, group)
+  const target = groupMessage(output, group)
+  if (current === undefined || target === undefined) return []
+  const previous = groupMessage(state.plan.previous, group) ?? current
+  const options = {
+    strict: config.strictProtectedTokens,
+    localeCode: state.locale.code,
+    localizeHref: config.localizeHref
+  }
+  const oldErrors = leafViolations(previous, target, [...group[0]], options)
+  return leafTokensDiffer(current, target, options) ? oldErrors : []
+}
+
+function auditChangedCopy(
+  state: LocaleFileState,
+  output: LocaleObject,
+  config: TranslationPipelineConfig,
+  skipped: ReadonlySet<string>
+) {
+  const groups = config.messageGroups ?? []
+  const excluded = new Set([
+    ...state.plan.excluded,
+    ...[...state.retained]
+      .filter(([, value]) => value === '')
+      .map(([key]) => key),
+    ...groups.flatMap((group) => group.map((path) => pathKey([...path])))
+  ])
+  return [
+    ...[...state.plan.modified]
+      .filter((key) => skipped.has(key) && !excluded.has(key))
+      .flatMap((key) => auditChangedLeaf(state, output, config, key)),
+    ...groups
+      .filter((group) =>
+        group.some((path) => state.plan.modified.has(pathKey([...path])))
+      )
+      .flatMap((group) => auditChangedGroup(state, output, config, group))
+  ]
+}
+
 function auditState(
   state: LocaleFileState,
   output: LocaleObject,
@@ -374,57 +448,116 @@ function auditState(
               !group.some((path) => replaced.includes(pathKey([...path])))
           )
   })
-  const known = new Set<string>()
-  const unexpected: typeof actual = []
-  for (const violation of actual) {
-    const key = violation.path
-      .map((_, index) => pathKey(violation.path.slice(0, index + 1)))
-      .find(
-        (path) =>
-          state.plan.sourceLeaves.has(path) &&
-          state.plan.knownViolationKeys.has(path)
-      )
-    if (key) known.add(key)
-    else unexpected.push(violation)
+  if (phase === 'check')
+    actual.push(...auditChangedCopy(state, output, config, skipped))
+  const safety = auditCatalogSafety(
+    output,
+    state.plan.filename,
+    phase === 'preflight' ? new Set(replaced) : new Set()
+  )
+  return { unexpected: actual, safety }
+}
+
+function reportState(
+  state: LocaleFileState,
+  config: TranslationPipelineConfig
+) {
+  const { label } = state
+  if (state.pendingLeaves.length)
+    print(
+      `${label}: ${state.pendingLeaves.length} strings need translation (${state.pendingLeaves
+        .slice(0, 5)
+        .map(({ path }) => path.join('.'))
+        .join(', ')})`
+    )
+  if (state.strayPaths.length)
+    print(
+      `${label}: ${state.strayPaths.length} keys will be pruned or use English fallback`
+    )
+  const audit = auditState(state, state.existing, config, 'check')
+  for (const error of audit.safety) print(`${label}: ${error}`)
+  for (const error of audit.unexpected)
+    print(`${label}: ${formatTokenViolation(error)}`)
+  return {
+    pending: state.pendingLeaves.length,
+    stray: state.strayPaths.length,
+    violations: audit.unexpected.length,
+    safetyErrors: audit.safety.length
   }
-  return { known: [...known], unexpected }
+}
+
+function catalogStatus(invalid: number, incomplete: number): string {
+  if (invalid) return 'Catalog status: invalid.'
+  return incomplete
+    ? 'Catalog status: valid; translations pending.'
+    : 'Catalog status: valid and complete.'
+}
+
+function catalogCheckExitCode(
+  invalid: number,
+  incomplete: number,
+  complete: boolean
+): number {
+  return invalid || (complete && incomplete) ? 1 : 0
 }
 
 function reportCheck(
   states: readonly LocaleFileState[],
-  config: TranslationPipelineConfig
+  config: TranslationPipelineConfig,
+  sourceErrors: readonly string[],
+  complete: boolean,
+  orphanCount: number
 ): number {
-  let pending = 0
-  let stray = 0
-  let violations = 0
-  for (const state of states) {
-    const { label } = state
-    pending += state.pendingLeaves.length
-    stray += state.strayPaths.length
-    if (state.pendingLeaves.length)
-      print(
-        `${label}: ${state.pendingLeaves.length} strings need translation (${state.pendingLeaves
-          .slice(0, 5)
-          .map(({ path }) => path.join('.'))
-          .join(', ')})`
-      )
-    if (state.strayPaths.length)
-      print(
-        `${label}: ${state.strayPaths.length} keys will be pruned or use English fallback`
-      )
-    if (state.plan.degraded) continue
-    const audit = auditState(state, state.existing, config, 'check')
-    violations += audit.unexpected.length
-    for (const error of audit.unexpected)
-      print(`${label}: ${formatTokenViolation(error)}`)
-  }
-  if ([pending, stray, violations].every((count) => count === 0))
+  const missingStructure = states.flatMap((state) =>
+    [...state.plan.sourceLeaves].filter(
+      ([key, leaf]) =>
+        !state.omitted.has(key) &&
+        !isTranslatableLeaf(leaf.value) &&
+        getLeaf(state.existing, leaf.path) === undefined
+    )
+  ).length
+  const stale = [...new Set(states.map(({ plan }) => plan))].filter(
+    (plan) => !plan.recorded || !isEqual(plan.source, plan.previous)
+  )
+  for (const plan of stale)
+    print(`${plan.filename}: English source provenance needs updating`)
+  for (const error of sourceErrors) print(error)
+  const reports = states.map((state) => reportState(state, config))
+  const pending = reports.reduce((total, report) => total + report.pending, 0)
+  const stray = reports.reduce((total, report) => total + report.stray, 0)
+  const violations = reports.reduce(
+    (total, report) => total + report.violations,
+    0
+  )
+  const safetyErrors =
+    sourceErrors.length +
+    reports.reduce((total, report) => total + report.safetyErrors, 0)
+  if (
+    [
+      pending,
+      stray,
+      violations,
+      safetyErrors,
+      orphanCount,
+      stale.length,
+      missingStructure
+    ].every((count) => count === 0)
+  )
     print('All locales are up to date with the English sources.')
   else
     print(
       `Pending: ${pending} translations, ${stray} prunable keys, ${violations} protected-token violations.`
     )
-  return violations ? 1 : 0
+  if (safetyErrors) print(`Catalog safety errors: ${safetyErrors}.`)
+  if (missingStructure)
+    print(`Missing non-translatable leaves: ${missingStructure}.`)
+  const incomplete =
+    pending + stray + orphanCount + stale.length + missingStructure
+  const invalid = violations + safetyErrors
+  print(catalogStatus(invalid, incomplete))
+  if (complete && incomplete)
+    print('Complete catalogs are required for this delivery gate.')
+  return catalogCheckExitCode(invalid, incomplete, complete)
 }
 
 export function parseOptions(argv: readonly string[]) {
@@ -432,7 +565,9 @@ export function parseOptions(argv: readonly string[]) {
     args: [...argv],
     options: {
       target: { type: 'string', default: 'app' },
-      check: { type: 'boolean', default: false }
+      check: { type: 'boolean', default: false },
+      complete: { type: 'boolean', default: false },
+      locales: { type: 'string' }
     }
   })
   const name = values.target
@@ -440,18 +575,41 @@ export function parseOptions(argv: readonly string[]) {
     throw new Error(
       `Unknown translation target "${name}"; expected app or website.`
     )
-  return { config: translationTargets[name], check: values.check }
+  if ((values.complete || values.locales) && !values.check)
+    throw new Error('--complete and --locales require --check.')
+  const config = translationTargets[name]
+  const selected = values.locales?.split(',')
+  if (
+    selected?.some(
+      (code) => !config.outputLocales.some((locale) => locale.code === code)
+    )
+  )
+    throw new Error(`Unknown output locale in "${values.locales}".`)
+  return {
+    config: selected
+      ? {
+          ...config,
+          outputLocales: config.outputLocales.filter(({ code }) =>
+            selected.includes(code)
+          )
+        }
+      : config,
+    check: values.check,
+    complete: values.complete
+  }
 }
 
 export async function updateLocales({
   repoRoot,
   config,
   check,
+  complete = false,
   translateBatch
 }: {
   repoRoot: string
   config: TranslationPipelineConfig
   check: boolean
+  complete?: boolean
   translateBatch?: TranslateBatch
 }): Promise<number> {
   const outputDir = resolve(repoRoot, config.output)
@@ -479,14 +637,9 @@ export async function updateLocales({
       `Missing source manifest ${manifestFile}. Restore it from version control.`
     )
   const manifest = loadManifest(manifestFile, manifestBytes)
-  const plans = loadPlans(
-    repoRoot,
-    outputDir,
-    manifest,
-    config,
-    check,
-    readCatalog
-  )
+  const plans = loadPlans(repoRoot, outputDir, manifest, config, readCatalog)
+  if (!plans.length)
+    throw new Error(`No English catalogs found in ${outputDir}.`)
   const states = loadStates(outputDir, plans, config, readCatalog)
   const filenames = new Set(plans.map(({ filename }) => filename))
   const directories = config.outputLocales.map(({ code }) =>
@@ -499,13 +652,36 @@ export async function updateLocales({
           .map((file) => join(directory, file))
       : []
   })
+  const sourceErrors = plans.flatMap((plan) =>
+    auditCatalogSafety(plan.source, plan.filename).map(
+      (error) => `en/${plan.filename}: ${error}`
+    )
+  )
   if (check) {
     for (const orphan of orphans)
       print(
         `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
       )
-    return reportCheck(states, config)
+    const staleManifestFiles = Object.keys(manifest.files).filter(
+      (filename) => !filenames.has(filename)
+    )
+    for (const filename of staleManifestFiles)
+      print(
+        `${filename}: removed English source is still recorded in the manifest`
+      )
+    return reportCheck(
+      states,
+      config,
+      sourceErrors,
+      complete,
+      orphans.length + staleManifestFiles.length
+    )
   }
+
+  if (sourceErrors.length)
+    throw new Error(
+      `Fix English catalogs before generation:\n${sourceErrors.join('\n')}`
+    )
 
   for (const orphan of orphans) readInput(orphan)
   const { outcomes, pending } = await translateStates(
@@ -530,7 +706,7 @@ export async function updateLocales({
 }
 
 type TranslationOutcome =
-  | { state: LocaleFileState; output: LocaleObject; known: string[] }
+  | { state: LocaleFileState; output: LocaleObject }
   | { state: LocaleFileState; failure: string }
 
 async function translateStates(
@@ -538,11 +714,12 @@ async function translateStates(
   config: TranslationPipelineConfig,
   translateBatch?: TranslateBatch
 ): Promise<{ outcomes: TranslationOutcome[]; pending: number }> {
-  const preflight = states.flatMap((state) =>
-    auditState(state, state.existing, config, 'preflight').unexpected.map(
-      (error) => `${state.label}: ${formatTokenViolation(error)}`
+  const preflight = states.flatMap((state) => {
+    const audit = auditState(state, state.existing, config, 'preflight')
+    return [...audit.unexpected.map(formatTokenViolation), ...audit.safety].map(
+      (error) => `${state.label}: ${error}`
     )
-  )
+  })
   if (preflight.length)
     throw new Error(
       `Fix retained copy before generation:\n${preflight.join('\n')}`
@@ -630,9 +807,12 @@ async function translateStates(
           state.omitted
         )
         const audit = auditState(state, output, config, 'output')
-        if (audit.unexpected.length)
-          throw new Error(audit.unexpected.map(formatTokenViolation).join('\n'))
-        return { state, output, known: audit.known }
+        const errors = [
+          ...audit.unexpected.map(formatTokenViolation),
+          ...audit.safety
+        ]
+        if (errors.length) throw new Error(errors.join('\n'))
+        return { state, output }
       } catch (error) {
         return {
           state,
@@ -691,15 +871,12 @@ function writeOutcomes({
       }
     ).trim()
     updates.set(join(entryDir, plan.filename), sourceBytes)
-    const remaining = new Set<string>()
-    for (const { state, output, known } of completed.filter(
+    for (const { state, output } of completed.filter(
       ({ state }) => state.plan === plan
     )) {
       const bytes = serializeLocale(output)
       updates.set(state.outputFile, bytes)
-      for (const key of known) remaining.add(key)
     }
-    if (remaining.size) knownViolations[plan.filename] = [...remaining].sort()
   }
   for (const orphan of orphans) updates.set(orphan, null)
   updates.set(

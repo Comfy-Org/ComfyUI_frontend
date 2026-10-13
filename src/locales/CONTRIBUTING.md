@@ -4,7 +4,7 @@
 
 1. **Let us know** - Open an issue or reach out on Discord to request a new language
 2. **Get technical setup help** - We'll help configure the initial files or you can follow the technical process below
-3. **Automatic translation** - Our CI system will generate translations using OpenAI when you create a PR
+3. **Automatic translation** - CI generates translations on release PRs; maintainers can dispatch generation for a language launch
 4. **Review and refine** - You can improve the auto-generated translations and become a maintainer for that language
 
 ## Technical Process (Confirmed Working)
@@ -56,6 +56,9 @@ pnpm locale
 
 # Report pending work without calling the API
 pnpm locale:check
+
+pnpm locale:check --complete
+pnpm locale:check --complete --locales=ja,zh
 ```
 
 Both commands need a clone with full history (a blobless partial clone works):
@@ -66,7 +69,7 @@ pipeline reads them back with `git cat-file`.
 
 - Create your PR with the configuration changes above
 - **Important**: Translation files will be generated during release PRs, not feature PRs
-- Empty JSON files are fine - they'll be populated during the next release workflow
+- Empty JSON files can stage an unpublished locale; generate complete catalogs before adding it to the shipped locale registry
 - For urgent translation needs, maintainers can manually trigger the workflow
 
 ### Step 3: Test Your Changes
@@ -87,7 +90,7 @@ pnpm dev        # Start development server
 ### Step 4: Submit PR
 
 1. **Create PR** with your configuration changes
-2. **CI will run** and automatically populate translation files
+2. **CI will run** integrity checks and require complete catalogs when publishing a new locale
 3. **Request review** from language maintainers: @Yorha4D @KarryCharon @DorotaLuna @shinshin86
 4. **Get added to CODEOWNERS** as a reviewer for your language
 
@@ -123,14 +126,24 @@ prune keys report each affected file's exact deleted-key count. The release PR
 diff and review approve those deletions; there is no separate size-based bypass.
 Source-manifest, translation, and protected-token integrity failures remain hard
 failures.
-`pnpm locale:check` runs offline in CI: it reports pending work and fails on
-protected-token violations that are not already queued for retranslation
-because the English source changed. The manifest's `knownViolations` field
-baselines violations that predate the pipeline; a successful locale run heals
-and drops them, and any corruption introduced beyond the baseline fails the
-check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
-sole writer of those bytes, which keeps the manifest's recorded blob hashes
-valid.
+`pnpm locale:check` runs offline in CI. Ordinary feature PRs may leave
+translations pending while the UI falls back to English. JSON/schema errors,
+invalid Vue I18n message syntax, unsafe HTML, broken protected tokens, and
+unavailable recorded English source blobs fail the check. Outdated translations
+may match their recorded English placeholders until generation refreshes them.
+Node slot tooltips are raw text and do not pass through the message compiler.
+
+`--complete` additionally requires current source provenance, every eligible
+leaf, and no prunable keys or orphan files. Use it for generated translation
+output, releases, and new locale launches. `--locales` limits that delivery
+scope; both options require check mode and never call the translation API.
+Legacy `knownViolations` cannot exempt corruption from either gate; do not add
+new corruption baselines. Generation uses the same safety checks before writing
+successful catalogs or advancing their provenance. Translation accuracy and
+terminology still need copy review.
+
+oxfmt ignores `src/locales/**/*.json` — the pipeline is the sole writer of those
+bytes, which keeps the manifest's recorded blob hashes valid.
 
 The same pipeline also translates the website catalogs in
 `apps/website/src/locales/`, with its own manifest and `--target website`
@@ -193,7 +206,7 @@ here is normal and is not a bug to fix by hand-editing the file.
 
 ### Issue: Empty translation files
 
-**Solution**: This is normal - CI will populate them when you create a PR
+**Solution**: Generate the staged locale through a release or manual dispatch before publishing it
 
 ### Issue: Language not appearing in dropdown
 

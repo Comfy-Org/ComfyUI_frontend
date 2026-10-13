@@ -230,9 +230,29 @@ describe('parseOptions', () => {
     expect(options.check).toBe(check)
   })
 
+  it('selects a strict locale scope without changing generation configuration', () => {
+    const options = parseOptions([
+      '--target=website',
+      '--check',
+      '--complete',
+      '--locales=ja'
+    ])
+    expect(options.complete).toBe(true)
+    expect(options.config.outputLocales.map(({ code }) => code)).toEqual(['ja'])
+    expect(
+      translationTargets.website.outputLocales.map(({ code }) => code)
+    ).toEqual(['zh-CN', 'ja'])
+  })
+
   it.for([
     { argv: ['--target', 'docs'], message: 'Unknown translation target' },
     { argv: ['--target'], message: 'argument missing' },
+    { argv: ['--complete'], message: 'require --check' },
+    { argv: ['--locales=ja'], message: 'require --check' },
+    {
+      argv: ['--check', '--locales=unknown'],
+      message: 'Unknown output locale'
+    },
     { argv: ['--chek'], message: 'Unknown option' }
   ])('rejects $argv', ({ argv, message }) => {
     expect(() => parseOptions(argv)).toThrow(message)
