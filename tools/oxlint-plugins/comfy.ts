@@ -13,6 +13,9 @@ import type {
   noUselessPathSegments as NoUselessPathSegments
 } from './importPaths'
 import type { noNewErrorThrow as NoNewErrorThrow } from './noNewErrorThrow'
+import type { noReexports as NoReexports } from './noReexports'
+import type { noThrowInExpectPoll as NoThrowInExpectPoll } from './playwrightPoll'
+import type { noPositionalBooleanParams as NoPositionalBooleanParams } from './positionalBoolean'
 import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,
   noDirectSelectionWrite as NoDirectSelectionWrite,
@@ -29,6 +32,7 @@ import type {
   noUnsafeErrorAssertion as NoUnsafeErrorAssertion,
   noVitestMockMethodNames as NoVitestMockMethodNames
 } from './restrictedSyntax'
+import type { noSortedLiteralArray as NoSortedLiteralArray } from './sortedLiteralArray'
 import type {
   noImportActual as NoImportActual,
   noMockedInExpect as NoMockedInExpect,
@@ -39,6 +43,7 @@ import type {
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
   noRedundantVitestCleanup as NoRedundantVitestCleanup
 } from './vitestCleanup'
+import type { noUnreadHoistedMockState as NoUnreadHoistedMockState } from './vitestHoisted'
 import type { noRenderInWatchEffect as NoRenderInWatchEffect } from './watchEffectRendering'
 
 const requireFrom = createRequire(import.meta.url)
@@ -67,6 +72,15 @@ const {
 }
 const { noNewErrorThrow } = requireFrom('./noNewErrorThrow.ts') as {
   noNewErrorThrow: typeof NoNewErrorThrow
+}
+const { noReexports } = requireFrom('./noReexports.ts') as {
+  noReexports: typeof NoReexports
+}
+const { noThrowInExpectPoll } = requireFrom('./playwrightPoll.ts') as {
+  noThrowInExpectPoll: typeof NoThrowInExpectPoll
+}
+const { noPositionalBooleanParams } = requireFrom('./positionalBoolean.ts') as {
+  noPositionalBooleanParams: typeof NoPositionalBooleanParams
 }
 const {
   noDeprecatedApiSchema,
@@ -99,6 +113,9 @@ const {
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
   noVitestMockMethodNames: typeof NoVitestMockMethodNames
 }
+const { noSortedLiteralArray } = requireFrom('./sortedLiteralArray.ts') as {
+  noSortedLiteralArray: typeof NoSortedLiteralArray
+}
 const {
   noImportActual,
   noMockedInExpect,
@@ -117,6 +134,9 @@ const {
   noRedundantFetchStub: typeof NoRedundantFetchStub
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
   noRedundantVitestCleanup: typeof NoRedundantVitestCleanup
+}
+const { noUnreadHoistedMockState } = requireFrom('./vitestHoisted.ts') as {
+  noUnreadHoistedMockState: typeof NoUnreadHoistedMockState
 }
 const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
   noRenderInWatchEffect: typeof NoRenderInWatchEffect
@@ -141,6 +161,7 @@ export default {
     'no-new-zod-server-response-schema': noNewZodServerResponseSchema,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
+    'no-positional-boolean-params': noPositionalBooleanParams,
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-statically-disabled-test': noStaticallyDisabledTest,
@@ -148,10 +169,14 @@ export default {
     'no-redundant-fetch-stub': noRedundantFetchStub,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
+    'no-reexports': noReexports,
     'no-relative-packages': noRelativePackages,
     'no-relative-parent-paths': noRelativeParentPaths,
     'no-restricted-paths': noRestrictedPaths,
+    'no-sorted-literal-array': noSortedLiteralArray,
+    'no-throw-in-expect-poll': noThrowInExpectPoll,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
+    'no-unread-hoisted-mock-state': noUnreadHoistedMockState,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
     'no-useless-path-segments': noUselessPathSegments,
     'no-vitest-mock-method-names': noVitestMockMethodNames,

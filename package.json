@@ -194,6 +194,7 @@
     "eslint-plugin-import-x": "catalog:",
     "eslint-plugin-oxlint": "catalog:",
     "eslint-plugin-playwright": "catalog:",
+    "eslint-plugin-regexp": "catalog:",
     "eslint-plugin-storybook": "catalog:",
     "eslint-plugin-testing-library": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",

@@ -348,18 +348,16 @@ describe('agentApiSchema contract subtleties', () => {
   })
 
   it('exposes the Agent event types, including the ask lifecycle', () => {
-    expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
-      [
-        'agent_active_tab',
-        'agent_ask',
-        'agent_ask_resolved',
-        'agent_message_delta',
-        'agent_message_done',
-        'agent_message_draft',
-        'agent_thinking',
-        'agent_tool_call'
-      ].sort()
-    )
+    expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual([
+      'agent_active_tab',
+      'agent_ask',
+      'agent_ask_resolved',
+      'agent_message_delta',
+      'agent_message_done',
+      'agent_message_draft',
+      'agent_thinking',
+      'agent_tool_call'
+    ])
   })
 
   it('parses an agent_message_draft frame, including the empty draft that withdraws one', () => {
