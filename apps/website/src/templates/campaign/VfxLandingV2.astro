@@ -108,16 +108,17 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         class="lg:gap-12 lg:[&>div:first-child]:flex-[0.8]"
         data-campaign-hero
       >
-        <VideoPlayer
-          slot="media"
-          locale={locale}
-          src={story.videoSrc}
-          poster={story.poster}
-          tracks={[...story.captions]}
-          ariaLabel={t('vfx.proof.title')}
-          preview
-          client:load
-        />
+        <div slot="media">
+          <VideoPlayer
+            locale={locale}
+            src={story.videoSrc}
+            poster={story.poster}
+            tracks={[...story.captions]}
+            ariaLabel={t('vfx.proof.title')}
+            preview
+            client:load
+          />
+        </div>
       </HeroSplit01>
     ) : (
       <VfxProofHero
