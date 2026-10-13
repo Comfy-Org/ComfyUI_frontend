@@ -44,22 +44,39 @@ export function useAgentDockMount(): AgentDockMount {
 
   const billingIdentity = useBillingIdentity()
 
+  function reportBillingRefreshError(error: unknown): void {
+    reportError(error, {
+      errorType: 'error_refreshing_agent_billing_status',
+      surface: 'agent'
+    })
+  }
+
+  function adoptTransitionBaseline(
+    billingType: string,
+    identity: string,
+    epoch: number
+  ): void {
+    if (billingIdentity.value !== identity || type.value !== billingType) return
+    if (!agentPanelStore.completeCreditTransitionRefresh(identity, epoch))
+      return
+    observeFreshScopedFunds(identity)
+  }
+
   function refreshTransitionBaseline(identity: string, epoch: number): void {
     if (fetchStatusFresh === undefined || type.value === 'unknown') return
-    const key = `${type.value}:${identity}:${epoch}`
+    const billingType = type.value
+    const key = `${billingType}:${identity}:${epoch}`
     void agentPanelStore
-      .refreshBillingStatus(key, fetchStatusFresh)
+      .refreshBillingStatus(
+        key,
+        fetchStatusFresh,
+        false,
+        reportBillingRefreshError,
+        () => adoptTransitionBaseline(billingType, identity, epoch)
+      )
       .then((adopted) => {
-        if (!adopted || billingIdentity.value !== identity) return
-        agentPanelStore.completeCreditTransitionRefresh(identity, epoch)
-        observeFreshScopedFunds(identity)
-      })
-      .catch((error: unknown) => {
-        reportError(error, {
-          errorType: 'error_refreshing_agent_billing_status',
-          surface: 'agent'
-        })
-      })
+        if (adopted) adoptTransitionBaseline(billingType, identity, epoch)
+      }, reportBillingRefreshError)
   }
 
   watch(billingIdentity, (identity, previousIdentity) => {
@@ -120,14 +137,10 @@ export function useAgentDockMount(): AgentDockMount {
         .refreshBillingStatus(
           `${type.value}:${identity}:reopen:${agentPanelStore.panelOpenEpoch}`,
           fetchStatusFresh,
-          true
+          true,
+          reportBillingRefreshError
         )
-        .catch((error: unknown) => {
-          reportError(error, {
-            errorType: 'error_refreshing_agent_billing_status',
-            surface: 'agent'
-          })
-        })
+        .catch(reportBillingRefreshError)
     }
   )
 

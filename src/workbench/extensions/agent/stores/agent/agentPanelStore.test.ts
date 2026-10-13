@@ -581,4 +581,60 @@ describe('agentPanelStore width', () => {
     await nextTick()
     expect(getAgentPanelOpen()).toBe(false)
   })
+
+  it('reports a refresh rejection that arrives after the timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentPanelStore()
+      const onLateError = vi.fn()
+      let rejectRefresh: ((error: Error) => void) | undefined
+      const refresh = store.refreshBillingStatus(
+        'late-rejection',
+        () =>
+          new Promise<boolean>((_, reject) => {
+            rejectRefresh = reject
+          }),
+        false,
+        onLateError
+      )
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(refresh).resolves.toBe(false)
+
+      const error = new Error('late rejection')
+      rejectRefresh?.(error)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(onLateError).toHaveBeenCalledWith(error)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports an adopted refresh that arrives after the timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentPanelStore()
+      const onLateSuccess = vi.fn()
+      let finishRefresh: ((adopted: boolean) => void) | undefined
+      const refresh = store.refreshBillingStatus(
+        'late-success',
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishRefresh = resolve
+          }),
+        false,
+        undefined,
+        onLateSuccess
+      )
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(refresh).resolves.toBe(false)
+
+      finishRefresh?.(true)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(onLateSuccess).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
