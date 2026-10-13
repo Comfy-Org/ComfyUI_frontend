@@ -94,7 +94,6 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     }
   )
 
-  // After the upload widget's own on-load preview write, which would clobber this one.
   requestAnimationFrame(() => void showHdrPreviewIfApplicable(modelValue.value))
 
   function updateSelectedItems(selectedItems: Set<string>) {

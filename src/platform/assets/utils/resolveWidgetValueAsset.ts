@@ -33,13 +33,13 @@ export async function resolveWidgetValueAsset(
     return parseResult.success ? parseResult.data.assets : undefined
   }
   const byHash = await lookup({ limit: 1, hash: name })
-  if (!byHash) return undefined
-  const hashMatch = byHash.find(assetMatches)
+  const hashMatch = byHash?.find(assetMatches)
   if (hashMatch) return hashMatch
   const byName = await lookup({
     limit: 500,
     name_contains: name.slice(name.lastIndexOf('/') + 1)
   })
-  if (!byName) return undefined
-  return byName.find(assetMatches) ?? null
+  const nameMatch = byName?.find(assetMatches)
+  if (nameMatch) return nameMatch
+  return byHash && byName ? null : undefined
 }
