@@ -362,7 +362,6 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
-  // The canvas follower stays inactive until the agent names its user.
   await mockAgentIdentity(page)
   await page.route('**/api/billing/status', (route) =>
     agentBilling.fulfillStatus(route)

@@ -16,7 +16,7 @@ interface WebSocketTracker {
 async function trackWebSocket(
   context: BrowserContext,
   url: RegExp,
-  connectToServer: boolean
+  { connectToServer }: { connectToServer: boolean }
 ): Promise<WebSocketTracker> {
   let current: WebSocketRoute | undefined
   const waiters = new Set<(ws: WebSocketRoute) => void>()
@@ -28,10 +28,7 @@ async function trackWebSocket(
         ws.send(message)
       })
     } else {
-      // A closed route is not a socket to send on: until the client
-      // reconnects, getters wait for the next one. Only registered when there
-      // is no server, because onClose disables Playwright's default close
-      // forwarding between the page and the server.
+      // onClose disables Playwright's default page-server close forwarding, so register it only without a server.
       ws.onClose(() => {
         if (current === ws) current = undefined
       })
@@ -64,21 +61,23 @@ export const webSocketFixture = base.extend<{
   agentSocketTracker: WebSocketTracker
 }>({
   connectWebSocketToServer: [true, { option: true }],
-  /** ComfyUI's `/ws`: execution status, feature flags, logs. */
   webSocketTracker: [
     async ({ context, connectWebSocketToServer }, use) => {
-      await use(await trackWebSocket(context, /\/ws/, connectWebSocketToServer))
+      await use(
+        await trackWebSocket(context, /\/ws/, {
+          connectToServer: connectWebSocketToServer
+        })
+      )
     },
     { auto: true }
   ],
-  /**
-   * The agent panel's `/api/agent/events` socket: agent_* events and doc_*
-   * frames in both directions. Never connected to a server; the test is the
-   * agent.
-   */
   agentSocketTracker: [
     async ({ context }, use) => {
-      await use(await trackWebSocket(context, AGENT_SOCKET_URL, false))
+      await use(
+        await trackWebSocket(context, AGENT_SOCKET_URL, {
+          connectToServer: false
+        })
+      )
     },
     { auto: true }
   ],
@@ -92,11 +91,9 @@ export const webSocketFixture = base.extend<{
   nextWebSocket: async ({ webSocketTracker }, use) => {
     await use(() => webSocketTracker.waitForNext())
   },
-  /** The agent socket the panel has open, or the first one it opens. */
   getAgentSocket: async ({ agentSocketTracker }, use) => {
     await use(() => currentOrNext(agentSocketTracker))
   },
-  /** Like `nextWebSocket`, for the agent socket's reconnect. */
   nextAgentSocket: async ({ agentSocketTracker }, use) => {
     await use(() => agentSocketTracker.waitForNext())
   }

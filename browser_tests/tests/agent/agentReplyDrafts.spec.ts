@@ -1,4 +1,4 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -13,11 +13,11 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
@@ -58,13 +58,12 @@ interface Turn {
 // the document subscription the way the host does, so every frame after it is
 // the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
-  const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (!socket)
-      throw new Error('the panel has not opened the agent socket yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(
+    page,
+    WORKFLOW_ID,
+    new HostDoc(WORKFLOW_ID, SEED, CATALOG)
+  )
+  const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
   await page.route('**/api/agent/threads', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
@@ -79,24 +78,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
-    socket = ws
-    ws.onMessage((raw) => {
-      const frame: unknown = JSON.parse(raw.toString())
-      if (typeof frame !== 'object' || frame === null) return
-      const { type, data } = frame as { type?: unknown; data?: unknown }
-      if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-        return
-      const { workflow_id, state_vector_b64 } = data as {
-        workflow_id?: unknown
-        state_vector_b64?: unknown
-      }
-      if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-        return
-      send(host.subscribed())
-      send(host.catchUp(state_vector_b64))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: { 'Comfy.Graph.CanvasInfo': false }
@@ -160,7 +142,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()

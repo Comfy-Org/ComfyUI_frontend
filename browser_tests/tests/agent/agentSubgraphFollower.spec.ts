@@ -59,7 +59,6 @@ test.describe(
 
       const outboundFrames: string[] = []
 
-      // The panel opens the agent socket when it mounts, not at boot.
       const socket = await test.step('open the agent panel', async () => {
         await loadSeedIntoActiveTab(page, subgraphWorkflow)
         const agentPanel = new AgentPanel(page)
@@ -286,7 +285,6 @@ test.describe(
       })
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      // The panel opens the agent socket when it mounts, not at boot.
       const socket = await getAgentSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))

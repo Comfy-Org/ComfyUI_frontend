@@ -60,9 +60,12 @@ export interface ClientDocFrame {
   atMs: number
   type: string
   workflowId: string | null
+  stateVector: string | null
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  /** 1 for the panel's first agent socket, 2 after one reconnect, and so on. */
+  connection: number
 }
 
 interface ParsedClientDocFrame {
@@ -105,13 +108,7 @@ function parseClientDocFrame(
   }
 }
 
-/**
- * Routed agent socket (`/api/agent/events`) host shared by black-box Agent
- * follower fixtures. It plays the agent: it answers the follower's doc frames
- * and pushes agent events and doc frames down the same socket. There is no
- * `status` frame on the agent socket; the follower subscribes on every socket
- * open. ComfyUI's `/ws` gets a separate quiet stub (see `install`).
- */
+/** Routed agent socket host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private refuseReason: string | null = null
   private refusalsLeft = 0
@@ -119,7 +116,12 @@ export class AgentFollowerHostSocket {
 
   private socket: WebSocketRoute | null = null
   private comfySocket: WebSocketRoute | null = null
+  private connections = 0
   private subscribes = 0
+  private subscribeAnswer = (stateVector: string): HostFrame[] => [
+    this.host.subscribed(),
+    this.host.catchUp(stateVector)
+  ]
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly heldBatches: WireOpEnvelope[][] = []
@@ -138,11 +140,6 @@ export class AgentFollowerHostSocket {
   ) {}
 
   async install(): Promise<void> {
-    // ComfyUI's `/ws` stays isolated from the backend, as it always was for
-    // these fixtures: a quiet socket that reports an idle queue and a FIXED
-    // client id. The app keys its session-scoped workflow tabs by that id, so
-    // a real server's fresh id per connect would lose the open tabs across a
-    // page reload. It carries no agent or doc frames.
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
       socket.send(
@@ -156,6 +153,7 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
@@ -222,8 +220,10 @@ export class AgentFollowerHostSocket {
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
+      stateVector: frame.stateVector,
       ops: ops.map((op) => opLabel(op)),
-      opIds: ops.map((op) => op.op_id)
+      opIds: ops.map((op) => op.op_id),
+      connection: this.connections
     })
   }
 
@@ -285,6 +285,15 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
+  /**
+   * Replaces the default subscribe answer (`subscribed` then a catch-up), for
+   * a host that withholds or reorders frames. An empty list leaves the
+   * subscribe unanswered.
+   */
+  answerSubscribesWith(answer: (stateVector: string) => HostFrame[]): void {
+    this.subscribeAnswer = answer
+  }
+
   private answerSubscribe(stateVector: string): void {
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
@@ -294,8 +303,7 @@ export class AgentFollowerHostSocket {
       this.resolveSubscribed?.()
       return
     }
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(stateVector))
+    for (const frame of this.subscribeAnswer(stateVector)) this.send(frame)
     this.subscribes += 1
     this.resolveSubscribed?.()
   }
@@ -360,6 +368,11 @@ export class AgentFollowerHostSocket {
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  /** Agent sockets the panel has opened, reconnects included. */
+  connectionCount(): number {
+    return this.connections
   }
 
   async disconnect(): Promise<void> {

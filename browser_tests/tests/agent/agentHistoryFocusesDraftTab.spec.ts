@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -16,10 +15,12 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 const DRAFT_THREAD_ID = 'c4a7e2d1-5b3f-4e6a-9c8d-1f2a3b4c5d6e'
 const OTHER_THREAD_ID = 'e1f2a3b4-6c5d-4e7f-8a9b-0c1d2e3f4a5b'
@@ -137,10 +138,13 @@ test.describe(
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
       }
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
-        socket = ws
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        DRAFT_WORKFLOW_ID,
+        new HostDoc(DRAFT_WORKFLOW_ID, emptySeed, { types: {} })
+      )
+      hostSocket.answerSubscribesWith(() => [])
+      await hostSocket.install()
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
@@ -214,13 +218,10 @@ test.describe(
 
       await test.step('the agent announces the draft it minted and the panel opens a tab for it', async () => {
         await expect(topbar.tabs).toHaveCount(1)
-        if (!socket) throw new Error('the panel never opened the agent socket')
-        socket.send(
-          JSON.stringify({
-            type: 'agent_active_tab',
-            data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
-          })
-        )
+        hostSocket.send({
+          type: 'agent_active_tab',
+          data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
+        })
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
         await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
         await expect(unavailable).toBeHidden()

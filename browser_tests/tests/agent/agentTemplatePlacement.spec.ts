@@ -1,4 +1,4 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type {
@@ -6,16 +6,15 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
@@ -114,11 +113,7 @@ function templateAddNodeOps() {
 // wiring, same real HostDoc/CRDT apply path, same real canvas.
 class TemplatePlacementHarness {
   private readonly host: HostDoc
-  private socket: WebSocketRoute | null = null
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
+  private readonly hostSocket: AgentFollowerHostSocket
 
   constructor(private readonly page: Page) {
     this.host = new HostDoc(
@@ -126,14 +121,12 @@ class TemplatePlacementHarness {
       SEED_WORKFLOW.seed,
       SEED_WORKFLOW.catalog
     )
+    this.hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, this.host)
   }
 
   async boot(): Promise<void> {
     await this.mockAgentApi()
-    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-    })
+    await this.hostSocket.install()
 
     await bootAgentApp(this.page, true, {
       settings: {
@@ -222,7 +215,7 @@ class TemplatePlacementHarness {
         data: { workflow_id: WORKFLOW_ID, name: WORKFLOW_NAME }
       })
     )
-    await this.waitForSubscribe()
+    await this.hostSocket.waitForSubscribe()
     // The subscribe catch-up (the user's pre-existing canvas) must be applied
     // before the template tool call arrives, as it is in production: sending
     // both back-to-back coalesces them into the follower's first frame, a
@@ -299,35 +292,7 @@ class TemplatePlacementHarness {
   }
 
   private send(frame: AgentWsEvent | HostFrame): void {
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket)
-      throw new Error('the panel has not opened the agent socket yet')
-    this.socket.send(JSON.stringify(frame))
-  }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.resolveSubscribed?.()
-  }
-
-  private waitForSubscribe(): Promise<void> {
-    return this.subscribed
+    this.hostSocket.send(frame)
   }
 }
 
