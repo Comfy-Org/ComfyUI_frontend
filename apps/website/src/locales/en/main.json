@@ -319,7 +319,10 @@
       "previewSaved": "Preview page",
       "useCases": {
         "label": "Use cases",
-        "help": "The Hub filters this page appears under."
+        "help": "The Hub filters this page appears under.",
+        "placeholder": "Choose use cases",
+        "search": "Search use cases",
+        "none": "No use cases match"
       },
       "runsOnHub": {
         "label": "On the Hub",

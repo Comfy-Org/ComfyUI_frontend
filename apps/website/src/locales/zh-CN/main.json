@@ -319,7 +319,10 @@
       "previewSaved": "预览页面",
       "useCases": {
         "label": "使用场景",
-        "help": "此页面会出现在 Hub 的这些筛选分类下。"
+        "help": "此页面会出现在 Hub 的这些筛选分类下。",
+        "placeholder": "选择用例",
+        "search": "搜索用例",
+        "none": "没有匹配的用例"
       },
       "runsOnHub": {
         "label": "在 Hub 上",
