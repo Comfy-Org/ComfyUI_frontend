@@ -1,14 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { DocFrameTransport } from './docFrameClient'
+import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
 import {
   DocFrameClient,
   encodeBase64,
   parseServerDocFrame
 } from './docFrameClient'
+import type { ServerDocFrameType } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
@@ -34,6 +35,10 @@ function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
 }
 
 describe('doc frame client', () => {
+  it('names every server frame type in SERVER_DOC_FRAME_TYPES', () => {
+    expectTypeOf<ServerDocFrame['type']>().toEqualTypeOf<ServerDocFrameType>()
+  })
+
   it('decodes a base64 doc_update that converges through Y.applyUpdate', () => {
     const source = new Y.Doc()
     source.getMap('nodes').set('one', { x: 10 })

@@ -3,7 +3,7 @@ import type {
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -6865,21 +6865,18 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 describe('useAgentSession credential refresh', () => {
   const REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
-  beforeEach(() => {
-    distribution.isCloud = false
-  })
-
-  afterEach(() => {
-    distribution.isCloud = true
-  })
-
   function startSession(
-    refreshCredential: AgentRestClient['refreshCredential']
+    refreshCredential: AgentRestClient['refreshCredential'],
+    refreshCredentialDuringTurns = true
   ) {
     const { source, emit } = fakeEvents()
     const scope = effectScope()
     const session = scope.run(() =>
-      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+      useAgentSession({
+        rest: fakeRest({ refreshCredential }),
+        events: source,
+        refreshCredentialDuringTurns
+      })
     )
     assert.exists(session)
     session.start()
@@ -6919,10 +6916,9 @@ describe('useAgentSession credential refresh', () => {
     scope.stop()
   })
 
-  it('does not refresh in the cloud, where fetchApi authenticates every request', async () => {
-    distribution.isCloud = true
+  it('does not refresh when the host does not ask for it, as in the cloud', async () => {
     const refreshCredential = vi.fn(async () => {})
-    const { scope, session } = startSession(refreshCredential)
+    const { scope, session } = startSession(refreshCredential, false)
 
     await session.sendMessage('build it')
     await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
