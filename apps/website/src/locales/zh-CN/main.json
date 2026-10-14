@@ -4572,6 +4572,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "backgroundRemoval": "背景移除",
+      "backgroundRemovalSummary": "将主体从照片中抠出，放在干净的背景上，或保留透明背景。",
+      "backgroundRemovalMeta": "图像 · Recraft Remove Background",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

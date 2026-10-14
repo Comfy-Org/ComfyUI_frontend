@@ -15,7 +15,12 @@ const copy = {
     'zh-CN': '像在片场一样执导镜头'
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  backgroundRemovalName: { en: 'Background Removal', 'zh-CN': '背景移除' },
+  backgroundRemovalTask: {
+    en: 'Cut the subject out of a photo',
+    'zh-CN': '将主体从照片中抠出'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
