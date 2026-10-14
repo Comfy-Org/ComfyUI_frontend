@@ -5,6 +5,7 @@ import { nextTick, ref } from 'vue'
 import type { ModelLaunchHero } from './types'
 
 import { useHeroLogo } from '@/composables/useHeroLogo'
+import { flux3ImagePage } from '@/data/flux3Image'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 
 vi.mock(import('@/composables/useHeroLogo'), { spy: true })
@@ -98,13 +99,7 @@ describe('ModelLaunchHeroSection', () => {
     async (width) => {
       stubViewport(width)
       render(ModelLaunchHeroSection, {
-        props: {
-          hero: {
-            layout: 'media-first',
-            placeholderLabelKey: 'flux3Image.hero.placeholder',
-            titleKey: 'flux3Image.hero.title'
-          }
-        }
+        props: { hero: flux3ImagePage.hero }
       })
 
       await nextTick()

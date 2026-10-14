@@ -6,7 +6,7 @@ for (const prefix of ['', '/zh-CN']) {
   test(`excludes the Flux image draft from ${prefix || 'English'} production pages`, async ({
     page
   }) => {
-    const response = await page.goto(`${prefix}/drafts/flux-3-image/`)
+    const response = await page.goto(`${prefix}/flux-3-image/`)
 
     expect(response?.status()).toBe(404)
     await expect(
