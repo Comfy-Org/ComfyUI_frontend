@@ -5,7 +5,10 @@ import CatalogPreviewController from '@/components/cms/preview/CatalogPreviewCon
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
 import { itemTitle } from '@/lib/cms/staging-review'
 import { fieldDiff } from '@/lib/cms/diff'
-import type { CatalogPreviewChange, CatalogScheduledPage } from '@/lib/cms/preview-display'
+import type {
+  CatalogPreviewChange,
+  CatalogScheduledPage
+} from '@/lib/cms/preview-display'
 import StaffTools from '@/components/cms/StaffTools.astro'
 import Analytics from '@vercel/analytics/astro'
 import '@/styles/global.css'
@@ -62,6 +65,7 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  bare?: boolean
   hideAnnouncementBanner?: boolean
   banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
@@ -82,6 +86,7 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
+  bare = false,
   hideAnnouncementBanner = false,
   banner,
   preloadFonts = []
@@ -142,23 +147,35 @@ const structuredData = head.emitStructuredData
   : undefined
 
 const catalogSession = Astro.locals.catalogAuthoring
-const previewReview = catalogSession && catalogSession.preview?.view === 'DRAFT'
-  ? await readReviewResponse(await catalogReview(catalogSession, 'staging'))
-  : undefined
-const previewItems = previewReview?.ok && 'items' in previewReview.snapshot
-  ? previewReview.snapshot.items : []
-const previewChanges: CatalogPreviewChange[] = previewItems.map(item => ({
+const previewReview =
+  catalogSession && catalogSession.preview?.view === 'DRAFT'
+    ? await readReviewResponse(await catalogReview(catalogSession, 'staging'))
+    : undefined
+const previewItems =
+  previewReview?.ok && 'items' in previewReview.snapshot
+    ? previewReview.snapshot.items
+    : []
+const previewChanges: CatalogPreviewChange[] = previewItems.map((item) => ({
   uid: item.content.uid,
   title: itemTitle(item),
-  kind: item.content.is_deleted ? 'deleted' : item.before ? 'modified' : 'added',
+  kind: item.content.is_deleted
+    ? 'deleted'
+    : item.before
+      ? 'modified'
+      : 'added',
   summary: item.summary,
-  fields: fieldDiff(item.before?.document, item.content.document).map(change => change.path),
-  route: ['model', 'workflow', 'app'].includes(item.content.type) ? `/admin/content/${item.content.uid}/edit` : undefined
+  fields: fieldDiff(item.before?.document, item.content.document).map(
+    (change) => change.path
+  ),
+  route: ['model', 'workflow', 'app'].includes(item.content.type)
+    ? `/admin/content/${item.content.uid}/edit`
+    : undefined
 }))
-const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap(item => {
+const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap((item) => {
   const at = item.content.document.visible_from
   return typeof at === 'string' && !item.content.is_deleted
-    ? [{ uid: item.content.uid, title: itemTitle(item), at }] : []
+    ? [{ uid: item.content.uid, title: itemTitle(item), at }]
+    : []
 })
 ---
 
@@ -322,18 +339,22 @@ const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap(item => {
     class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
   >
     <GoogleTagManager part="noscript" />
-    {Astro.locals.catalogAuthoring ? <CatalogPreviewController
-      csrf={Astro.locals.catalogAuthoring.csrf}
-      view={Astro.locals.catalogAuthoring.preview?.view ?? 'LIVE'}
-      now={Astro.locals.catalogAuthoring.preview?.now}
-      locale={Astro.locals.catalogLocale ?? 'en'}
-      currentPath={Astro.url.pathname + Astro.url.search}
-      changes={previewChanges}
-      launches={previewLaunches}
-      client:load
-    /> : <><PreviewBanner /><StaffTools /></>}
+    {Astro.locals.catalogAuthoring ? (
+      <CatalogPreviewController
+        csrf={Astro.locals.catalogAuthoring.csrf}
+        view={Astro.locals.catalogAuthoring.preview?.view ?? 'LIVE'}
+        now={Astro.locals.catalogAuthoring.preview?.now}
+        locale={Astro.locals.catalogLocale ?? 'en'}
+        currentPath={Astro.url.pathname + Astro.url.search}
+        changes={previewChanges}
+        launches={previewLaunches}
+        client:load
+      />
+    ) : (
+      <><PreviewBanner /><StaffTools /></>
+    )}
 
-    {bannerVisible && !minimal && (
+    {bannerVisible && !minimal && !bare && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -341,7 +362,7 @@ const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap(item => {
         client:load
       />
     )}
-    {minimal ? (
+    {bare ? null : minimal ? (
       <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <a
           href={getRoutes(locale).home}
@@ -367,7 +388,7 @@ const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap(item => {
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && (
+    {!minimal && !bare && (
       <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
     )}
 

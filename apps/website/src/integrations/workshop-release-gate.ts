@@ -130,7 +130,7 @@ function installCmsRoutes(
     ['/admin/catalog-demo-session', 'catalog-demo-session.ts'],
     ['/admin/catalog-testers', 'catalog-testers.astro'],
     ['/admin/catalog-preview', 'catalog-preview.ts'],
-    ['/admin/catalog/final-review', 'catalog-final-review.astro'],
+    ['/admin/catalog/final-review', 'catalog-final-review.ts'],
     ['/admin/catalog-api/[operation]', 'catalog-api.ts']
   ]) {
     injectRoute({

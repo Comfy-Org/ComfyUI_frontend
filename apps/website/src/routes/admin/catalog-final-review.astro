@@ -1,6 +1,0 @@
----
-import { editorFailure } from '@/lib/cms/editor-server'
-const session = Astro.locals.catalogAuthoring
-if (!session?.can_apply) return editorFailure(404)
-return Astro.redirect('/admin/catalog', 303)
----

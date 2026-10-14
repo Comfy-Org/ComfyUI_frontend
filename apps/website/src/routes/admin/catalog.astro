@@ -18,7 +18,7 @@ if (!result.ok) return editorFailure(result.status)
 if (!('items' in result.snapshot)) return editorFailure(503)
 ---
 
-<BaseLayout title={Astro.locals.t('cccStaging.title')} minimal noindex>
+<BaseLayout title={Astro.locals.t('cccStaging.title')} bare noindex>
   <CatalogCheckedReview
     initial={result.snapshot}
     csrf={session.csrf}
