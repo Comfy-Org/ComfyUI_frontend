@@ -90,14 +90,8 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
-  /* Code styling colors for help menu*/
-  --code-text-color: rgb(0 122 255 / 1);
-  --code-bg-color: rgb(96 165 250 / 0.2);
-  --code-block-bg-color: rgb(60 60 60 / 0.12);
-
   --text-secondary: var(--color-smoke-800);
   --text-primary: var(--color-charcoal-700);
-  --input-surface: rgb(0 0 0 / 0.15);
 
   /* Semantic tokens - light mode */
   --brand-yellow: var(--color-electric-400);
@@ -151,8 +145,6 @@
   --text-secondary: var(--color-smoke-700);
   --text-primary: var(--color-white);
 
-  --input-surface: rgb(130 130 130 / 0.1);
-
   /* Semantic tokens - dark mode */
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
@@ -201,7 +193,6 @@
 
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
-  --color-input-surface: var(--input-surface);
 
   /* Semantic tokens */
   --color-secondary-background-hover: var(--secondary-background-hover);
@@ -460,15 +451,15 @@ body {
 
 /* Code */
 .comfy-markdown-content code {
-  color: var(--code-text-color);
-  background-color: var(--code-bg-color);
+  color: var(--primary);
+  background-color: var(--secondary);
   border-radius: 0.25rem; /* rounded */
   padding: 0.125rem 0.375rem; /* px-1.5 py-0.5 */
   font-family: monospace;
 }
 
 .comfy-markdown-content pre {
-  background-color: var(--code-block-bg-color);
+  background-color: var(--secondary);
   border-radius: 0.25rem; /* rounded */
   padding: 1rem; /* p-4 */
   margin: 1rem 0; /* my-4 */

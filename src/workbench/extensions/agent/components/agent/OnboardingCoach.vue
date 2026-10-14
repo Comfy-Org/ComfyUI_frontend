@@ -285,9 +285,7 @@ useEventListener(
           :class="
             cn(
               'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2
-                ? 'border-secondary-background'
-                : 'border-alpha-smoke-500-20'
+              index < 2 ? 'border-secondary-background' : 'border-smoke-500/20'
             )
           "
         >

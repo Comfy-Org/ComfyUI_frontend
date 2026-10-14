@@ -415,7 +415,7 @@ function resolveAppearance(themeRoot: HTMLElement): Appearance {
         borderColor: resolveThemeColor('--foreground')
       },
       '.Input': {
-        backgroundColor: resolveThemeColor('--input-surface'),
+        backgroundColor: resolveThemeColor('--input'),
         borderColor: resolveThemeColor('--border'),
         boxShadow: 'none'
       },

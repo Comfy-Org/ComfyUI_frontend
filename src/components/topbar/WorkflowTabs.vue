@@ -10,7 +10,7 @@
     <div
       ref="tabStripRef"
       data-testid="workflow-tab-strip"
-      class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
+      class="no-drag scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
       @transitionend="handleTabResize"
     >

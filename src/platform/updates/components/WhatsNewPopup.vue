@@ -310,7 +310,7 @@ defineExpose({
 
 /* Code styling */
 .content-text :deep(code) {
-  background-color: var(--input-surface);
+  background-color: var(--input);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 2px 6px;

@@ -208,8 +208,8 @@ const outputList = computed(() =>
 
 .markdown-content :deep(code),
 .fallback-content code {
-  color: var(--code-text-color);
-  background-color: var(--code-bg-color);
+  color: var(--primary);
+  background-color: var(--secondary);
   border-radius: var(--radius);
   padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1.5);
 }
@@ -251,7 +251,7 @@ const outputList = computed(() =>
   overflow-x: auto;
   border-radius: var(--radius);
   padding: calc(var(--spacing) * 4);
-  background-color: var(--code-block-bg-color);
+  background-color: var(--secondary);
 
   code {
     background-color: transparent;

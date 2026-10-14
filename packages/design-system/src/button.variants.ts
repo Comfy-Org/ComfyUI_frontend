@@ -29,11 +29,11 @@ export const buttonVariants = cva({
       subscribe:
         'border-transparent bg-credit text-charcoal-800 hover:opacity-80',
       'brand-ghost':
-        'bg-transparency-white-t8 text-primary-warm-white hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
+        'bg-white/8 text-primary-warm-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
       'brand-solid':
         'bg-brand-yellow text-primary-comfy-ink hover:bg-brand-yellow/90 focus-visible:ring-2 focus-visible:ring-primary-warm-white',
       'brand-ghost-accent':
-        'bg-transparency-white-t8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
+        'bg-white/8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',

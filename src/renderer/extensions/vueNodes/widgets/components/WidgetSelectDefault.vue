@@ -105,7 +105,7 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
+            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
