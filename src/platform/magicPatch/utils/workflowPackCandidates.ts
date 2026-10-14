@@ -25,6 +25,12 @@ export function convertedWorkflowPackCandidates(
   node: NodeIdentity,
   revisions: readonly CloudNodeRegistryRevision[]
 ): CloudNodeRegistryRevision[] {
+  const version = node.properties?.ver
+  if (
+    typeof version === 'string' &&
+    !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(version)
+  )
+    return []
   return matchingWorkflowPackRevisions(node, revisions, 2)
 }
 
@@ -37,7 +43,11 @@ function matchingWorkflowPackRevisions(
     typeof node.properties?.cnr_id === 'string'
       ? node.properties.cnr_id
       : typeof node.properties?.aux_id === 'string'
-        ? node.properties.aux_id.split('/').at(-1)
+        ? node.properties.aux_id
+            .replace(/\/+$/u, '')
+            .replace(/\.git$/u, '')
+            .split('/')
+            .at(-1)
         : undefined
   const version =
     typeof node.properties?.ver === 'string' ? node.properties.ver : undefined

@@ -1,3 +1,4 @@
+import type { CloudNodeRegistryRevision } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 import { unresolvedWorkflowPacks } from './unresolvedWorkflowPacks'
 
@@ -11,6 +12,31 @@ const missing = [
 ]
 
 describe('missing community pack discovery', () => {
+  it('keeps exact-version source lookup available when a converted catalogue row cannot prove that release', () => {
+    const converted: CloudNodeRegistryRevision = {
+      pack_id: 'z-image-power-nodes/x1234567',
+      revision_id: 'a'.repeat(64),
+      name: 'Z-Image Power Nodes',
+      upstream_commit: 'b'.repeat(40),
+      source_sha256: 'c'.repeat(64),
+      manifest_sha256: 'd'.repeat(64),
+      dependency_profile_sha256: 'e'.repeat(64),
+      node_api_version: 2,
+      nodes: [node.type],
+      prepared: false,
+      pinned: false
+    }
+    expect(
+      unresolvedWorkflowPacks({ nodes: [node] }, missing, [converted])
+    ).toEqual([
+      expect.objectContaining({
+        cnrId: node.properties.cnr_id,
+        version: '2.0.0',
+        nodeTypes: [node.type]
+      })
+    ])
+  })
+
   it('retains the screenshot workflow exact package version without needing a local registry row', () => {
     expect(unresolvedWorkflowPacks({ nodes: [node] }, missing, [])).toEqual([
       expect.objectContaining({

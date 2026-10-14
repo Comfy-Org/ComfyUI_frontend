@@ -369,6 +369,7 @@ export const useMagicPatchBatchStore = defineStore('magicPatchBatch', () => {
     consentOpen.value = true
   }
   function convertedMissingPack(group: MissingPackGroup) {
+    if (!app.isGraphReady) return []
     return missingPackCandidates(
       app.rootGraph,
       [group],

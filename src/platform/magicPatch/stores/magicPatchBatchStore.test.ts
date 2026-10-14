@@ -240,6 +240,21 @@ async function submit(packs = [first], acknowledge = true) {
 }
 
 describe('authenticated publication completion and user reload', () => {
+  it('does not access the graph for converted-pack review before initialization', () => {
+    const store = useMagicPatchBatchStore()
+    graphReady.value = false
+    const rootGraph = vi.spyOn(app, 'rootGraph', 'get')
+    expect(
+      store.convertedMissingPack({
+        packId: first.pack_id,
+        nodeTypes: [{ type: 'RandomNumber', nodeId: '7' }],
+        isResolving: false
+      })
+    ).toEqual([])
+    expect(rootGraph).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
   it('does not start another conversion for existing V2 candidates and keeps partial groups convertible', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('RandomNumber')

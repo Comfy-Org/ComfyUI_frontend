@@ -19,6 +19,49 @@ const source: CloudNodeRegistryRevision = {
   prepared: false
 }
 describe('workflow pack discovery', () => {
+  it.for(['2.0.0', '3.0.0'])(
+    'does not assume a catalogue Git revision proves workflow version %s',
+    (version) => {
+      const node = {
+        type: 'RandomNumber',
+        properties: { cnr_id: 'randomnumbers', ver: version }
+      }
+      const converted: CloudNodeRegistryRevision = {
+        ...source,
+        node_api_version: 2
+      }
+      expect(convertedWorkflowPackCandidates(node, [converted])).toEqual([])
+      expect(workflowPackCandidates(node, [source, converted])).toEqual([
+        source
+      ])
+    }
+  )
+
+  it('normalizes repository URL suffixes without treating an unrelated trailing-slash repository as an unnamed pack', () => {
+    const converted: CloudNodeRegistryRevision = {
+      ...source,
+      node_api_version: 2
+    }
+    expect(
+      convertedWorkflowPackCandidates(
+        {
+          type: 'RandomNumber',
+          properties: { aux_id: 'https://github.com/owner/randomnumbers.git/' }
+        },
+        [converted]
+      )
+    ).toEqual([converted])
+    expect(
+      convertedWorkflowPackCandidates(
+        {
+          type: 'RandomNumber',
+          properties: { aux_id: 'https://github.com/owner/unrelated/' }
+        },
+        [converted]
+      )
+    ).toEqual([])
+  })
+
   it('keeps all existing V2 revisions for explicit selection instead of reconverting an ambiguous pack', () => {
     const node = {
       type: 'RandomNumber',
