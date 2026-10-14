@@ -17,6 +17,7 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
+import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -69,6 +70,7 @@ function capabilitiesResponse(
       can_revert_scheduled_change: false,
       can_change_seats: true,
       can_invite_members: true,
+      can_manage_members: true,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -254,6 +256,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
@@ -271,6 +274,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(true)
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
@@ -288,6 +292,7 @@ describe('useBillingCapabilities', () => {
           can_revert_scheduled_change: false,
           can_change_seats: false,
           can_invite_members: false,
+          can_manage_members: false,
           can_downgrade_to_personal: false
         }
       )
@@ -299,7 +304,22 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+  })
+
+  it('does not infer member management from an older response', async () => {
+    const response = capabilitiesResponse(true)
+    Reflect.deleteProperty(response.capabilities, 'can_manage_members')
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canChangeSeats.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {
@@ -343,6 +363,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
@@ -418,6 +439,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
@@ -1158,5 +1180,112 @@ describe('useBillingCapabilities on the SDK rail', () => {
 
     expect(readCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+  })
+})
+
+describe('useBillingCapabilities capability gates', () => {
+  type Capabilities = BillingCapabilitiesResponse['capabilities']
+
+  let response: BillingCapabilitiesResponse
+  let scope: EffectScope | null = null
+
+  beforeEach(() => {
+    mockIsCloud.value = true
+    railState.rail = null
+    response = capabilitiesResponse(true)
+    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+      Promise.resolve(structuredClone(response))
+    )
+  })
+
+  afterEach(() => {
+    scope?.stop()
+    scope = null
+    railState.rail = null
+  })
+
+  async function mount() {
+    scope?.stop()
+    scope = effectScope()
+    const billingCapabilities = scope.run(() => useBillingCapabilities())!
+    await billingCapabilities.initialize()
+    return billingCapabilities
+  }
+
+  function otherCapabilityFlips(fact: keyof Capabilities) {
+    const capabilities = capabilitiesResponse(true).capabilities
+    return Object.keys(capabilities)
+      .filter(
+        (key): key is keyof Capabilities => key in capabilities && key !== fact
+      )
+      .map((key) => ({
+        name: `a flipped ${key}`,
+        apply: () => {
+          response.capabilities[key] = !response.capabilities[key]
+        }
+      }))
+  }
+
+  describe.for([
+    ['can_subscribe_self_serve', 'canSubscribeSelfServe'],
+    ['can_cancel', 'canCancel'],
+    ['can_reactivate', 'canReactivate'],
+    ['can_change_seats', 'canChangeSeats'],
+    ['can_manage_members', 'canManageMembers'],
+    ['can_invite_members', 'canInviteMembers'],
+    ['can_downgrade_to_personal', 'canDowngradeToPersonal']
+  ] as const)('%s', ([fact, gate]) => {
+    describeServerFactGate({
+      name: gate,
+      fact: {
+        set: (value) => {
+          response.capabilities[fact] = value
+        }
+      },
+      perturbations: [
+        {
+          name: 'the member role',
+          apply: () => {
+            Object.assign(useTeamWorkspaceStore(), {
+              activeWorkspace: { id: 'workspace-1', role: 'member' }
+            })
+          }
+        },
+        ...otherCapabilityFlips(fact),
+        {
+          name: 'rollout defaults applied',
+          apply: () => {
+            response.rollout_defaults_applied = {
+              can_downgrade_to_personal: true,
+              can_subscribe_self_serve: true,
+              can_top_up: true
+            }
+          }
+        },
+        {
+          name: 'a denied reason',
+          apply: () => {
+            response.denied_reasons = {
+              can_subscribe_self_serve: 'not_workspace_owner'
+            }
+          }
+        },
+        {
+          name: 'the SDK billing rail',
+          apply: () => {
+            railState.rail = {
+              readCapabilities: vi.fn(() =>
+                Promise.resolve({
+                  status: 'ok',
+                  value: structuredClone(response)
+                })
+              )
+            }
+          }
+        }
+      ],
+      mount,
+      read: (billingCapabilities) => billingCapabilities[gate].value
+    })
   })
 })

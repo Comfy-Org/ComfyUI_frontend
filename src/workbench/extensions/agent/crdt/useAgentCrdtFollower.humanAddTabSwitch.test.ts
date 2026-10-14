@@ -131,14 +131,17 @@ describe('a human-added node across a tab switch', () => {
       enqueue: followerApi.enqueueHumanOperations,
       getGraph: () => graph,
       boundRootGraphId: () => null,
-      docInputNames: followerApi.docInputNames
+      docInputNames: followerApi.docInputNames,
+      docPromotedWidgets: followerApi.docPromotedWidgets,
+      mayWritePromotedHost: followerApi.mayWritePromotedHost,
+      onWidgetWriteRefused: followerApi.notifyWidgetWriteRefused
     })
     const cleanup = () => {
       minter.detach()
       view.unmount()
       host.destroy()
     }
-    return { host, isTargetActive, cleanup }
+    return { host, isTargetActive, followerApi, cleanup }
   }
 
   function deliverCatchUp(host: Y.Doc, seq: number): void {
@@ -287,4 +290,35 @@ describe('a human-added node across a tab switch', () => {
       }
     }
   )
+
+  it('lets a promoted host write through only once the document can vouch for it', async () => {
+    const graph = new LGraph()
+    const source = createRegisteredNode('TestSource')
+    graph.add(source)
+    const { host, followerApi, cleanup } = mountBoundFollower(graph)
+    try {
+      const added = createRegisteredNode('TestSource')
+      graph.add(added)
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect({
+        existing: followerApi.mayWritePromotedHost(source.id),
+        addedHere: followerApi.mayWritePromotedHost(added.id)
+      }).toEqual({ existing: false, addedHere: true })
+
+      deliverCatchUp(host, 1)
+      expect(followerApi.mayWritePromotedHost(source.id)).toBe(true)
+
+      deliver('doc_reset', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 2,
+        lineage_seq: 2
+      })
+      expect(followerApi.mayWritePromotedHost(added.id)).toBe(false)
+    } finally {
+      cleanup()
+    }
+  })
 })

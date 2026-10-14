@@ -45,7 +45,7 @@ const { loaded } = useHeroLogo(logoContainer, {
     ref="logoContainer"
     role="img"
     :aria-label="label"
-    class="relative mx-auto mb-10 flex aspect-173/48 w-full max-w-2xl items-center justify-center lg:mb-12"
+    class="relative mx-auto flex aspect-173/48 w-full max-w-2xl items-center justify-center"
   >
     <svg
       :viewBox="viewBox ?? WORDMARK_VIEWBOX"

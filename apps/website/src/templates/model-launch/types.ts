@@ -52,6 +52,9 @@ export interface ModelLaunchHero {
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
   // a scrim, which is how the announcement pages are designed.
   layout?: 'media-first' | 'content-first' | 'overlay'
+  mediaOutline?: 'gray'
+  titleSize?: 'default' | 'compact'
+  logoSize?: 'default' | 'large'
   promptBar?: ModelLaunchPromptBar
   // Small label above the heading on announcement pages, e.g. COMING SOON.
   eyebrowKey?: TranslationKey
@@ -80,7 +83,7 @@ export type ModelLaunchMedia =
   | { kind: 'video'; src: string; posterSrc?: string }
   | { kind: 'image'; src: string }
 
-interface ModelLaunchGalleryCard {
+export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
@@ -89,6 +92,8 @@ interface ModelLaunchGalleryCard {
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
   prompt?: LocalizedText
+  span?: 'full'
+  expandable?: boolean
   media: ModelLaunchMedia
   // Brand mark drawn over the card, for pages whose gallery mixes models.
   logoSrc?: string
@@ -99,7 +104,9 @@ export interface ModelLaunchGallery {
   headingKey: TranslationKey
   // 'accent' paints the per-card link solid yellow. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
-  ctaVariant?: 'muted' | 'accent'
+  ctaVariant?: 'muted' | 'accent' | 'none'
+  cardMeta?: 'default' | 'none'
+  captionPlacement?: 'below' | 'overlay'
   cards: readonly ModelLaunchGalleryCard[]
 }
 
@@ -202,6 +209,20 @@ export interface ModelLaunchComparison {
   rows: readonly ModelLaunchComparisonRow[]
 }
 
+interface ModelLaunchBeforeAfterTab {
+  id: string
+  label: LocalizedText
+  caption: LocalizedText
+  beforeSrc: string
+  afterSrc: string
+}
+
+export interface ModelLaunchBeforeAfter {
+  headingKey: TranslationKey
+  bodyKey?: TranslationKey
+  tabs: readonly ModelLaunchBeforeAfterTab[]
+}
+
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey
   subtitleKey: TranslationKey
@@ -220,6 +241,8 @@ export interface ModelLaunchHighlight {
 
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
+  autoplayMs?: number
+  quoteSize?: 'default' | 'compact'
   highlight?: ModelLaunchHighlight
 }
 
@@ -227,6 +250,7 @@ export interface ModelLaunchReviews {
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
   | 'showcases'
+  | 'beforeAfter'
   | 'gallery'
   | 'audioGallery'
   | 'steps'
@@ -242,6 +266,7 @@ export type ModelLaunchSection =
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'showcases',
+  'beforeAfter',
   'gallery',
   'audioGallery',
   'pricing',
@@ -262,6 +287,7 @@ export interface ModelLaunchPage {
   stackBreadcrumbOnMobile?: boolean
   hero: ModelLaunchHero
   showcases?: readonly ModelLaunchShowcase[]
+  beforeAfter?: ModelLaunchBeforeAfter
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery

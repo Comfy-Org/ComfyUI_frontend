@@ -10,13 +10,12 @@ import type { FloatingRerouteSlot } from '../Reroute'
 import type {
   Dictionary,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
   ISlotType,
   Point,
   Size
 } from '../interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './slots'
 import type { LiteGraph } from '../litegraph'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'

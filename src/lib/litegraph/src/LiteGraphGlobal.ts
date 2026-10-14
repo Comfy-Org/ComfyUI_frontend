@@ -12,15 +12,18 @@ import { InputIndicators } from './canvas/InputIndicators'
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
-  CreateNodeOptions,
   Dictionary,
+  INodeFlags,
   ISlotType,
+  Point,
   Rect,
+  Size,
   WhenNullish
 } from './interfaces'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -30,6 +33,22 @@ import {
   TitleMode
 } from './types/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+
+/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+export interface CreateNodeOptions {
+  pos?: Point
+  size?: Size
+  properties?: Dictionary<NodeProperty | undefined>
+  flags?: Partial<INodeFlags>
+  mode?: LGraphEventMode
+  color?: string
+  bgcolor?: string
+  boxcolor?: string
+  title?: string
+  shape?: RenderShape
+  inputs?: Partial<INodeInputSlot>[]
+  outputs?: Partial<INodeOutputSlot>[]
+}
 
 export interface SlotTypeDefaultNodeOpts {
   node?: string

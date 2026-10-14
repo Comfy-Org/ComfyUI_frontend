@@ -50,7 +50,7 @@ function timelineHeadingClass(id: string) {
 
 function timelineBadgeClass(id: string) {
   return cn(
-    'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-3xl font-semibold text-primary-comfy-ink',
+    'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-2xl font-semibold whitespace-nowrap text-primary-comfy-ink xl:text-3xl',
     id === highlightedId ? 'bg-primary-comfy-yellow' : 'bg-timeline-neutral'
   )
 }
@@ -64,13 +64,16 @@ function timelineBadgeClass(id: string) {
       {{ heading }}
     </h2>
 
-    <ol v-if="layout === 'timeline'" class="grid grid-cols-1 md:grid-cols-4">
+    <ol
+      v-if="layout === 'timeline'"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+    >
       <li
         v-for="step in steps"
         :key="step.id"
         class="relative pb-10 text-center"
       >
-        <h3 :class="timelineHeadingClass(step.id)">
+        <h3 v-if="step.title" :class="timelineHeadingClass(step.id)">
           {{ step.title }}
         </h3>
         <span :class="timelineBadgeClass(step.id)">

@@ -13,6 +13,7 @@ const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
 export const NOINDEX_ROUTES = [
+  '/changelog',
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
   '/individual-submission',
   '/booking-confirmation',
@@ -27,8 +28,9 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
-  '/events/dev-platform-challenge',
+  '/open-source-higgsfield',
   '/nano-banana',
+  '/fish-audio',
   ...PLACEHOLDER_PATHNAMES
 ] as const
 

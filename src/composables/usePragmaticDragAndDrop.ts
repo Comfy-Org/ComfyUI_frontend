@@ -2,7 +2,7 @@ import {
   draggable,
   dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { onBeforeUnmount, onMounted, toValue } from 'vue'
+import { onBeforeUnmount, onMounted, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 export function usePragmaticDroppable(
@@ -12,16 +12,14 @@ export function usePragmaticDroppable(
   let cleanup = () => {}
 
   onMounted(() => {
-    const element = toValue(dropTargetElement)
-
-    if (!element) {
-      return
-    }
-
-    cleanup = dropTargetForElements({
-      element,
-      ...options
-    })
+    cleanup = watch(
+      () => toValue(dropTargetElement),
+      (element, _previous, onCleanup) => {
+        if (!element) return
+        onCleanup(dropTargetForElements({ element, ...options }))
+      },
+      { immediate: true, flush: 'post' }
+    )
   })
 
   onBeforeUnmount(() => {

@@ -10,6 +10,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
   challengeRequiredOperation,
   pendingOperation,
   succeededOperation
@@ -462,7 +463,7 @@ test('447-6886: a redirect method shows the pre-money line, never Phase B, and l
   })
 })
 
-test('coming back from Alipay after its own payment went through is Success, naming the plan the server now lists', async ({
+test('coming back from Alipay after its own payment went through is Success, naming the plan the server reports for it', async ({
   page,
   cloud,
   signIn
@@ -479,7 +480,7 @@ test('coming back from Alipay after its own payment went through is Success, nam
   await payButton(page).click()
   await expect(page).toHaveURL(PORTAL_URL)
 
-  moveOperation(succeededOperation(OPERATION))
+  moveOperation({ ...succeededOperation(OPERATION), plan: PRO_MONTHLY_OP_PLAN })
   cloud.scenario.status = {
     ...cloud.scenario.status,
     plan_slug: 'pro_monthly',
