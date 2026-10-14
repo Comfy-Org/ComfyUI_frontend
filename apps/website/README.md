@@ -87,6 +87,13 @@ links; the editor API separately rechecks authorization on every operation.
 
 ## CCC review discovery
 
+Workflow editors expose element 0 of `workflow_versions`: named `download` graph
+JSON and `api` execution JSON, separately uploaded and exactly pinned in Media.
+The initial name is V1; later stored pairs are preserved but ignored by the site.
+API files are at most 1 MiB and shape-validated by the backend, not executed on Save.
+Graph preview/download never becomes an API execution fallback. Historical
+`workflow_files` remains readable until ordinary versioned Draft conversion.
+
 CCC editor uploads accept PNG/JPEG/WebP, MP4/WebM and workflow JSON, up to 64 MiB
 per file (the proxy allows 65 MiB for multipart overhead). Video bytes are verified
 by the backend's ffprobe runtime; the browser never supplies trusted hashes/MIME.

@@ -14,6 +14,8 @@ const {
   draft,
   csrf,
   mediaRole,
+  jsonOnly = false,
+  fileLabel,
   locale = 'en'
 } = defineProps<{
   reference?: Document
@@ -21,6 +23,8 @@ const {
   draft: number
   csrf: string
   mediaRole: string
+  jsonOnly?: boolean
+  fileLabel?: string
   locale?: Locale
 }>()
 const emit = defineEmits<{
@@ -48,7 +52,11 @@ async function upload(replace: boolean) {
   if (!entityUID || !file.value || state.value === 'uploading') return
   const mime = file.value.type
   if (
-    file.value.size > 64 << 20 ||
+    file.value.size >
+      (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20) ||
+    (jsonOnly &&
+      (!file.value.name.toLowerCase().endsWith('.json') ||
+        !['application/json', ''].includes(mime))) ||
     ![
       'image/png',
       'image/jpeg',
@@ -141,10 +149,16 @@ async function upload(replace: boolean) {
       {{ t('cmsEditor.saveBeforeUpload') }}
     </p>
     <label class="grid gap-2 text-sm text-admin-muted"
-      >{{ t('cmsEditor.chooseFile')
+      >{{
+        fileLabel ??
+        t(jsonOnly ? 'cccWorkflowVersions.chooseJSON' : 'cmsEditor.chooseFile')
       }}<input
         type="file"
-        accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm"
+        :accept="
+          jsonOnly
+            ? 'application/json,.json'
+            : 'image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm'
+        "
         :disabled="!entityUID || state === 'uploading'"
         class="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-admin-raised file:px-3 file:py-2 file:text-admin-fg"
         @change="choose"

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { blankDocument, editorSnapshot } from '@/lib/cms/editor-document'
 import { editorRequest } from '@/lib/cms/editor-client'
@@ -41,6 +47,75 @@ function setup(existing = true) {
 }
 
 describe('staff page editor', () => {
+  it('uploads the API file separately while preserving the downloadable graph pin', async () => {
+    setup()
+    const input = screen.getByLabelText('API JSON (Cloud Run workflow)')
+    const uploadPanel = input.closest('div')
+    if (!uploadPanel) throw new Error('Missing API upload panel')
+    vi.mocked(editorRequest)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        data: { uid: next, revision_uid: revision }
+      })
+      .mockResolvedValueOnce({ ok: false, status: 409, data: undefined })
+    await fireEvent.change(input, {
+      target: {
+        files: [
+          new File(
+            ['{"7":{"class_type":"Example","inputs":{}}}'],
+            'workflow.json',
+            { type: 'application/json' }
+          )
+        ]
+      }
+    })
+    await fireEvent.click(
+      within(uploadPanel).getByRole('button', { name: 'Upload as new media' })
+    )
+    await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', { name: 'Save changes' })[0]
+      ).toBeEnabled()
+    )
+    await fireEvent.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    )
+    await waitFor(() => expect(editorRequest).toHaveBeenCalledTimes(2))
+    const upload = vi.mocked(editorRequest).mock.calls[0][1]?.body
+    if (!(upload instanceof FormData))
+      throw new Error('Missing API upload form')
+    expect(upload.get('role')).toBe('workflow-api-0')
+    const save = JSON.parse(
+      String(vi.mocked(editorRequest).mock.calls[1][1]?.body)
+    )
+    expect(save.workflow_versions).toEqual([
+      {
+        name: 'Original file',
+        download: flat.workflow_files[0].file,
+        api: {
+          src: 'r2',
+          id: next,
+          file_version_uid: revision,
+          name: 'workflow-api-0.json'
+        }
+      }
+    ])
+    expect(save).not.toHaveProperty('workflow_files')
+  })
+  it('defaults a new pair name to V1 and exposes two JSON-only selectors', () => {
+    setup(false)
+    expect(
+      screen.getByRole('textbox', { name: 'Workflow version name' })
+    ).toHaveValue('V1')
+    expect(
+      screen.getByLabelText('Download JSON (graph workflow)')
+    ).toHaveAttribute('accept', 'application/json,.json')
+    expect(
+      screen.getByLabelText('API JSON (Cloud Run workflow)')
+    ).toHaveAttribute('accept', 'application/json,.json')
+  })
   it('requires opting into input editing but not script examples', async () => {
     setup(false)
     const runnable = screen.getByRole('checkbox', { name: 'Runnable' })

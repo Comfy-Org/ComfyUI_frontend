@@ -76,7 +76,13 @@ const blocked = computed(
   () =>
     state.value === 'saving' ||
     uploads.value > 0 ||
-    invalidFields.value.size > 0
+    invalidFields.value.size > 0 ||
+    (Array.isArray(document.value.workflow_versions) &&
+      arrayObjects(document.value.workflow_versions).some(
+        (version) =>
+          !objectValue(version.download).id ||
+          !String(version.name ?? '').trim()
+      ))
 )
 const completeDocumentBlocked = computed(
   () =>
@@ -287,37 +293,38 @@ function media(name: string, reference: Document | undefined) {
   else delete next[name]
   document.value = next
 }
-function workflowFile(reference: Document | undefined) {
-  if (!reference) return
-  const files = arrayObjects(document.value.workflow_files)
-  document.value = {
+const workflowVersions = computed<Document[]>(() => {
+  const versions = arrayObjects(document.value.workflow_versions)
+  if (versions.length) return versions
+  return arrayObjects(document.value.workflow_files).map((legacy, index) => ({
+    name: typeof legacy.name === 'string' ? legacy.name : `V${index + 1}`,
+    download: objectValue(legacy.file),
+    api: null
+  }))
+})
+const primaryWorkflowVersion = computed<Document>(
+  () => workflowVersions.value[0] ?? { name: 'V1', api: null }
+)
+function setWorkflowVersionField(
+  field: 'name' | 'download' | 'api',
+  value: Document | string | undefined
+) {
+  const versions = workflowVersions.value
+  const reference =
+    field !== 'name' && value && typeof value === 'object'
+      ? { ...value, name: `workflow-${field}-0.json` }
+      : value
+  const first = { ...primaryWorkflowVersion.value, [field]: reference ?? null }
+  const next: Document = {
     ...document.value,
-    workflow_files: [
-      ...files,
-      {
-        name: t('cmsEditor.fileVersion', { count: files.length + 1 }),
-        file: reference
-      }
-    ]
+    workflow_versions: [first, ...versions.slice(1)]
   }
+  delete next.workflow_files
+  document.value = next
 }
-function editWorkflowName(index: number, event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const name = event.target.value
-  document.value = {
-    ...document.value,
-    workflow_files: arrayObjects(document.value.workflow_files).map(
-      (file, i) => (i === index ? { ...file, name } : file)
-    )
-  }
-}
-function removeWorkflowFile(index: number) {
-  document.value = {
-    ...document.value,
-    workflow_files: arrayObjects(document.value.workflow_files).filter(
-      (_, i) => i !== index
-    )
-  }
+function workflowVersionName(event: Event) {
+  if (event.target instanceof HTMLInputElement)
+    setWorkflowVersionField('name', event.target.value)
 }
 async function save() {
   if (blocked.value) return
@@ -677,7 +684,7 @@ async function save() {
           <h2 class="text-lg font-medium">{{ t('cmsEditor.hero') }}</h2>
           <MediaUpload
             :reference="document.hero ? objectValue(document.hero) : undefined"
-            :entityUID="snapshot?.uid"
+            :entity-u-i-d="snapshot?.uid"
             :draft
             :csrf
             :locale
@@ -690,7 +697,7 @@ async function save() {
             :reference="
               document.thumbnail ? objectValue(document.thumbnail) : undefined
             "
-            :entityUID="snapshot?.uid"
+            :entity-u-i-d="snapshot?.uid"
             :draft
             :csrf
             :locale
@@ -859,7 +866,7 @@ async function save() {
       </section>
       <ExamplesEditor
         v-model="document"
-        :entityUID="snapshot?.uid"
+        :entity-u-i-d="snapshot?.uid"
         :draft
         :csrf
         :locale
@@ -870,32 +877,43 @@ async function save() {
         v-if="kind === 'workflow'"
         class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
       >
-        <h2 class="text-lg">{{ t('cmsEditor.workflowFiles') }}</h2>
-        <div
-          v-for="(file, index) in arrayObjects(document.workflow_files)"
-          :key="index"
-          class="grid gap-2 text-sm text-admin-muted sm:grid-cols-[1fr_auto]"
-        >
-          <label class="grid gap-1"
-            >{{ t('cmsEditor.fileName')
-            }}<input
-              :value="typeof file.name === 'string' ? file.name : ''"
-              :class="inputClass"
-              @input="editWorkflowName(index, $event)"
-            /><code class="text-xs break-all">{{
-              objectValue(file.file).id
-            }}</code></label
-          ><AdminButton @click="removeWorkflowFile(index)">{{
-            t('cmsEditor.detach')
-          }}</AdminButton>
-        </div>
+        <h2 class="text-lg">{{ t('cccWorkflowVersions.heading') }}</h2>
+        <p class="text-sm text-admin-muted">
+          {{ t('cccWorkflowVersions.help') }}
+        </p>
+        <label class="grid gap-1 text-sm text-admin-muted"
+          >{{ t('cccWorkflowVersions.name')
+          }}<input
+            :value="primaryWorkflowVersion.name"
+            :disabled="!snapshot?.uid"
+            :class="inputClass"
+            maxlength="200"
+            @input="workflowVersionName"
+        /></label>
+        <h3 class="text-sm">{{ t('cccWorkflowVersions.download') }}</h3>
         <MediaUpload
-          :entityUID="snapshot?.uid"
+          :reference="objectValue(primaryWorkflowVersion.download)"
+          :entity-u-i-d="snapshot?.uid"
           :draft
           :csrf
           :locale
-          media-role="workflow-file"
-          @update="workflowFile"
+          media-role="workflow-download-0"
+          :file-label="t('cccWorkflowVersions.download')"
+          json-only
+          @update="setWorkflowVersionField('download', $event)"
+          @busy="busy"
+        />
+        <h3 class="text-sm">{{ t('cccWorkflowVersions.api') }}</h3>
+        <MediaUpload
+          :reference="objectValue(primaryWorkflowVersion.api)"
+          :entity-u-i-d="snapshot?.uid"
+          :draft
+          :csrf
+          :locale
+          media-role="workflow-api-0"
+          :file-label="t('cccWorkflowVersions.api')"
+          json-only
+          @update="setWorkflowVersionField('api', $event)"
           @busy="busy"
         />
       </section>

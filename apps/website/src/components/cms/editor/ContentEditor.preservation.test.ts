@@ -152,7 +152,7 @@ describe('complete authored document preservation', () => {
     )
     await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
     await fireEvent.change(
-      screen.getAllByLabelText('Choose image or workflow JSON')[0],
+      screen.getAllByLabelText('Choose image, video or workflow JSON')[0],
       {
         target: { files: [new File(['png'], 'new.png', { type: 'image/png' })] }
       }

@@ -1,4 +1,12 @@
 {
+  "cccWorkflowVersions": {
+    "heading": "工作流文件 — 列表第 0 项",
+    "help": "网站仅使用第一组具名文件。其他已保存版本将保留，以便未来提供选择器。新内容请先保存，再上传文件。API 文件与可下载的图工作流不同。",
+    "name": "工作流版本名称",
+    "download": "下载 JSON（图工作流）",
+    "api": "API JSON（云端运行工作流）",
+    "chooseJSON": "选择工作流 JSON"
+  },
   "cccMetadata": {
     "runnable": "可运行",
     "runnableHint": "启用输入编辑和网站运行面板。关闭后保留已保存的输入；下载和代码示例仍可用。",

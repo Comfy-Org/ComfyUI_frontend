@@ -1,4 +1,12 @@
 {
+  "cccWorkflowVersions": {
+    "heading": "Primary workflow file pair",
+    "help": "The website uses the first named pair only. Other stored versions are preserved for a future selector. Save new content before uploading files. An API file is separate from the downloadable graph.",
+    "name": "Workflow version name",
+    "download": "Download JSON (graph workflow)",
+    "api": "API JSON (Cloud Run workflow)",
+    "chooseJSON": "Choose workflow JSON"
+  },
   "cccMetadata": {
     "runnable": "Runnable",
     "runnableHint": "Enable input editing and the website playground. Turning this off keeps saved inputs; download and code examples remain available.",

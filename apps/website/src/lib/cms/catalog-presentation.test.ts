@@ -2,6 +2,7 @@ import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 import { detailSchema } from '@/config/models-page-data'
 import { modelSchema } from '@/config/models-catalogue-data'
+import { workflowCloudRequest } from '@/config/workshop-workflow-api'
 import {
   catalogLanguageFallback,
   catalogPresentation
@@ -43,6 +44,82 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('uses only named pair zero: download graph and independent API prompt for Run', () => {
+    const download = '00000000-0000-4000-8000-000000000080'
+    const api = '00000000-0000-4000-8000-000000000081'
+    const version = '00000000-0000-4000-8000-000000000082'
+    const file = (id: string) => ({ src: 'r2', id, file_version_uid: version })
+    const view = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          workflow_versions: [
+            { name: 'V1', download: file(download), api: file(api) },
+            { name: 'Ignore future', download: file(api), api: file(download) }
+          ],
+          website_media: {
+            '$.workflow_versions[0].download': `/preview-media/2/${download}/${version}`,
+            '$.workflow_versions[1].download': `/preview-media/2/${api}/${version}`
+          },
+          website_api_workflow: {
+            '7': { class_type: 'Example', inputs: { quality: 1 } }
+          },
+          inputBindings: {
+            quality: {
+              encoding: 'scalar',
+              targets: [{ nodeId: '7', inputName: 'quality' }]
+            }
+          }
+        }
+      })
+    )
+    if (view.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(view.catalogDetails?.workflowFiles).toEqual([
+      {
+        name: 'V1',
+        uid: download,
+        version,
+        href: `/preview-media/2/${download}/${version}`
+      }
+    ])
+    expect(
+      workflowCloudRequest(view.workflow, {
+        workflowId: view.workflow.id,
+        definitionVersion: view.workflow.definitionVersion,
+        appInputs: { quality: 2 }
+      })
+    ).toMatchObject({
+      prompt: { '7': { class_type: 'Example', inputs: { quality: 2 } } }
+    })
+    expect(view.workflow.cloud?.workflow['7'].inputs.quality).toBe(1)
+  })
+  it('never substitutes a legacy inline API when the primary pair API is unavailable', () => {
+    const view = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          runnable: true,
+          workflow_versions: [],
+          website_api_workflow: null,
+          compatibility: {
+            website: {
+              workflow: {
+                cloud: {
+                  workflow: { '7': { class_type: 'Legacy', inputs: {} } },
+                  inputBindings: {}
+                }
+              }
+            }
+          }
+        }
+      })
+    )
+    if (view.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(view.workflow.cloud).toBeUndefined()
+    expect(view.catalogDetails?.runnable).toBe(false)
+  })
   it.each(['video/mp4', 'video/webm'])(
     'uses exact verified %s metadata for native hero playback',
     (mime) => {

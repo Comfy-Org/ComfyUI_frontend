@@ -83,6 +83,15 @@ export function catalogPresentation(
   }
   const title = text('title', record.uid)
   const urls = jsonObject.safeParse(d.website_media)
+  const hasWorkflowVersions = Array.isArray(d.workflow_versions)
+  const firstWorkflowVersion = Array.isArray(d.workflow_versions)
+    ? objectPresentation(d.workflow_versions[0])
+    : undefined
+  const apiWorkflow = hasWorkflowVersions
+    ? objectPresentation(d.website_api_workflow)
+    : undefined
+  const workflowPresentation = { ...objectPresentation(preserved.workflow) }
+  if (hasWorkflowVersions) delete workflowPresentation.cloud
   const mediaTypes = jsonObject.safeParse(d.website_media_types)
   const mediaKind = (field: string) => {
     const mime = mediaTypes.success ? mediaTypes.data[field] : undefined
@@ -104,30 +113,50 @@ export function catalogPresentation(
       validDocumentationURL(d.documentation_url)
         ? d.documentation_url
         : undefined,
-    workflowFiles: Array.isArray(d.workflow_files)
-      ? d.workflow_files.flatMap((raw, index) => {
-          const entry = objectPresentation(raw)
-          const file = objectPresentation(entry.file)
+    workflowFiles: hasWorkflowVersions
+      ? (() => {
+          const file = objectPresentation(firstWorkflowVersion?.download)
           const href = urls.success
-            ? urls.data[`$.workflow_files[${index}].file`]
+            ? urls.data['$.workflow_versions[0].download']
             : undefined
-          if (
-            typeof entry.name !== 'string' ||
-            !entry.name.trim() ||
-            typeof href !== 'string' ||
-            !validWorkflowDownloadURL(href)
-          )
-            return []
-          return [
-            {
-              name: entry.name.trim(),
-              uid: file.id,
-              version: file.file_version_uid,
-              href
-            }
-          ]
-        })
-      : undefined,
+          return typeof href === 'string' && validWorkflowDownloadURL(href)
+            ? [
+                {
+                  name:
+                    typeof firstWorkflowVersion?.name === 'string'
+                      ? firstWorkflowVersion.name
+                      : 'V1',
+                  uid: file.id,
+                  version: file.file_version_uid,
+                  href
+                }
+              ]
+            : []
+        })()
+      : Array.isArray(d.workflow_files)
+        ? d.workflow_files.flatMap((raw, index) => {
+            const entry = objectPresentation(raw)
+            const file = objectPresentation(entry.file)
+            const href = urls.success
+              ? urls.data[`$.workflow_files[${index}].file`]
+              : undefined
+            if (
+              typeof entry.name !== 'string' ||
+              !entry.name.trim() ||
+              typeof href !== 'string' ||
+              !validWorkflowDownloadURL(href)
+            )
+              return []
+            return [
+              {
+                name: entry.name.trim(),
+                uid: file.id,
+                version: file.file_version_uid,
+                href
+              }
+            ]
+          })
+        : undefined,
     longDescription: text('long_description', '').trim() || undefined,
     faqs: Array.isArray(faq)
       ? faq.flatMap((raw, index) => {
@@ -150,7 +179,12 @@ export function catalogPresentation(
       : [],
     worksOnCloud:
       typeof d.works_on_cloud === 'boolean' ? d.works_on_cloud : undefined,
-    runnable: typeof d.runnable === 'boolean' ? d.runnable : undefined,
+    runnable:
+      hasWorkflowVersions && !Object.keys(apiWorkflow ?? {}).length
+        ? false
+        : typeof d.runnable === 'boolean'
+          ? d.runnable
+          : undefined,
     scriptCode: d.script_code,
     outputType:
       typeof d.output_type === 'string' && d.output_type.trim()
@@ -293,23 +327,28 @@ export function catalogPresentation(
             : {}),
           workflowId: preserved.workflowId ?? workflowId,
           workflow: {
-            ...objectPresentation(preserved.workflow),
-            id: objectPresentation(preserved.workflow).id ?? workflowId,
-            definitionVersion:
-              objectPresentation(preserved.workflow).definitionVersion ??
-              record.edit_version,
+            ...workflowPresentation,
+            id: workflowPresentation.id ?? workflowId,
+            definitionVersion: hasWorkflowVersions
+              ? record.edit_version
+              : (workflowPresentation.definitionVersion ?? record.edit_version),
             inputSchema,
             inputs: inputs.success ? inputs.data : {},
-            ...(objectPresentation(preserved.workflow).cloud
+            ...(hasWorkflowVersions && Object.keys(apiWorkflow ?? {}).length
               ? {
                   cloud: {
-                    ...objectPresentation(
-                      objectPresentation(preserved.workflow).cloud
-                    ),
+                    workflow: apiWorkflow,
                     inputBindings: d.inputBindings ?? {}
                   }
                 }
-              : {})
+              : workflowPresentation.cloud
+                ? {
+                    cloud: {
+                      ...objectPresentation(workflowPresentation.cloud),
+                      inputBindings: d.inputBindings ?? {}
+                    }
+                  }
+                : {})
           }
         }
       : {}),
