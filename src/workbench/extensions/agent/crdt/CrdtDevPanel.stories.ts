@@ -38,25 +38,15 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Open: Story = {
-  render: () => ({
-    components: { CrdtDevPanel },
-    setup() {
-      localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
-      localStorage.setItem('Comfy.Agent.CrdtDevPanel.hidden', 'false')
-      return { status }
-    },
-    template: '<CrdtDevPanel :status="status" />'
-  })
+  beforeEach: () => {
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.hidden', 'false')
+  }
 }
 
 export const Collapsed: Story = {
-  render: () => ({
-    components: { CrdtDevPanel },
-    setup() {
-      localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'false')
-      localStorage.setItem('Comfy.Agent.CrdtDevPanel.hidden', 'false')
-      return { status }
-    },
-    template: '<CrdtDevPanel :status="status" />'
-  })
+  beforeEach: () => {
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'false')
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.hidden', 'false')
+  }
 }

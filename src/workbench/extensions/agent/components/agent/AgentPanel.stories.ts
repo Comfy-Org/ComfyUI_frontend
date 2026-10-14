@@ -122,9 +122,14 @@ export const LongWorkflowList: Story = {
     const lastWorkflow = await body.findByRole('menuitem', {
       name: 'Workflow 30'
     })
+    const workflowMenu = body.getByRole('menu', { name: 'Workflows' })
 
     lastWorkflow.scrollIntoView({ block: 'nearest' })
 
+    await expect(workflowMenu.scrollHeight).toBeGreaterThan(
+      workflowMenu.clientHeight
+    )
+    await expect(workflowMenu.scrollTop).toBeGreaterThan(0)
     const lastWorkflowRect = lastWorkflow.getBoundingClientRect()
     await expect(lastWorkflowRect.top).toBeGreaterThanOrEqual(10)
     await expect(lastWorkflowRect.bottom).toBeLessThanOrEqual(
