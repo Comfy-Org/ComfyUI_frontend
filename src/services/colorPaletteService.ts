@@ -42,10 +42,12 @@ function deriveLegacyTheme({ comfy_base, litegraph_base }: Colors): Theme {
       mixWithContrast(92.5),
     muted:
       comfy_base['interface-panel-selected-surface'] ?? mixWithContrast(87.5),
-    card: litegraph_base.NODE_DEFAULT_BGCOLOR,
-    'card-foreground': litegraph_base.WIDGET_TEXT_COLOR,
-    secondary: litegraph_base.NODE_DEFAULT_COLOR,
-    input: litegraph_base.WIDGET_BGCOLOR
+    card: comfy_base['comfy-menu-secondary-bg'],
+    input: litegraph_base.WIDGET_BGCOLOR,
+    node: litegraph_base.NODE_DEFAULT_BGCOLOR,
+    'node-foreground': litegraph_base.WIDGET_TEXT_COLOR,
+    'node-header': litegraph_base.NODE_DEFAULT_COLOR,
+    'node-border': litegraph_base.NODE_BOX_OUTLINE_COLOR
   }
 }
 

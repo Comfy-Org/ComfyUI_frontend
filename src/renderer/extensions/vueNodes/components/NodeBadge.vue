@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="text"
-    class="flex min-w-max items-center gap-1 rounded-sm bg-card px-1 py-0.5 text-xs"
+    class="flex min-w-max items-center gap-1 rounded-sm bg-node px-1 py-0.5 text-xs"
     :style="{
       color: fgColor,
       backgroundColor: bgColor

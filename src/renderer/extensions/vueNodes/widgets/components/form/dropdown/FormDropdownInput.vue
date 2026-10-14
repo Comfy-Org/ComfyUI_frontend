@@ -70,7 +70,7 @@ defineExpose({ focus, showPicker })
   <div
     :class="
       cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'cursor-not-allowed opacity-50 outline-border': disabled
+        'cursor-not-allowed opacity-50 outline-node-border': disabled
       })
     "
   >
@@ -112,7 +112,7 @@ defineExpose({ focus, showPicker })
         cn(
           theButtonStyle,
           'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-border'
+          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-border'
         )
       "
     >

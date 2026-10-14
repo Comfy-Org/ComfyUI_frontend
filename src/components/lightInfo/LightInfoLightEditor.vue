@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-2 rounded-sm bg-card p-2 text-xs">
+  <div class="flex flex-col gap-2 rounded-sm bg-node p-2 text-xs">
     <ToggleGroup
       type="single"
       :model-value="light.type"

@@ -27,7 +27,7 @@
       v-if="beforeImage || afterImage"
       ref="containerRef"
       data-testid="image-compare-viewport"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-card py-4"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node py-4"
     >
       <img
         v-if="afterImage"

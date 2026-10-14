@@ -11,7 +11,7 @@
         preserveAspectRatio="none"
         :class="
           cn(
-            'block w-full rounded-sm bg-card',
+            'block w-full rounded-sm bg-node',
             display === 'histogram' ? 'aspect-3/2' : 'h-8'
           )
         "

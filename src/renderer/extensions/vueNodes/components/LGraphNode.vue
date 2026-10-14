@@ -68,7 +68,7 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-secondary',
+          'flex flex-1 flex-col bg-node-header',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
@@ -81,7 +81,7 @@
         )
       "
       :style="{
-        '--card': applyLightThemeColor(nodeData.bgcolor),
+        '--node': applyLightThemeColor(nodeData.bgcolor),
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
@@ -143,7 +143,7 @@
 
         <div
           :class="
-            cn('flex flex-1 flex-col bg-card pt-1 pb-3', bodyRoundingClass)
+            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
           "
           :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"

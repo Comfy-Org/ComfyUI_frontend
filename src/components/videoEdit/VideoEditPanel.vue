@@ -3,7 +3,7 @@
     <div
       v-if="!hasSource"
       data-testid="video-edit-empty"
-      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-card p-4 text-center"
+      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-border bg-node p-4 text-center"
     >
       <i class="icon-[lucide--film] size-6 text-muted-foreground" />
       <p class="m-0 text-sm text-muted-foreground">
@@ -13,7 +13,7 @@
     <div
       v-else
       data-testid="video-preview-container"
-      :class="cn('overflow-hidden rounded-lg bg-card', hasCrop && 'p-1.5')"
+      :class="cn('overflow-hidden rounded-lg bg-node', hasCrop && 'p-1.5')"
     >
       <div class="relative w-full" :style="videoAspectRatioStyle">
         <video
@@ -40,7 +40,7 @@
         />
         <div
           v-if="loading"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-card"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node"
           data-testid="video-preview-loading"
           :aria-busy="true"
           :aria-label="t('videoEdit.loadingVideo')"
@@ -52,7 +52,7 @@
         </div>
         <div
           v-else-if="error"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-card"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node"
           data-testid="video-preview-error"
           role="alert"
         >
@@ -86,7 +86,7 @@
         data-testid="playback-toggle"
         :class="
           cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-card-foreground',
+            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-node-foreground',
             loading
               ? 'cursor-default opacity-50'
               : 'cursor-pointer hover:bg-muted'
@@ -225,7 +225,7 @@
       />
 
       <div
-        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-border py-2"
+        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-node-border py-2"
       >
         <div
           v-for="row in metadataRows"
@@ -235,7 +235,7 @@
           <span class="truncate text-muted-foreground">
             {{ row.label }}
           </span>
-          <span class="text-right text-card-foreground">
+          <span class="text-right text-node-foreground">
             {{ row.value }}
           </span>
         </div>

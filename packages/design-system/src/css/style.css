@@ -53,7 +53,10 @@
   --background: var(--color-white);
   --foreground: var(--color-charcoal-800);
   --card: var(--color-white);
-  --card-foreground: var(--color-charcoal-800);
+  --node: var(--color-white);
+  --node-foreground: var(--color-charcoal-800);
+  --node-header: var(--color-smoke-200);
+  --node-border: var(--color-smoke-600);
   --popover: var(--color-white);
   --primary: var(--color-azure-400);
   --secondary: var(--color-smoke-200);
@@ -123,7 +126,10 @@
   --background: var(--color-charcoal-800);
   --foreground: var(--color-white);
   --card: var(--color-charcoal-600);
-  --card-foreground: var(--color-white);
+  --node: var(--color-charcoal-600);
+  --node-foreground: var(--color-white);
+  --node-header: var(--color-charcoal-700);
+  --node-border: var(--color-charcoal-100);
   --popover: var(--color-charcoal-800);
   --primary: var(--color-azure-600);
   --secondary: var(--color-charcoal-600);
@@ -169,7 +175,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
+  --color-node: var(--node);
+  --color-node-foreground: var(--node-foreground);
+  --color-node-header: var(--node-header);
+  --color-node-border: var(--node-border);
   --color-popover: var(--popover);
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);

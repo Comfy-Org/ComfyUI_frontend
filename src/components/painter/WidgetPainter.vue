@@ -6,7 +6,7 @@
     @pointerup.stop
   >
     <div
-      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-card"
+      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node"
     >
       <div
         class="relative max-h-full w-full"
@@ -267,7 +267,7 @@
         data-testid="painter-clear-button"
         :class="
           cn(
-            'gap-2 rounded-lg border border-border bg-card text-xs text-muted-foreground hover:text-base-foreground',
+            'gap-2 rounded-lg border border-node-border bg-node text-xs text-muted-foreground hover:text-base-foreground',
             !compact && 'col-span-2'
           )
         "

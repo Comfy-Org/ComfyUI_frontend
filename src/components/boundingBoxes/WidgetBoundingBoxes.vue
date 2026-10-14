@@ -6,7 +6,7 @@
   >
     <div class="flex flex-col">
       <div
-        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-border bg-input px-2"
+        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-node-border bg-input px-2"
       >
         <Button
           variant="textonly"
@@ -30,7 +30,7 @@
       </div>
       <div
         ref="canvasContainer"
-        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-border bg-base-background"
+        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-node-border bg-base-background"
         :style="canvasStyle"
       >
         <canvas
@@ -64,7 +64,7 @@
 
     <div
       v-if="activeRegion"
-      class="flex flex-col gap-2 rounded-sm bg-card p-2 text-xs"
+      class="flex flex-col gap-2 rounded-sm bg-node p-2 text-xs"
     >
       <div class="flex h-8 items-center gap-1 rounded-sm bg-input p-1">
         <Button
@@ -110,7 +110,7 @@
         <Textarea
           v-model="activeRegion.text"
           :placeholder="$t('boundingBoxes.textPlaceholder')"
-          class="min-h-14 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-card-foreground hover:overflow-auto focus:overflow-auto"
+          class="min-h-14 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-node-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
           @update:model-value="syncState"
         />
@@ -126,7 +126,7 @@
         <Textarea
           v-model="activeRegion.desc"
           :placeholder="$t('boundingBoxes.descPlaceholder')"
-          class="min-h-20 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-card-foreground hover:overflow-auto focus:overflow-auto"
+          class="min-h-20 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-node-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
           @update:model-value="syncState"
         />

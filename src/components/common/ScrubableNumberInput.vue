@@ -3,7 +3,7 @@
     ref="container"
     :class="
       cn(
-        'flex overflow-hidden rounded-md bg-input text-xs text-card-foreground',
+        'flex overflow-hidden rounded-md bg-input text-xs text-node-foreground',
         useWidgetHeight()
       )
     "

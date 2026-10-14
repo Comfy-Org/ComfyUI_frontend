@@ -6,7 +6,7 @@
     preserveAspectRatio="xMidYMid meet"
     :class="
       cn(
-        'aspect-square w-full rounded-[5px] bg-card',
+        'aspect-square w-full rounded-[5px] bg-node',
         disabled ? 'cursor-default' : 'cursor-crosshair'
       )
     "

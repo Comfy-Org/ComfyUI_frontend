@@ -7,7 +7,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     :node-def="nodeDef"
     :position="position"
   />
-  <div v-else class="_sb_node_preview bg-card" data-testid="node-preview">
+  <div v-else class="_sb_node_preview bg-node" data-testid="node-preview">
     <div class="_sb_table">
       <div
         class="node_header text-ellipsis"

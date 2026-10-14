@@ -1,7 +1,7 @@
 <template>
   <div class="widget-expands flex size-full flex-col gap-1" @pointerdown.stop>
     <div
-      class="group/preview relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-card"
+      class="group/preview relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node"
       data-testid="compositor-preview-area"
       @dblclick.stop="openEditor"
     >

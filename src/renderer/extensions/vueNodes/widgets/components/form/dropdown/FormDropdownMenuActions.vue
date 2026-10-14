@@ -40,7 +40,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 
 const actionButtonStyle = cn(
-  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-border transition-all duration-150'
+  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-border transition-all duration-150'
 )
 
 const layoutSwitchItemStyle =
@@ -161,8 +161,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-card',
-            'rounded-lg outline -outline-offset-1 outline-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >
@@ -214,8 +214,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-card',
-            'rounded-lg outline -outline-offset-1 outline-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >
@@ -267,8 +267,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-card',
-            'rounded-lg outline -outline-offset-1 outline-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >

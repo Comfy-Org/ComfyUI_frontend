@@ -4,7 +4,7 @@
       <Loader
         v-if="loading"
         size="sm"
-        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-card-foreground"
+        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-node-foreground"
       />
       <Input
         v-model="modelValue"
