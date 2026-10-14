@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import CatalogPreviewController from './CatalogPreviewController.vue'
@@ -13,17 +14,36 @@ const props = {
 }
 
 describe('verified staff Preview controller', () => {
+  it('hides redundant normal-LIVE entry controls in the admin shell', () => {
+    render(CatalogPreviewController, {
+      props: { ...props, view: 'LIVE', now: undefined, showEntry: false }
+    })
+    expect(screen.queryByRole('button', { name: 'ADMIN' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Preview Draft' })).toBeNull()
+  })
+  it('retains the active Preview controls when entry shortcuts are hidden', () => {
+    render(CatalogPreviewController, { props: { ...props, showEntry: false } })
+    expect(screen.getByRole('button', { name: 'EXIT' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ADMIN' })).toBeInTheDocument()
+  })
   it('keeps controls disabled until the mounted DOM is ready for commands', async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>()
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetch)
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
     render(CatalogPreviewController, { props })
     expect(screen.getByRole('button', { name: 'EXIT' })).toBeDisabled()
-    await fireEvent.click(screen.getByRole('button', { name: 'EXIT' }))
     expect(fetch).not.toHaveBeenCalled()
     await nextTick()
     expect(screen.getByRole('button', { name: 'EXIT' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'EXIT' }))
+    expect(fetch).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(assign).toHaveBeenCalledWith(props.currentPath))
   })
-  it.each([
+  it.for([
     { view: 'DRAFT' as const, now: props.now },
     { view: 'LIVE' as const, now: undefined }
   ])(
@@ -36,12 +56,12 @@ describe('verified staff Preview controller', () => {
         .mockImplementation(() => {})
       render(CatalogPreviewController, { props: { ...props, ...state } })
       await nextTick()
-      await fireEvent.click(screen.getByRole('button', { name: 'ADMIN' }))
+      await userEvent.click(screen.getByRole('button', { name: 'ADMIN' }))
       expect(assign).toHaveBeenCalledExactlyOnceWith('/admin/catalog')
       expect(fetch).not.toHaveBeenCalled()
     }
   )
-  it.each([
+  it.for([
     { button: 'EXIT', expected: { view: 'LIVE', now: 'now' } },
     { button: 'NOW', expected: { view: 'DRAFT', now: 'now' } }
   ])(
@@ -56,7 +76,7 @@ describe('verified staff Preview controller', () => {
         .mockImplementation(() => {})
       render(CatalogPreviewController, { props })
       await nextTick()
-      await fireEvent.click(screen.getByRole('button', { name: button }))
+      await userEvent.click(screen.getByRole('button', { name: button }))
       await waitFor(() =>
         expect(assign).toHaveBeenCalledWith(props.currentPath)
       )
@@ -129,14 +149,14 @@ describe('verified staff Preview controller', () => {
       .mockImplementation(() => {})
     render(CatalogPreviewController, { props })
     await nextTick()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Preview date and time' })
     )
     await fireEvent.update(
       screen.getByLabelText('Preview date and time (UTC)'),
       '2026-10-20T15:30'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Show this date' })
     )
     await waitFor(() => expect(assign).toHaveBeenCalledOnce())
@@ -147,7 +167,7 @@ describe('verified staff Preview controller', () => {
       })
     )
   })
-  it.each([400, 403, 503])(
+  it.for([400, 403, 503])(
     'keeps confirmed view and language on rejected status %s',
     async (status) => {
       const fetch = vi
@@ -189,10 +209,10 @@ describe('verified staff Preview controller', () => {
       .mockImplementation(() => {})
     render(CatalogPreviewController, { props })
     await nextTick()
-    await fireEvent.click(screen.getByRole('button', { name: 'NOW' }))
+    await userEvent.click(screen.getByRole('button', { name: 'NOW' }))
     expect(screen.getByRole('button', { name: 'EXIT' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'ADMIN' })).toBeDisabled()
-    await fireEvent.click(screen.getByRole('button', { name: 'EXIT' }))
+    await userEvent.click(screen.getByRole('button', { name: 'EXIT' }))
     expect(fetch).toHaveBeenCalledOnce()
     expect(assign).not.toHaveBeenCalled()
     assert.exists(commit)
@@ -212,7 +232,7 @@ describe('verified staff Preview controller', () => {
     })
     await nextTick()
     expect(screen.queryByRole('region')).not.toBeInTheDocument()
-    await fireEvent.click(screen.getByRole('button', { name: 'Preview Draft' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Preview Draft' }))
     await waitFor(() => expect(assign).toHaveBeenCalledOnce())
     expect(fetch).toHaveBeenCalledWith(
       '/admin/catalog-preview',
@@ -229,7 +249,7 @@ describe('verified staff Preview controller', () => {
       props: { ...props, currentPath: '//evil.test' }
     })
     await nextTick()
-    await fireEvent.click(screen.getByRole('button', { name: 'EXIT' }))
+    await userEvent.click(screen.getByRole('button', { name: 'EXIT' }))
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Your view is unchanged'
     )

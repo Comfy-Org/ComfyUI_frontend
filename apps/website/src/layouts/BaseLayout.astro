@@ -348,6 +348,7 @@ const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap((item) => {
         currentPath={Astro.url.pathname + Astro.url.search}
         changes={previewChanges}
         launches={previewLaunches}
+        showEntry={!bare}
         client:load
       />
     ) : (

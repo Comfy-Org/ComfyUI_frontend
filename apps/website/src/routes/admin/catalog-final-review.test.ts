@@ -35,5 +35,7 @@ describe('legacy review URL', () => {
     expect(response.status).toBe(303)
     expect(response.headers.get('Location')).toBe('/admin/catalog')
     expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    context.url.search = '?unsupported=1'
+    expect((await GET(context)).status).toBe(400)
   })
 })

@@ -25,7 +25,8 @@ const {
   locale = 'en',
   currentPath,
   changes = [],
-  launches = []
+  launches = [],
+  showEntry = true
 } = defineProps<{
   csrf: string
   view: 'DRAFT' | 'LIVE'
@@ -34,6 +35,7 @@ const {
   currentPath: string
   changes?: CatalogPreviewChange[]
   launches?: CatalogScheduledPage[]
+  showEntry?: boolean
 }>()
 
 const t = computed(() => translationsFor(locale).t)
@@ -91,7 +93,7 @@ function navigate(path: string) {
     @navigate="navigate"
   />
   <div
-    v-if="!active"
+    v-if="!active && showEntry"
     class="fixed right-4 bottom-4 z-40 flex max-w-sm flex-wrap justify-end gap-2"
   >
     <button

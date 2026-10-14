@@ -49,8 +49,10 @@ The review header reuses Mar's presentational `PageHeader` from PR #20640
 (source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`). The first integration of
 her newer one-page review layout (`83744da`) uses `AdminDialogContent` and opens
 Final review in a popup. Her bare-page option lets the admin shell provide its
-own navigation without an extra marketing header/footer; ordinary pages retain
-their existing chrome. The site header also uses her Preview-height offset so
+own navigation without an extra marketing header/footer or redundant floating
+staff-entry controls over the list; active Draft/timewarp controls remain
+available. Ordinary pages retain their existing chrome. The site header also
+uses her Preview-height offset so
 it docks below the authenticated yellow bar instead of scrolling over it.
 The button/sidebar
 palette remains in use; her sandbox publication/authentication transports are
