@@ -49,7 +49,6 @@ const facts = (duration: number): VideoFacts => ({
 
 let scenario: Scenario
 let transport: ReshootTransport
-/** Takes the last page started down, as leaving it would. */
 let leavePage = () => {}
 
 function start() {

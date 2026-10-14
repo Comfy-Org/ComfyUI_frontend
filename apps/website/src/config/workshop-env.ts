@@ -125,11 +125,6 @@ const RESHOOT_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
 
 export const WORKSHOP_RESHOOT_PROXY_ID = RESHOOT_PROXY_IDS[WORKSHOP_CLOUD_ENV]
 
-/**
- * Openjutsu's app proxy id in each family's comfy-api catalog (`openjutsu` in
- * `services/comfy-api/appproxy/apps/`, added by Comfy-Org/cloud#13014). Until
- * that lands the proxy answers 404 and the page reports itself unavailable.
- */
 const OPENJUTSU_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
   prod: '51a6c7e1-0117-4bc4-9cc5-5278be98cba0',
   staging: 'e800652d-df5c-463d-9419-9abd45957e19',

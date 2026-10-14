@@ -13,7 +13,6 @@ const {
   locale = 'en'
 } = defineProps<{
   loading?: SwapExample['id']
-  /** The last example could not be fetched. */
   failed?: boolean
   locale?: Locale
 }>()

@@ -52,7 +52,6 @@ const {
   view: EditorView
   /** The example being fetched, while there is no video yet. */
   loadingExample?: SwapExample['id']
-  /** The last example could not be fetched. */
   exampleFailed?: boolean
   locale?: Locale
 }>()

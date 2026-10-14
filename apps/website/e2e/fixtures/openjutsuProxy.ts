@@ -6,15 +6,8 @@ import { expect } from '@playwright/test'
 
 import { websiteRoot } from '@website/paths'
 
-/**
- * comfy-api's app proxy for Openjutsu, answering as a warm deployment: the
- * swap succeeds as soon as it is submitted and its output is a small real
- * video, so the page lands on a result it can play.
- */
-
 type Answer = Parameters<Route['fulfill']>[0]
 
-/** A paid quote as the catalog prices Openjutsu: per frame, one tier. */
 const QUOTE = {
   free_runs_remaining: 0,
   resets_at: null,
@@ -29,11 +22,6 @@ const SWAP_JOB = {
   outputs: [{ id: 'out', filename: 'openjutsu/result_00001_.mp4' }]
 }
 
-/**
- * Answers the Openjutsu app proxy on any Router origin and proxy id. Every
- * request must carry the workspace token the signed-in session minted.
- * Returns the `METHOD path` of each call, in order, below the proxy id.
- */
 export async function mockOpenjutsuProxy(page: Page, workspaceToken: string) {
   const calls: string[] = []
   const result = readFileSync(

@@ -123,19 +123,10 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   let videoRequest = 0
-  /**
-   * A visitor's own video opens the trim dialog first, whatever its length:
-   * they choose the part, and with it what the run costs.
-   */
   function takeVideo(file: File) {
     videoRequest += 1
     openTrim(file)
   }
-  /**
-   * An example's clip is used from its start, cut to the longest part a run
-   * takes. One that cannot be read or is too short opens the trim dialog,
-   * which says why.
-   */
   async function useWholeClip(file: File) {
     const request = ++videoRequest
     const url = URL.createObjectURL(file)
@@ -178,7 +169,6 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   /** The example being fetched, so its card can show it is on its way. */
   const loadingExample = ref<SwapExample['id']>()
-  /** The last example could not be fetched. */
   const exampleFailed = ref(false)
   let exampleRequest = 0
   async function fileFrom(url: string) {
@@ -189,11 +179,6 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       type: blob.type
     })
   }
-  /**
-   * Loads an example's clip, character and words, on the default settings.
-   * Nothing changes until both files have arrived, and a later example or a
-   * video picked meanwhile wins.
-   */
   async function takeExample(example: SwapExample) {
     const request = ++exampleRequest
     const videoAt = ++videoRequest
@@ -243,7 +228,6 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   let quoteRequest = 0
   let quoteRetry: ReturnType<typeof setTimeout> | undefined
   let quoteFailures = 0
-  /** The page has gone: nothing may ask for a price or refresh credits again. */
   let disposed = false
 
   const signedIn = () => OPENJUTSU_NO_ACCOUNT || !!session.value

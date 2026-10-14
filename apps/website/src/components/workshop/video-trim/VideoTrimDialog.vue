@@ -140,7 +140,6 @@ async function toggle() {
 }
 
 // While it plays, the part that is kept loops, so its join can be judged.
-// The loop only runs while playing; the dialog stays mounted all page long.
 const loop = useRafFn(
   () => {
     const video = player.value

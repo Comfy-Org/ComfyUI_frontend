@@ -5,9 +5,7 @@ import type { SwapPhase } from './run-swap'
 export interface SwapTake {
   readonly id: string
   readonly n: number
-  /** The clip the take was made from, kept so a later clip cannot stand in. */
   readonly sourceUrl?: string
-  /** The frame the take was saved at, for the stage's shape. */
   readonly frame?: SwapCanvas
   /** Who was replaced, as typed. */
   readonly target: string

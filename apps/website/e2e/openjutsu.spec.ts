@@ -46,7 +46,6 @@ signedInTest(
   'swaps a character through the app proxy, at the price the page showed',
   async ({ page, context, modelsAccount }) => {
     await mockFlags(context, true)
-    // Firebase waits for gapi's onload, which the empty stub never calls.
     await context.route('https://apis.google.com/js/api.js*', (route) =>
       route.abort('blockedbyclient')
     )
@@ -74,7 +73,6 @@ signedInTest(
       .setInputFiles(asset('placeholder-1x1.webp'))
     await page.getByLabel('Who to replace').fill('the man')
 
-    // The longest part, 345 frames, at the quote's rate per frame.
     await expect(page.getByTestId('openjutsu-price')).toHaveText('360 credits')
     await page.getByTestId('openjutsu-action').click()
 

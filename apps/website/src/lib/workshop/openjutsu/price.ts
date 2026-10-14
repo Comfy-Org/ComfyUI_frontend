@@ -3,22 +3,12 @@ import { translationsFor } from '@/i18n/translations'
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { FPS, sourceFrames } from './clip'
 
-/**
- * Credits per frame, when the quote prices Openjutsu as its catalog entry
- * does: one rate, read from `VideoFrameSample` with `seed` (always 0) as the
- * only tier. Any other shape is one the page cannot price, so it shows none
- * rather than a number the proxy would not charge.
- */
 function frameRate(quote: ReshootQuote): number | undefined {
   const priced = quote.price_per_second
   return priced?.tier_input === 'seed' ? priced.credits['0'] : undefined
 }
 
-/**
- * The quote with this run's price worked out, rounded up as the proxy
- * charges it. A flat price comes back as it was; a per-second price the page
- * cannot read comes back as nothing.
- */
+/** The quote priced for a part of `seconds`, as the app proxy charges it; undefined when the page cannot price it. */
 export function runQuote(
   quote: ReshootQuote,
   seconds: number | undefined
@@ -33,7 +23,7 @@ export function runQuote(
   }
 }
 
-/** The rate per second of result, before a part is chosen. */
+/** The credits per second a paid run costs, before a part is chosen. */
 export function perSecondNote(
   quote: ReshootQuote,
   locale: Locale
