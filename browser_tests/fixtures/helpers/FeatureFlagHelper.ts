@@ -118,13 +118,11 @@ export class FeatureFlagHelper {
    */
   async seedServerFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      const earlier = Object.getOwnPropertyDescriptor(window, 'app')
       let comfyApp: Window['app']
       Object.defineProperty(window, 'app', {
         configurable: true,
         get: () => comfyApp,
         set: (value: Window['app']) => {
-          earlier?.set?.(value)
           comfyApp = value
           const api = value?.api
           if (!api) return

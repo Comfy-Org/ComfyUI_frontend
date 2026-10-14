@@ -33,8 +33,8 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(store.flagsSettled).toBe(true)
   })
 
-  it.for([null, false, ''])(
-    'ignores an agent feature that is not an object: %j',
+  it.for([null, false, '', {}, { state: 'unknown' }])(
+    'ignores an agent feature without a known state: %j',
     (agent) => {
       onTestFinished(() => {
         api.serverFeatureFlags.value = {}
