@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 import {
@@ -16,9 +16,11 @@ function git(args: string[]): string {
 }
 
 function stagedDiffArgs(): string[] {
-  const merging =
-    spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD']).status === 0
-  return merging ? ['--cached', 'MERGE_HEAD'] : ['--cached']
+  try {
+    return ['--cached', git(['rev-parse', '--verify', 'MERGE_HEAD']).trim()]
+  } catch {
+    return ['--cached']
+  }
 }
 
 function diffArgs(argv: string[]): string[] {

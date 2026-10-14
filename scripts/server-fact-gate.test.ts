@@ -199,6 +199,7 @@ describe('server-fact gate on a real diff', () => {
     for (const linked of ['node_modules', 'tools']) {
       symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
     }
+    mkdirSync(path.join(dir, '.git/info'), { recursive: true })
     writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
     mkdirSync(path.join(dir, 'src'))
     for (const [file, lines] of Object.entries(files)) write(file, lines)

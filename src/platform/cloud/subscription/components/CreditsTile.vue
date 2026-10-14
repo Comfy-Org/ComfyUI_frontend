@@ -22,7 +22,7 @@
       <div class="text-sm text-muted">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -79,14 +79,12 @@
         <div class="flex items-center justify-between gap-2 text-sm">
           <Skeleton
             v-if="isLoadingBalance"
-            class="@max-[300px]:hidden"
-            width="5rem"
-            height="1rem"
+            class="h-4 w-20 @max-[300px]:hidden"
           />
           <span v-else class="text-muted @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-36" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -136,7 +134,7 @@
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-12" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -213,9 +211,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'

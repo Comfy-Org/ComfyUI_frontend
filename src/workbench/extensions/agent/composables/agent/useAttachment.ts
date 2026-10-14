@@ -30,15 +30,13 @@ interface UploadResult {
   url?: string
 }
 
-type DeferredFileResult =
-  | 'uploaded'
-  | 'unsupported'
-  | 'cancelled'
-  | 'failed'
-  | 'duplicate'
+type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
+
+type DeferredFileResult = UploadFileResult | 'unsupported' | 'duplicate'
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  validate?: (file: File) => boolean | Promise<boolean>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
@@ -250,12 +248,27 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
-  async function uploadStagedFile(id: string, file: File): Promise<boolean> {
+  async function uploadStagedFile(
+    id: string,
+    file: File
+  ): Promise<UploadFileResult> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
     else activeUploads += 1
     try {
-      if (cancelled.has(id)) return false
+      if (cancelled.has(id)) return 'cancelled'
+      if (options.validate) {
+        const valid = await options.validate(file)
+        if (cancelled.has(id)) return 'cancelled'
+        if (!valid) {
+          options.update(id, {
+            name: file.name,
+            uploading: false,
+            validationError: 'invalid-video'
+          })
+          return 'failed'
+        }
+      }
       const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
@@ -268,11 +281,11 @@ export function useAttachment(options: UseAttachmentOptions) {
         ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
-      return true
+      return 'uploaded'
     } catch (cause) {
-      if (!cancelled.has(id))
-        failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
-      return false
+      if (cancelled.has(id)) return 'cancelled'
+      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
+      return 'failed'
     } finally {
       settle(id)
       const next = waiting.shift()
@@ -308,9 +321,9 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      if (!(await uploadStagedFile(id, file))) return 'failed'
-      options.onUploaded?.()
-      return 'uploaded'
+      const result = await uploadStagedFile(id, file)
+      if (result === 'uploaded') options.onUploaded?.()
+      return result
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
       failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
@@ -347,7 +360,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
-        if (await uploadStagedFile(id, file)) uploaded += 1
+        if ((await uploadStagedFile(id, file)) === 'uploaded') uploaded += 1
       })
     )
     if (uploaded > 0) options.onUploaded?.()
