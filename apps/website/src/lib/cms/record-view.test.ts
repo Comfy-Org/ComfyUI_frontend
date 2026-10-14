@@ -41,6 +41,33 @@ function record() {
   }
 }
 describe('private read-only record view', () => {
+  it('resolves canonical account authors and enforces exact case-sensitive organization ownership', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
+    const org = 'ComfyOrganizationAccount'
+    const author = 'fPc7irbKt2VLbuIkRrWuC5TH5lX2'
+    const session = { ...staff(), owner_uid: org }
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        Response.json({ ...record(), author_uid: author, owner_uid: org })
+      )
+      .mockResolvedValueOnce(Response.json(fixtureReview()))
+      .mockResolvedValueOnce(
+        Response.json({
+          ...record(),
+          author_uid: author,
+          owner_uid: org.toLowerCase()
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const result = await loadRecordView(session, uid, new URLSearchParams())
+    assert.isTrue(result.ok)
+    expect(result.document.author_uid).toBe(author)
+    expect(result.document).not.toHaveProperty('owner_uid')
+    const other = await loadRecordView(session, uid, new URLSearchParams())
+    assert.isFalse(other.ok)
+    expect(other.response.status).toBe(404)
+  })
   it('loads the exact reviewed version, preserves authored literal keys and does not save', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
     const raw = {
@@ -72,7 +99,7 @@ describe('private read-only record view', () => {
     ])
     expect(JSON.stringify(result)).not.toContain('server-only-fixture')
   })
-  it.each([
+  it.for([
     { query: 'rev=0', status: 400 },
     { query: 'rev=9007199254740992', status: 400 },
     { query: 'rev=7&rev=8', status: 400 },

@@ -2206,10 +2206,10 @@ export const zCccCatalogState = z.object({
 });
 
 export const zCccAuthoringContext = z.object({
-    actor_uid: z.string().uuid(),
+    actor_uid: z.string().min(1),
     can_apply: z.boolean(),
     can_edit: z.boolean(),
-    owner_uid: z.string().uuid(),
+    owner_uid: z.string().min(1),
     state: zCccCatalogState
 });
 
@@ -4340,7 +4340,7 @@ export const zReplaceCccItemPath = z.object({
 });
 
 /**
- * New immutable edit; unchanged original author and organization owner
+ * New immutable edit; owner stays fixed, author attribution is versioned and saved_by_uid records the actual editor
  */
 export const zReplaceCccItemResponse = zCccjson;
 
@@ -4433,9 +4433,20 @@ export const zReplaceCccMediaFilePath = z.object({
  */
 export const zReplaceCccMediaFileResponse = zCccjson;
 
+export const zPublishCccDraftBody = zCccjson;
+
+export const zPublishCccDraftHeaders = z.object({
+    'Idempotency-Key': z.string().min(1).max(200)
+});
+
+/**
+ * New Live, previous Live and fresh Draft state after atomic commit
+ */
+export const zPublishCccDraftResponse = zCccjson;
+
 export const zGetCccStagingQuery = z.object({
     search: z.string().max(300).optional(),
-    author_uid: z.string().uuid().optional(),
+    author_uid: z.string().min(1).optional(),
     tags: z.array(z.string().min(1).max(200)).max(30).optional(),
     types: z.array(z.enum([
         'model',
@@ -4475,7 +4486,8 @@ export const zListContentCatalogItemsQuery = z.object({
         'MODEL',
         'WORKFLOW',
         'APP'
-    ]).optional()
+    ]).optional(),
+    workflow_slug: z.string().min(1).max(300).optional()
 });
 
 /**

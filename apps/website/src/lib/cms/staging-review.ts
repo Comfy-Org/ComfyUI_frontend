@@ -7,6 +7,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { Document } from './editor-document'
 import { jsonObject } from './editor-document'
+import { accountID } from './account-id'
 
 export const editorialStates = [
   'NEW',
@@ -35,7 +36,7 @@ const resource = z.object({
   uid: z.uuid(),
   revision_uid: z.uuid(),
   type: z.enum(reviewTypes),
-  author_uid: z.uuid(),
+  author_uid: accountID,
   document: jsonObject,
   is_deleted: z.boolean()
 })
@@ -79,9 +80,13 @@ const item = z.object({
     .optional()
 })
 export type ReviewFilter = NonNullable<GetCccStagingData['query']>
-export const reviewFilter = z.custom<ReviewFilter>(
-  (value) => zGetCccStagingQuery.strict().safeParse(value).success
-)
+export const reviewFilter = z.custom<ReviewFilter>((value) => {
+  const parsed = zGetCccStagingQuery.strict().safeParse(value)
+  return (
+    parsed.success &&
+    accountID.optional().safeParse(parsed.data.author_uid).success
+  )
+})
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
 // View models are narrowed from the deployed, generated open-JSON contract.
 // Preserve authored literal keys rather than using the record parser's output.
@@ -189,10 +194,12 @@ export function filterFromQuery(query: URLSearchParams) {
 }
 export function filterQuery(filter: ReviewFilter) {
   const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(filter)) {
-    if (Array.isArray(value))
-      for (const entry of value) query.append(key, entry)
-    else if (value !== undefined) query.set(key, value)
+  for (const key of ['search', 'author_uid'] as const) {
+    const value = filter[key]
+    if (value !== undefined) query.set(key, value)
+  }
+  for (const key of ['tags', 'types', 'statuses'] as const) {
+    for (const entry of filter[key] ?? []) query.append(key, entry)
   }
   return query
 }
@@ -347,8 +354,12 @@ export function fieldDifferences(entry: ReviewItem): FieldDifference[] {
     }
     differences.push({
       path,
-      before: JSON.stringify(before)?.slice(0, 1500),
-      after: JSON.stringify(after)?.slice(0, 1500)
+      before:
+        before === undefined
+          ? undefined
+          : JSON.stringify(before).slice(0, 1500),
+      after:
+        after === undefined ? undefined : JSON.stringify(after).slice(0, 1500)
     })
   }
   visit(

@@ -4191,9 +4191,15 @@ export type CccCatalogState = {
 };
 
 export type CccAuthoringContext = {
+    /**
+     * Canonical authenticated Comfy account ID (users.id).
+     */
     actor_uid: string;
     can_apply: boolean;
     can_edit: boolean;
+    /**
+     * Server-configured comfy.org canonical account ID (users.id).
+     */
     owner_uid: string;
     state: CccCatalogState;
 };
@@ -12694,7 +12700,7 @@ export type ReplaceCccItemError = ReplaceCccItemErrors[keyof ReplaceCccItemError
 
 export type ReplaceCccItemResponses = {
     /**
-     * New immutable edit; unchanged original author and organization owner
+     * New immutable edit; owner stays fixed, author attribution is versioned and saved_by_uid records the actual editor
      */
     200: Cccjson;
 };
@@ -12966,11 +12972,56 @@ export type ReplaceCccMediaFileResponses = {
 
 export type ReplaceCccMediaFileResponse = ReplaceCccMediaFileResponses[keyof ReplaceCccMediaFileResponses];
 
+export type PublishCccDraftData = {
+    body: Cccjson;
+    headers: {
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/catalog/draft/publish';
+};
+
+export type PublishCccDraftErrors = {
+    /**
+     * Unsupported query parameters
+     */
+    400: unknown;
+    /**
+     * Verified publisher permission required
+     */
+    403: unknown;
+    /**
+     * Stale reviewed state or decisions or conflicting retry; nothing published
+     */
+    409: unknown;
+    /**
+     * Invalid review, unfinished decisions or reference/dependency validation failed; nothing published
+     */
+    422: unknown;
+    /**
+     * Local publication is disabled or catalog unavailable
+     */
+    503: unknown;
+};
+
+export type PublishCccDraftResponses = {
+    /**
+     * New Live, previous Live and fresh Draft state after atomic commit
+     */
+    200: Cccjson;
+};
+
+export type PublishCccDraftResponse = PublishCccDraftResponses[keyof PublishCccDraftResponses];
+
 export type GetCccStagingData = {
     body?: never;
     path?: never;
     query?: {
         search?: string;
+        /**
+         * Exact canonical Comfy account ID (users.id); preserve case.
+         */
         author_uid?: string;
         tags?: Array<string>;
         types?: Array<'model' | 'workflow' | 'app' | 'media' | 'template_set'>;
@@ -13048,6 +13099,10 @@ export type ListContentCatalogItemsData = {
         q?: string;
         slug?: string;
         kind?: 'MODEL' | 'WORKFLOW' | 'APP';
+        /**
+         * Optional canonical workflow path or website detail slug. Expand the verified primary API file for this one eligible workflow only; collection reads otherwise never open API blobs.
+         */
+        workflow_slug?: string;
     };
     url: '/api/v1/catalog/items';
 };
@@ -13149,7 +13204,7 @@ export type GetCccPublicMediaBytesData = {
 
 export type GetCccPublicMediaBytesErrors = {
     /**
-     * Missing or unverifiable authority
+     * Missing or unverifiable authority, unpublished/scheduled/private, or unsupported HEAD/range/query
      */
     404: unknown;
 };
@@ -13213,7 +13268,7 @@ export type GetCccPreviewMediaBytesErrors = {
      */
     401: unknown;
     /**
-     * Unauthorized
+     * Unauthorized, unavailable, unselected, or unsupported HEAD/range/query
      */
     404: unknown;
 };

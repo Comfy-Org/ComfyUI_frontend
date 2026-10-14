@@ -524,7 +524,7 @@ async function save() {
             <input
               :value="value(field)"
               :class="inputClass"
-              :maxlength="field === 'author_uid' ? 36 : 2000"
+              :maxlength="field === 'documentation_url' ? 2000 : undefined"
               @input="patch(field, $event)"
             />
           </label>

@@ -43,6 +43,35 @@ function context() {
   return ctx
 }
 describe('fresh CCC authorization', () => {
+  it('keeps canonical actor and organization account IDs rather than requiring UUIDs', async () => {
+    const actor = 'fPc7irbKt2VLbuIkRrWuC5TH5lX2'
+    const owner = 'ComfyOrganizationAccount'
+    backend(200, { ...authority, actor_uid: actor, owner_uid: owner })
+    const verified = await verifyAuthoringCredential('fixture')
+    if (!verified.ok) throw new Error('Canonical account ID rejected')
+    expect(verified.context.actor_uid).toBe(actor)
+    expect(verified.context.owner_uid).toBe(owner)
+    const result = await loadAuthoringSession(context())
+    if (!result.ok) throw new Error('Canonical author session rejected')
+    const editor = await loadEditorData(result.session, undefined, 'workflow')
+    if (!editor.ok) throw new Error('Editor unavailable')
+    expect(editor.initial.author_uid).toBe(actor)
+    expect(editor.initial).not.toHaveProperty('owner_uid')
+  })
+  it.for([
+    '',
+    'has space',
+    'control\n',
+    '00000000-0000-0000-0000-000000000000'
+  ])(
+    'refuses malformed account identities in a successful authority response: %j',
+    async (actor) => {
+      backend(200, { ...authority, actor_uid: actor })
+      const result = await verifyAuthoringCredential('fixture')
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.response.status).toBe(503)
+    }
+  )
   it('does not cache grants from an earlier request', async () => {
     const fetcher = backend()
     const ctx = context()
@@ -109,7 +138,7 @@ describe('fresh CCC authorization', () => {
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(fetcher.mock.calls[1][1]).not.toHaveProperty('method')
   })
-  it.each(['NaN', '9223372036854775807'])(
+  it.for(['NaN', '9223372036854775807'])(
     'fails closed for nonrepresentable state: %s',
     async (draft) => {
       backend(200, {

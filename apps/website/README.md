@@ -16,7 +16,7 @@ No Cloud execution availability or paid validation is implied by stored code.
 The new layout is selected only by CCC detail data; the existing non-CCC
 website consumer stays unchanged until catalog activation/cutover.
 The editor exposes the short name/one-line description, large multi-paragraph
-long description, editable credited-author UUID, optional documentation/Cloud
+long description, editable credited-author account ID, optional documentation/Cloud
 share links, counts, Cloud compatibility, output type, model UID references,
 typed output bindings and question/answer rows. New records use schema v2;
 opening an existing v1 record keeps its version and prose limits without
@@ -25,6 +25,12 @@ counts or incomplete FAQ/output rows block saves until repaired or removed.
 New content defaults its editable credited author to the freshly verified actor;
 opening an existing record preserves its author rather than reassigning it to
 the editor. The server still fixes Owner and records the actual saving actor.
+Account identities are opaque, case-sensitive canonical Comfy `users.id`
+strings, not resource UUIDs. Author input, current authority, staging author
+filters and private record views accept existing Firebase-style staff IDs and
+UUID-shaped SSO IDs without normalization. Resource/edit/media UID validation
+remains UUID-based. Empty/control-bearing identities fail closed, and ownership
+still compares exact canonical IDs supplied by the verified backend.
 The plain Apps/Workflows link-list fallback is now noscript-only; the hydrated
 catalog does not paint a second unstyled list. The collapsed Models directory
 is retained.

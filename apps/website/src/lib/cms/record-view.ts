@@ -8,6 +8,7 @@ import { authoredDocument, jsonObject } from './editor-document'
 import { boundedBody, catalogAuthoring, editorFailure } from './editor-server'
 import { catalogReview, readReviewResponse } from './staging-server'
 import { reviewTypes } from './staging-review'
+import { accountID } from './account-id'
 
 export async function loadRecordView(
   session: AuthoringSession | undefined,
@@ -62,8 +63,8 @@ export async function loadRecordView(
   const identity = z
     .object({
       uid: z.uuid(),
-      owner_uid: z.uuid(),
-      author_uid: z.uuid(),
+      owner_uid: accountID,
+      author_uid: accountID,
       revision_uid: z.uuid(),
       type: z.enum(reviewTypes),
       is_deleted: z.boolean()

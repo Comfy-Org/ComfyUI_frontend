@@ -6,6 +6,7 @@ import { z } from 'astro/zod'
 import { boundedBody, catalogAuthoring, editorFailure } from './editor-server'
 import type { CatalogPreview } from './catalog-preview'
 import { DEMO_COOKIE, resolveDemoSession } from './catalog-demo'
+import { accountID } from './account-id'
 
 export const AUTHORING_COOKIE = 'comfy_catalog_authoring'
 export const AUTHORING_CSRF_COOKIE = 'comfy_catalog_csrf'
@@ -40,7 +41,11 @@ export async function verifyAuthoringCredential(credential: string) {
     return { ok: false as const, response: editorFailure(503) }
   }
   const parsed = zGetCccAuthoringContextResponse.safeParse(raw)
-  if (!parsed.success)
+  if (
+    !parsed.success ||
+    !accountID.safeParse(parsed.data.actor_uid).success ||
+    !accountID.safeParse(parsed.data.owner_uid).success
+  )
     return { ok: false as const, response: editorFailure(503) }
   const state = z
     .object({
