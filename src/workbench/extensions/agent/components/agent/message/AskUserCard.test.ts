@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
-import { i18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import type {
   AskUserPart,
@@ -16,6 +17,12 @@ const options: AskUserPart['options'] = [
   { id: 'flux', label: 'Flux Dev', description: 'Best prompt adherence' },
   { id: 'sd15', label: 'SD 1.5' }
 ]
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function renderCard(
   ask: Partial<AskUserPart> = {},
