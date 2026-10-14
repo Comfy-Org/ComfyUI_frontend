@@ -31,6 +31,8 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -61,7 +63,13 @@ interface EditorApp {
   readonly label: (locale: Locale) => string
 }
 
-const EDITOR_APPS: readonly EditorApp[] = []
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'hand-product-swap',
+    studio: HandSwapStudio,
+    label: (locale) => hc('swap.title', locale)
+  }
+]
 const APPS: readonly WorkshopAppId[] = [
   'studio',
   'reshoot',
