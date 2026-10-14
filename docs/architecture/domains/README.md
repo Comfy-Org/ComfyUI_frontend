@@ -10,7 +10,7 @@ tracks architecture suppressions.
 ```sh
 pnpm architecture:check    # validate records, ledger, and boundaries.json
 pnpm architecture:update   # regenerate boundaries.json from the records
-pnpm architecture:catalog  # print records, CODEOWNERS owners, and exceptions as JSON
+pnpm architecture:catalog  # print records, owners, exceptions, and coverage as JSON
 pnpm test:unit tools/architecture
 ```
 
@@ -24,6 +24,13 @@ pnpm test:unit tools/architecture
   `extends` in `.fallowrc.jsonc`. Do not edit it by hand.
 
 Owners come from `CODEOWNERS`; records do not repeat them.
+
+`architecture:catalog` also reports classification coverage: each domain's
+`sourceFileCount`, and a top-level `coverage` object with `total`,
+`classified`, and `unclassified` counts plus the sorted `unclassifiedFiles`
+list. Coverage counts only `src/**/*.{ts,tsx,vue}`, tests included. It
+excludes `apps/`, `packages/`, and non-code files such as JSON, CSS, and
+assets, so 100% coverage means every `src` code file belongs to a domain.
 
 ## Boundaries
 

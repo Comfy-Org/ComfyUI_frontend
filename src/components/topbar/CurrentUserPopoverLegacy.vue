@@ -17,7 +17,7 @@
       <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
-      <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
+      <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
         {{ userEmail }}
       </p>
       <span
@@ -78,7 +78,7 @@
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
-      <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
+      <Skeleton v-if="isLoading" class="h-5 w-16" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
@@ -159,13 +159,13 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'

@@ -8,7 +8,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { i18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -2214,7 +2214,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: i18n.global.t('agent.runApproval.answerSuperseded')
+          text: enMessages.agent.runApproval.answerSuperseded
         }
       ])
     })
@@ -2252,7 +2252,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: i18n.global.t('agent.askUser.answerRejected')
+          text: enMessages.agent.askUser.answerRejected
         }
       ])
 
@@ -2293,7 +2293,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: i18n.global.t('agent.runApproval.answerSuperseded')
+          text: enMessages.agent.runApproval.answerSuperseded
         }
       ])
     })
@@ -2309,7 +2309,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: i18n.global.t('agent.runApproval.answerSuperseded')
+          text: enMessages.agent.runApproval.answerSuperseded
         }
       ])
     })
