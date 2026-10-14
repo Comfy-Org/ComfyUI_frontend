@@ -29,7 +29,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
   answered: 'agent.askUser.answered',
   closed: 'agent.askUser.closed',
   retired: 'agent.askUser.retired',
-  unknown: 'agent.askUser.unconfirmed'
+  unconfirmed: 'agent.askUser.unconfirmed'
 }
 </script>
 

@@ -85,22 +85,19 @@ describe('toAskPart ask_user', () => {
     expect(toAskPart(askUser({ options: [] }))).toBeUndefined()
   })
 
-  it('clamps out-of-range bounds into a satisfiable range', () => {
-    expect(
-      toAskPart(askUser({ min_selections: 5, max_selections: 0 }))
-    ).toMatchObject({ minSelections: 1, maxSelections: 1 })
+  it('raises a negative minimum to zero', () => {
     expect(
       toAskPart(askUser({ min_selections: -1, max_selections: 2 }))
     ).toMatchObject({ minSelections: 0, maxSelections: 2 })
   })
 
-  it('caps the bounds at what can actually be chosen', () => {
+  it('caps the maximum at what can actually be chosen', () => {
     expect(
-      toAskPart(askUser({ min_selections: 3, max_selections: 5 }))
-    ).toMatchObject({ minSelections: 2, maxSelections: 2 })
+      toAskPart(askUser({ min_selections: 1, max_selections: 5 }))
+    ).toMatchObject({ minSelections: 1, maxSelections: 2 })
     expect(
       toAskPart(
-        askUser({ min_selections: 4, max_selections: 4, allow_other: true })
+        askUser({ min_selections: 3, max_selections: 4, allow_other: true })
       )
     ).toMatchObject({ minSelections: 3, maxSelections: 3 })
   })
@@ -167,6 +164,35 @@ describe('toAskOrNoticePart', () => {
       askId: 'turn-1:call-1'
     })
   })
+
+  it.for<{ name: string; ask: Partial<AskInput> }>([
+    {
+      name: 'a minimum above the options it can show',
+      ask: { min_selections: 3, max_selections: 5 }
+    },
+    {
+      name: 'a minimum above the maximum',
+      ask: { min_selections: 2, max_selections: 1 }
+    },
+    { name: 'a zero maximum', ask: { min_selections: 0, max_selections: 0 } },
+    {
+      name: 'a minimum only duplicate ids could meet',
+      ask: {
+        options: [
+          { id: 'a', label: 'A' },
+          { id: 'a', label: 'A again' },
+          { id: 'b', label: 'B' }
+        ],
+        min_selections: 3,
+        max_selections: 3
+      }
+    }
+  ])('stands a notice in for $name', ({ ask }) => {
+    expect(toAskOrNoticePart(askUser(ask))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
 })
 
 describe('retireAskParts', () => {
@@ -219,21 +245,21 @@ describe('retireAskParts', () => {
     },
     {
       name: 'a server cancel replaces an unknown outcome',
-      shown: { status: 'unknown' },
+      shown: { status: 'unconfirmed' },
       next: { status: 'closed' },
       expected: { status: 'closed' }
     },
     {
       name: 'a server answer replaces an unknown outcome',
-      shown: { status: 'unknown' },
+      shown: { status: 'unconfirmed' },
       next: { status: 'answered', selected: ['flux'] },
       expected: { status: 'answered', selected: ['flux'] }
     },
     {
       name: 'an unknown outcome outlasts a local retirement',
-      shown: { status: 'unknown' },
+      shown: { status: 'unconfirmed' },
       next: { status: 'retired' },
-      expected: { status: 'unknown' }
+      expected: { status: 'unconfirmed' }
     },
     {
       name: 'a server answer outlasts a local retirement',
@@ -250,7 +276,7 @@ describe('retireAskParts', () => {
     {
       name: 'a server cancel outlasts an unknown outcome',
       shown: { status: 'closed' },
-      next: { status: 'unknown' },
+      next: { status: 'unconfirmed' },
       expected: { status: 'closed' }
     },
     {

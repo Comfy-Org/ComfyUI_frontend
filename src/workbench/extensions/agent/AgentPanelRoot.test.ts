@@ -5197,15 +5197,10 @@ describe('AgentPanelRoot run approval telemetry', () => {
 
 describe('AgentPanelRoot ask_user answer telemetry', () => {
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
-    const fetchMock = vi.mocked(fetch)
-    fetchMock.mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input)
-        if (url.includes('/asks/') && init?.method === 'POST')
-          return json(200, { status: 'answered' })
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        return json(200, {})
-      }
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(200, { status: 'answered' })
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -5237,12 +5232,7 @@ describe('AgentPanelRoot ask_user answer telemetry', () => {
     await userEvent.click(await screen.findByRole('radio', { name: 'Run now' }))
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await vi.waitFor(() =>
-      expect(
-        fetchMock.mock.calls.filter(
-          ([url, init]) =>
-            String(url).includes('/asks/') && init?.method === 'POST'
-        )
-      ).toHaveLength(1)
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     )
     ws.emit('agent_ask_resolved', {
       thread_id: 'th-1',

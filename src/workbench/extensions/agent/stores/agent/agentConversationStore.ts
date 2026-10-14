@@ -409,8 +409,8 @@ export const useAgentConversationStore = defineStore(
 
     function retireAsk(
       askId: string,
-      owner: string | undefined,
-      resolution: AskUserResolution
+      resolution: AskUserResolution,
+      owner?: string
     ): void {
       const key = threadKey(owner)
       if (key === threadKey()) {
@@ -479,21 +479,20 @@ export const useAgentConversationStore = defineStore(
       answeringAskIds.value = next
     }
 
-    /** Retires the ask with its committed answer, waiting briefly for its frame. */
     function commitAsk(
       askId: string,
       owner: string,
       committed: AskUserResolution
     ): void {
       if (!activeTurnOwnsAsk(askId) || owner !== threadKey()) {
-        retireAsk(askId, owner, committed)
+        retireAsk(askId, committed, owner)
         return
       }
       clearAskResolutionWatchdog(askId)
       askResolutionWatchdogs.set(
         askId,
         setTimeout(
-          () => retireAsk(askId, owner, committed),
+          () => retireAsk(askId, committed, owner),
           ASK_RESOLUTION_GRACE_MS
         )
       )

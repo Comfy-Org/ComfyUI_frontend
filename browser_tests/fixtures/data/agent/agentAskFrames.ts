@@ -10,7 +10,7 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 export const ASK_WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const ASK_THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
 const ASK_MESSAGE_ID = '1e2d3c4b-5a69-4788-9a7b-6c5d4e3f2a1b'
-export const RUN_ASK_ID = `${ASK_MESSAGE_ID}:call-run`
+export const RUN_ASK_ID = askIdFor('call-run')
 export const ASK_USER_QUESTION = 'Which styles should I try?'
 
 export const askTurnIds = {
@@ -52,7 +52,7 @@ export function runApprovalAsk(): AgentAskFrame {
 export function askResolved(
   selected: string[],
   askId = RUN_ASK_ID,
-  outcome: Partial<Pick<AgentAskResolvedData, 'status' | 'other_text'>> = {}
+  outcome: Partial<Pick<AgentAskResolvedData, 'other_text'>> = {}
 ): AgentAskResolvedFrame {
   return {
     type: 'agent_ask_resolved',

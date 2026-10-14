@@ -121,6 +121,21 @@ describe('AskUserCard', () => {
     }
   )
 
+  it.for<{ name: string; ask: Partial<AskUserPart> }>([
+    {
+      name: 'one optional option',
+      ask: { options: [options[0]], minSelections: 0, maxSelections: 1 }
+    },
+    {
+      name: 'an optional Other box alone',
+      ask: { options: [], allowOther: true, minSelections: 0, maxSelections: 1 }
+    }
+  ])('shows no hint for $name', ({ ask }) => {
+    renderCard(ask)
+
+    expect(screen.queryByText(/^Choose/)).not.toBeInTheDocument()
+  })
+
   it('counts Other text as a selection and sends it trimmed', async () => {
     const { user, submit, emitted } = renderCard({
       maxSelections: 2,
@@ -325,7 +340,7 @@ describe('AskUserCard', () => {
         copy: 'This question is no longer open here.'
       },
       {
-        resolution: { status: 'unknown' },
+        resolution: { status: 'unconfirmed' },
         copy: "We couldn't confirm your answer reached the agent."
       }
     ])(

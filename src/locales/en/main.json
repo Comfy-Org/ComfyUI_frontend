@@ -5627,7 +5627,7 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
-      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
+      "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
     "askUser": {
@@ -5645,7 +5645,7 @@
       "unconfirmed": "We couldn't confirm your answer reached the agent.",
       "closed": "This question was closed without an answer.",
       "retired": "This question is no longer open here.",
-      "answerRejected": "The agent couldn't accept that answer. Check your choices and submit again."
+      "answerRejected": "The agent couldn't accept that answer. Change your choices or stop the turn."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",

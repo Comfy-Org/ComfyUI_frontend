@@ -44,18 +44,29 @@ const canSubmit = computed(
     count.value <= part.maxSelections
 )
 
-const hint = computed(() => {
-  if (requiredSingleChoice.value || part.resolution) return undefined
-  const { minSelections: min, maxSelections: max } = part
-  if (min > 0 && min === max) return t('agent.askUser.chooseExactly', { min })
-  if (max >= choosableCount(part))
-    return min > 0
+function boundsHint(
+  min: number,
+  max: number,
+  choosable: number
+): string | undefined {
+  if (min > 0) {
+    if (min === max) return t('agent.askUser.chooseExactly', { min })
+    return max >= choosable
       ? t('agent.askUser.chooseAtLeast', { min })
-      : t('agent.askUser.chooseAny')
-  if (min > 0) return t('agent.askUser.chooseBetween', { min, max })
-  if (max === 1) return t('agent.askUser.chooseOneOrNone')
-  return t('agent.askUser.chooseUpTo', { max })
-})
+      : t('agent.askUser.chooseBetween', { min, max })
+  }
+  if (choosable === 1) return undefined
+  if (max >= choosable) return t('agent.askUser.chooseAny')
+  return max === 1
+    ? t('agent.askUser.chooseOneOrNone')
+    : t('agent.askUser.chooseUpTo', { max })
+}
+
+const hint = computed(() =>
+  requiredSingleChoice.value || part.resolution
+    ? undefined
+    : boundsHint(part.minSelections, part.maxSelections, choosableCount(part))
+)
 
 const promptId = `${baseId}-prompt`
 const hintId = `${baseId}-hint`

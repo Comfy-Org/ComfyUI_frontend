@@ -50,7 +50,7 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
- * request a consent card's buttons wait on, since the card is held disabled
+ * request an ask card's Submit waits on, since the card is held disabled
  * from the click until this settles. A quarter of it, rather than merely lower, so that
  * the caller's single re-drive still fits inside the 60s the card used to be
  * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout

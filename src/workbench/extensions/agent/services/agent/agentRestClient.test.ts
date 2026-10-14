@@ -406,6 +406,10 @@ describe('postMessage wire body', () => {
     })
   })
 
+  // The id this send already reports on app:agent_message_sent has to reach the
+  // server, which echoes it onto agent_turn_started. Without it on the wire the
+  // message -> turn step of the activation funnel is countable but not
+  // attributable, and nothing else fails loudly - so assert the wire key.
   it('sends client_message_id so the turn can be joined back to this message', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
