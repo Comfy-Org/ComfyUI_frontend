@@ -555,14 +555,15 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
-  const forcedOn =
+  const ignoresRemoteFeatureConfig =
     import.meta.env.MODE === 'development' ||
-    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    (__DISTRIBUTION__ !== 'cloud' &&
+      import.meta.env.VITE_AGENT_STANDALONE === 'true')
 
   watch(
     () =>
       [
-        forcedOn || flags.agentInAppExperienceEnabled,
+        ignoresRemoteFeatureConfig || flags.agentInAppExperienceEnabled,
         remoteConfigRevision.value
       ] as const,
     ([enabled]) => {
@@ -591,7 +592,7 @@ function setupFlagGate(
   watch(
     () =>
       [
-        forcedOn ||
+        ignoresRemoteFeatureConfig ||
           authenticatedRemoteConfigState.value === 'authenticated' ||
           authenticatedRemoteConfigState.value === 'error',
         isSignedOut()
@@ -603,7 +604,4 @@ function setupFlagGate(
     },
     { immediate: true }
   )
-  // A signed-out session never runs the authenticated /features refresh
-  // (WorkspaceAuthGate returns early with no user), so the watch above never
-  // reaches a decided state for it.
 }

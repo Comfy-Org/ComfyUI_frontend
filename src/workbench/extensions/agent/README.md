@@ -42,7 +42,8 @@ The panel speaks one contract on the cloud and on the local agent:
 The dock is visible only when the `agent-in-app-experience` feature flag is
 enabled, the panel has an open intent, and the current user and workspace have
 accepted Agent consent. Development mode and the standalone agent build
-(`VITE_AGENT_STANDALONE`) enable the feature flag; consent is still required. A restored open intent cannot bypass consent.
+(`VITE_AGENT_STANDALONE`, outside the cloud distribution) enable the feature
+flag; consent is still required. A restored open intent cannot bypass consent.
 
 On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under
@@ -52,7 +53,7 @@ without saving; failed loads or saves keep the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the new
 scope. Desktop/Local sign-in continuation authenticates before saving; this
 branch mounts the Agent extension in Cloud builds and in builds with
-`VITE_AGENT_STANDALONE=true` (the local agent harness, in any distribution);
+`VITE_AGENT_STANDALONE=true` (the local agent harness, in any non-cloud build);
 FE-1931 owns the remaining Local and Desktop product entry points.
 
 ## First-use tour
