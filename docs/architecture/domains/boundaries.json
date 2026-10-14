@@ -107,8 +107,6 @@
         "patterns": [
           "src/workbench/extensions/agent/services/agent/agentEventSource.ts",
           "src/workbench/extensions/agent/services/agent/agentEventSource.test.ts",
-          "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts",
-          "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.test.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.test.ts",
           "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts",
@@ -116,7 +114,7 @@
           "src/workbench/extensions/agent/utils/videoThumbnail.ts",
           "src/workbench/extensions/agent/utils/videoThumbnail.test.ts",
           "src/workbench/extensions/agent/crdt/agentCrdtTransport.ts",
-          "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
+          "src/workbench/extensions/agent/crdt/agentCrdtTransport.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.ts",
