@@ -79,8 +79,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   /** The local agent ComfyUI runs with `--enable-agent`; absent otherwise. */
   const comfyAgent = computed(() => {
     if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
-    const agent = api.getServerFeature('agent')
-    return typeof agent === 'object' && agent !== null
+    const agent = api.getServerFeature<{ state?: unknown } | null>('agent')
+    return agent?.state === 'starting' ||
+      agent?.state === 'ready' ||
+      agent?.state === 'failed'
       ? (agent as AgentStatusWsMessage)
       : undefined
   })
