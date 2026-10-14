@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
@@ -52,7 +52,7 @@ describe('useCompositorEditor', () => {
       'Layer editor',
       expect.objectContaining({ description: 'Run the workflow first' })
     )
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('shows a toast when layers are cached without a fingerprint', () => {
@@ -66,7 +66,7 @@ describe('useCompositorEditor', () => {
       'Layer editor',
       expect.objectContaining({ description: 'Run the workflow first' })
     )
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('opens the layer editor in compositor mode when layers are cached', () => {
@@ -79,7 +79,7 @@ describe('useCompositorEditor', () => {
     mountComposable().openCompositorEditor(node)
 
     expect(useToast().toasts).toEqual([])
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',
         props: { node, mode: 'compositor' }

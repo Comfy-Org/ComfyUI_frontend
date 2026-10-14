@@ -445,6 +445,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       await expect(signInWithGoogle()).resolves.toBeUndefined()
 
       expect(presentSsoRequired).toHaveBeenCalledWith(
+        'customer_create',
         expect.objectContaining({ organizationId: 'org_1' })
       )
       expect(mockAuthStore.logout).toHaveBeenCalledOnce()

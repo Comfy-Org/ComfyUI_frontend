@@ -9,4 +9,5 @@ export interface ComposerAttachment {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
+  validationError?: 'invalid-video'
 }

@@ -13,7 +13,7 @@
             />
           </div>
           <i
-            class="icon-[lucide--arrow-left-right] size-6 text-muted"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted-foreground"
             aria-hidden="true"
           />
           <div
@@ -42,7 +42,7 @@
               {{ t('oauth.consent.unverifiedBadge') }}
             </Badge>
             <p
-              class="m-0 text-xs wrap-anywhere text-muted"
+              class="m-0 text-xs wrap-anywhere text-muted-foreground"
               data-testid="client-unverified-notice"
             >
               {{
@@ -54,7 +54,7 @@
               }}
             </p>
           </template>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
         </div>
@@ -66,7 +66,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted-foreground"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -115,7 +115,7 @@
           {{ t('oauth.consent.detailsHeader') }}
         </p>
         <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
           <ul
@@ -140,7 +140,7 @@
           v-if="challenge.redirect_uri"
           class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
         >
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
@@ -191,7 +191,7 @@
     >
       {{ errorMessage }}
     </p>
-    <p v-else class="m-0 text-center text-sm text-muted">
+    <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
   </main>

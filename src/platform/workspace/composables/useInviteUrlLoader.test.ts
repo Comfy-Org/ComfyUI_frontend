@@ -2,7 +2,7 @@ import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
 import type { User } from 'firebase/auth'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 
@@ -52,7 +52,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
   })
 }))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
 
@@ -218,7 +218,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
@@ -238,10 +238,10 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useWorkspaceDialogs().showInviteWrongAccountDialog
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
       expect(useToast().toasts).toEqual([])
     })
@@ -285,7 +285,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useWorkspaceDialogs().showInviteWrongAccountDialog
       ).toHaveBeenCalledTimes(wrongAccountDialogs)
       expect(useToast().toasts).toEqual(toasts)
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -303,7 +303,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
@@ -319,7 +319,7 @@ describe('useInviteUrlLoader', () => {
         new WorkspaceApiError('Invite not found or expired', 404, 'NOT_FOUND')
       )
       vi.mocked(
-        useDialogService().showInviteLinkInvalidDialog
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).mockRejectedValue(
         new Error('failed to fetch dynamically imported module')
       )
@@ -333,7 +333,7 @@ describe('useInviteUrlLoader', () => {
           title: 'Failed to Accept Invite'
         })
       ])
-      vi.mocked(useDialogService().showInviteLinkInvalidDialog).mockReset()
+      vi.mocked(useWorkspaceDialogs().showInviteLinkInvalidDialog).mockReset()
     })
 
     it('shows error toast when invite acceptance fails', async () => {

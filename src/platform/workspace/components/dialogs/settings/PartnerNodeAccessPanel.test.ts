@@ -56,7 +56,7 @@ function nodeDef(
 
 function renderComponent() {
   return render(PartnerNodeAccessPanel, {
-    global: { plugins: [getActivePinia()!, i18n], directives: { tooltip: {} } }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 

@@ -14,8 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const renderMenu = () =>
   render(JobHistoryActionsMenu, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
@@ -43,8 +42,8 @@ describe('JobHistoryActionsMenu', () => {
       screen.getByRole('menuitemcheckbox', { name: 'Show run progress bar' })
     )
 
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.ShowRunProgressBar',
       false
     )
@@ -62,12 +61,12 @@ describe('JobHistoryActionsMenu', () => {
     )
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.QPOV2',
       true
     )
-    expect(vi.mocked(useSettingStore().setMany)).not.toHaveBeenCalled()
+    expect(useSettingStore().setMany).not.toHaveBeenCalled()
     expect(useSidebarTabStore().activeSidebarTabId).toBe('job-history')
   })
 
@@ -78,8 +77,7 @@ describe('JobHistoryActionsMenu', () => {
     render(JobHistoryActionsMenu, {
       props: { onClearHistory: clearHistorySpy },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 

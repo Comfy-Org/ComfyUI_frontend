@@ -126,36 +126,31 @@
       </template>
 
       <template v-else>
-        <AccessibleTooltip
+        <Button
           v-if="showGatedRepoAction"
-          :label="t('rightSidePanel.missingModels.gatedModelTooltip')"
+          :tooltip="t('rightSidePanel.missingModels.gatedModelTooltip')"
+          :as="usesNativeModelAccess ? 'button' : 'a'"
+          :type="usesNativeModelAccess ? 'button' : undefined"
+          :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
+          :target="usesNativeModelAccess ? undefined : '_blank'"
+          :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
+          data-testid="missing-model-gated-access"
+          variant="muted-textonly"
+          size="icon"
+          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+          :aria-label="
+            t(
+              usesNativeModelAccess
+                ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
+                : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+          @click="handleOpenGatedRepo"
         >
-          <template #trigger>
-            <Button
-              :as="usesNativeModelAccess ? 'button' : 'a'"
-              :type="usesNativeModelAccess ? 'button' : undefined"
-              :href="usesNativeModelAccess ? undefined : gatedRepoUrl"
-              :target="usesNativeModelAccess ? undefined : '_blank'"
-              :rel="usesNativeModelAccess ? undefined : 'noopener noreferrer'"
-              data-testid="missing-model-gated-access"
-              variant="muted-textonly"
-              size="icon"
-              class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
-              :aria-label="
-                t(
-                  usesNativeModelAccess
-                    ? 'rightSidePanel.missingModels.openHuggingFaceRepoDesktop'
-                    : 'rightSidePanel.missingModels.openHuggingFaceRepoNewTab',
-                  { model: model.name },
-                  { escapeParameter: false }
-                )
-              "
-              @click="handleOpenGatedRepo"
-            >
-              <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
-            </Button>
-          </template>
-        </AccessibleTooltip>
+          <i aria-hidden="true" class="icon-[lucide--lock] size-4" />
+        </Button>
         <Button
           v-if="showDownloadAction"
           data-testid="missing-model-download"
@@ -255,7 +250,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'

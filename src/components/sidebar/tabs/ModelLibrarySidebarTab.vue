@@ -2,7 +2,8 @@
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
-        v-tooltip.bottom="$t('g.refresh')"
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
@@ -12,7 +13,8 @@
       </Button>
       <Button
         v-if="!flags.assetsEnabled"
-        v-tooltip.bottom="$t('g.loadAllFolders')"
+        :tooltip="$t('g.loadAllFolders')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.loadAllFolders')"
@@ -36,7 +38,7 @@
         <p
           v-if="searchResults.capped"
           role="status"
-          class="mx-2 my-1 text-xs text-muted"
+          class="mx-2 my-1 text-xs text-muted-foreground"
         >
           {{
             $t('sideToolbar.searchResultsCapped', {
@@ -331,10 +333,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

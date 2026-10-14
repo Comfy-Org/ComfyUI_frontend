@@ -38,6 +38,7 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -286,6 +287,26 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('partner-node session revoke', () => {
+    it.for([
+      { name: 'sign-out', next: () => null, revokes: 1 },
+      {
+        name: 'an account switch',
+        next: () => ({ ...mockUser, uid: 'account-b' }),
+        revokes: 1
+      },
+      { name: 'the same account again', next: () => mockUser, revokes: 0 }
+    ])('revokes $revokes time(s) on $name', ({ next, revokes }) => {
+      const revokeAll = vi
+        .spyOn(partnerNodeTokens, 'revokeAll')
+        .mockResolvedValue(undefined)
+
+      authStateCallback(next())
+
+      expect(revokeAll).toHaveBeenCalledTimes(revokes)
+    })
+  })
+
   describe('fetchBalance', () => {
     it('returns null when the customer record is not found (404)', async () => {
       respondToFetch(
@@ -447,9 +468,7 @@ describe('useAuthStore', () => {
           })
         })
       )
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
     })
 
     it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
@@ -1903,9 +1922,7 @@ describe('useAuthStore', () => {
       })
 
       await expect(store.createCustomer()).rejects.toThrow()
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
       expect(fetch).not.toHaveBeenCalled()
     })
 

@@ -1,5 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setImmediate } from 'node:timers/promises'
 
 import type {
   AgentThreadListResponse,
@@ -244,10 +245,12 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
+  isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -260,6 +263,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -333,12 +337,15 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+              agentHasFunds:
+                paywallAgentHasFunds.value ?? paywallHasFunds.value,
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
+      canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -451,9 +458,11 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  paywallAgentScopedHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -616,23 +625,74 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
+  const reportFreeUseNotice = vi.fn()
+
+  function placeFundedFreeUseNotice() {
+    paywallHasFunds.value = true
+    paywallAgentScopedHasFunds.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner') })
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
     )
+  }
+
+  function freeUseNotice() {
+    return screen.findByRole('note', { name: 'Free use notice' })
+  }
+
+  it('forwards free-use notice interactions to the experiment', async () => {
+    placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const notice = await screen.findByRole('note', {
-      name: 'Free use notice'
-    })
     await userEvent.click(
-      within(notice).getByRole('button', { name: 'Dismiss' })
+      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'dismissed',
-      placement: 'top-banner'
-    })
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
+  })
+
+  it.for([
+    { label: 'the grant is spent but paid credits remain', scoped: false },
+    { label: 'no scoped balance is reported at all', scoped: undefined }
+  ])('says nothing about free turns when $label', async ({ scoped }) => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('hides the notice while any inline paywall remains unresolved', async () => {
+    placeFundedFreeUseNotice()
+    const conversation = useAgentConversationStore()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await freeUseNotice()
+
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    conversation.recordFailedSend(
+      toTurnId('msg-failed'),
+      'try again',
+      'Send failed'
+    )
+    await screen.findByText('Send failed')
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+
+    conversation.resolvePaywalls()
+
+    expect(await freeUseNotice()).toBeInTheDocument()
   })
 })
 
@@ -1572,6 +1632,207 @@ describe('AgentPanelRoot paywall telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot Agent credit transition notice', () => {
+  const NOTICE = 'agent-credit-transition-notice'
+
+  function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
+    paywallAgentScopedHasFunds.value = scopedHasFunds
+    if (scopedHasFunds === undefined) return
+    useAgentPanelStore().observeAgentScopedFunds(
+      useBillingIdentity().value,
+      scopedHasFunds
+    )
+  }
+
+  beforeEach(() => {
+    paywallHasFunds.value = true
+    paywallAgentHasFunds.value = true
+  })
+
+  it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toHaveTextContent(
+      i18n.global.t('agent.creditTransitionNotice')
+    )
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports one impression however often the panel remounts', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports an impression first shown without telemetry once telemetry is available', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    vi.mocked(useTelemetry).mockReturnValue(telemetry)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('does not infer a transition when the first scoped-balance read is false', async () => {
+    observeAgentScopedFunds(false)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(undefined)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await nextTick()
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
+    observeAgentScopedFunds(true)
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('textbox')
+    firstPanel.unmount()
+
+    observeAgentScopedFunds(undefined)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('defers an observed transition until Agent consent is ready', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    Object.assign(useAgentConsentStore(), { accepted: true })
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('withholds the notice while the workspace has no active subscription', async () => {
+    paywallBilling.isActive = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('defers the notice until the billing capability read settles', async () => {
+    paywallCapabilities.isReady = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallCapabilities.isReady = true
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    paywallAgentHasFunds.value = false
+    paywallHasFunds.value = false
+
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentHasFunds.value = true
+    paywallHasFunds.value = true
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('reports a new impression when the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'shown' }]
+    ])
+  })
+
+  it('shows again for a dismissed notice once the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    const notice = await screen.findByTestId(NOTICE)
+
+    await userEvent.click(
+      within(notice).getByRole('button', {
+        name: i18n.global.t('agent.dismiss')
+      })
+    )
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'dismissed' }],
+      [{ action: 'shown' }]
+    ])
+  })
+})
+
 /**
  * The standing credits-exhausted surface.
  *
@@ -1617,16 +1878,19 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it.for([
     {
       subscription: null,
+      isActive: false,
       effectiveFunds: false
     },
     {
       subscription: 'STANDARD' as const,
+      isActive: true,
       effectiveFunds: false
     }
   ])(
     'shows for subscription=$subscription without effective funds',
-    async ({ subscription, effectiveFunds }) => {
+    async ({ subscription, isActive, effectiveFunds }) => {
       paywallBilling.tier = subscription
+      paywallBilling.isActive = isActive
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -2115,8 +2379,10 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+const mp4Header = '\0\0\0\x18ftyp'
+
 function fileOfSize(name: string, size: number, type: string): File {
-  const file = new File(['x'], name, { type })
+  const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -2905,7 +3171,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
-        files: [new File(['x'], name, { type })]
+        files: [new File([mp4Header], name, { type })]
       })
     ).toBe(true)
 
@@ -3021,6 +3287,56 @@ describe('AgentPanelRoot attach flow', () => {
     )
     await nextTick()
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('refuses a text file renamed to mp4 from the picker', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
+    )
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('refuses a text file renamed to mp4 from drag and drop', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    const renamed = new File(['plain text'], 'renamed.mp4', {
+      type: 'video/mp4'
+    })
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [renamed] })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -3209,7 +3525,7 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('keeps a removed tray upload retired after completion and stale editor history', async () => {
+  it('cancels a removed tray upload and keeps it retired after stale editor history', async () => {
     const signals: AbortSignal[] = []
     let finishUpload: (response: Response) => void = () => {}
     const upload = new Promise<Response>((resolve) => {
@@ -3242,11 +3558,12 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    expect(signals[0].aborted).toBe(false)
+    expect(signals[0].aborted).toBe(true)
     finishUpload(
       json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
     )
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    await setImmediate()
+    expect(refresh).not.toHaveBeenCalled()
     expect(composer.attachments).toEqual([])
     composer.applyEditorPrompt(prompt)
     expect(composer.attachments).toEqual([])
@@ -3369,7 +3686,7 @@ describe('AgentPanelRoot attach flow', () => {
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob(['asset']), {
+            return new Response(new Blob([mp4Header]), {
               headers: { 'Content-Type': mime }
             })
           if (url.endsWith('/api/upload/image'))
@@ -3432,6 +3749,54 @@ describe('AgentPanelRoot attach flow', () => {
       })
     }
   )
+
+  it('keeps an invalid URI-only asset visible and blocks Send until removal', async () => {
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch(
+      /\/api\/view/,
+      () =>
+        new Response(new Blob(['plain text']), {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'renamed.mp4', type: 'input' })
+            : 'http://localhost/api/view?filename=renamed.mp4'
+      })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: 'renamed.mp4 isn’t a valid video file. Remove it and try another file.'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    await userEvent.type(screen.getByRole('textbox'), 'Describe these files')
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(fetchRequests(/\/messages$/)).toEqual([])
+    expect(useToast().toasts).toEqual([])
+    await userEvent.hover(screen.getByRole('group', { name: 'renamed.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove renamed.mp4' })
+    )
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Send' })).not.toHaveAttribute(
+      'aria-disabled'
+    )
+    expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
+  })
 
   it.for([
     { mime: 'image/png', filename: 'gen.png' },
@@ -3819,6 +4184,56 @@ describe('AgentPanelRoot attach flow', () => {
           ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
         )
       }
+    }
+  )
+
+  it.for(['valid', 'invalid'] as const)(
+    'removing a video during %s validation cancels it and allows a fresh retry',
+    async (outcome) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const file = new File(
+        [outcome === 'valid' ? mp4Header : 'plain text'],
+        'clip.mp4',
+        { type: 'video/mp4' }
+      )
+      const header = file.slice(0, 12)
+      const bytes = await header.arrayBuffer()
+      let finishValidation: (bytes: ArrayBuffer) => void = () => {}
+      const validation = new Promise<ArrayBuffer>((resolve) => {
+        finishValidation = resolve
+      })
+      vi.spyOn(file, 'slice').mockReturnValue(header)
+      vi.spyOn(header, 'arrayBuffer').mockReturnValue(validation)
+      const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+      await userEvent.upload(input, file)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Describe the clip')
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+      await userEvent.keyboard('{Enter}')
+      expect(fetchRequests(/\/messages$/)).toHaveLength(0)
+
+      await clearTrayAsset('clip.mp4')
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await userEvent.upload(
+        input,
+        new File([mp4Header], 'clip.mp4', { type: 'video/mp4' })
+      )
+      await vi.waitFor(() => expect(uploaded).toEqual(['clip.mp4']))
+      finishValidation(bytes)
+      await setImmediate()
+
+      expect(uploaded).toEqual(['clip.mp4'])
+      expect(
+        useToast().toasts.filter(({ kind }) => kind === 'warning')
+      ).toEqual([])
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     }
   )
 
@@ -5092,7 +5507,7 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('does not claim the minimap graph-activity layer when setup throws', () => {
-    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+    vi.mocked(useBillingContext).mockImplementationOnce(() => {
       throw new Error('setup failed')
     })
     // Mounted without Testing Library, whose error handler lets a failed
@@ -10968,11 +11383,11 @@ describe('AgentPanelRoot workflow binding', () => {
     setupNodeSelectionCanvas()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
-    const action = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
+    const action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
-    await openMentionPicker()
+    await userEvent.click(action)
     await userEvent.click(await screen.findByText('KSampler'))
 
     workflowStore.activeWorkflow = addTab('workflows/other.json')

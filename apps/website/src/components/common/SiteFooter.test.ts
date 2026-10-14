@@ -10,11 +10,23 @@ const agentAlternates: LocaleAlternate[] = [
   { locale: 'zh-CN', path: '/zh-CN/agent/' }
 ]
 
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
+const socialHrefs: readonly (string | null)[] = socialChannels.map(
+  ([, href]) => href
+)
+
 describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
     ['zh-CN', '更新日志', '资源'],
-    ['ja', 'Changelog', 'Resources']
+    ['ja', '変更履歴', 'リソース']
   ] as const)(
     'links the live changelog last in footer Resources (%s)',
     ([locale, name, resources]) => {
@@ -35,7 +47,7 @@ describe('SiteFooter', () => {
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
-    ['ja', 'ComfyUI Models']
+    ['ja', 'ComfyUIモデル']
   ] as const)(
     'links the one model catalogue from every locale (%s)',
     ([locale, name]) => {
@@ -66,8 +78,6 @@ describe('SiteFooter', () => {
     }
   )
 
-  // The agent page gained a zh-CN twin, so the footer link has to follow the
-  // active locale rather than staying pinned to the canonical /agent path.
   it.for([
     ['en', 'Comfy Agent', '/agent/'],
     ['zh-CN', 'Comfy Agent', '/zh-CN/agent/']
@@ -84,6 +94,45 @@ describe('SiteFooter', () => {
     }
   )
 
+  it.for([
+    ['en', '/fish-audio/'],
+    ['zh-CN', '/zh-CN/fish-audio/']
+  ] as const)(
+    'links the Fish Audio page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const fishAudio = models.find(
+        (link) => link.textContent.trim() === 'Fish Audio'
+      )
+      expect(fishAudio?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/nvidia-vfx/'],
+    ['zh-CN', '/zh-CN/nvidia-vfx/']
+  ] as const)(
+    'links the Nvidia VFX page last in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const last = models.at(-1)
+      expect(last?.textContent.trim()).toBe('Nvidia VFX')
+      expect(last?.getAttribute('href')).toBe(href)
+    }
+  )
+
   it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
@@ -94,8 +143,6 @@ describe('SiteFooter', () => {
     }
   })
 
-  // The footer mirrors the top nav: same Products and Features columns, same
-  // order, with Pricing kept at the end of Products.
   it('lists the nav Products and Features links in nav order (en)', () => {
     render(SiteFooter)
     const routes = getRoutes()
@@ -118,9 +165,46 @@ describe('SiteFooter', () => {
       ['Comfy MCP', routes.mcp],
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
-      ['Launches', routes.launches],
       ['Supported Models', routes.models]
     ])
+  })
+
+  it.for([
+    ['en', 'Follow Comfy', 'opens in new tab'],
+    ['zh-CN', '关注 Comfy', '在新标签页中打开']
+  ] as const)(
+    'shows the social channels as icon links opening in a new tab (%s)',
+    ([locale, name, newTab]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const links = within(
+        screen.getByRole('navigation', { name })
+      ).getAllByRole('link')
+      expect(
+        links.map((link) => [
+          link.textContent.replace(/\s+/g, ' ').trim(),
+          link.getAttribute('href'),
+          link.getAttribute('target'),
+          link.getAttribute('rel')
+        ])
+      ).toEqual(
+        socialChannels.map(([label, href]) => [
+          `${label} (${newTab})`,
+          href,
+          '_blank',
+          'noopener'
+        ])
+      )
+    }
+  )
+
+  it('lists no social channel as a text link in Resources', () => {
+    render(SiteFooter)
+
+    const hrefs = within(screen.getByRole('navigation', { name: 'Resources' }))
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+    expect(hrefs.filter((href) => socialHrefs.includes(href))).toEqual([])
   })
 
   it('keeps Docs in Resources, opening in a new tab', () => {
@@ -133,23 +217,15 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Launches and Supported Models only in Features', () => {
+  it('keeps Supported Models out of every column but Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
       const nav = screen.getByRole('navigation', { name: column })
-      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
       expect(
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
-    const features = screen.getByRole('navigation', { name: 'Features' })
-    expect(
-      within(features).getByRole('link', { name: 'Launches' })
-    ).toBeTruthy()
-    expect(
-      within(features).getByRole('link', { name: 'Supported Models' })
-    ).toBeTruthy()
   })
 
   it('hands the page alternates and the reader locale to the switcher', () => {

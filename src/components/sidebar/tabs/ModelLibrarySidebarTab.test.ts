@@ -129,8 +129,7 @@ describe('ModelLibrarySidebarTab', () => {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true },
-        directives: { tooltip: {} }
+        stubs: { teleport: true }
       }
     })
   }
@@ -167,7 +166,7 @@ describe('ModelLibrarySidebarTab', () => {
       'checkpoints'
     )
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
-      widgetValues: { ckpt_name: 'model.safetensors' },
+      widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }],
       source: 'sidebar_drag'
     })
   })
