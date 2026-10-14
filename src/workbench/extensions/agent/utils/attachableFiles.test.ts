@@ -28,7 +28,8 @@ describe('isAgentAttachable', () => {
     'sound.wav',
     'mesh.glb',
     'notes.md',
-    'prompt.txt'
+    'prompt.txt',
+    'prompts.csv'
   ])('accepts %s regardless of MIME type', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
@@ -60,11 +61,12 @@ describe('isAgentAttachable', () => {
         '.glb',
         '.md',
         '.txt',
+        '.csv',
         '.json',
         'application/json'
       ])
     )
-    expect(accepted).toHaveLength(13)
+    expect(accepted).toHaveLength(14)
   })
 
   it('rejects .json despite it being in the picker accept list, so a dropped workflow file still falls through to the graph loader', () => {

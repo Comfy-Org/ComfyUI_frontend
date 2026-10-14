@@ -3162,7 +3162,8 @@ describe('AgentPanelRoot attach flow', () => {
     ['sound.wav', ''],
     ['mesh.glb', ''],
     ['notes.md', ''],
-    ['prompt.txt', 'text/plain']
+    ['prompt.txt', 'text/plain'],
+    ['prompts.csv', 'text/csv']
   ])('attaches a dropped %s and uploads it', async ([name, type]) => {
     telemetry.trackAgentAttachButtonClicked.mockClear()
     const uploaded = stubUploadFetch()
@@ -3356,7 +3357,8 @@ describe('AgentPanelRoot attach flow', () => {
       '.wav',
       '.glb',
       '.md',
-      '.txt'
+      '.txt',
+      '.csv'
     ]) {
       expect(accept).toContain(extension)
     }
