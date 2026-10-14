@@ -175,6 +175,9 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   function takeCharacter(file: File) {
     character.value = file
   }
+  function removeCharacter() {
+    character.value = undefined
+  }
 
   /** The example being fetched, so its card can show it is on its way. */
   const loadingExample = ref<SwapExample['id']>()
@@ -487,6 +490,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     removeVideo,
     restoreVideo,
     takeCharacter,
+    removeCharacter,
     loadingExample,
     takeExample,
     generate,

@@ -5801,6 +5801,7 @@
       "change": "Change",
       "changeLabel": "Change the part used"
     },
+    "removeCharacter": "Remove character",
     "needs": {
       "video": "Add a video to start",
       "character": "Add a character image",

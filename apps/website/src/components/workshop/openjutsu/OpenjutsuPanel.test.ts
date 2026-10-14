@@ -82,17 +82,17 @@ describe('OpenjutsuPanel', () => {
     }
   )
 
-  it('keeps the chosen character without a way to empty it', () => {
-    render(OpenjutsuPanel, {
+  it('shows the chosen character with an X that takes it out', async () => {
+    const { emitted } = render(OpenjutsuPanel, {
       props: { ...models, characterUrl: 'blob:face', characterName: 'face.png' }
     })
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Change: face.png'
-      })
-    ).toBeVisible()
-    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
+    expect(screen.getByText('face.png')).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove character' })
+    )
+
+    expect(emitted('removeCharacter')).toHaveLength(1)
   })
 
   it('edits who to replace, the quality and a fixed seed', async () => {

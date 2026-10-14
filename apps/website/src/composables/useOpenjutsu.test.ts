@@ -182,6 +182,15 @@ describe('useOpenjutsu', () => {
     expect(swap.loadingExample.value).toBeUndefined()
   })
 
+  it('takes the character out so a new one is asked for', async () => {
+    const swap = await ready()
+
+    swap.removeCharacter()
+
+    expect(swap.character.value).toBeUndefined()
+    expect(swap.missing.value).toBe('character')
+  })
+
   it('takes the video out and puts it back as it was', async () => {
     const swap = await ready()
 

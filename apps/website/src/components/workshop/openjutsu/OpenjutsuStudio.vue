@@ -156,6 +156,7 @@ onBeforeUnmount(() =>
         @video="swap.takeVideo"
         @remove-video="swap.removeVideo"
         @character="swap.takeCharacter"
+        @remove-character="swap.removeCharacter"
         @trim="swap.editTrim"
       />
     </template>

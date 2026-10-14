@@ -39,6 +39,7 @@ const emit = defineEmits<{
   video: [file: File]
   removeVideo: []
   character: [file: File]
+  removeCharacter: []
   trim: []
 }>()
 
@@ -89,11 +90,12 @@ const partNote = computed(() => {
     <EditorSourceTile
       kind="image"
       :src="characterUrl"
-      :name="characterName"
+      :caption="characterName"
       :add-label="t('openjutsu.needs.character')"
-      :change-label="t('reshoot.clip.change')"
+      :remove-label="t('openjutsu.removeCharacter')"
       input-test-id="openjutsu-character-file"
       @file="emit('character', $event)"
+      @remove="emit('removeCharacter')"
     />
 
     <section class="flex flex-col gap-2">
@@ -113,7 +115,7 @@ const partNote = computed(() => {
       </div>
     </section>
 
-    <div class="flex flex-col gap-2">
+    <div class="grid grid-cols-2 gap-2">
       <CinematicMenu
         v-model="sizeValue"
         :options="sizes"

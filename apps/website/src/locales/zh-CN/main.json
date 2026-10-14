@@ -4319,6 +4319,7 @@
       "change": "更改",
       "changeLabel": "更改使用的片段"
     },
+    "removeCharacter": "移除角色",
     "needs": {
       "video": "先添加一段视频",
       "character": "添加一张角色图片",
