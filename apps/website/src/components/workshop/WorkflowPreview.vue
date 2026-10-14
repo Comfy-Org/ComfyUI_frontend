@@ -295,7 +295,7 @@ const facts = computed(() => {
                   <a
                     v-if="item.href"
                     :href="item.href"
-                    class="min-w-0 flex-1 truncate text-base text-primary-comfy-canvas hover:text-primary-comfy-yellow"
+                    class="min-w-0 flex-1 truncate text-base text-primary-comfy-canvas underline underline-offset-4 hover:text-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow"
                     >{{ item.name }}</a
                   >
                   <span
