@@ -50,6 +50,7 @@ describe('complete authored documents', () => {
       ...blankDocument(),
       title: 'Example',
       slug: 'example',
+      author_uid: uid,
       ...raw
     })
     expect(Object.getPrototypeOf(parseObject(text))).toBe(Object.prototype)
@@ -89,7 +90,8 @@ describe('complete authored documents', () => {
     expect(snapshot?.document).toEqual({
       ...blankDocument(),
       title: 'Example',
-      slug: 'example'
+      slug: 'example',
+      author_uid: uid
     })
     expect(
       savePayload(snapshot!.document, 'workflow', 7, snapshot)
@@ -126,6 +128,11 @@ describe('complete authored documents', () => {
     expect(hasReservedFields(blankDocument())).toBe(false)
     expect(hasReservedFields({ uid })).toBe(true)
     expect(hasReservedFields({ owner_uid: uid })).toBe(true)
+    expect(hasReservedFields({ author_uid: uid })).toBe(false)
+    expect(savePayload({ author_uid: uid }, 'workflow', 7)).toMatchObject({
+      author_uid: uid,
+      schema_version: 2
+    })
   })
 })
 

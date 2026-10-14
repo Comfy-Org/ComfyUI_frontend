@@ -1,4 +1,14 @@
 {
+  "cccMetadata": {
+    "invalidCount": "请输入非负整数，或留空。",
+    "invalidFAQ": "每个问题都需要答案；问题不得重复。",
+    "outputs": "工作流输出",
+    "addOutput": "添加输出",
+    "removeOutput": "删除输出",
+    "invalidOutputs": "每个输出都需要唯一 ID、节点 ID 和输出键。",
+    "output": { "id": "输出 {count} ID", "nodeId": "输出 {count} 节点 ID", "key": "输出 {count} 键", "kind": "输出 {count} 类型" },
+    "longDescription": "详细描述", "author": "署名作者账户 UID", "documentation": "文档 URL", "ownerFixed": "所有者由服务器固定；署名作者可编辑。", "runs": "运行次数", "downloads": "下载次数", "cloud": "可在 Comfy Cloud 上运行", "unspecified": "未指定", "outputType": "输出类型", "models": "模型 UID（以逗号分隔）", "cloudShare": "Comfy Cloud 分享 URL", "faq": "常见问答", "addQuestion": "添加问题", "removeQuestion": "删除问题", "question": "问题 {count}", "answer": "回答 {count}"
+  },
   "cccWorkflow": {
     "about": "关于此工作流",
     "faq": "常见问答",

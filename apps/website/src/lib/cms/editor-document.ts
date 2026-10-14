@@ -71,7 +71,6 @@ const metadata = new Set([
   'edit_sequence',
   'digest',
   'owner_uid',
-  'author_uid',
   'saved_by_uid',
   'is_deleted',
   'draft_generation',
@@ -159,7 +158,7 @@ export function savePayload(
   return {
     ...document,
     type,
-    schema_version: snapshot?.schema_version ?? 1,
+    schema_version: snapshot?.schema_version ?? 2,
     expected_draft_rev: draft,
     ...(snapshot ? { expected_revision_uid: snapshot.revision_uid } : {})
   }

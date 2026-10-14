@@ -55,11 +55,11 @@ const records = catalog?.ok
   <noscript>
     <ModelsShowcase />
   </noscript>
-  {catalog?.ok && <section class="mx-auto max-w-10xl px-6 pb-16 lg:px-8">
+  {catalog?.ok && <noscript><section class="mx-auto max-w-10xl px-6 pb-16 lg:px-8">
     <ul>
       {records.map((record) => <li>
-        <a href={record.slug + '/'}>{String(record.data.name)}</a>
+        <a href={record.slug + '/'}>{String(record.data.title ?? record.data.name ?? record.uid)}</a>
       </li>)}
     </ul>
-  </section>}
+  </section></noscript>}
 </BaseLayout>

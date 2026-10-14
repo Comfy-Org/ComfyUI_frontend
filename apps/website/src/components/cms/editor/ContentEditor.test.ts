@@ -41,12 +41,133 @@ function setup(existing = true) {
 }
 
 describe('staff page editor', () => {
+  it('uses single-line Description and a large multi-paragraph Long description', () => {
+    setup()
+    expect(screen.getByRole('textbox', { name: /^Description$/ }).tagName).toBe(
+      'INPUT'
+    )
+    expect(
+      screen.getByRole('textbox', { name: /^Long description$/ })
+    ).toHaveAttribute('rows', '12')
+    expect(
+      screen.getByRole('textbox', { name: /^Long description$/ }).tagName
+    ).toBe('TEXTAREA')
+  })
+
+  it('saves new structured fields and editable credited author without an owner override', async () => {
+    setup()
+    vi.mocked(editorRequest).mockResolvedValue({
+      ok: false,
+      status: 409,
+      data: undefined
+    })
+    for (const [name, value] of [
+      ['Long description', 'First paragraph.\n\nSecond paragraph.'],
+      ['Credited author account UID', next],
+      ['Documentation URL', 'https://docs.comfy.org/api-reference/'],
+      ['Runs', '0'],
+      ['Downloads', '9'],
+      ['Model UIDs (comma-separated)', next],
+      ['Comfy Cloud share URL', 'https://cloud.comfy.org/?share=abcdef123456']
+    ])
+      await fireEvent.update(
+        screen.getByRole('textbox', { name: (label) => label === name }),
+        value
+      )
+    await fireEvent.update(
+      screen.getByRole('combobox', { name: 'Works on Comfy Cloud' }),
+      'false'
+    )
+    await fireEvent.update(
+      screen.getByRole('combobox', { name: 'Output type' }),
+      'video'
+    )
+    await fireEvent.click(screen.getByRole('button', { name: 'Add output' }))
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Output 1 ID' }),
+      'result'
+    )
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Output 1 node ID' }),
+      '9'
+    )
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Output 1 key' }),
+      'videos'
+    )
+    await fireEvent.update(
+      screen.getByRole('combobox', { name: 'Output 1 type' }),
+      'video'
+    )
+    await fireEvent.click(screen.getByRole('button', { name: 'Add question' }))
+    expect(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    ).toBeDisabled()
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Question 1' }),
+      'Can I edit this?'
+    )
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Answer 1' }),
+      'Yes, download it.'
+    )
+    await fireEvent.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    )
+    await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
+    const payload = JSON.parse(
+      String(vi.mocked(editorRequest).mock.calls[0][1]?.body)
+    )
+    expect(payload).toMatchObject({
+      long_description: 'First paragraph.\n\nSecond paragraph.',
+      author_uid: next,
+      documentation_url: 'https://docs.comfy.org/api-reference/',
+      runs: 0,
+      downloads: 9,
+      works_on_cloud: false,
+      output_type: 'video',
+      outputs: [{ id: 'result', nodeId: '9', key: 'videos', kind: 'video' }],
+      model_uids: [next],
+      cloud_share_url: 'https://cloud.comfy.org/?share=abcdef123456',
+      faq: [{ question: 'Can I edit this?', answer: 'Yes, download it.' }],
+      expected_revision_uid: revision,
+      workflow_files: flat.workflow_files
+    })
+    expect(payload.owner_uid).toBeUndefined()
+    expect(
+      screen.getByRole('textbox', { name: 'Long description' })
+    ).toHaveValue('First paragraph.\n\nSecond paragraph.')
+  })
+
+  it('retains invalid count text and blocks saving until repaired or cleared', async () => {
+    setup()
+    const count = screen.getByRole('textbox', { name: /^Runs$/ })
+    await fireEvent.update(count, '-5')
+    expect(count).toHaveValue('-5')
+    expect(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    ).toBeDisabled()
+    await fireEvent.update(count, '0')
+    expect(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    ).toBeEnabled()
+    await fireEvent.update(count, '')
+    expect(count).toHaveValue('')
+    expect(editorRequest).not.toHaveBeenCalled()
+  })
   it('uses matching large Cancel/Save controls and Comfy yellow on both Save buttons', () => {
     setup()
     for (const cancel of screen.getAllByRole('link', { name: /^Cancel$/ }))
       expect(cancel).toHaveClass('h-10', 'w-40')
-    for (const save of screen.getAllByRole('button', { name: /^Save changes$/ })) {
-      expect(save).toHaveClass('h-10', 'w-40', 'bg-primary-comfy-yellow', 'text-primary-comfy-ink')
+    for (const save of screen.getAllByRole('button', {
+      name: /^Save changes$/
+    })) {
+      expect(save).toHaveClass(
+        'h-10',
+        'w-40',
+        'bg-primary-comfy-yellow',
+        'text-primary-comfy-ink'
+      )
       expect(save).not.toHaveClass('bg-admin-fg')
     }
   })

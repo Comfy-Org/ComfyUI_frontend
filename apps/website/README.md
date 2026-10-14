@@ -1,6 +1,16 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+The editor exposes the short name/one-line description, large multi-paragraph
+long description, editable credited-author UUID, optional documentation/Cloud
+share links, counts, Cloud compatibility, output type, model UID references,
+typed output bindings and question/answer rows. New records use schema v2;
+opening an existing v1 record keeps its version and prose limits without
+truncation. Owner/editor bookkeeping remains server-protected. Temporary invalid
+counts or incomplete FAQ/output rows block saves until repaired or removed.
+The plain Apps/Workflows link-list fallback is now noscript-only; the hydrated
+catalog does not paint a second unstyled list. The collapsed Models directory
+is retained.
 Native CCC workflow pages reuse the workflow graph/details card and the site's
 FAQ accordion. `long_description` renders as escaped multi-paragraph text;
 `faq` renders complete question/answer pairs only. Empty sections and details

@@ -77,7 +77,7 @@ const dirty = computed(
     JSON.stringify(document.value) !==
     JSON.stringify(snapshot.value?.document ?? initial)
 )
-const fields = ['title', 'slug', 'description'] as const
+const fields = ['title', 'slug', 'description', 'long_description'] as const
 function value(name: string) {
   const raw = document.value[name]
   return typeof raw === 'string' ? raw : ''
@@ -103,11 +103,20 @@ function patch(name: string, event: Event) {
       'visible_from',
       'workflow_uid',
       'implementation_ref',
-      'router_model_id'
+      'router_model_id',
+      'author_uid',
+      'documentation_url',
+      'cloud_share_url',
+      'output_type',
+      'long_description',
+      'description',
+      'works_on_cloud'
     ].includes(name)
   )
     delete next[name]
   document.value = next
+  if (name === 'works_on_cloud' && result !== '')
+    document.value[name] = result === 'true'
   state.value = 'idle'
 }
 function list(name: string, event: Event) {
@@ -123,6 +132,128 @@ function list(name: string, event: Event) {
 function listValue(name: string) {
   const parsed = z.array(z.string()).safeParse(document.value[name])
   return parsed.success ? parsed.data.join(', ') : ''
+}
+function counterValue(name: string) {
+  const raw = document.value[name]
+  return typeof raw === 'number' || typeof raw === 'string' ? String(raw) : ''
+}
+function counter(name: string, event: Event) {
+  if (!(event.target instanceof HTMLInputElement)) return
+  const raw = event.target.value
+  const parsed = raw === '' ? undefined : Number(raw)
+  const valid =
+    parsed === undefined ||
+    (/^\d+$/.test(raw) && Number.isSafeInteger(parsed) && parsed >= 0)
+  const next = { ...document.value }
+  if (parsed === undefined) delete next[name]
+  else next[name] = valid ? parsed : raw
+  document.value = next
+  validity(name, valid)
+}
+function faqValue(index: number, name: string) {
+  const raw = arrayObjects(document.value.faq)[index]?.[name]
+  return typeof raw === 'string' ? raw : ''
+}
+function checkFaq() {
+  const questions = new Set<string>()
+  const valid = arrayObjects(document.value.faq).every((entry) => {
+    const question =
+      typeof entry.question === 'string'
+        ? entry.question.trim().toLowerCase()
+        : ''
+    const answer = typeof entry.answer === 'string' ? entry.answer.trim() : ''
+    if (!question || !answer || questions.has(question)) return false
+    questions.add(question)
+    return true
+  })
+  validity('faq', valid)
+}
+function faq(index: number, name: string, event: Event) {
+  if (
+    !(
+      event.target instanceof HTMLInputElement ||
+      event.target instanceof HTMLTextAreaElement
+    )
+  )
+    return
+  const value = event.target.value
+  document.value = {
+    ...document.value,
+    faq: arrayObjects(document.value.faq).map((item, at) =>
+      at === index ? { ...item, [name]: value } : item
+    )
+  }
+  checkFaq()
+}
+function addFaq() {
+  document.value = {
+    ...document.value,
+    faq: [...arrayObjects(document.value.faq), { question: '', answer: '' }]
+  }
+  checkFaq()
+}
+function removeFaq(index: number) {
+  document.value = {
+    ...document.value,
+    faq: arrayObjects(document.value.faq).filter((_, at) => at !== index)
+  }
+  checkFaq()
+}
+function checkOutputs() {
+  const seen = new Set<string>()
+  validity(
+    'outputs',
+    arrayObjects(document.value.outputs).every((entry) => {
+      const id = typeof entry.id === 'string' ? entry.id.trim() : ''
+      if (
+        !id ||
+        seen.has(id) ||
+        typeof entry.nodeId !== 'string' ||
+        !entry.nodeId.trim() ||
+        typeof entry.key !== 'string' ||
+        !entry.key.trim()
+      )
+        return false
+      seen.add(id)
+      return true
+    })
+  )
+}
+function output(index: number, name: string, event: Event) {
+  if (
+    !(
+      event.target instanceof HTMLInputElement ||
+      event.target instanceof HTMLSelectElement
+    )
+  )
+    return
+  const value = event.target.value
+  document.value = {
+    ...document.value,
+    outputs: arrayObjects(document.value.outputs).map((item, at) =>
+      at === index ? { ...item, [name]: value } : item
+    )
+  }
+  checkOutputs()
+}
+function addOutput() {
+  document.value = {
+    ...document.value,
+    outputs: [
+      ...arrayObjects(document.value.outputs),
+      { id: '', nodeId: '', key: '', kind: 'image' }
+    ]
+  }
+  checkOutputs()
+}
+function removeOutput(index: number) {
+  document.value = {
+    ...document.value,
+    outputs: arrayObjects(document.value.outputs).filter(
+      (_, at) => at !== index
+    )
+  }
+  checkOutputs()
 }
 function validity(key: string, valid: boolean) {
   const next = new Set(invalidFields.value)
@@ -320,21 +451,141 @@ async function save() {
             v-for="field in fields"
             :key="field"
             class="grid gap-1 text-sm text-admin-muted"
-            >{{ t(`cmsEditor.${field}`)
+            >{{
+              field === 'long_description'
+                ? t('cccMetadata.longDescription')
+                : t(`cmsEditor.${field}`)
             }}<textarea
-              v-if="field === 'description'"
+              v-if="field === 'long_description'"
               :value="value(field)"
-              rows="4"
+              rows="12"
+              maxlength="20000"
               :class="inputClass"
               @input="patch(field, $event)" /><input
               v-else
               :value="value(field)"
-              required
-              :maxlength="field === 'title' ? 300 : 200"
+              :required="field === 'title' || field === 'slug'"
+              :maxlength="
+                field === 'title'
+                  ? snapshot?.schema_version === 1
+                    ? 300
+                    : 80
+                  : field === 'description'
+                    ? snapshot?.schema_version === 1
+                      ? 20000
+                      : 160
+                    : 200
+              "
               :pattern="field === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined"
               :class="inputClass"
               @input="patch(field, $event)"
           /></label>
+          <label
+            v-for="field in ['author_uid', 'documentation_url']"
+            :key="field"
+            class="grid gap-1 text-sm text-admin-muted"
+          >
+            {{
+              t(
+                field === 'author_uid'
+                  ? 'cccMetadata.author'
+                  : 'cccMetadata.documentation'
+              )
+            }}
+            <input
+              :value="value(field)"
+              :class="inputClass"
+              :maxlength="field === 'author_uid' ? 36 : 2000"
+              @input="patch(field, $event)"
+            />
+          </label>
+          <p class="text-xs text-admin-muted">
+            {{ t('cccMetadata.ownerFixed') }}
+          </p>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label
+              v-for="field in ['runs', 'downloads']"
+              :key="field"
+              class="grid gap-1 text-sm text-admin-muted"
+            >
+              {{
+                t(
+                  field === 'runs'
+                    ? 'cccMetadata.runs'
+                    : 'cccMetadata.downloads'
+                )
+              }}
+              <input
+                :value="counterValue(field)"
+                inputmode="numeric"
+                :aria-invalid="invalidFields.has(field)"
+                :class="inputClass"
+                @input="counter(field, $event)"
+              />
+              <span
+                v-if="invalidFields.has(field)"
+                class="text-xs text-admin-danger-text"
+                >{{ t('cccMetadata.invalidCount') }}</span
+              >
+            </label>
+          </div>
+          <template v-if="kind === 'workflow'">
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.cloud') }}
+              <select
+                :value="
+                  typeof document.works_on_cloud === 'boolean'
+                    ? String(document.works_on_cloud)
+                    : ''
+                "
+                :class="inputClass"
+                @change="patch('works_on_cloud', $event)"
+              >
+                <option value="">{{ t('cccMetadata.unspecified') }}</option>
+                <option value="true">{{ t('cccWorkflow.yes') }}</option>
+                <option value="false">{{ t('cccWorkflow.no') }}</option>
+              </select>
+            </label>
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.outputType') }}
+              <select
+                :value="value('output_type')"
+                :class="inputClass"
+                @change="patch('output_type', $event)"
+              >
+                <option value="">{{ t('cccMetadata.unspecified') }}</option>
+                <option
+                  v-for="output in [
+                    'image',
+                    'video',
+                    'audio',
+                    '3d',
+                    'text',
+                    'mixed'
+                  ] as const"
+                  :key="output"
+                  :value="output"
+                >
+                  {{ t(`cccWorkflow.output.${output}`) }}
+                </option>
+              </select>
+            </label>
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.models')
+              }}<input
+                :value="listValue('model_uids')"
+                :class="inputClass"
+                @input="list('model_uids', $event)"
+            /></label>
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.cloudShare')
+              }}<input
+                :value="value('cloud_share_url')"
+                :class="inputClass"
+                maxlength="2000"
+                @input="patch('cloud_share_url', $event)"
+            /></label>
+          </template>
           <template v-if="kind === 'model'"
             ><label class="grid gap-1 text-sm text-admin-muted"
               >{{ t('cmsEditor.provider')
@@ -431,6 +682,108 @@ async function save() {
             @busy="busy"
           />
         </aside>
+      </section>
+      <section
+        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-medium">{{ t('cccMetadata.faq') }}</h2>
+          <AdminButton @click="addFaq">{{
+            t('cccMetadata.addQuestion')
+          }}</AdminButton>
+        </div>
+        <p
+          v-if="invalidFields.has('faq')"
+          class="text-sm text-admin-danger-text"
+        >
+          {{ t('cccMetadata.invalidFAQ') }}
+        </p>
+        <div
+          v-for="(_, index) in arrayObjects(document.faq)"
+          :key="index"
+          class="grid gap-3 rounded-lg border border-admin-line p-4"
+        >
+          <label class="grid gap-1 text-sm text-admin-muted"
+            >{{ t('cccMetadata.question', { count: index + 1 })
+            }}<input
+              :value="faqValue(index, 'question')"
+              maxlength="300"
+              :class="inputClass"
+              @input="faq(index, 'question', $event)"
+          /></label>
+          <label class="grid gap-1 text-sm text-admin-muted"
+            >{{ t('cccMetadata.answer', { count: index + 1 })
+            }}<textarea
+              :value="faqValue(index, 'answer')"
+              rows="5"
+              maxlength="20000"
+              :class="inputClass"
+              @input="faq(index, 'answer', $event)"
+            />
+          </label>
+          <AdminButton @click="removeFaq(index)">{{
+            t('cccMetadata.removeQuestion')
+          }}</AdminButton>
+        </div>
+      </section>
+      <section
+        v-if="kind === 'workflow'"
+        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-medium">{{ t('cccMetadata.outputs') }}</h2>
+          <AdminButton @click="addOutput">{{
+            t('cccMetadata.addOutput')
+          }}</AdminButton>
+        </div>
+        <p
+          v-if="invalidFields.has('outputs')"
+          class="text-sm text-admin-danger-text"
+        >
+          {{ t('cccMetadata.invalidOutputs') }}
+        </p>
+        <div
+          v-for="(entry, index) in arrayObjects(document.outputs)"
+          :key="index"
+          class="grid gap-3 rounded-lg border border-admin-line p-4 sm:grid-cols-2"
+        >
+          <label
+            v-for="field in ['id', 'nodeId', 'key'] as const"
+            :key="field"
+            class="grid gap-1 text-sm text-admin-muted"
+            >{{ t(`cccMetadata.output.${field}`, { count: index + 1 })
+            }}<input
+              :value="typeof entry[field] === 'string' ? entry[field] : ''"
+              :class="inputClass"
+              maxlength="200"
+              @input="output(index, field, $event)"
+          /></label>
+          <label class="grid gap-1 text-sm text-admin-muted"
+            >{{ t('cccMetadata.output.kind', { count: index + 1 })
+            }}<select
+              :value="entry.kind"
+              :class="inputClass"
+              @change="output(index, 'kind', $event)"
+            >
+              <option
+                v-for="kind in [
+                  'image',
+                  'video',
+                  'audio',
+                  '3d',
+                  'text'
+                ] as const"
+                :key="kind"
+                :value="kind"
+              >
+                {{ t(`cccWorkflow.output.${kind}`) }}
+              </option>
+            </select></label
+          >
+          <AdminButton @click="removeOutput(index)">{{
+            t('cccMetadata.removeOutput')
+          }}</AdminButton>
+        </div>
       </section>
       <InputsEditor
         v-model="document"
