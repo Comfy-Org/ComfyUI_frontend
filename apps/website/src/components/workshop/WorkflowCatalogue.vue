@@ -271,6 +271,11 @@ function openWorkflow(model: WorkshopModel, position: number, row?: string) {
   })
 }
 
+function openCard(event: MouseEvent, model: WorkshopModel, position: number) {
+  if (mockOn.value) event.preventDefault()
+  else openWorkflow(model, position)
+}
+
 watch(category, (value) => {
   const next = categoryAddress(location.href, value)
   if (next !== location.href) history.replaceState(history.state, '', next)
@@ -614,9 +619,7 @@ function clear() {
               <WorkshopModelCard
                 :model
                 :locale
-                @click="
-                  mockOn ? $event.preventDefault() : openWorkflow(model, index)
-                "
+                @click="openCard($event, model, index)"
               />
             </li>
           </ul>
