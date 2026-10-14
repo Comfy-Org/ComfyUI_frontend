@@ -315,7 +315,13 @@ test.describe('Home Hub banner @interaction', () => {
       banner.getByRole('link', { name: 'Workflows' })
     ).toHaveAttribute('href', '/hub/workflows/')
 
-    await page.getByRole('button', { name: 'Preview controls' }).click()
+    const previewControls = page.getByRole('button', {
+      name: 'Preview controls'
+    })
+    await expect(
+      page.locator('astro-island', { has: previewControls })
+    ).not.toHaveAttribute('ssr')
+    await previewControls.click()
     await page
       .getByRole('menuitemcheckbox', {
         name: 'Home: Pick · Remix · Run banner'
