@@ -1483,7 +1483,7 @@
   },
   "src/workbench/extensions/agent/AgentPanelRoot.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
+      "count": 3
     }
   },
   "src/workbench/extensions/agent/components/agent/ConversationView.test.ts": {
@@ -1503,11 +1503,6 @@
   },
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
