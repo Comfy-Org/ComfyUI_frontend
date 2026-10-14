@@ -540,5 +540,6 @@ export function resolveDisplayImageDimensions(
  * values or media URLs that must round-trip through the view endpoint.
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
-  return asset.hash ?? asset.name
+  if (isCloud && asset.hash) return asset.hash
+  return asset.loader_path ?? asset.name
 }

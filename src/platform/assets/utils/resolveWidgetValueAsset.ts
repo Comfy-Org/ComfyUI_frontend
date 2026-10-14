@@ -13,7 +13,7 @@ export async function resolveWidgetValueAsset(
   widgetValue: string,
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<AssetItem | null | undefined> {
-  const { filepath: name } = parseAnnotatedPath(widgetValue)
+  const { filepath: name, rootFolder: type } = parseAnnotatedPath(widgetValue)
   const assetMatches = (asset: AssetItem) => name === (asset.hash || asset.name)
   const assetsStore = useAssetsStore()
   const storedAsset =
@@ -23,7 +23,7 @@ export async function resolveWidgetValueAsset(
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
 
-  const query = encodeParams({ limit: 1, hash: name })
+  const query = encodeParams({ limit: 1, name_contains: name, tags_all: type })
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
   const json = await resp.json().catch(() => {})
   const parseResult = assetResponseSchema.safeParse(json)
