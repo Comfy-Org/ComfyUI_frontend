@@ -16,6 +16,7 @@ const {
   stageOf,
   openId,
   canApply,
+  selected = [],
   locale = 'en'
 } = defineProps<{
   tab: StageStatus
@@ -26,12 +27,14 @@ const {
   stageOf: (item: QueueItem) => StageEntry
   openId?: string
   canApply: boolean
+  selected?: string[]
   locale?: Locale
 }>()
 const emit = defineEmits<{
   decide: [items: QueueItem[], status: StageStatus]
   reject: [items: SubmissionQueueItem[]]
   open: [id: string]
+  select: [id: string]
 }>()
 const { t } = translationsFor(locale)
 const reviewing = computed(() => tab === 'NEW')
@@ -63,10 +66,12 @@ const groups = computed(() =>
     :stage-of="stageOf"
     :open-id="openId"
     :can-apply="canApply"
-    :bulk="reviewing"
+    :selectable="reviewing && canApply"
+    :selected
     :locale
     @decide="(items, status) => emit('decide', items, status)"
     @reject="emit('reject', $event)"
     @open="emit('open', $event)"
+    @select="emit('select', $event)"
   />
 </template>

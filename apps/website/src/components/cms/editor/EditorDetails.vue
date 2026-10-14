@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import EditorField from '@/components/cms/editor/EditorField.vue'
+import EditorTags from '@/components/cms/editor/EditorTags.vue'
 import EditorUseCases from '@/components/cms/editor/EditorUseCases.vue'
 import EditorSection from '@/components/cms/editor/EditorSection.vue'
 import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
@@ -85,11 +86,11 @@ const creditLabel =
         <EditorField v-if="state.kind !== 'APP'" :label="creditLabel">
           <input v-model="state.credit" :class="fieldClass" />
         </EditorField>
-        <EditorField :label="t('cmsAdmin.editor.tags')">
-          <input
+        <EditorField :label="t('cmsAdmin.editor.tags')" as="div">
+          <EditorTags
             v-model="state.tags"
-            :placeholder="t('cmsAdmin.editor.tagsPlaceholder')"
-            :class="fieldClass"
+            :label="t('cmsAdmin.editor.tags')"
+            :locale
           />
         </EditorField>
       </div>

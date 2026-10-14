@@ -1,4 +1,6 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
+import type { ItemStats } from './stats'
+import { itemStats } from './stats'
 
 export type Placement = 'basic' | 'advanced' | 'hidden'
 export type MediaKind = 'image' | 'video' | 'audio'
@@ -63,6 +65,8 @@ export interface EditorState {
   faq: EditorFaq[]
   /** Workflows only: whether it runs on the Hub or only downloads as a node graph. */
   runsOnHub: boolean
+  /** Read only: copied in from analytics, never saved from the editor. */
+  stats: ItemStats
 }
 
 const object = (value: unknown): Data =>
@@ -193,7 +197,8 @@ export function editorState(
       question: text(object(entry).question),
       answer: text(object(entry).answer)
     })),
-    runsOnHub: data.runsOnHub !== false
+    runsOnHub: data.runsOnHub !== false,
+    stats: itemStats(data)
   }
 }
 
@@ -210,6 +215,7 @@ export function newFromTemplate(
     slug: '',
     translation: { name: '', summary: '' },
     faq: [],
+    stats: {},
     enabled: true,
     visibility: 'PUBLIC',
     visibleFrom: '',
@@ -299,6 +305,10 @@ function savedData(state: EditorState, base: Data): Data {
     useCases: state.useCases.length ? state.useCases : undefined,
     faq: savedFaq(state.faq),
     runsOnHub: state.kind === 'WORKFLOW' ? state.runsOnHub : undefined,
+    // Written back as loaded, so a page copied from a template starts at zero.
+    popularity: state.stats.popularity,
+    downloads: state.stats.downloads,
+    runs: state.stats.runs,
     ...(parameters.length
       ? {
           defaults: { ...object(base.defaults), ...defaults },

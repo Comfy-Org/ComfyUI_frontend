@@ -52,10 +52,6 @@
       "APP": "App"
     },
     "draft": {
-      "bulk": {
-        "reject": "Reject {count} | Reject all {count}",
-        "approve": "Approve {count} | Approve all {count}"
-      },
       "title": "Draft",
       "help": "Approve what should go live, then publish it after a final review.",
       "all": "All",
@@ -172,7 +168,12 @@
       "attentionCount": "Needs attention {count}",
       "attentionHelp": "Pages on the Hub that are missing something. Pick a gap to fix the same thing across pages.",
       "gapLabel": "Filter by what's missing",
-      "allGood": "Nothing needs attention. Every page has what the Hub needs."
+      "allGood": "Nothing needs attention. Every page has what the Hub needs.",
+      "sort": {
+        "label": "Sort by",
+        "popular": "Most popular",
+        "default": "Catalog order"
+      }
     },
     "preview": {
       "card": {
@@ -236,7 +237,7 @@
       "provider": "Provider",
       "author": "Author",
       "tags": "Tags",
-      "tagsPlaceholder": "e.g. image, edit, fast",
+      "tagsPlaceholder": "Type a tag and press Enter",
       "address": "Page address",
       "addressFixed": "The address can't change once a page exists, so links to it keep working.",
       "problem": {
@@ -338,7 +339,8 @@
         "question": "Question",
         "answer": "Answer",
         "remove": "Remove question"
-      }
+      },
+      "removeTag": "Remove {tag}"
     },
     "readiness": {
       "title": "Before publishing",
@@ -380,8 +382,7 @@
     },
     "decision": {
       "approve": "Approve",
-      "approveTitle": "Approve {title}",
-      "rejectTitle": "Reject {title}"
+      "approveTitle": "Approve {title}"
     },
     "stage": {
       "tabLabel": "Show changes by review status",
@@ -396,8 +397,6 @@
         "DEFERRED": "Later"
       },
       "later": "Later",
-      "laterTitle": "Leave {title} for later",
-      "laterAll": "All for later",
       "back": "Review again",
       "backTitle": "Send {title} back to review",
       "reapproval": "Edited after approval",
@@ -411,7 +410,9 @@
         "NEW": "Nothing left to review.",
         "APPROVED": "Nothing approved yet.",
         "DEFERRED": "Nothing is left for later."
-      }
+      },
+      "more": "More actions for {title}",
+      "select": "Select {title}"
     },
     "finalReview": {
       "open": "Final review ({count})",
@@ -428,6 +429,24 @@
       "restore": "Restore",
       "confirmTitle": "Restore the version from {date}?",
       "confirmBody": "It replaces what the draft has for this page now. Later saves stay in the history, so you can come back to them."
+    },
+    "bulk": {
+      "selected": "{count} selected",
+      "selectAll": "Select all {count} shown",
+      "approve": "Approve {count}"
+    },
+    "progress": {
+      "label": "Reviewed",
+      "count": "{reviewed} of {total}"
+    },
+    "stats": {
+      "title": "Usage",
+      "help": "Filled in from analytics. You can't edit these here.",
+      "popularity": "Popularity",
+      "runs": "Runs",
+      "downloads": "Downloads",
+      "runsCount": "{count} runs",
+      "downloadsCount": "{count} downloads"
     }
   },
   "home": {

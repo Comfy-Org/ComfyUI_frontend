@@ -52,10 +52,6 @@
       "APP": "应用"
     },
     "draft": {
-      "bulk": {
-        "reject": "拒绝 {count} 个",
-        "approve": "批准 {count} 个 | 全部批准 {count} 个"
-      },
       "title": "草稿",
       "help": "批准要上线的内容，最终审核后发布。",
       "all": "全部",
@@ -172,7 +168,12 @@
       "attentionCount": "需要处理 {count}",
       "attentionHelp": "Hub 上缺少内容的页面。选择一个缺漏，即可批量处理同类问题。",
       "gapLabel": "按缺少的内容筛选",
-      "allGood": "没有需要处理的内容。每个页面都具备 Hub 所需的内容。"
+      "allGood": "没有需要处理的内容。每个页面都具备 Hub 所需的内容。",
+      "sort": {
+        "label": "排序方式",
+        "popular": "最受欢迎",
+        "default": "目录顺序"
+      }
     },
     "preview": {
       "card": {
@@ -236,7 +237,7 @@
       "provider": "提供方",
       "author": "作者",
       "tags": "标签",
-      "tagsPlaceholder": "例如 image, edit, fast",
+      "tagsPlaceholder": "输入标签后按回车",
       "address": "页面地址",
       "addressFixed": "页面创建后地址不能更改，以免链接失效。",
       "problem": {
@@ -338,7 +339,8 @@
         "question": "问题",
         "answer": "答案",
         "remove": "删除问题"
-      }
+      },
+      "removeTag": "移除 {tag}"
     },
     "readiness": {
       "title": "发布前检查",
@@ -380,8 +382,7 @@
     },
     "decision": {
       "approve": "批准",
-      "approveTitle": "批准 {title}",
-      "rejectTitle": "拒绝 {title}"
+      "approveTitle": "批准 {title}"
     },
     "stage": {
       "tabLabel": "按审核状态显示更改",
@@ -396,8 +397,6 @@
         "DEFERRED": "稍后"
       },
       "later": "稍后",
-      "laterTitle": "将 {title} 留到稍后",
-      "laterAll": "全部留到稍后",
       "back": "重新审核",
       "backTitle": "将 {title} 送回审核",
       "reapproval": "批准后被编辑",
@@ -411,7 +410,9 @@
         "NEW": "没有待审核的内容。",
         "APPROVED": "还没有已批准的内容。",
         "DEFERRED": "没有留到稍后的内容。"
-      }
+      },
+      "more": "{title} 的更多操作",
+      "select": "选择 {title}"
     },
     "finalReview": {
       "open": "最终审核（{count}）",
@@ -428,6 +429,24 @@
       "restore": "恢复",
       "confirmTitle": "恢复 {date} 的版本？",
       "confirmBody": "它会替换草稿中此页面的当前内容。之后的保存仍保留在历史中，可以随时恢复。"
+    },
+    "bulk": {
+      "selected": "已选 {count} 项",
+      "selectAll": "选择显示的全部 {count} 项",
+      "approve": "批准 {count} 项"
+    },
+    "progress": {
+      "label": "已审核",
+      "count": "{reviewed} / {total}"
+    },
+    "stats": {
+      "title": "使用情况",
+      "help": "来自分析数据，无法在此编辑。",
+      "popularity": "热度",
+      "runs": "运行次数",
+      "downloads": "下载次数",
+      "runsCount": "{count} 次运行",
+      "downloadsCount": "{count} 次下载"
     }
   },
   "about": {

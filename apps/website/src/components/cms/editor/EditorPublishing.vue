@@ -5,6 +5,7 @@ import EditorField from '@/components/cms/editor/EditorField.vue'
 import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
 import EditorSection from '@/components/cms/editor/EditorSection.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
 import { fieldClass } from '@/components/cms/ui/field'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { Locale } from '@/i18n/translations'
@@ -43,10 +44,13 @@ const { t } = translationsFor(locale)
           <Switch v-model="state.enabled" />
         </label>
         <EditorField :label="t('cmsAdmin.editor.audience')">
-          <select v-model="state.visibility" :class="fieldClass">
-            <option value="PUBLIC">{{ t('cmsAdmin.editor.everyone') }}</option>
-            <option value="STAFF">{{ t('cmsAdmin.editor.staff') }}</option>
-          </select>
+          <AdminSelect
+            v-model="state.visibility"
+            :options="[
+              { value: 'PUBLIC', label: t('cmsAdmin.editor.everyone') },
+              { value: 'STAFF', label: t('cmsAdmin.editor.staff') }
+            ]"
+          />
         </EditorField>
       </template>
       <EditorField

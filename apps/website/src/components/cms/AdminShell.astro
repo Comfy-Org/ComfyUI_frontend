@@ -27,7 +27,7 @@ const links = [
   { key: 'history', href: '/admin/history/', icon: History, count: undefined }
 ] as const
 const item =
-  'flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-sm whitespace-nowrap text-admin-fg/80 transition-colors hover:bg-admin-hover hover:text-admin-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-admin-muted'
+  'flex h-9 min-w-0 shrink-0 items-center gap-2 rounded-lg px-3 text-sm max-lg:justify-center max-lg:px-2 max-sm:[&_svg]:hidden whitespace-nowrap text-admin-fg/80 transition-colors hover:bg-admin-hover hover:text-admin-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-admin-muted'
 ---
 
 <BaseLayout title={t('cmsAdmin.title')} bare noindex>
@@ -55,7 +55,7 @@ const item =
       </a>
       <nav
         aria-label={t('cmsAdmin.nav.label')}
-        class="flex gap-1 overflow-x-auto lg:flex-col"
+        class="grid grid-cols-3 gap-1 lg:flex lg:flex-col"
       >
         {links.map((link) => {
           const active = current === link.key
@@ -68,7 +68,9 @@ const item =
             )}
           >
             <link.icon aria-hidden="true" />
-            <span class="flex-1">{t(`cmsAdmin.nav.${link.key}`)}</span>
+            <span class="truncate lg:flex-1"
+              >{t(`cmsAdmin.nav.${link.key}`)}</span
+            >
             {link.count !== undefined && <span
               class="text-xs text-admin-muted tabular-nums"
               >{link.count}</span

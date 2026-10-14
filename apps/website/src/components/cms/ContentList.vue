@@ -7,6 +7,7 @@ import ContentListRow from '@/components/cms/ContentListRow.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
+import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -14,6 +15,7 @@ import type { ListingFilter } from '@/lib/cms/format'
 import { kindCounts, matchesListing } from '@/lib/cms/format'
 import type { ContentRow } from '@/lib/cms/queue'
 import type { ReadinessGap } from '@/lib/cms/readiness'
+import { byPopularity } from '@/lib/cms/stats'
 
 const {
   rows,
@@ -61,7 +63,13 @@ const inStatus = computed(() => {
   )
 })
 const counts = computed(() => kindCounts(inStatus.value.map((row) => row.kind)))
-const visible = computed(() =>
+type Order = 'popular' | 'default'
+const order = ref<Order>('popular')
+const orders = [
+  { value: 'popular' as const, label: t('cmsAdmin.content.sort.popular') },
+  { value: 'default' as const, label: t('cmsAdmin.content.sort.default') }
+]
+const filtered = computed(() =>
   inStatus.value.filter((row) =>
     matchesListing(filter.value, query.value, row.kind, [
       row.title,
@@ -69,6 +77,9 @@ const visible = computed(() =>
       row.slug
     ])
   )
+)
+const visible = computed(() =>
+  order.value === 'popular' ? byPopularity(filtered.value) : filtered.value
 )
 const emptyText = computed(() => {
   if (status.value === 'archived') return t('cmsAdmin.content.noArchived')
@@ -137,7 +148,17 @@ const emptyText = computed(() => {
       :counts
       :search-label="t('cmsAdmin.content.search')"
       :locale
-    />
+    >
+      <template #end>
+        <div class="w-40">
+          <AdminSelect
+            v-model="order"
+            :options="orders"
+            :label="t('cmsAdmin.content.sort.label')"
+          />
+        </div>
+      </template>
+    </ListingFilters>
     <ul class="overflow-hidden rounded-lg border border-admin-line">
       <li
         v-if="visible.length === 0"

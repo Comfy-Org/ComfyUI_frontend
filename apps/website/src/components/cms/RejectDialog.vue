@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { DialogDescription, DialogTitle } from 'reka-ui'
+import { ref } from 'vue'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
 import { fieldClass } from '@/components/cms/ui/field'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -21,6 +23,7 @@ const {
 const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
 const reasons = ['broken', 'description', 'outputs', 'duplicate', 'other']
+const reason = ref(reasons[0])
 const field = fieldClass
 </script>
 
@@ -55,11 +58,16 @@ const field = fieldClass
         />
         <label class="grid gap-1.5 text-xs text-admin-muted">
           {{ t('cmsAdmin.reject.reason') }}
-          <select name="reason" :class="field">
-            <option v-for="reason in reasons" :key="reason" :value="reason">
-              {{ t(`cmsAdmin.reject.reasons.${reason}`) }}
-            </option>
-          </select>
+          <AdminSelect
+            v-model="reason"
+            name="reason"
+            :options="
+              reasons.map((value) => ({
+                value,
+                label: t(`cmsAdmin.reject.reasons.${value}`)
+              }))
+            "
+          />
         </label>
         <label class="grid gap-1.5 text-xs text-admin-muted">
           {{ t('cmsAdmin.reject.note') }}

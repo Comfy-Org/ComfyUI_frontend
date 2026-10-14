@@ -16,18 +16,24 @@ const {
   stage,
   active,
   canApply,
+  selectable = false,
+  selected = false,
   locale = 'en'
 } = defineProps<{
   item: QueueItem
   stage: StageEntry
   active: boolean
   canApply: boolean
+  /** Show a checkbox so the row can join a bulk decision. */
+  selectable?: boolean
+  selected?: boolean
   locale?: Locale
 }>()
 const emit = defineEmits<{
   open: []
   decide: [status: StageStatus]
   reject: []
+  select: []
 }>()
 const { t } = translationsFor(locale)
 
@@ -52,11 +58,22 @@ const when =
     :class="
       cn(
         'grid min-h-14 cursor-pointer grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[3.5rem_minmax(0,1fr)_11rem_auto]',
-        active && 'bg-admin-line hover:bg-admin-line'
+        selectable &&
+          'grid-cols-[1rem_3.5rem_minmax(0,1fr)] md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_auto]',
+        (active || selected) && 'bg-admin-line hover:bg-admin-line'
       )
     "
     @click="emit('open')"
   >
+    <span v-if="selectable" role="cell" class="flex" @click.stop>
+      <input
+        type="checkbox"
+        :checked="selected"
+        :aria-label="t('cmsAdmin.stage.select', { title: item.title })"
+        class="size-4 cursor-pointer accent-admin-fg"
+        @change="emit('select')"
+      />
+    </span>
     <QueueThumb
       role="cell"
       :src="item.thumbnail"
@@ -96,7 +113,12 @@ const when =
     </span>
     <span
       role="cell"
-      class="col-span-2 flex items-center justify-end gap-1 md:col-span-1"
+      :class="
+        cn(
+          'col-span-2 flex items-center justify-end gap-1 md:col-span-1',
+          selectable && 'col-span-3'
+        )
+      "
       @click.stop
     >
       <StageDecision

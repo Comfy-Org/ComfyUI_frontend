@@ -50,8 +50,16 @@ export function createMockIngest(seed: SeedEntry[]) {
     edit_version: randomUUID()
   })
 
-  let live: CatalogRecord[] = seed.map((entry) => ({
+  // Usage numbers like the ones an agent copies in from analytics.
+  let live: CatalogRecord[] = seed.map((entry, index) => ({
     ...entry,
+    data: {
+      ...entry.data,
+      runs: ((index + 3) * 7919) % 48_000,
+      downloads: ((index + 5) * 3571) % 9_000,
+      popularity:
+        (((index + 3) * 7919) % 48_000) + (((index + 5) * 3571) % 9_000) * 2
+    },
     revision: 1,
     edit_version: randomUUID(),
     deleted: false

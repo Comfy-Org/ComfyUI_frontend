@@ -3,6 +3,8 @@ import { Check, Clock, RotateCcw, X } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminMenu from '@/components/cms/ui/AdminMenu.vue'
+import AdminMenuItem from '@/components/cms/ui/AdminMenuItem.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { StageStatus } from '@/lib/cms/stage-status'
@@ -32,31 +34,20 @@ const { t } = translationsFor(locale)
   </span>
   <template v-else-if="status === 'NEW'">
     <AdminButton
-      v-if="canReject"
-      variant="ghost"
-      size="icon"
-      :aria-label="t('cmsAdmin.decision.rejectTitle', { title })"
-      :title="t('cmsAdmin.review.reject')"
-      class="hover:text-admin-danger-text"
-      @click="emit('reject')"
-    >
-      <X class="size-4" />
-    </AdminButton>
-    <AdminButton
-      variant="ghost"
-      :icon="Clock"
-      :aria-label="t('cmsAdmin.stage.laterTitle', { title })"
-      @click="emit('decide', 'DEFERRED')"
-    >
-      {{ t('cmsAdmin.stage.later') }}
-    </AdminButton>
-    <AdminButton
       :icon="Check"
       :aria-label="t('cmsAdmin.decision.approveTitle', { title })"
       @click="emit('decide', 'APPROVED')"
     >
       {{ t('cmsAdmin.decision.approve') }}
     </AdminButton>
+    <AdminMenu :label="t('cmsAdmin.stage.more', { title })">
+      <AdminMenuItem :icon="Clock" @select="emit('decide', 'DEFERRED')">
+        {{ t('cmsAdmin.stage.later') }}
+      </AdminMenuItem>
+      <AdminMenuItem v-if="canReject" :icon="X" danger @select="emit('reject')">
+        {{ t('cmsAdmin.review.reject') }}
+      </AdminMenuItem>
+    </AdminMenu>
   </template>
   <template v-else>
     <span

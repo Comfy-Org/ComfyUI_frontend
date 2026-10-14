@@ -5,11 +5,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   options,
   label,
-  size = 'md'
+  size = 'md',
+  fill = false
 } = defineProps<{
   options: ReadonlyArray<{ value: T; label: string }>
   label: string
   size?: 'sm' | 'md'
+  /** Stretch to the full width with equal segments, so stacked rows line up. */
+  fill?: boolean
 }>()
 const model = defineModel<T>({ required: true })
 </script>
@@ -18,7 +21,12 @@ const model = defineModel<T>({ required: true })
   <div
     role="radiogroup"
     :aria-label="label"
-    class="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5"
+    :class="
+      cn(
+        'inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5',
+        fill && 'grid w-full auto-cols-fr grid-flow-col'
+      )
+    "
   >
     <button
       v-for="option in options"
@@ -28,7 +36,7 @@ const model = defineModel<T>({ required: true })
       :aria-checked="model === option.value"
       :class="
         cn(
-          'inline-flex shrink-0 cursor-pointer items-center rounded-md font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
+          'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
           size === 'sm' ? 'h-6 px-2 text-xs' : 'h-6.5 px-2.5 text-xs',
           model === option.value
             ? 'bg-admin-selected text-admin-fg'

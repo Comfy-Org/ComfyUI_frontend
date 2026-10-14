@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Eye } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import DraftBulkBar from '@/components/cms/DraftBulkBar.vue'
 import DraftLists from '@/components/cms/DraftLists.vue'
+import DraftProgress from '@/components/cms/DraftProgress.vue'
 import FinalReviewDialog from '@/components/cms/FinalReviewDialog.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import RejectDialog from '@/components/cms/RejectDialog.vue'
@@ -141,6 +143,29 @@ function decideOpen(status: StageStatus) {
 function step(direction: -1 | 1) {
   openId.value = visible.value[openIndex.value + direction]?.id
 }
+// Ticked rows, kept to those the filters still show.
+const selected = ref<string[]>([])
+const picked = computed(() =>
+  visible.value.filter((item) => selected.value.includes(item.id))
+)
+watch(tab, () => (selected.value = []))
+const showBulk = computed(
+  () => tab.value === 'NEW' && canApply && visible.value.length > 0
+)
+const pickedSubmissions = computed(
+  () => picked.value.length > 0 && picked.value.every(isSubmission)
+)
+const isSubmission = (item: QueueItem): item is SubmissionQueueItem =>
+  item.source === 'submission'
+function toggle(id: string) {
+  selected.value = selected.value.includes(id)
+    ? selected.value.filter((chosen) => chosen !== id)
+    : [...selected.value, id]
+}
+function decidePicked(status: StageStatus) {
+  void decide(picked.value, status)
+  selected.value = []
+}
 function rejectOpen() {
   if (openItem.value?.source === 'submission')
     rejecting.value = [openItem.value]
@@ -164,8 +189,8 @@ function rejectOpen() {
           {{ t('cmsAdmin.previewDraft') }}
         </AdminButton>
         <AdminButton
+          v-if="canFinish"
           variant="primary"
-          :disabled="!canFinish"
           @click="reviewing = true"
         >
           {{
@@ -176,6 +201,12 @@ function rejectOpen() {
             )
           }}
         </AdminButton>
+        <DraftProgress
+          v-else-if="items.length > 0"
+          :reviewed="items.length - counts.NEW"
+          :total="items.length"
+          :locale
+        />
       </template>
     </PageHeader>
 
@@ -204,20 +235,32 @@ function rejectOpen() {
     </div>
 
     <template v-else>
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <AdminSegmented
-          v-model="tab"
-          :options="tabs"
-          :label="t('cmsAdmin.stage.tabLabel')"
-        />
-        <p v-if="guidance" class="text-xs text-admin-muted">{{ guidance }}</p>
-      </div>
       <ListingFilters
         v-model:filter="filter"
         v-model:query="query"
         :counts="kinds"
         :search-label="t('cmsAdmin.draft.search')"
         :locale
+      >
+        <AdminSegmented
+          v-model="tab"
+          :options="tabs"
+          :label="t('cmsAdmin.stage.tabLabel')"
+        />
+      </ListingFilters>
+      <p v-if="guidance" class="-mt-2 text-xs text-admin-muted">
+        {{ guidance }}
+      </p>
+      <DraftBulkBar
+        v-if="showBulk"
+        :count="picked.length"
+        :shown="visible.length"
+        :can-reject="pickedSubmissions"
+        :locale
+        @all="selected = $event ? visible.map((item) => item.id) : []"
+        @approve="decidePicked('APPROVED')"
+        @later="decidePicked('DEFERRED')"
+        @reject="rejecting = picked.filter(isSubmission)"
       />
       <DraftLists
         :tab
@@ -227,7 +270,9 @@ function rejectOpen() {
         :stage-of="stageFor"
         :open-id="openId"
         :can-apply="canApply"
+        :selected
         :locale
+        @select="toggle"
         @decide="decide"
         @reject="rejecting = $event"
         @open="openId = $event"

@@ -28,6 +28,7 @@ const label = (option: ListingFilter) =>
 
 <template>
   <div class="flex flex-wrap items-center gap-2">
+    <slot />
     <div
       role="group"
       :aria-label="t('cmsAdmin.draft.filterLabel')"
@@ -65,5 +66,6 @@ const label = (option: ListingFilter) =>
         class="h-8 w-full rounded-lg border border-admin-field bg-transparent pr-3 pl-8 text-xs text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control"
       />
     </label>
+    <slot name="end" />
   </div>
 </template>

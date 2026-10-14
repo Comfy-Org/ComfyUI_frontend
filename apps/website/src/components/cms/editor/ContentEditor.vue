@@ -11,6 +11,7 @@ import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
 import EditorNotices from '@/components/cms/editor/EditorNotices.vue'
 import EditorParameters from '@/components/cms/editor/EditorParameters.vue'
 import EditorPublishing from '@/components/cms/editor/EditorPublishing.vue'
+import EditorStats from '@/components/cms/editor/EditorStats.vue'
 import EditorVersions from '@/components/cms/editor/EditorVersions.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
@@ -171,6 +172,7 @@ function discard() {
         <EditorFaq v-if="state.kind !== 'APP'" v-model="state.faq" :locale />
       </div>
       <div class="grid content-start gap-5">
+        <EditorStats :state :locale />
         <EditorPublishing
           v-model="state"
           :is-new="initial.isNew"

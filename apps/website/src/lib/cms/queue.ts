@@ -8,6 +8,8 @@ import { draftChanges } from './admin'
 import { contentDiff } from './diff'
 import type { ReadinessGap } from './readiness'
 import { readinessGaps } from './readiness'
+import type { ItemStats } from './stats'
+import { itemStats } from './stats'
 
 export type QueueChange = 'new' | 'updated' | 'removed'
 
@@ -172,6 +174,7 @@ export interface ContentRow {
   archived: boolean
   /** What the current version still lacks; empty when archived or ready. */
   gaps: ReadinessGap[]
+  stats: ItemStats
 }
 
 export function contentRows(review: ContentCatalogReview): ContentRow[] {
@@ -196,7 +199,8 @@ export function contentRows(review: ContentCatalogReview): ContentRow[] {
         inDraft: changed.has(uid),
         isNew: !live.has(uid),
         archived: current.deleted,
-        gaps: current.deleted ? [] : readinessGaps(current)
+        gaps: current.deleted ? [] : readinessGaps(current),
+        stats: itemStats(shown.data)
       }
     ]
   })

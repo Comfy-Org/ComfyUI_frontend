@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
+import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
 import { fieldClass } from '@/components/cms/ui/field'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -13,6 +16,18 @@ const choices =
   parameter.value.type === 'boolean'
     ? ['true', 'false']
     : parameter.value.options
+// The select can't hold an empty value, so "no default" gets its own key.
+const NONE = '__none__'
+const choiceOptions = [
+  { value: NONE, label: t('cmsAdmin.editor.parameters.noDefault') },
+  ...choices.map((choice) => ({ value: choice, label: choice }))
+]
+const defaultChoice = computed({
+  get: () => parameter.value.defaultValue || NONE,
+  set: (value: string) => {
+    parameter.value.defaultValue = value === NONE ? '' : value
+  }
+})
 const inputType = ['integer', 'number'].includes(parameter.value.type)
   ? 'number'
   : 'text'
@@ -45,19 +60,12 @@ const defaultLabel = `${parameter.value.name} ${t('cmsAdmin.editor.parameters.de
       </span>
     </div>
     <div role="cell">
-      <select
+      <AdminSelect
         v-if="choices.length"
-        v-model="parameter.defaultValue"
-        :aria-label="defaultLabel"
-        :class="fieldClass"
-      >
-        <option value="">
-          {{ t('cmsAdmin.editor.parameters.noDefault') }}
-        </option>
-        <option v-for="choice in choices" :key="choice" :value="choice">
-          {{ choice }}
-        </option>
-      </select>
+        v-model="defaultChoice"
+        :options="choiceOptions"
+        :label="defaultLabel"
+      />
       <input
         v-else
         v-model="parameter.defaultValue"
@@ -73,6 +81,7 @@ const defaultLabel = `${parameter.value.name} ${t('cmsAdmin.editor.parameters.de
         :options="placements"
         :label="`${parameter.name} ${t('cmsAdmin.editor.parameters.shownAs')}`"
         size="sm"
+        fill
       />
     </div>
   </div>
