@@ -506,8 +506,35 @@ export async function updateLocales({
 }
 
 type TranslationOutcome =
-  | { state: LocaleFileState; output: LocaleObject; known: string[] }
+  | {
+      state: LocaleFileState
+      output: LocaleObject
+      known: string[]
+      unfinished: string[]
+    }
   | { state: LocaleFileState; failure: string }
+
+function withoutFailedLeaves(
+  pendingLeaves: readonly LocaleLeafEntry[],
+  translation: TranslationPlan,
+  failed: readonly TranslationItem[]
+) {
+  const leafKeyOf = (item: TranslationItem) =>
+    translation.refs.get(item.id)?.leafKey
+  const failedLeaves = new Set(failed.map(leafKeyOf))
+  return {
+    failedLeaves: new Set([...failedLeaves].filter((key) => key !== undefined)),
+    pendingLeaves: pendingLeaves.filter(
+      (leaf) => !failedLeaves.has(pathKey(leaf.path))
+    ),
+    translation: {
+      items: translation.items.filter(
+        (item) => !failedLeaves.has(leafKeyOf(item))
+      ),
+      refs: translation.refs
+    }
+  }
+}
 
 async function translateStates(
   states: readonly LocaleFileState[],
@@ -577,19 +604,22 @@ async function translateStates(
     config.localeFileConcurrency,
     async ({ state, translation }): Promise<TranslationOutcome> => {
       try {
-        const translated = translation.items.length
-          ? await translateLocaleItems(
-              state.locale,
-              translation.items,
-              translator,
-              config
-            )
-          : new Map<string, string>()
+        const { translated, failed } = await translateLocaleItems(
+          state.locale,
+          translation.items,
+          translator,
+          config
+        )
+        const finished = withoutFailedLeaves(
+          state.pendingLeaves,
+          translation,
+          failed
+        )
         const values = new Map([
           ...state.retained,
           ...assembleLeafTranslations(
-            state.pendingLeaves,
-            translation,
+            finished.pendingLeaves,
+            finished.translation,
             translated
           )
         ])
@@ -598,12 +628,17 @@ async function translateStates(
           state.existing,
           state.plan.invalidated,
           values,
-          state.omitted
+          new Set([...state.omitted, ...finished.failedLeaves])
         )
         const audit = auditState(state, output, config, 'output')
         if (audit.unexpected.length)
           throw new Error(audit.unexpected.map(formatTokenViolation).join('\n'))
-        return { state, output, known: audit.known }
+        return {
+          state,
+          output,
+          known: audit.known,
+          unfinished: failed.map(({ context }) => context)
+        }
       } catch (error) {
         return {
           state,
@@ -678,10 +713,16 @@ function writeOutcomes({
     serializeManifest({ version: 1, files, knownViolations })
   )
   const written = writeCatalogUpdates(updates, inputs)
-  if (failures.length)
-    throw new Error(
-      `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
-    )
+  const unfinished = completed.flatMap(({ state, unfinished }) =>
+    unfinished.map((context) => `${state.label}: ${context}`)
+  )
+  const problems = [
+    failures.length &&
+      `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`,
+    unfinished.length &&
+      `${unfinished.length} strings were rejected on every attempt and left out; they render in English and retry on the next run:\n${unfinished.join('\n')}`
+  ].filter(Boolean)
+  if (problems.length) throw new Error(problems.join('\n'))
   return written
 }
 

@@ -396,17 +396,6 @@ describe('failure isolation', () => {
             locale === 'zh-CN' && item.context.startsWith('a.json:')
         ),
       failures: ['zh-CN/a.json: provider unavailable']
-    },
-    {
-      label: 'every attempt corrupts a protected token',
-      translator: () =>
-        createTranslator((locale, item) =>
-          `[${locale}] ${item.source}`.replace(' {name}', '')
-        ),
-      failures: [
-        'ja/a.json: Translation into ja failed for 1 strings after 3 attempts',
-        'zh-CN/a.json: Translation into zh-CN failed for 1 strings after 3 attempts'
-      ]
     }
   ])(
     'discards one entry file when $label while another file is written',
@@ -446,6 +435,41 @@ describe('failure isolation', () => {
       })
     }
   )
+})
+
+describe('strings rejected on every attempt', () => {
+  it('writes the rest of the file, leaves them out, and retries them next run', async () => {
+    const repo = createCatalogRepo()
+    const english = { greeting: 'Hello {name}', title: 'Title' }
+    repo.writeCatalog('en/main.json', english)
+    repo.writeText(manifestFile, json({ version: 1, files: {} }))
+    const corrupting = createTranslator((locale, item) =>
+      `[${locale}] ${item.source}`.replace(' {name}', '')
+    )
+
+    const error = await repo.run(false, corrupting.translate).then(
+      () => undefined,
+      (rejection: unknown) => String(rejection)
+    )
+
+    expect(error).toContain('2 strings were rejected on every attempt')
+    expect(error).toContain('ja/main.json: main.json: greeting')
+    expect(repo.readCatalog('ja/main.json')).toEqual({ title: '[ja] Title' })
+    expect(repo.readCatalog('zh-CN/main.json')).toEqual({
+      title: '[zh-CN] Title'
+    })
+    expect(repo.readManifest()).toEqual({
+      version: 1,
+      files: { 'main.json': repo.blobId(english) }
+    })
+
+    const healthy = createTranslator()
+    expect((await repo.run(false, healthy.translate)).status).toBe(0)
+    expect(healthy.sourcesByLocale()).toEqual({
+      ja: ['Hello {name}'],
+      'zh-CN': ['Hello {name}']
+    })
+  })
 })
 
 describe('edits during generation', () => {

@@ -118,7 +118,9 @@ translations whose placeholders no longer match the English source are
 re-queued for translation, so corrupted strings heal on the next run. Results
 persist per entry file: a failure translating one file does not discard the
 completed, validated work of the others — those are written and their manifest
-entries advance, and only the failed files retry on the next run. Runs that
+entries advance, and only the failed files retry on the next run. Within a
+file, a string still rejected after every retry is left out (English fallback)
+and retried on the next run, while the rest of the file is written. Runs that
 prune keys report each affected file's exact deleted-key count. The release PR
 diff and review approve those deletions; there is no separate size-based bypass.
 Source-manifest, translation, and protected-token integrity failures remain hard

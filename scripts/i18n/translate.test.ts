@@ -53,7 +53,7 @@ describe('translateLocaleItems', () => {
         )
       )
     }
-    const translations = await translateLocaleItems(
+    const { translated: translations } = await translateLocaleItems(
       locale,
       items,
       flaky,
@@ -63,14 +63,21 @@ describe('translateLocaleItems', () => {
     expect(calls).toBe(2)
   })
 
-  it('fails after exhausting rounds when tokens stay corrupted', async () => {
+  it('reports items still corrupted after the last round as failed', async () => {
     const corrupting: TranslateBatch = (_batchLocale, batch) =>
       Promise.resolve(
         Object.fromEntries(batch.map((item) => [item.id, 'Bonjour name']))
       )
-    await expect(
-      translateLocaleItems(locale, items, corrupting, translationConfig)
-    ).rejects.toThrow(/failed for 1 strings/)
+    const { translated, failed } = await translateLocaleItems(
+      locale,
+      items,
+      corrupting,
+      translationConfig
+    )
+    expect(translated.size).toBe(0)
+    expect(failed.map(({ context }) => context)).toEqual([
+      'main.json: greeting'
+    ])
   })
 
   it('retries empty translations', async () => {
@@ -83,7 +90,7 @@ describe('translateLocaleItems', () => {
         )
       )
     }
-    const translations = await translateLocaleItems(
+    const { translated: translations } = await translateLocaleItems(
       locale,
       items,
       blankFirst,
@@ -111,10 +118,15 @@ describe('translateLocaleItems', () => {
       inFlight--
       return Object.fromEntries(batch.map((item) => [item.id, `t${item.id}`]))
     }
-    const translations = await translateLocaleItems(locale, sixItems, gated, {
-      ...translationConfig,
-      requestConcurrency: 2
-    })
+    const { translated: translations } = await translateLocaleItems(
+      locale,
+      sixItems,
+      gated,
+      {
+        ...translationConfig,
+        requestConcurrency: 2
+      }
+    )
     expect(translations.size).toBe(6)
     expect(maxInFlight).toBe(2)
   })
@@ -134,7 +146,7 @@ describe('translateLocaleItems', () => {
     let call = 0
     const crossTalking: TranslateBatch = () =>
       Promise.resolve(responses[call++] ?? {})
-    const translations = await translateLocaleItems(
+    const { translated: translations } = await translateLocaleItems(
       locale,
       threeItems,
       crossTalking,
@@ -193,7 +205,7 @@ describe('translateLocaleItems', () => {
         )
       }
 
-      const translations = await translateLocaleItems(
+      const { translated: translations } = await translateLocaleItems(
         locale,
         [docsLink],
         correctsOnRetry,

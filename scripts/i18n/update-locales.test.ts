@@ -55,15 +55,12 @@ async function updateLocaleFile(
     leafTokensDiffer
   )
   const plan = buildTranslationItems('main.json', pendingLeaves)
-  const translations =
-    plan.items.length > 0
-      ? await translateLocaleItems(
-          locale,
-          plan.items,
-          translateBatch,
-          translationConfig
-        )
-      : new Map<string, string>()
+  const { translated: translations } = await translateLocaleItems(
+    locale,
+    plan.items,
+    translateBatch,
+    translationConfig
+  )
   const output = rebuildLocale(
     source,
     existing,

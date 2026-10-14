@@ -53,16 +53,14 @@ as the application's `src/locales/` at the repository root:
 API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
 TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
 composer because the site renders locales concurrently. Missing messages fall
-back to English. The catalog test compiles every message and checks that each
-eligible English message has Chinese copy.
+back to English. The catalog test compiles every message in every locale.
 
 `main.json` is the catalog for each locale. Keep feature copy grouped under a
 nested feature key.
 
-Add new English copy to the English catalog; translated copy lives in the
-matching file under each locale. Every eligible English message requires a
-Chinese entry. Excluded namespaces use English fallback when no translation
-exists. The catalog tests enforce this distinction.
+Write new and changed copy in the English catalog only. Do not add or edit
+other locales by hand: the generation workflow below translates it after it
+merges, and until then those strings render in English.
 Catalog files use two-space JSON indentation and a final newline. Legal and
 content pages render their sections in the order they appear in the catalog, so
 keep `en/main.json` in document order and never sort its keys.
@@ -100,6 +98,15 @@ have no `/ja/` route yet. Generation never enables routes or indexing.
 
 ### Generating translations
 
+The `i18n: Update Website` workflow runs when English catalogs or translation
+config change on main, and daily. It opens or updates one
+`fix(website): update locale catalogs` PR from the `i18n/website-locales`
+branch. Each run regenerates that branch from main, so merge the PR before
+editing its translations by hand. A string the model keeps getting wrong is
+left out, so it renders in English, and is retried on the next run; the rest
+of the file is still written. Running the workflow by hand on another branch
+commits the translations to that branch instead.
+
 Inside this package, run `pnpm locale:check` for an offline preflight, or
 `pnpm locale` with `OPENAI_API_KEY` to translate eligible missing or changed
 copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
@@ -114,8 +121,9 @@ of the English last generated. Its `knownViolations` field lists accepted
 protected-token violations as JSON-encoded key paths, such as
 `["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
 blob is missing, `locale:check` warns and skips change detection and token
-validation for that file, and `pnpm locale` fails. When translation of an entry file fails,
-its English, locale catalogs and manifest entry keep their previous contents.
+validation for that file, and `pnpm locale` fails. When a translation request
+for an entry file fails, its English, locale catalogs and manifest entry keep
+their previous contents.
 
 Commit the generated English catalog, locale catalogs and manifest together. If
 you edit any of them after generation, run `pnpm locale` again before
