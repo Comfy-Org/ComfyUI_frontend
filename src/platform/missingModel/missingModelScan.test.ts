@@ -20,14 +20,9 @@ import {
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
-import { releaseModelOptions as bootReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
+import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -1745,7 +1740,6 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 function makeAssetCandidate(
   name: string,
@@ -2036,38 +2030,12 @@ describe('on a developer-platform deployment', () => {
 })
 
 describe("while the page's deployment listing is slow", () => {
-  const onDeployment: WorkspaceDeploymentList = {
-    builds_visible: true,
-    picked_deployment_id: 'dep-2',
-    pick_source: 'browser',
-    items: [
-      {
-        deployment_id: 'dep-2',
-        release_id: 'r-2',
-        status: 'ready',
-        created_at: '2026-10-01T00:00:00Z'
-      }
-    ]
-  }
-
   beforeEach(() => {
-    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
-    useNodeDefStore().nodeDefsByName = {
-      CheckpointLoaderSimple: fromPartial<ComfyNodeDefImpl>({
-        inputs: {
-          ckpt_name: {
-            type: 'COMBO',
-            name: 'ckpt_name',
-            options: ['release_model.safetensors']
-          }
-        }
-      })
-    }
     mockUpdateModelsForNodeType.mockResolvedValue(undefined)
     mockGetAssets.mockReturnValue([])
   })
 
-  function scanReleaseModel() {
+  function scanReleaseModel(releaseModelOptions: ReleaseModelOptions) {
     const graph = makeGraph([
       makeNode(1, 'CheckpointLoaderSimple', [
         makeAssetWidget('ckpt_name', 'release_model.safetensors')
@@ -2077,33 +2045,28 @@ describe("while the page's deployment listing is slow", () => {
       graph,
       () => true,
       undefined,
-      bootReleaseModelOptions
+      releaseModelOptions
     )
   }
 
-  it('takes the model the Release lists as present when the listing answers after 6 seconds', async () => {
-    let answer = (_listing: WorkspaceDeploymentList) => {}
-    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
-      new Promise((resolve) => {
-        answer = resolve
-      })
+  it('takes the model the Release lists as present when the options answer after 6 seconds', async () => {
+    const candidates = scanReleaseModel(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve(['release_model.safetensors']), 6000)
+        )
     )
-    const candidates = scanReleaseModel()
 
     const verifying = verifyAssetSupportedCandidates(candidates)
     await vi.advanceTimersByTimeAsync(6000)
-    answer(onDeployment)
     await verifying
 
     expect(candidates[0].isMissing).toBe(false)
     expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
   })
 
-  it('checks the model against the library when the listing request fails', async () => {
-    vi.mocked(workspaceApi.listDeployments).mockRejectedValue(
-      new Error('timeout of 30000ms exceeded')
-    )
-    const candidates = scanReleaseModel()
+  it('checks the model against the library when the Release options are unknown', async () => {
+    const candidates = scanReleaseModel(async () => undefined)
 
     await verifyAssetSupportedCandidates(candidates)
 
@@ -2113,25 +2076,15 @@ describe("while the page's deployment listing is slow", () => {
     )
   })
 
-  it('checks the model against the library when the listing cannot be read', async () => {
-    vi.mocked(workspaceApi.listDeployments).mockResolvedValue(
-      fromAny<WorkspaceDeploymentList, unknown>({ builds_visible: true })
+  it('settles at once when the scan is aborted before the options answer', async () => {
+    const candidates = scanReleaseModel(
+      (_nodeType, _widgetName, signal) =>
+        new Promise((resolve) =>
+          signal?.addEventListener('abort', () => resolve(undefined), {
+            once: true
+          })
+        )
     )
-    const candidates = scanReleaseModel()
-
-    await verifyAssetSupportedCandidates(candidates)
-
-    expect(candidates[0].isMissing).toBe(true)
-    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
-      'CheckpointLoaderSimple'
-    )
-  })
-
-  it('settles at once when the scan is aborted before the listing answers', async () => {
-    vi.mocked(workspaceApi.listDeployments).mockReturnValue(
-      new Promise(() => {})
-    )
-    const candidates = scanReleaseModel()
     const controller = new AbortController()
 
     const verifying = verifyAssetSupportedCandidates(

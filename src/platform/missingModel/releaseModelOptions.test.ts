@@ -1,7 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { releaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
+import {
+  cloudReleaseModelOptions,
+  releaseModelOptions
+} from '@/platform/missingModel/releaseModelOptions'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_TIMEOUT_MS
@@ -12,6 +15,19 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get DISTRIBUTION() {
+    return distribution.isCloud ? 'cloud' : 'localhost'
+  },
+  isDesktop: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
+  isNightly: false
+}))
 
 const deployment = {
   deployment_id: 'dep-2',
@@ -109,4 +125,64 @@ describe('releaseModelOptions', () => {
 
     await expect(options).resolves.toEqual(['homestead_private_v1.safetensors'])
   })
+  it.for([
+    {
+      listing: 'fails',
+      answer: () => Promise.reject(new Error('timeout of 30000ms exceeded'))
+    },
+    {
+      listing: 'cannot be read',
+      answer: () =>
+        Promise.resolve(
+          fromAny<WorkspaceDeploymentList, unknown>({ builds_visible: true })
+        )
+    }
+  ])(
+    'checks the library as on Comfy Cloud when the listing $listing',
+    async ({ answer }) => {
+      loadCatalog()
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      vi.spyOn(workspaceApi, 'listDeployments').mockImplementation(answer)
+
+      await expect(
+        releaseModelOptions('LoraLoader', 'lora_name')
+      ).resolves.toBeUndefined()
+    }
+  )
+
+  it('gives up at once when the check is aborted before the listing answers', async () => {
+    loadCatalog()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    vi.spyOn(workspaceApi, 'listDeployments').mockReturnValue(
+      new Promise(() => {})
+    )
+    const controller = new AbortController()
+
+    const options = releaseModelOptions(
+      'LoraLoader',
+      'lora_name',
+      controller.signal
+    )
+    controller.abort()
+
+    await expect(options).resolves.toBeUndefined()
+  })
+})
+
+describe('cloudReleaseModelOptions', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it.for([
+    { runsOn: 'Comfy Cloud', isCloud: true, gives: releaseModelOptions },
+    { runsOn: 'Local', isCloud: false, gives: undefined }
+  ])(
+    'gives releaseModelOptions only on Comfy Cloud: on $runsOn',
+    ({ isCloud, gives }) => {
+      distribution.isCloud = isCloud
+
+      expect(cloudReleaseModelOptions()).toBe(gives)
+    }
+  )
 })

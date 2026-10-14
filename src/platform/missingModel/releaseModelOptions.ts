@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -27,6 +28,14 @@ export const releaseModelOptions: ReleaseModelOptions = async (
   if (signal?.aborted || !deploymentPick.bootDeployment) return undefined
   const input = useNodeDefStore().getNodeDefByName(nodeType)?.inputs[widgetName]
   return input && isComboInputSpec(input) ? input.options : undefined
+}
+
+/**
+ * `releaseModelOptions` where the page can boot on a deployment (Comfy
+ * Cloud), undefined elsewhere so a scan never waits on the listing.
+ */
+export function cloudReleaseModelOptions(): ReleaseModelOptions | undefined {
+  return isCloud ? releaseModelOptions : undefined
 }
 
 /**
