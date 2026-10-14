@@ -69,6 +69,89 @@ function upstream(status = 200, body: unknown = { uid }) {
 }
 
 describe('staff content proxy', () => {
+  it('proxies bounded author search only for verified editing sessions', async () => {
+    const body = {
+      items: [
+        {
+          id: 'fPc7irbKt2VLbuIkRrWuC5TH5lX2',
+          label: 'Public fixture',
+          username: 'public-fixture'
+        }
+      ]
+    }
+    const fetcher = upstream(200, body)
+    const response = await GET(
+      context('profiles', { method: 'GET', query: '?q=Public' })
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(body)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/profiles?q=Public'
+    )
+    fetcher.mockClear()
+    expect(
+      (
+        await GET(
+          context('profiles', {
+            method: 'GET',
+            query: '?q=Public',
+            anonymous: true
+          })
+        )
+      ).status
+    ).toBe(404)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it.for(['?q=a', '?q=ab&q=cd', '?q=ab&email=x', '?q=someone%40example.org'])(
+    'rejects unsupported profile query %s before forwarding',
+    async (query) => {
+      const fetcher = upstream()
+      expect(
+        (await GET(context('profiles', { method: 'GET', query }))).status
+      ).toBe(400)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it('does not expose undeclared private fields from a malformed directory response', async () => {
+    upstream(200, {
+      items: [
+        {
+          id: uid,
+          label: 'Name',
+          username: 'public-fixture',
+          email: 'private@example.org'
+        }
+      ]
+    })
+    expect(
+      (await GET(context('profiles', { method: 'GET', query: '?q=Public' })))
+        .status
+    ).toBe(503)
+  })
+  it('accepts the full bounded result set with long valid avatar URLs', async () => {
+    const body = {
+      items: Array.from({ length: 20 }, (_, index) => ({
+        id: `public-account-${index}`,
+        label: `Public fixture ${index}`,
+        username: `public-fixture-${index}`,
+        avatar_url: `https://example.org/${'a'.repeat(3900)}`
+      }))
+    }
+    upstream(200, body)
+    const response = await GET(
+      context('profiles', { method: 'GET', query: '?q=Public' })
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(body)
+  })
+  it('fails closed when the directory response exceeds its transport budget', async () => {
+    upstream(200, { items: [], unexpected: 'x'.repeat(1 << 20) })
+    expect(
+      (await GET(context('profiles', { method: 'GET', query: '?q=Public' })))
+        .status
+    ).toBe(503)
+  })
   it('forwards literal JSON keys without record-parser data loss or prototype mutation', async () => {
     const fetcher = upstream()
     const payload =
@@ -79,7 +162,7 @@ describe('staff content proxy', () => {
     expect(fetcher.mock.calls[0][1].body).toBe(payload)
     expect(Object.hasOwn(Object.prototype, 'literal')).toBe(false)
   })
-  it.each([{ anonymous: true }, { edit: false }])(
+  it.for([{ anonymous: true }, { edit: false }])(
     'hides authoring from unauthorized accounts',
     async (options) => {
       const fetcher = upstream()
@@ -164,7 +247,7 @@ describe('staff content proxy', () => {
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual(details)
   })
-  it.each([
+  it.for([
     '?uid=not-a-uid',
     `?uid=${uid}&uid=${uid}`,
     `?uid=${uid}&path=/etc/passwd`

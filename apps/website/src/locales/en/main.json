@@ -1,4 +1,14 @@
 {
+  "cccReferences": {
+    "authorSearch": "Author",
+    "searchPlaceholder": "Search name, username or account ID",
+    "results": "Matching profiles",
+    "searching": "Searching profiles…",
+    "unavailable": "Profile lookup is unavailable. The selected author has not changed.",
+    "noMatches": "No matching profile in this directory.",
+    "manual": "Enter an account ID directly",
+    "currentAccount": "Current account: {id}"
+  },
   "cccChecked": {
     "instructions": "Check the changes you want to publish. Unchecked changes stay in Draft; approval fields are not used.",
     "remaining": "Staying in Draft",

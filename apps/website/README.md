@@ -31,6 +31,13 @@ filters and private record views accept existing Firebase-style staff IDs and
 UUID-shaped SSO IDs without normalization. Resource/edit/media UID validation
 remains UUID-based. Empty/control-bearing identities fail closed, and ownership
 still compares exact canonical IDs supplied by the verified backend.
+The staff Author picker searches existing public profile names/usernames or an
+exact account ID and displays names/avatars while saving only the canonical
+account ID. Search text alone never changes attribution. Lookup failures retain
+the existing ID, and direct account-ID entry remains available. Its authenticated
+same-origin proxy permits only bounded profile queries and rejects private
+fields/unsafe avatar URLs in responses. No email search or account creation is
+provided; the fixed Owner is not an editable reference.
 The plain Apps/Workflows link-list fallback is now noscript-only; the hydrated
 catalog does not paint a second unstyled list. The collapsed Models directory
 is retained.

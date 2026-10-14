@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro'
 import { z } from 'astro/zod'
 
 import { validAuthoringMutation } from '@/lib/cms/authoring-session'
+import { profileChoices, validProfileQuery } from '@/lib/cms/profile-client'
 import { jsonObject } from '@/lib/cms/editor-document'
 import {
   boundedBody,
@@ -17,6 +18,33 @@ export const GET: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
   if (!session?.can_edit) return editorFailure(404)
   const operation = context.params.operation
+  if (operation === 'profiles') {
+    const query = context.url.searchParams
+    const q = query.get('q') ?? ''
+    if (
+      query.size !== 1 ||
+      query.getAll('q').length !== 1 ||
+      !validProfileQuery(q)
+    )
+      return editorFailure(400)
+    const response = await catalogAuthoring(
+      session,
+      `/api/v1/catalog/profiles?${new URLSearchParams({ q })}`
+    )
+    if (!response.ok) return editorFailure(response.status)
+    const bytes = await boundedBody(response, 1 << 20)
+    if (!bytes) return editorFailure(503)
+    try {
+      const parsed = profileChoices.safeParse(
+        JSON.parse(new TextDecoder().decode(bytes))
+      )
+      return parsed.success
+        ? privateJSON(Response.json(parsed.data))
+        : editorFailure(503)
+    } catch {
+      return editorFailure(503)
+    }
+  }
   if (operation !== 'state' && operation !== 'item') return editorFailure(404)
   const params = context.url.searchParams
   if (
@@ -74,7 +102,8 @@ export const POST: APIRoute = async (context) => {
     }
     const parsed = jsonObject.safeParse(raw)
     if (!parsed.success) return editorFailure(400)
-    const { uid: id, ...body } = parsed.data
+    const { uid: rawUID, ...body } = parsed.data
+    const id = Object.hasOwn(parsed.data, 'uid') ? rawUID : undefined
     if (id !== undefined && !uid.safeParse(id).success)
       return editorFailure(400)
     const response = await catalogAuthoring(

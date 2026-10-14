@@ -5,6 +5,7 @@ import { z } from 'astro/zod'
 import { zCreateCccItemResponse } from '@comfyorg/ingest-types/zod'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import EditorTags from './EditorTags.vue'
+import AuthorPicker from './AuthorPicker.vue'
 import InputsEditor from './InputsEditor.vue'
 import ExamplesEditor from './ExamplesEditor.vue'
 import JsonField from './JsonField.vue'
@@ -509,23 +510,21 @@ async function save() {
               :class="inputClass"
               @input="patch(field, $event)"
           /></label>
-          <label
-            v-for="field in ['author_uid', 'documentation_url']"
-            :key="field"
-            class="grid gap-1 text-sm text-admin-muted"
-          >
-            {{
-              t(
-                field === 'author_uid'
-                  ? 'cccMetadata.author'
-                  : 'cccMetadata.documentation'
-              )
-            }}
+          <AuthorPicker
+            :model-value="value('author_uid')"
+            :locale
+            :disabled="
+              state === 'saving' || uploads > 0 || invalidFields.has('document')
+            "
+            @update:model-value="document = { ...document, author_uid: $event }"
+          />
+          <label class="grid gap-1 text-sm text-admin-muted">
+            {{ t('cccMetadata.documentation') }}
             <input
-              :value="value(field)"
+              :value="value('documentation_url')"
               :class="inputClass"
-              :maxlength="field === 'documentation_url' ? 2000 : undefined"
-              @input="patch(field, $event)"
+              maxlength="2000"
+              @input="patch('documentation_url', $event)"
             />
           </label>
           <p class="text-xs text-admin-muted">

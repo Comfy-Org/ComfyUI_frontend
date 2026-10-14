@@ -1,4 +1,14 @@
 {
+  "cccReferences": {
+    "authorSearch": "作者",
+    "searchPlaceholder": "搜索姓名、用户名或账户 ID",
+    "results": "匹配的个人资料",
+    "searching": "正在搜索个人资料…",
+    "unavailable": "暂时无法查询个人资料。已选作者未更改。",
+    "noMatches": "此目录中没有匹配的个人资料。",
+    "manual": "直接输入账户 ID",
+    "currentAccount": "当前账户：{id}"
+  },
   "cccChecked": {
     "instructions": "勾选要发布的更改。未勾选的更改保留在草稿中；暂不使用审批字段。",
     "remaining": "保留在草稿中",

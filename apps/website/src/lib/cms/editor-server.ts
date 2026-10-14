@@ -24,7 +24,7 @@ export async function catalogAuthoring(
   if (!origin || process.env.VERCEL_ENV === 'production')
     return editorFailure(503)
   if (
-    !/^\/api\/v1\/catalog\/(?:state|authoring-context|draft\/items(?:\/[0-9a-f-]{36})?|draft\/media(?:\/[0-9a-f-]{36}\/file)?|revisions\/[1-9]\d*\/items\/[0-9a-f-]{36})$/.test(
+    !/^\/api\/v1\/catalog\/(?:profiles\?q=[^&?#]+|state|authoring-context|draft\/items(?:\/[0-9a-f-]{36})?|draft\/media(?:\/[0-9a-f-]{36}\/file)?|revisions\/[1-9]\d*\/items\/[0-9a-f-]{36})$/.test(
       path
     )
   )

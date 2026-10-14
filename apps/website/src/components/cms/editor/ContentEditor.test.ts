@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { blankDocument, editorSnapshot } from '@/lib/cms/editor-document'
 import { editorRequest } from '@/lib/cms/editor-client'
 import ContentEditor from './ContentEditor.vue'
+import userEvent from '@testing-library/user-event'
 
 vi.mock(import('@/lib/cms/editor-client'))
 const uid = '00000000-0000-4000-8000-000000000001'
@@ -203,6 +204,9 @@ describe('staff page editor', () => {
 
   it('saves new structured fields and editable credited author without an owner override', async () => {
     setup()
+    await userEvent
+      .setup()
+      .click(screen.getByText('Enter an account ID directly'))
     vi.mocked(editorRequest).mockResolvedValue({
       ok: false,
       status: 409,
