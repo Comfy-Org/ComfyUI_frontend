@@ -93,6 +93,7 @@
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
           :inviting="!agentPanelStore.hasEverOpened"
+          :comfy-agent="comfyAgentNotReady"
           @click="onAgentEntryClick"
         />
       </template>
@@ -161,8 +162,13 @@ const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
+const comfyAgentNotReady = computed(() =>
+  agentPanelStore.enabled ? undefined : agentPanelStore.comfyAgent
+)
 const showAgentEntry = computed(
-  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+  () =>
+    (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
+    !(agentPanelStore.isOpen && isChecking.value)
 )
 
 async function onAgentEntryClick(): Promise<void> {

@@ -33,6 +33,24 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(store.flagsSettled).toBe(true)
   })
 
+  it("opens the event socket at ComfyUI's agent url, under ComfyUI's base", () => {
+    const store = useAgentPanelStore()
+    expect(store.agentEventsUrl).toBe(api.apiURL('/agent/events'))
+
+    api.api_base = '/comfy'
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', url: '/api/agent', reason: null }
+    }
+    expect(store.agentEventsUrl).toBe('/comfy/api/agent/events')
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', url: 'http://127.0.0.1:9000/a', reason: null }
+    }
+    expect(store.agentEventsUrl).toBe('http://127.0.0.1:9000/a/events')
+    api.api_base = ''
+    api.serverFeatureFlags.value = {}
+  })
+
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     const store = useConsentedAgentPanelStore()

@@ -7,6 +7,8 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
+import type { AgentStatusWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -75,6 +77,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  /** The local agent ComfyUI runs with `--enable-agent`; absent otherwise. */
+  const comfyAgent = computed(() =>
+    isCloud
+      ? undefined
+      : api.getServerFeature<AgentStatusWsMessage | undefined>('agent')
+  )
+  /** The agent's event socket: at the flag's url (relative to ComfyUI's base) when set. */
+  const agentEventsUrl = computed(() => {
+    const url = comfyAgent.value?.url
+    if (!url) return api.apiURL('/agent/events')
+    return `${URL.canParse(url) ? '' : api.api_base}${url}/events`
+  })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -382,6 +396,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     view,
     interruptHistorySelection,
     flagsSettled,
+    comfyAgent,
+    agentEventsUrl,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
     reportedFreeUseImpression,

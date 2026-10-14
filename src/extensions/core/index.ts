@@ -44,8 +44,9 @@ if (__DISTRIBUTION__ === 'cloud') {
   registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-} else if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
-  // The local agent harness mounts the panel in any distribution.
+} else {
+  // Enabled by ComfyUI's `agent` feature, or by the local agent harness
+  // (VITE_AGENT_STANDALONE).
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
 }

@@ -149,17 +149,8 @@ describe('useAgentDockMount', () => {
     )
   })
 
-  it('returns an inert mount on non-cloud distributions', () => {
+  it('docks only once the gate enables and the panel opens, off cloud too', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-
-    const { docked, DockedAgentPanel } = useAgentDockMount()
-
-    expect(docked.value).toBe(false)
-    expect(DockedAgentPanel).toBeNull()
-  })
-
-  it('docks only once the gate enables and the panel opens on cloud', async () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()

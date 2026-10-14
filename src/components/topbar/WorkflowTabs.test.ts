@@ -243,6 +243,33 @@ describe('WorkflowTabs agent entry button', () => {
 
   // The separator divides the button off from the avatar, so it must leave
   // with it rather than trailing the icon group.
+  it("shows ComfyUI's agent starting, then failed with its reason, without opening", async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', url: null, reason: null }
+    }
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.entryStarting })
+    ).toBeDisabled()
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'failed', url: null, reason: 'not_found' }
+    }
+    await nextTick()
+    const failed = screen.getByRole('button', {
+      name: enMessages.agent.entryFailed
+    })
+    expect(failed).toBeDisabled()
+    expect(failed).toHaveAttribute(
+      'title',
+      'ComfyUI could not start the agent: not_found'
+    )
+    api.serverFeatureFlags.value = {}
+  })
+
   it('takes the separator away with the button when the flag is off', () => {
     useAgentPanelStore().enabled = false
     renderComponent()
