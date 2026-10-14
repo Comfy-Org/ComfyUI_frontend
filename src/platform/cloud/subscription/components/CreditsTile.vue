@@ -3,7 +3,7 @@
     :class="
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
-        inactivePlan && 'text-muted'
+        inactivePlan && 'text-muted-foreground'
       )
     "
   >
@@ -19,7 +19,7 @@
     </Button>
 
     <div class="flex flex-col gap-1">
-      <div class="text-sm text-muted">
+      <div class="text-sm text-muted-foreground">
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
@@ -33,7 +33,7 @@
           "
         />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
-        <span class="text-sm text-muted @max-[300px]:hidden">{{
+        <span class="text-sm text-muted-foreground @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
       </div>
@@ -49,7 +49,9 @@
         />
         <div class="flex flex-col gap-1">
           <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
-          <span class="text-muted">{{ emptyStateNotice.description }}</span>
+          <span class="text-muted-foreground">{{
+            emptyStateNotice.description
+          }}</span>
         </div>
       </div>
 
@@ -59,7 +61,7 @@
       >
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-primary">{{ allowanceLabel }}</span>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ refillsLabel }}
           </span>
         </div>
@@ -81,7 +83,7 @@
             v-if="isLoadingBalance"
             class="h-4 w-20 @max-[300px]:hidden"
           />
-          <span v-else class="text-muted @max-[300px]:hidden">
+          <span v-else class="text-muted-foreground @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
           <Skeleton v-if="isLoadingBalance" class="h-4 w-36" />
@@ -123,7 +125,7 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -145,7 +147,7 @@
         </div>
         <span
           v-if="!isDurationUnknown"
-          class="text-sm text-muted @max-[300px]:hidden"
+          class="text-sm text-muted-foreground @max-[300px]:hidden"
         >
           {{ usedAfterAllowanceLabel }}
         </span>
@@ -163,7 +165,7 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>

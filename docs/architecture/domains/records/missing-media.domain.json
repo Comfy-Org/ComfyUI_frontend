@@ -1,0 +1,86 @@
+{
+  "id": "missing-media",
+  "capability": "Missing media detection",
+  "description": "Scans loaded workflows (including promoted subgraph widgets) for image, video, and audio inputs whose files are not available, verifies candidates against assets, stores per-workflow results, and renders the missing-media error card.",
+  "modules": [
+    {
+      "path": "src/platform/missingMedia/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaGrouping.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaScan.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaScan.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaScan.promotedWidget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaPipeline.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaPipeline.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/missingMediaStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/__fixtures__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingMedia/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/missingMediaPreviewRegression.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Missing media scan finds and verifies unavailable media inputs, including promoted widgets",
+      "checks": [
+        "src/platform/missingMedia/missingMediaScan.test.ts",
+        "src/platform/missingMedia/missingMediaScan.promotedWidget.test.ts",
+        "src/platform/missingMedia/missingMediaPipeline.test.ts",
+        "src/platform/missingMedia/missingMediaStore.test.ts"
+      ]
+    },
+    {
+      "name": "Missing media card lists references and the error surfaces in the browser",
+      "checks": [
+        "src/platform/missingMedia/components/MissingMediaCard.test.ts",
+        "browser_tests/tests/missingMediaFilePath.spec.ts"
+      ]
+    },
+    {
+      "name": "Flagging missing media on workflow load leaves node previews intact",
+      "checks": ["src/stores/missingMediaPreviewRegression.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The missing-media scan and store keep reading litegraph, node definitions, assets, canvas, and workflow stores; that coupling remains visible and classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

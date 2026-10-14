@@ -1,0 +1,305 @@
+{
+  "id": "subgraphs",
+  "capability": "Subgraphs",
+  "description": "Subgraph definitions, subgraph nodes, IO nodes and slots, conversion to and from subgraphs, definition deduplication, execution flattening DTOs, and lifting inner node errors to the subgraph boundary. The Subgraph class itself is defined in LGraph.ts (graph-model) and re-exported here; widget promotion lives in subgraph-promotion.",
+  "modules": [
+    {
+      "path": "src/core/graph/subgraph/resolveSubgraphInputLink.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolveSubgraphInputLink.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolveSubgraphInputTarget.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolveSubgraphInputTarget.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/constants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/infrastructure/SubgraphEventMap.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/infrastructure/SubgraphInputEventMap.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/EmptySubgraphInput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/EmptySubgraphOutput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/Subgraph.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/Subgraph.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphDuplicateDeleteOrder.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphEdgeCases.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphIONodeBase.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphInput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphMemory.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.titleButton.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphOutput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphOutputNode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotBase.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotVisualFeedback.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/subgraphUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/subgraphUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/unpackSubgraph.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/svgBitmapCache.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphComplexPromotion1.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphFixtures.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumb.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumb.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/breadcrumb/SubgraphBreadcrumbItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphNavigationStore.viewport.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/blueprintUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/subgraphIdSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/subgraphIdSchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/groupNodeConstants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/groupNode.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/groupNode.test.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Converting, unpacking, and serialising subgraphs preserves links and definitions",
+      "checks": [
+        "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
+        "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
+        "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
+        "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
+        "browser_tests/tests/subgraph/subgraphSerialization.spec.ts"
+      ]
+    },
+    {
+      "name": "Subgraph IO slots connect, rename, and emit events consistently",
+      "checks": [
+        "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
+        "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
+        "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
+        "src/core/graph/subgraph/resolveSubgraphInputTarget.test.ts"
+      ]
+    },
+    {
+      "name": "Execution flattening and error lifting resolve nodes inside subgraphs",
+      "checks": [
+        "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
+        "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts"
+      ]
+    },
+    {
+      "name": "Subgraph breadcrumb shows the navigation path and navigates between subgraph levels",
+      "checks": ["src/components/breadcrumb/SubgraphBreadcrumb.test.ts"]
+    },
+    {
+      "name": "Subgraph navigation keeps the navigation stack, route hash, and per-graph viewport in sync",
+      "checks": [
+        "src/stores/subgraphNavigationStore.test.ts",
+        "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+        "src/stores/subgraphNavigationStore.viewport.test.ts",
+        "browser_tests/tests/subgraph/subgraphNavigation.spec.ts",
+        "browser_tests/tests/subgraph/subgraphViewportRestore.spec.ts"
+      ]
+    },
+    {
+      "name": "Subgraph ids validate and legacy group nodes migrate with separators and links intact",
+      "checks": [
+        "src/schemas/subgraphIdSchema.test.ts",
+        "src/extensions/core/groupNode.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/GRAPH-DOCUMENT-0026-frontend-document-model.md",
+    "docs/adr/CRDT-INPUTS-0030-preserve-named-input-targets.md",
+    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+  ],
+  "compatibilityPromises": [
+    "Serialised subgraph definitions and subgraph node instances stay compatible with saved workflows.",
+    "SubgraphNode, SubgraphInput, SubgraphOutput, and their events keep their extension-facing behaviour."
+  ],
+  "deepImports": "inventory"
+}

@@ -31,7 +31,7 @@
           <p class="m-0 w-full truncate text-base-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ modelType }}
           </p>
         </div>
@@ -62,7 +62,7 @@
           <p class="m-0 w-full truncate text-base-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ modelType }}
           </p>
         </div>
@@ -93,7 +93,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchAlreadyImported"
           tag="p"
-          class="m-0 text-sm text-muted"
+          class="m-0 text-sm text-muted-foreground"
         >
           <template #actual>
             <span>{{ actualModelTypeLabel }}</span>
@@ -102,7 +102,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchRequired"
           tag="p"
-          class="m-0 text-sm text-muted"
+          class="m-0 text-sm text-muted-foreground"
         >
           <template #required>
             <span>{{ typeMismatch.requiredModelTypeLabel }}</span>
@@ -122,7 +122,7 @@
         <p class="m-0 text-sm font-bold">
           {{ $t('assetBrowser.uploadFailed') }}
         </p>
-        <p v-if="error" class="mb-0 text-sm text-muted">
+        <p v-if="error" class="mb-0 text-sm text-muted-foreground">
           {{ error }}
         </p>
       </div>

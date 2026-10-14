@@ -1,0 +1,44 @@
+{
+  "id": "media-loading",
+  "capability": "Shared media loading",
+  "description": "Shared technical module for temporary media upload, retryable media URLs, and fetching text preview content. Playback, editing, asset records, and feature-specific upload controls remain separate.",
+  "modules": [
+    {
+      "path": "src/services/uploadTempFile.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/media/useRetryableMediaSrc.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/media/useRetryableMediaSrc.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useTextFileContent.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useTextFileContent.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Shared media loading preserves its existing behavior",
+      "checks": [
+        "src/composables/media/useRetryableMediaSrc.test.ts",
+        "src/composables/useTextFileContent.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}
