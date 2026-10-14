@@ -116,6 +116,7 @@ describe('FreeUseNotice', () => {
     vi.mocked(useCurrentUser).mockReturnValue({
       ...useCurrentUser(),
       isAuthInitialized: computed(() => authInitialized.value),
+      isLoggedIn: computed(() => true),
       resolvedUserInfo: computed(() =>
         userId.value === null ? null : { id: userId.value }
       )
@@ -131,8 +132,13 @@ describe('FreeUseNotice', () => {
       'no default planted under the signed-out key on the way to the real one'
     ).toBeNull()
 
-    userId.value = 'dismissed-user'
     authInitialized.value = true
+    await nextTick()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(emitted('notice')).toBeUndefined()
+
+    userId.value = 'dismissed-user'
     await nextTick()
 
     expect(screen.queryByRole('note')).toBeNull()
