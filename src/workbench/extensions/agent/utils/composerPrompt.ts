@@ -9,6 +9,8 @@ import {
 } from '../types/composerPrompt'
 import type { PromptSnapshot } from '../types/workflowReference'
 import { assetReferenceText, nodeReferenceText } from './agentMessageText'
+import { promptReferenceParts } from './promptReferenceParts'
+import { serializeSkillReference } from './skillReferenceText'
 
 export function insertComposerReference(
   prompt: ComposerPrompt,
@@ -52,12 +54,25 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
   let text = ''
   let offset = 0
   const workflowReferences: PromptSnapshot['workflowReferences'] = []
+  let skillReference: PromptSnapshot['skillReference']
   for (const reference of prompt.references) {
     text += prompt.text.slice(offset, reference.textOffset)
     offset = reference.textOffset
     if (reference.kind === 'workflow') {
       const { kind: _kind, ...workflow } = reference
       workflowReferences.push({ ...workflow, textOffset: text.length })
+    } else if (reference.kind === 'skill') {
+      const {
+        kind: _kind,
+        scope: _scope,
+        resolvePastedName: _resolvePastedName,
+        ...skill
+      } = reference
+      skillReference = {
+        ...skill,
+        textOffset: text.length,
+        workflowIndex: workflowReferences.length
+      }
     } else {
       const name = composerReferenceName(reference)
       text +=
@@ -66,7 +81,11 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
           : assetReferenceText(name)
     }
   }
-  return { text: text + prompt.text.slice(offset), workflowReferences }
+  return {
+    text: text + prompt.text.slice(offset),
+    workflowReferences,
+    ...(skillReference ? { skillReference } : {})
+  }
 }
 
 export function sameComposerReferenceOrder(
@@ -81,4 +100,23 @@ export function sameComposerReferenceOrder(
         composerReferenceKey(b.references[index])
     )
   )
+}
+
+export function composerPromptForSubmission(
+  prompt: ComposerPrompt
+): Pick<PromptSnapshot, 'text' | 'workflowReferences'> {
+  const snapshot = composerPromptForSend(prompt)
+  let text = ''
+  const workflowReferences: PromptSnapshot['workflowReferences'] = []
+  for (const part of promptReferenceParts(
+    snapshot.text,
+    snapshot.workflowReferences,
+    snapshot.skillReference
+  )) {
+    if (part.type === 'text') text += part.text
+    else if (part.type === 'skill')
+      text += serializeSkillReference(part.reference)
+    else workflowReferences.push({ ...part.reference, textOffset: text.length })
+  }
+  return { text, workflowReferences }
 }

@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { captureDownloadClick } from '../../../scripts/posthog'
+import { captureDownloadClick } from '@/scripts/posthog'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 
-vi.mock(import('../../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const UA = {
   iphone:

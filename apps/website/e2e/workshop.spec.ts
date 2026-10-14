@@ -500,6 +500,54 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  // The stuck toolbar paints its full-bleed band with a zero-width
+  // border-image rather than a clip-path. A clip would cut the use-case panel
+  // off at the toolbar's bottom edge, because on desktop that panel renders
+  // inside the toolbar instead of portalling to the body.
+  test('the use-case panel stays reachable under the stuck toolbar', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.evaluate(() => window.scrollTo({ top: 1200 }))
+    // In the viewport is not the same as stuck: the toolbar is there at rest
+    // too. It is stuck once it sits at the offset it sticks to.
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect
+      .poll(() =>
+        toolbar.evaluate(
+          (bar) =>
+            Math.round(bar.getBoundingClientRect().top) ===
+            Math.round(Number.parseFloat(getComputedStyle(bar).top))
+        )
+      )
+      .toBe(true)
+
+    await page.getByTestId('workshop-filter').click()
+    const options = page
+      .getByTestId('workshop-filter-menu')
+      .getByTestId(/^filter-useCase-/)
+    const last = options.last()
+    await expect(last).toBeVisible()
+    // A clipped panel keeps its box, so only a hit test says the option is
+    // reachable. Asserting it before the click turns a timeout into a reason.
+    await expect
+      .poll(() =>
+        last.evaluate((option) => {
+          const { left, right, top, bottom } = option.getBoundingClientRect()
+          const hit = document.elementFromPoint(
+            (left + right) / 2,
+            (top + bottom) / 2
+          )
+          return option.contains(hit)
+        })
+      )
+      .toBe(true)
+    await last.click()
+
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const tag = page
@@ -514,7 +562,7 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     for (const card of await cards.all())
-      await expect(card).toHaveAccessibleName(/premium/i)
+      await expect(card.getByTestId('tag-row')).toContainText(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
@@ -675,21 +723,18 @@ test.describe('Model playground', () => {
     )
   })
 
-  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
+  test('restores sign-in and keeps Run and uploads enabled after All models navigation', async ({
     page,
     modelsAccount
   }) => {
     await page.goto(MODEL_PATH)
-    const signIn = page.getByRole('link', {
-      name: 'Sign in to run',
-      exact: true
-    })
-    await expect(signIn).toHaveAttribute('href', /\/login\/\?returnTo=/)
+    const run = page.getByRole('link', { name: 'Run', exact: true })
+    await expect(run).toHaveAttribute('href', /\/login\/\?returnTo=/)
     const prompt = 'a capybara in a trench coat'
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill(prompt)
-    await signIn.click()
+    await run.click()
     await expect(page).toHaveURL(/\/login\/\?returnTo=/)
     await page.getByRole('button', { name: 'Use email instead' }).click()
     await page.getByLabel('Email').fill(modelsAccount.email)
@@ -703,10 +748,12 @@ test.describe('Model playground', () => {
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
 
-    await page
-      .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Hub', exact: true })
-      .click()
+    const mainNav = page.getByRole('navigation', {
+      name: 'Main navigation',
+      exact: true
+    })
+    await mainNav.getByRole('button', { name: /^Hub\b/ }).click()
+    await mainNav.getByRole('link', { name: 'All models', exact: true }).click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page
       .getByTestId('workshop-models-grid')
@@ -901,6 +948,20 @@ test.describe('Model playground', () => {
         return box.x < width - 24 && box.x + box.width > width
       })
       .toBe(true)
+  })
+
+  test('tells a keyboard apart from the pick it lands on', async ({ page }) => {
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
+    const chosen = page.getByTestId('example-card').first()
+    await expect(chosen).toHaveAttribute('aria-current', 'true')
+    const thumbnail = chosen.getByTestId('example-thumbnail')
+    await expect(thumbnail).toHaveCSS('outline-style', 'none')
+
+    await page.keyboard.press('Tab')
+    await chosen.focus()
+
+    await expect(thumbnail).toHaveCSS('outline-style', 'solid')
+    await expect(thumbnail).toHaveCSS('outline-color', 'rgb(240, 239, 237)')
   })
 
   test('a lone sample takes the phone row @mobile', async ({ page }) => {

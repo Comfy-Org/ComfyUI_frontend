@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import SectionHeader from '../common/SectionHeader.vue'
-import { getRoutes } from '../../config/routes'
-import { minimaxLicenseComparison } from '../../data/minimaxLicense'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { getRoutes } from '@/config/routes'
+import { minimaxLicenseComparison } from '@/data/minimaxLicense'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

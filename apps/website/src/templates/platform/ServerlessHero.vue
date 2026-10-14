@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { platformCtas } from './ctas'
 import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 

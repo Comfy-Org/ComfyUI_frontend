@@ -2,7 +2,7 @@ import { screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import { WorkflowExamples } from './workflowExamples'
 
 customElements.define('test-workflow-examples', WorkflowExamples)

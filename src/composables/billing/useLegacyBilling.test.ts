@@ -3,7 +3,7 @@ import type { Mock } from 'vitest'
 import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { AuthStoreError } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
   BillingStatusResponse,
@@ -47,6 +47,25 @@ describe('useLegacyBilling', () => {
       })
 
       expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
+    })
+
+    it('maps the legacy Agent-scoped balance when the server reports it', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentScopedHasFunds).toBe(
+        false
+      )
+    })
+
+    it('uses the Agent-effective funds verdict for legacy admission', () => {
+      useAuthStore().balance = { currency: 'usd', amount_micros: 1 }
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_effective_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentHasFunds).toBe(false)
     })
 
     it('keeps a tierless past-due status as a subscription', () => {
@@ -143,6 +162,28 @@ describe('useLegacyBilling', () => {
   })
 
   describe('cancelSubscription', () => {
+    it('asks the portal to open on the cancel confirmation', async () => {
+      vi.mocked(useSubscription().manageSubscription).mockResolvedValue(
+        undefined
+      )
+
+      await useLegacyBilling().cancelSubscription()
+
+      expect(useSubscription().manageSubscription).toHaveBeenCalledWith({
+        cancelSubscription: true
+      })
+    })
+
+    it('leaves manageSubscription without the cancel option', async () => {
+      vi.mocked(useSubscription().manageSubscription).mockResolvedValue(
+        undefined
+      )
+
+      await useLegacyBilling().manageSubscription()
+
+      expect(useSubscription().manageSubscription).toHaveBeenCalledWith()
+    })
+
     it('rejects a failed billing portal request without reporting it', async () => {
       const failure = new Error('portal down')
       vi.mocked(useSubscription().manageSubscription).mockRejectedValue(failure)

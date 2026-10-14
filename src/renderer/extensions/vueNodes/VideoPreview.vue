@@ -35,10 +35,7 @@
       <!-- Loading State -->
       <Skeleton
         v-if="showLoader && !videoError"
-        class="absolute inset-0 size-full"
-        border-radius="5px"
-        width="100%"
-        height="100%"
+        class="absolute inset-0 size-full rounded-md"
       />
 
       <!-- Main Video -->
@@ -125,12 +122,12 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue'
-import Skeleton from 'primevue/skeleton'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -210,12 +207,9 @@ const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)
   } catch (error) {
-    useToast().add({
-      severity: 'error',
-      summary: 'Error',
-      detail: t('g.failedToDownloadVideo'),
-      life: 3000,
-      group: 'video-preview'
+    useToast().error(t('g.error'), {
+      description: t('g.failedToDownloadVideo'),
+      duration: 3000
     })
   }
 }

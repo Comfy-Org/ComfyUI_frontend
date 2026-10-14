@@ -4,14 +4,14 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AccordionStep } from '../../components/blocks/StepsAccordion01.vue'
-import type { Locale } from '../../i18n/translations'
+import type { AccordionStep } from '@/components/blocks/StepsAccordion01.vue'
+import type { Locale } from '@/i18n/translations'
 
-import StepsAccordion01 from '../../components/blocks/StepsAccordion01.vue'
-import Button from '../../components/ui/button/Button.vue'
-import { externalLinks } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
+import StepsAccordion01 from '@/components/blocks/StepsAccordion01.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

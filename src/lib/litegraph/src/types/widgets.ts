@@ -2,6 +2,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import type { LightInfoEntry } from '@/types/lightInfo'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
@@ -101,8 +102,6 @@ export interface IWidgetOptions<TValues = unknown> {
   disabled?: boolean
   useGrouping?: boolean
   placeholder?: string
-  showThumbnails?: boolean
-  showItemNavigators?: boolean
   hidden?: boolean
 }
 
@@ -174,6 +173,7 @@ export type IWidget =
   | IVideoEditWidget
   | IResolutionPreviewWidget
   | IBoundingBoxesWidget
+  | ILightInfoWidget
   | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
@@ -399,6 +399,14 @@ export interface IBoundingBoxesWidget extends IBaseWidget<
 > {
   type: 'boundingboxes'
   value: BoundingBox[]
+}
+
+export interface ILightInfoWidget extends IBaseWidget<
+  LightInfoEntry[],
+  'lightinfo'
+> {
+  type: 'lightinfo'
+  value: LightInfoEntry[]
 }
 
 export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {

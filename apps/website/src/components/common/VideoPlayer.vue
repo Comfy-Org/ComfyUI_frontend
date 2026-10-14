@@ -14,10 +14,11 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
-import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
-import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { formatClock } from '@/utils/formatClock'
+import VolumeMutedIcon from '@/components/icons/VolumeMutedIcon.vue'
+import VolumeUnmutedIcon from '@/components/icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 export type VideoTrack = {
@@ -236,12 +237,7 @@ const displayTime = computed(() =>
   scrubbing.value ? pendingTime.value : currentTime.value
 )
 
-const timestamp = computed(() => {
-  const secs = Math.floor(displayTime.value)
-  const m = String(Math.floor(secs / 60)).padStart(2, '0')
-  const s = String(secs % 60).padStart(2, '0')
-  return `${m}:${s}`
-})
+const timestamp = computed(() => formatClock(displayTime.value))
 
 // Subtitles
 const ccEnabled = computed(() => selectedTrack.value !== -1)

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import ChecklistSplit01 from '../../components/blocks/ChecklistSplit01.vue'
-import { affiliateAudienceCriteria } from '../../data/affiliateAudience'
-import { translationsFor } from '../../i18n/translations'
+import ChecklistSplit01 from '@/components/blocks/ChecklistSplit01.vue'
+import { affiliateAudienceCriteria } from '@/data/affiliateAudience'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

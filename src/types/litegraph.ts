@@ -21,24 +21,30 @@ export type {
 export type {
   CanvasColour,
   ColorOption,
-  ConnectingLink,
-  CreateNodeOptions,
   IColorable,
-  IContextMenuOptions,
-  IContextMenuValue,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
   ISlotType,
   IWidgetLocator,
-  LinkNetwork,
   Point,
   ReadOnlyRect,
-  ReadonlyLinkNetwork,
   Rect,
   Size
 } from '@/lib/litegraph/src/interfaces'
+export type { CreateNodeOptions } from '@/lib/litegraph/src/LiteGraphGlobal'
+export type {
+  IContextMenuOptions,
+  IContextMenuValue
+} from '@/lib/litegraph/src/types/contextMenu'
+export type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@/lib/litegraph/src/types/linkNetwork'
+export type {
+  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 export type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 export type {

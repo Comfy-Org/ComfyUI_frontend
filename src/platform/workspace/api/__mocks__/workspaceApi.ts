@@ -15,7 +15,7 @@ export class WorkspaceApiError extends Error {
 
 export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
   {
-    list: async () => ({ workspaces: [] }),
+    list: async () => ({ workspaces: [], can_create_workspace: true }),
     getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
@@ -93,6 +93,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_change_seats: false,
           can_downgrade_to_personal: false,
           can_invite_members: false,
+          can_manage_members: false,
           can_reactivate: false,
           can_revert_scheduled_change: false,
           can_subscribe_self_serve: false,
@@ -140,11 +141,14 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       billing_op_id: 'op-1',
       cancel_at: '2026-02-01T00:00:00Z'
     }),
-    getChurnkeyAuth: async () => ({
-      auth_hash: 'test-hash',
-      customer_id: 'customer-1',
-      mode: 'test'
+    prepareRetentionFlow: async () => {
+      throw new WorkspaceApiError('unavailable', 503)
+    },
+    acceptRetentionOffer: async () => ({
+      billing_op_id: 'op-retention',
+      status: 'pending'
     }),
+    recordRetentionFlowEvent: async () => {},
     resubscribe: async () => ({
       billing_op_id: 'op-1',
       status: 'active'

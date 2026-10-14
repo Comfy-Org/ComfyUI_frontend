@@ -119,6 +119,41 @@ function totalDeclarations(
   return { bytes, isComplete }
 }
 
+/** The state a row's own download is in, as the view's row-downloads reports it. */
+type RowDownloadStatus = { status: string }
+
+/** A row the bulk action would actually start. */
+export function isModelDownloadCandidate(
+  row: TemplateModelSetupRow,
+  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+): boolean {
+  if (row.status !== 'downloadable') return false
+  const state = stateFor(row.model)
+  return state.status === 'idle' || state.status === 'failed'
+}
+
+/** Nothing left to satisfy: already on disk, or downloaded in this session. */
+export function isModelRowComplete(
+  row: TemplateModelSetupRow,
+  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+): boolean {
+  if (row.status === 'installed') return true
+  return stateFor(row.model).status === 'done'
+}
+
+/**
+ * What a bulk click would transfer. Shares `totalDeclarations`' identity dedupe
+ * so this and the group header cannot count the same model differently.
+ */
+export function remainingModelDownloadTotal(
+  rows: readonly TemplateModelSetupRow[],
+  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+): TemplateModelDeclarationTotal {
+  return totalDeclarations(
+    rows.filter((row) => isModelDownloadCandidate(row, stateFor))
+  )
+}
+
 export function deriveTemplateModelSetup(
   requirements: readonly TemplateModelRequirementDetail[],
   availability: readonly ResolvedTemplateModelAvailability[],

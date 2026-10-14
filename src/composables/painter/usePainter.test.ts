@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   ExecutableNodeDTO,
   LGraph,
@@ -500,6 +501,12 @@ describe('usePainter', () => {
       await expect(
         widgetOf('mask').serializeValue!(executablePaintNode(), 0)
       ).rejects.toThrow(/missing 'name'/)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'painter.uploadMissingName'
+        })
+      ])
     })
 
     it('throws when the upload response body is not valid JSON', async () => {

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
@@ -68,6 +69,7 @@ const i18n = createI18n({
 })
 
 const challenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',
@@ -101,7 +103,27 @@ const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
 
 describe('OAuthConsentView', () => {
   beforeEach(() => {
-    mockSubmitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+    mockSubmitOAuthConsentDecision.mockResolvedValue(undefined)
+  })
+
+  it('loads the consent named in the URL on the session cookie alone, as an SSO callback lands', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(challenge))
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+    })
+    await router.push(
+      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+
+    expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe(
+      `/oauth/authorize?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    expect(init?.credentials).toBe('include')
+    expect(new Headers(init?.headers).has('Authorization')).toBe(false)
   })
 
   it('shows the generic app icon regardless of client_display_name', () => {

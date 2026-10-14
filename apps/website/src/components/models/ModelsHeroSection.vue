@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 
 const {
   locale = 'en',

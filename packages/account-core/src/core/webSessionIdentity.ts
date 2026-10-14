@@ -445,7 +445,8 @@ const zSharedResult = z.discriminatedUnion('status', [
         email: z.string(),
         name: z.string().optional(),
         emailVerified: z.boolean(),
-        signInProvider: z.string().optional()
+        signInProvider: z.string().optional(),
+        hasPersonalWorkspace: z.boolean().optional()
       }),
       csrfToken: z.string(),
       expiresAt: z.number(),

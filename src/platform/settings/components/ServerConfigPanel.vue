@@ -46,7 +46,7 @@
           v-model:form-value="item.value"
           :item="translateItem(item)"
           :label-class="{
-            'text-highlight': item.initialValue !== item.value
+            'text-primary-background': item.initialValue !== item.value
           }"
         />
       </div>
@@ -66,13 +66,13 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
-const toastStore = useToastStore()
+const toast = useToast()
 const {
   serverConfigsByCategory,
   serverConfigValues,
@@ -116,11 +116,9 @@ onBeforeUnmount(() => {
     return
   }
 
-  toastStore.add({
-    severity: 'warn',
-    summary: t('serverConfig.restartRequiredToastSummary'),
-    detail: t('serverConfig.restartRequiredToastDetail'),
-    life: 10_000
+  toast.warning(t('serverConfig.restartRequiredToastSummary'), {
+    description: t('serverConfig.restartRequiredToastDetail'),
+    duration: 10_000
   })
 })
 

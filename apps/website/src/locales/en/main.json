@@ -78,7 +78,6 @@
       "select": "Select an option",
       "maxFiles": "Select no more than {count} files.",
       "invalidJson": "This JSON does not match what the model expects.",
-      "runNext": "Run model — sign-in coming next",
       "codeLanguage": "Code language",
       "copy": "Copy code",
       "copied": "Copied",
@@ -124,7 +123,15 @@
       "text": "Text",
       "image": "Image",
       "video": "Video",
-      "audio": "Audio"
+      "audio": "Audio",
+      "output": {
+        "text": "text",
+        "image": "image",
+        "video": "video",
+        "audio": "audio",
+        "3d": "3D",
+        "other": "other"
+      }
     },
     "models": {
       "heading": "Models"
@@ -537,7 +544,7 @@
         "show": "Show {n} workflows",
         "noResults": "No matches"
       },
-      "models": "Model",
+      "models": "Models",
       "categories": "CATEGORIES",
       "docs": "Read docs",
       "tryNow": "Try now",
@@ -563,6 +570,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -672,6 +680,7 @@
       "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
       "pending": "Finish signing in from the pop-up window.",
       "signingIn": "Signing you in…",
+      "ssoRedirecting": "Continuing to your organization's sign-in…",
       "signOut": "Sign out",
       "useEmailInstead": "Use email instead",
       "backToSocialLogin": "Sign up with Google or Github instead",
@@ -725,7 +734,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -918,15 +928,18 @@
     "subtitle2": "Start from a community template or build from scratch.",
     "feature1": {
       "title": "Full Control with Nodes",
-      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable."
+      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.",
+      "cta": "Download Desktop"
     },
     "feature2": {
-      "title": "App mode, a simplified view of your workflows",
-      "description": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper."
+      "title": "Comfy Agent",
+      "description": "Describe what you want and Comfy Agent builds and runs the workflow for you.",
+      "cta": "Explore Comfy Agent"
     },
     "feature3": {
-      "title": "Community Workflows on Comfy Workflows",
-      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs."
+      "title": "Comfy API",
+      "description": "Run Comfy workflows and models from your own app with one API.",
+      "cta": "Explore Comfy API"
     },
     "badgeHow": "HOW",
     "badgeWorks": "WORKS"
@@ -1490,6 +1503,7 @@
       },
       "standard": {
         "label": "STANDARD",
+        "whatsIncluded": "What's included:",
         "price": "$20",
         "yearlyPrice": "$16",
         "yearlyTotal": "$192",
@@ -1504,6 +1518,7 @@
       },
       "creator": {
         "label": "CREATOR",
+        "everythingInStandardPlus": "Everything in Standard, plus:",
         "price": "$35",
         "yearlyPrice": "$28",
         "yearlyTotal": "$336",
@@ -1518,6 +1533,7 @@
       },
       "pro": {
         "label": "PRO",
+        "everythingInCreatorPlus": "Everything in Creator, plus:",
         "price": "$100",
         "yearlyPrice": "$80",
         "yearlyTotal": "$960",
@@ -1550,7 +1566,7 @@
     "creditsLabelYearly": "credits per year",
     "banner": {
       "title": "Start Comfy Cloud for free. Upgrade when ready.",
-      "subtitle": "5 free runs on real GPUs — no credit card required.",
+      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits for new users",
       "cta": "TRY FREE"
     },
     "feature": {
@@ -1561,7 +1577,7 @@
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
       "inviteMembers": "Invite members",
-      "inviteMembersUpTo50": "Invite members up to 50",
+      "inviteMembersUpTo50": "Invite up to 50 members",
       "concurrentWorkflows": "Members can run workflows concurrently",
       "sharedCreditPool": "Shared credit pool for all members",
       "roleBasedPermissions": "Role-based permissions"
@@ -1631,15 +1647,21 @@
     },
     "comfyApi": {
       "heading": "Comfy API pricing",
-      "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
-      "metricColumn": "Limit",
+      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits depend on your plan.",
       "metric": {
-        "releases": "Total releases limit",
+        "builds": "Total builds limit",
         "deployments": "Total deployments limit",
         "concurrency": "Max worker concurrency (per deployment)"
       },
       "enterpriseNote": "Enterprise limits are determined by your contract.",
-      "learnMore": "Learn More"
+      "learnMore": "Learn More",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "builds": "{count} builds",
+        "deployments": "{count} deployments",
+        "concurrency": "Up to {count} workers per deployment",
+        "notIncluded": "Comfy API access"
+      }
     },
     "minimaxLicense": {
       "heading": "MiniMax license pricing",
@@ -1649,6 +1671,45 @@
     "cycle": {
       "monthly": "monthly",
       "yearly": "yearly"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan, and new users get free credits to try it.",
+      "learnMore": "Learn More",
+      "limit": {
+        "availability": {
+          "title": "Available on every plan",
+          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is free new-user credits or a positive credit balance."
+        },
+        "credits": {
+          "title": "Billed in Comfy Credits",
+          "description": "Once your free credits are used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
+        },
+        "runs": {
+          "title": "Workflow runs",
+          "description": "Workflows the agent runs are charged exactly like runs you start yourself, with no surcharge, and follow your plan's runtime and job limits."
+        },
+        "model": {
+          "title": "Model",
+          "description": "Comfy picks the model for you. Bringing your own LLM key is not supported yet."
+        },
+        "queue": {
+          "title": "No message cap",
+          "description": "There is no limit on how many messages you send. Past your plan's limits, new tasks wait in line instead of failing. When your credits run out, the agent pauses until you add more."
+        }
+      },
+      "metric": {
+        "tasksPerMember": "Agent tasks at once, per member",
+        "requestsPerWorkspace": "Agent requests at once, per workspace"
+      },
+      "enterpriseNote": "Enterprise plans get higher Agent limits.",
+      "cardTitle": "Comfy Agent",
+      "cardFeature": {
+        "sessionsPerWorkspace": "{count} concurrent agent sessions per workspace"
+      }
+    },
+    "planLimits": {
+      "metricColumn": "Limit"
     }
   },
   "player": {
@@ -1717,10 +1778,6 @@
     }
   },
   "gallery": {
-    "label": "GALLERY",
-    "heroTitleBefore": "Built, Tweaked, and Dreamed in ",
-    "heroTitleAfter": "",
-    "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",
       "and": "and",
@@ -1730,10 +1787,6 @@
     "detail": {
       "close": "Close",
       "visitHub": "VISIT COMMUNITY HUB"
-    },
-    "contact": {
-      "label": "CONTACT",
-      "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
     }
   },
   "about": {
@@ -2393,11 +2446,33 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
+    "hubModels": "Models",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "hubWorkflows": "Workflows",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubImageToVideo": "Image to video",
+    "hubVideoFromReferences": "Video from references",
+    "hubMotionTransfer": "Motion transfer",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubAllWorkflows": "All workflows",
+    "hubApps": "Apps",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "reshoot": "Re-shoot",
+    "hubAllApps": "All apps",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2420,7 +2495,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2460,6 +2547,8 @@
     "workflows": "Workflows",
     "useCases": "Use Cases",
     "location": "San Francisco, USA",
+    "language": "Language",
+    "social": "Follow Comfy",
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "wanAnimate2": "Wan Animate 2",
@@ -2468,8 +2557,12 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
+    "fishAudio": "Fish Audio",
+    "nvidiaVfx": "Nvidia VFX",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -3262,6 +3355,20 @@
       "quote3": "ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.",
       "name3": "Alex Chen",
       "role3": "Head of AI at Creative Studios"
+    },
+    "directory": {
+      "searchLabel": "Search customer stories",
+      "searchPlaceholder": "Search by company, title, category, or description…",
+      "formatLabel": "Format",
+      "tab": {
+        "all": "All",
+        "watch": "Watch",
+        "read": "Read"
+      },
+      "sortLabel": "Sort customer stories",
+      "sortLatest": "Latest",
+      "sortOldest": "Oldest",
+      "empty": "No customer stories match those filters yet. Try a broader search."
     }
   },
   "contact": {
@@ -3281,7 +3388,7 @@
       "q3": "What does Comfy Enterprise include?",
       "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
-      "a4": "A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
+      "a4": "Our SOC 2 Type II audit is complete, and the Type II report is available on request. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
     }
   },
   "hubspotForm": {
@@ -3523,27 +3630,9 @@
     }
   },
   "launches": {
-    "page": {
-      "title": "Launches: Everything New in ComfyUI",
-      "description": "Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them."
-    },
-    "hero": {
-      "title": "Everything new in ComfyUI",
-      "primary": "Download Desktop",
-      "secondary": "Try Cloud for free",
-      "visualAlt": "Comfy"
-    },
     "banner": {
       "text": "Comfy Agent can now build workflows inside ComfyUI.",
       "cta": "Try It for Free"
-    },
-    "cta": {
-      "heading": "Everything Comfy ships. All in one place.",
-      "primary": "Open Comfy Cloud",
-      "secondary": "Try Workflow"
-    },
-    "section": {
-      "title": "Latest Launches"
     }
   },
   "ltx": {
@@ -3876,7 +3965,15 @@
   "modelLaunch": {
     "tagFree": "Free",
     "tagPremium": "Premium",
-    "copyPrompt": "Copy prompt"
+    "copyPrompt": "Copy prompt",
+    "voices": "voice: | voices:",
+    "clipSeconds": "({seconds}s)",
+    "beforeAfter": {
+      "tabsLabel": "Comparison",
+      "sliderLabel": "Comparison slider",
+      "before": "Before",
+      "after": "After"
+    }
   },
   "flux3": {
     "meta": {
@@ -4049,6 +4146,57 @@
       "highlightCta": "GET STARTED"
     }
   },
+  "nanoBanana": {
+    "meta": {
+      "title": "Nano Banana on Comfy: Generate and Edit Images",
+      "description": "Run Nano Banana in ComfyUI. Generate images from text, edit existing visuals, and direct results with reference images in a repeatable workflow."
+    },
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nano Banana 2.1 is here",
+      "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
+      "tagTextToImage": "Text to Image",
+      "tagImageEditing": "Image Editing",
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
+    },
+    "showcase": {
+      "photography": {
+        "heading": "Shot like it happened.",
+        "description": "Realistic light and detail for the scenes you've only pictured."
+      },
+      "design": {
+        "heading": "One idea, every style.",
+        "description": "Iterate your designs in any style you want."
+      },
+      "advertising": {
+        "heading": "From brief to campaign.",
+        "description": "Advertising for any industry, with crisp detail and type that reads."
+      }
+    },
+    "pricing": {
+      "banner": {
+        "title": "Start Comfy Cloud for free. Upgrade when you're ready.",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say"
+    }
+  },
   "qwenImage21": {
     "meta": {
       "title": "Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
@@ -4104,6 +4252,51 @@
         "description": "Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
         "primaryCta": "GET NOTIFIED"
       }
+    }
+  },
+  "nvidiaRtx": {
+    "meta": {
+      "title": "Nvidia VFX Nodes for ComfyUI",
+      "description": "Three ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion."
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nvidia VFX Nodes",
+      "description": "Three custom nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
+      "tagUpscale": "Super Resolution up to 4×",
+      "tagFrameRate": "Frame Rate up to 16×",
+      "tagSdrToHdr": "SDR-to-HDR",
+      "primaryCta": "TRY ON COMFY CLOUD",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "beforeAfter": {
+      "heading": "One clip, two states.",
+      "body": "Source on one side, output on the other. Drag the line to compare them frame by frame."
+    },
+    "gallery": {
+      "heading": "Made on NVIDIA RTX"
+    },
+    "steps": {
+      "heading": "Prefer running locally?",
+      "step": "Step",
+      "primaryCta": "DOWNLOAD DESKTOP"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run on your RTX PC today. Move the same workflow to Comfy Cloud or the API when a job outgrows your desk.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "COMFY AGENT",
+      "highlightDescription": "Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.",
+      "highlightCta": "TRY IN COMFY DESKTOP"
     }
   },
   "minimax": {
@@ -4252,6 +4445,57 @@
       },
       "intro": "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
       "introCta": "see what it includes"
+    }
+  },
+  "fishAudio": {
+    "meta": {
+      "title": "Fish Audio Drama 3 on Comfy: Multi-Character Scenes",
+      "description": "Fish Audio's Drama 3, its most emotive and controllable model yet, generates multi-character scenes as one conversation. Try it in Comfy Cloud from day one."
+    },
+    "breadcrumb": {
+      "model": "Fish Audio Drama 3",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "titleModel": "Fish Audio Drama 3",
+      "titleRest": " is now on Comfy",
+      "description": "Get 50% off for your first 30 days. Drama 3 is Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
+      "badge1": "Partner node",
+      "badge2": "Multi-character scenes",
+      "badge3": "50% off at launch",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "pricing": {
+      "banner": {
+        "title": "Launch offer: 50% off Fish Audio Drama 3 for your first 30 days",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "samples": {
+      "heading": "Made with Drama 3",
+      "cta": "TRY NOW"
+    },
+    "steps": {
+      "heading": "Direct your first scene",
+      "step": "Step",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run Drama 3 in Comfy Cloud today, batch scenes through the API, or run it from ComfyUI on your own machine.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
+      "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
+      "highlightCta": "GET STARTED"
     }
   },
   "fdct": {
@@ -4444,6 +4688,11 @@
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
     },
+    "challengeBanner": {
+      "label": "OPEN CALL CHALLENGE",
+      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
+      "cta": "Read the post"
+    },
     "serverless": {
       "codeHeading": "Call your endpoint",
       "codeSubtitle": "The SDK is the front door; plain HTTP works too."
@@ -4633,7 +4882,7 @@
       },
       "enterprise": {
         "title": "Enterprise",
-        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 underway.",
+        "description": "Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 Type II audit complete.",
         "cta": "Contact sales"
       }
     },
@@ -4681,7 +4930,7 @@
       },
       "7": {
         "q": "Is the platform SOC 2 certified?",
-        "a": "SOC 2 is underway. Contact us for current status and security documentation."
+        "a": "Our SOC 2 Type II audit is complete, and the report is available on request. Contact us for security documentation."
       },
       "8": {
         "q": "Does it autoscale? What about cold starts?",
@@ -5495,5 +5744,18 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

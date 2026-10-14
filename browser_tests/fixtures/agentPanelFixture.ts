@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   AgentRunMode,
   AgentThreadListResponse,
+  BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
@@ -18,6 +19,7 @@ import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/age
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import {
   AGENT_COMPOSER_THREAD_ID,
   agentComposerRunMode,
@@ -57,6 +59,8 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  /** Replaces `mockBilling`'s default billing status. */
+  billingStatus?: BillingStatusResponse
   beforeNavigate?: (page: Page) => Promise<void>
 }
 
@@ -68,13 +72,15 @@ async function mockAgentBoot(
     features,
     vueNodes,
     objectInfo,
-    assets
+    assets,
+    billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
     features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
@@ -83,7 +89,7 @@ async function mockAgentBoot(
     },
     objectInfo
   })
-  await mockBilling(page)
+  await mockBilling(page, { billingStatus })
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,

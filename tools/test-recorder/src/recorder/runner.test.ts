@@ -1,5 +1,5 @@
 import type { SpawnSyncReturns } from 'node:child_process'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const {
   cleanupRecordedCode,
@@ -54,10 +54,6 @@ vi.mock(import('../featureFlags'), () => ({
 vi.mock(import('../ui/logger'), () => ({ box: vi.fn(), info: vi.fn() }))
 
 import { runRecording } from './runner'
-
-beforeEach(() => {
-  vi.spyOn(console, 'log').mockImplementation(() => {})
-})
 
 describe('runRecording', () => {
   it('removes the shared legacy state before recording a custom backend', async () => {

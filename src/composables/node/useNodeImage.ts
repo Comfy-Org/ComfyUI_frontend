@@ -5,6 +5,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import type { ImageLoadFailureMetadata } from '@/platform/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
@@ -139,7 +140,9 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
-      img.src = url
+      const previewUrl = getHdrPreviewUrl(url)
+      if (previewUrl) img.dataset.fileUrl = url
+      img.src = previewUrl ?? url
     })
 
   const onLoaded = (elements: HTMLImageElement[]) => {
