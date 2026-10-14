@@ -31,7 +31,6 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
@@ -498,13 +497,13 @@ describe('useWorkflowService', () => {
       workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
       useWorkflowStore().activeWorkflow = workflow
       const reloading = useWorkflowService().reloadCurrentWorkflow()
-      app.rootGraph.add(new LGraphNode('Agent edit'))
+      app.rootGraph.extra.agentEdit = true
 
       await reloading
 
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.objectContaining({
-          nodes: [expect.objectContaining({ title: 'Agent edit' })]
+          extra: expect.objectContaining({ agentEdit: true })
         }),
         true,
         true,

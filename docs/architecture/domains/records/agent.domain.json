@@ -761,7 +761,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["authentication"],
+  "allowedDependencies": [
+    "authentication",
+    "error-reporting",
+    "extension-runtime",
+    "workbench-shell",
+    "workflow-management"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
