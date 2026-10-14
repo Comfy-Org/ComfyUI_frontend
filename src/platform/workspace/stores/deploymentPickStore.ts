@@ -2,6 +2,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -103,9 +104,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * the workspace says: its default deployment, or Comfy Cloud without one.
    */
   const followsWorkspace = computed(() => pickSource.value !== 'browser')
-  /** Only a workspace owner may set or clear the default deployment. */
-  const canSetDefault = computed(
-    () => workspaceStore.activeWorkspace?.role === 'owner'
+  const canSetDefault = computed(() =>
+    pendingServerFact(
+      'BE-20674',
+      workspaceStore.activeWorkspace?.role === 'owner'
+    )
   )
   const buildsVisible = computed(() =>
     'buildsVisible' in state.value ? state.value.buildsVisible : true
