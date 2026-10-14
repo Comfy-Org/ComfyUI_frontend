@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -8,6 +7,8 @@ import { useSlideRotation } from '@/composables/useSlideRotation'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CatalogueFeature } from '@/lib/workshop/catalogue-features'
+import FeaturedCarouselProgress from './FeaturedCarouselProgress.vue'
+import FeaturedCarouselThumbs from './FeaturedCarouselThumbs.vue'
 import WorkshopCardMaker from './WorkshopCardMaker.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
@@ -33,11 +34,6 @@ const { shownIndex, goTo, fill, rotating } = useSlideRotation({
 const active = computed<CatalogueFeature | undefined>(
   () => features[shownIndex.value]
 )
-
-function barFill(index: number) {
-  if (index < shownIndex.value) return 1
-  return index === shownIndex.value ? fill.value : 0
-}
 </script>
 
 <template>
@@ -72,49 +68,12 @@ function barFill(index: number) {
       aria-hidden="true"
     />
 
-    <div
+    <FeaturedCarouselThumbs
       v-if="features.length > 1"
-      class="absolute top-4 right-4 z-10 flex gap-2 sm:top-6 sm:right-6"
-      data-testid="featured-thumbs"
-    >
-      <button
-        v-for="(feature, index) in features"
-        :key="feature.key"
-        type="button"
-        :aria-label="feature.title"
-        :aria-pressed="index === shownIndex"
-        :class="
-          cn(
-            'grid size-10 cursor-pointer place-items-center overflow-hidden rounded-lg border-2 bg-hub-surface-hover text-sm font-semibold text-primary-warm-white transition-[border-color,opacity] outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
-            index === shownIndex
-              ? 'border-primary-warm-white'
-              : 'border-transparent opacity-80 hover:opacity-100'
-          )
-        "
-        @click="goTo(index)"
-      >
-        <img
-          v-if="feature.still"
-          :src="feature.still"
-          alt=""
-          class="size-full object-cover"
-          loading="lazy"
-          decoding="async"
-          draggable="false"
-        />
-        <video
-          v-else-if="feature.media.thumbnail?.kind === 'video'"
-          :src="`${feature.media.thumbnail.url}#t=0.1`"
-          class="size-full object-cover"
-          aria-hidden="true"
-          muted
-          playsinline
-          preload="metadata"
-          data-testid="featured-thumb-video"
-        />
-        <span v-else aria-hidden="true">{{ feature.title[0] }}</span>
-      </button>
-    </div>
+      :features
+      :active-index="shownIndex"
+      @go="goTo"
+    />
 
     <div
       :key="active.key"
@@ -181,22 +140,11 @@ function barFill(index: number) {
       </div>
     </div>
 
-    <div
+    <FeaturedCarouselProgress
       v-if="features.length > 1"
-      class="pointer-events-none absolute inset-x-5 bottom-6 flex gap-2 sm:inset-x-8"
-      aria-hidden="true"
-      data-testid="featured-progress"
-    >
-      <span
-        v-for="(feature, index) in features"
-        :key="feature.key"
-        class="h-0.5 flex-1 overflow-hidden rounded-full bg-primary-warm-white/25"
-      >
-        <span
-          class="block h-full rounded-full bg-primary-warm-white"
-          :style="{ width: `${barFill(index) * 100}%` }"
-        />
-      </span>
-    </div>
+      :count="features.length"
+      :active-index="shownIndex"
+      :fill
+    />
   </section>
 </template>
