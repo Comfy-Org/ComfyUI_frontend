@@ -3,6 +3,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
+import { resolveRel } from '@/utils/cta'
 
 type Cta = { label: string; href: string; target?: '_blank' }
 
@@ -86,9 +87,7 @@ defineProps<{
         as="a"
         :href="primaryCta.href"
         :target="primaryCta.target"
-        :rel="
-          primaryCta.target === '_blank' ? 'noopener noreferrer' : undefined
-        "
+        :rel="resolveRel(primaryCta)"
         size="lg"
         class="w-full lg:w-auto lg:min-w-48"
       >
@@ -99,9 +98,7 @@ defineProps<{
         as="a"
         :href="secondaryCta.href"
         :target="secondaryCta.target"
-        :rel="
-          secondaryCta.target === '_blank' ? 'noopener noreferrer' : undefined
-        "
+        :rel="resolveRel(secondaryCta)"
         variant="outline"
         size="lg"
         class="w-full lg:w-auto lg:min-w-48"

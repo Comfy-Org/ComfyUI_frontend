@@ -31,6 +31,18 @@ function hasLgVertical(i: number, total: number) {
   return i % 2 === 1 && i + 1 < total
 }
 
+function hasVerticalConnector(i: number, total: number) {
+  return hasMobileVertical(i, total) || hasLgVertical(i, total)
+}
+
+function verticalConnectorClass(i: number, total: number) {
+  return cn(
+    'absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150 text-primary-comfy-yellow',
+    !hasMobileVertical(i, total) && 'hidden lg:block',
+    !hasLgVertical(i, total) && 'lg:hidden'
+  )
+}
+
 function cardClass(i: number, total: number) {
   const fullSpan = isFullSpan(i, total)
   const rtl = isRtlRow(i)
@@ -117,17 +129,8 @@ function timelineBadgeClass(id: string) {
           class="absolute top-1/2 right-0 hidden size-4 translate-x-[calc(100%+2px)] -translate-y-1/2 scale-x-150 rotate-90 text-primary-comfy-yellow lg:block"
         />
         <NodeUnionIcon
-          v-if="
-            hasMobileVertical(index, steps.length) ||
-            hasLgVertical(index, steps.length)
-          "
-          :class="
-            cn(
-              'absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150 text-primary-comfy-yellow',
-              !hasMobileVertical(index, steps.length) && 'hidden lg:block',
-              !hasLgVertical(index, steps.length) && 'lg:hidden'
-            )
-          "
+          v-if="hasVerticalConnector(index, steps.length)"
+          :class="verticalConnectorClass(index, steps.length)"
         />
       </div>
     </div>
