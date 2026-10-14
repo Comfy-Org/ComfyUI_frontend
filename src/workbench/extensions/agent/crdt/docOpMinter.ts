@@ -274,7 +274,7 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
-): GraphOperation | PromotedWriteRefusal | null {
+): GraphOperation | PromotedWriteRefusal | { unresolvedGraphId: string } {
   const operation = {
     op: 'set_widget',
     node_id: event.nodeId,
@@ -289,14 +289,8 @@ function routedWidgetOperation(
     return 'reason' in promoted ? promoted : { ...operation, promoted }
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
-  if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-    reportError(new Error('Agent widget write has an unresolvable owner'), {
-      surface: 'agent',
-      errorType: 'agent_crdt_widget_owner_unresolved',
-      context: { graphId: owningGraphId, nodeId: event.nodeId }
-    })
-    return null
-  }
+  if (subgraphNodePath === null || subgraphNodePath.length === 0)
+    return { unresolvedGraphId: owningGraphId }
   const [head, ...rest] = subgraphNodePath
   return {
     ...operation,
@@ -466,7 +460,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
-    if (routed === null) return
+    if ('unresolvedGraphId' in routed) {
+      const graphId = routed.unresolvedGraphId
+      reportOnce(
+        `owner:${nodeKey(graphId, event.nodeId)}`,
+        'Agent widget write has an unresolvable owner',
+        'agent_crdt_widget_owner_unresolved',
+        { graphId, nodeId: event.nodeId },
+        reportedRefusals
+      )
+      return
+    }
     if ('reason' in routed) {
       reportRefusal(rootGraphId, event, routed)
       deps.onWidgetWriteRefused()
