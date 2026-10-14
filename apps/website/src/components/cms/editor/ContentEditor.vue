@@ -4,6 +4,7 @@ import { ArrowLeft, Save } from '@lucide/vue'
 import { z } from 'astro/zod'
 import { zCreateCccItemResponse } from '@comfyorg/ingest-types/zod'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import EditorTags from './EditorTags.vue'
 import InputsEditor from './InputsEditor.vue'
 import ExamplesEditor from './ExamplesEditor.vue'
 import JsonField from './JsonField.vue'
@@ -43,6 +44,10 @@ const {
 }>()
 const t = translationsFor(locale).t
 const document = ref<Document>(structuredClone(toRaw(initial)))
+const tags = computed(() => {
+  const parsed = z.array(z.string()).safeParse(document.value.tags)
+  return parsed.success ? parsed.data : []
+})
 const snapshot = ref(initialSnapshot)
 const kind = ref<ContentType>(initialType)
 const inputsEnabled = computed(
@@ -638,13 +643,20 @@ async function save() {
                 :class="inputClass"
                 @input="patch('workflow_uid', $event)" /></label
           ></template>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cmsEditor.tags')
-            }}<input
-              :value="listValue('tags')"
-              :class="inputClass"
-              @input="list('tags', $event)"
-          /></label>
+          <div class="grid gap-1 text-sm text-admin-muted">
+            <span>{{ t('cmsEditor.tags') }}</span>
+            <EditorTags
+              :model-value="tags"
+              :label="t('cmsEditor.tags')"
+              :locale
+              :disabled="
+                state === 'saving' ||
+                uploads > 0 ||
+                invalidFields.has('document')
+              "
+              @update:model-value="document = { ...document, tags: $event }"
+            />
+          </div>
           <label class="grid gap-1 text-sm text-admin-muted"
             >{{ t('cmsEditor.useCases')
             }}<input

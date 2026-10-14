@@ -85,6 +85,17 @@ async function saveBody() {
   return JSON.parse(String(vi.mocked(editorRequest).mock.calls[0][1]?.body))
 }
 describe('complete authored document preservation', () => {
+  it('saves chip tags without changing nested content or exact media pins', async () => {
+    setup()
+    const input = screen.getByRole('textbox', { name: 'Tags' })
+    await fireEvent.update(input, 'product-video')
+    await fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    const payload = await saveBody()
+    expect(payload).toMatchObject({
+      ...authored,
+      tags: ['product-video']
+    })
+  })
   it('keeps literal keys in a successful save response for the next save', async () => {
     setup()
     const literal = JSON.parse('{"__proto__":{"literal":true}}')

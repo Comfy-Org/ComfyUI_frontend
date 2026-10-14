@@ -77,6 +77,10 @@ while a request is unsettled. Cancel does not mutate the catalog. The legacy
 decision component remains only for compatibility; the new console does not use
 it. The rest of Mar's editor, list/history and site-wide redesign is still being
 integrated, with real upload/auth/Preview transport retained instead of mocks.
+The editor also adopts Mar's tag chips: Enter or comma adds a tag, and each chip
+has a localized remove action. Tags stay an array throughout editing and saving;
+existing tag text is not split merely by opening the form. Upload/save and
+invalid complete-JSON states block the chip controls with the rest of the form.
 Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
 `Add Content` is beside the selection actions. A temporary local Publish control
