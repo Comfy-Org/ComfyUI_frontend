@@ -124,7 +124,7 @@ export type FeatureFlagsWsMessage = Record<string, unknown>
 export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
   url: string | null
-  reason: string | null
+  reason?: string | null
 }
 export interface AssetDownloadWsMessage {
   task_id: string

@@ -40,14 +40,12 @@ import './widgetInputs'
 // dead-code-eliminates this block from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-} else {
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
 }
+
+const { registerAgentPanelExtension } = await import('./agentPanel')
+registerAgentPanelExtension()
 
 // Feedback button for cloud and nightly builds
 if (isCloud || isNightly) {
