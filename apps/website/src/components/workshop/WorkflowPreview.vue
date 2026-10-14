@@ -18,10 +18,12 @@ import WorkflowGraph from './WorkflowGraph.vue'
 const {
   model,
   cloudHref,
+  standalone = false,
   active = true
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
   cloudHref?: string
+  standalone?: boolean
   /** Whether this tab is showing; the graph waits until it first is. */
   active?: boolean
 }>()
@@ -156,20 +158,27 @@ const facts = computed(() => {
 <template>
   <section
     id="workflow-panel-workflow"
-    role="tabpanel"
-    aria-labelledby="workflow-tab-workflow"
+    :role="standalone ? undefined : 'tabpanel'"
+    :aria-labelledby="standalone ? undefined : 'workflow-tab-workflow'"
   >
     <SectionHeading
+      v-if="!standalone"
       class="mb-8"
       :title="t('workshop.workflow.inside')"
       :subtitle="t('workshop.workflow.previewHint')"
     />
 
-    <div class="grid gap-10 lg:grid-cols-12">
-      <div class="lg:col-span-8">
+    <div
+      :class="
+        standalone
+          ? 'grid gap-8 lg:grid-cols-[22.5rem_minmax(0,1fr)] lg:gap-16'
+          : 'grid gap-10 lg:grid-cols-12'
+      "
+    >
+      <div :class="standalone ? 'min-w-0 lg:order-2' : 'lg:col-span-8'">
         <WorkflowGraph
           v-if="downloadHref"
-          :key="model.slug"
+          :key="downloadHref"
           :source="downloadHref"
           :samples
           :fallback="files ? undefined : template?.previewUrl"
@@ -193,7 +202,7 @@ const facts = computed(() => {
         </a>
       </div>
 
-      <div class="lg:col-span-4">
+      <div :class="standalone ? 'min-w-0 lg:order-1' : 'lg:col-span-4'">
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
           <div class="flex flex-col gap-3" data-testid="workflow-actions">
             <Button

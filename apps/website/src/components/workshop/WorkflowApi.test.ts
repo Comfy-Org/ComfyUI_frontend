@@ -8,6 +8,7 @@ import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
 import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import { workflowSnippetRequest } from '@/config/workshop-workflow-snippet'
+import { formForWorkflow } from '@/config/workshop-workflow-definition'
 import WorkflowApi from './WorkflowApi.vue'
 
 const fixture = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
@@ -19,6 +20,144 @@ const model = markRaw(fixture)
 const values = initialWorkshopPageState(model).values
 
 describe('WorkflowApi', () => {
+  it('does not conceal invalid current inputs behind stored code', () => {
+    const invalidValues = Object.fromEntries(
+      Object.keys(model.workflow.inputSchema.properties).map((name) => [
+        name,
+        Number.NaN
+      ])
+    )
+    render(WorkflowApi, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            models: [],
+            faqs: [],
+            scriptCode: { python: 'STALE_MANUAL_CODE' }
+          }
+        },
+        values: invalidValues
+      }
+    })
+    expect(screen.queryByTestId('workflow-api-snippet')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Fill in the Playground inputs'
+    )
+    expect(screen.queryByText('STALE_MANUAL_CODE')).toBeNull()
+  })
+  it('can infer code from a complete graph without editable inputs', () => {
+    if (!model.workflow.cloud) throw new Error('Missing fixture graph')
+    const workflow = {
+      ...model.workflow,
+      inputs: {},
+      inputSchema: {
+        type: 'object' as const,
+        properties: {},
+        required: [],
+        additionalProperties: false as const
+      },
+      cloud: { ...model.workflow.cloud, inputBindings: {} }
+    }
+    render(WorkflowApi, {
+      props: {
+        model: {
+          ...model,
+          workflow,
+          form: formForWorkflow(workflow),
+          fields: [],
+          examples: [],
+          defaults: {},
+          catalogDetails: {
+            locale: 'en',
+            models: [],
+            faqs: [],
+            runnable: false,
+            scriptCode: { python: 'STALE_MANUAL_CODE' }
+          }
+        },
+        values: {},
+        downloadOnly: true
+      }
+    })
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      'from comfy_sdk import Comfy'
+    )
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      Object.values(workflow.cloud.workflow)[0].class_type
+    )
+    expect(screen.getByTestId('workflow-api-snippet')).not.toHaveTextContent(
+      'STALE_MANUAL_CODE'
+    )
+  })
+  it('prefers inferred code over stale authored snippets', () => {
+    render(WorkflowApi, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            models: [],
+            faqs: [],
+            runnable: false,
+            scriptCode: { python: 'STALE_MANUAL_CODE' }
+          }
+        },
+        values,
+        downloadOnly: true
+      }
+    })
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      'from comfy_sdk import Comfy'
+    )
+    expect(screen.getByTestId('workflow-api-snippet')).not.toHaveTextContent(
+      'STALE_MANUAL_CODE'
+    )
+  })
+  it('offers only stored languages when inference is unavailable, without Cloud execution claims', () => {
+    render(WorkflowApi, {
+      props: {
+        model: {
+          ...model,
+          workflow: { ...model.workflow, cloud: undefined },
+          catalogDetails: {
+            locale: 'en',
+            models: [],
+            faqs: [],
+            scriptCode: {
+              curl: 'curl --fail https://example.com/workflow.json'
+            }
+          }
+        },
+        values: {},
+        downloadOnly: true
+      }
+    })
+    expect(screen.getByRole('tab', { name: 'cURL' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.queryByRole('tab', { name: 'Python' })).toBeNull()
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      'curl --fail'
+    )
+    expect(screen.queryByTestId('workflow-api-endpoint')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Download the API graph' })
+    ).toBeNull()
+    expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
+  })
+  it('omits the blank download-only API section', () => {
+    const { container } = render(WorkflowApi, {
+      props: {
+        model: { ...model, workflow: { ...model.workflow, cloud: undefined } },
+        values: {},
+        downloadOnly: true
+      }
+    })
+    expect(container.querySelector('section')).toBeNull()
+  })
   // A developer opening this tab wants the address before they want the
   // snippet, and it was only ever readable by picking it out of the cURL.
   it('names the address a cURL run is posted to', async () => {

@@ -43,6 +43,23 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('preserves explicit download-only and stored script facts only in detail data', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        runnable: false,
+        script_code: { python: 'print("Example")' }
+      }
+    })
+    expect(detailSchema.parse(view)).toMatchObject({
+      catalogDetails: {
+        runnable: false,
+        scriptCode: { python: 'print("Example")' }
+      }
+    })
+    expect(modelSchema.parse(view)).not.toHaveProperty('catalogDetails')
+  })
   it('maps only server-resolved file downloads and valid Cloud/doc links into detail metadata', () => {
     const uid = '00000000-0000-4000-8000-000000000080'
     const version = '00000000-0000-4000-8000-000000000081'

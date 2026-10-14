@@ -7,6 +7,7 @@ const website = 'http://127.0.0.1:4353'
 const browser = await chromium.launch({ headless: true })
 try {
   const context = await browser.newContext({
+    acceptDownloads: true,
     viewport: { width: 1440, height: 1000 }
   })
   const graph = await readFile(
@@ -81,6 +82,10 @@ try {
       render: () => {
         const catalogDetails = {
           locale: state.locale,
+          runnable: false,
+          scriptCode: state.empty
+            ? undefined
+            : { python: 'print("Read-only script example")' },
           models: state.empty
             ? []
             : [
@@ -100,12 +105,12 @@ try {
                   {
                     name: 'Version one',
                     uid: '00000000-0000-4000-8000-000000000080',
-                    href: '/preview-media/7/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000081'
+                    href: '/workflow-graphs/remove-background.json'
                   },
                   {
                     name: 'Version two',
                     uid: '00000000-0000-4000-8000-000000000080',
-                    href: '/preview-media/7/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000082'
+                    href: '/workflow-graphs/animate-reference-sheet.json'
                   }
                 ],
                 runs: 0,
@@ -163,7 +168,10 @@ try {
     page.getByRole('heading', { name: 'About this workflow' })
   ).toBeVisible()
   await expect(page.getByText('A workflow you can customize.')).toBeVisible()
-  await page.getByRole('tab', { name: 'Details' }).click()
+  await expect(page.getByRole('tab', { name: 'Playground' })).toHaveCount(0)
+  await expect(page.getByTestId('workflow-api-snippet')).toContainText(
+    'Read-only script example'
+  )
   await expect(page.getByTestId('workflow-details')).toContainText(
     'Comfy CloudNo'
   )
@@ -172,21 +180,29 @@ try {
   ).toHaveAttribute('href', '/hub/models/local-fixture/')
   await expect(
     page.getByRole('link', { name: 'Download workflow JSON' })
-  ).toHaveAttribute('href', /000000000082$/)
+  ).toHaveAttribute('href', '/workflow-graphs/animate-reference-sheet.json')
   await expect(
-    page.getByRole('link', { name: 'API documentation', exact: true })
+    page
+      .getByTestId('workflow-actions')
+      .getByRole('link', { name: 'API documentation', exact: true })
   ).toHaveAttribute('href', 'https://docs.comfy.org/api-reference/')
+  await expect(page.getByTestId('api-docs')).toHaveAttribute(
+    'href',
+    'https://docs.comfy.org/api-reference/'
+  )
   await page
     .getByRole('combobox', { name: 'Workflow version' })
     .selectOption({ label: 'Version one' })
   await expect(
     page.getByRole('link', { name: 'Download workflow JSON' })
-  ).toHaveAttribute('href', /000000000081$/)
+  ).toHaveAttribute('href', '/workflow-graphs/remove-background.json')
   const downloaded = page.waitForEvent('download')
   await page.getByRole('link', { name: 'Download workflow JSON' }).click()
-  expect((await downloaded).suggestedFilename()).toBe(
-    'local-readonly-fixture.json'
-  )
+  const download = await downloaded
+  expect(download.suggestedFilename()).toBe('local-readonly-fixture.json')
+  const savedPath = await download.path()
+  if (!savedPath) throw new Error('Workflow download was not saved')
+  expect(await readFile(savedPath)).toEqual(graph)
   await page.getByRole('button', { name: 'Check Cloud link' }).click()
   await expect(
     page.getByRole('link', { name: 'Try in Cloud' })
@@ -195,6 +211,7 @@ try {
   await expect(page.getByText('Yes. Edit the workflow JSON.')).toBeVisible()
   await page.screenshot({
     path: '/tmp/ccc-bruce-workflow-details-desktop.png',
+    animations: 'disabled',
     fullPage: true
   })
   await page.setViewportSize({ width: 390, height: 844 })

@@ -142,6 +142,8 @@ export function catalogPresentation(
       : [],
     worksOnCloud:
       typeof d.works_on_cloud === 'boolean' ? d.works_on_cloud : undefined,
+    runnable: typeof d.runnable === 'boolean' ? d.runnable : undefined,
+    scriptCode: d.script_code,
     outputType:
       typeof d.output_type === 'string' && d.output_type.trim()
         ? d.output_type

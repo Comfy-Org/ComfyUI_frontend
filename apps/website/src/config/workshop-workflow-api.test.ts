@@ -1,6 +1,7 @@
 import type { JobDetailResponse } from '@comfyorg/ingest-types'
 import { z } from 'astro/zod'
 import { assert, describe, expect, it, vi } from 'vitest'
+import { shallowReactive } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import {
@@ -53,6 +54,15 @@ function observation(
 }
 
 describe('Workshop workflow HTTP client', () => {
+  it('can infer a request from reactive page props without altering the source graph', () => {
+    const source = definition()
+    const original = structuredClone(source.cloud.workflow)
+    source.cloud.workflow = shallowReactive(source.cloud.workflow)
+    const result = workflowCloudRequest(source, request)
+    expect(Object.keys(result.prompt)).toEqual(Object.keys(original))
+    expect(source.cloud.workflow).toEqual(original)
+    expect(result.prompt).not.toBe(source.cloud.workflow)
+  })
   it('renews authentication once with the identical materialized graph', async () => {
     const source = definition()
     const original = structuredClone(source.cloud.workflow)

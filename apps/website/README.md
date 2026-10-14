@@ -1,6 +1,20 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+Workflow `runnable` controls the website playground, not code examples. With
+no declared inputs or `runnable:false`, the page uses a standalone graph/media
+and sticky details/download/Cloud sidebar, prose, code and FAQ flow based on
+workflow_templates/site's original TemplateDetailPage. No run composables,
+input form or generated-output panel are mounted. Legacy records with inputs
+and no flag retain their playground. The editor's Runnable checkbox enables
+input editing; disabling it preserves definitions/bindings and exact file pins.
+Code remains independent: infer Python/TypeScript/cURL from the real executable
+graph and current/default input values whenever possible. Optional `script_code`
+language snippets are inert fallback text only when inference is unavailable;
+unsupported/blank languages and empty download-only code sections are omitted.
+No Cloud execution availability or paid validation is implied by stored code.
+The new layout is selected only by CCC detail data; the existing non-CCC
+website consumer stays unchanged until catalog activation/cutover.
 The editor exposes the short name/one-line description, large multi-paragraph
 long description, editable credited-author UUID, optional documentation/Cloud
 share links, counts, Cloud compatibility, output type, model UID references,

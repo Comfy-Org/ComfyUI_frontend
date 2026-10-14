@@ -78,6 +78,14 @@ export const workflowCatalogDetailsSchema = z.object({
     })
   ),
   worksOnCloud: z.boolean().optional(),
+  runnable: z.boolean().optional(),
+  scriptCode: z
+    .object({
+      python: z.string().max(60000).optional(),
+      typescript: z.string().max(60000).optional(),
+      curl: z.string().max(60000).optional()
+    })
+    .optional(),
   outputType: z
     .enum(['image', 'video', 'audio', '3d', 'text', 'mixed'])
     .optional(),

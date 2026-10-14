@@ -1,5 +1,10 @@
 {
   "cccMetadata": {
+    "runnable": "可运行",
+    "runnableHint": "启用输入编辑和网站运行面板。关闭后保留已保存的输入；下载和代码示例仍可用。",
+    "scriptCode": "备用脚本示例",
+    "scriptHint": "尽可能根据可执行图和输入自动生成代码。仅在无法生成时填写示例；网站只显示这些代码，不会执行。",
+    "script": { "python": "Python 备用代码", "typescript": "TypeScript 备用代码", "curl": "cURL 备用代码" },
     "invalidCount": "请输入非负整数，或留空。",
     "invalidFAQ": "每个问题都需要答案；问题不得重复。",
     "outputs": "工作流输出",
@@ -10,6 +15,9 @@
     "longDescription": "详细描述", "author": "署名作者账户 UID", "documentation": "文档 URL", "ownerFixed": "所有者由服务器固定；署名作者可编辑。", "runs": "运行次数", "downloads": "下载次数", "cloud": "可在 Comfy Cloud 上运行", "unspecified": "未指定", "outputType": "输出类型", "models": "模型 UID（以逗号分隔）", "cloudShare": "Comfy Cloud 分享 URL", "faq": "常见问答", "addQuestion": "添加问题", "removeQuestion": "删除问题", "question": "问题 {count}", "answer": "回答 {count}"
   },
   "cccWorkflow": {
+    "codeHeading": "通过代码使用此工作流",
+    "codeHint": "尽可能根据工作流图和输入自动生成代码，否则显示已保存的示例。运行代码可能产生费用，请先核对凭据和端点。",
+    "codeUnavailable": "此工作流暂未提供脚本示例。请下载工作流或查看文档。",
     "about": "关于此工作流",
     "faq": "常见问答",
     "runs": "运行次数",

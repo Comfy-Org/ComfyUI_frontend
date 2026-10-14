@@ -18,6 +18,99 @@ const mount = (selected = model) =>
   })
 
 describe('WorkflowPage header', () => {
+  it('does not switch the legacy consumer layout before catalog activation', () => {
+    const { container } = mount({
+      ...model,
+      workflow: { ...model.workflow, inputs: {} }
+    })
+    expect(container.querySelector('workflow-playground-stub')).not.toBeNull()
+  })
+  it.each([false, true, undefined])(
+    'keeps a workflow with no inputs download-only (runnable=%s)',
+    (runnable) => {
+      const emptyWorkflow = {
+        ...model.workflow,
+        inputs: {},
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+          required: [],
+          additionalProperties: false as const
+        },
+        cloud: undefined
+      }
+      const { container } = render(WorkflowPage, {
+        props: {
+          model: {
+            ...model,
+            workflow: emptyWorkflow,
+            form: {
+              parameters: emptyWorkflow.inputSchema,
+              inputs: {},
+              roles: [],
+              advancedFields: []
+            },
+            catalogDetails: {
+              locale: 'en',
+              faqs: [],
+              models: [],
+              runnable,
+              scriptCode: { python: 'print("Download-only example")' }
+            }
+          }
+        },
+        global: {
+          stubs: {
+            WorkflowPlayground: true,
+            WorkflowGraph: true,
+            HighlightedCode: {
+              props: ['code'],
+              template: '<code>{{code}}</code>'
+            }
+          }
+        }
+      })
+      expect(container.querySelector('workflow-playground-stub')).toBeNull()
+      expect(screen.queryByRole('tab', { name: 'Playground' })).toBeNull()
+      expect(
+        screen.getByRole('link', { name: 'Download workflow JSON' })
+      ).toHaveAttribute('href', template.downloadUrl)
+      expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+        'Download-only example'
+      )
+      expect(screen.queryByTestId('workflow-api-endpoint')).toBeNull()
+    }
+  )
+  it('turns off the run layout without disabling generated code for a workflow with inputs', () => {
+    const { container } = render(WorkflowPage, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            runnable: false
+          }
+        }
+      },
+      global: {
+        stubs: {
+          WorkflowPlayground: true,
+          WorkflowGraph: true,
+          HighlightedCode: {
+            props: ['code'],
+            template: '<code>{{code}}</code>'
+          }
+        }
+      }
+    })
+    expect(container.querySelector('workflow-playground-stub')).toBeNull()
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      'from comfy_sdk import Comfy'
+    )
+    expect(screen.getByRole('tab', { name: 'cURL' })).toBeVisible()
+  })
   it('passes an actual Cloud share link without inventing a share ID from the catalog UID', () => {
     const { getByTestId } = render(WorkflowPage, {
       props: {

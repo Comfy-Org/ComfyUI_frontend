@@ -45,6 +45,23 @@ const t = translationsFor(locale).t
 const document = ref<Document>(structuredClone(toRaw(initial)))
 const snapshot = ref(initialSnapshot)
 const kind = ref<ContentType>(initialType)
+const inputsEnabled = computed(
+  () =>
+    kind.value !== 'workflow' ||
+    (typeof document.value.runnable === 'boolean'
+      ? document.value.runnable
+      : Object.keys(objectValue(document.value.inputs)).length > 0)
+)
+function scriptCode(language: string, event: Event) {
+  if (!(event.target instanceof HTMLTextAreaElement)) return
+  const scripts = { ...objectValue(document.value.script_code) }
+  if (event.target.value.trim()) scripts[language] = event.target.value
+  else delete scripts[language]
+  const next = { ...document.value }
+  if (Object.keys(scripts).length) next.script_code = scripts
+  else delete next.script_code
+  document.value = next
+}
 const draft = ref(initialDraft)
 const state = ref<'idle' | 'saving' | 'saved' | 'conflict' | 'failed'>('idle')
 const errors = ref<string[]>([])
@@ -785,14 +802,61 @@ async function save() {
           }}</AdminButton>
         </div>
       </section>
-      <InputsEditor
-        v-model="document"
-        :locale
-        :disabled="
-          state === 'saving' || uploads > 0 || invalidFields.has('document')
-        "
-        @validity="validity"
-      />
+      <label v-if="kind === 'workflow'" class="flex items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          :checked="inputsEnabled"
+          @change="patch('runnable', $event)"
+        />
+        {{ t('cccMetadata.runnable') }}
+      </label>
+      <p v-if="kind === 'workflow'" class="text-sm text-admin-muted">
+        {{ t('cccMetadata.runnableHint') }}
+      </p>
+      <fieldset
+        :disabled="!inputsEnabled"
+        :class="!inputsEnabled ? 'min-w-0 opacity-40' : 'min-w-0'"
+      >
+        <InputsEditor
+          v-model="document"
+          :locale
+          :disabled="
+            !inputsEnabled ||
+            state === 'saving' ||
+            uploads > 0 ||
+            invalidFields.has('document')
+          "
+          @validity="validity"
+        />
+      </fieldset>
+      <section
+        v-if="kind === 'workflow'"
+        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+      >
+        <h2 class="text-lg">{{ t('cccMetadata.scriptCode') }}</h2>
+        <p class="text-sm text-admin-muted">
+          {{ t('cccMetadata.scriptHint') }}
+        </p>
+        <label
+          v-for="language in ['python', 'typescript', 'curl'] as const"
+          :key="language"
+          class="grid gap-2 text-sm text-admin-muted"
+        >
+          {{ t(`cccMetadata.script.${language}`) }}
+          <textarea
+            :value="
+              typeof objectValue(document.script_code)[language] === 'string'
+                ? String(objectValue(document.script_code)[language])
+                : ''
+            "
+            rows="8"
+            maxlength="60000"
+            spellcheck="false"
+            :class="inputClass"
+            @input="scriptCode(language, $event)"
+          />
+        </label>
+      </section>
       <ExamplesEditor
         v-model="document"
         :entityUID="snapshot?.uid"

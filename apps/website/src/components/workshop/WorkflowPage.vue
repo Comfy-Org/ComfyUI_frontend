@@ -9,10 +9,20 @@ import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import { translationsFor } from '@/i18n/translations'
 import WorkflowPlayground from './WorkflowPlayground.vue'
+import WorkflowPreview from './WorkflowPreview.vue'
+import WorkflowApi from './WorkflowApi.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
+const runnable = computed(
+  () =>
+    !model.catalogDetails ||
+    (model.catalogDetails.runnable !== false &&
+      Object.keys(model.workflow.inputs).length > 0)
+)
+const snippetValues = computed(() => initialWorkshopPageState(model).values)
 const t = computed(
   () => translationsFor(model.catalogDetails?.locale ?? 'en').t
 )
@@ -94,12 +104,14 @@ const cloudHref = computed(
     </header>
 
     <WorkflowPlayground
+      v-if="runnable"
       :key="scope"
       :model="model"
       :scope="scope"
       :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
+    <WorkflowPreview v-else :model :cloud-href="cloudHref" standalone />
     <section
       v-if="paragraphs.length"
       class="mt-16 max-w-4xl"
@@ -121,6 +133,13 @@ const cloudHref = computed(
         </p>
       </div>
     </section>
+    <WorkflowApi
+      v-if="!runnable"
+      class="mt-16"
+      :model
+      :values="snippetValues"
+      download-only
+    />
     <FAQSplit01
       v-if="faqs.length"
       id="workflow-faq"

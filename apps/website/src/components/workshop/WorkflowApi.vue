@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -14,6 +14,7 @@ import type { FormValues } from '@/config/workshop-playground'
 import { urlUploadField } from '@/config/workshop-playground'
 import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
 import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
@@ -24,16 +25,24 @@ import {
   workflowSnippetRequest,
   workflowTypeScript
 } from '@/config/workshop-workflow-snippet'
-import { t } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type { CodeLang } from '@/lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
 
-const { model, values } = defineProps<{
+const {
+  model,
+  values,
+  downloadOnly = false
+} = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
+  downloadOnly?: boolean
 }>()
+const t = computed(
+  () => translationsFor(model.catalogDetails?.locale ?? 'en').t
+)
 const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
@@ -42,20 +51,44 @@ const keyHref = computed(() =>
     session.value?.workspace.id
   )
 )
-const request = computed(() => {
-  if (model.type !== 'CLOUD') return undefined
+const inferred = computed(() => {
+  if (model.type !== 'CLOUD') return { fallback: true }
   try {
-    return workflowSnippetRequest(model, values)
-  } catch {
-    return undefined
+    return { request: workflowSnippetRequest(model, values), fallback: false }
+  } catch (error) {
+    return {
+      fallback: !(
+        error instanceof WorkshopWorkflowError && error.code === 'invalid_input'
+      )
+    }
   }
 })
+const request = computed(() => inferred.value.request)
 const language = ref<SnippetLanguage>('python')
+const languages = computed(() =>
+  request.value
+    ? SNIPPET_LANGUAGES
+    : SNIPPET_LANGUAGES.filter(
+        (lang) =>
+          inferred.value.fallback &&
+          model.catalogDetails?.scriptCode?.[lang]?.trim()
+      )
+)
+watch(
+  languages,
+  (available) => {
+    if (!available.includes(language.value))
+      language.value = available[0] ?? 'python'
+  },
+  { immediate: true }
+)
 const { onKeydown: onLanguageKeydown } = useTablist(
-  () => SNIPPET_LANGUAGES,
+  () => languages.value,
   language
 )
 const code = computed(() => {
+  if (!request.value && inferred.value.fallback)
+    return model.catalogDetails?.scriptCode?.[language.value] ?? ''
   if (!request.value) return ''
   if (language.value === 'curl') return workflowCurl(request.value)
   const plan = workflowSdkPlan(model, values, request.value)
@@ -99,24 +132,24 @@ const facts = computed(() => {
       ? []
       : [
           {
-            label: t('workshop.api.needsEndpoint'),
+            label: t.value('workshop.api.needsEndpoint'),
             value: `POST ${endpoint}`,
             mono: true,
-            copyLabel: t('workshop.api.copyEndpoint')
+            copyLabel: t.value('workshop.api.copyEndpoint')
           }
         ]),
     {
-      label: t('workshop.api.needsKey'),
+      label: t.value('workshop.api.needsKey'),
       value: sdk ? 'COMFY_API_KEY' : 'X-API-Key + extra_data.api_key_comfy_org',
       mono: true
     },
     ...(hasMedia
       ? [
           {
-            label: t('workshop.api.needsFiles'),
+            label: t.value('workshop.api.needsFiles'),
             value: sdk
-              ? t('workshop.api.filesSdk')
-              : t('workshop.api.filesUploaded')
+              ? t.value('workshop.api.filesSdk')
+              : t.value('workshop.api.filesUploaded')
           }
         ]
       : [])
@@ -125,17 +158,27 @@ const facts = computed(() => {
 </script>
 
 <template>
-  <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
+  <section
+    v-if="!downloadOnly || request || languages.length"
+    class="flex flex-col gap-6"
+    aria-labelledby="workflow-api-heading"
+  >
     <SectionHeading
       title-id="workflow-api-heading"
-      :title="t('workshop.api.heading')"
-      :subtitle="t('workshop.workflow.apiHint')"
+      :title="
+        t(downloadOnly ? 'cccWorkflow.codeHeading' : 'workshop.api.heading')
+      "
+      :subtitle="
+        t(downloadOnly ? 'cccWorkflow.codeHint' : 'workshop.workflow.apiHint')
+      "
     />
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
+        v-if="request || !downloadOnly"
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
         <Button
+          v-if="request || !downloadOnly"
           as="a"
           :href="keyHref"
           target="_blank"
@@ -170,7 +213,10 @@ const facts = computed(() => {
           {{ t('workshop.api.downloadGraph') }}
           <template #append><span aria-hidden="true">↓</span></template>
         </Button>
-        <div data-testid="workflow-api-endpoint">
+        <div
+          v-if="request || !downloadOnly"
+          data-testid="workflow-api-endpoint"
+        >
           <ApiFacts
             :where="t('workshop.api.runsOnCloud')"
             :rows="facts"
@@ -194,7 +240,7 @@ const facts = computed(() => {
               @keydown="onLanguageKeydown"
             >
               <button
-                v-for="option in SNIPPET_LANGUAGES"
+                v-for="option in languages"
                 :id="`workflow-snippet-tab-${option}`"
                 :key="option"
                 type="button"
@@ -232,11 +278,17 @@ const facts = computed(() => {
           ><HighlightedCode :code="code" :language="highlightLanguage[language]" /></pre>
         </div>
         <p v-else role="status" class="text-sm text-primary-warm-gray">
-          {{ t('workshop.api.inputInvalid') }}
+          {{
+            t(
+              downloadOnly
+                ? 'cccWorkflow.codeUnavailable'
+                : 'workshop.api.inputInvalid'
+            )
+          }}
         </p>
 
         <details
-          v-if="language === 'curl'"
+          v-if="request && language === 'curl'"
           class="rounded-2xl border border-transparency-white-t8 px-5"
           data-testid="workflow-api-steps"
         >

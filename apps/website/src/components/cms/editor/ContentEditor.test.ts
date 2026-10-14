@@ -41,6 +41,78 @@ function setup(existing = true) {
 }
 
 describe('staff page editor', () => {
+  it('requires opting into input editing but not script examples', async () => {
+    setup(false)
+    const runnable = screen.getByRole('checkbox', { name: 'Runnable' })
+    const addInput = screen.getByRole('button', { name: 'Add input' })
+    expect(runnable).not.toBeChecked()
+    expect(addInput).toBeDisabled()
+    expect(
+      screen.getByRole('textbox', { name: 'Python fallback code' })
+    ).toBeEnabled()
+    await fireEvent.click(runnable)
+    expect(addInput).toBeEnabled()
+    await fireEvent.click(runnable)
+    expect(addInput).toBeDisabled()
+  })
+  it('disabling Runnable preserves inputs, bindings and authored fallback code on save', async () => {
+    const fields = {
+      inputs: {
+        prompt: {
+          label: 'Prompt',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-area'
+        }
+      },
+      inputSchema: {
+        type: 'object',
+        properties: { prompt: { type: 'string', default: 'Default' } },
+        required: [],
+        additionalProperties: false
+      },
+      inputBindings: {
+        prompt: {
+          encoding: 'scalar',
+          targets: [{ nodeId: '6', inputName: 'text' }]
+        }
+      }
+    }
+    const snapshot = editorSnapshot({ ...flat, ...fields })
+    if (!snapshot) throw new Error('Fixture invalid')
+    render(ContentEditor, {
+      props: {
+        initial: snapshot.document,
+        snapshot,
+        type: 'workflow',
+        draft: 7,
+        csrf: 'a'.repeat(64)
+      }
+    })
+    vi.mocked(editorRequest).mockResolvedValue({
+      ok: false,
+      status: 409,
+      data: undefined
+    })
+    expect(screen.getByRole('checkbox', { name: 'Runnable' })).toBeChecked()
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Python fallback code' }),
+      'print("Fallback")\n'
+    )
+    await fireEvent.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]
+    )
+    await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
+    expect(
+      JSON.parse(String(vi.mocked(editorRequest).mock.calls[0][1]?.body))
+    ).toMatchObject({
+      ...fields,
+      runnable: false,
+      script_code: { python: 'print("Fallback")\n' }
+    })
+  })
   it('uses single-line Description and a large multi-paragraph Long description', () => {
     setup()
     expect(screen.getByRole('textbox', { name: /^Description$/ }).tagName).toBe(
@@ -253,6 +325,7 @@ describe('staff page editor', () => {
   })
   it('adds editable input and example fields without network or paid generation', async () => {
     setup()
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Parameter name' }),
       'prompt'
