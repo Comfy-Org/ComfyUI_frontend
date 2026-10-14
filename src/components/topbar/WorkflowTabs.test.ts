@@ -280,6 +280,8 @@ describe('WorkflowTabs agent entry button', () => {
       name: enMessages.agent.entryFailed
     })
     expect(failed).toHaveAttribute('aria-disabled', 'true')
+    await user.click(failed)
+    expect(withConsent).not.toHaveBeenCalled()
     expect(failed).toHaveAttribute(
       'title',
       'ComfyUI could not start the agent: not_found'
