@@ -3,13 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfigRevision
-} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -40,8 +34,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 /** Upper bound on how long readiness consumers wait for a gate decision. */
-export const GATE_SETTLE_TIMEOUT_MS = 5_000
-
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2
@@ -169,8 +161,7 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
-        useCurrentUser()
+      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -540,33 +531,25 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      setupFlagGate(
-        loadConsentIfEligible,
-        openWhenStartupDecided,
-        () => isAuthInitialized.value && resolvedUserInfo.value === null
-      )
+      setupFlagGate(loadConsentIfEligible, openWhenStartupDecided)
     }
   })
 }
 
 function setupFlagGate(
   loadConsentIfEligible: () => void,
-  openWhenStartupDecided: () => void,
-  isSignedOut: () => boolean
+  openWhenStartupDecided: () => void
 ): void {
   const agentPanelStore = useAgentPanelStore()
-  const { flags } = useFeatureFlags()
   const devForcedOn =
     import.meta.env.MODE === 'development' &&
-    (isCloud || import.meta.env.VITE_AGENT_STANDALONE === 'true')
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
 
   watch(
     () =>
       [
-        devForcedOn ||
-          flags.agentInAppExperienceEnabled ||
-          agentPanelStore.comfyAgent?.state === 'ready',
-        remoteConfigRevision.value
+        devForcedOn || agentPanelStore.comfyAgent?.state === 'ready',
+        agentPanelStore.comfyAgent
       ] as const,
     ([enabled]) => {
       agentPanelStore.enabled = enabled
@@ -576,37 +559,12 @@ function setupFlagGate(
     },
     { immediate: true }
   )
-
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  let settleTimer: ReturnType<typeof setTimeout> | undefined
-  const clearSettleTimer = (): void => {
-    clearTimeout(settleTimer)
-    settleTimer = undefined
-  }
-  const scheduleSignedOutFallback = (): void => {
-    clearSettleTimer()
-    settleTimer = setTimeout(() => {
-      if (isSignedOut()) settle()
-    }, GATE_SETTLE_TIMEOUT_MS)
-  }
   watch(
     () =>
-      [
-        import.meta.env.MODE === 'development' ||
-          authenticatedRemoteConfigState.value === 'authenticated' ||
-          authenticatedRemoteConfigState.value === 'error',
-        isSignedOut()
-      ] as const,
-    ([decided, signedOut]) => {
-      agentPanelStore.gateSettled = decided
-      clearSettleTimer()
-      if (!decided && signedOut) scheduleSignedOutFallback()
+      import.meta.env.MODE === 'development' || agentPanelStore.flagsSettled,
+    (settled) => {
+      agentPanelStore.gateSettled = settled
     },
     { immediate: true }
   )
-  // A signed-out session never runs the authenticated /features refresh
-  // (WorkspaceAuthGate returns early with no user), so the watch above never
-  // reaches a decided state for it.
 }
