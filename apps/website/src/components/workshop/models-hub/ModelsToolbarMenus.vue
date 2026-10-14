@@ -34,7 +34,7 @@ const sort = defineModel<SortOrder>('sort', { required: true })
 
 <template>
   <div
-    class="flex items-center gap-2 max-sm:order-last max-sm:-mx-1 max-sm:basis-full max-sm:overflow-x-auto max-sm:px-1"
+    class="flex items-center gap-3 max-sm:order-last max-sm:-mx-1 max-sm:basis-full max-sm:overflow-x-auto max-sm:px-1"
     data-testid="workshop-dropdowns"
   >
     <BestForMenu
@@ -52,7 +52,7 @@ const sort = defineModel<SortOrder>('sort', { required: true })
     />
   </div>
 
-  <div class="flex items-center gap-2" data-testid="workshop-filters">
+  <div class="flex items-center gap-3" data-testid="workshop-filters">
     <WorkshopFilterMenu
       v-if="accessOptions.length"
       v-model:access="access"
