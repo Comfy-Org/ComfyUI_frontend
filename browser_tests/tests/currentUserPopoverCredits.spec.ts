@@ -183,6 +183,33 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
 
+  test('draws a single card frame with no offset shell behind it', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await setupCloudApp(page, {
+      workspace: workspace('personal', 'owner'),
+      features: { subscription_required: false }
+    })
+    await page.goto(APP_URL)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
+    await page.getByRole('button', { name: 'Close dialog' }).click()
+    await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    const shell = page.getByRole('dialog').filter({ has: popover })
+
+    const popoverBox = await popover.boundingBox()
+    const shellBox = await shell.boundingBox()
+    expect(popoverBox).not.toBeNull()
+    expect(shellBox).toEqual(popoverBox)
+  })
+
   test(
     'renders Manage plan as a plain full-width menu row',
     { tag: '@screenshot' },

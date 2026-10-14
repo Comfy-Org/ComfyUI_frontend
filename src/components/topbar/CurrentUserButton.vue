@@ -37,7 +37,7 @@
     <Popover
       ref="popover"
       align="end"
-      content-class="w-80 overflow-visible p-0"
+      content-class="w-auto overflow-visible border-0 bg-transparent p-0 shadow-none"
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
