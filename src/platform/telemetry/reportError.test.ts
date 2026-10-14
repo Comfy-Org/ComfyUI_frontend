@@ -72,12 +72,14 @@ describe('reportError', () => {
 
     reportError(error, {
       surface: 'platform',
-      errorType: 'workspace_auth_gate_initialization_failure'
+      errorType: 'workspace_auth_gate_initialization_failure',
+      fingerprint: ['workspace_auth_gate_initialization_failure']
     })
 
     expect(captureException).toHaveBeenCalledWith(
       error,
       expect.objectContaining({
+        fingerprint: ['workspace_auth_gate_initialization_failure'],
         tags: expect.objectContaining({ bucket: 'canary' })
       })
     )

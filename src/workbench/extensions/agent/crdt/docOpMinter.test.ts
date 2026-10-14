@@ -204,6 +204,29 @@ describe('attachDocOpMinter', () => {
 
   afterEach(() => minter.detach())
 
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('failure_syncing_agent_edit_mint_divergence'),
+      expect.objectContaining({
+        fingerprint: ['failure_syncing_agent_edit_mint_divergence'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          operations: ['add_node']
+        })
+      })
+    )
+  })
+
   describe('mints one op per graph command', () => {
     it.for([
       {

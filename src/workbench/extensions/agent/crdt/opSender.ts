@@ -28,6 +28,7 @@ import {
   WIRE_MAX_OPS_PER_BATCH
 } from './opEnvelope'
 import type { SizedOp } from './opEnvelope'
+import { reportLostEdit } from './reportLostEdit'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -271,6 +272,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   ): (outcome: BatchOutcome) => void {
     let reportedFailure = false
     return (outcome) => {
+      if (outcome.state !== 'acknowledged')
+        reportLostEdit(outcome.state, outcome.ops, { code: outcome.state })
       try {
         deps.onBatchSettled(outcome)
       } catch (cause) {

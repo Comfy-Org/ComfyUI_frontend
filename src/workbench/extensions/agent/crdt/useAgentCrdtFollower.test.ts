@@ -1930,10 +1930,11 @@ describe('useAgentCrdtFollower', () => {
       removed_count: 0,
       apply_failure_count: 0
     })
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'agent_crdt_human_ops_rejected',
+        errorType: 'error_applying_agent_graph_edit',
+        fingerprint: ['error_applying_agent_graph_edit'],
         context: expect.objectContaining({
           opId: ops[1].op_id,
           code: 'unknown_node'

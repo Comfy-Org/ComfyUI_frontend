@@ -44,6 +44,7 @@ import {
 
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -290,10 +291,9 @@ function routedWidgetOperation(
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
   if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-    console.error(
-      '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-      nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-    )
+    reportLostEdit('mint_divergence', [operation], {
+      code: 'unresolvable_widget_owner'
+    })
     return null
   }
   const [head, ...rest] = subgraphNodePath
@@ -379,10 +379,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (node.graph !== graph) return null
     const snapshot = wireNodeSnapshot(node)
     if (!snapshot) {
-      console.error(
-        '[agent-crdt] add_node mint dropped: no snapshot for node',
-        node.id
-      )
+      reportLostEdit('mint_divergence', [{ op: 'add_node' }], {
+        code: 'missing_node_snapshot'
+      })
       return null
     }
     return {

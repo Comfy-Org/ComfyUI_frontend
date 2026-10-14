@@ -31,6 +31,7 @@ export interface ReportErrorOptions {
   errorType: string
   /** Product surface responsible for acting on this failure. */
   surface: Surface
+  fingerprint?: string[]
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
@@ -171,13 +172,15 @@ function dispatchToSentry(
   surface: Surface,
   tags: Record<string, string | number | boolean>,
   context: Record<string, unknown>,
-  level: ReportErrorOptions['level']
+  level: ReportErrorOptions['level'],
+  fingerprint: ReportErrorOptions['fingerprint']
 ): boolean {
   try {
     captureException(error, {
       tags: { ...tags, error_type: errorType, surface },
       extra: context,
-      level
+      level,
+      ...(fingerprint ? { fingerprint } : {})
     })
     return true
   } catch (reporterFailure) {
@@ -249,7 +252,8 @@ function dispatch(
         surface,
         tags,
         context,
-        level
+        level,
+        options.fingerprint
       )
     }
     if (datadogLive) {

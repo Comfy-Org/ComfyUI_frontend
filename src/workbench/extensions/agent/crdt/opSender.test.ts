@@ -1,8 +1,17 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mock } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
@@ -28,6 +37,12 @@ function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
     state: outcome.state,
     nodeIds: nodeIdsOf(outcome.ops)
   }
+}
+
+function reportsOfType(errorType: string) {
+  return vi
+    .mocked(reportError)
+    .mock.calls.filter(([, options]) => options.errorType === errorType)
 }
 
 const detachListenerFailureCases = [
@@ -187,6 +202,46 @@ describe('createOpSender', () => {
   afterEach(() => {
     sender.detach()
   })
+
+  it.for([
+    ['undeliverable', false, WORKFLOW, 3_000],
+    ['undeliverable', true, null, 0],
+    ['unconfirmed', true, WORKFLOW, 0],
+    ['unacknowledged', true, WORKFLOW, 20_000]
+  ] as const)(
+    'reports %s exactly once with transport=%s, workflow=%s, elapsed=%s',
+    ([state, available, workflow, elapsed]) => {
+      transportUp = available
+      boundWorkflow = workflow
+      const previousClientId = api.clientId
+      api.clientId = 'api-tab'
+      onTestFinished(() => {
+        api.clientId = previousClientId
+      })
+
+      sender.enqueue([addNode(7), addNode(12)])
+      vi.advanceTimersByTime(elapsed)
+      sender.detach()
+      sender.abortAll()
+      vi.advanceTimersByTime(60_000)
+
+      expect(settled).toHaveLength(1)
+      expect(settled[0].state).toBe(state)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: `failure_syncing_agent_edit_${state}`,
+        fingerprint: [`failure_syncing_agent_edit_${state}`],
+        tags: { tab: 'api-tab', outcome: state },
+        context: {
+          code: state,
+          workflowId: undefined,
+          opId: settled[0].ops[0].op_id,
+          opIds: settled[0].ops.map((op) => op.op_id),
+          operations: ['add_node', 'add_node']
+        }
+      })
+    }
+  )
 
   it('mints once and sends a doc_ops batch with the wire envelope', () => {
     sender.enqueue([addNode(1), addNode(2)])
@@ -999,7 +1054,9 @@ describe('createOpSender', () => {
       localSender.detach()
 
       expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(
+        reportsOfType('failure_settling_agent_op_sender_detach')
+      ).toHaveLength(1)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1029,7 +1086,9 @@ describe('createOpSender', () => {
 
     localSender.detach()
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(localUnsubscribe).toHaveBeenCalledOnce()
   })
 
@@ -1050,7 +1109,9 @@ describe('createOpSender', () => {
     localSender.enqueue([addNode(1)])
     localSender.enqueue([addNode(2)])
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -1066,12 +1127,9 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] }
     ])
     expect(sender.pending()).toBe(0)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.any(TypeError),
-      expect.objectContaining({
-        errorType: 'failure_serializing_agent_op_sender'
-      })
-    )
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toEqual([
+      [expect.any(TypeError), expect.objectContaining({ surface: 'agent' })]
+    ])
 
     sender.detach()
 
@@ -1143,7 +1201,7 @@ describe('createOpSender', () => {
     enqueueCircular(4)
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
   })
 
   it('keeps serialization telemetry bounded across successful sends and re-arms by time', () => {
@@ -1153,17 +1211,17 @@ describe('createOpSender', () => {
     enqueueCircular(1)
     enqueueCircular(2)
     enqueueCircular(3)
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     sender.enqueue([addNode(4)])
     ackInFlight()
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     vi.advanceTimersByTime(60_000)
     enqueueCircular(6)
-    expect(reportError).toHaveBeenCalledTimes(4)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(4)
   })
 
   it('rejects an unserializable non-batchable op before transport', () => {
