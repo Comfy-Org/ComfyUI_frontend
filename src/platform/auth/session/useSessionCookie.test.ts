@@ -386,8 +386,9 @@ describe('useSessionCookie', () => {
           { status }
         )
       )
-      const { useSessionCookie, SessionRevokedError } =
-        await loadUseSessionCookie()
+      const { useSessionCookie } = await loadUseSessionCookie()
+      const { SessionRevokedError } =
+        await import('@/platform/auth/session/sessionRevokedError')
 
       const failure = await useSessionCookie()
         .ensureSessionCookie()

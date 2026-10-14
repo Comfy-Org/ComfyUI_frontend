@@ -22,6 +22,7 @@ import {
 import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useTelemetry } from '@/platform/telemetry'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -460,6 +461,20 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
+    })
+
+    it('does not retry a revoked session', async () => {
+      mockEnsureSessionCookie.mockRejectedValue(
+        new SessionRevokedError('This session was signed out; sign in again')
+      )
+
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toBeInstanceOf(
+        SessionRevokedError
+      )
+      expect(mockEnsureSessionCookie).toHaveBeenCalledOnce()
+      expect(store.initState).toBe('error')
     })
 
     it('does not reinitialize if already initialized', async () => {

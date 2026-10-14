@@ -7,7 +7,7 @@ import type {
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
@@ -550,7 +550,8 @@ describe('WorkspaceAuthGate', () => {
       expect(splashLoader).not.toBeInTheDocument()
       expect(mockReportError).toHaveBeenCalledWith(error, {
         surface: 'auth',
-        errorType: 'workspace_auth_gate_initialization_failure'
+        errorType: 'workspace_auth_gate_initialization_failure',
+        level: 'error'
       })
     })
 
@@ -707,6 +708,32 @@ describe('WorkspaceAuthGate', () => {
         expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
       }
     )
+
+    it.for([
+      {
+        name: 'a revoked session',
+        error: new SessionRevokedError('signed out'),
+        level: 'warning'
+      },
+      {
+        name: 'any other failure',
+        error: new Error('Workspace init failed'),
+        level: 'error'
+      }
+    ])('reports $name at $level level', async ({ error, level }) => {
+      vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(error)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          errorType: 'workspace_auth_gate_initialization_failure',
+          level
+        })
+      )
+    })
 
     it('signs out from the no-workspace screen', async () => {
       const user = userEvent.setup()

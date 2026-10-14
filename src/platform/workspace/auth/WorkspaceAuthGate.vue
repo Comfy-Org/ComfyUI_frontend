@@ -96,7 +96,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -224,7 +224,8 @@ async function initialize(): Promise<void> {
     if (generation !== initializationGeneration) return
     reportError(error, {
       surface: 'auth',
-      errorType: 'workspace_auth_gate_initialization_failure'
+      errorType: 'workspace_auth_gate_initialization_failure',
+      level: error instanceof SessionRevokedError ? 'warning' : 'error'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value =

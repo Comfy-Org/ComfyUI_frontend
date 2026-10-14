@@ -8,6 +8,7 @@ import {
   isDesktopHostSignedIn,
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -517,10 +518,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           e.status !== 408 &&
           e.status !== 429
 
-        // Don't retry on permanent errors (no workspaces available)
         if (
           isNoWorkspacesError ||
           isPermanentCredentialError ||
+          e instanceof SessionRevokedError ||
           attempt >= MAX_INIT_RETRIES
         ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')

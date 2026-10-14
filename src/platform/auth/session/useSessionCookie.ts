@@ -4,6 +4,7 @@ import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -17,9 +18,6 @@ interface InFlightCreateSession {
 class SsoRequiredSessionError extends Error {
   readonly code = 'SSO_REQUIRED'
 }
-
-/** Ingest refused the session because the sign-in predates a sign-out. */
-export class SessionRevokedError extends Error {}
 
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
