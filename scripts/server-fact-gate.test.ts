@@ -186,81 +186,105 @@ describe('server-fact gate on a real diff', () => {
     workDir = undefined
   })
 
-  function runGateAfterEdit(before: string[], after: string[]) {
+  function createRepo(files: Record<string, string[]>) {
     const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-gate-'))
     workDir = dir
-    const run = (...args: string[]) =>
+    const git = (...args: string[]) =>
       execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
-    run('init', '-q')
-    run('config', 'user.email', 'gate@test.invalid')
-    run('config', 'user.name', 'gate')
+    const write = (file: string, lines: string[]) =>
+      writeFileSync(path.join(dir, file), lines.join('\n'))
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.email', 'gate@test.invalid')
+    git('config', 'user.name', 'gate')
     for (const linked of ['node_modules', 'tools']) {
       symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
     }
     mkdirSync(path.join(dir, '.git/info'), { recursive: true })
     writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
     mkdirSync(path.join(dir, 'src'))
-    writeFileSync(path.join(dir, gatedFile), before.join('\n'))
-    run('add', '.')
-    run('commit', '-q', '-m', 'base')
-    writeFileSync(path.join(dir, gatedFile), after.join('\n'))
+    for (const [file, lines] of Object.entries(files)) write(file, lines)
+    git('add', '.')
+    git('commit', '-q', '-m', 'base')
+    return { dir, git, write }
+  }
+
+  function runGate(dir: string, ...args: string[]) {
     return spawnSync(
       process.execPath,
       [
         '--import',
         'tsx',
         path.join(repoRoot, 'scripts/server-fact-gate.ts'),
-        '--base',
-        'HEAD'
+        ...args
       ],
       { cwd: dir, encoding: 'utf8' }
     )
   }
 
-  function runStagedGateDuringMerge() {
-    const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-gate-'))
-    workDir = dir
-    const run = (...args: string[]) =>
-      execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
-    run('init', '-q')
-    run('config', 'user.email', 'gate@test.invalid')
-    run('config', 'user.name', 'gate')
-    for (const linked of ['node_modules', 'tools']) {
-      symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
-    }
-    mkdirSync(path.join(dir, '.git/info'), { recursive: true })
-    writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
-    mkdirSync(path.join(dir, 'src'))
-    writeFileSync(path.join(dir, gatedFile), 'export const ready = true\n')
-    run('add', '.')
-    run('commit', '-q', '-m', 'base')
-    run('branch', 'feature')
-    writeFileSync(
-      path.join(dir, gatedFile),
-      'const { canInviteMembers } = useBillingCapabilities()\n' +
-        'export const canInvite = canInviteMembers.value || isPlanEnded.value\n'
-    )
-    run('add', gatedFile)
-    run('commit', '-q', '-m', 'upstream finding')
-    run('switch', '-q', 'feature')
-    writeFileSync(
-      path.join(dir, 'src/feature.ts'),
-      'export const feature = true\n'
-    )
-    run('add', 'src/feature.ts')
-    run('commit', '-q', '-m', 'feature')
-    run('merge', '--no-commit', '--no-ff', 'master')
-    return spawnSync(
-      process.execPath,
-      [
-        '--import',
-        'tsx',
-        path.join(repoRoot, 'scripts/server-fact-gate.ts'),
-        '--staged'
-      ],
-      { cwd: dir, encoding: 'utf8' }
-    )
+  function runGateAfterEdit(before: string[], after: string[]) {
+    const { dir, write } = createRepo({ [gatedFile]: before })
+    write(gatedFile, after)
+    return runGate(dir, '--base', 'HEAD')
   }
+
+  const recombinationLines = [
+    'const { canInviteMembers } = useBillingCapabilities()',
+    'export const canInvite =',
+    '  canInviteMembers.value || isPlanEnded.value',
+    ''
+  ]
+  const clean = ['export const ready = true', '']
+
+  it.for([
+    {
+      name: 'passes a finding the merged branch brings in',
+      incoming: recombinationLines,
+      ours: clean,
+      status: 0
+    },
+    {
+      name: 'reports a finding this branch adds',
+      incoming: clean,
+      ours: recombinationLines,
+      status: 1
+    }
+  ])('$name when staging a merge', ({ incoming, ours, status }) => {
+    const otherFile = 'src/other.ts'
+    const base = ['export const base = true', '']
+    const { dir, git, write } = createRepo({
+      [gatedFile]: base,
+      [otherFile]: base
+    })
+    git('checkout', '-q', '-b', 'incoming')
+    write(gatedFile, incoming)
+    git('commit', '-q', '-am', 'incoming')
+    git('checkout', '-q', 'main')
+    write(otherFile, ours)
+    git('commit', '-q', '-am', 'ours')
+    git('merge', '-q', '--no-commit', '--no-ff', 'incoming')
+
+    expect(runGate(dir, '--staged').status).toBe(status)
+  })
+
+  it('reports a finding introduced by a staged conflict resolution', () => {
+    const { dir, git, write } = createRepo({
+      [gatedFile]: ['export const base = true', '']
+    })
+    git('checkout', '-q', '-b', 'incoming')
+    write(gatedFile, ['export const incoming = true', ''])
+    git('commit', '-q', '-am', 'incoming')
+    git('checkout', '-q', 'main')
+    write(gatedFile, clean)
+    git('commit', '-q', '-am', 'ours')
+    const merge = spawnSync('git', ['merge', '-q', '--no-ff', 'incoming'], {
+      cwd: dir
+    })
+    expect(merge.status).not.toBe(0)
+    write(gatedFile, recombinationLines)
+    git('add', gatedFile)
+
+    expect(runGate(dir, '--staged').status).toBe(1)
+  })
 
   it('reports a recombination exposed by deleting only its pendingServerFact wrapper lines', () => {
     const wrapped = [
@@ -297,14 +321,6 @@ describe('server-fact gate on a real diff', () => {
     const result = runGateAfterEdit(before, after)
 
     expect(result.stderr).toBe('')
-    expect(result.status).toBe(0)
-  })
-
-  it('checks the feature delta instead of upstream files during a merge', () => {
-    const result = runStagedGateDuringMerge()
-
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toContain('no findings on changed lines')
     expect(result.status).toBe(0)
   })
 })
