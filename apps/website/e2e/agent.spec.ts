@@ -121,7 +121,9 @@ test.describe('Agent landing — desktop @smoke', () => {
       page.getByRole('region', { name: 'Comfy Agent 构建工作流', exact: true })
     ).toBeAttached()
     await expect(
-      page.getByRole('img', { name: '用户与智能体协作' })
+      page
+        .getByRole('region', { name: 'Comfy Agent 构建工作流', exact: true })
+        .getByRole('img', { name: '用户与智能体协作' })
     ).toBeAttached()
   })
 })
@@ -153,6 +155,105 @@ test.describe('Agent navigation @smoke', () => {
         name: t('nav.comfyAgent', {}, { locale })
       })
       await expect(footerLink).toHaveAttribute('href', expectedHref)
+    })
+  }
+})
+
+test.describe('Agent workflow — mobile @mobile', () => {
+  test.use({ reducedMotion: 'reduce' })
+
+  for (const locale of ['en', 'zh-CN'] as const) {
+    test(`shows four panels with connected ports and both cursors (${locale})`, async ({
+      page
+    }) => {
+      await page.goto(locale === 'en' ? PATH_EN : PATH_ZH)
+      const workflow = page.getByRole('region', {
+        name: tAgent('agentPage.workflow.mobile.label', locale),
+        exact: true
+      })
+      await workflow.scrollIntoViewIfNeeded()
+      for (const name of ['input', 'motion', 'generate', 'output'] as const) {
+        await expect(
+          workflow.getByRole('heading', {
+            name: tAgent(`agentPage.workflow.mobile.${name}`, locale),
+            exact: true
+          })
+        ).toBeVisible()
+      }
+      await expect(
+        workflow.getByRole('img', {
+          name: tAgent('agentPage.workflow.userCursorLabel', locale),
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        workflow.getByRole('img', { name: 'Comfy Agent', exact: true })
+      ).toBeVisible()
+      await expect(workflow.locator('video')).toHaveCount(2)
+
+      for (const width of [393, 320]) {
+        await page.setViewportSize({ width, height: 851 })
+        await expect
+          .poll(() =>
+            workflow.evaluate((root) => {
+              const input = root.querySelector('.mobile-workflow-input img')
+              const reference = root.querySelector(
+                '.mobile-workflow-reference video'
+              )
+              if (
+                !input ||
+                !reference ||
+                Math.abs(
+                  input.getBoundingClientRect().height -
+                    reference.getBoundingClientRect().height
+                ) > 1
+              )
+                return false
+              const dots = [
+                ...root.querySelectorAll<HTMLElement>('[data-mobile-port]')
+              ]
+              if (
+                dots.length !== 5 ||
+                dots.some((dot) => {
+                  const bounds = dot.getBoundingClientRect()
+                  return bounds.width !== 6 || bounds.height !== 6
+                })
+              )
+                return false
+              const paths = [
+                ...root.querySelectorAll<SVGPathElement>('path[data-from]')
+              ]
+              return (
+                paths.length === 3 &&
+                paths.every((path) => {
+                  const matrix = path.getScreenCTM()
+                  if (!matrix || !path.hasAttribute('d')) return false
+                  return (['from', 'to'] as const).every((end, index) => {
+                    const dot = root.querySelector(
+                      `[data-mobile-port="${path.dataset[end]}"]`
+                    )
+                    if (!dot) return false
+                    const bounds = dot.getBoundingClientRect()
+                    const point = path.getPointAtLength(
+                      index === 0 ? 0 : path.getTotalLength()
+                    )
+                    const position = new DOMPoint(
+                      point.x,
+                      point.y
+                    ).matrixTransform(matrix)
+                    return (
+                      Math.hypot(
+                        position.x - bounds.left - bounds.width / 2,
+                        position.y - bounds.top - bounds.height / 2
+                      ) < 1
+                    )
+                  })
+                })
+              )
+            })
+          )
+          .toBe(true)
+      }
     })
   }
 })
