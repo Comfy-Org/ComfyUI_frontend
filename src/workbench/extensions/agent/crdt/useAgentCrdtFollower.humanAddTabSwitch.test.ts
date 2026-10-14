@@ -176,6 +176,38 @@ describe('a human-added node across a tab switch', () => {
     })
   }
 
+  it('mints beyond document stamps even when the host sequence is lower', async () => {
+    const graph = new LGraph()
+    const source = createRegisteredNode('TestSource')
+    graph.add(source)
+    const { host, followerApi, cleanup } = mountBoundFollower(graph)
+    try {
+      applyOps(
+        host,
+        mintWireOps(
+          [
+            { op: 'set_widget', node_id: source.id, widget: 'steps', value: 55 }
+          ],
+          { actor: 'agent:comfy:host', baseVersion: 90 }
+        ),
+        CATALOG
+      )
+      deliverCatchUp(host, 2)
+      followerApi.enqueueHumanOperations([
+        { op: 'set_widget', node_id: source.id, widget: 'steps', value: 56 }
+      ])
+      await Promise.resolve()
+
+      const ops = frames(sent, 'doc_ops')[0].data.ops ?? []
+      expect(ops.map((op) => op.base_version)).toEqual([91])
+      expect(applyOps(host, ops, CATALOG).outcomes).toEqual([
+        { op_id: ops[0].op_id, outcome: 'applied' }
+      ])
+    } finally {
+      cleanup()
+    }
+  })
+
   it.for([
     {
       name: 'a catalogued node',

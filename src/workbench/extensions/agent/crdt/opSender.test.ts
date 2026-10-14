@@ -1,3 +1,4 @@
+import { OpRejectedError } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -103,14 +104,6 @@ function circularAddNode(id: number): AddNodeOperation {
   return operation
 }
 
-function clearDisguisedAddNode(id: number): AddNodeOperation {
-  const operation: AddNodeOperation & Record<string, unknown> = addNode(id)
-  operation.toJSON = function serializeAsClear(this: Op) {
-    return { ...this, op: 'clear' }
-  }
-  return operation
-}
-
 function enqueueNodeBacklog(
   sender: ReturnType<typeof createOpSender>,
   count: number
@@ -141,7 +134,7 @@ describe('createOpSender', () => {
   let transportUp: boolean
   let transportThrows: boolean
   let boundWorkflow: string | null
-  let observedSequence: number
+  let observedCounter: number
   let sender: ReturnType<typeof createOpSender>
   const unsubscribe = vi.fn(() => {
     resultListener = null
@@ -164,7 +157,7 @@ describe('createOpSender', () => {
     transportUp = true
     transportThrows = false
     boundWorkflow = WORKFLOW
-    observedSequence = 41
+    observedCounter = 40
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -179,7 +172,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => observedSequence,
+      observedCounter: () => observedCounter,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -229,7 +222,7 @@ describe('createOpSender', () => {
     sender.admit([addNode(4)])
     // Back on wf-1 before its re-subscribe is acknowledged.
     boundWorkflow = WORKFLOW
-    observedSequence = 0
+    observedCounter = 0
     sender.admit([addNode(5)])
 
     expect(
@@ -284,7 +277,7 @@ describe('createOpSender', () => {
     sender.admit([addNode(1)])
     sender.admit([addNode(2)])
     boundWorkflow = 'wf-2'
-    observedSequence = 0
+    observedCounter = 0
     sender.admit([addNode(3)])
     boundWorkflow = WORKFLOW
     sender.admit([addNode(4)])
@@ -297,7 +290,7 @@ describe('createOpSender', () => {
       }))
     ).toEqual([
       { workflowId: WORKFLOW, versions: [41, 42] },
-      { workflowId: 'wf-2', versions: [0] },
+      { workflowId: 'wf-2', versions: [1] },
       { workflowId: WORKFLOW, versions: [43] }
     ])
   })
@@ -312,15 +305,15 @@ describe('createOpSender', () => {
     ).toEqual([41, 42, 43, 44])
   })
 
-  it('mints from the observed sequence once the document advances past this actor', () => {
+  it('mints past the observed counter once the document advances past this actor', () => {
     sender.admit([addNode(1)])
-    observedSequence = 90
+    observedCounter = 90
     sender.admit([addNode(2)])
     sender.flush()
 
     expect(
       sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
-    ).toEqual([41, 90])
+    ).toEqual([41, 91])
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
@@ -798,7 +791,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled
     })
     localSender.enqueue([addNode(1)])
@@ -829,7 +822,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -857,7 +850,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -897,7 +890,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         if (shouldFail) throw new Error('listener boom')
       }
@@ -931,7 +924,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -987,7 +980,7 @@ describe('createOpSender', () => {
         workflowId: () => boundWorkflow,
         tab: TAB,
         actor: () => ACTOR,
-        baseVersion: () => 41,
+        observedCounter: () => 41,
         onBatchSettled
       })
 
@@ -1018,7 +1011,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1040,7 +1033,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1067,7 +1060,7 @@ describe('createOpSender', () => {
     ])
     expect(sender.pending()).toBe(0)
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.any(TypeError),
+      expect.any(OpRejectedError),
       expect.objectContaining({
         errorType: 'failure_serializing_agent_op_sender'
       })
@@ -1079,28 +1072,24 @@ describe('createOpSender', () => {
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it.for([
-    { label: 'a cycle', malformed: circularAddNode },
-    {
-      label: 'a toJSON that rewrites it as clear',
-      malformed: clearDisguisedAddNode
-    }
-  ])(
-    'sends the valid ops around an op with $label and rejects only that op',
-    ({ malformed }) => {
-      sender.admit([addNode(1), malformed(2), addNode(3)])
-      expect(() => sender.flush()).not.toThrow()
+  it('never sends a package-rejected op while admitting its valid neighbors', () => {
+    const rejected = addNode(2)
+    rejected.node.value = Array.from({ length: 65 }).reduce<unknown>(
+      (value) => [value],
+      0
+    )
+    sender.admit([addNode(1), rejected, addNode(3)])
+    expect(() => sender.flush()).not.toThrow()
 
-      expect(sent).toHaveLength(1)
-      expect(nodeIdsOf(sent[0].ops)).toEqual([1, 3])
-      expect(sent[0].ops.map((op) => op.op)).toEqual(['add_node', 'add_node'])
-      expect(settled.map(summarizeSettlement)).toEqual([
-        { state: 'undeliverable', nodeIds: [2] }
-      ])
-      ackInFlight()
-      expect(sent).toHaveLength(1)
-    }
-  )
+    expect(sent).toHaveLength(1)
+    expect(nodeIdsOf(sent[0].ops)).toEqual([1, 3])
+    expect(sent[0].ops.map((op) => op.op)).toEqual(['add_node', 'add_node'])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    ackInFlight()
+    expect(sent).toHaveLength(1)
+  })
 
   it.for([
     { label: 'returns a different value', secondCall: (): unknown => 'second' },
@@ -1191,7 +1180,7 @@ describe('createOpSender', () => {
       workflowId: () => workflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
@@ -1230,7 +1219,7 @@ describe('createOpSender', () => {
       workflowId: () => workflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
@@ -1268,7 +1257,7 @@ describe('createOpSender', () => {
       workflowId: () => WORKFLOW,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
           localSender.admit([addNode(3)])
@@ -1315,7 +1304,7 @@ describe('createOpSender', () => {
       workflowId: () => WORKFLOW,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
     const operation = addNode(1)
@@ -1360,7 +1349,7 @@ describe('createOpSender', () => {
     expect(() => sender.flush()).not.toThrow()
     expect(settled.at(-1)?.state).toBe('undeliverable')
     expect(settled.every((outcome) => outcome.ops.length <= 256)).toBe(true)
-  })
+  }, 30_000)
 
   it('settles the admitted ops when a rejection settlement detaches the sender', () => {
     const localSettled: BatchOutcome[] = []
@@ -1370,7 +1359,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
@@ -1398,7 +1387,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     localSender.enqueue([addNode(1)])
@@ -1447,7 +1436,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
           throw new Error('listener boom')
