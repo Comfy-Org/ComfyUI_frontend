@@ -37,7 +37,6 @@ import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
@@ -138,8 +137,8 @@ import {
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
-import { refreshNodeCatalogOnRestart } from './services/agent/nodeCatalogRefresh'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
   deriveSessionTitle,
@@ -236,35 +235,8 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-function reportNodeCatalogRefreshFailure(error: unknown): void {
-  reportError(error, {
-    surface: 'agent',
-    errorType: 'failure_refreshing_agent_node_catalog',
-    level: 'warning'
-  })
-}
-
-const stopNodeCatalogRefresh = refreshNodeCatalogOnRestart(events, {
-  refreshNodeDefinitions: async () => {
-    let refreshed = true
-    await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
-      errorHandler: (error) => {
-        refreshed = false
-        reportNodeCatalogRefreshFailure(error)
-      }
-    })
-    return refreshed
-  },
-  reloadCurrentWorkflow: async () => {
-    const workflow = workflowStore.activeWorkflow
-    return workflow === null
-      ? true
-      : useWorkflowService().openWorkflow(workflow, { force: true })
-  },
-  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
-  onError: reportNodeCatalogRefreshFailure
-})
-onBeforeUnmount(stopNodeCatalogRefresh)
+const nodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
+onBeforeUnmount(events.subscribe(nodeDefinitionRefresh.observeAgentEvent))
 
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()

@@ -23,6 +23,10 @@ The panel speaks one contract on the cloud and on the local agent:
   with backoff, capped at 30 seconds and never given up, and at once when the
   socket connects again. A rejected credential is not retried until the
   account changes.
+- **ComfyUI restart** (`stores/agent/agentNodeDefinitionRefreshStore.ts`). A
+  successful `restart_comfyui` tool call refreshes node definitions and then
+  reloads the open workflow. A failed refresh runs again on ComfyUI's next
+  `/ws` reconnect. A restart made while the panel is closed is not observed.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
