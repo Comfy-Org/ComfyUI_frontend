@@ -82,7 +82,7 @@ const columns = computed(() =>
           {{ t('homeHub.heading') }}
         </h2>
         <p
-          class="mt-5 max-w-md text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/snug"
+          class="mt-5 max-w-md text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/6"
         >
           {{ t('homeHub.subtitle') }}
         </p>

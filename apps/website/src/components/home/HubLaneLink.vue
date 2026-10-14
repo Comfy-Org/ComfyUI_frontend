@@ -24,7 +24,7 @@ const { t } = translationsFor(locale)
       :segments="[{ text: t(lane.verb) }]"
       segment-class="px-1.5 sm:px-5"
       text-class="text-xl sm:text-4xl lg:text-5xl"
-      size-class="h-11 sm:h-auto motion-safe:transition-transform motion-safe:group-hover:-translate-y-1"
+      size-class="h-11 sm:h-16 lg:h-22 motion-safe:transition-transform motion-safe:group-hover:-translate-y-1"
     />
     <span
       v-if="lane.open"

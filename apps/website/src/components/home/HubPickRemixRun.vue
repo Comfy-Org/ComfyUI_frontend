@@ -38,7 +38,7 @@ const lanes = useHubLanes(locale)
         </ul>
       </nav>
       <p
-        class="mt-8 max-w-md text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/snug"
+        class="mt-8 max-w-md text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/6"
       >
         {{ t('homeHub.pickRemixRunSubtitle') }}
       </p>
