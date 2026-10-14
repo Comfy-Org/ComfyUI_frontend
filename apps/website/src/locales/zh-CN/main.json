@@ -4572,6 +4572,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "virtualTryOn": "虚拟试穿",
+      "virtualTryOnSummary": "为照片中的人物换上一件衣服，可选修身、常规或宽松版型，模型会保留姿势与光线。",
+      "virtualTryOnMeta": "图像 · Kling Virtual Try-On",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

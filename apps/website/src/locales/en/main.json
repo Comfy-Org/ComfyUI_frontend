@@ -5179,6 +5179,9 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "virtualTryOn": "Virtual try-on",
+      "virtualTryOnSummary": "Put a garment on a person in a photo, in a slim, regular or relaxed fit, and the model keeps their pose and light.",
+      "virtualTryOnMeta": "Image · Kling Virtual Try-On",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
