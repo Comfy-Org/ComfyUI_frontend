@@ -36,10 +36,17 @@ useEventListener(audioEl, 'play', () => {
 
 const promptEl = useTemplateRef<HTMLParagraphElement>('promptEl')
 const expanded = shallowRef(false)
+// Whether the prompt ever overflowed while clamped. Latching the first
+// overflow keeps the toggle mounted while expanded: unclamped text measures
+// no overflow, so a live check unmounts the focused "Read less" button on
+// its own click and drops keyboard focus to <body> (#20976, #20977).
+const everOverflowed = shallowRef(false)
 const promptOverflows = shallowRef(false)
 function measurePromptOverflow() {
   const el = promptEl.value
-  promptOverflows.value = el !== null && el.scrollHeight > el.clientHeight
+  const overflows = el !== null && el.scrollHeight > el.clientHeight
+  if (overflows) everOverflowed.value = true
+  promptOverflows.value = overflows
 }
 onMounted(measurePromptOverflow)
 useResizeObserver(promptEl, measurePromptOverflow)
@@ -113,7 +120,7 @@ const metaLabel = computed(() => {
           />
         </div>
         <button
-          v-if="expanded || promptOverflows"
+          v-if="expanded || everOverflowed"
           type="button"
           class="mt-2 cursor-pointer text-sm/relaxed font-light text-primary-comfy-canvas underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
           @click="expanded = !expanded"
