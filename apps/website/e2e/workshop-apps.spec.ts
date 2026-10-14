@@ -254,7 +254,7 @@ async function expectDownloadBesideGitHub(app: Locator) {
 }
 
 async function expectPanelWidth(panel: Locator) {
-  expect((await panel.boundingBox())?.width).toBe(280)
+  expect((await panel.boundingBox())?.width).toBe(372)
 }
 
 test('moves a thing from the Move anything side panel and shows the result', async ({
