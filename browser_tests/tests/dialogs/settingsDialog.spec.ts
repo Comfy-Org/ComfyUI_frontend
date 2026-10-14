@@ -22,6 +22,23 @@ test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
   })
 })
 
+test.describe(
+  'Settings dialog - left panel',
+  { tag: ['@ui', '@screenshot'] },
+  () => {
+    test('outlines the search field against the panel at rest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.searchBox.blur()
+      await expect(dialog.searchBox).not.toBeFocused()
+
+      await expect(dialog.leftPanel).toHaveScreenshot('settings-left-panel.png')
+    })
+  }
+)
+
 test.describe('Settings dialog', { tag: '@ui' }, () => {
   test('About panel renders mocked version from server', async ({
     comfyPage
