@@ -74,9 +74,14 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
-  test('accepts bypass through changeMode', () => {
-    expect(node.changeMode(LGraphEventMode.BYPASS)).toBe(true)
-    expect(node.mode).toBe(LGraphEventMode.BYPASS)
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {

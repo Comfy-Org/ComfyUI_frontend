@@ -1219,28 +1219,52 @@ describe('LiveGraphApplier', () => {
     }
   )
 
-  it('expands a pinned node and restores resizing when flags are removed', () => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [
-        sourceNode(1, {
-          flags: { pinned: true, collapsed: true, allow_interaction: true }
-        })
-      ],
-      links: []
-    })
-    applyCollected()
-    const node = graph.getNodeById(toNodeId(1))
-    assert.exists(node)
-    node.resizable = false
+  it.for([
+    {
+      flags: {},
+      collapsed: false,
+      pinned: false,
+      resizable: true,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { pinned: true },
+      collapsed: false,
+      pinned: true,
+      resizable: false,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { collapsed: true },
+      collapsed: true,
+      pinned: false,
+      resizable: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    }
+  ])(
+    'updates pinned, collapsed and custom flags to $flags',
+    ({ flags, collapsed, pinned, resizable, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          sourceNode(1, {
+            flags: { pinned: true, collapsed: true, allow_interaction: true }
+          })
+        ],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
 
-    applyEdit(() => nodesMap(doc).get('1')?.set('flags', {}))
+      applyEdit(() => nodesMap(doc).get('1')?.set('flags', flags))
 
-    expect(node.collapsed).toBe(false)
-    expect(node.pinned).toBe(false)
-    expect(node.resizable).toBe(true)
-    expect(node.flags.allow_interaction).toBeUndefined()
-    expect([...node.renderingSize]).toEqual([210, 100])
-  })
+      expect(node.collapsed).toBe(collapsed)
+      expect(node.pinned).toBe(pinned)
+      expect(node.resizable).toBe(resizable)
+      expect(node.flags.allow_interaction).toBeUndefined()
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
 
   it('creates trigger slots through the mode channel', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
@@ -1275,11 +1299,33 @@ describe('LiveGraphApplier', () => {
   })
 
   it.for([
-    { color: '#322', bgcolor: '#533', calls: 1 },
-    { color: '#123456', bgcolor: '#654321', calls: 0 }
+    {
+      initial: {},
+      update: { color: '#322', bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: {},
+      update: { color: '#123456', bgcolor: '#654321' },
+      expected: { color: '#123456', bgcolor: '#654321' },
+      calls: 0
+    },
+    {
+      initial: { color: '#123456', bgcolor: '#533' },
+      update: { color: '#322' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: { color: '#322', bgcolor: '#654321' },
+      update: { bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    }
   ])(
-    'applies colours $color/$bgcolor using a named option when available',
-    ({ color, bgcolor, calls }) => {
+    'applies colour update $update using a named option when available',
+    ({ initial, update, expected, calls }) => {
       const { graph, doc, applyCollected, applyEdit } = setup({
         nodes: [sourceNode(1)],
         links: []
@@ -1287,15 +1333,15 @@ describe('LiveGraphApplier', () => {
       applyCollected()
       const node = graph.getNodeById(toNodeId(1))
       assert.exists(node)
+      Object.assign(node, initial)
       const setColorOption = vi.spyOn(node, 'setColorOption')
 
       applyEdit(() => {
-        nodesMap(doc).get('1')?.set('color', color)
-        nodesMap(doc).get('1')?.set('bgcolor', bgcolor)
+        nodesMap(doc).get('1')?.set('color', update.color)
+        nodesMap(doc).get('1')?.set('bgcolor', update.bgcolor)
       })
 
-      expect(node.color).toBe(color)
-      expect(node.bgcolor).toBe(bgcolor)
+      expect(node).toMatchObject(expected)
       expect(setColorOption).toHaveBeenCalledTimes(calls)
     }
   )
