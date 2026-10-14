@@ -12,7 +12,7 @@
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
   "componentCount": 72,
-  "storyCount": 248,
+  "storyCount": 249,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -2778,7 +2778,7 @@
         "importPath": "@/components/ui/button/Button",
         "storybookPath": "/?path=/story/website-ui-button--playground",
         "docsPath": "/?path=/docs/website-ui-button--docs",
-        "states": ["Playground", "ActionVariants"],
+        "states": ["Playground", "ActionVariants", "InContext"],
         "hasInteractionTest": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
@@ -2791,6 +2791,10 @@
         {
           "exportName": "ActionVariants",
           "storyId": "website-ui-button--action-variants"
+        },
+        {
+          "exportName": "InContext",
+          "storyId": "website-ui-button--in-context"
         }
       ]
     },

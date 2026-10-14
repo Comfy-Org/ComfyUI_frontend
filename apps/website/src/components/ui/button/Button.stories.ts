@@ -96,3 +96,35 @@ export const ActionVariants: Story = {
     `
   })
 }
+
+export const InContext: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'One yellow action per view. A page header pairs Ghost with Primary, a detail panel pairs Secondary with Primary outline, and a shelf ends with Secondary outline.'
+      }
+    }
+  },
+  render: () => ({
+    components: { Button },
+    template: `
+      <div class="grid gap-8 text-primary-warm-white">
+        <div class="flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-transparency-white-t8 p-6">
+          <span class="text-2xl font-semibold">Cinematic Studio</span>
+          <div class="flex items-center gap-3">
+            <Button variant="ghost">View on GitHub</Button>
+            <Button>Try free</Button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-transparency-white-t8 p-6">
+          <Button variant="secondary">Generate</Button>
+          <Button variant="outline">Get API key</Button>
+        </div>
+        <div class="flex justify-center rounded-2xl border border-transparency-white-t8 p-6">
+          <Button variant="secondaryOutline">Browse all models</Button>
+        </div>
+      </div>
+    `
+  })
+}

@@ -1,17 +1,11 @@
-import {
-  ArrowRight,
-  ArrowUpRight,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight
-} from '@lucide/vue'
+import { ArrowRight, ArrowUpRight, ChevronDown } from '@lucide/vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BrandButton from '@/components/common/BrandButton.vue'
-import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import CardRow from '@/components/workshop/CardRow.vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
@@ -27,6 +21,8 @@ Which icon goes on a button or link depends on where it takes the visitor.
 | Disclosure trigger | ⌄ \`ChevronDown\` | Opens something in place. Rotates when open. | Dropdowns, filters, disclosures, folds |
 
 **Don't** put an arrow or a chevron on a CTA button. Arrows belong to text links only.
+
+**Row and carousel arrows** (\`CardRow\`): ‹ › sit on the left and right edges of the row, half over the cards and half over the page, centred vertically. They are neutral (dark fill, light border), never yellow: the yellow belongs to See all. They appear while the row is hovered or focused, dim when that end is reached, and are hidden on touch screens, where the reader swipes.
 `
 
 const meta: Meta = {
@@ -124,20 +120,27 @@ export const ChevronPrevNext: Story = {
     docs: {
       description: {
         story:
-          'Prev and next controls move within the same place, so they use ‹ and ›. Each icon-only button has an aria-label.'
+          'Row prev and next use ‹ and › on the row edges. Hover the row to reveal them; the left one starts dimmed because the row is at its start.'
       }
     }
   },
   render: () => ({
-    components: { IconButton, ChevronLeft, ChevronRight },
+    components: { CardRow },
+    setup: () => ({
+      cards: Array.from({ length: 8 }, (_, index) => index + 1)
+    }),
     template: `
-      <div class="flex gap-4">
-        <IconButton variant="outline" aria-label="Previous">
-          <ChevronLeft class="size-5" aria-hidden="true" />
-        </IconButton>
-        <IconButton variant="outline" aria-label="Next">
-          <ChevronRight class="size-5" aria-hidden="true" />
-        </IconButton>
+      <div class="px-6">
+        <CardRow>
+          <template #heading>
+            <h3 class="text-xl font-semibold text-primary-warm-white">Popular models</h3>
+          </template>
+          <li
+            v-for="card in cards"
+            :key="card"
+            class="h-40 w-64 shrink-0 snap-start rounded-2xl bg-transparency-white-t8"
+          />
+        </CardRow>
       </div>
     `
   })
