@@ -33,7 +33,6 @@ import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-/** Upper bound on how long readiness consumers wait for a gate decision. */
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2
