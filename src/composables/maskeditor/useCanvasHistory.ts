@@ -1,5 +1,4 @@
 import { ref, computed } from 'vue'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 // Define the state interface for better readability
 interface CanvasState {
@@ -8,9 +7,16 @@ interface CanvasState {
   img: ImageData | ImageBitmap
 }
 
-export function useCanvasHistory(maxStates = 20) {
-  const store = useMaskEditorStore()
+export interface CanvasHistoryLayers {
+  maskCanvas: HTMLCanvasElement | null
+  maskCtx: CanvasRenderingContext2D | null
+  rgbCanvas: HTMLCanvasElement | null
+  rgbCtx: CanvasRenderingContext2D | null
+  imgCanvas: HTMLCanvasElement | null
+  imgCtx: CanvasRenderingContext2D | null
+}
 
+export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
   const states = ref<CanvasState[]>([])
   const currentStateIndex = ref(-1)
   const initialized = ref(false)
@@ -27,7 +33,7 @@ export function useCanvasHistory(maxStates = 20) {
   })
 
   const saveInitialState = () => {
-    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = layers
 
     // Ensure all 3 contexts and canvases are ready
     if (
@@ -79,7 +85,7 @@ export function useCanvasHistory(maxStates = 20) {
     providedRgbData?: ImageData | ImageBitmap,
     providedImgData?: ImageData | ImageBitmap
   ) => {
-    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = layers
 
     if (
       !maskCtx ||
@@ -144,7 +150,7 @@ export function useCanvasHistory(maxStates = 20) {
   }
 
   const restoreState = (state: CanvasState) => {
-    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
+    const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = layers
     if (
       !maskCtx ||
       !rgbCtx ||
@@ -169,13 +175,13 @@ export function useCanvasHistory(maxStates = 20) {
       imgCanvas.height = newHeight
     }
 
-    const layers = [
+    const targets = [
       { ctx: maskCtx, data: state.mask },
       { ctx: rgbCtx, data: state.rgb },
       { ctx: imgCtx, data: state.img }
     ]
 
-    layers.forEach(({ ctx, data }) => {
+    targets.forEach(({ ctx, data }) => {
       if (data instanceof ImageBitmap) {
         ctx.clearRect(0, 0, data.width, data.height)
         ctx.drawImage(data, 0, 0)

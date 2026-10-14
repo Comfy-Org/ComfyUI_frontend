@@ -1,0 +1,41 @@
+{
+  "id": "browser-export",
+  "capability": "Browser download and clipboard export (shared technical module)",
+  "description": "Shared technical module, not a business domain. Delivers user data out of the browser: direct and blob file downloads, Content-Disposition filename extraction, cloud fetch-as-blob downloads, opening files in a new tab, and clipboard copy with success and failure toasts. Feature-specific export payloads (asset zips, node outputs, workflows, system info) stay with their owning domains.",
+  "modules": [
+    {
+      "path": "src/base/common/downloadUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/base/common/downloadUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useCopyToClipboard.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useCopyToClipboard.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Downloads resolve filenames, stream via blob on cloud, and open files in new tabs safely",
+      "checks": ["src/base/common/downloadUtil.test.ts"]
+    },
+    {
+      "name": "Clipboard copy falls back to the legacy path and toasts success or failure",
+      "checks": ["src/composables/useCopyToClipboard.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

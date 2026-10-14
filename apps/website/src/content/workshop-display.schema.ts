@@ -27,11 +27,11 @@ const STILL_IMAGE = /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i
 
 const mediaAssetSchema = z.object({
   /** An absolute URL, or a root-relative path to a file this site serves. */
-  url: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]),
+  url: z.union([z.url(), z.string().regex(/^\/[^/]/)]),
   kind: mediaKindSchema,
   /** A still shown in place of a video until it plays, or when it never does. */
   poster: z
-    .union([z.string().url(), z.string().regex(/^\/[^/]/)])
+    .union([z.url(), z.string().regex(/^\/[^/]/)])
     .refine((url) => STILL_IMAGE.test(url), 'A poster must be a still image')
     .optional(),
   /** The prompt that produced a sample, where the content side recorded one. */

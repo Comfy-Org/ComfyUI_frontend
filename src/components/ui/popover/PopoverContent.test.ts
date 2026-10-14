@@ -1,9 +1,10 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
+
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import PopoverContent from './PopoverContent.vue'
 
@@ -11,7 +12,7 @@ const registered: HTMLElement[] = []
 
 function registerDialog() {
   const element = document.createElement('div')
-  ZIndex.set('modal', element, 1700)
+  raiseModalLayer(element)
   registered.push(element)
   return Number(element.style.zIndex)
 }
@@ -19,7 +20,7 @@ function registerDialog() {
 afterEach(() => {
   let element = registered.pop()
   while (element) {
-    ZIndex.clear(element)
+    releaseModalLayer(element)
     element = registered.pop()
   }
 })

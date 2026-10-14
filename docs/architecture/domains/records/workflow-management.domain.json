@@ -1,0 +1,286 @@
+{
+  "id": "workflow-management",
+  "capability": "Workflow management",
+  "description": "Open workflow documents and sessions: the ComfyWorkflow model and workflow store (open tabs, active workflow, modified state, subgraph paths), workflowService open, save, save-as, close, and insert flows, workflow menu actions, workflow ids and clipboard conversion, pending load warnings, restoring dynamic group inputs from API prompts, extracting workflows from jobs and assets, and the workflows and apps sidebar tab registrations. Draft persistence, sharing, templates, deployment, the document format, and graph entity implementation are separate records.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/management/stores/workflowStoreTypes.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/__mocks__/workflowService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/workflowActionsService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/workflowActionsService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/workflowService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/services/workflowService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/pendingWarnings.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/pendingWarnings.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/workflowId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/workflowId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/management/composables/useAppsSidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/workflow/management/composables/useWorkflowsSidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/workflow/management/stores/comfyWorkflow.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/management/stores/workflowStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/management/stores/workflowStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/utils/workflowExtractionUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/utils/workflowExtractionUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/components/common/WorkflowActionsDropdown.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/WorkflowActionsDropdown.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/UnloadWindowConfirmDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/WorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowOverflowMenu.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowOverflowMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabs.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/WorkflowTabs.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/userFileStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/userFileStore.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useNewMenuItemIndicator.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useNewMenuItemIndicator.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowActionsMenu.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowActionsMenu.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/syncUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/changeTracker.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/changeTracker.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/defaultGraph.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/workflowMenuItem.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Workflow store opens, renames, closes, and tracks modified workflows",
+      "checks": [
+        "src/platform/workflow/management/stores/workflowStore.test.ts"
+      ]
+    },
+    {
+      "name": "workflowService saves, loads, and inserts workflows with pending warnings",
+      "checks": [
+        "src/platform/workflow/core/services/workflowService.test.ts",
+        "src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts",
+        "src/platform/workflow/core/utils/pendingWarnings.test.ts"
+      ]
+    },
+    {
+      "name": "Workflow actions, ids, and clipboard conversion act on the active workflow",
+      "checks": [
+        "src/platform/workflow/core/services/workflowActionsService.test.ts",
+        "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
+        "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
+        "src/platform/workflow/core/utils/workflowId.test.ts"
+      ]
+    },
+    {
+      "name": "Workflows extracted from job outputs and asset metadata reopen as documents",
+      "checks": ["src/platform/workflow/utils/workflowExtractionUtil.test.ts"]
+    },
+    {
+      "name": "Workflow tabs open, close, reorder, and show per-tab state and overflow actions",
+      "checks": [
+        "src/components/topbar/WorkflowTabs.test.ts",
+        "src/components/topbar/WorkflowTab.test.ts",
+        "src/components/topbar/WorkflowOverflowMenu.test.ts"
+      ]
+    },
+    {
+      "name": "Workflows and apps sidebar tabs and the workflow actions dropdown expose workflow menu actions",
+      "checks": [
+        "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+        "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+        "src/components/common/WorkflowActionsDropdown.test.ts"
+      ]
+    },
+    {
+      "name": "User data files sync, load, save, rename, and delete through the userdata API",
+      "checks": ["src/stores/userFileStore.test.ts"]
+    },
+    {
+      "name": "Workflow tab activity tracks the editing tab and modified paths and prunes closed tabs",
+      "checks": ["src/stores/workflowTabActivityStore.test.ts"]
+    },
+    {
+      "name": "Workflow actions menu and new-item indicators reflect workflow and settings state; entity sync reconciles user files",
+      "checks": [
+        "src/composables/useWorkflowActionsMenu.test.ts",
+        "src/composables/useNewMenuItemIndicator.test.ts",
+        "src/platform/workflow/management/stores/workflowStore.test.ts"
+      ]
+    },
+    {
+      "name": "Change tracker records workflow state and drives undo and redo",
+      "checks": ["src/scripts/changeTracker.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "useWorkflowStore and useWorkflowService keep their names and exports because extensions, the app, persistence, sharing, templates, queue, and execution code import them.",
+    "The workflowStore and draft-store cycle with workflow persistence, workflowService reaching into the app, litegraph, dialog, toast, missing-resource, execution-error, and node-output stores, restoreDynamicGroupInputs mutating LGraphNode widgets, and workflowExtractionUtil reading asset schemas and jobOutputCache remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}
