@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import {
   createTemplateSearchIndex,
   searchTemplates
-} from '@/composables/templateSearchConfig'
+} from '@comfyorg/shared-frontend-utils/templateSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'

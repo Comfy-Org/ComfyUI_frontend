@@ -9,10 +9,18 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
+import { LOCAL_MODELS_PATH, localModels } from './local-models'
 
 const MODELS_BASE_PATH = '/models'
 
-type PageKind = 'hub' | 'section' | 'model' | 'workflow' | 'app' | 'reserved'
+type PageKind =
+  | 'hub'
+  | 'section'
+  | 'model'
+  | 'workflow'
+  | 'app'
+  | 'local'
+  | 'reserved'
 
 const navigableKinds: ReadonlySet<string> = new Set<PageKind>([
   'hub',
@@ -44,6 +52,8 @@ interface ModelsUrlSources {
   readonly apps: readonly string[]
   /** Old alias under `/models` → the slug under `/hub/models` it serves. */
   readonly aliases: ReadonlyMap<string, string>
+  /** Downloadable model files under `/hub/models/local`. */
+  readonly localFiles: readonly string[]
 }
 
 const withoutTrailingSlash = (pathname: string) => pathname.replace(/\/$/, '')
@@ -52,10 +62,12 @@ export function modelsUrlEntries({
   models,
   workflows,
   apps,
-  aliases
+  aliases,
+  localFiles
 }: ModelsUrlSources): ModelsUrlEntry[] {
   const at = (slug: string) => `${MODELS_BASE_PATH}/${slug}`
   const atHub = (slug: string) => `${HUB_MODELS_PATH}/${slug}`
+  const atLocal = (file: string) => `${LOCAL_MODELS_PATH}/${file}`
   const page = (kind: PageKind) => (slug: string) => ({ path: at(slug), kind })
   const redirect = ([slug, hubSlug]: readonly [string, string]) => ({
     path: at(slug),
@@ -95,6 +107,16 @@ export function modelsUrlEntries({
     ...[...models.keys(), ...workflows].map((slug) =>
       page('reserved')(`${slug}/page.json`)
     ),
+    { path: LOCAL_MODELS_PATH, kind: 'local' },
+    { path: atLocal('llms.txt'), kind: 'reserved' },
+    ...localFiles.map((slug) => ({
+      path: atLocal(slug),
+      kind: 'local' as const
+    })),
+    ...localFiles.map((slug) => ({
+      path: atLocal(`${slug}.md`),
+      kind: 'reserved' as const
+    })),
     ...Array.from(models, redirect),
     ...Array.from(aliases, redirect)
   ]
@@ -152,7 +174,8 @@ const modelsUrlRegistry = buildModelsUrlRegistry(
     models: hubModelSlugs,
     workflows: hubWorkflowSlugs,
     apps: hubAppSlugs,
-    aliases: hubModelAliases
+    aliases: hubModelAliases,
+    localFiles: localModels.map(({ slug }) => slug)
   }),
   [MODELS_BASE_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH, HUB_APPS_PATH]
 )

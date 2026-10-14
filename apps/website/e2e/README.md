@@ -4,6 +4,10 @@ Use `test` from `./fixtures/blockExternalMedia`, not `@playwright/test`.
 Use its `page` and `context`. Set user-agent variants with scoped `test.use`
 options instead of creating browser contexts.
 
+Find an auth toast with `new AuthToasts(page).withText(...)` from
+`./fixtures/authToasts`, never `page.getByText` on its copy: a screen-reader
+live region repeats that copy.
+
 ## No external requests
 
 Register test-specific `context.route` responses before navigation. They override

@@ -74,8 +74,6 @@ vi.mock(import('./checkoutAttributionLoader'), () => ({
   loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
 }))
 
-global.fetch = vi.fn()
-
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'

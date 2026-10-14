@@ -81,7 +81,6 @@ export function useBillingContext(): BillingContext {
     fetchStatus: async () => {},
     fetchBalance: async () => {},
     reconcileSubscriptionSuccess: async () => {},
-    readCheckoutOperation: async () => false,
     subscribe: async () => {},
     previewSubscribe: async () => null,
     manageSubscription: async () => {},
@@ -89,7 +88,6 @@ export function useBillingContext(): BillingContext {
     resubscribe: async () => {},
     topup: async () => {},
     fetchPlans: async () => {},
-    requireActiveSubscription: async () => {},
-    showSubscriptionDialog: () => {}
+    whenRoutingKnown: async () => true
   }
 }

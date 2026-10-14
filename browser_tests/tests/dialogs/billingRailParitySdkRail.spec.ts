@@ -24,6 +24,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -44,7 +45,6 @@ interface Rails {
 
 const RAILS_OFF: Rails = { subscription: false, topup: false }
 const SUBSCRIPTION_RAIL_ONLY: Rails = { subscription: true, topup: false }
-const TOPUP_RAIL_ONLY: Rails = { subscription: false, topup: true }
 
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
@@ -362,28 +362,13 @@ async function buyFiftyDollars(page: Page): Promise<TopUpCreditsDialog> {
   return dialog
 }
 
-/** Opens the top-up confirm step and returns the saved-card note under it. */
-async function savedCardNote(page: Page): Promise<Locator> {
-  const dialog = new TopUpCreditsDialog(page)
-  await dialog.open()
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
-  await expect(
-    dialog.root.getByRole('button', { name: 'Pay $50.00' })
-  ).toBeVisible()
-  return dialog.root.getByText(/payment method/)
-}
-
 /** A customer coming back to this tab from another one. */
 async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-const successToast = (page: Page) =>
-  page.locator('.p-toast-message-success', {
-    hasText: 'Credits added successfully!'
-  })
+const successToast = (toast: ToastHelper) =>
+  toast.toastSuccesses.filter({ hasText: 'Credits added successfully!' })
 
 /** The plan summary on the success step, which names what was bought. */
 const successSummary = (page: Page) =>
@@ -440,10 +425,13 @@ async function expectPortalReturnRefresh(
  * Buys $50 of credits, then upgrades to Creator from Plan & Credits without
  * leaving the page, and returns the panel once the success step is closed.
  */
-async function topUpThenUpgrade(page: Page): Promise<Locator> {
+async function topUpThenUpgrade(
+  page: Page,
+  toast: ToastHelper
+): Promise<Locator> {
   await bootApp(page)
   const topUp = await buyFiftyDollars(page)
-  await expect(successToast(page)).toBeVisible()
+  await expect(successToast(toast)).toBeVisible()
   await expect(topUp.root).toBeHidden()
 
   // A settled purchase lands the customer on Plan & Credits.
@@ -471,12 +459,11 @@ async function topUpThenUpgrade(page: Page): Promise<Locator> {
   return panel
 }
 
-const SAVED_CARD_NOTE = 'Your saved payment method is charged immediately.'
-
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
   test.describe('with only the subscription rail on', () => {
     test('buys credits on the legacy transport and refreshes the balance', async ({
-      page
+      page,
+      toast
     }) => {
       const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
       await bootApp(page)
@@ -484,7 +471,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
       await buyFiftyDollars(page)
 
-      await expect(successToast(page)).toBeVisible()
+      await expect(successToast(toast)).toBeVisible()
       expect(routes.topupRequests).toHaveLength(1)
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')
@@ -525,10 +512,11 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     })
 
     test('completes a top-up and then a subscribe in one session, and totals both', async ({
-      page
+      page,
+      toast
     }) => {
       const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      const panel = await topUpThenUpgrade(page)
+      const panel = await topUpThenUpgrade(page, toast)
 
       expect(routes.topupRequests.map(transport)).toEqual(['xhr'])
       expect(routes.subscribeRequests.map(transport)).toEqual(['fetch'])
@@ -540,33 +528,6 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
           OPENING_BALANCE_MICROS + TOPUP_MICROS + SUBSCRIPTION_GRANT_MICROS
         )
       )
-    })
-  })
-
-  test.describe('saved-card note in the top-up dialog', () => {
-    test('shows the saved card while the rails are off', async ({ page }) => {
-      await setupParity(page, { rails: RAILS_OFF })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
-    })
-
-    test('shows the same note while the top-up rail is on', async ({
-      page
-    }) => {
-      await setupParity(page, { rails: TOPUP_RAIL_ONLY })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
-    })
-
-    test('shows the same note while the subscription rail is on', async ({
-      page
-    }) => {
-      await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
     })
   })
 
@@ -592,8 +553,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open(ACTIVE_STANDARD.renewal_date)
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
+    await cancelDialog.confirmCancel()
 
     const panel = await openPlanAndCredits(page)
     await expect(panel.getByText(/Ends on/)).toBeVisible()

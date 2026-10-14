@@ -8,7 +8,7 @@ const ATTACHMENT_COUNT = 36
 
 // Regression: https://linear.app/comfyorg/issue/FE-3202
 test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
-  test('keeps a visible send path after attaching dozens of images', async ({
+  test('keeps a visible send path and a reachable chip list after attaching dozens of images', async ({
     agentPanel,
     comfyPage,
     postedMessages
@@ -41,9 +41,28 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     )
 
     await expect(agentPanel.attachmentChips).toHaveCount(ATTACHMENT_COUNT)
+    await expect(agentPanel.attachmentChips.last()).not.toBeInViewport({
+      ratio: 1
+    })
+    await agentPanel.scrollAssetsToEnd()
+    await expect(agentPanel.attachmentChips.last()).toBeInViewport({ ratio: 1 })
     await expect(agentPanel.sendButton).toBeEnabled()
     // ratio: 1 rather than the default ratio: 0 — a Send button clipped down to
     // a sliver is the FE-3202 symptom, and it satisfies ratio: 0.
+    await expect(agentPanel.sendButton).toBeInViewport({ ratio: 1 })
+
+    await agentPanel.composerAssetSection.hover()
+    await page.mouse.wheel(-10000, 0)
+    await expect(agentPanel.attachmentChips.first()).toBeInViewport({
+      ratio: 1
+    })
+    await expect(agentPanel.attachmentChips.last()).not.toBeInViewport({
+      ratio: 1
+    })
+    await page.mouse.wheel(10000, 0)
+    await expect(
+      agentPanel.attachmentChip(`reference-${ATTACHMENT_COUNT}.png`)
+    ).toBeInViewport({ ratio: 1 })
     await expect(agentPanel.sendButton).toBeInViewport({ ratio: 1 })
 
     // Click, not Enter: the keyboard path posts even when the button has been

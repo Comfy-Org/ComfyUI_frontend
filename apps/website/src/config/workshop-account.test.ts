@@ -20,7 +20,7 @@ vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 function statusFetch(status: number) {
-  return vi.fn<typeof fetch>(async () => new Response('{}', { status }))
+  return async () => new Response('{}', { status })
 }
 
 beforeEach(() => {
@@ -43,7 +43,7 @@ describe('auth refresh telemetry', () => {
   }
 
   it('reports one succeeded outcome per minted token', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
 
     onTestFinished(subscribeAuthRefreshTelemetry())
     const fire = await activateIdentity()
@@ -57,7 +57,7 @@ describe('auth refresh telemetry', () => {
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
 
     onTestFinished(subscribeAuthRefreshTelemetry())
     const fire = await activateIdentity()
@@ -78,7 +78,7 @@ describe('auth refresh telemetry', () => {
   })
 
   it('reports a permanent failure outcome', async () => {
-    vi.stubGlobal('fetch', statusFetch(403))
+    vi.mocked(fetch).mockImplementation(statusFetch(403))
 
     onTestFinished(subscribeAuthRefreshTelemetry())
     const fire = await activateIdentity()
@@ -94,7 +94,7 @@ describe('auth refresh telemetry', () => {
   })
 
   it('stays silent on a transient failure', async () => {
-    vi.stubGlobal('fetch', statusFetch(503))
+    vi.mocked(fetch).mockImplementation(statusFetch(503))
 
     onTestFinished(subscribeAuthRefreshTelemetry())
     const fire = await activateIdentity()
