@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type {
   AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -228,8 +229,8 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
 const askResolved = (
   id: string,
   askId = 'turn-1:call-1',
-  selected: string[] | null = ['run'],
-  status: 'answered' | 'cancelled' | 'expired' = 'answered'
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
 ) =>
   wire({
     type: 'agent_ask_resolved',
@@ -241,6 +242,7 @@ const askResolved = (
       selected
     }
   })
+const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
 const askUser = (id: string, askId = 'turn-1:call-1') =>
   wire({
     type: 'agent_ask',
@@ -2063,10 +2065,8 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   describe('ask_user', () => {
-    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
-
     const parkedOnQuestion = async (
-      receipt: AgentAnswerAccepted = { status: 'answered', selected: [] }
+      receipt: AgentAnswerReceipt = { status: 'answered' }
     ) => {
       const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
       const { source, emit } = fakeEvents()
@@ -2087,14 +2087,9 @@ describe('useAgentSession (v1 composition root)', () => {
       session: ReturnType<typeof useAgentSession>,
       answer: AgentAnswerRequest
     ) => {
-      vi.useFakeTimers()
-      try {
-        const answered = session.answerAsk('turn-1:call-1', answer)
-        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
-        await answered
-      } finally {
-        vi.useRealTimers()
-      }
+      const answered = session.answerAsk('turn-1:call-1', answer)
+      await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+      await answered
     }
 
     it('posts the answer, free text included, against the ask it was given for', async () => {
@@ -2167,17 +2162,17 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('shows the answer the 202 committed when no frame follows', async () => {
-      const { session, emit } = await parkedOnQuestion({
+      const { session } = await parkedOnQuestion({
         status: 'answered',
         selected: ['sdxl'],
         other_text: 'a LoRA'
       })
-      emit(done('msg-1'))
 
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
         other_text: 'a LoRA'
       })
+      await vi.advanceTimersByTimeAsync(60_000)
 
       expect(card()).toMatchObject({
         resolution: {
@@ -2254,7 +2249,6 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
       expect(card()).not.toHaveProperty('resolution')
-      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
       expect(session.notices.value).toEqual([
         {
           level: 'error',
@@ -2269,16 +2263,70 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
 
-    it('marks the outcome unknown when the answer may have landed', async () => {
-      const { session, answerAsk } = await parkedOnQuestion()
-      answerAsk.mockRejectedValue(
-        new AgentApiError('backend blip', 500, undefined)
+    it('does not report a rejected answer as superseded by a later one', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
       )
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
-      await answerPastBackoff(session, { selected: ['flux'] })
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
 
-      expect(card()).toMatchObject({ resolution: { status: 'unknown' } })
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
     })
+
+    it('reports an empty committed answer that replaced this one', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', []))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: i18n.global.t('agent.runApproval.answerSuperseded')
+        }
+      ])
+    })
+
+    it('leaves a status-only 202 to the frame to report', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(session.notices.value).toEqual([])
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: i18n.global.t('agent.runApproval.answerSuperseded')
+        }
+      ])
+    })
+
+    it.for([400, 500])(
+      'marks the outcome unconfirmed when the answer may have landed (%i)',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('blip', status, undefined)
+        )
+
+        await answerPastBackoff(session, { selected: ['flux'] })
+
+        expect(card()).toMatchObject({ resolution: { status: 'unconfirmed' } })
+      }
+    )
 
     it('lets the server cancel replace an unconfirmed answer', async () => {
       const { session, answerAsk, emit } = await parkedOnQuestion()
@@ -2310,6 +2358,11 @@ describe('useAgentSession (v1 composition root)', () => {
           selected: ['sdxl', 'flux'],
           otherText: 'a LoRA'
         }
+      },
+      {
+        name: 'a subset of it',
+        committed: { selected: [], other_text: 'a LoRA' },
+        expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
       },
       {
         name: 'free text alone',
@@ -2357,7 +2410,7 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
-    it.for([400, 403, 404, 501])(
+    it.for([403, 404, 501])(
       'shows the card as no longer open here when the answer is refused with %i',
       async (status) => {
         const { session, answerAsk } = await parkedOnQuestion()
@@ -2445,7 +2498,6 @@ describe('useAgentSession (v1 composition root)', () => {
     // Comfortably past the composable's answer backoff and the store's
     // resolution grace, without restating either: a test that pinned the exact
     // values would fail on a tuning change that broke nothing.
-    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
     const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
 
     const parkedOnApproval = async () => {

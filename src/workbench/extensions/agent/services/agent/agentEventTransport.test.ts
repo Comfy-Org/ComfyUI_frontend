@@ -1,5 +1,9 @@
 import fs from 'fs'
 
+import type {
+  AgentAskResolvedData,
+  AgentPendingAskUser
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -159,8 +163,8 @@ function runApproval(
 
 function askResolved(
   askId = 'turn-1:call-1',
-  selected: string[] | null = ['run'],
-  status: 'answered' | 'cancelled' | 'expired' = 'answered'
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
 ): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
@@ -176,7 +180,7 @@ function askResolved(
 
 function askUser(
   askId = 'ask-1',
-  overrides: Record<string, unknown> = {}
+  overrides: Partial<AgentPendingAskUser> = {}
 ): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask',

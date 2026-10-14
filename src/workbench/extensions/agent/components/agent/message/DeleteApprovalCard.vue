@@ -23,7 +23,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
   answered: 'agent.deleteApproval.answered',
   closed: 'agent.deleteApproval.closed',
   retired: 'agent.deleteApproval.retired',
-  unknown: 'agent.deleteApproval.unconfirmed'
+  unconfirmed: 'agent.deleteApproval.unconfirmed'
 }
 
 const decision = computed(() => {

@@ -296,7 +296,7 @@ export function trackAgentError(
   })
 }
 
-const REFUSED_ANSWER_STATUSES = new Set([400, 403, 404, 501])
+const REFUSED_ANSWER_STATUSES = new Set([403, 404, 501])
 
 type AnswerFailure = 'rejected' | 'refused' | 'unconfirmed'
 
@@ -313,7 +313,7 @@ function classifyAnswerFailure(error: unknown): AnswerFailure {
 }
 
 /**
- * PM-1658: backoff before re-driving a consent answer. The server documents
+ * PM-1658: backoff before re-driving an ask answer. The server documents
  * 5xx here as retryable and re-drives the STORED selection, so resending the
  * same answer is always safe and is the only recovery that cannot turn into a
  * contradictory second choice. One retry only: the card is disabled for the
@@ -1463,17 +1463,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         errorType: 'agent_ask_answer_unroutable'
       })
       pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      conversationStore.retireAsk(askId, undefined, { status: 'retired' })
+      conversationStore.retireAsk(askId, { status: 'retired' })
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
     conversationStore.recordAskAnswer(askId, answer)
     conversationStore.setAskAnswering(askId, true)
     try {
-      const committed = toAskResolution(
-        await sendAnswer(currentThreadId, askId, answer)
-      )
-      reportSupersededAnswer(askId, committed)
+      const receipt = await sendAnswer(currentThreadId, askId, answer)
+      const committed = toAskResolution(receipt)
+      if (receipt.selected !== undefined)
+        reportSupersededAnswer(askId, committed)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1493,7 +1493,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         zAgentAskConflict.safeParse(error.body).data ?? {}
       )
       reportSupersededAnswer(askId, committed)
-      conversationStore.retireAsk(askId, threadId, committed)
+      conversationStore.retireAsk(askId, committed, threadId)
       return
     }
     const failure = classifyAnswerFailure(error)
@@ -1504,29 +1504,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
       retryable: isRetryableRequestFailure(error, false)
     })
-    if (failure === 'rejected') {
-      conversationStore.setAskAnswering(askId, false)
-      pushError(i18n.global.t('agent.askUser.answerRejected'))
-      return
+    const settle: Record<AnswerFailure, () => void> = {
+      rejected: () => {
+        conversationStore.takeSubmittedAskAnswer(askId)
+        conversationStore.setAskAnswering(askId, false)
+        pushError(i18n.global.t('agent.askUser.answerRejected'))
+      },
+      refused: () => {
+        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
+      },
+      unconfirmed: () => {
+        conversationStore.retireAsk(askId, { status: 'unconfirmed' }, threadId)
+        pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+      }
     }
-    if (failure === 'refused') {
-      pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      conversationStore.retireAsk(askId, threadId, { status: 'retired' })
-      return
-    }
-    conversationStore.retireAsk(askId, threadId, { status: 'unknown' })
-    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    settle[failure]()
   }
 
   function reportSupersededAnswer(
     askId: string,
     committed: AskUserResolution
   ): void {
-    if (
-      committed.status !== 'answered' ||
-      (committed.selected.length === 0 && committed.otherText === undefined)
-    )
-      return
+    if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined || !isSupersededAnswer(submitted, committed))
       return
@@ -1749,8 +1749,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       reportSupersededAnswer(event.data.ask_id, resolution)
       conversationStore.retireAsk(
         event.data.ask_id,
-        event.data.thread_id,
-        resolution
+        resolution,
+        event.data.thread_id
       )
       onAskResolved?.(event.data.ask_id)
     }

@@ -1,7 +1,4 @@
-import type {
-  AgentAskOption,
-  AgentAskResolvedData
-} from '@comfyorg/ingest-types'
+import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentRunApprovalContext
@@ -75,12 +72,12 @@ export interface RunApprovalPart {
 
 export type AskUserResolution =
   | { status: 'answered'; selected: string[]; otherText?: string }
-  | { status: 'closed' | 'unknown' | 'retired' }
+  | { status: 'closed' | 'unconfirmed' | 'retired' }
 
 const UNANSWERED_SCORE: Record<
   Exclude<AskUserResolution['status'], 'answered'>,
   number
-> = { retired: 0, unknown: 1, closed: 2 }
+> = { retired: 0, unconfirmed: 1, closed: 2 }
 
 function resolutionScore(resolution: AskUserResolution): number {
   if (resolution.status !== 'answered')
@@ -103,8 +100,9 @@ export function toAskResolution({
   status,
   selected,
   other_text: otherText
-}: Partial<
-  Pick<AgentAskResolvedData, 'status' | 'selected' | 'other_text'>
+}: Pick<
+  AgentAskConflict,
+  'status' | 'selected' | 'other_text'
 >): AskUserResolution {
   if (status === undefined) return { status: 'retired' }
   if (status !== 'answered') return { status: 'closed' }
@@ -219,14 +217,14 @@ export function choosableCount({
 function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   const options = toAskUserOptions(ask.options)
   const choosable = choosableCount({ options, allowOther: ask.allow_other })
-  if (choosable === 0) return undefined
-  const maxSelections = Math.min(Math.max(1, ask.max_selections), choosable)
+  const maxSelections = Math.min(ask.max_selections, choosable)
+  if (maxSelections < 1 || ask.min_selections > maxSelections) return undefined
   return {
     type: 'askUser',
     askId: ask.ask_id,
     prompt: clip(ask.prompt, ASK_LIMITS.prompt),
     options,
-    minSelections: Math.min(Math.max(0, ask.min_selections), maxSelections),
+    minSelections: Math.max(0, ask.min_selections),
     maxSelections,
     allowOther: ask.allow_other
   }

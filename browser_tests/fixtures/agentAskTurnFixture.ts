@@ -2,7 +2,11 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentAskServerFrame, AgentRunMode } from '@comfyorg/ingest-types'
+import type {
+  AgentAskServerFrame,
+  AgentError,
+  AgentRunMode
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -32,7 +36,6 @@ interface AnswerCall {
   body: unknown
 }
 
-/** A turn parked in the agent panel, driven over a mocked socket. */
 export interface AskTurn {
   panel: Locator
   send: (frame: AgentWsEvent | AgentAskServerFrame | HostFrame) => void
@@ -40,6 +43,7 @@ export interface AskTurn {
   holdAnswer: (askId: string) => Promise<() => void>
   refuseAnswer: (askId: string, status: number) => Promise<void>
   questionCard: (prompt: string) => Locator
+  answer: (prompt: string, option: string) => Promise<void>
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -140,6 +144,11 @@ async function startAskTurn(
   await panel.getByRole('button', { name: enMessages.agent.send }).click()
   await expect(panel.getByText(prompt).first()).toBeVisible()
 
+  const questionCard = (prompt: string) =>
+    panel
+      .getByRole('group', { name: enMessages.agent.askUser.card })
+      .filter({ hasText: prompt })
+
   return {
     panel,
     send,
@@ -160,14 +169,16 @@ async function startAskTurn(
         route.fulfill({
           status,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'refused' })
+          body: JSON.stringify({ error: 'refused' } satisfies AgentError)
         })
       )
     },
-    questionCard: (prompt) =>
-      panel
-        .getByRole('group', { name: enMessages.agent.askUser.card })
-        .filter({ hasText: prompt })
+    questionCard,
+    answer: async (prompt, option) => {
+      const card = questionCard(prompt)
+      await card.getByRole('radio', { name: option }).click()
+      await card.getByRole('button', { name: enMessages.g.submit }).click()
+    }
   }
 }
 

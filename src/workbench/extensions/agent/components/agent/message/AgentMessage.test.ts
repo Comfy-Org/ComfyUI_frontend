@@ -928,7 +928,7 @@ describe('AgentMessage delete approval', () => {
     },
     {
       name: 'an unconfirmed answer',
-      resolution: { status: 'unknown' },
+      resolution: { status: 'unconfirmed' },
       text: "We couldn't confirm your answer. Check the canvas before trying again."
     }
   ])(

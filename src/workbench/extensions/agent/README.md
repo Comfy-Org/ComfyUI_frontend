@@ -61,7 +61,7 @@ unwired until the `@comfyorg/comfy-multi-player` applier is available.
 
 ## Ask cards
 
-An `ask_user` question stays on screen, read-only, after it resolves, but only
-for the life of this session. The server's transcript keeps
-only a pending ask (`pending_ask`), so any re-hydrate of the thread (a reload,
-or opening another chat and coming back) drops a card whose ask has resolved.
+An `ask_user` question stays on screen, read-only, after it resolves, until
+the thread is loaded again. The server's transcript keeps only a pending ask
+(`pending_ask`), so a reload, or opening another chat and coming back, drops a
+card whose ask has resolved.

@@ -958,7 +958,7 @@ describe('useAgentConversationStore', () => {
         }
         store.hydrate(askUserTranscript())
         store.ingest(chat({ type: 'agent_ask', data: ask }))
-        store.retireAsk('turn-1:call-2', 'th', { status: 'retired' })
+        store.retireAsk('turn-1:call-2', { status: 'retired' }, 'th')
 
         store.ingest(chat({ type: 'agent_ask', data: ask }))
 
@@ -973,10 +973,11 @@ describe('useAgentConversationStore', () => {
       store.setThreadId('th')
       store.hydrate(askUserTranscript())
       store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] })
-      store.retireAsk('turn-1:call-1', 'th', {
-        status: 'answered',
-        selected: ['ink']
-      })
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: ['ink'] },
+        'th'
+      )
 
       store.commitAsk('turn-1:call-1', 'th', {
         status: 'answered',
@@ -1018,10 +1019,11 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
-      store.retireAsk('turn-1:call-1', 'th', {
-        status: 'answered',
-        selected: ['keep']
-      })
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: ['keep'] },
+        'th'
+      )
 
       store.hydrate(deleteTranscript())
 
@@ -1041,7 +1043,7 @@ describe('useAgentConversationStore', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.hydrate(askUserTranscript())
-      store.retireAsk('turn-1:call-1', undefined, {
+      store.retireAsk('turn-1:call-1', {
         status: 'answered',
         selected: [],
         otherText: 'watercolor'
@@ -1099,7 +1101,7 @@ describe('useAgentConversationStore', () => {
       ])[0]
     ]
     store.hydrate(parkedTranscript)
-    store.retireAsk('turn-1:call-1', undefined, { status: 'retired' })
+    store.retireAsk('turn-1:call-1', { status: 'retired' })
 
     store.hydrate(parkedTranscript)
 
@@ -1110,6 +1112,9 @@ describe('useAgentConversationStore', () => {
         )
       )
     ).toBe(false)
+    // The TURN is still adopted, though: answering the card is what lets it
+    // resume, so it is live and must keep routing. Dropping it here would
+    // strand the row mid-flight with every later frame discarded.
     expect(store.activeTurnId).toBe('assistant-message-1')
     store.ingest(delta('assistant-message-1', 'Running it now.'))
     expect(partTexts(store)).toContain('Running it now.')
@@ -1138,6 +1143,7 @@ describe('useAgentConversationStore', () => {
         if (timing === 'watchdog')
           store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
+        // The user leaves A for B while the answer is still settling.
         store.stashActiveTurn()
         store.setThreadId('th-B')
         store.hydrate([])
@@ -1145,6 +1151,7 @@ describe('useAgentConversationStore', () => {
         if (timing === 'watchdog') vi.advanceTimersByTime(60_000)
         else store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
+        // Back to A: the stashed turn is handed back to the screen.
         store.setThreadId('th-A')
         store.resumeBackgroundTurn()
 
@@ -1203,7 +1210,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
     expect(hasCard()).toBe(true)
 
-    store.retireAsk('turn-1:call-1', undefined, { status: 'retired' })
+    store.retireAsk('turn-1:call-1', { status: 'retired' })
 
     expect(hasCard()).toBe(false)
     expect(store.entries.map((entry) => entry.role)).toEqual([
