@@ -137,9 +137,12 @@ jobs:
           fi
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
 
-          if ! timeout 45m gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
+          watch_status=0
+          timeout 45m gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null || watch_status=$?
+          if [ "$watch_status" -eq 124 ]; then
             unavailable "The E2E run ${run_url} did not finish within 45 minutes."
           fi
+          [ "$watch_status" -eq 0 ] || exit "$watch_status"
 
           conclusions=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
             --jq '.jobs[] | select(.name | startswith(env.JOB_PREFIX)) | .conclusion')
