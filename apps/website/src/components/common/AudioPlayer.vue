@@ -5,7 +5,7 @@ import {
   useMediaControls,
   useMouseInElement
 } from '@vueuse/core'
-import { computed, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { translationsFor } from '@/i18n/translations'
@@ -22,12 +22,14 @@ const {
   locale = 'en',
   sources,
   poster,
+  autoplay = false,
   ariaLabel,
   class: className
 } = defineProps<{
   locale?: Locale
   sources: readonly AudioSource[]
-  poster: string
+  poster?: string
+  autoplay?: boolean
   ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
@@ -37,6 +39,12 @@ const audioEl = useTemplateRef<HTMLAudioElement>('audioEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
 
 const { playing, currentTime, duration } = useMediaControls(audioEl)
+
+// A player mounted by a click (e.g. picking a playlist track) starts itself;
+// the browser may still refuse without a recent gesture, which is fine.
+onMounted(() => {
+  if (autoplay) void audioEl.value?.play().catch(() => {})
+})
 
 // One track at a time: starting this player pauses any other on the page.
 useEventListener(audioEl, 'play', () => {
@@ -114,7 +122,12 @@ function handleScrubberKeydown(e: KeyboardEvent) {
       )
     "
   >
-    <img :src="poster" :alt="ariaLabel" class="size-full object-cover" />
+    <img
+      v-if="poster"
+      :src="poster"
+      :alt="ariaLabel"
+      class="size-full object-cover"
+    />
 
     <audio ref="audioEl" :aria-label="ariaLabel" preload="metadata">
       <source

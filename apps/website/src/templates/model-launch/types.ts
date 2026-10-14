@@ -119,10 +119,29 @@ export interface ModelLaunchAudioCard {
   description: LocalizedText
   prompt: LocalizedText
   audioSources: readonly { src: string; type: string }[]
-  posterSrc: string
+  // Grid cards show a still behind the player; playlist tracks have none.
+  posterSrc?: string
+  // Playlist layout only: the track name, its length, and who performs it.
+  title?: LocalizedText
+  durationSeconds?: number
+  voices?: readonly ModelLaunchAudioVoice[]
+}
+
+// Voice names are Fish Audio library names, not site copy, so they are not
+// localized. `alias` is the tag the prompt addresses a voice by (e.g. @Voice1).
+interface ModelLaunchAudioVoice {
+  name: string
+  alias?: string
 }
 
 export interface ModelLaunchAudioGallery {
+  // 'playlist' swaps the card grid for a track list beside a prompt window that
+  // follows the selected track. Defaults to the grid /minimax-music-3 ships.
+  layout?: 'grid' | 'playlist'
+  headingKey?: TranslationKey
+  subtitleKey?: TranslationKey
+  // The model id every track was generated with, shown in the prompt window.
+  model?: string
   cards: readonly ModelLaunchAudioCard[]
 }
 

@@ -7,6 +7,15 @@ const DOCS_HREF =
 const HERO_POSTER_SRC =
   'https://media.comfy.org/website/fish-audio/fish-audio-poster.jpg'
 
+// The exact text sent to Drama 3 for each sample. These are model prompts, not
+// UI copy, so both locales share the one English source and the tags stay
+// verbatim.
+const hushedGossipPrompt = `[excited, hushed tones] Did you hear, Fish Drama 3 is in Comfy now?! [barely containing a squeal] I know, I know, keep your voice down. <whisper>It does whispering too.</whisper>`
+const movieTrailerPrompt = `[deep, gravelly movie trailer voice] In a world... where every node sat in silence... [pause] one model dared to speak. [building to an epic shout] FISH! AUDIO! DRAMA THREE! [suddenly flat and casual] It's in Comfy now. You can just, like, use it.`
+const sleepyToHypedPrompt = `[groggy, just woke up, mumbling] Mmm, what time is it... [yawn] why is my phone blowing up. [reading slowly, confused] Fish Drama 3... is in Comfy? [pause] [wide awake, voice cracking with excitement] WAIT. It's in Comfy?! [talking very fast] Okay okay okay, nobody talk to me, I'm opening my laptop, I have forty ideas and no time. [laugh] <emphasis>This is the best morning of my life.</emphasis>`
+const twoVoicesPrompt = `@Voice1 [leaning in, conspiratorial whisper] Okay, don't freak out. But I have news. @Voice2 [bored, not looking up] If this is about your sourdough starter again, I'm leaving. @Voice1 [giddy, speeding up] Better. Fish Drama 3 is in Comfy now. One node. Both of us. In the same take. @Voice2 [long pause, then slowly, suspicious] ...Wait. Are we in it right now? @Voice1 [delighted] We are literally in it right now! @Voice2 [gasp] [dramatic, theatrical despair] Then everything I have ever said was a prompt. [sigh] @Voice1 [laugh] [warm] Yeah. And you sounded great.`
+const noirDetectivePrompt = `[weary noir detective, low and slow] It was three in the morning. The queue was empty, and so was my coffee. [sigh] Then she walked into my workflow. A text to speech node, with a model I'd never seen before. [suspicious, quiet] Drama 3, the dropdown said. Fish Audio. [pause] <whisper>I'd heard the rumors.</whisper> Voices that could laugh. [dry chuckle] Voices that could cry. Voices that could change their mind halfway through a sentence. [voice rising, alarmed] I typed one line and hit Run, and the thing talked back like it meant it! [long exhale, calm again] I've worked a lot of cases in this town, kid. <emphasis>This one's in Comfy now.</emphasis> [soft, almost fond] And I'm not closing it.`
+
 export const fishAudioPage: ModelLaunchPage = {
   metaTitleKey: 'fishAudio.meta.title',
   metaDescriptionKey: 'fishAudio.meta.description',
@@ -29,7 +38,91 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'pricing', 'highlight'],
+  sectionOrder: ['audioGallery', 'steps', 'faq', 'pricing', 'highlight'],
+  audioGallery: {
+    layout: 'playlist',
+    headingKey: 'fishAudio.playlist.heading',
+    subtitleKey: 'fishAudio.playlist.subtitle',
+    model: 'drama-3',
+    cards: [
+      {
+        id: 'hushed-gossip',
+        title: { en: 'Hushed gossip', 'zh-CN': '窃窃私语' },
+        description: { en: 'Hushed gossip', 'zh-CN': '窃窃私语' },
+        durationSeconds: 8,
+        voices: [{ name: 'Friendly Women (en)' }],
+        prompt: { en: hushedGossipPrompt, 'zh-CN': hushedGossipPrompt },
+        audioSources: [
+          {
+            src: '/audio/fish-audio/hushed-gossip.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
+      },
+      {
+        id: 'movie-trailer',
+        title: { en: 'Movie trailer', 'zh-CN': '电影预告片' },
+        description: { en: 'Movie trailer', 'zh-CN': '电影预告片' },
+        durationSeconds: 18,
+        voices: [{ name: 'Dramatic Character Male (en)' }],
+        prompt: { en: movieTrailerPrompt, 'zh-CN': movieTrailerPrompt },
+        audioSources: [
+          {
+            src: '/audio/fish-audio/movie-trailer.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
+      },
+      {
+        id: 'sleepy-to-hyped',
+        title: { en: 'Sleepy to hyped', 'zh-CN': '从迷糊到亢奋' },
+        description: { en: 'Sleepy to hyped', 'zh-CN': '从迷糊到亢奋' },
+        durationSeconds: 21,
+        voices: [{ name: 'Energetic Male (en)' }],
+        prompt: { en: sleepyToHypedPrompt, 'zh-CN': sleepyToHypedPrompt },
+        audioSources: [
+          {
+            src: '/audio/fish-audio/sleepy-to-hyped.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
+      },
+      {
+        id: 'two-voices-one-take',
+        title: { en: 'Two voices, one take', 'zh-CN': '两个声音，一镜到底' },
+        description: {
+          en: 'Two voices, one take',
+          'zh-CN': '两个声音，一镜到底'
+        },
+        durationSeconds: 34,
+        voices: [
+          { name: 'Sarah (en)', alias: '@Voice1' },
+          { name: 'Adrian (en)', alias: '@Voice2' }
+        ],
+        prompt: { en: twoVoicesPrompt, 'zh-CN': twoVoicesPrompt },
+        audioSources: [
+          {
+            src: '/audio/fish-audio/two-voices-one-take.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
+      },
+      {
+        id: 'noir-detective',
+        title: { en: 'Noir detective', 'zh-CN': '黑色侦探' },
+        description: { en: 'Noir detective', 'zh-CN': '黑色侦探' },
+        durationSeconds: 44,
+        voices: [{ name: 'Narrator (en)' }],
+        prompt: { en: noirDetectivePrompt, 'zh-CN': noirDetectivePrompt },
+        audioSources: [
+          {
+            src: '/audio/fish-audio/noir-detective.mp3',
+            type: 'audio/mpeg'
+          }
+        ]
+      }
+    ]
+  },
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',

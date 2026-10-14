@@ -1994,6 +1994,10 @@
       "description": "Fish Audio 的 Drama 3 是其迄今最富情感、最可控的模型，能把多角色场景作为一段对话完整演绎。发布首日即可在 Comfy Cloud 中试用。",
       "title": "Comfy 上的 Fish Audio Drama 3：多角色场景"
     },
+    "playlist": {
+      "heading": "听听 Drama 3 的演绎",
+      "subtitle": "选择一条试听，并查看背后使用的完整提示词和声音。可将任意提示词复制到 Fish Audio Text to Speech 节点中。"
+    },
     "pricing": {
       "banner": {
         "cta": "免费试用",
@@ -2725,8 +2729,11 @@
       "tabsLabel": "对比项目"
     },
     "copyPrompt": "复制提示词",
+    "promptWindow": "提示词",
     "tagFree": "免费",
-    "tagPremium": "高级"
+    "tagPremium": "高级",
+    "tracks": "曲目",
+    "voice": "声音"
   },
   "modelRelease": {
     "eyebrow": "新模型发布",

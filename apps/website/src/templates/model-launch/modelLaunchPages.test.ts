@@ -58,7 +58,8 @@ const VIDEO_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webm|mp4)$/
 const IMAGE_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
-const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
+const AUDIO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(mp3|flac|m4a|ogg)$/
 const HERO_STILL_URL =
   /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const LOCALES = ['en', 'zh-CN'] as const
@@ -130,6 +131,8 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     page.beforeAfter?.headingKey,
     page.beforeAfter?.bodyKey,
     page.gallery?.headingKey,
+    page.audioGallery?.headingKey,
+    page.audioGallery?.subtitleKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
     page.comparison?.headingKey,
@@ -344,7 +347,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       (card) =>
         card.audioSources.length === 0 ||
         card.audioSources.some((source) => !AUDIO_URL.test(source.src)) ||
-        !IMAGE_URL.test(card.posterSrc)
+        (card.posterSrc !== undefined && !IMAGE_URL.test(card.posterSrc))
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])

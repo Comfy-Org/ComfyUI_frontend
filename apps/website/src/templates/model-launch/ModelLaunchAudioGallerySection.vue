@@ -2,6 +2,7 @@
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchAudioGallery } from './types'
 
+import ModelLaunchAudioPlaylist from './ModelLaunchAudioPlaylist.vue'
 import ModelLaunchAudioSampleCard from './ModelLaunchAudioSampleCard.vue'
 
 const { locale = 'en', audioGallery } = defineProps<{
@@ -11,7 +12,12 @@ const { locale = 'en', audioGallery } = defineProps<{
 </script>
 
 <template>
-  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
+  <ModelLaunchAudioPlaylist
+    v-if="audioGallery.layout === 'playlist'"
+    :audio-gallery
+    :locale
+  />
+  <section v-else class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div
       class="mx-auto grid max-w-7xl grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2"
     >

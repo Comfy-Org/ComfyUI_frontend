@@ -3971,7 +3971,10 @@
       "sliderLabel": "Comparison slider",
       "before": "Before",
       "after": "After"
-    }
+    },
+    "promptWindow": "Prompt",
+    "tracks": "Tracks",
+    "voice": "Voice"
   },
   "flux3": {
     "meta": {
@@ -4488,6 +4491,10 @@
       "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
       "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
       "highlightCta": "GET STARTED"
+    },
+    "playlist": {
+      "heading": "Hear Drama 3 perform",
+      "subtitle": "Pick a track to hear it and see the exact prompt and voices behind it. Copy any prompt into the Fish Audio Text to Speech node."
     }
   },
   "fdct": {
