@@ -6,7 +6,7 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { getLogoPath } from '@/lib/hub/model-logos'
+import { COMFY_LOGO_PATH, getLogoPath } from '@/lib/hub/model-logos'
 import { SHELF_CARD } from '@/lib/workshop/card-layout'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
@@ -84,7 +84,7 @@ function keyOf(entry: ExploreEntry): string {
           :name="entry.app.name"
           :model="entry.app"
           :source="t('workshop.card.comfyApp')"
-          :logo="getLogoPath(entry.app.name)"
+          :logo="COMFY_LOGO_PATH"
           :pills="[
             t(entry.app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon')
           ]"

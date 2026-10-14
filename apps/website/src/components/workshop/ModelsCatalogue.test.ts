@@ -102,13 +102,12 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'en',
       tab: 'explore',
-      subtitle:
-        'Start with an app, go deeper with a workflow, or build with a model.'
+      subtitle: 'Pick an app, remix a workflow or call a model.'
     },
     {
       locale: 'zh-CN',
       tab: 'explore',
-      subtitle: '从应用开始，用工作流深入，或用模型来构建。'
+      subtitle: '挑一个应用，改编一个工作流，或调用一个模型。'
     },
     {
       locale: 'en',
@@ -178,7 +177,7 @@ describe('ModelsCatalogue', () => {
 
     expect(await screen.findByTestId('explore-finder')).toHaveClass(
       'mx-auto',
-      'max-w-3xl'
+      'max-w-2xl'
     )
   })
 

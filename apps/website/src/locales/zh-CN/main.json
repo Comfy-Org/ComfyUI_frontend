@@ -4026,7 +4026,7 @@
       "creditsPerRun": "积分 / 次",
       "from": "起",
       "partnerNode": "合作伙伴节点",
-      "comfyApp": "Comfy 应用",
+      "comfyApp": "Comfy",
       "priceOnPage": "价格见模型页",
       "runs": "{n} 次运行",
       "tryCta": "在 Playground 试用"
@@ -4709,7 +4709,7 @@
       "buildHint": "通过 API 用在你的产品中"
     },
     "explore": {
-      "subtitle": "从应用开始，用工作流深入，或用模型来构建。",
+      "subtitle": "挑一个应用，改编一个工作流，或调用一个模型。",
       "searchLabel": "搜索 Hub",
       "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
       "popularTitle": "热门",

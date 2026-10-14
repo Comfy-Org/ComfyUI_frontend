@@ -335,7 +335,7 @@
     },
     "card": {
       "partnerNode": "Partner node",
-      "comfyApp": "Comfy app",
+      "comfyApp": "Comfy",
       "runs": "{n} runs",
       "creditsPerRun": "credits / run",
       "from": "from",
@@ -723,7 +723,7 @@
       "buildHint": "Put it in your product with APIs"
     },
     "explore": {
-      "subtitle": "Start with an app, go deeper with a workflow, or build with a model.",
+      "subtitle": "Pick an app, remix a workflow or call a model.",
       "searchLabel": "Search the Hub",
       "searchPlaceholder": "Try “relight”, “upscale” or a model name",
       "popularTitle": "Popular",

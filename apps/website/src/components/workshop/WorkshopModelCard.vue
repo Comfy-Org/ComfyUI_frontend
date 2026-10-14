@@ -8,7 +8,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import HubTypeBadge from '@/components/hub/HubTypeBadge.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
-import { getLogoPath } from '@/lib/hub/model-logos'
+import { COMFY_LOGO_PATH, getLogoPath } from '@/lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import TagRow from '@/components/hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -45,10 +45,11 @@ const providerName = computed(() =>
       t('workshop.card.partnerNode'))
 )
 
-const logo = computed(
-  () =>
-    getLogoPath(workflowModels.value?.[0] ?? model.provider ?? '') ??
-    getLogoPath(model.name)
+const logo = computed(() =>
+  model.type === 'APP'
+    ? COMFY_LOGO_PATH
+    : (getLogoPath(workflowModels.value?.[0] ?? model.provider ?? '') ??
+      getLogoPath(model.name))
 )
 
 const taskLabel = computed(() => taskLabelFor(model, locale))

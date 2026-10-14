@@ -16,7 +16,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 const SECTIONS = {
-  explore: { path: '/hub/', heading: 'What do you want to make?' },
+  explore: { path: '/hub/', heading: 'What will you make?' },
   apps: { path: '/hub/apps/', heading: 'Apps' },
   workflows: { path: '/hub/workflows/', heading: 'Workflows' },
   models: { path: '/hub/models/', heading: 'Models' }

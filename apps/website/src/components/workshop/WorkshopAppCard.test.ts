@@ -60,27 +60,19 @@ describe('WorkshopAppCard', () => {
     ).toBeVisible()
   })
 
-  it('marks an app with the logo its name matches', () => {
-    render(WorkshopAppCard, {
-      props: { app: { ...app, name: 'Seedance Studio' } }
-    })
-    const mark = screen.getByTestId('model-card-provider')
+  it.for(['Seedance Studio', 'Re-shoot a video'])(
+    'marks %s with the Comfy logo',
+    (name) => {
+      render(WorkshopAppCard, { props: { app: { ...app, name } } })
+      const mark = screen.getByTestId('model-card-provider')
 
-    expect(mark).toHaveTextContent('Comfy app')
-    expect(within(mark).getByTestId('model-card-provider-logo')).toHaveStyle({
-      maskImage: 'url(/icons/ai-models/bytedance.svg)'
-    })
-    expect(within(mark).queryByText('C', { exact: true })).toBeNull()
-  })
-
-  it('marks an app with the initial when no logo matches', () => {
-    render(WorkshopAppCard, { props: { app } })
-    const mark = screen.getByTestId('model-card-provider')
-
-    expect(mark).toHaveTextContent('Comfy app')
-    expect(within(mark).queryByTestId('model-card-provider-logo')).toBeNull()
-    expect(within(mark).getByText('C', { exact: true })).toBeInTheDocument()
-  })
+      expect(mark).toHaveTextContent('Comfy')
+      expect(within(mark).getByTestId('model-card-provider-logo')).toHaveStyle({
+        maskImage: 'url(/icons/logomark.svg)'
+      })
+      expect(within(mark).queryByText('C', { exact: true })).toBeNull()
+    }
+  )
 
   it.for([
     {

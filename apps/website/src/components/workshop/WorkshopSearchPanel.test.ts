@@ -57,7 +57,7 @@ describe('WorkshopSearchPanel', () => {
     }
     render(WorkshopSearchPanel, { props: { models: [app], query: 're-shoot' } })
     expect(
-      screen.getByRole('button', { name: 'Re-shoot a video Comfy app' })
+      screen.getByRole('button', { name: 'Re-shoot a video Comfy' })
     ).toBeTruthy()
   })
 

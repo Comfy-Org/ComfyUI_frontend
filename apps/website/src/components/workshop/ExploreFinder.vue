@@ -12,7 +12,7 @@ const query = defineModel<string>({ required: true })
 
 <template>
   <label
-    class="relative mx-auto flex w-full max-w-3xl items-center"
+    class="relative mx-auto flex w-full max-w-2xl items-center"
     data-testid="explore-finder"
   >
     <span class="sr-only">{{ t('workshop.explore.searchLabel') }}</span>

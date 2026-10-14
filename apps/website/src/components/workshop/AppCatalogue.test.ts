@@ -49,8 +49,8 @@ describe('AppCatalogue', () => {
   })
 
   it.for([
-    { locale: 'en', mark: 'Comfy app' },
-    { locale: 'zh-CN', mark: 'Comfy 应用' }
+    { locale: 'en', mark: 'Comfy' },
+    { locale: 'zh-CN', mark: 'Comfy' }
   ] as const)('labels every card in $locale', ({ locale, mark }) => {
     render(AppCatalogue, {
       props: { apps: appsOf(2, 'open'), upcoming: appsOf(1, 'soon'), locale }
@@ -59,7 +59,7 @@ describe('AppCatalogue', () => {
       screen
         .getAllByTestId('model-card-provider')
         .map((element) => element.textContent.trim())
-    ).toEqual(Array(3).fill(`C${mark}`))
+    ).toEqual(Array(3).fill(mark))
   })
 
   it('puts no featured app ahead of the list', () => {
