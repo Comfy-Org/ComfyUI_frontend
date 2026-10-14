@@ -384,14 +384,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/workbench/extensions/agent/services/agent/agentRestClient.ts",
       "role": "infrastructure"
     },
@@ -420,7 +412,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
+      "path": "src/workbench/extensions/agent/crdt/agentCrdtTransport.test.ts",
       "role": "infrastructure"
     },
     {

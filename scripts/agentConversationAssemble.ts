@@ -239,47 +239,28 @@ function turnIds(turn: RecordedTurn, label: string): TurnIds {
   return { threadId: ack.data.thread_id, messageId: ack.data.message_id }
 }
 
-function keepTurnFrames(
-  frames: RecordedFrame[],
-  ids: TurnIds[],
+function isSameTurn(data: RecordedFrame['data'], id: TurnIds): boolean {
+  return data.thread_id === id.threadId && data.message_id === id.messageId
+}
+
+// The bucket a frame is dropped into, or null when it belongs to a recorded
+// turn and is kept.
+function dropBucket(
+  { type, data }: RecordedFrame,
+  turn: number,
   seedTurn: TurnIds | null
-): { kept: KeptFrame[][]; dropped: Record<string, number> } {
-  const kept: KeptFrame[][] = ids.map(() => [])
-  const dropped: Record<string, number> = {}
-  const drop = (bucket: string): void => {
-    dropped[bucket] = (dropped[bucket] ?? 0) + 1
-  }
+): string | null {
+  // Unparseable payloads belong to no turn; the heartbeat carries no ids.
+  if (type === '__raw__') return 'unparseable'
+  if (type === 'draft_version') return 'type:draft_version'
+  if (turn === -1)
+    return seedTurn !== null && isSameTurn(data, seedTurn)
+      ? 'seed_turn'
+      : 'foreign'
+  return isAgentEvent(type) ? null : `type:${type}`
+}
 
-  for (const frame of frames) {
-    const { type, data } = frame
-    const turn = ids.findIndex(
-      (id) => data.thread_id === id.threadId && data.message_id === id.messageId
-    )
-    // Unparseable payloads belong to no turn; the heartbeat carries no ids.
-    if (type === '__raw__' || type === 'draft_version')
-      drop(type === '__raw__' ? 'unparseable' : 'type:draft_version')
-    else if (turn === -1)
-      drop(
-        seedTurn !== null &&
-          data.thread_id === seedTurn.threadId &&
-          data.message_id === seedTurn.messageId
-          ? 'seed_turn'
-          : 'foreign'
-      )
-    else if (isAgentEvent(type))
-      kept[turn].push({
-        event: parseOrRefuse(
-          zAgentWsEvent,
-          { type, data },
-          `${turnLabel(turn)} ${type} frame`
-        ),
-        at_ms: frame.at_ms
-      })
-    else drop(`type:${type}`)
-  }
-
-  if (dropped.unparseable)
-    refuse(`${dropped.unparseable} unparseable socket payload(s) recorded`)
+function assertTurnsClosed(kept: KeptFrame[][]): void {
   for (const [index, turn] of kept.entries()) {
     const dones = turn.filter(
       ({ event }) => event.type === 'agent_message_done'
@@ -294,6 +275,37 @@ function keepTurnFrames(
         `last kept frame of ${turnLabel(index)} is ${last?.event.type}, not agent_message_done`
       )
   }
+}
+
+function keepTurnFrames(
+  frames: RecordedFrame[],
+  ids: TurnIds[],
+  seedTurn: TurnIds | null
+): { kept: KeptFrame[][]; dropped: Record<string, number> } {
+  const kept: KeptFrame[][] = ids.map(() => [])
+  const dropped: Record<string, number> = {}
+
+  for (const frame of frames) {
+    const { type, data } = frame
+    const turn = ids.findIndex((id) => isSameTurn(data, id))
+    const bucket = dropBucket(frame, turn, seedTurn)
+    if (bucket !== null) {
+      dropped[bucket] = (dropped[bucket] ?? 0) + 1
+      continue
+    }
+    kept[turn].push({
+      event: parseOrRefuse(
+        zAgentWsEvent,
+        { type, data },
+        `${turnLabel(turn)} ${type} frame`
+      ),
+      at_ms: frame.at_ms
+    })
+  }
+
+  if (dropped.unparseable)
+    refuse(`${dropped.unparseable} unparseable socket payload(s) recorded`)
+  assertTurnsClosed(kept)
   return { kept, dropped }
 }
 
