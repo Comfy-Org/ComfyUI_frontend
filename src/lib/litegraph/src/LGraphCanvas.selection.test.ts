@@ -425,6 +425,15 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
+    it('node removal clears the selection without reporting it', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      graph.remove(a)
+
+      expect(onSelectionChange).not.toHaveBeenCalled()
+    })
+
     it('node removal clears legacy selection before a deselection hook throws', () => {
       canvas.select(a)
       a.onDeselected = () => {
@@ -443,6 +452,19 @@ describe('LGraphCanvas selection', () => {
       canvas.deselect(a)
 
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('a replacing click with a selecting hook reports one final selection', () => {
+      canvas.select(a)
+      canvas.onNodeSelected = (node) => {
+        if (node === b) canvas.select(a)
+      }
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.processSelect(b, undefined)
+
+      expect(onSelectionChange).toHaveBeenCalledOnce()
+      expect(selectedTitles(canvas)).toEqual(['A', 'B'])
     })
 
     it('ghost placement reports one change holding the placed node', () => {
