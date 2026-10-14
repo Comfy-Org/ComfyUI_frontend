@@ -367,3 +367,40 @@ test.describe('Model discovery row @interaction', () => {
     await expect.poll(overflow).toBeLessThanOrEqual(1)
   })
 })
+
+test.describe('ModelDiscoverySection marquee @smoke', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } })
+
+  test('still fills an ultra-wide viewport late in the cycle', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 3420, height: 900 })
+    await page.goto('/')
+    const tracks = page.getByTestId('discovery-marquee')
+    await expect(tracks.first()).toBeVisible()
+    const { rightEdge, viewportWidth } = await tracks.evaluateAll(
+      (elements) => {
+        const duration = elements[0]
+          ?.getAnimations()
+          .at(0)
+          ?.effect?.getTiming().duration
+        if (typeof duration !== 'number' || duration <= 1) {
+          throw new Error(`Marquee has unusable duration: ${String(duration)}`)
+        }
+        for (const element of elements) {
+          for (const animation of element.getAnimations()) {
+            animation.pause()
+            animation.currentTime = duration - 0.1
+          }
+        }
+        void document.body.offsetWidth
+        return {
+          rightEdge:
+            elements[elements.length - 1].getBoundingClientRect().right,
+          viewportWidth: window.innerWidth
+        }
+      }
+    )
+    expect(rightEdge).toBeGreaterThanOrEqual(viewportWidth)
+  })
+})
