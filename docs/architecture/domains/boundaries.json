@@ -5128,7 +5128,7 @@
     "rules": [
       {
         "from": "agent/domain",
-        "allow": ["agent/domain", "unclassified"]
+        "allow": ["agent/domain", "authentication/domain", "unclassified"]
       },
       {
         "from": "agent/application",
@@ -5136,6 +5136,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "unclassified"
         ]
       },
@@ -5145,6 +5148,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "unclassified"
         ]
       },
@@ -5154,6 +5160,9 @@
           "agent/domain",
           "agent/application",
           "agent/presentation",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
           "unclassified"
         ]
       },
@@ -5165,6 +5174,11 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
           "unclassified"
         ]
       },
@@ -6988,11 +7002,21 @@
       },
       {
         "from": "settings/domain",
-        "allow": ["settings/domain", "unclassified"]
+        "allow": [
+          "authentication/domain",
+          "dialog-host/domain",
+          "settings/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "settings/application",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
@@ -7002,6 +7026,11 @@
       {
         "from": "settings/infrastructure",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
@@ -7011,6 +7040,12 @@
       {
         "from": "settings/presentation",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation",
           "settings/domain",
           "settings/application",
           "settings/presentation",
@@ -7020,6 +7055,15 @@
       {
         "from": "settings/integration",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation",
+          "dialog-host/integration",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
