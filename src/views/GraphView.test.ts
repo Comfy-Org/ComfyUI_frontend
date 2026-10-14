@@ -6,6 +6,7 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -353,19 +354,12 @@ describe('GraphView - deployment pick at startup', () => {
   const pickGone = 'The deployment you picked no longer exists.'
 
   beforeEach(() => {
-    const deploymentPick = useDeploymentPickStore()
-    vi.spyOn(deploymentPick, 'loadOnce').mockImplementation(async () => {
-      deploymentPick.state = {
-        phase: 'ready',
-        deployments: [],
-        pickedDeploymentId: 'dep-gone',
-        pickSource: 'browser',
-        defaultDeploymentId: null,
-        gonePickedDeploymentId: null,
-        goneDefaultDeploymentId: null,
-        buildsVisible: true
-      }
+    mockDeploymentListing({
+      items: [],
+      builds_visible: true,
+      gone_picked_deployment_id: 'dep-gone'
     })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce')
   })
 
   afterEach(() => {
