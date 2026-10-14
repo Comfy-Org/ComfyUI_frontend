@@ -41,7 +41,10 @@ export function useFreeUsePlacement() {
 
   function assign(): void {
     const served = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
-    if (!isFreeUseVariant(served)) return
+    if (!isFreeUseVariant(served)) {
+      assigned.value = 'control'
+      return
+    }
     assigned.value = served
     if (panelStore.reportedFreeUseExposure) return
     const telemetry = useTelemetry()

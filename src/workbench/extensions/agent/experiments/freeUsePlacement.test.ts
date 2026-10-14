@@ -188,6 +188,18 @@ describe('useFreeUsePlacement', () => {
     expect(telemetry.trackAgentFreeUseExposure).toHaveBeenCalledTimes(1)
   })
 
+  it('returns to control when a later config refresh is invalid', async () => {
+    authenticatedRemoteConfigState.value = 'authenticated'
+    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'inside-input' }
+    const { variant } = useFreeUsePlacement()
+
+    expect(variant.value).toBe('inside-input')
+
+    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'unknown' as never }
+
+    await vi.waitFor(() => expect(variant.value).toBe('control'))
+  })
+
   it('re-attributes a mounted panel when it reopens', async () => {
     remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'top-banner' }
     authenticatedRemoteConfigState.value = 'authenticated'
