@@ -1,7 +1,10 @@
 import type { ServerConfigValue } from '@/constants/serverConfig'
 import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type {
+  Keybinding,
+  KeybindingSettings
+} from '@/platform/keybindings/types'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -102,6 +105,7 @@ export type Settings = {
   'Comfy.Keybinding.UnsetBindings': Array<Keybinding>
   'Comfy.Keybinding.NewBindings': Array<Keybinding>
   'Comfy.Keybinding.CurrentPreset': string
+  'Comfy.Keybinding.SettingsV1': KeybindingSettings | null
   'Comfy.Extension.Disabled': Array<string>
   'Comfy.LinkRenderMode': number
   'Comfy.Node.AutoSnapLinkToSlot': boolean

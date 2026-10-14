@@ -9,7 +9,7 @@ const zOptionalBoolean = z
   .optional()
 
 const zKeyCombo = z.object({
-  key: z.string(),
+  key: z.string().min(1),
   ctrl: zOptionalBoolean,
   alt: zOptionalBoolean,
   shift: zOptionalBoolean,
@@ -39,8 +39,20 @@ export const zKeybinding = z.object({
   targetElementId: zOptionalString,
   /** Fires only while the dialog opened with this key is the active one. */
   dialogKey: zOptionalString,
-  when: zWhenClause
+  when: zWhenClause,
+  allowRepeat: z.boolean().optional(),
+  preventDefault: z.boolean().optional(),
+  releaseCommandId: zOptionalString
 })
+
+export const zKeybindingSettings = z.object({
+  version: z.literal(1),
+  newBindings: z.array(zKeybinding),
+  unsetBindings: z.array(zKeybinding),
+  currentPreset: z.string()
+})
+
+export type KeybindingSettings = z.infer<typeof zKeybindingSettings>
 
 export const zKeybindingPreset = z.object({
   name: z.string().trim().min(1, 'Preset name cannot be empty'),

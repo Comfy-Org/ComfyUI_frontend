@@ -18,6 +18,30 @@ export interface EditKeybindingDialogState {
   targetElementId?: string
   dialogKey?: string
   when?: string
+  allowRepeat?: boolean
+  preventDefault?: boolean
+  releaseCommandId?: string
+}
+
+/** The fields a rebind carries over from the binding it replaces. */
+function bindingScope(binding: KeybindingImpl | undefined) {
+  if (!binding) return {}
+  const {
+    targetElementId,
+    dialogKey,
+    when,
+    allowRepeat,
+    preventDefault,
+    releaseCommandId
+  } = binding
+  return {
+    targetElementId,
+    dialogKey,
+    when,
+    allowRepeat,
+    preventDefault,
+    releaseCommandId
+  }
 }
 
 export function useEditKeybindingDialog() {
@@ -41,9 +65,7 @@ export function useEditKeybindingDialog() {
       newCombo: options.currentCombo,
       currentCombo: options.currentCombo,
       existingBinding: options.existingBinding ?? null,
-      targetElementId: scopeTemplate?.targetElementId,
-      dialogKey: scopeTemplate?.dialogKey,
-      when: scopeTemplate?.when
+      ...bindingScope(scopeTemplate)
     })
 
     const newKeybinding = computed(() =>
@@ -53,7 +75,10 @@ export function useEditKeybindingDialog() {
             combo: dialogState.newCombo,
             targetElementId: dialogState.targetElementId,
             dialogKey: dialogState.dialogKey,
-            when: dialogState.when
+            when: dialogState.when,
+            allowRepeat: dialogState.allowRepeat,
+            preventDefault: dialogState.preventDefault,
+            releaseCommandId: dialogState.releaseCommandId
           })
         : null
     )

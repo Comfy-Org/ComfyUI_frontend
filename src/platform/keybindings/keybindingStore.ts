@@ -265,6 +265,17 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     )
   }
 
+  function loadUserKeybindings(
+    preset: Pick<KeybindingPreset, 'newBindings' | 'unsetBindings'>
+  ) {
+    userKeybindings.value = []
+    userUnsetKeybindings.value = preset.unsetBindings.map(
+      (binding) => new KeybindingImpl(binding)
+    )
+    for (const binding of preset.newBindings)
+      addUserKeybinding(new KeybindingImpl(binding))
+  }
+
   function resetAllKeybindings() {
     userKeybindings.value = []
     userUnsetKeybindings.value = []
@@ -356,6 +367,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addDefaultKeybinding,
     addExtensionKeybinding,
     addUserKeybinding,
+    loadUserKeybindings,
     unsetKeybinding,
     resetAllKeybindings,
     resetKeybindingForCommand,
