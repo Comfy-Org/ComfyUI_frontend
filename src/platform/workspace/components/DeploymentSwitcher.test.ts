@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -95,6 +95,40 @@ describe('DeploymentSwitcher', () => {
       writable: true,
       configurable: true
     })
+  })
+
+  it('distinguishes two named deployments on one Release and renders names as plain text', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      items: [
+        {
+          ...listing.items[0],
+          deployment_name: "Studio's <b>production</b> & R&D"
+        },
+        { ...listing.items[0], deployment_id: D1, deployment_name: 'staging' }
+      ]
+    })
+    renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.getByTestId('deployment-switcher-current')).toHaveTextContent(
+      "Studio's <b>production</b> & R&D"
+    )
+    await userEvent.click(trigger)
+    expect(
+      within(screen.getByTestId(`deployment-row-${D2}`)).getByText(
+        "Studio's <b>production</b> & R&D"
+      )
+    ).toBeVisible()
+    expect(
+      within(screen.getByTestId(`deployment-row-${D1}`)).getByText('staging')
+    ).toBeVisible()
+    expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
+      'Studio Build v2 · dep-a2a2a2a2, ready'
+    )
+    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
+      'Studio Build v2 · dep-a1a1a1a1, ready'
+    )
   })
 
   it('renders nothing when the account is outside the rollout', async () => {

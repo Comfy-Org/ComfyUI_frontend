@@ -40,6 +40,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
@@ -157,30 +158,10 @@ export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
 
-/**
- * The developer-platform deployment listing and pick (FE-2434, BE-17480), as
- * ingest's OpenAPI declares them. Declared here until the ingest-types sync
- * generates them from that spec.
- */
-export interface WorkspaceDeployment {
-  deployment_id: string
-  release_id: string
-  build_id?: string
-  build_name?: string
-  release_version?: number
-  status: string
-  created_at: string
-}
-
-export interface WorkspaceDeploymentList {
-  items: WorkspaceDeployment[]
-  builds_visible: boolean
-  picked_deployment_id?: string
-  pick_source?: 'browser' | 'workspace_default'
-  default_deployment_id?: string
-  gone_picked_deployment_id?: string
-  gone_default_deployment_id?: string
-}
+export type {
+  WorkspaceDeployment,
+  WorkspaceDeploymentList
+} from '@comfyorg/ingest-types'
 
 interface PickWorkspaceDeploymentRequest {
   deployment_id: string
