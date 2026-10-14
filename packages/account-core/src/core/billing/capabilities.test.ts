@@ -330,9 +330,6 @@ describe('createCapabilitiesReader', () => {
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
-            // The scope knows the caller by the identity provider's uid; the
-            // server names its canonical user id, which may differ for the
-            // same user.
             resolved_for: { user_id: 'canonical-user-1', workspace_id: 'ws-1' }
           })
         )

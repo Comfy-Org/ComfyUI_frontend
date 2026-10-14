@@ -166,15 +166,6 @@ export function createCapabilitiesReader(
   ): BillingResult<CapabilitiesSnapshot> {
     const { data, body, httpStatus } = response
 
-    // Only the workspace half can be checked here. `resolved_for.user_id` is
-    // the server's canonical user id, while `scope.userId` is whatever the
-    // scope source knows the caller as: the identity provider's uid on a
-    // session client (`sessionBillingScopeSource`), which need not be the
-    // same id. The user half is the credential's to prove: the server resolves
-    // for the caller the request was sent as, and the ingest service checks
-    // both halves against its own upstream before it forwards a response. A
-    // workspace mismatch is a contract violation rather than an answer about
-    // this scope, so it joins the transient bucket instead of being cached.
     if (data.resolved_for.workspace_id !== scope.workspaceId) {
       return { status: 'error', code: 'REQUEST_FAILED', httpStatus }
     }

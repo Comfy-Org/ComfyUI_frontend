@@ -152,7 +152,6 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-// The server names its own user id, which need not be the Firebase uid.
 const CAPABILITIES = {
   resolved_for: { user_id: 'canonical-user-a', workspace_id: 'ws-personal' },
   capabilities: {
