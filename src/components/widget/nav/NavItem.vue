@@ -5,7 +5,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none',
+            'flex cursor-pointer items-center-safe gap-2 rounded-md p-3 text-sm text-base-foreground transition-colors select-none',
             active
               ? 'bg-interface-menu-component-surface-selected'
               : 'hover:bg-interface-menu-component-surface-hovered'
@@ -18,7 +18,7 @@
         <NavIcon v-if="icon" :icon="icon" />
         <i
           v-else
-          class="icon-[lucide--folder] size-3.5 shrink-0 text-base-foreground"
+          class="icon-[lucide--folder] size-4 shrink-0 text-base-foreground"
         />
         <span ref="textRef" class="min-w-0 truncate">
           <slot />
