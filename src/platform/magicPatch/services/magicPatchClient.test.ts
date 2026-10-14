@@ -25,6 +25,143 @@ beforeEach(() => {
 })
 
 describe('Magic Patch client', () => {
+  it.for([401, 403, 429, 503])(
+    'retains safe error codes and HTTP %i without exposing response messages',
+    async (status) => {
+      const client = createMagicPatchClient(
+        async () =>
+          Response.json(
+            {
+              code: 'source_access_denied',
+              message: 'private-response-marker'
+            },
+            { status }
+          ),
+        () => true,
+        scopeGuard
+      )
+      const result = await client.prepareWorkflowSource({
+        cnr_id: 'example',
+        ver: '2.0.0',
+        node_types: ['ExampleNode']
+      })
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: status === 503 ? 'unavailable' : 'request_failed',
+          status,
+          reason: 'source_access_denied'
+        }
+      })
+      expect(
+        JSON.stringify([result, vi.mocked(reportError).mock.calls])
+      ).not.toContain('private-response-marker')
+    }
+  )
+
+  it.for([
+    { code: 'PRIVATE/secret', message: 'private-marker' },
+    { code: 'a'.repeat(81), message: 'private-marker' },
+    { code: 'source_access_denied', message: 'private-marker', token: 'secret' }
+  ])('ignores unsafe or unrecognized error bodies %j', async (body) => {
+    const client = createMagicPatchClient(
+      async () => Response.json(body, { status: 403 }),
+      () => true,
+      scopeGuard
+    )
+    expect(await client.status(request.id)).toEqual({
+      ok: false,
+      error: { code: 'request_failed', status: 403 }
+    })
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'private-marker'
+    )
+  })
+
+  it('keeps the actual HTTP status when an error body is malformed', async () => {
+    const client = createMagicPatchClient(
+      async () => new Response('private-invalid-json', { status: 401 }),
+      () => true,
+      scopeGuard
+    )
+    expect(await client.status(request.id)).toEqual({
+      ok: false,
+      error: { code: 'invalid_response', status: 401 }
+    })
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'private-invalid-json'
+    )
+  })
+
+  it('cancels oversized error bodies and retains their HTTP status', async () => {
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>({ cancel })
+    const client = createMagicPatchClient(
+      async () =>
+        new Response(body, {
+          status: 403,
+          headers: { 'Content-Length': String(1024 * 1024 + 1) }
+        }),
+      () => true,
+      scopeGuard
+    )
+    expect(await client.status(request.id)).toEqual({
+      ok: false,
+      error: { code: 'response_too_large', status: 403 }
+    })
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('preserves scope fencing while reading a failed HTTP response', async () => {
+    let generation = 1
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          generation = 2
+          controller.enqueue(
+            new TextEncoder().encode('{"code":"denied","message":"private"}')
+          )
+        },
+        cancel
+      },
+      { highWaterMark: 0 }
+    )
+    const client = createMagicPatchClient(
+      async () => new Response(body, { status: 403 }),
+      () => true,
+      {
+        capture: () => generation,
+        current: (captured) => captured === generation
+      }
+    )
+    expect(await client.status(request.id)).toEqual({
+      ok: false,
+      error: { code: 'scope_changed' }
+    })
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
+  it('bounds stalled error bodies without losing the service status', async () => {
+    vi.useFakeTimers()
+    const cancel = vi.fn()
+    const client = createMagicPatchClient(
+      async () =>
+        new Response(new ReadableStream<Uint8Array>({ cancel }), {
+          status: 503
+        }),
+      () => true,
+      scopeGuard
+    )
+    const pending = client.status(request.id)
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(await pending).toEqual({
+      ok: false,
+      error: { code: 'response_timeout', status: 503 }
+    })
+    expect(cancel).toHaveBeenCalledOnce()
+  })
+
   const acquisition = {
     acquisition_id: 'a'.repeat(32),
     state: 'queued',

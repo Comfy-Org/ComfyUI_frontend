@@ -17,7 +17,7 @@
         <span
           v-if="job.phase === 'preparing' && job.disconnected"
           role="alert"
-          >{{ t('magicPatch.disconnected') }}</span
+          >{{ message(job.reason, 'magicPatch.disconnected') }}</span
         >
         <progress
           v-else
@@ -26,13 +26,7 @@
         />
       </template>
       <span v-else-if="job.phase === 'error'" role="alert">
-        {{
-          t(
-            te(`magicPatch.reasons.${job.reason}`)
-              ? `magicPatch.reasons.${job.reason}`
-              : 'magicPatch.unavailable'
-          )
-        }}
+        {{ message(job.reason, 'magicPatch.unavailable') }}
       </span>
     </div>
   </div>
@@ -44,4 +38,9 @@ import type { WorkflowSourceJob } from '../stores/magicPatchBatchStore'
 
 const { jobs } = defineProps<{ jobs: WorkflowSourceJob[] }>()
 const { t, te } = useI18n()
+
+function message(reason: string | undefined, fallback: string) {
+  const key = `magicPatch.reasons.${reason}`
+  return t(reason && te(key) ? key : fallback)
+}
 </script>

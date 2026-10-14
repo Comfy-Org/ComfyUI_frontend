@@ -22,6 +22,62 @@ function mount(jobs: WorkflowSourceJob[]) {
 }
 
 describe('workflow source preparation progress', () => {
+  it.for([
+    'source_authentication_required',
+    'source_access_denied',
+    'source_service_unavailable',
+    'source_connection_failed',
+    'source_response_timeout',
+    'source_response_invalid'
+  ] as const)('shows the specific cause and action for %s', (reason) => {
+    mount([{ pack, phase: 'error', reason }])
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      en.magicPatch.reasons[reason]
+    )
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  })
+
+  it('shows a specific polling failure while preserving preparation instead of reporting completion', () => {
+    mount([
+      {
+        pack,
+        phase: 'preparing',
+        deadline: 600000,
+        disconnected: true,
+        reason: 'source_service_unavailable',
+        failure: { code: 'unavailable', status: 503 },
+        acquisition: {
+          acquisition_id: 'a'.repeat(32),
+          state: 'acquiring',
+          status_version: 2,
+          source_ref: null,
+          reason: null,
+          conversion_supported: false,
+          message: 'Acquiring',
+          progress: {
+            stage: 'source_preparation',
+            state: 'acquiring',
+            message: 'Acquiring'
+          }
+        }
+      }
+    ])
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      en.magicPatch.reasons.source_service_unavailable
+    )
+    expect(
+      screen.getByText(en.magicPatch.resolvingWorkflowSource)
+    ).toBeVisible()
+  })
+
+  it('does not render unrecognized server error text', () => {
+    mount([{ pack, phase: 'error', reason: 'private-server-marker' }])
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      en.magicPatch.unavailable
+    )
+    expect(screen.queryByText('private-server-marker')).not.toBeInTheDocument()
+  })
+
   it('shows the actual pack and indeterminate progress while preparing source', () => {
     mount([{ pack, phase: 'resolving' }])
     expect(screen.getByText(pack.name)).toBeVisible()

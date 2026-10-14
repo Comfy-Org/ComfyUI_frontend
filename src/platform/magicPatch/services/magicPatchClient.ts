@@ -35,11 +35,16 @@ type FailureCode =
   | 'response_too_large'
   | 'response_too_fragmented'
   | 'response_timeout'
+export type MagicPatchFailure = {
+  code: FailureCode
+  status?: number
+  reason?: string
+}
 type MagicPatchResult<T> =
   | { ok: true; value: T }
   | {
       ok: false
-      error: { code: FailureCode; status?: number; reason?: string }
+      error: MagicPatchFailure
     }
 
 class MagicPatchProtocolError extends Error {
@@ -51,7 +56,8 @@ class MagicPatchProtocolError extends Error {
 class MagicPatchRequestError extends Error {
   constructor(
     readonly status: number,
-    readonly reason?: string
+    readonly reason?: string,
+    readonly code?: FailureCode
   ) {
     super(`Magic Patch request failed (${status})`)
     this.name = 'MagicPatchRequestError'
@@ -84,20 +90,42 @@ export function createMagicPatchClient<Scope>(
     }
     check()
     const response = await fetchApi(`/magic-patch${route}`, options, check)
-    try {
-      check()
-      if (!response.ok && !acceptedStatus.includes(response.status))
-        throw new MagicPatchRequestError(response.status)
-    } catch (cause) {
-      void response.body?.cancel().catch(() => {})
-      throw cause
-    }
-    return {
+    const call = {
       response,
       current: () => scopeGuard.current(captured),
       check,
       signal: options.signal
     }
+    try {
+      check()
+      if (!response.ok && !acceptedStatus.includes(response.status)) {
+        let reason: string | undefined
+        let code: FailureCode | undefined
+        try {
+          const failure = zAPIError.safeParse(await readJSON(call))
+          if (failure.success && /^[a-z_]{1,80}$/u.test(failure.data.code))
+            reason = failure.data.code
+        } catch (cause) {
+          check()
+          if (
+            cause instanceof MagicPatchProtocolError &&
+            cause.code === 'scope_changed'
+          )
+            throw cause
+          code =
+            cause instanceof MagicPatchProtocolError
+              ? cause.code
+              : cause instanceof SyntaxError || cause instanceof TypeError
+                ? 'invalid_response'
+                : 'transport_indeterminate'
+        }
+        throw new MagicPatchRequestError(response.status, reason, code)
+      }
+    } catch (cause) {
+      void response.body?.cancel().catch(() => {})
+      throw cause
+    }
+    return call
   }
 
   async function readBytes(
@@ -474,9 +502,8 @@ export function createMagicPatchClient<Scope>(
         cause instanceof MagicPatchProtocolError
           ? cause.code
           : cause instanceof MagicPatchRequestError
-            ? cause.status === 503
-              ? 'unavailable'
-              : 'request_failed'
+            ? (cause.code ??
+              (cause.status === 503 ? 'unavailable' : 'request_failed'))
             : cause instanceof ZodError || cause instanceof SyntaxError
               ? 'invalid_response'
               : 'transport_indeterminate'

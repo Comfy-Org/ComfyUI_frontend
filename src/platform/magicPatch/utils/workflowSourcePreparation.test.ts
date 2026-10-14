@@ -1,10 +1,16 @@
 import type { SourceAcquisition } from '@comfyorg/magic-patch-types'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { createMagicPatchClient } from '../services/magicPatchClient'
+import { reportError } from '@/platform/telemetry/reportError'
+import type {
+  MagicPatchFailure,
+  createMagicPatchClient
+} from '../services/magicPatchClient'
 import { createWorkflowSourcePreparation } from './workflowSourcePreparation'
 import type { WorkflowSourceState } from './workflowSourcePreparation'
 import type { UnresolvedWorkflowPack } from './unresolvedWorkflowPacks'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 const pack: UnresolvedWorkflowPack = {
   key: 'power-2.0.0',
@@ -72,6 +78,129 @@ function setup() {
 }
 
 describe('workflow source preparation', () => {
+  it.for([
+    {
+      failure: { code: 'request_failed', status: 401 },
+      reason: 'source_authentication_required'
+    },
+    {
+      failure: { code: 'invalid_response', status: 403 },
+      reason: 'source_access_denied'
+    },
+    {
+      failure: { code: 'request_failed', status: 429 },
+      reason: 'source_rate_limited'
+    },
+    {
+      failure: { code: 'unavailable', status: 503 },
+      reason: 'source_service_unavailable'
+    },
+    { failure: { code: 'scope_changed' }, reason: 'source_scope_changed' },
+    {
+      failure: { code: 'transport_indeterminate' },
+      reason: 'source_connection_failed'
+    },
+    {
+      failure: { code: 'response_timeout' },
+      reason: 'source_response_timeout'
+    },
+    {
+      failure: { code: 'invalid_response' },
+      reason: 'source_response_invalid'
+    },
+    {
+      failure: { code: 'response_too_large' },
+      reason: 'source_response_invalid'
+    },
+    { failure: { code: 'invalid_request' }, reason: 'source_request_invalid' },
+    {
+      failure: { code: 'request_failed', status: 400 },
+      reason: 'source_request_failed'
+    },
+    {
+      failure: {
+        code: 'request_failed',
+        status: 422,
+        reason: 'pack_file_limit_exceeded'
+      },
+      reason: 'pack_file_limit_exceeded'
+    }
+  ] satisfies { failure: MagicPatchFailure; reason: string }[])(
+    'preserves failure metadata and classifies $reason without converting',
+    async ({ failure, reason }) => {
+      const test = setup()
+      test.client.prepareWorkflowSource.mockResolvedValue({
+        ok: false,
+        error: failure
+      })
+      await test.flow.start(pack)
+      expect(test.publish).toHaveBeenLastCalledWith({
+        phase: 'error',
+        reason,
+        failure
+      })
+      expect(test.ready).not.toHaveBeenCalled()
+      expect(test.client.prepareWorkflowSource).toHaveBeenCalledOnce()
+      expect(test.client.sourceStatus).not.toHaveBeenCalled()
+    }
+  )
+
+  it('retains the same acquisition and deadline across a service failure and recovery', async () => {
+    const test = setup()
+    await test.flow.start(pack)
+    const before = test.publish.mock.calls.at(-1)?.[0]
+    if (before?.phase !== 'preparing') throw new Error('Expected preparation')
+    const failure = { code: 'unavailable', status: 503 } as const
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: false,
+      error: failure
+    })
+    await test.flow.refresh()
+    expect(test.publish).toHaveBeenLastCalledWith({
+      ...before,
+      disconnected: true,
+      reason: 'source_service_unavailable',
+      failure
+    })
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: true,
+      value: { ...acquisition, state: 'acquiring', status_version: 2 }
+    })
+    await test.flow.refresh()
+    expect(test.publish).toHaveBeenLastCalledWith({
+      phase: 'preparing',
+      acquisition: expect.objectContaining({ status_version: 2 }),
+      deadline: before.deadline,
+      disconnected: false
+    })
+    expect(test.client.prepareWorkflowSource).toHaveBeenCalledOnce()
+    await test.flow.refresh()
+    expect(test.ready).toHaveBeenCalledOnce()
+  })
+
+  it('sanitizes unexpected failures and ignores failures after disposal', async () => {
+    const test = setup()
+    test.client.prepareWorkflowSource.mockRejectedValueOnce(
+      new Error('private-error-marker')
+    )
+    await test.flow.start(pack)
+    expect(test.publish).toHaveBeenLastCalledWith({
+      phase: 'error',
+      reason: 'source_lookup_failed'
+    })
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'private-error-marker'
+    )
+    const disposed = setup()
+    disposed.client.prepareWorkflowSource.mockImplementationOnce(async () => {
+      disposed.flow.dispose()
+      return { ok: false, error: { code: 'request_failed', status: 403 } }
+    })
+    await disposed.flow.start(pack)
+    expect(disposed.publish).not.toHaveBeenCalled()
+    expect(disposed.ready).not.toHaveBeenCalled()
+  })
+
   it('starts only on confirmation, preserves exact workflow metadata, and hands off the prepared reference once', async () => {
     const test = setup()
     expect(test.client.prepareWorkflowSource).not.toHaveBeenCalled()

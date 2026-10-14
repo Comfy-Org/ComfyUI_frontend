@@ -3,7 +3,10 @@ import type {
   SourceAcquisition
 } from '@comfyorg/magic-patch-types'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { createMagicPatchClient } from '../services/magicPatchClient'
+import type {
+  MagicPatchFailure,
+  createMagicPatchClient
+} from '../services/magicPatchClient'
 import type { UnresolvedWorkflowPack } from './unresolvedWorkflowPacks'
 
 export type WorkflowSourceState =
@@ -13,9 +16,38 @@ export type WorkflowSourceState =
       acquisition: SourceAcquisition
       deadline: number
       disconnected: boolean
+      reason?: string
+      failure?: MagicPatchFailure
     }
-  | { phase: 'error'; reason: string }
+  | { phase: 'error'; reason: string; failure?: MagicPatchFailure }
   | { phase: 'resolved' }
+
+function failureReason(failure: MagicPatchFailure): string {
+  if (failure.status === 401) return 'source_authentication_required'
+  if (failure.status === 403) return 'source_access_denied'
+  if (failure.status === 429) return 'source_rate_limited'
+  if (failure.status !== undefined && failure.status >= 500)
+    return 'source_service_unavailable'
+  switch (failure.code) {
+    case 'scope_changed':
+      return 'source_scope_changed'
+    case 'unavailable':
+      return 'source_service_unavailable'
+    case 'response_timeout':
+      return 'source_response_timeout'
+    case 'transport_indeterminate':
+      return 'source_connection_failed'
+    case 'invalid_response':
+    case 'report_mismatch':
+    case 'response_too_large':
+    case 'response_too_fragmented':
+      return 'source_response_invalid'
+    case 'invalid_request':
+      return 'source_request_invalid'
+    case 'request_failed':
+      return failure.reason ?? 'source_request_failed'
+  }
+}
 
 export function createWorkflowSourcePreparation(
   client: Pick<
@@ -99,12 +131,13 @@ export function createWorkflowSourcePreparation(
       else
         update({
           phase: 'error',
-          reason: result.error.reason ?? 'source_lookup_failed'
+          reason: failureReason(result.error),
+          failure: result.error
         })
-    } catch (cause) {
+    } catch {
       if (current() && !abort.signal.aborted) {
         update({ phase: 'error', reason: 'source_lookup_failed' })
-        reportError(cause, {
+        reportError(new Error('Source preparation failed unexpectedly'), {
           errorType: 'magic_patch_source_preparation_failure'
         })
       }
@@ -132,16 +165,22 @@ export function createWorkflowSourcePreparation(
         previous.acquisition.acquisition_id,
         abort.signal
       )
-      if (!result.ok) update({ ...previous, disconnected: true })
+      if (!result.ok)
+        update({
+          ...previous,
+          disconnected: true,
+          reason: failureReason(result.error),
+          failure: result.error
+        })
       else if (
         result.value.acquisition_id === previous.acquisition.acquisition_id &&
         result.value.status_version >= previous.acquisition.status_version
       )
         await accept(result.value, previous.deadline)
-    } catch (cause) {
+    } catch {
       if (current() && !abort.signal.aborted) {
         update({ phase: 'error', reason: 'source_lookup_failed' })
-        reportError(cause, {
+        reportError(new Error('Source preparation failed unexpectedly'), {
           errorType: 'magic_patch_source_preparation_failure'
         })
       }
