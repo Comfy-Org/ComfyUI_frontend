@@ -5179,6 +5179,9 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "moveAnything": "Move anything",
+      "moveAnythingSummary": "Drag the things in a photo somewhere new, and the model rebuilds the scene around them.",
+      "moveAnythingMeta": "Image · Qwen Image 2.1",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {

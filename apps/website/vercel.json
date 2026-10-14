@@ -4843,6 +4843,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/move-anything",
+      "destination": "/hub/apps/move-anything/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/move-anything/",
+      "destination": "/hub/apps/move-anything/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/reshoot",
       "destination": "/hub/apps/reshoot/",
       "permanent": true
