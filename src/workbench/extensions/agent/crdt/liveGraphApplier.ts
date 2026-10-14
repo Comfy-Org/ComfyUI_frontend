@@ -8,6 +8,10 @@ import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
+import {
+  isDynamicGroupController,
+  reportRemoteDynamicGroupRowMismatch
+} from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
@@ -919,6 +923,13 @@ export class LiveGraphApplier {
       )
         continue
       this.setWidgetValue(node, widget, value)
+      if (isDynamicGroupController(widget) && !Object.is(widget.value, value)) {
+        this.incrementFailureCount()
+        reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
+          ...AGENT_APPLY_TAGS,
+          outcome: 'degraded'
+        })
+      }
       resolved = true
     }
     return { resolved, unresolved }
