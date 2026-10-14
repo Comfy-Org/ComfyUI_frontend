@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
@@ -88,9 +89,13 @@ const filterMenu =
 const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
 const features = computed(() => workflowFeatures(models, locale))
-const modalitySidebar = usePreviewSwitch('hub-facet-sidebar')
+const flatGrid = usePreviewSwitch('hub-workflows-flat')
+const modalitySwitch = usePreviewSwitch('hub-facet-sidebar')
+const modalitySidebar = computed(() => modalitySwitch.value && !flatGrid.value)
 const taskSwitch = usePreviewSwitch('hub-task-sidebar')
-const taskSidebar = computed(() => taskSwitch.value && !modalitySidebar.value)
+const taskSidebar = computed(
+  () => taskSwitch.value && !modalitySidebar.value && !flatGrid.value
+)
 const altSidebar = computed(() => taskSidebar.value || modalitySidebar.value)
 const taskEntries = computed(() =>
   hubTaskEntries(models, (listed) => listed.length)
@@ -286,6 +291,7 @@ const { shown, total, hasMore, showMore } = usePagedList(visible)
 
 const sectioned = computed(
   () =>
+    !flatGrid.value &&
     !query.value.trim() &&
     (!taskSidebar.value || taskKey.value === 'all') &&
     allSectioned(models) &&
@@ -356,7 +362,14 @@ function clear() {
     class="flex flex-col lg:flex-row lg:items-start lg:gap-10"
     data-testid="workflow-catalogue"
   >
-    <div class="max-lg:contents lg:sticky lg:top-26 lg:w-70 lg:shrink-0">
+    <div
+      :class="
+        cn(
+          'max-lg:contents lg:sticky lg:top-26 lg:shrink-0',
+          flatGrid ? 'lg:w-58' : 'lg:w-70'
+        )
+      "
+    >
       <HubChoiceSidebar
         v-if="modalitySidebar"
         v-model="workflowType"

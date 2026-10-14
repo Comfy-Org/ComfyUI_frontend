@@ -12,7 +12,8 @@ export const PREVIEW_SWITCHES = [
     labelKey: 'workshop.preview.homePickRemixRun'
   },
   { id: 'hub-task-sidebar', labelKey: 'workshop.preview.taskSidebar' },
-  { id: 'hub-facet-sidebar', labelKey: 'workshop.preview.workflowsByModality' }
+  { id: 'hub-facet-sidebar', labelKey: 'workshop.preview.workflowsByModality' },
+  { id: 'hub-workflows-flat', labelKey: 'workshop.preview.workflowsFlat' }
 ] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
 
 export type PreviewSwitchId = (typeof PREVIEW_SWITCHES)[number]['id']

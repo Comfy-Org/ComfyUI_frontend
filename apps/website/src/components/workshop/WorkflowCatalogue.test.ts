@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import WorkflowCatalogue from './WorkflowCatalogue.vue'
 
 function workflow(
@@ -249,6 +250,35 @@ describe('WorkflowCatalogue categories', () => {
       'restore',
       'talk'
     ])
+  })
+
+  it('lists every workflow flat beside every category when switched to the Models layout', () => {
+    setPreviewSwitch('hub-workflows-flat', true)
+    try {
+      render(WorkflowCatalogue, { props: { models } })
+
+      expect(sectionHeadings()).toEqual([])
+      expect(listed()).toEqual([
+        'inpaint',
+        'animate',
+        'connect',
+        'restore',
+        'talk'
+      ])
+      expect(
+        within(sidebar())
+          .getAllByRole('tab')
+          .map((tab) => tab.textContent.replace(/\d+/g, '').trim())
+      ).toEqual([
+        'All',
+        'image-to-image label',
+        'image-to-video label',
+        'upscale label',
+        'audio label'
+      ])
+    } finally {
+      setPreviewSwitch('hub-workflows-flat', false)
+    }
   })
 
   it('narrows to a category, keeps it in the address, and lets go of it from All', async () => {

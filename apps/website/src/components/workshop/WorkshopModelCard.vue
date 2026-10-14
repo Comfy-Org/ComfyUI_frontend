@@ -82,7 +82,7 @@ const labelledBy = computed(() =>
 <template>
   <a
     :href="model.href"
-    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex h-full cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     :aria-labelledby="labelledBy"
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
@@ -132,7 +132,7 @@ const labelledBy = computed(() =>
         {{ cardName }}
       </h3>
       <div
-        class="flex min-h-6 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5"
+        class="flex h-6 min-w-0 items-center gap-2.5 overflow-hidden"
         data-testid="model-card-meta"
       >
         <WorkshopCardMaker :id="`${id}-provider`" :label="providerName" :logo />
@@ -140,6 +140,7 @@ const labelledBy = computed(() =>
           <Badge
             :id="`${id}-task`"
             variant="subtle"
+            class="shrink-0"
             data-testid="model-card-task"
           >
             {{ taskLabel }}

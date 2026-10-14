@@ -882,7 +882,8 @@
       "community": "From the community",
       "homePickRemixRun": "Home: Pick · Remix · Run banner",
       "taskSidebar": "Hub: task sidebar",
-      "workflowsByModality": "Hub: workflows by modality"
+      "workflowsByModality": "Hub: workflows by modality",
+      "workflowsFlat": "Hub: workflows like Models"
     },
     "taskSidebar": {
       "label": "Browse by task",
