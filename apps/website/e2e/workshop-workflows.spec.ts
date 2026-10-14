@@ -44,17 +44,18 @@ test('workflow launch groups lead to the existing shared form', async ({
     )
   ).toBeVisible()
   const catalogue = page.getByTestId('workflow-catalogue')
-  await expect(catalogue.getByRole('heading', { level: 2 })).toHaveCount(0)
+  await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
+    'Create & edit videos',
+    'Animate characters',
+    'Create product photos & ads',
+    'Upscale & restore',
+    'Edit & clean up photos'
+  ])
   const cards = catalogue
     .getByTestId('workflow-grid')
     .getByTestId('workshop-model-card')
-  await expect(cards).toHaveCount(12)
-  const more = catalogue.getByTestId('catalogue-show-more')
-  await more.click()
-  await expect(cards).toHaveCount(24)
-  await more.click()
   await expect(cards).toHaveCount(30)
-  await expect(more).toHaveCount(0)
+  await expect(catalogue.getByTestId('catalogue-show-more')).toHaveCount(0)
   await expect(catalogue.getByTestId('workshop-sort')).toHaveText('Recommended')
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
@@ -344,9 +345,6 @@ test('the workflows half narrows to the model it runs on, from the menu and from
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
   const more = page.getByTestId('catalogue-show-more')
-  await expect(outcomes).toHaveCount(12)
-  await more.click()
-  await more.click()
   await expect(outcomes).toHaveCount(30)
   await expect(more).toHaveCount(0)
 
@@ -355,17 +353,13 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await page.getByTestId('filter-model-LTX-2.3').click()
   await expect(outcomes).toHaveCount(7)
 
-  // An outcome can stand on several models, so a second choice widens the list
-  // instead of intersecting it.
   await page.getByTestId('filter-model-SeedVR2').click()
   await expect(outcomes).toHaveCount(9)
   await expect(page.getByTestId('workshop-facet-model-count')).toHaveText('2')
 
-  // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
-  await expect(outcomes).toHaveCount(12)
-  await expect(more).toBeVisible()
+  await expect(outcomes).toHaveCount(30)
 
   await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
   await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')
@@ -382,7 +376,7 @@ test('the workflows narrow by what they start from and what they make, from the 
   const outcomes = page
     .getByTestId('workflow-grid')
     .getByTestId('workshop-model-card')
-  await expect(outcomes).toHaveCount(12)
+  await expect(outcomes).toHaveCount(30)
 
   await page.getByTestId('workshop-filter').click()
   const dialog = page.getByRole('dialog', { name: 'Filters' })
@@ -396,9 +390,7 @@ test('the workflows narrow by what they start from and what they make, from the 
   await expect(page.getByTestId('workshop-filter-chips')).toContainText(
     'Image output'
   )
-  await expect(page.getByTestId('catalogue-show-more-count')).toHaveText(
-    'Showing 12 of 16'
-  )
+  await expect(outcomes).toHaveCount(16)
 
   await expect(dialog.getByRole('tab')).toHaveText([/^Output/, 'Models'])
 
