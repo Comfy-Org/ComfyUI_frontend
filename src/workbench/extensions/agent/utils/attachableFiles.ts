@@ -1,4 +1,4 @@
-import type { MediaType, VideoExtension } from '@/utils/formatUtil'
+import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const AGENT_ATTACH_MEDIA_KINDS = [
@@ -89,9 +89,11 @@ const VIDEO_CONTAINER_CHECKS: Partial<Record<string, VideoContainerCheck>> = {
   webm: isEbml,
   mkv: isEbml,
   avi: (bytes) => bytesMatch(bytes, 0, 'RIFF') && bytesMatch(bytes, 8, 'AVI ')
-} satisfies Record<VideoExtension, VideoContainerCheck>
+}
 
-export function isValidAgentAttachment(file: File): boolean | Promise<boolean> {
+export function contentMatchesExtension(
+  file: File
+): boolean | Promise<boolean> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
   const check = Object.hasOwn(VIDEO_CONTAINER_CHECKS, extension)
     ? VIDEO_CONTAINER_CHECKS[extension]

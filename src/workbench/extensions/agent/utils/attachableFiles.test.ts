@@ -4,7 +4,7 @@ import {
   AGENT_ATTACH_ACCEPT,
   attachableClipboardFiles,
   isAgentAttachable,
-  isValidAgentAttachment
+  contentMatchesExtension
 } from './attachableFiles'
 
 /* Dragged files often carry no MIME (glb, md) or a generic one, so the
@@ -98,7 +98,7 @@ describe('attachableClipboardFiles', () => {
   })
 })
 
-describe('isValidAgentAttachment', () => {
+describe('contentMatchesExtension', () => {
   it.for([
     { name: 'clip.mp4', bytes: [0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70] },
     { name: 'clip.m4v', bytes: [0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70] },
@@ -111,7 +111,7 @@ describe('isValidAgentAttachment', () => {
     }
   ])('accepts a valid $name container signature', async ({ name, bytes }) => {
     await expect(
-      isValidAgentAttachment(new File([new Uint8Array(bytes)], name))
+      contentMatchesExtension(new File([new Uint8Array(bytes)], name))
     ).resolves.toBe(true)
   })
 
@@ -119,7 +119,7 @@ describe('isValidAgentAttachment', () => {
     'accepts a classic MOV beginning with %s without ftyp',
     async (atom) => {
       await expect(
-        isValidAgentAttachment(new File(['\0\0\0\x08', atom], 'classic.mov'))
+        contentMatchesExtension(new File(['\0\0\0\x08', atom], 'classic.mov'))
       ).resolves.toBe(true)
     }
   )
@@ -133,7 +133,7 @@ describe('isValidAgentAttachment', () => {
     'accepts $name beginning with $atom without ftyp',
     async ({ name, atom }) => {
       await expect(
-        isValidAgentAttachment(new File(['\0\0\0\x08', atom], name))
+        contentMatchesExtension(new File(['\0\0\0\x08', atom], name))
       ).resolves.toBe(true)
     }
   )
@@ -152,7 +152,7 @@ describe('isValidAgentAttachment', () => {
     'rejects $name without its container signature',
     async ({ name, contents }) => {
       await expect(
-        isValidAgentAttachment(new File([contents], name))
+        contentMatchesExtension(new File([contents], name))
       ).resolves.toBe(false)
     }
   )
@@ -163,14 +163,14 @@ describe('isValidAgentAttachment', () => {
     )
 
     await expect(
-      isValidAgentAttachment(new File(['\0\0\0\x18ftyp'], 'clip.mp4'))
+      contentMatchesExtension(new File(['\0\0\0\x18ftyp'], 'clip.mp4'))
     ).resolves.toBe(false)
   })
 
   it.for(['notes.txt', 'clip.mp4.txt', 'clip.constructor'])(
     'does not inspect non-video attachment %s',
     (name) => {
-      expect(isValidAgentAttachment(new File(['plain text'], name))).toBe(true)
+      expect(contentMatchesExtension(new File(['plain text'], name))).toBe(true)
     }
   )
 })

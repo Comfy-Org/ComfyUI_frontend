@@ -672,7 +672,7 @@ export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
-export type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
+type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
 type TextExtension = (typeof TEXT_EXTENSIONS)[number]

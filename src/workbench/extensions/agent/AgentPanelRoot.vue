@@ -39,7 +39,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import {
   AGENT_ATTACH_ACCEPT,
   isAgentAttachable,
-  isValidAgentAttachment
+  contentMatchesExtension
 } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -1695,7 +1695,7 @@ const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
-  validate: isValidAgentAttachment,
+  validate: contentMatchesExtension,
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
