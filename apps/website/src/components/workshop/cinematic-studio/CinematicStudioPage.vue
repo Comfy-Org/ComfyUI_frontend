@@ -31,6 +31,8 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -61,7 +63,13 @@ interface EditorApp {
   readonly label: (locale: Locale) => string
 }
 
-const EDITOR_APPS: readonly EditorApp[] = []
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'sprite-sheet',
+    studio: SpriteSheetStudio,
+    label: (locale) => spc('sprite.title', locale)
+  }
+]
 const APPS: readonly WorkshopAppId[] = [
   'studio',
   'reshoot',
