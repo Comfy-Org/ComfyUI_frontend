@@ -120,6 +120,35 @@ describe('useCopyToClipboard', () => {
     }
   })
 
+  it('keeps copied feedback for the full duration after overlapping writes', async () => {
+    vi.useFakeTimers()
+    try {
+      mockWriteText
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => setTimeout(resolve, 100))
+        )
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => setTimeout(resolve, 500))
+        )
+      const { copied, copyToClipboard } = useCopyToClipboard({
+        copiedDuring: 1600,
+        showSuccessToast: false
+      })
+
+      const firstCopy = copyToClipboard('first')
+      const secondCopy = copyToClipboard('second')
+      await vi.advanceTimersByTimeAsync(500)
+      await Promise.all([firstCopy, secondCopy])
+
+      await vi.advanceTimersByTimeAsync(1200)
+      expect(copied.value).toBe(true)
+      await vi.advanceTimersByTimeAsync(400)
+      expect(copied.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('falls through to legacy when clipboard API is unavailable', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,

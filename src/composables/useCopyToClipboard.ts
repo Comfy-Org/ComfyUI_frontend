@@ -67,6 +67,7 @@ export function useCopyToClipboard({
     const success = await writeToClipboard(text, clipboardItems)
 
     if (success) {
+      clearTimeout(copiedReset)
       copied.value = true
       if (copiedDuring !== undefined) {
         copiedReset = setTimeout(() => (copied.value = false), copiedDuring)
