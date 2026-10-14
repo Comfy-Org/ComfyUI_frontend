@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Sparkles } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
@@ -35,17 +34,16 @@ function toggle(key: WorkflowCollection) {
       :aria-pressed="selected === chip.key"
       :class="
         cn(
-          'inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+          'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
           selected === chip.key
             ? 'bg-primary-warm-white text-primary-comfy-ink'
-            : 'bg-primary-comfy-plum/60 text-primary-warm-white hover:bg-primary-comfy-plum'
+            : 'bg-transparency-white-t8 text-content hover:text-content-bright'
         )
       "
       @click="toggle(chip.key)"
     >
-      <Sparkles class="size-3.5 shrink-0" aria-hidden="true" />
       {{ chip.label }}
-      <span class="tabular-nums opacity-70">{{ chip.count }}</span>
+      <span class="tabular-nums opacity-60">{{ chip.count }}</span>
     </button>
   </div>
 </template>
