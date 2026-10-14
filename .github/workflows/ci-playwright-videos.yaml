@@ -81,7 +81,7 @@ jobs:
           EXPECTED_DISTRIBUTION: localhost
           EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
         run: |
-          pnpm build
+          pnpm build:dist
           pnpm test:assets-flag-artifact
 
       - name: Upload local frontend

@@ -1196,6 +1196,10 @@ dialog {
   box-shadow: 0 0 20px #888888;
 }
 
+dialog:modal {
+  pointer-events: auto;
+}
+
 dialog::backdrop {
   background: rgb(0 0 0 / 0.5);
 }

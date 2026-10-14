@@ -197,6 +197,7 @@ describe('server-fact gate on a real diff', () => {
     for (const linked of ['node_modules', 'tools']) {
       symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
     }
+    mkdirSync(path.join(dir, '.git/info'), { recursive: true })
     writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
     mkdirSync(path.join(dir, 'src'))
     writeFileSync(path.join(dir, gatedFile), before.join('\n'))
@@ -211,6 +212,51 @@ describe('server-fact gate on a real diff', () => {
         path.join(repoRoot, 'scripts/server-fact-gate.ts'),
         '--base',
         'HEAD'
+      ],
+      { cwd: dir, encoding: 'utf8' }
+    )
+  }
+
+  function runStagedGateDuringMerge() {
+    const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-gate-'))
+    workDir = dir
+    const run = (...args: string[]) =>
+      execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
+    run('init', '-q')
+    run('config', 'user.email', 'gate@test.invalid')
+    run('config', 'user.name', 'gate')
+    for (const linked of ['node_modules', 'tools']) {
+      symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
+    }
+    mkdirSync(path.join(dir, '.git/info'), { recursive: true })
+    writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
+    mkdirSync(path.join(dir, 'src'))
+    writeFileSync(path.join(dir, gatedFile), 'export const ready = true\n')
+    run('add', '.')
+    run('commit', '-q', '-m', 'base')
+    run('branch', 'feature')
+    writeFileSync(
+      path.join(dir, gatedFile),
+      'const { canInviteMembers } = useBillingCapabilities()\n' +
+        'export const canInvite = canInviteMembers.value || isPlanEnded.value\n'
+    )
+    run('add', gatedFile)
+    run('commit', '-q', '-m', 'upstream finding')
+    run('switch', '-q', 'feature')
+    writeFileSync(
+      path.join(dir, 'src/feature.ts'),
+      'export const feature = true\n'
+    )
+    run('add', 'src/feature.ts')
+    run('commit', '-q', '-m', 'feature')
+    run('merge', '--no-commit', '--no-ff', 'master')
+    return spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        path.join(repoRoot, 'scripts/server-fact-gate.ts'),
+        '--staged'
       ],
       { cwd: dir, encoding: 'utf8' }
     )
@@ -251,6 +297,14 @@ describe('server-fact gate on a real diff', () => {
     const result = runGateAfterEdit(before, after)
 
     expect(result.stderr).toBe('')
+    expect(result.status).toBe(0)
+  })
+
+  it('checks the feature delta instead of upstream files during a merge', () => {
+    const result = runStagedGateDuringMerge()
+
+    expect(result.stderr).toBe('')
+    expect(result.stdout).toContain('no findings on changed lines')
     expect(result.status).toBe(0)
   })
 })
