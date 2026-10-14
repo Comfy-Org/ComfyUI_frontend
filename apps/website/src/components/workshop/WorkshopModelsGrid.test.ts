@@ -73,23 +73,10 @@ async function chooseTab(
   await user.click(screen.getByRole('tab', { name }))
 }
 
-async function useCase(user: ReturnType<typeof userEvent.setup>, name: string) {
-  if (!screen.queryByRole('menu'))
-    await user.click(screen.getByRole('button', { name: /^Best for/ }))
-  const menu = await screen.findByRole('menu')
-  return within(menu).getByRole('menuitemcheckbox', { name })
-}
-
-async function offeredUseCases(user: ReturnType<typeof userEvent.setup>) {
-  const trigger = screen.queryByRole('button', { name: /^Best for/ })
-  if (!trigger) return []
-  await user.click(trigger)
-  const menu = await screen.findByRole('menu')
-  const names = within(menu)
-    .getAllByRole('menuitemcheckbox')
-    .map((item) => item.dataset.testid)
-  await user.keyboard('{Escape}')
-  return names
+function restoredPageShow() {
+  const event = new Event('pageshow')
+  Object.defineProperty(event, 'persisted', { value: true })
+  return event
 }
 
 function catalogueHeading() {
@@ -148,6 +135,14 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
+  it('offers Resolution and no Best for menu in the toolbar', () => {
+    render(WorkshopModelsGrid, { props: { models } })
+    const toolbar = within(screen.getByTestId('workshop-toolbar'))
+
+    expect(toolbar.getByTestId('resolution-menu')).toBeVisible()
+    expect(toolbar.queryByRole('button', { name: /Best for/ })).toBeNull()
+  })
+
   it('opens the use case the address names on its tab, with no way back to leave', async () => {
     history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
@@ -158,10 +153,6 @@ describe('WorkshopModelsGrid', () => {
     ).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Image' })).toHaveAttribute(
       'aria-selected',
-      'true'
-    )
-    expect(await useCase(user, 'Edit 1')).toHaveAttribute(
-      'aria-checked',
       'true'
     )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
@@ -200,7 +191,7 @@ describe('WorkshopModelsGrid', () => {
     }
   )
 
-  it('brings the catalogue heading into view as a use case opens, without leaving the page', async () => {
+  it('brings the catalogue heading into view as a restored page opens a use case, without leaving the page', async () => {
     const scrollTo = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => undefined)
@@ -211,13 +202,13 @@ describe('WorkshopModelsGrid', () => {
       scrollTo.mockRestore()
       scrollIntoView.mockRestore()
     })
-    const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     await nextTick()
-    await chooseTab(user, 'Image')
     expect(scrollIntoView).not.toHaveBeenCalled()
 
-    await user.click(await useCase(user, 'Edit 1'))
+    history.replaceState(null, '', '/models/?useCase=edit-images')
+    window.dispatchEvent(restoredPageShow())
+
     await vi.waitFor(() =>
       expect(scrollIntoView.mock.contexts).toContain(
         screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
@@ -227,83 +218,54 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
   })
 
-  it('lists in the filter menu only the tasks of the chosen type that have results', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-    expect(await offeredUseCases(user)).toEqual([
-      'best-for-edit-images',
-      'best-for-generate-videos'
-    ])
-
-    await chooseTab(user, 'Video')
-    expect(await offeredUseCases(user)).toEqual(['best-for-generate-videos'])
-
-    await chooseTab(user, 'Edit')
-    expect(await offeredUseCases(user)).toEqual(['best-for-edit-images'])
-  })
-
-  it('moves the sidebar to the type of a use case chosen on All', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(await useCase(user, 'Generate videos 1'))
-
-    expect(screen.getByRole('tab', { name: /^Video/ })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    )
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Generate videos 1' })
-    ).toBeTruthy()
-  })
-
-  it('narrows a tab by its use cases, several at once, and lets go of one', async () => {
-    const restyle: WorkshopModel = {
-      ...models[0],
-      slug: 'restyle',
-      name: 'Restyle',
-      href: '/models/restyle/',
-      task: 'video-to-video'
+  it.for([
+    {
+      search: '?tab=video&useCase=edit-videos',
+      cards: ['Restyle'],
+      heading: 'Edit videos 1'
+    },
+    {
+      search: '?tab=video&useCase=edit-videos,generate-videos',
+      cards: ['Kling AI', 'Restyle'],
+      heading: 'All models 2'
     }
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models: [...models, restyle] } })
-    await chooseTab(user, 'Video')
+  ])(
+    'narrows a tab by the use cases $search names',
+    async ({ search, cards, heading }) => {
+      const restyle: WorkshopModel = {
+        ...models[0],
+        slug: 'restyle',
+        name: 'Restyle',
+        href: '/models/restyle/',
+        task: 'video-to-video'
+      }
+      history.replaceState(null, '', `/models/${search}`)
+      render(WorkshopModelsGrid, { props: { models: [...models, restyle] } })
 
-    await user.click(await useCase(user, 'Edit video 1'))
-    expect(cardNames()).toEqual([expect.stringContaining('Restyle')])
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Edit videos 1' })
-    ).toBeTruthy()
-    expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
-    expect(location.search).toBe('?tab=video&useCase=edit-videos')
-
-    await user.click(await useCase(user, 'Generate 1'))
-    expect(cardNames()).toHaveLength(2)
-
-    await user.click(await useCase(user, 'Edit video 1'))
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
-
-    await user.click(await useCase(user, 'Generate 1'))
-    expect(screen.queryByTestId('best-for-count')).toBeNull()
-    expect(cardNames()).toHaveLength(2)
-  })
+      expect(
+        await screen.findByRole('heading', { level: 2, name: heading })
+      ).toBeTruthy()
+      expect(cardNames()).toEqual(
+        cards.map((name) => expect.stringContaining(name))
+      )
+      expect(location.search).toBe(search.replace(',', '%2C'))
+    }
+  )
 
   it('keeps a use case the next tab also offers and lets go of one it does not', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await chooseTab(user, 'Image')
-    await user.click(await useCase(user, 'Edit 1'))
-    await user.keyboard('{Escape}')
+    await screen.findByRole('heading', { level: 2, name: 'Edit images 1' })
 
     await chooseTab(user, 'Edit')
-    expect(await useCase(user, 'Images 1')).toHaveAttribute(
-      'aria-checked',
-      'true'
-    )
-    await user.keyboard('{Escape}')
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
+    ).toBeTruthy()
+    expect(location.search).toContain('useCase=edit-images')
 
     await chooseTab(user, 'Video')
-    expect(screen.queryByTestId('best-for-count')).toBeNull()
+    expect(location.search).not.toContain('useCase')
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -328,9 +290,6 @@ describe('WorkshopModelsGrid', () => {
     expect(link).toHaveAttribute('href', '/hub/models/local/')
   })
 
-  // Coming back from a model, a browser can restore this page from its cache
-  // with the shelf still open, so the reader lands on a narrowed catalogue the
-  // address does not name. Reported by Eric: back should reach all models.
   it.for([undefined, ''])(
     'starts from the address again when the browser restores the page (initialSearch: %s)',
     async (initialSearch) => {
@@ -338,15 +297,9 @@ describe('WorkshopModelsGrid', () => {
       render(WorkshopModelsGrid, { props: { models, initialSearch } })
 
       await chooseTab(user, 'Image')
-      await user.click(await useCase(user, 'Edit 1'))
 
-      // A different shelf in the address, so a handler that only emptied the
-      // selection would fail here rather than pass by coincidence.
       history.replaceState(null, '', '/models/?useCase=generate-videos')
-      onTestFinished(() => history.replaceState(null, '', '/'))
-      const restored = new Event('pageshow')
-      Object.defineProperty(restored, 'persisted', { value: true })
-      window.dispatchEvent(restored)
+      window.dispatchEvent(restoredPageShow())
 
       expect(
         await screen.findByRole('heading', {
@@ -354,24 +307,19 @@ describe('WorkshopModelsGrid', () => {
           name: /Generate videos/
         })
       ).toBeTruthy()
-      expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
       expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     }
   )
 
-  // A first load is a pageshow too, and it must not throw away a shelf the
-  // visitor opened before the page had finished settling.
-  it('keeps the open shelf when the page was not restored', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
+  it('reads the address only on a restored page, not on every pageshow', async () => {
+    history.replaceState(null, '', '/models/?useCase=generate-videos')
+    render(WorkshopModelsGrid, { props: { models, initialSearch: '' } })
 
-    await chooseTab(user, 'Image')
-    await user.click(await useCase(user, 'Edit 1'))
     window.dispatchEvent(new Event('pageshow'))
+    await nextTick()
 
-    await waitFor(() =>
-      expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
-    )
+    expect(catalogueHeading()).toHaveTextContent('3')
+    expect(cardNames()).toHaveLength(3)
   })
 
   it('sorts by recommendation by default and by name on request', async () => {
@@ -635,15 +583,6 @@ describe('WorkshopModelsGrid', () => {
       expect(
         within(dialog).queryByRole('button', { name: /^Download/ })
       ).toBeNull()
-    })
-
-    it('offers Best for on All, with every use case that has results', async () => {
-      render(WorkshopModelsGrid, { props: { models } })
-
-      expect(await offeredUseCases(userEvent.setup())).toEqual([
-        'best-for-edit-images',
-        'best-for-generate-videos'
-      ])
     })
 
     it.for([

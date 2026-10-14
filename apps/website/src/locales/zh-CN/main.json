@@ -4587,12 +4587,8 @@
       "text": "文本"
     },
     "useCaseOption": {
-      "animateImage": "让图像动起来",
       "edit": "编辑",
-      "editVideo": "编辑视频",
-      "generate": "生成",
-      "images": "图像",
-      "videos": "视频"
+      "generate": "生成"
     },
     "workflow": {
       "about": "关于",
@@ -4886,9 +4882,6 @@
           "api": "可通过 API 调用的模型"
         }
       }
-    },
-    "bestFor": {
-      "label": "适用于"
     },
     "resolution": {
       "label": "分辨率",

@@ -110,16 +110,18 @@ describe('WorkshopModelsGrid analytics', () => {
     expect(events('hub_search_performed')).toHaveLength(1)
   })
 
-  it('reports the use case and sort a visitor picks', async () => {
+  it('reports the use case a visitor leaves and the sort they pick', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: /^Best for/ }))
-    const menu = await screen.findByRole('menu')
-    await user.click(
-      within(menu).getByRole('menuitemcheckbox', { name: /^Edit images/ })
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Image' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
     )
-    await user.keyboard('{Escape}')
+
+    await user.click(screen.getByRole('tab', { name: 'All' }))
     await user.click(screen.getByRole('button', { name: 'Sort' }))
     await user.click(
       await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
@@ -131,8 +133,8 @@ describe('WorkshopModelsGrid analytics', () => {
         properties: {
           surface: 'models',
           filter: 'use_case',
-          value: 'edit-images',
-          previous_value: 'all'
+          value: 'all',
+          previous_value: 'edit-images'
         }
       },
       {

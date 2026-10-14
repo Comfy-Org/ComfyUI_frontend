@@ -485,12 +485,7 @@ const tabletToolbars = [640, 700, 768].flatMap((width) => [
     width,
     half: 'Models',
     path: '/hub/models/?tab=video',
-    controls: [
-      'workshop-search',
-      'best-for-menu',
-      'resolution-menu',
-      'workshop-sort'
-    ]
+    controls: ['workshop-search', 'resolution-menu', 'workshop-sort']
   },
   {
     width,

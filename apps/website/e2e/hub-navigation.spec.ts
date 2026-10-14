@@ -419,14 +419,15 @@ for (const { section, openCategory } of [
     await expectSearchFillsRow(page)
 
     await openCategory(page)
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(page).toHaveURL(/[?&]useCase=generate-images/)
     await expect(page.getByTestId('section-back')).toHaveCount(0)
     await expectSearchFillsRow(page)
 
-    await page.getByTestId('best-for-menu').click()
-    await page.getByTestId('best-for-generate-images').click()
-    await page.keyboard.press('Escape')
-    await expect(page.getByTestId('best-for-count')).toHaveCount(0)
+    await page
+      .getByRole('tablist', { name: 'Model categories' })
+      .getByRole('tab', { name: /^All/ })
+      .click()
+    await expect(page).not.toHaveURL(/[?&]useCase=/)
     await expectSearchFillsRow(page)
   })
 }

@@ -303,7 +303,7 @@ test.describe('Models catalog', () => {
     await expect(firstLink).toBeVisible()
   })
 
-  test('an opened shelf reads as a chosen filter on its tab', async ({
+  test('an opened shelf opens on its tab and lets go on All', async ({
     page
   }) => {
     await page.goto('/hub/models/?useCase=generate-videos')
@@ -315,12 +315,10 @@ test.describe('Models catalog', () => {
       'aria-selected',
       'true'
     )
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
-    await page.getByTestId('best-for-menu').click()
-    const chosen = page.getByTestId('best-for-generate-videos')
-    await expect(chosen).toHaveAttribute('aria-checked', 'true')
-    await chosen.click()
-    await expect(catalogueHeading(page)).toHaveText(/^Video models \d+$/)
+    await expect(page).toHaveURL(/[?&]useCase=generate-videos/)
+    await tabs.getByRole('tab', { name: /^All/ }).click()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
+    await expect(page).not.toHaveURL(/[?&]useCase=/)
   })
 
   test('a model page returns to the shelf it was opened from', async ({
@@ -350,7 +348,7 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(page).toHaveURL(/[?&]useCase=generate-videos/)
   })
 
   test('a model page returns to the category tab it was opened from', async ({
@@ -503,7 +501,7 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the use-case filter actually narrows the catalog', async ({ page }) => {
+  test('a use-case address actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
     const all = await catalogueCount(page)
     expect(all).toBeGreaterThan(0)
@@ -511,8 +509,7 @@ test.describe('Models catalog', () => {
     await tabs.getByRole('tab', { name: /^Image/ }).click()
     await expect(catalogueHeading(page)).toHaveText(/^Image models \d+$/)
     const image = await catalogueCount(page)
-    await page.getByTestId('best-for-menu').click()
-    await page.getByTestId('best-for-edit-images').click()
+    await page.goto('/hub/models/?useCase=edit-images')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -520,13 +517,8 @@ test.describe('Models catalog', () => {
     await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
     const narrowed = await catalogueCount(page)
     expect(narrowed).toBeLessThan(image)
-    await expect(page.getByTestId('best-for-edit-images')).toContainText(
-      String(narrowed)
-    )
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
     await expect(page).toHaveURL(/[?&]useCase=edit-images/)
 
-    await page.keyboard.press('Escape')
     await showEveryPage(page)
     await expect(cards).toHaveCount(narrowed)
     await expect(
@@ -715,12 +707,15 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the Best for menu stays reachable under the stuck toolbar', async ({
+  test('the Resolution menu stays reachable under the stuck toolbar', async ({
     page
   }) => {
     await page.goto('/hub/models/')
     const toolbar = page.getByTestId('workshop-toolbar')
-    await expect(toolbar.getByTestId('best-for-menu')).toBeVisible()
+    await expect(toolbar.getByTestId('resolution-menu')).toBeVisible()
+    await expect(toolbar.getByRole('button', { name: /Best for/ })).toHaveCount(
+      0
+    )
     await page.evaluate(() => window.scrollTo({ top: 1200 }))
     await expect
       .poll(() =>
@@ -732,8 +727,8 @@ test.describe('Models catalog', () => {
       )
       .toBe(true)
 
-    await toolbar.getByTestId('best-for-menu').click()
-    const last = page.getByRole('menuitemcheckbox').last()
+    await toolbar.getByTestId('resolution-menu').click()
+    const last = page.getByRole('menuitemradio').last()
     await expect(last).toBeVisible()
     await expect
       .poll(() =>
@@ -747,9 +742,9 @@ test.describe('Models catalog', () => {
         })
       )
       .toBe(true)
-    await page.getByRole('menuitemcheckbox').first().click()
+    await last.click()
 
-    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(page).toHaveURL(/[?&]resolution=/)
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {

@@ -228,11 +228,7 @@
     },
     "useCaseOption": {
       "generate": "Generate",
-      "edit": "Edit",
-      "animateImage": "Animate an image",
-      "editVideo": "Edit video",
-      "images": "Images",
-      "videos": "Videos"
+      "edit": "Edit"
     },
     "input": {
       "title": "Input"
@@ -874,9 +870,6 @@
           "api": "Models with an API"
         }
       }
-    },
-    "bestFor": {
-      "label": "Best for"
     },
     "resolution": {
       "label": "Resolution",

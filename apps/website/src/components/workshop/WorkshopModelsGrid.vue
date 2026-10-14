@@ -23,7 +23,6 @@ import type {
 } from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
-  countByUseCase,
   sortWorkshopModels
 } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
@@ -45,7 +44,6 @@ import type { ModelTab } from '@/lib/workshop/explorer/model-tabs'
 import {
   hostedInTab,
   tabForUseCases,
-  tabUseCases,
   useCasesInTab
 } from '@/lib/workshop/explorer/model-tabs'
 import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
@@ -219,40 +217,6 @@ watch(compareOpen, () => window.scrollTo({ top: 0 }))
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
-
-const useCaseOptions = computed<FacetMenuOption[]>(() => {
-  if (taskSidebar.value) return []
-  const counts = countByUseCase(
-    models.filter(
-      (model) =>
-        hostedInTab(model, tab.value) &&
-        offersAccess(accessFor(model), selectedAccess.value)
-    )
-  )
-  return (tabUseCases[tab.value] ?? [])
-    .filter(({ useCase }) => counts[useCase] > 0)
-    .map(({ useCase, labelKey }) => ({
-      value: useCase,
-      label: t(labelKey),
-      count: counts[useCase]
-    }))
-})
-
-watch(selectedUseCases, (selected) => {
-  if (tab.value !== 'all') return
-  const implied = tabForUseCases(selected, 'all')
-  if (implied !== 'all' && (tabCounts.value.get(implied) ?? 0) > 0)
-    tab.value = implied
-})
-
-watch(useCaseOptions, (options) => {
-  if (tab.value === 'all') return
-  const offered = selectedUseCases.value.filter((useCase) =>
-    options.some((option) => option.value === useCase)
-  )
-  if (offered.length !== selectedUseCases.value.length)
-    selectedUseCases.value = offered
-})
 
 const legacyFiltered = computed(
   () =>
@@ -504,11 +468,9 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
             />
 
             <ModelsToolbarMenus
-              v-model:use-cases="selectedUseCases"
               v-model:resolution="selectedResolution"
               v-model:access="selectedAccess"
               v-model:sort="sort"
-              :use-case-options
               :resolution-options
               :access-options
               :result-count

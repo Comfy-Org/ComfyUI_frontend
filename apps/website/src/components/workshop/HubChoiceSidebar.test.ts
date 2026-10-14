@@ -302,11 +302,7 @@ describe('Hub task sidebar switched on', () => {
     expect(location.search).toBe('?task=generate-images')
   })
 
-  it('hides the use-case menu on Models and keeps the model filter on Workflows', () => {
-    const { unmount } = render(WorkshopModelsGrid, { props: { models } })
-    expect(screen.queryByRole('button', { name: /Best for/ })).toBeNull()
-    unmount()
-
+  it('keeps the model filter on Workflows', () => {
     render(WorkflowCatalogue, { props: { models: workflows } })
     expect(
       within(screen.getByTestId('workshop-toolbar')).getByTestId(

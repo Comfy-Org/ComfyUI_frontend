@@ -1,7 +1,6 @@
 import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import { modalityOf, useCasesFor } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
-import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 export const MODEL_TABS = [
   'all',
@@ -28,41 +27,21 @@ export const modelTabLabelKey: Record<ModelTab, TranslationKey> = {
   llm: 'workshop.explorer.tabs.llm'
 }
 
-interface TabUseCase {
-  readonly useCase: UseCase
-  readonly labelKey: TranslationKey
-}
-
 /** The tasks a tab splits into; a tab that is already one task has none. */
-export const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
-  all: (
-    [
-      'generate-images',
-      'edit-images',
-      'generate-videos',
-      'animate-images',
-      'edit-videos',
-      'audio',
-      '3d',
-      'text'
-    ] as const
-  ).map((useCase) => ({ useCase, labelKey: useCaseLabelKey[useCase] })),
-  image: [
-    { useCase: 'generate-images', labelKey: 'workshop.useCaseOption.generate' },
-    { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.edit' }
+const tabUseCases: Partial<Record<ModelTab, readonly UseCase[]>> = {
+  all: [
+    'generate-images',
+    'edit-images',
+    'generate-videos',
+    'animate-images',
+    'edit-videos',
+    'audio',
+    '3d',
+    'text'
   ],
-  video: [
-    { useCase: 'generate-videos', labelKey: 'workshop.useCaseOption.generate' },
-    {
-      useCase: 'animate-images',
-      labelKey: 'workshop.useCaseOption.animateImage'
-    },
-    { useCase: 'edit-videos', labelKey: 'workshop.useCaseOption.editVideo' }
-  ],
-  edit: [
-    { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.images' },
-    { useCase: 'edit-videos', labelKey: 'workshop.useCaseOption.videos' }
-  ]
+  image: ['generate-images', 'edit-images'],
+  video: ['generate-videos', 'animate-images', 'edit-videos'],
+  edit: ['edit-images', 'edit-videos']
 }
 
 const TAB_OF_USE_CASE: Record<UseCase, ModelTab> = {
@@ -81,9 +60,7 @@ export function useCasesInTab(
   tab: ModelTab
 ): UseCase[] {
   const offered = tabUseCases[tab] ?? []
-  return selected.filter((useCase) =>
-    offered.some((entry) => entry.useCase === useCase)
-  )
+  return selected.filter((useCase) => offered.includes(useCase))
 }
 
 /**

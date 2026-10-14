@@ -1,4 +1,4 @@
-/** The Best for and Resolution menus' trigger, panel and rows. */
+/** The Resolution menu's trigger, panel and rows. */
 export const MENU_TRIGGER =
   'group inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium whitespace-nowrap text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:bg-transparency-white-t8 max-sm:h-10 max-sm:rounded-xl'
 
