@@ -453,7 +453,6 @@ function clear() {
         :label="t('workshop.taskSidebar.typeLabel')"
         :panel-id="TAB_PANEL_ID"
         class="max-lg:order-1"
-        data-design-decision="workflows-sidebar"
       />
       <HubChoiceSidebar
         v-else-if="taskSidebar"
@@ -462,7 +461,6 @@ function clear() {
         :label="t('workshop.taskSidebar.label')"
         :panel-id="TAB_PANEL_ID"
         class="max-lg:order-1"
-        data-design-decision="workflows-sidebar"
       />
       <WorkflowCategoryTabs
         v-else
@@ -472,7 +470,6 @@ function clear() {
         :panel-id="TAB_PANEL_ID"
         :locale
         class="max-lg:order-1"
-        data-design-decision="workflows-sidebar"
       />
     </div>
 
@@ -499,7 +496,6 @@ function clear() {
             v-model:inputs="inputs"
             v-model:outputs="outputs"
             v-model:models="runsOn"
-            data-design-decision="workflows-filters"
             kind="workflows"
             :input-options
             :output-options

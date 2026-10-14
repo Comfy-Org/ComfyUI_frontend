@@ -84,6 +84,7 @@ const active = computed<CatalogueFeature | undefined>(
     >
       <div class="flex min-w-0 items-center gap-3">
         <span
+          v-if="active.badge"
           class="shrink-0 rounded-md bg-primary-comfy-yellow px-2 py-1 text-xs/none font-bold tracking-wide text-primary-comfy-ink uppercase"
           data-testid="featured-badge"
         >

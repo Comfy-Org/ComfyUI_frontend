@@ -40,8 +40,8 @@ describe('workflowFeatures', () => {
       'third',
       'fourth'
     ])
+    expect(features[0].badge).toBeUndefined()
     expect(features[0]).toMatchObject({
-      badge: 'Featured',
       source: { label: 'Comfy workflow', logo: '/icons/logomark.svg' },
       cta: 'Open workflow',
       ctaLabel: 'Open workflow first',

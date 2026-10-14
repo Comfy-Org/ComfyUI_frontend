@@ -2,7 +2,6 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
-import DesignDecisions from '@/components/workshop/design-decisions/DesignDecisions.vue'
 import PreviewControls from '@/components/workshop/PreviewControls.vue'
 import { isProductionBuild } from '@/config/build-env'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -51,11 +50,6 @@ const jsonLd = modelsHubJsonLd({
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
-  <DesignDecisions
-    enabled={!isProductionBuild()}
-    client:idle
-    transition:persist="design-decisions"
-  />
   <PreviewControls
     enabled={!isProductionBuild()}
     client:idle

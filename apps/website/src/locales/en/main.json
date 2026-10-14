@@ -6043,32 +6043,5 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
-  },
-  "designDecisions": {
-    "button": "Design decisions",
-    "title": "Design decisions",
-    "close": "Close design decisions",
-    "dot": "Design decision {n}",
-    "footer": "Measured after launch with hub_filter_changed and hub_item_clicked (analytics PR #20538).",
-    "models": {
-      "sidebar": {
-        "title": "Sidebar by type",
-        "body": "The sidebar groups models by what they make (Image, Video, Audio, 3D, Edit, Upscale, LLM) with counts, so the first choice is the format. Use cases that only repeated these types (Generate images ≈ Image, Text ≈ LLM…) are no longer a separate filter."
-      },
-      "filters": {
-        "title": "Best for and Resolution in the toolbar",
-        "body": "Use cases moved out of the Filters menu into a Best for menu next to the search, with Resolution beside it, so the two choices visitors make most are visible without opening Filters. Best for lists only the tasks of the selected sidebar type; Resolution lists the output resolutions the run forms offer. About half of the models state a resolution, so choosing one hides those that do not."
-      }
-    },
-    "workflows": {
-      "sidebar": {
-        "title": "Sidebar by category",
-        "body": "The sidebar lists the workflow categories from Charlene's proposal (Image to image, Image to video, Video to video, Product & ads…) with counts, the same way the Models sidebar lists types. Only categories with at least one workflow appear. Each card keeps its own use-case label, so a category never hides what a workflow actually does."
-      },
-      "filters": {
-        "title": "Input, output and model inside Filters",
-        "body": "Filters keeps the production tabs and adds Input (what you start from) and Output (what you get), read from each workflow's uploads and results, next to Model. A choice that every listed workflow shares is not offered, since it would narrow nothing. In the last 30 days about 7% of Workflows visitors opened a filter, so these stay in the menu rather than above the grid. Selected ones show as removable chips."
-      }
-    }
   }
 }

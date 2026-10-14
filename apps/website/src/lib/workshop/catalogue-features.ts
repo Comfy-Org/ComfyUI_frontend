@@ -9,7 +9,7 @@ import { featuredModels } from './models-hub'
 
 export interface CatalogueFeature {
   readonly key: string
-  readonly badge: string
+  readonly badge?: string
   readonly source: { readonly label: string; readonly logo: string | null }
   readonly title: string
   readonly summary?: string
@@ -71,7 +71,6 @@ export function workflowFeatures(
     .slice(0, FEATURED_WORKFLOW_COUNT)
     .map((workflow) => ({
       key: workflow.slug,
-      badge: t('workshop.sections.featured'),
       source: {
         label: t('workshop.featured.comfyWorkflow'),
         logo: COMFY_LOGO_PATH

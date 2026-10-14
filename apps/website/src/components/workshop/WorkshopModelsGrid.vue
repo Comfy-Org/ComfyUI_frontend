@@ -467,7 +467,6 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
             :label="t('workshop.taskSidebar.label')"
             :panel-id="TAB_PANEL_ID"
             class="max-lg:order-1"
-            data-design-decision="models-sidebar"
           />
           <ModelTabs
             v-else
@@ -476,7 +475,6 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
             :counts="tabCounts"
             :locale
             class="max-lg:order-1"
-            data-design-decision="models-sidebar"
             @update:model-value="selectTab"
           />
           <a

@@ -108,7 +108,7 @@ test('leads the Workflows page with a featured workflow to open', async ({
     hero.getByRole('heading', { level: 1, name: 'Workflows', exact: true })
   ).toBeVisible()
   const card = hero.getByRole('region', { name: 'Featured workflows' })
-  await expect(card.getByTestId('featured-badge')).toHaveText('Featured')
+  await expect(card.getByTestId('featured-badge')).toHaveCount(0)
   await expect(card).toContainText('Comfy workflow')
   const href = await card.getByTestId('featured-title').getAttribute('href')
   if (!href) throw new Error('The featured workflow has no page')

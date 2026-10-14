@@ -42,7 +42,6 @@ const sort = defineModel<SortOrder>('sort', { required: true })
       v-model="useCases"
       :options="useCaseOptions"
       :locale
-      data-design-decision="models-filters"
     />
     <ResolutionMenu
       v-if="resolutionOptions.length"

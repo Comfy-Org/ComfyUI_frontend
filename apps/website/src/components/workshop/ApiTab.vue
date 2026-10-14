@@ -249,6 +249,7 @@ const facts = computed(() => [
           :href="apiKeyHref"
           target="_blank"
           rel="noopener noreferrer"
+          variant="secondaryOutline"
           class="w-full justify-center"
           data-testid="api-get-key"
           @click="emit('getKey')"
