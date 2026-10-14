@@ -104,9 +104,7 @@ const metaLabel = computed(() => {
           {{ ctaLabel }}
         </a>
       </p>
-      <div
-        class="mt-4 max-w-3xl rounded-2xl bg-transparency-white-t8 py-4 pl-5"
-      >
+      <div class="mt-4 rounded-2xl bg-transparency-white-t8 py-4 pl-5">
         <div class="flex items-end gap-2">
           <p
             ref="promptEl"
@@ -129,7 +127,7 @@ const metaLabel = computed(() => {
         <button
           v-if="expanded || promptOverflows"
           type="button"
-          class="mt-2 cursor-pointer text-sm font-semibold text-primary-warm-white underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
+          class="mt-2 cursor-pointer text-sm font-semibold text-primary-comfy-canvas underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
           @click="expanded = !expanded"
         >
           {{ expanded ? t('ui.readLess') : t('ui.readMore') }}
