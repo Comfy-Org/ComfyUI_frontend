@@ -880,6 +880,15 @@ describe('LGraphCanvas selection', () => {
       expect(b.selected).toBe(true)
     })
 
+    it('deselectAll(keepSelected) retains an item with an option property', () => {
+      Object.assign(a, { notify: true })
+      canvas.selectItems([a, b])
+
+      canvas.deselectAll(a)
+
+      expect([...canvas.selectedItems]).toEqual([a])
+    })
+
     it('assignment with only foreign items clears the selection', () => {
       const foreignGraph = new LGraph()
       const foreign = addNode(foreignGraph, 'Foreign', 0, 0)
