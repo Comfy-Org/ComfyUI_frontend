@@ -2126,9 +2126,12 @@ export type PreviewSubscribeRequest = {
 export type PlanAvailabilityReason =
   | 'same_plan'
   | 'incompatible_transition'
+  | 'billing_operation_in_progress'
+  | 'billing_operation_parked'
+  | 'annual_to_monthly_unsupported'
+  | 'exceeds_max_seats'
   | 'requires_team'
   | 'requires_personal'
-  | 'exceeds_max_seats'
 
 /**
  * Availability and eligibility information for a billing plan.
