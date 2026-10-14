@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import {
   agentTest as test,
   bootAgentApp
