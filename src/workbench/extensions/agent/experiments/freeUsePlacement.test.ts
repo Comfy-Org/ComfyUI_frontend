@@ -174,7 +174,10 @@ describe('useFreeUsePlacement', () => {
 
   it('attributes a valid arm after a later authenticated config refresh', async () => {
     authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'unknown' as never }
+    const malformedConfig: Record<string, unknown> = {
+      [FREE_USE_PLACEMENT_FLAG]: 'unknown'
+    }
+    remoteConfig.value = malformedConfig
     const { variant } = useFreeUsePlacement()
     const telemetry = useTelemetry()!
     vi.mocked(telemetry.trackAgentFreeUseExposure).mockClear()
@@ -195,7 +198,10 @@ describe('useFreeUsePlacement', () => {
 
     expect(variant.value).toBe('inside-input')
 
-    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'unknown' as never }
+    const malformedConfig: Record<string, unknown> = {
+      [FREE_USE_PLACEMENT_FLAG]: 'unknown'
+    }
+    remoteConfig.value = malformedConfig
 
     await vi.waitFor(() => expect(variant.value).toBe('control'))
   })
