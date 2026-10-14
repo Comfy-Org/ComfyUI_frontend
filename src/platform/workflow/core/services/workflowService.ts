@@ -709,9 +709,9 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
+    const graphState = app.rootGraphOrUndefined?.state
     await activateLoadedWorkflow(value, workflowData, shareId)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    if (graphState !== app.rootGraphOrUndefined?.state) return
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
@@ -722,7 +722,7 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
+    const graphState = app.rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
@@ -773,7 +773,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
-          if (graphState !== useApp().rootGraphOrUndefined?.state) return
+          if (graphState !== app.rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -809,13 +809,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
-      if (graphState !== useApp().rootGraphOrUndefined?.state) return
+      if (graphState !== app.rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    if (graphState !== app.rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId

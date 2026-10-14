@@ -212,9 +212,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    const graphState = useApp().rootGraphOrUndefined?.state
+    const graphState = comfyApp.rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
-    if (graphState !== useApp().rootGraphOrUndefined?.state) {
+    if (graphState !== comfyApp.rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
     activeWorkflow.value = loadedWorkflow
