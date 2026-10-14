@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { provide } from 'vue'
 
-import { TOAST_Z_INDEX } from '@/components/dialog/vRekaZIndex'
+import { TOAST_Z_INDEX } from '@/utils/modalLayerStack'
 import { overlayZIndexKey } from '@/composables/useModalLiftedZIndex'
 
 provide(overlayZIndexKey, TOAST_Z_INDEX)

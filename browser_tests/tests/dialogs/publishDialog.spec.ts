@@ -395,6 +395,7 @@ test.describe('Publish dialog - layout', () => {
         await comfyPage.canvas.evaluate((el) => {
           el.style.visibility = 'hidden'
         })
+        await comfyPage.page.mouse.move(0, 0)
 
         await expect(comfyPage.page).toHaveScreenshot(
           `publish-dialog-${name}.png`
