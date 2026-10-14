@@ -39,11 +39,7 @@ const MOSAIC_LAYOUT: Readonly<Record<number, string>> = {
       {{ t('workshop.explore.useCasesTitle') }}
     </h2>
     <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
-      <li
-        v-for="tile in tiles"
-        :key="tile.id"
-        class="lg:col-span-2 lg:nth-4:col-start-2"
-      >
+      <li v-for="tile in tiles" :key="tile.id" class="lg:col-span-2">
         <a
           :href="tile.href"
           class="group flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface p-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
