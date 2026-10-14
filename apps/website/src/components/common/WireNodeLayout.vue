@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import type { Ref } from 'vue'
 
@@ -7,24 +7,21 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref, useSlots } from 'vue'
 
+import { I18nT } from 'vue-i18n'
+
 import { translationsFor } from '@/i18n/translations'
 
-type TranslationKey = Parameters<typeof t>[0]
 type Point = { x: number; y: number }
 
 const {
   reasons,
   rightCardPadding = 'p-6',
-  titleBeforeKey = 'about.careers.whyTitleBefore',
-  titleAfterKey = 'about.careers.whyTitleAfter',
   labelKey = 'about.careers.whyLabel',
   variant = 'split',
   locale = 'en'
 } = defineProps<{
   reasons: TranslationKey[]
   rightCardPadding?: string
-  titleBeforeKey?: TranslationKey
-  titleAfterKey?: TranslationKey
   labelKey?: TranslationKey
   /**
    * 'split' — title card + label pill on the left, wired to the reasons and
@@ -34,7 +31,8 @@ const {
   variant?: 'split' | 'node'
   locale?: Locale
 }>()
-const { t } = translationsFor(locale)
+const i18n = translationsFor(locale)
+const { t } = i18n
 
 const slots = useSlots()
 const hasRightCard = computed(() => !!slots['right-card'])
@@ -173,17 +171,22 @@ onMounted(() => {
         )
       "
     >
-      <!-- Left column: title + label (split) or single node card (node) -->
       <div v-if="variant === 'split'" class="flex w-64 shrink-0 flex-col gap-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-          <p class="text-2xl font-light text-primary-comfy-canvas">
-            {{ t(titleBeforeKey) }}
-            <br />
-            <span
-              class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
-              style="mask: url(/icons/logo.svg) no-repeat center / contain"
-            />{{ t(titleAfterKey) }}
-          </p>
+          <I18nT
+            keypath="about.careers.whyTitle"
+            tag="p"
+            :i18n
+            class="text-2xl font-light text-primary-comfy-canvas"
+          >
+            <template #logo>
+              <br />
+              <span
+                class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
+                style="mask: url(/icons/logo.svg) no-repeat center / contain"
+              />
+            </template>
+          </I18nT>
         </div>
         <div
           class="flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
@@ -303,14 +306,20 @@ onMounted(() => {
 
     <template v-if="variant === 'split'">
       <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-        <p class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(titleBeforeKey) }}
-          <br />
-          <span
-            class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
-            style="mask: url(/icons/logo.svg) no-repeat center / contain"
-          />{{ t(titleAfterKey) }}
-        </p>
+        <I18nT
+          keypath="about.careers.whyTitle"
+          tag="p"
+          :i18n
+          class="text-2xl font-light text-primary-comfy-canvas"
+        >
+          <template #logo>
+            <br />
+            <span
+              class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
+              style="mask: url(/icons/logo.svg) no-repeat center / contain"
+            />
+          </template>
+        </I18nT>
       </div>
 
       <div

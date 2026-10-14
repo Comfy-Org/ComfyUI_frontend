@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '@/i18n/translations'
 
+import { I18nT } from 'vue-i18n'
+
 import { translationsFor } from '@/i18n/translations'
 import BrandButton from '@/components/common/BrandButton.vue'
 
@@ -17,18 +19,23 @@ const {
   videoSrc: string
   videoAriaLabel?: string
 }>()
-const { t } = translationsFor(locale)
+const i18n = translationsFor(locale)
+const { t } = i18n
 </script>
 
 <template>
   <section class="flex flex-col items-center px-6 pt-16 text-center lg:pt-36">
-    <h1
+    <I18nT
+      keypath="models.list.heroTitle"
+      tag="h1"
+      :i18n
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
-      {{ t('models.list.heroTitleBefore', { name: modelName })
-      }}<span class="text-primary-comfy-yellow">ComfyUI</span
-      >{{ t('models.list.heroTitleAfter', { name: modelName }) }}
-    </h1>
+      <template #name>{{ modelName }}</template>
+      <template #comfyui>
+        <span class="text-primary-comfy-yellow">ComfyUI</span>
+      </template>
+    </I18nT>
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
     >

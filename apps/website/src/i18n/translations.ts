@@ -1,3 +1,5 @@
+import type { LocaleMessageValue, VueMessageType } from 'vue-i18n'
+
 import { createI18n } from 'vue-i18n'
 
 import { DEFAULT_LOCALE } from '@/config/locales'
@@ -16,12 +18,21 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
+const messages: Record<
+  string,
+  Record<string, LocaleMessageValue<VueMessageType>>
+> = {
+  en,
+  'zh-CN': zhCN,
+  ja
+}
+
 function createSiteI18n(locale: Locale) {
   return createI18n({
     legacy: false,
     locale,
     fallbackLocale: DEFAULT_LOCALE,
-    messages: { en, 'zh-CN': zhCN, ja },
+    messages,
     missingWarn: false,
     fallbackWarn: false,
     warnHtmlMessage: false

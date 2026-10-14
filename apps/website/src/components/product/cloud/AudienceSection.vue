@@ -2,12 +2,15 @@
 import type { Locale } from '@/i18n/translations'
 
 import { externalLinks } from '@/config/routes'
+import { I18nT } from 'vue-i18n'
+
 import { translationsFor } from '@/i18n/translations'
 import CardArrow from '@/components/common/CardArrow.vue'
 import GlassCard from '@/components/common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const { t } = translationsFor(locale)
+const i18n = translationsFor(locale)
+const { t } = i18n
 
 const cards = [
   {
@@ -27,15 +30,18 @@ const cards = [
 
 <template>
   <section class="mx-auto max-w-9xl px-4 pt-24 lg:px-20 lg:pt-40">
-    <h2
+    <I18nT
+      keypath="cloud.audience.heading"
+      tag="h2"
+      :i18n
       class="mx-auto max-w-3xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
-      {{ t('cloud.audience.headingBefore')
-      }}<span class="text-white">{{
-        t('cloud.audience.headingHighlight')
-      }}</span
-      >{{ t('cloud.audience.headingAfter') }}
-    </h2>
+      <template #highlight>
+        <span class="text-white">{{
+          t('cloud.audience.headingHighlight')
+        }}</span>
+      </template>
+    </I18nT>
 
     <GlassCard class="mt-12 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-2">
       <a
