@@ -178,8 +178,6 @@ jobs:
       - name: Stage changed snapshot files
         id: changed-snapshots
         uses: ./trusted/.github/actions/stage-rewritten-snapshots
-        with:
-          artifact-name: snapshot-updates-shard-${{ matrix.shard }}
 
       # Reject test failures that produced no rewritten snapshots.
       - name: Verify shard did the work it claims
@@ -237,6 +235,15 @@ jobs:
           fi
 
           echo "Shard ${SHARD}: ${ran} test(s) ran, ${not_passing} not passing, snapshot changes=${HAS_CHANGES:-false}"
+
+      - name: Upload rewritten snapshots
+        if: steps.changed-snapshots.outputs.has-changes == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: snapshot-updates-shard-${{ matrix.shard }}
+          path: ${{ steps.changed-snapshots.outputs.path }}
+          retention-days: 1
+          overwrite: true
 
       - name: Upload test report
         uses: actions/upload-artifact@v6

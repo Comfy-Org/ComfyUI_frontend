@@ -94,10 +94,19 @@ jobs:
           persist-credentials: false
 
       - name: Stage rewritten screenshots
+        id: changed-snapshots
         uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
           config-dir: apps/website
-          artifact-name: website-snapshot-updates-full
+
+      - name: Upload rewritten screenshots
+        if: steps.changed-snapshots.outputs.has-changes == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: website-snapshot-updates-full
+          path: ${{ steps.changed-snapshots.outputs.path }}
+          retention-days: 1
+          overwrite: true
 
   commit:
     needs: [plan, update-screenshots]

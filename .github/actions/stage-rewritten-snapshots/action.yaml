@@ -2,22 +2,22 @@ name: Stage Rewritten Snapshots
 description: >
   After a Playwright run with --update-snapshots, collects every modified or
   new file under a `*-snapshots/` directory inside the Playwright config
-  directory and uploads them as an artifact, laid out relative to that
-  directory, in the shape snapshot-update-commit.yaml merges back.
+  directory into a staging directory, laid out relative to that directory,
+  in the shape snapshot-update-commit.yaml merges back.
 
 inputs:
   config-dir:
     description: Directory Playwright runs from, relative to the workspace
     required: false
     default: .
-  artifact-name:
-    description: Artifact to upload the rewritten snapshots as
-    required: true
 
 outputs:
   has-changes:
     description: '`true` when at least one snapshot was rewritten'
     value: ${{ steps.stage.outputs.has-changes }}
+  path:
+    description: Staging directory to upload
+    value: ${{ steps.stage.outputs.path }}
 
 runs:
   using: composite
@@ -54,11 +54,4 @@ runs:
         done <<< "$changed_files"
 
         echo "has-changes=true" >> "$GITHUB_OUTPUT"
-
-    - name: Upload rewritten snapshots
-      if: steps.stage.outputs.has-changes == 'true'
-      uses: actions/upload-artifact@v6
-      with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ runner.temp }}/rewritten-snapshots/
-        retention-days: 1
+        echo "path=${STAGING_DIR}" >> "$GITHUB_OUTPUT"
