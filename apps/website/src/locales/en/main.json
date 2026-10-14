@@ -2559,6 +2559,7 @@
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
     "fishAudio": "Fish Audio",
+    "nvidiaVfx": "Nvidia VFX",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
@@ -3964,7 +3965,13 @@
   "modelLaunch": {
     "tagFree": "Free",
     "tagPremium": "Premium",
-    "copyPrompt": "Copy prompt"
+    "copyPrompt": "Copy prompt",
+    "beforeAfter": {
+      "tabsLabel": "Comparison",
+      "sliderLabel": "Comparison slider",
+      "before": "Before",
+      "after": "After"
+    }
   },
   "flux3": {
     "meta": {
@@ -4243,6 +4250,51 @@
         "description": "Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
         "primaryCta": "GET NOTIFIED"
       }
+    }
+  },
+  "nvidiaRtx": {
+    "meta": {
+      "title": "Nvidia VFX Nodes for ComfyUI",
+      "description": "Three ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion."
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nvidia VFX Nodes",
+      "description": "Three custom nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
+      "tagUpscale": "Super Resolution up to 4×",
+      "tagFrameRate": "Frame Rate up to 16×",
+      "tagSdrToHdr": "SDR-to-HDR",
+      "primaryCta": "TRY ON COMFY CLOUD",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "beforeAfter": {
+      "heading": "One clip, two states.",
+      "body": "Source on one side, output on the other. Drag the line to compare them frame by frame."
+    },
+    "gallery": {
+      "heading": "Made on NVIDIA RTX"
+    },
+    "steps": {
+      "heading": "Prefer running locally?",
+      "step": "Step",
+      "primaryCta": "DOWNLOAD DESKTOP"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run on your RTX PC today. Move the same workflow to Comfy Cloud or the API when a job outgrows your desk.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "COMFY AGENT",
+      "highlightDescription": "Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.",
+      "highlightCta": "TRY IN COMFY DESKTOP"
     }
   },
   "minimax": {

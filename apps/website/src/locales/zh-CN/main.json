@@ -2089,6 +2089,7 @@
     "modelCatalogue": "ComfyUI 模型",
     "models": "模型",
     "nanoBanana": "Nano Banana 2.1",
+    "nvidiaVfx": "Nvidia VFX",
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
@@ -2717,6 +2718,12 @@
     "workflowRowLabel": "工作流"
   },
   "modelLaunch": {
+    "beforeAfter": {
+      "after": "处理后",
+      "before": "处理前",
+      "sliderLabel": "对比滑块",
+      "tabsLabel": "对比项目"
+    },
     "copyPrompt": "复制提示词",
     "tagFree": "免费",
     "tagPremium": "高级"
@@ -3042,6 +3049,51 @@
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
     "youtube": "YouTube"
+  },
+  "nvidiaRtx": {
+    "beforeAfter": {
+      "body": "一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。",
+      "heading": "一段视频，两种状态。"
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "gallery": {
+      "heading": "在 NVIDIA RTX 上创作"
+    },
+    "hero": {
+      "description": "三个由 Nvidia RTX 技术驱动的自定义节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。",
+      "primaryCta": "在 Comfy Cloud 试用",
+      "secondaryCta": "查看文档",
+      "tagFrameRate": "最高 16 倍帧率",
+      "tagSdrToHdr": "SDR 转 HDR",
+      "tagUpscale": "最高 4 倍超分辨率",
+      "title": "Nvidia VFX 节点"
+    },
+    "meta": {
+      "description": "三个由 Nvidia RTX 技术驱动的 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。",
+      "title": "ComfyUI 的 Nvidia VFX 节点"
+    },
+    "reviews": {
+      "heading": "超过 400 万 Comfy 创作者这样说",
+      "highlightCta": "在 Comfy Desktop 中试用",
+      "highlightDescription": "现已登陆 Comfy Desktop。描述你想要的效果，它会与你并肩规划、搭建并运行工作流。每一步都保留在画布上，随时可以调整。",
+      "highlightTitle": "COMFY AGENT"
+    },
+    "runOptions": {
+      "cta": "了解更多",
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在你的 RTX 电脑上运行。当任务超出本地算力时，将同一工作流迁移到 Comfy Cloud 或 API。"
+    },
+    "steps": {
+      "heading": "更喜欢在本地运行？",
+      "primaryCta": "下载桌面版",
+      "step": "步骤"
+    }
   },
   "payment": {
     "failed": {
