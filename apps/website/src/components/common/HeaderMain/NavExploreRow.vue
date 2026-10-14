@@ -14,7 +14,7 @@ defineProps<{
     class="mb-6 flex items-center justify-between gap-8 border-b border-transparency-white-t8 pb-4"
     data-testid="nav-explore-row"
   >
-    <p class="pl-2 text-sm text-primary-warm-gray">
+    <p class="pl-2 text-sm text-primary-comfy-canvas">
       {{ link.intro }}
     </p>
     <Button

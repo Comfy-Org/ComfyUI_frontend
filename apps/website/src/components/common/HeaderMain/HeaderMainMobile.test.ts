@@ -35,6 +35,15 @@ describe('HeaderMainMobile', () => {
     ).toBeTruthy()
   })
 
+  it('shows the Hub home link in white rather than the link yellow', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
+
+    const explore = screen.getByRole('link', { name: 'Explore the Hub' })
+    expect(explore).toHaveClass('text-primary-warm-white')
+    expect(explore).not.toHaveClass('text-primary-comfy-yellow')
+  })
+
   it('drills into the described Hub columns, each ending with its All link', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Hub\b/i }))

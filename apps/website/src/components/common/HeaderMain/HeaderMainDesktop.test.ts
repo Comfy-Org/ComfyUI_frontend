@@ -48,6 +48,14 @@ describe('HeaderMainDesktop', () => {
     )
   })
 
+  it('shows the Hub home link in white rather than the link yellow', async () => {
+    const menu = await openHub()
+    const explore = menu.getByRole('link', { name: 'Explore the Hub' })
+
+    expect(explore).toHaveClass('text-primary-warm-white')
+    expect(explore).not.toHaveClass('text-primary-comfy-yellow')
+  })
+
   it('opens the Hub as described Models, Workflows and Apps columns', async () => {
     const menu = await openHub()
     const linksIn = (list: string) =>

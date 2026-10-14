@@ -142,13 +142,14 @@ onUnmounted(() => {
                   v-if="activeItem.exploreLink"
                   class="flex flex-col gap-y-2"
                 >
-                  <p class="text-sm text-primary-warm-gray">
+                  <p class="text-sm text-primary-comfy-canvas">
                     {{ activeItem.exploreLink.intro }}
                   </p>
                   <Button
                     :href="activeItem.exploreLink.href"
                     variant="link"
                     as="a"
+                    class="text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
                     data-testid="nav-explore-link"
                   >
                     {{ activeItem.exploreLink.label }}
