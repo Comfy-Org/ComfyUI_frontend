@@ -40,7 +40,10 @@ type AgentTokenSource =
   | { kind: 'static'; token: string }
   | { kind: 'discovery'; dataDir: string }
 
-export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
+export function createDevAgentConfig(
+  env: NodeJS.ProcessEnv,
+  distribution?: 'desktop' | 'localhost' | 'cloud'
+) {
   const url = env.DEV_AGENT_URL
   const sessionToken = env.DEV_AGENT_SESSION_TOKEN
   const dataDir = env.DEV_AGENT_DATA_DIR
@@ -65,9 +68,9 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
     )
   }
 
-  if (env.VITE_AGENT_STANDALONE === 'true' && env.DISTRIBUTION === 'cloud') {
+  if (env.VITE_AGENT_STANDALONE === 'true' && distribution === 'cloud') {
     throw new Error(
-      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud (set directly or derived from a *.comfy.org DEV_SERVER_COMFYUI_URL); point DEV_SERVER_COMFYUI_URL at a local ComfyUI.'
+      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud (set directly or derived from a *.comfy.org DEV_SERVER_COMFYUI_URL); unset DISTRIBUTION and point DEV_SERVER_COMFYUI_URL at a local ComfyUI.'
     )
   }
 

@@ -122,6 +122,7 @@ describe('dev agent proxy transport', () => {
               ...process.env,
               DEV_AGENT_URL: 'http://127.0.0.1:8095',
               DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+              DEV_AGENT_DATA_DIR: '',
               VITE_AGENT_STANDALONE: 'true',
               DEV_SERVER_COMFYUI_URL: 'https://testcloud.comfy.org/',
               DISTRIBUTION: ''
@@ -133,6 +134,18 @@ describe('dev agent proxy transport', () => {
       )
     }
   )
+
+  it('allows the agent proxy in a cloud distribution without the standalone harness', () => {
+    expect(
+      createDevAgentConfig(
+        {
+          DEV_AGENT_URL: 'http://127.0.0.1:8095',
+          DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+        },
+        'cloud'
+      ).proxy
+    ).toMatchObject({ target: 'http://127.0.0.1:8095' })
+  })
 
   it('leaves the proxy disabled when no target or token is set', () => {
     expect(createDevAgentConfig({})).toEqual({
@@ -228,6 +241,7 @@ describe('dev agent comfy credential', () => {
             VITE_AGENT_STANDALONE: 'true',
             VITE_REMOTE_DEV: 'true',
             DEV_SERVER_COMFYUI_URL: '',
+            DEV_AGENT_DATA_DIR: '',
             DISTRIBUTION: ''
           }
         }

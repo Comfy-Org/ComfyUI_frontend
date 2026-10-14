@@ -6,15 +6,13 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
-import { parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
-function isSuccessfulRestart(raw: unknown): boolean {
-  const parsed = parseAgentWsEvent(raw)
+function isSuccessfulRestart(event: AgentWsEvent): boolean {
   return (
-    parsed.success &&
-    parsed.data.type === 'agent_tool_call' &&
-    parsed.data.data.tool_name === 'restart_comfyui' &&
-    parsed.data.data.status === 'success'
+    event.type === 'agent_tool_call' &&
+    event.data.tool_name === 'restart_comfyui' &&
+    event.data.status === 'success'
   )
 }
 
@@ -36,7 +34,7 @@ async function refreshNodeDefinitions(): Promise<boolean> {
   }
 }
 
-async function reloadWorkflowReportedByLoadQueue(): Promise<void> {
+async function reloadWorkflowWithoutRejecting(): Promise<void> {
   await useWorkflowService()
     .reloadCurrentWorkflow()
     .catch(() => undefined)
@@ -59,15 +57,15 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
         stale = true
         return
       }
-      await reloadWorkflowReportedByLoadQueue()
+      await reloadWorkflowWithoutRejecting()
     }
 
     function enqueueRefresh(): void {
       queue = queue.then(refreshIfStale)
     }
 
-    function observeAgentEvent(raw: unknown): void {
-      if (!isSuccessfulRestart(raw)) return
+    function observeAgentEvent(event: AgentWsEvent): void {
+      if (!isSuccessfulRestart(event)) return
       stale = true
       enqueueRefresh()
     }

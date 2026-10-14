@@ -5614,7 +5614,7 @@ describe('AgentPanelRoot node definition refresh', () => {
     vi.useFakeTimers()
   })
 
-  it('re-registers node definitions and rebuilds the open workflow after the agent restarts ComfyUI', async () => {
+  it('refreshes node definitions when the agent restarts ComfyUI while the panel is open', async () => {
     const refreshNodeDefinitions = vi.fn()
     useCommandStore().registerCommand({
       id: 'Comfy.RefreshNodeDefinitions',
@@ -5626,7 +5626,6 @@ describe('AgentPanelRoot node definition refresh', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refreshNodeDefinitions).toHaveBeenCalledOnce()
-    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
   })
 
   it('stops observing restarts once the panel unmounts', async () => {

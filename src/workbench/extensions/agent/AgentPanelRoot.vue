@@ -239,9 +239,6 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const nodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
-onBeforeUnmount(events.subscribe(nodeDefinitionRefresh.observeAgentEvent))
-
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const agentAccountId = computed(
@@ -889,6 +886,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   workflow: {
