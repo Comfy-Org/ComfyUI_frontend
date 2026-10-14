@@ -6083,6 +6083,9 @@ describe('thread resume (B17)', () => {
 
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toEqual([])
+    expect(
+      localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
+    ).toBeNull()
     session.stop()
   })
 
@@ -6147,9 +6150,9 @@ describe('thread resume (B17)', () => {
         events: fakeEvents().source
       })
       session.start()
+      await session.sendMessage('hello')
       identity.value = { id: 'user-1' }
       await nextTick()
-      await session.sendMessage('hello')
       expect(
         localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
       ).toBe('th-1')

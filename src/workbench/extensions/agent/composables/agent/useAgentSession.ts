@@ -383,18 +383,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
   } = deps
   const scope = useAccountScope()
   const owner = ref(scope.value)
-  watch(
-    scope,
-    (next) => {
-      owner.value ??= next
-    },
-    { flush: 'sync' }
-  )
-  const storedThread = useAccountStorage<string | null>(
+  const pendingThread = ref<string | null>()
+  const persistedThread = useAccountStorage<string | null>(
     StorageKeys.agentThread,
     null,
     {},
     computed(() => (scope.value === owner.value ? owner.value : null))
+  )
+  const storedThread = computed({
+    get: () =>
+      pendingThread.value === undefined
+        ? persistedThread.value
+        : pendingThread.value,
+    set: (value: string | null) => {
+      if (owner.value === null) pendingThread.value = value
+      else persistedThread.value = value
+    }
+  })
+  watch(
+    scope,
+    (next) => {
+      if (owner.value !== null || next === null) return
+      owner.value = next
+      if (pendingThread.value === undefined) return
+      persistedThread.value = pendingThread.value
+      pendingThread.value = undefined
+    },
+    { flush: 'sync' }
   )
 
   const conversationStore = useAgentConversationStore()
