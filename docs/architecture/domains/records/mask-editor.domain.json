@@ -38,6 +38,30 @@
     {
       "path": "src/extensions/core/maskeditor.test.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/utils/__fixtures__/decodePng.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/pngEncodeUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/pngEncodeUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/clipspace.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/clipspace.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/clipspace.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],
@@ -57,6 +81,10 @@
         "src/composables/maskeditor/useMaskEditorLoader.test.ts",
         "src/composables/maskeditor/useMaskEditorSaver.test.ts"
       ]
+    },
+    {
+      "name": "Mask PNG encoding round-trips through the decoder fixture",
+      "checks": ["src/utils/pngEncodeUtil.test.ts"]
     }
   ],
   "adrs": [],

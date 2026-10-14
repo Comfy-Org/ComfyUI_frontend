@@ -184,7 +184,7 @@ evidence in the review.
 
 CRITICAL: Flag any re-implementation of existing functionality:
 - **Tailwind CSS**: Custom CSS instead of utility classes
-- **PrimeVue**: Re-implementing buttons, modals, dropdowns, etc.
+- **Design system** (`src/components/ui`): Re-implementing buttons, modals, dropdowns, etc.
 - **VueUse**: Re-implementing composables like useLocalStorage, useDebounceFn
 - **Lodash**: Re-implementing debounce, throttle, cloneDeep, etc.
 - **Common components**: Not reusing from src/components/common/

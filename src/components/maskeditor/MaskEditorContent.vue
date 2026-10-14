@@ -2,7 +2,7 @@
   <div
     ref="containerRef"
     data-testid="mask-editor-root"
-    class="maskEditor-dialog-root flex size-full flex-col"
+    class="relative flex size-full flex-col overflow-hidden"
     @contextmenu.prevent
     @dragstart="handleDragStart"
     @keydown.stop
@@ -10,6 +10,7 @@
     <div
       id="maskEditorCanvasContainer"
       ref="canvasContainerRef"
+      class="absolute inset-0 z-0"
       @contextmenu.prevent
     >
       <canvas
@@ -27,7 +28,6 @@
         class="absolute top-0 left-0 z-30 size-full"
         @contextmenu.prevent
       />
-      <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
         class="pointer-events-none absolute top-0 left-0 size-full"
@@ -41,7 +41,10 @@
 
     <LoadingOverlay :loading="!initialized" size="sm" />
 
-    <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">
+    <div
+      data-testid="mask-editor-ui"
+      class="relative z-1 flex min-h-0 flex-1 flex-col"
+    >
       <div class="flex min-h-0 flex-1 overflow-hidden">
         <ToolPanel
           v-if="initialized"
@@ -213,24 +216,3 @@ onBeforeUnmount(() => {
   dataStore.reset()
 })
 </script>
-
-<style scoped>
-.maskEditor-dialog-root {
-  position: relative;
-  overflow: hidden;
-}
-
-.maskEditor-ui-container {
-  position: relative;
-  z-index: 1;
-}
-
-:deep(#maskEditorCanvasContainer) {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-</style>

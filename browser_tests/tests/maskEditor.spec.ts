@@ -127,7 +127,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(canvasContainer).toBeVisible()
       await expect(canvasContainer.locator('canvas')).toHaveCount(4)
 
-      await expect(dialog.locator('.maskEditor-ui-container')).toBeVisible()
+      await expect(dialog.getByTestId('mask-editor-ui')).toBeVisible()
       await expect(dialog.getByText('Save')).toBeVisible()
       await expect(dialog.getByText('Cancel')).toBeVisible()
 
@@ -318,7 +318,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     async ({ maskEditor }) => {
       const dialog = await maskEditor.openDialog()
 
-      const toolPanel = dialog.locator('.maskEditor-ui-container')
+      const toolPanel = dialog.getByTestId('mask-editor-ui')
       await expect(toolPanel).toBeVisible()
 
       // The tool panel should contain exactly 5 tool entries

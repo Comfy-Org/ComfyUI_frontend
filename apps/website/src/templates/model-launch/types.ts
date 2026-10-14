@@ -126,6 +126,27 @@ export interface ModelLaunchAudioGallery {
   cards: readonly ModelLaunchAudioCard[]
 }
 
+interface ModelLaunchListVoice {
+  name: string
+  alias?: string
+}
+
+export interface ModelLaunchListItem {
+  id: string
+  title: LocalizedText
+  prompt: string
+  durationSeconds: number
+  voices: readonly ModelLaunchListVoice[]
+  href: string
+  audioSources: readonly { src: string; type: string }[]
+}
+
+export interface ModelLaunchList {
+  headingKey: TranslationKey
+  ctaKey?: TranslationKey
+  items: readonly ModelLaunchListItem[]
+}
+
 interface ModelLaunchShowcaseCard {
   id: string
   alt: LocalizedText
@@ -215,6 +236,8 @@ interface ModelLaunchBeforeAfterTab {
   caption: LocalizedText
   beforeSrc: string
   afterSrc: string
+  beforePosterSrc?: string
+  afterPosterSrc?: string
 }
 
 export interface ModelLaunchBeforeAfter {
@@ -253,6 +276,7 @@ export type ModelLaunchSection =
   | 'beforeAfter'
   | 'gallery'
   | 'audioGallery'
+  | 'list'
   | 'steps'
   | 'comparison'
   | 'pricing'
@@ -269,6 +293,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'beforeAfter',
   'gallery',
   'audioGallery',
+  'list',
   'pricing',
   'faq',
   'highlight',
@@ -292,6 +317,7 @@ export interface ModelLaunchPage {
   // only until the model ships.
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
+  list?: ModelLaunchList
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   highlight?: ModelLaunchHighlight

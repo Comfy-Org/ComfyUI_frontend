@@ -77,6 +77,21 @@ describe('vercel.json redirects', () => {
 })
 
 describe('the redirect list', () => {
+  it.for([
+    ['/vfx', '/solutions/vfx/'],
+    ['/zh-CN/vfx', '/zh-CN/solutions/vfx/']
+  ])(
+    'permanently redirects both slash forms of %s to %s',
+    ([source, destination]) => {
+      expect(toVercelRedirects(siteRedirects)).toEqual(
+        expect.arrayContaining([
+          { source, destination, permanent: true },
+          { source: `${source}/`, destination, permanent: true }
+        ])
+      )
+    }
+  )
+
   const sources = siteRedirects.map(({ source }) => source)
 
   it('names each source once', () => {

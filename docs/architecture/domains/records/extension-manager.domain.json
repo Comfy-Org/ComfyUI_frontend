@@ -39,6 +39,42 @@
     {
       "path": "src/workbench/extensions/manager/components/**",
       "role": "presentation"
+    },
+    {
+      "path": "src/composables/useCachedRequest.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useCachedRequest.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useServerLogs.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useServerLogs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/mapperUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/packUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/packUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/searchServiceTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/searchConstants.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -59,6 +95,14 @@
         "src/workbench/extensions/manager/composables/useManagerQueue.test.ts",
         "src/workbench/extensions/manager/composables/useManagerDialog.test.ts",
         "src/workbench/extensions/manager/stores/comfyManagerStore.test.ts"
+      ]
+    },
+    {
+      "name": "Registry requests are cached, pack ids normalised, and install logs streamed",
+      "checks": [
+        "src/composables/useCachedRequest.test.ts",
+        "src/utils/packUtils.test.ts",
+        "src/composables/useServerLogs.test.ts"
       ]
     }
   ],

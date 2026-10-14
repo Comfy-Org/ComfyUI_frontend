@@ -1582,6 +1582,11 @@
         "count": 1
       }
     },
+    "src/core/graph/nodeDef/ComfyNodeDefImpl.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
       "complexity_critical": {
         "count": 1
@@ -3363,11 +3368,6 @@
         "count": 1
       }
     },
-    "src/stores/nodeDefStore.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/stores/nodeOutputStore.ts": {
       "complexity_moderate": {
         "count": 1
@@ -3537,12 +3537,12 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
+    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
       "crap_high": {
         "count": 1
       }

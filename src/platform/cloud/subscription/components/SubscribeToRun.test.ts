@@ -62,8 +62,7 @@ function renderButton() {
   const user = userEvent.setup()
   const result = render(SubscribeToRun, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
