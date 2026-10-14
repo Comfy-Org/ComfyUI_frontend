@@ -59,6 +59,8 @@ export const workflowModelSchema = presentationSchema.extend({
   section: z.string().optional(),
   sectionLabel: z.object({ en: z.string(), 'zh-CN': z.string() }).optional(),
   sectionOrder: z.number().optional(),
+  sections: z.array(z.string()).optional(),
+  sectionNames: z.array(z.string()).optional(),
   inputKinds: z.array(z.enum(MODALITIES)).optional(),
   models: z.array(z.string()).optional(),
   author: z.string().optional()
