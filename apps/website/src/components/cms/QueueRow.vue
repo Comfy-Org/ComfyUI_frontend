@@ -4,37 +4,26 @@ import { cn } from '@comfyorg/tailwind-utils'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
 import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
-import StageDecision from '@/components/cms/StageDecision.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { formatUtc, isFuture } from '@/lib/cms/format'
 import type { QueueItem } from '@/lib/cms/queue'
-import type { StageEntry, StageStatus } from '@/lib/cms/stage-status'
 
 const {
   item,
-  stage,
   active,
-  canApply,
   selectable = false,
   selected = false,
   locale = 'en'
 } = defineProps<{
   item: QueueItem
-  stage: StageEntry
   active: boolean
-  canApply: boolean
-  /** Show a checkbox so the row can join a bulk decision. */
+  /** Show a checkbox so the row can be picked for the next publish. */
   selectable?: boolean
   selected?: boolean
   locale?: Locale
 }>()
-const emit = defineEmits<{
-  open: []
-  decide: [status: StageStatus]
-  reject: []
-  select: []
-}>()
+const emit = defineEmits<{ open: []; select: [] }>()
 const { t } = translationsFor(locale)
 
 const later = isFuture(item.source === 'catalog' ? item.visibleFrom : undefined)
@@ -57,9 +46,9 @@ const when =
     role="row"
     :class="
       cn(
-        'grid min-h-14 cursor-pointer grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[3.5rem_minmax(0,1fr)_11rem_auto]',
+        'grid min-h-14 cursor-pointer grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[3.5rem_minmax(0,1fr)_14rem]',
         selectable &&
-          'grid-cols-[1rem_3.5rem_minmax(0,1fr)] md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_auto]',
+          'grid-cols-[1rem_3.5rem_minmax(0,1fr)] md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_14rem]',
         (active || selected) && 'bg-admin-line hover:bg-admin-line'
       )
     "
@@ -93,9 +82,6 @@ const when =
       >
         <ChangeTag :change="item.change" :locale />
         {{ t(`cmsAdmin.kind.${item.kind}`) }}
-        <span v-if="stage.reapproval" class="text-admin-warning">
-          {{ t('cmsAdmin.stage.reapproval') }}
-        </span>
         <ReadinessFlag
           v-if="item.source === 'catalog'"
           :gaps="item.gaps"
@@ -110,26 +96,6 @@ const when =
       >
         {{ when }}
       </span>
-    </span>
-    <span
-      role="cell"
-      :class="
-        cn(
-          'col-span-2 flex items-center justify-end gap-1 md:col-span-1',
-          selectable && 'col-span-3'
-        )
-      "
-      @click.stop
-    >
-      <StageDecision
-        :status="stage.status"
-        :title="item.title"
-        :can-apply="canApply"
-        :can-reject="item.source === 'submission'"
-        :locale
-        @decide="emit('decide', $event)"
-        @reject="emit('reject')"
-      />
     </span>
   </div>
 </template>

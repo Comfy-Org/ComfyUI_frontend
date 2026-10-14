@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp } from '@lucide/vue'
+import { Check, ChevronDown, ChevronUp, Plus } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
-import StageDecision from '@/components/cms/StageDecision.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
 import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
@@ -15,32 +14,31 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { formatUtc } from '@/lib/cms/format'
 import type { QueueItem } from '@/lib/cms/queue'
-import type { StageEntry, StageStatus } from '@/lib/cms/stage-status'
 
 const {
   item,
-  stage,
   index,
   total,
   canApply,
   canEdit,
+  selected = false,
   csrf,
   locale = 'en'
 } = defineProps<{
   item: QueueItem
-  stage: StageEntry
   index: number
   total: number
   canApply: boolean
   canEdit: boolean
+  /** Whether the change is picked for the next publish. */
+  selected?: boolean
   csrf: string
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{
   step: [direction: -1 | 1]
-  decide: [status: StageStatus]
-  reject: []
+  select: []
 }>()
 const { t } = translationsFor(locale)
 
@@ -89,9 +87,6 @@ const subtitle = computed(() =>
           >
             <ChangeTag :change="item.change" :locale />
             {{ t(`cmsAdmin.kind.${item.kind}`) }}
-            <span v-if="stage.reapproval" class="text-admin-warning">
-              {{ t('cmsAdmin.stage.reapprovalHelp') }}
-            </span>
           </div>
           <DialogTitle class="text-lg leading-snug font-medium text-balance">
             {{ item.title }}
@@ -124,15 +119,17 @@ const subtitle = computed(() =>
           :locale
         />
         <span class="ml-auto flex flex-wrap items-center gap-1">
-          <StageDecision
-            :status="stage.status"
-            :title="item.title"
-            :can-apply="canApply"
-            :can-reject="item.source === 'submission'"
-            :locale
-            @decide="emit('decide', $event)"
-            @reject="emit('reject')"
-          />
+          <AdminButton
+            v-if="canApply"
+            :variant="selected ? 'secondary' : 'primary'"
+            :icon="selected ? Check : Plus"
+            :aria-pressed="selected"
+            @click="emit('select')"
+          >
+            {{
+              selected ? t('cmsAdmin.review.picked') : t('cmsAdmin.review.pick')
+            }}
+          </AdminButton>
         </span>
       </footer>
     </AdminSheetContent>

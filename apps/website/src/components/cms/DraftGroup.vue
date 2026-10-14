@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import QueueRow from '@/components/cms/QueueRow.vue'
 import type { Locale } from '@/i18n/translations'
-import type { QueueItem, SubmissionQueueItem } from '@/lib/cms/queue'
-import type { StageEntry, StageStatus } from '@/lib/cms/stage-status'
+import type { QueueItem } from '@/lib/cms/queue'
 
-/** One block of Draft rows; rows can be ticked for a bulk decision while they wait for review. */
+/** One block of Draft rows, each of which can be ticked for the next publish. */
 const {
   title,
   help,
   items,
-  stageOf,
   openId,
-  canApply,
   selectable = false,
   selected = [],
   locale = 'en'
@@ -19,19 +16,12 @@ const {
   title: string
   help?: string
   items: QueueItem[]
-  stageOf: (item: QueueItem) => StageEntry
   openId?: string
-  canApply: boolean
   selectable?: boolean
   selected?: string[]
   locale?: Locale
 }>()
-const emit = defineEmits<{
-  decide: [items: QueueItem[], status: StageStatus]
-  reject: [items: SubmissionQueueItem[]]
-  open: [id: string]
-  select: [id: string]
-}>()
+const emit = defineEmits<{ open: [id: string]; select: [id: string] }>()
 </script>
 
 <template>
@@ -53,15 +43,11 @@ const emit = defineEmits<{
         v-for="item in items"
         :key="item.id"
         :item
-        :stage="stageOf(item)"
         :active="openId === item.id"
-        :can-apply="canApply"
         :selectable
         :selected="selected.includes(item.id)"
         :locale
         @open="emit('open', item.id)"
-        @decide="emit('decide', [item], $event)"
-        @reject="item.source === 'submission' && emit('reject', [item])"
         @select="emit('select', item.id)"
       />
     </div>

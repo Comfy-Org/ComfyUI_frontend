@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { Eye } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import DraftBulkBar from '@/components/cms/DraftBulkBar.vue'
 import DraftLists from '@/components/cms/DraftLists.vue'
-import DraftProgress from '@/components/cms/DraftProgress.vue'
 import FinalReviewDialog from '@/components/cms/FinalReviewDialog.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
-import RejectDialog from '@/components/cms/RejectDialog.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminTabs from '@/components/cms/ui/AdminTabs.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { kindCounts, matchesListing } from '@/lib/cms/format'
-import type { QueueItem, SubmissionQueueItem } from '@/lib/cms/queue'
-import type { Staging, StageStatus } from '@/lib/cms/stage-status'
-import { postDecision } from '@/lib/cms/stage-client'
-import { STAGE_STATUSES, stageOf } from '@/lib/cms/stage-status'
+import type { QueueItem } from '@/lib/cms/queue'
+import type { Staging } from '@/lib/cms/stage-status'
+import { stageOf } from '@/lib/cms/stage-status'
 
 const {
   items,
@@ -34,7 +30,7 @@ const {
 } = defineProps<{
   items: QueueItem[]
   staging?: Staging
-  /** Whether decisions are kept by the API; otherwise they live in the page. */
+  /** Whether the API keeps review state; unpicked changes are left for later there before a publish. */
   stagingSaved?: boolean
   csrf: string
   canApply: boolean
@@ -45,36 +41,14 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const decisions = ref<Staging>({ ...staging })
-const stageFor = (item: QueueItem) => stageOf(decisions.value, item.id)
-const inStatus = (status: StageStatus) =>
-  items.filter((item) => stageFor(item).status === status)
-const counts = computed(() =>
-  Object.fromEntries(
-    STAGE_STATUSES.map((status) => [status, inStatus(status).length])
-  )
-)
-const tab = ref<StageStatus>(
-  counts.value.NEW > 0 || counts.value.APPROVED === 0 ? 'NEW' : 'APPROVED'
-)
-const tabs = computed(() =>
-  STAGE_STATUSES.map((status) => ({
-    value: status,
-    label: t(`cmsAdmin.stage.tab.${status}`, { count: counts.value[status] })
-  }))
-)
-
 const filter = ref<ListingFilter>('ALL')
 const query = ref('')
 const openId = ref<string>()
-const reviewing = ref(false)
-const rejecting = ref<SubmissionQueueItem[]>([])
-const failed = ref(false)
+const publishing = ref(false)
 
-const inTab = computed(() => inStatus(tab.value))
-const kinds = computed(() => kindCounts(inTab.value.map((item) => item.kind)))
+const kinds = computed(() => kindCounts(items.map((item) => item.kind)))
 const shown = computed(() =>
-  inTab.value.filter((item) =>
+  items.filter((item) =>
     matchesListing(filter.value, query.value, item.kind, [
       item.title,
       item.source === 'submission' ? item.author : item.provider,
@@ -82,17 +56,14 @@ const shown = computed(() =>
     ])
   )
 )
-const shownSubmissions = computed(() =>
-  shown.value.filter((item) => item.source === 'submission')
+const shownNew = computed(() =>
+  shown.value.filter((item) => item.change === 'new')
 )
-const shownChanges = computed(() =>
-  shown.value.filter((item) => item.source === 'catalog')
+const shownUpdates = computed(() =>
+  shown.value.filter((item) => item.change !== 'new')
 )
 // The sheet steps through rows in the order the page shows them.
-const visible = computed(() => [
-  ...shownSubmissions.value,
-  ...shownChanges.value
-])
+const visible = computed(() => [...shownNew.value, ...shownUpdates.value])
 const openIndex = computed(() =>
   visible.value.findIndex((item) => item.id === openId.value)
 )
@@ -103,73 +74,36 @@ const sheetOpen = computed({
     if (!value) openId.value = undefined
   }
 })
-const approved = computed(() => inStatus('APPROVED'))
-// Whatever isn't approved stays in the draft, so the final review opens as soon as anything is.
-const canFinish = computed(() => canApply && approved.value.length > 0)
-const notReviewed = computed(() => inStatus('NEW'))
-const guidance = computed(() => {
-  if (counts.value.NEW > 0) return t('cmsAdmin.stage.guide.review')
-  if (approved.value.length > 0)
-    return t(
-      'cmsAdmin.stage.guide.ready',
-      { count: approved.value.length },
-      approved.value.length
-    )
-  return undefined
-})
-
-async function decide(changes: QueueItem[], status: StageStatus) {
-  const before = decisions.value
-  decisions.value = {
-    ...before,
-    ...Object.fromEntries(changes.map((item) => [item.id, { status }]))
-  }
-  failed.value = false
-  if (!stagingSaved) return
-  const ids = changes.map((item) => item.id)
-  if (await postDecision(csrf, ids, status)) return
-  decisions.value = before
-  failed.value = true
-}
-// Deciding in the panel moves on to the next change still in this tab.
-function decideOpen(status: StageStatus) {
-  const item = openItem.value
-  if (!item) return
-  const next =
-    visible.value[openIndex.value + 1] ?? visible.value[openIndex.value - 1]
-  void decide([item], status)
-  openId.value = next?.id
-}
 function step(direction: -1 | 1) {
   openId.value = visible.value[openIndex.value + direction]?.id
 }
-// Ticked rows, kept to those the filters still show.
+
+// Ticked rows go live together; everything else stays in the draft.
 const selected = ref<string[]>([])
 const picked = computed(() =>
-  visible.value.filter((item) => selected.value.includes(item.id))
+  items.filter((item) => selected.value.includes(item.id))
 )
-watch(tab, () => (selected.value = []))
-const showBulk = computed(
-  () => tab.value === 'NEW' && canApply && visible.value.length > 0
+const leftOver = computed(() =>
+  items.filter(
+    (item) =>
+      !selected.value.includes(item.id) &&
+      stageOf(staging, item.id).status === 'NEW'
+  )
 )
-const pickedSubmissions = computed(
-  () => picked.value.length > 0 && picked.value.every(isSubmission)
-)
-const isSubmission = (item: QueueItem): item is SubmissionQueueItem =>
-  item.source === 'submission'
 function toggle(id: string) {
   selected.value = selected.value.includes(id)
     ? selected.value.filter((chosen) => chosen !== id)
     : [...selected.value, id]
 }
-function decidePicked(status: StageStatus) {
-  void decide(picked.value, status)
-  selected.value = []
+function selectShown(checked: boolean) {
+  const ids = visible.value.map((item) => item.id)
+  selected.value = checked
+    ? [...new Set([...selected.value, ...ids])]
+    : selected.value.filter((id) => !ids.includes(id))
 }
-function rejectOpen() {
-  if (openItem.value?.source === 'submission')
-    rejecting.value = [openItem.value]
-}
+const shownPicked = computed(
+  () => visible.value.filter((item) => selected.value.includes(item.id)).length
+)
 </script>
 
 <template>
@@ -188,25 +122,6 @@ function rejectOpen() {
         >
           {{ t('cmsAdmin.previewDraft') }}
         </AdminButton>
-        <AdminButton
-          v-if="canFinish"
-          variant="primary"
-          @click="reviewing = true"
-        >
-          {{
-            t(
-              'cmsAdmin.finalReview.open',
-              { count: approved.length },
-              approved.length
-            )
-          }}
-        </AdminButton>
-        <DraftProgress
-          v-else-if="items.length > 0"
-          :reviewed="items.length - counts.NEW"
-          :total="items.length"
-          :locale
-        />
       </template>
     </PageHeader>
 
@@ -215,13 +130,6 @@ function rejectOpen() {
       class="rounded-lg border border-admin-info/25 bg-admin-info/10 px-3 py-2 text-xs text-admin-fg"
     >
       {{ t('cmsAdmin.applyOnly') }}
-    </p>
-    <p
-      v-if="failed"
-      role="alert"
-      class="rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
-    >
-      {{ t('cmsAdmin.stage.failed') }}
     </p>
 
     <div
@@ -241,40 +149,24 @@ function rejectOpen() {
         :counts="kinds"
         :search-label="t('cmsAdmin.draft.search')"
         :locale
-      >
-        <AdminTabs
-          v-model="tab"
-          :options="tabs"
-          :label="t('cmsAdmin.stage.tabLabel')"
-        />
-      </ListingFilters>
-      <p v-if="guidance" class="-mt-1 text-xs text-admin-muted">
-        {{ guidance }}
-      </p>
+      />
       <DraftBulkBar
-        v-if="showBulk"
+        v-if="canApply && visible.length > 0"
         :count="picked.length"
         :shown="visible.length"
-        :can-reject="pickedSubmissions"
+        :shown-picked="shownPicked"
         :locale
-        @all="selected = $event ? visible.map((item) => item.id) : []"
-        @approve="decidePicked('APPROVED')"
-        @later="decidePicked('DEFERRED')"
-        @reject="rejecting = picked.filter(isSubmission)"
+        @all="selectShown"
+        @publish="publishing = true"
       />
       <DraftLists
-        :tab
-        :in-tab-count="inTab.length"
-        :submissions="shownSubmissions"
-        :changes="shownChanges"
-        :stage-of="stageFor"
+        :fresh="shownNew"
+        :updates="shownUpdates"
         :open-id="openId"
-        :can-apply="canApply"
+        :selectable="canApply"
         :selected
         :locale
         @select="toggle"
-        @decide="decide"
-        @reject="rejecting = $event"
         @open="openId = $event"
       />
     </template>
@@ -283,34 +175,26 @@ function rejectOpen() {
       v-if="openItem"
       v-model:open="sheetOpen"
       :item="openItem"
-      :stage="stageFor(openItem)"
       :index="openIndex"
       :total="visible.length"
       :can-apply="canApply"
       :can-edit="canEdit"
+      :selected="selected.includes(openItem.id)"
       :csrf
       :locale
-      @decide="decideOpen"
+      @select="toggle(openItem.id)"
       @step="step"
-      @reject="rejectOpen"
     />
     <FinalReviewDialog
-      v-model:open="reviewing"
-      :items="approved"
-      :later-count="counts.DEFERRED + counts.NEW"
-      :not-reviewed="notReviewed.map((item) => item.id)"
+      v-model:open="publishing"
+      :items="picked"
+      :later-count="items.length - picked.length"
+      :not-reviewed="leftOver.map((item) => item.id)"
       :staging-saved="stagingSaved"
       :csrf
       :draft-id="draftId"
       :generation
       :locale
-    />
-    <RejectDialog
-      :open="rejecting.length > 0"
-      :items="rejecting"
-      :csrf
-      :locale
-      @update:open="!$event && (rejecting = [])"
     />
   </div>
 </template>

@@ -1,32 +1,27 @@
 <script setup lang="ts">
-import { Check, Clock, X } from '@lucide/vue'
+import { Upload } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
-/** Tick every row shown, then decide the ticked rows in one go. */
+/** Tick the rows to publish, then publish them in one go. */
 const {
   count,
   shown,
-  canReject = false,
+  shownPicked,
   locale = 'en'
 } = defineProps<{
-  /** Rows ticked. */
+  /** Rows ticked, including any the filters hide. */
   count: number
   /** Rows the filters show. */
   shown: number
-  /** Only submitted workflows can be rejected. */
-  canReject?: boolean
+  /** Ticked rows among those shown. */
+  shownPicked: number
   locale?: Locale
 }>()
-const emit = defineEmits<{
-  all: [checked: boolean]
-  approve: []
-  later: []
-  reject: []
-}>()
+const emit = defineEmits<{ all: [checked: boolean]; publish: [] }>()
 const { t } = translationsFor(locale)
 </script>
 
@@ -44,8 +39,8 @@ const { t } = translationsFor(locale)
     <label class="flex cursor-pointer items-center gap-2 text-admin-muted">
       <input
         type="checkbox"
-        :checked="count > 0 && count === shown"
-        :indeterminate="count > 0 && count < shown"
+        :checked="shownPicked > 0 && shownPicked === shown"
+        :indeterminate="shownPicked > 0 && shownPicked < shown"
         class="size-4 cursor-pointer accent-admin-fg"
         @change="emit('all', ($event.target as HTMLInputElement).checked)"
       />
@@ -54,21 +49,14 @@ const { t } = translationsFor(locale)
       </span>
       <span v-else>{{ t('cmsAdmin.bulk.selectAll', { count: shown }) }}</span>
     </label>
-    <div v-if="count > 0" class="ml-auto flex flex-wrap gap-1">
-      <AdminButton
-        v-if="canReject"
-        variant="dangerGhost"
-        :icon="X"
-        @click="emit('reject')"
-      >
-        {{ t('cmsAdmin.review.reject') }}
-      </AdminButton>
-      <AdminButton variant="ghost" :icon="Clock" @click="emit('later')">
-        {{ t('cmsAdmin.stage.later') }}
-      </AdminButton>
-      <AdminButton variant="primary" :icon="Check" @click="emit('approve')">
-        {{ t('cmsAdmin.bulk.approve', { count }) }}
-      </AdminButton>
-    </div>
+    <AdminButton
+      variant="primary"
+      :icon="Upload"
+      :disabled="count === 0"
+      class="ml-auto"
+      @click="emit('publish')"
+    >
+      {{ t('cmsAdmin.bulk.publish', { count }, count) }}
+    </AdminButton>
   </div>
 </template>

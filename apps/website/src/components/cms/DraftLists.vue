@@ -4,44 +4,30 @@ import { computed } from 'vue'
 import DraftGroup from '@/components/cms/DraftGroup.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { QueueItem, SubmissionQueueItem } from '@/lib/cms/queue'
-import type { StageEntry, StageStatus } from '@/lib/cms/stage-status'
+import type { QueueItem } from '@/lib/cms/queue'
 
-/** The rows of one review tab: submissions first, then the team's edits. */
+/** The draft's rows: brand-new content first, then edits to what's live. */
 const {
-  tab,
-  inTabCount,
-  submissions,
-  changes,
-  stageOf,
+  fresh,
+  updates,
   openId,
-  canApply,
+  selectable = false,
   selected = [],
   locale = 'en'
 } = defineProps<{
-  tab: StageStatus
-  /** Rows in the tab before the kind filter and search narrow them. */
-  inTabCount: number
-  submissions: QueueItem[]
-  changes: QueueItem[]
-  stageOf: (item: QueueItem) => StageEntry
+  fresh: QueueItem[]
+  updates: QueueItem[]
   openId?: string
-  canApply: boolean
+  selectable?: boolean
   selected?: string[]
   locale?: Locale
 }>()
-const emit = defineEmits<{
-  decide: [items: QueueItem[], status: StageStatus]
-  reject: [items: SubmissionQueueItem[]]
-  open: [id: string]
-  select: [id: string]
-}>()
+const emit = defineEmits<{ open: [id: string]; select: [id: string] }>()
 const { t } = translationsFor(locale)
-const reviewing = computed(() => tab === 'NEW')
 const groups = computed(() =>
   [
-    { key: 'submissions', items: submissions },
-    { key: 'team', items: changes }
+    { key: 'fresh', items: fresh },
+    { key: 'updates', items: updates }
   ].filter((group) => group.items.length > 0)
 )
 </script>
@@ -51,26 +37,18 @@ const groups = computed(() =>
     v-if="groups.length === 0"
     class="rounded-lg border border-admin-line px-6 py-10 text-center text-xs text-admin-muted"
   >
-    {{
-      inTabCount === 0
-        ? t(`cmsAdmin.stage.empty.${tab}`)
-        : t('cmsAdmin.draft.noMatches')
-    }}
+    {{ t('cmsAdmin.draft.noMatches') }}
   </p>
   <DraftGroup
     v-for="group in groups"
-    :key="`${group.key}-${tab}`"
+    :key="group.key"
     :title="t(`cmsAdmin.draft.${group.key}.title`)"
-    :help="reviewing ? t(`cmsAdmin.draft.${group.key}.help`) : undefined"
+    :help="t(`cmsAdmin.draft.${group.key}.help`)"
     :items="group.items"
-    :stage-of="stageOf"
     :open-id="openId"
-    :can-apply="canApply"
-    :selectable="reviewing && canApply"
+    :selectable
     :selected
     :locale
-    @decide="(items, status) => emit('decide', items, status)"
-    @reject="emit('reject', $event)"
     @open="emit('open', $event)"
     @select="emit('select', $event)"
   />

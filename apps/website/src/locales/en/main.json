@@ -53,7 +53,7 @@
     },
     "draft": {
       "title": "Draft",
-      "help": "Approve what should go live, then publish it after a final review.",
+      "help": "Pick what should go live and publish it. Anything you don't pick stays in the draft.",
       "filter": {
         "MODEL": "Models",
         "WORKFLOW": "Workflows",
@@ -73,15 +73,15 @@
       "emptyTitle": "You're all caught up",
       "emptyBody": "Nothing is waiting for review. Changes and workflow submissions land here.",
       "noMatches": "No changes match. Try another filter or search.",
-      "submissions": {
-        "title": "Workflow submissions",
-        "help": "Sent by creators. Run them, then approve, leave for later or reject."
+      "allTypes": "All types",
+      "fresh": {
+        "title": "New content",
+        "help": "Models, workflows and apps that aren't on the Hub yet."
       },
-      "team": {
-        "title": "Content changes",
-        "help": "Saved to the draft by the team. Approve them, leave them for later, or undo one in its panel."
-      },
-      "allTypes": "All types"
+      "updates": {
+        "title": "Updates",
+        "help": "Edits to what's already on the Hub. Open one to see what changes, or to undo it."
+      }
     },
     "review": {
       "position": "{index} of {total}",
@@ -89,7 +89,7 @@
       "next": "Next change",
       "close": "Close",
       "submitted": "Submitted {date}",
-      "runTitle": "Run it before you approve",
+      "runTitle": "Run it before publishing",
       "runAction": "Run in Comfy Cloud",
       "shareId": "Share ID",
       "listed": "Listed on the Hub",
@@ -100,13 +100,14 @@
       "after": "After",
       "empty": "Empty",
       "description": "Description",
-      "reject": "Reject",
       "copy": "Copy share ID",
       "copied": "Copied",
       "hubCard": "How it shows on the Hub",
       "pending": "Pending approval",
       "noImage": "No image sent with this submission",
-      "newTitle": "What this adds to the site"
+      "newTitle": "What this adds to the site",
+      "pick": "Add to publish",
+      "picked": "Added to publish"
     },
     "publish": {
       "cancel": "Cancel"
@@ -379,45 +380,13 @@
       "sectionTitle": "Unpublished changes",
       "sectionHelp": "This page has changes saved to the draft that aren't live yet."
     },
-    "decision": {
-      "approve": "Approve",
-      "approveTitle": "Approve {title}"
-    },
     "stage": {
-      "tabLabel": "Show changes by review status",
-      "tab": {
-        "NEW": "To review {count}",
-        "APPROVED": "Approved {count}",
-        "DEFERRED": "Later {count}"
-      },
-      "label": {
-        "NEW": "To review",
-        "APPROVED": "Approved",
-        "DEFERRED": "Later"
-      },
-      "later": "Later",
-      "back": "Review again",
-      "backTitle": "Send {title} back to review",
-      "reapproval": "Edited after approval",
-      "reapprovalHelp": "Edited after it was approved, so it needs another look",
-      "failed": "That decision wasn't saved. Reload the page and try again.",
-      "guide": {
-        "review": "Approve what should go live. Anything you don't approve stays in the draft for later.",
-        "ready": "Everything is decided. {count} approved change is ready for the final review. | Everything is decided. {count} approved changes are ready for the final review."
-      },
-      "empty": {
-        "NEW": "Nothing left to review.",
-        "APPROVED": "Nothing approved yet.",
-        "DEFERRED": "Nothing is left for later."
-      },
-      "more": "More actions for {title}",
       "select": "Select {title}"
     },
     "finalReview": {
-      "open": "Final review ({count})",
-      "title": "Final review",
-      "body": "This approved change goes live when you publish. | These {count} approved changes go live together when you publish.",
-      "later": "{count} change you didn't approve stays in the draft. | {count} changes you didn't approve stay in the draft.",
+      "title": "Publish these changes?",
+      "body": "This change goes live when you publish. | These {count} changes go live together when you publish.",
+      "later": "{count} change you didn't pick stays in the draft. | {count} changes you didn't pick stay in the draft.",
       "confirm": "Publish {count} change | Publish {count} changes"
     },
     "versions": {
@@ -432,11 +401,7 @@
     "bulk": {
       "selected": "{count} selected",
       "selectAll": "Select all {count} shown",
-      "approve": "Approve {count}"
-    },
-    "progress": {
-      "label": "Reviewed",
-      "count": "{reviewed} of {total}"
+      "publish": "Publish | Publish {count} change | Publish {count} changes"
     },
     "stats": {
       "title": "Usage",
