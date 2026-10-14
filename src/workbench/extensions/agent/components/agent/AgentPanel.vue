@@ -133,6 +133,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -536,6 +537,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

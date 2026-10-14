@@ -121,7 +121,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 function deleteNode(nodeId: string): GraphOperation {
   return {

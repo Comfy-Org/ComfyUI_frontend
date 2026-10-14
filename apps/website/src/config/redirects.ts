@@ -156,6 +156,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/zh-CN/about/',
     slashFormIsPageBecause: '/zh-CN/about/ is the About page'
   },
+  { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+  { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
