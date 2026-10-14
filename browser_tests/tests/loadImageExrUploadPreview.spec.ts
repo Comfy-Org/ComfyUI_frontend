@@ -73,16 +73,16 @@ test.describe('Load Image EXR upload preview', { tag: '@widget' }, () => {
       )
       await expect(dimensions).toBeVisible()
 
-      const nodeImage = (mark?: 'stale') =>
-        comfyPage.page.evaluate((mark) => {
+      // Re-uploading identical bytes keeps the same /view URL, so the node
+      // keeps (or gets back) the preview it already decoded.
+      const nodeImage = () =>
+        comfyPage.page.evaluate(() => {
           const img = window.app?.graph.nodes.find(
             (n) => n.type === 'LoadImage'
           )?.imgs?.[0]
-          if (mark && img) img.dataset.stale = mark
           if (!img?.complete || !img.naturalWidth) return 'loading'
-          return img.dataset.stale ?? img.dataset.testid ?? 'replaced'
-        }, mark)
-      await nodeImage('stale')
+          return img.dataset.testid ?? 'replaced'
+        })
       await uploadFromPicker(comfyPage, node)
       await expect.poll(() => nodeImage()).toBe('main-image')
       await expect(dimensions).toBeVisible()
