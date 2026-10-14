@@ -6113,23 +6113,31 @@ describe('thread resume (B17)', () => {
     )
   })
 
-  it('persists the thread on send and clears it on newChat', async () => {
-    const session = useAgentSession({
-      rest: fakeRest(),
-      events: fakeEvents().source
-    })
-    session.start()
-    await session.sendMessage('hello')
-    expect(localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))).toBe(
-      'th-1'
-    )
+  it.for([{ initialIdentity: null }, { initialIdentity: { id: 'user-1' } }])(
+    'persists the thread on send and clears it on newChat with initial identity $initialIdentity',
+    async ({ initialIdentity }) => {
+      const identity = ref(initialIdentity)
+      useCurrentUser().resolvedUserInfo = computed(() => identity.value)
+      const session = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+      session.start()
+      identity.value = { id: 'user-1' }
+      await nextTick()
+      await session.sendMessage('hello')
+      expect(
+        localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
+      ).toBe('th-1')
 
-    session.newChat()
-    expect(
-      localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
-    ).toBeNull()
-    expect(useAgentConversationStore().threadId).toBeNull()
-  })
+      session.newChat()
+      expect(
+        localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
+      ).toBeNull()
+      expect(useAgentConversationStore().threadId).toBeNull()
+      session.stop()
+    }
+  )
 
   it('panel reopen refreshes the surviving conversation without losing the sent message', async () => {
     const getMessages = vi.fn(

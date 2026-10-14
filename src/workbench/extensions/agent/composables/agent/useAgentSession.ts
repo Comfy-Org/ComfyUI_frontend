@@ -381,12 +381,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflow
   } = deps
   const scope = useAccountScope()
-  const owner = scope.value
+  const owner = ref(scope.value)
+  watch(
+    scope,
+    (next) => {
+      owner.value ??= next
+    },
+    { flush: 'sync' }
+  )
   const storedThread = useAccountStorage<string | null>(
     StorageKeys.agentThread,
     null,
     {},
-    computed(() => (scope.value === owner ? owner : null))
+    computed(() => (scope.value === owner.value ? owner.value : null))
   )
 
   const conversationStore = useAgentConversationStore()
