@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -53,14 +61,17 @@ import {
 } from '@/lib/workshop/workflow-goals'
 import type { ModalityTaskKey } from '@/lib/workshop/workflow-modality-tasks'
 import {
+  HUB_TAXONOMY,
   MODALITY_TASK_KEYS,
-  WORKFLOW_COLLECTIONS,
   collectionChips,
   inCollection,
   inModalityTask,
   modalityTaskChoices,
   modalityTaskShown
 } from '@/lib/workshop/workflow-modality-tasks'
+import { WORKFLOW_COLLECTIONS } from '@/lib/workshop/workflow-catalogue-mock-data'
+import type { WorkflowCatalogueMock } from '@/lib/workshop/workflow-catalogue-mock'
+import { fetchWorkflowCatalogueMock } from '@/lib/workshop/workflow-catalogue-mock'
 import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
 import { workflowFeatures } from '@/lib/workshop/catalogue-features'
 import CatalogueHero from './CatalogueHero.vue'
@@ -101,8 +112,16 @@ const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
 const features = computed(() => workflowFeatures(models, locale))
 const flatGrid = usePreviewSwitch('hub-workflows-flat')
-// Modality › task with one grid wins over the other Workflows layouts.
 const modalityTaskOn = usePreviewSwitch('hub-workflows-modality-task')
+const mockSwitch = usePreviewSwitch('hub-workflows-full-catalogue-mock')
+const mockOn = computed(() => modalityTaskOn.value && mockSwitch.value)
+const mock = shallowRef<WorkflowCatalogueMock>()
+const catalogue = computed(() =>
+  mockOn.value ? (mock.value?.models ?? []) : models
+)
+const taxonomy = computed(() =>
+  mockOn.value && mock.value ? mock.value.taxonomy : HUB_TAXONOMY
+)
 const modalitySwitch = usePreviewSwitch('hub-facet-sidebar')
 const modalitySidebar = computed(
   () => modalitySwitch.value && !flatGrid.value && !modalityTaskOn.value
@@ -123,16 +142,17 @@ const altSidebar = computed(
 )
 const { choice: modalityTask, readAddress: readModalityTask } =
   useAddressedChoice('browse', MODALITY_TASK_KEYS, modalityTaskOn, (key) =>
-    modalityTaskShown(models, key)
+    modalityTaskShown(catalogue.value, key, taxonomy.value)
   )
 const modalityTaskEntries = computed(() =>
-  modalityTaskChoices(models, modalityTask.value, t)
+  modalityTaskChoices(catalogue.value, modalityTask.value, t, taxonomy.value)
 )
 const { choice: collection, readAddress: readCollection } = useAddressedChoice(
   'collection',
   WORKFLOW_COLLECTIONS,
   modalityTaskOn,
-  (key) => models.some((model) => inCollection(model, key))
+  (key) =>
+    catalogue.value.some((model) => inCollection(model, key, taxonomy.value))
 )
 const taskEntries = computed(() =>
   hubTaskEntries(models, (listed) => listed.length)
@@ -226,8 +246,19 @@ onMounted(() =>
       sectionFromHash(location.hash, models) ??
         sectionFromAddress(search, models)
     )
+    void loadMock()
   })
 )
+
+async function loadMock() {
+  if (!mockOn.value || mock.value) return
+  mock.value = await fetchWorkflowCatalogueMock()
+  quietly(() => {
+    readModalityTask(location.search)
+    readCollection(location.search)
+  })
+}
+watch(mockOn, () => void loadMock())
 
 function openWorkflow(model: WorkshopModel, position: number, row?: string) {
   submitSearch()
@@ -246,19 +277,22 @@ watch(category, (value) => {
 })
 
 const ordered = computed(() =>
-  [...models].sort(
+  [...catalogue.value].sort(
     (a, b) =>
       (a.categoryOrder ?? Infinity) - (b.categoryOrder ?? Infinity) ||
       (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
   )
 )
 const byModalityTask = computed(() =>
-  ordered.value.filter((model) => inModalityTask(model, modalityTask.value))
+  ordered.value.filter((model) =>
+    inModalityTask(model, modalityTask.value, taxonomy.value)
+  )
 )
 const collectionEntries = computed(() =>
-  modalityTaskOn.value ? collectionChips(byModalityTask.value, t) : []
+  modalityTaskOn.value
+    ? collectionChips(byModalityTask.value, t, taxonomy.value)
+    : []
 )
-// A collection the chosen type holds nothing of would empty the grid.
 watch(collectionEntries, (entries) => {
   if (!entries.some((entry) => entry.key === collection.value))
     collection.value = 'all'
@@ -266,7 +300,7 @@ watch(collectionEntries, (entries) => {
 const inCategory = computed(() =>
   modalityTaskOn.value
     ? byModalityTask.value.filter((model) =>
-        inCollection(model, collection.value)
+        inCollection(model, collection.value, taxonomy.value)
       )
     : modalitySidebar.value
       ? ordered.value.filter((model) =>
@@ -355,9 +389,14 @@ const matching = computed(() =>
 const searched = computed(
   () =>
     new Set([
-      ...searchWorkshopModels(models, { query: query.value }),
+      ...searchWorkshopModels(catalogue.value, { query: query.value }),
       ...(modalitySidebar.value
         ? models.filter((model) => matchesSectionName(model, query.value))
+        : []),
+      ...(mockOn.value && mock.value
+        ? catalogue.value.filter((model) =>
+            mock.value?.matches(model, query.value)
+          )
         : [])
     ])
 )
@@ -575,7 +614,9 @@ function clear() {
               <WorkshopModelCard
                 :model
                 :locale
-                @click="openWorkflow(model, index)"
+                @click="
+                  mockOn ? $event.preventDefault() : openWorkflow(model, index)
+                "
               />
             </li>
           </ul>

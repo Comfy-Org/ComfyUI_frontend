@@ -3,6 +3,11 @@ import type { TranslationKey } from '@/i18n/translations'
 import type { HubTask } from './hub-tasks'
 import { HUB_TASKS, hubTaskOf } from './hub-tasks'
 import type { SidebarChoice } from './sidebar-tab-classes'
+import type {
+  MockTask,
+  WorkflowCollection
+} from './workflow-catalogue-mock-data'
+import { MOCK_TASKS } from './workflow-catalogue-mock-data'
 import {
   WORKFLOW_TYPES,
   inWorkflowType,
@@ -10,42 +15,76 @@ import {
 } from './workflow-goals'
 
 type WorkflowType = (typeof WORKFLOW_TYPES)[number]
-type TypeTask = `${WorkflowType}:${HubTask}`
+type ModalityTask = HubTask | MockTask
+type TypeTask = `${WorkflowType}:${ModalityTask}`
 export type ModalityTaskKey = 'all' | WorkflowType | TypeTask
+
+const MODALITY_TASKS: readonly ModalityTask[] = [
+  ...new Set<ModalityTask>([...HUB_TASKS, ...Object.values(MOCK_TASKS).flat()])
+]
 
 /** Every key the sidebar can hold, so an address naming one can be checked. */
 export const MODALITY_TASK_KEYS: readonly ModalityTaskKey[] = [
   ...WORKFLOW_TYPES,
   ...WORKFLOW_TYPES.flatMap((type) =>
-    HUB_TASKS.map((task): TypeTask => `${type}:${task}`)
+    MODALITY_TASKS.map((task): TypeTask => `${type}:${task}`)
   )
 ]
 
-// Under a type the type is already said, so a task reads as its verb alone.
-const taskLabelKey: Record<HubTask, TranslationKey> = {
+/** How a catalogue sorts its workflows into tasks under each type, and into collections. */
+export interface ModalityTaxonomy {
+  readonly tasks: (type: WorkflowType) => readonly ModalityTask[]
+  readonly taskOf: (model: WorkflowWorkshopModel) => ModalityTask | undefined
+  readonly collections: readonly WorkflowCollection[]
+  readonly collectionsOf: (model: WorkflowWorkshopModel) => readonly string[]
+}
+
+/** The published catalogue's tasks and its two use-case collections. */
+export const HUB_TAXONOMY: ModalityTaxonomy = {
+  tasks: () => HUB_TASKS,
+  taskOf: hubTaskOf,
+  collections: ['characters', 'product'],
+  collectionsOf: (model) =>
+    model.sections ?? (model.section ? [model.section] : [])
+}
+
+const taskLabelKey: Record<ModalityTask, TranslationKey> = {
   'generate-images': 'workshop.useCaseOption.generate',
   'edit-images': 'workshop.useCaseOption.edit',
   'generate-videos': 'workshop.useCaseOption.generate',
   'animate-images': 'workshop.taskSidebar.imageToVideo',
   'edit-videos': 'workshop.useCaseOption.edit',
   upscale: 'workshop.explorer.tabs.upscale',
-  audio: 'workshop.explorer.tabs.audio'
+  audio: 'workshop.explorer.tabs.audio',
+  generate: 'workshop.useCaseOption.generate',
+  edit: 'workshop.useCaseOption.edit',
+  control: 'workshop.modalityTasks.control',
+  'image-to-video': 'workshop.taskSidebar.imageToVideo',
+  'motion-transfer': 'workshop.modalityTasks.motionTransfer',
+  'lip-sync': 'workshop.modalityTasks.lipSync',
+  speech: 'workshop.modalityTasks.speech',
+  music: 'workshop.modalityTasks.music',
+  'from-image': 'workshop.modalityTasks.fromImage',
+  'from-text': 'workshop.modalityTasks.fromText'
 }
 
 function split(key: ModalityTaskKey): {
   type: 'all' | WorkflowType
-  task?: HubTask
+  task?: ModalityTask
 } {
-  const [type, task] = key.split(':') as ['all' | WorkflowType, HubTask?]
+  const [type, task] = key.split(':') as ['all' | WorkflowType, ModalityTask?]
   return { type, task }
 }
 
 export function inModalityTask(
   model: WorkflowWorkshopModel,
-  key: ModalityTaskKey
+  key: ModalityTaskKey,
+  taxonomy: ModalityTaxonomy = HUB_TAXONOMY
 ): boolean {
   const { type, task } = split(key)
-  return inWorkflowType(model, type) && (!task || hubTaskOf(model) === task)
+  return (
+    inWorkflowType(model, type) && (!task || taxonomy.taskOf(model) === task)
+  )
 }
 
 /**
@@ -56,19 +95,24 @@ export function inModalityTask(
 export function modalityTaskChoices(
   models: readonly WorkflowWorkshopModel[],
   selected: ModalityTaskKey,
-  t: (key: TranslationKey) => string
+  t: (key: TranslationKey) => string,
+  taxonomy: ModalityTaxonomy = HUB_TAXONOMY
 ): SidebarChoice<ModalityTaskKey>[] {
   const open = split(selected).type
   return workflowTypeChoices(models, t).flatMap(
     (choice): SidebarChoice<ModalityTaskKey>[] => {
       if (choice.key === 'all' || choice.key !== open) return [choice]
       const listed = models.filter((model) => inWorkflowType(model, open))
-      const tasks = HUB_TASKS.map((task) => ({
-        key: `${open}:${task}` as const,
-        label: t(taskLabelKey[task]),
-        count: listed.filter((model) => hubTaskOf(model) === task).length,
-        nested: true
-      })).filter((task) => task.count > 0)
+      const tasks = taxonomy
+        .tasks(open)
+        .map((task) => ({
+          key: `${open}:${task}` as const,
+          label: t(taskLabelKey[task]),
+          count: listed.filter((model) => taxonomy.taskOf(model) === task)
+            .length,
+          nested: true
+        }))
+        .filter((task) => task.count > 0)
       return tasks.length > 1 ? [choice, ...tasks] : [choice]
     }
   )
@@ -77,28 +121,28 @@ export function modalityTaskChoices(
 /** Whether the sidebar offers `key` for these workflows. */
 export function modalityTaskShown(
   models: readonly WorkflowWorkshopModel[],
-  key: ModalityTaskKey
+  key: ModalityTaskKey,
+  taxonomy: ModalityTaxonomy = HUB_TAXONOMY
 ): boolean {
-  return models.some((model) => inModalityTask(model, key))
+  return models.some((model) => inModalityTask(model, key, taxonomy))
 }
-
-export const WORKFLOW_COLLECTIONS = ['characters', 'product'] as const
-export type WorkflowCollection = (typeof WORKFLOW_COLLECTIONS)[number]
 
 const collectionLabelKey: Record<WorkflowCollection, TranslationKey> = {
   characters: 'workshop.workflowGoals.characters',
-  product: 'workshop.workflowGoals.product'
+  'game-assets': 'workshop.workflowCollections.gameAssets',
+  product: 'workshop.workflowGoals.product',
+  architecture: 'workshop.workflowCollections.architecture',
+  storyboards: 'workshop.workflowCollections.storyboards',
+  anime: 'workshop.workflowCollections.anime'
 }
 
 export function inCollection(
   model: WorkflowWorkshopModel,
-  collection: 'all' | WorkflowCollection
+  collection: 'all' | WorkflowCollection,
+  taxonomy: ModalityTaxonomy = HUB_TAXONOMY
 ): boolean {
   return (
-    collection === 'all' ||
-    (model.sections ?? (model.section ? [model.section] : [])).includes(
-      collection
-    )
+    collection === 'all' || taxonomy.collectionsOf(model).includes(collection)
   )
 }
 
@@ -111,11 +155,14 @@ export interface CollectionChip {
 /** The collections that hold any of these workflows, with how many. */
 export function collectionChips(
   models: readonly WorkflowWorkshopModel[],
-  t: (key: TranslationKey) => string
+  t: (key: TranslationKey) => string,
+  taxonomy: ModalityTaxonomy = HUB_TAXONOMY
 ): CollectionChip[] {
-  return WORKFLOW_COLLECTIONS.map((key) => ({
-    key,
-    label: t(collectionLabelKey[key]),
-    count: models.filter((model) => inCollection(model, key)).length
-  })).filter((chip) => chip.count > 0)
+  return taxonomy.collections
+    .map((key) => ({
+      key,
+      label: t(collectionLabelKey[key]),
+      count: models.filter((model) => inCollection(model, key, taxonomy)).length
+    }))
+    .filter((chip) => chip.count > 0)
 }

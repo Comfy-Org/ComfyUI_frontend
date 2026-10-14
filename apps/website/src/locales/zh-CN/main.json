@@ -4894,7 +4894,8 @@
       "taskSidebar": "Hub：任务侧栏",
       "workflowsByModality": "Hub：按模态浏览工作流",
       "workflowsFlat": "Hub：工作流与模型页同版式",
-      "workflowsModalityTask": "Hub：按模态 › 任务浏览工作流"
+      "workflowsModalityTask": "Hub：按模态 › 任务浏览工作流",
+      "fullCatalogueMock": "Hub：完整目录模拟（工作流）"
     },
     "taskSidebar": {
       "label": "按任务浏览",
@@ -4906,8 +4907,21 @@
       "editVideos": "编辑视频",
       "seeAll": "查看全部 ({n})"
     },
+    "modalityTasks": {
+      "control": "控制",
+      "motionTransfer": "动作迁移",
+      "lipSync": "口型同步",
+      "speech": "语音与人声",
+      "music": "音乐与音效",
+      "fromImage": "从图像生成",
+      "fromText": "从文本生成"
+    },
     "workflowCollections": {
-      "label": "合集"
+      "label": "合集",
+      "gameAssets": "游戏素材",
+      "architecture": "建筑与室内",
+      "storyboards": "分镜",
+      "anime": "动漫与漫画"
     },
     "workflowGoals": {
       "characters": "角色",

@@ -17,6 +17,10 @@ export const PREVIEW_SWITCHES = [
   {
     id: 'hub-workflows-modality-task',
     labelKey: 'workshop.preview.workflowsModalityTask'
+  },
+  {
+    id: 'hub-workflows-full-catalogue-mock',
+    labelKey: 'workshop.preview.fullCatalogueMock'
   }
 ] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
 

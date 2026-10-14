@@ -882,7 +882,8 @@
       "taskSidebar": "Hub: task sidebar",
       "workflowsByModality": "Hub: workflows by modality",
       "workflowsFlat": "Hub: workflows like Models",
-      "workflowsModalityTask": "Hub: workflows by modality › task"
+      "workflowsModalityTask": "Hub: workflows by modality › task",
+      "fullCatalogueMock": "Hub: full catalogue mock (Workflows)"
     },
     "taskSidebar": {
       "label": "Browse by task",
@@ -894,8 +895,21 @@
       "editVideos": "Edit videos",
       "seeAll": "See all ({n})"
     },
+    "modalityTasks": {
+      "control": "Control",
+      "motionTransfer": "Motion transfer",
+      "lipSync": "Lip sync",
+      "speech": "Speech & voice",
+      "music": "Music & sound",
+      "fromImage": "From image",
+      "fromText": "From text"
+    },
     "workflowCollections": {
-      "label": "Collections"
+      "label": "Collections",
+      "gameAssets": "Game assets",
+      "architecture": "Architecture",
+      "storyboards": "Storyboards",
+      "anime": "Anime & comics"
     },
     "workflowGoals": {
       "characters": "Characters",

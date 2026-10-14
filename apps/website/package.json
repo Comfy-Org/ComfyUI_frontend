@@ -58,6 +58,7 @@
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
     "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",
     "hub:backfill-media-type": "tsx ./scripts/backfill-template-media-type.ts",
+    "generate:workflow-catalogue-mock": "tsx ./scripts/generate-workflow-catalogue-mock.ts",
     "hub:generate-join": "tsx ./scripts/generate-template-model-join.ts"
   },
   "dependencies": {

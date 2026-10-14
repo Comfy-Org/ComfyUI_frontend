@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  CollectionChip,
-  WorkflowCollection
-} from '@/lib/workshop/workflow-modality-tasks'
+import type { WorkflowCollection } from '@/lib/workshop/workflow-catalogue-mock-data'
+import type { CollectionChip } from '@/lib/workshop/workflow-modality-tasks'
 
 const { chips, label } = defineProps<{
   chips: readonly CollectionChip[]
