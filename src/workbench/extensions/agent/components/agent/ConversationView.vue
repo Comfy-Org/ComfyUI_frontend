@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -19,7 +20,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { AgentAnswerRequest, TurnId } from '../../schemas/agentApiSchema'
+import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
@@ -253,10 +254,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, answer: AgentAnswerRequest) =>
-                  emit('answerAsk', askId, answer)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)

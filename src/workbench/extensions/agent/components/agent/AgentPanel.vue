@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -21,7 +22,7 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type { AgentAnswerRequest, TurnId } from '../../schemas/agentApiSchema'
+import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { AgentAskOption } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 import type { AskUserResolution } from '../../../services/agent/agentMessageParts'
 
 const { resolution, options } = defineProps<{
@@ -14,6 +14,7 @@ const { resolution, options } = defineProps<{
 const { t } = useI18n()
 
 const answers = computed(() => {
+  if (resolution.status !== 'answered') return []
   const labels = new Map(options.map(({ id, label }) => [id, label]))
   const chosen = resolution.selected.map((id) => labels.get(id) ?? id)
   return resolution.otherText
@@ -42,7 +43,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
       {{ t(STATUS_TEXT[resolution.status]) }}
     </p>
     <ul
-      v-if="resolution.status === 'answered' && answers.length > 0"
+      v-if="answers.length > 0"
       class="m-0 flex list-none flex-col gap-0.5 p-0"
     >
       <li

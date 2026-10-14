@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { AgentAskOption } from '@comfyorg/ingest-types'
+import { xor } from 'es-toolkit'
+
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 
-import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import {
   askUserOptionDescribedBy,
@@ -31,9 +33,8 @@ function optionDisabled(id: string): boolean {
   return disabled || (full && !selected.value.includes(id))
 }
 
-function toggle(id: string, checked: boolean): void {
-  const others = selected.value.filter((value) => value !== id)
-  selected.value = checked ? [...others, id] : others
+function toggle(id: string): void {
+  selected.value = xor(selected.value, [id])
 }
 </script>
 
@@ -56,7 +57,7 @@ function toggle(id: string, checked: boolean): void {
         :aria-labelledby="`${askUserOptionId(idPrefix, index)}-label`"
         :aria-describedby="askUserOptionDescribedBy(idPrefix, option, index)"
         class="mt-0.5"
-        @update:model-value="(checked) => toggle(option.id, checked === true)"
+        @update:model-value="toggle(option.id)"
       />
       <AskUserOptionLabel
         :option-id="askUserOptionId(idPrefix, index)"

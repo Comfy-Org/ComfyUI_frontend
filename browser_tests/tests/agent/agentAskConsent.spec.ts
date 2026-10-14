@@ -1,337 +1,157 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
-
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import {
-  agentTest as test,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { agentAskTest as test } from '@e2e/fixtures/agentAskTurnFixture'
 import {
   ASK_USER_QUESTION,
   DELETE_APPROVAL_PROMPT,
+  RUN_ASK_ID,
+  answerPath,
+  askCancelled,
+  askIdFor,
+  askResolved,
+  askTurnIds,
   askUserQuestionFrame,
-  deleteApprovalFrame
-} from '@e2e/fixtures/agentAskFrames'
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
-
-// The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
-// a run_approval ask blocks the run on the user's explicit answer. The server
-// holds the run; the panel's whole job is to show the card, send exactly the
-// answer the user picked, and never answer on its own. Three independent
-// 2026-09-21 reports ("Ask mode doesn't ask to run the workflow") came from
-// the server-side gate being disabled while the picker still said Ask — so
-// this suite also guards the client half: no code path may self-approve a
-// spend, whatever the stored preference claims.
-
-const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
-const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
-const MESSAGE_ID = '1e2d3c4b-5a69-4788-9a7b-6c5d4e3f2a1b'
-const ASK_ID = `${MESSAGE_ID}:call-run`
-const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
-const CATALOG: WidgetCatalog = { types: {} }
-const SEED: WorkflowJSON = { nodes: [], links: [] }
-
-const SEND_LABEL = enMessages.agent.send
-const CARD_LEAD = enMessages.agent.runApproval.leadBound
-const RUN_LABEL = enMessages.agent.runApproval.run
-const CANCEL_LABEL = enMessages.agent.runApproval.cancel
-const { t } = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global
-
-const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
-
-function runApprovalAsk(): AgentWsEvent {
-  return {
-    type: 'agent_ask',
-    data: {
-      ...ids,
-      ask_id: ASK_ID,
-      kind: 'run_approval',
-      context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
-      prompt: 'Run workflow “Unsaved Workflow”?',
-      options: [
-        { id: 'run', label: 'Run' },
-        { id: 'cancel', label: 'Cancel' }
-      ],
-      min_selections: 1,
-      max_selections: 1,
-      allow_other: false
-    }
-  }
-}
-
-function askResolved(selected: string[], askId = ASK_ID): AgentWsEvent {
-  return {
-    type: 'agent_ask_resolved',
-    data: { ...ids, ask_id: askId, status: 'answered', selected }
-  }
-}
-
-function toolCall(name: string, status: 'running' | 'success'): AgentWsEvent {
-  return {
-    type: 'agent_tool_call',
-    data: {
-      tool_call_id: `call-${name}`,
-      tool_name: name,
-      status,
-      ...(status === 'success' && { duration_ms: 1200 }),
-      ...ids
-    }
-  }
-}
-
-/**
- * One POST the app made to the ask-answer endpoint. The URL is recorded
- * alongside the body because the body alone cannot show *which* ask was
- * answered — `{"selected":["run"]}` aimed at the wrong thread or a stale ask
- * would satisfy a body-only assertion while authorizing the wrong spend.
- */
-interface AnswerCall {
-  /** Decoded pathname, so the `:` inside `ASK_ID` compares literally. */
-  path: string
-  body: unknown
-}
-
-interface Turn {
-  panel: Locator
-  send: (frame: AgentWsEvent | HostFrame) => void
-  answers: () => AnswerCall[]
-}
-
-const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
-const QUESTION_ASK_ID = `${MESSAGE_ID}:call-ask`
-const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/answer`
-const DELETE_ASK_ID = `${MESSAGE_ID}:call-delete`
-const DELETE_PATH = `/api/agent/threads/${THREAD_ID}/asks/${DELETE_ASK_ID}/answer`
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-async function startTurn(
-  page: Page,
-  prompt: string,
-  storedMode: AgentRunMode['mode']
-): Promise<Turn> {
-  const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
-  const answerCalls: AnswerCall[] = []
-
-  const runMode: AgentRunMode = { mode: storedMode, credit_limit: null }
-  await page.route('**/api/agent/run-mode', (route) =>
-    route.fulfill(jsonRoute(runMode))
-  )
-  await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
-    const request = route.request()
-    answerCalls.push({
-      path: decodeURIComponent(new URL(request.url()).pathname),
-      body: request.postDataJSON()
-    })
-    return route.fulfill(jsonRoute({ status: 'answered' }))
-  })
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
-  )
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() === 'POST') {
-      return route.fulfill({
-        status: 202,
-        contentType: 'application/json',
-        body: JSON.stringify({ ...ids, workflow_id: WORKFLOW_ID })
-      })
-    }
-    return route.fulfill(jsonRoute([]))
-  })
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: 0 } }, sid: SOCKET_SID }
-      })
-    )
-    ws.onMessage((raw) => {
-      const frame: unknown = JSON.parse(raw.toString())
-      if (!isRecord(frame)) return
-      const { type, data } = frame
-      if (type !== 'doc_subscribe' || !isRecord(data)) return
-      const { workflow_id, state_vector_b64 } = data
-      if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-        return
-      send(host.subscribed())
-      send(host.catchUp(state_vector_b64))
-    })
-  })
-
-  await bootAgentApp(page, true, {
-    settings: { 'Comfy.Graph.CanvasInfo': false }
-  })
-
-  const panel = page.locator('#agent-panel-root')
-  const topbarActions = page.getByTestId('integrated-tab-bar-actions')
-  await expect(topbarActions).toHaveAttribute(
-    'data-agent-gate-settled',
-    'true',
-    { timeout: 8_000 }
-  )
-  await new AgentPanel(page).open(30_000)
-
-  await mockWorkflowPersistence(page, WORKFLOW_ID)
-
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-  await expect.poll(() => socket !== null).toBe(true)
-
-  await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
-  await panel.getByRole('button', { name: SEND_LABEL }).click()
-  await expect(panel.getByText(prompt).first()).toBeVisible()
-  return { panel, send, answers: () => answerCalls }
-}
+  deleteApprovalFrame,
+  pausedAskFrame,
+  runApprovalAsk,
+  singleChoiceQuestionFrame,
+  toolCall
+} from '@e2e/fixtures/data/agent/agentAskFrames'
 
 test.describe(
   'Agent run approval consent',
   { tag: ['@cloud', '@agent'] },
   () => {
     test('in Ask mode the run waits on the card, and only the user’s click answers it', async ({
-      page
+      startAskTurn
     }) => {
       test.setTimeout(60_000)
-      const { panel, send, answers } = await startTurn(
-        page,
+      const { panel, send, answers } = await startAskTurn(
         'Run it.',
         'ask_approval'
       )
-
-      send(runApprovalAsk())
+      const cardLead = panel.getByText(enMessages.agent.runApproval.leadBound)
       const runButton = panel.getByRole('button', {
-        name: RUN_LABEL,
+        name: enMessages.agent.runApproval.run,
         exact: true
       })
       const cancelButton = panel.getByRole('button', {
-        name: CANCEL_LABEL,
+        name: enMessages.agent.runApproval.cancel,
         exact: true
       })
-      await expect(panel.getByText(CARD_LEAD)).toBeVisible()
-      await expect(runButton).toBeEnabled()
-      await expect(cancelButton).toBeEnabled()
 
-      // The card alone answered nothing: the ask is still open, so the
-      // server-held run has not been authorized.
-      expect(answers()).toHaveLength(0)
-
-      // The user's click is the consent: exactly one answer, aimed at exactly
-      // the ask they were shown, carrying exactly what they picked.
-      await runButton.click()
-      await expect.poll(() => answers().length).toBe(1)
-      expect(answers()[0]).toEqual({
-        path: ANSWER_PATH,
-        body: { selected: ['run'] }
+      await test.step('the card alone answers nothing', async () => {
+        send(runApprovalAsk())
+        await expect(cardLead).toBeVisible()
+        await expect(runButton).toBeEnabled()
+        await expect(cancelButton).toBeEnabled()
+        expect(answers()).toHaveLength(0)
       })
 
-      // Until the canonical resolution arrives, the card cannot answer again.
-      await expect(runButton).toBeDisabled()
-      await expect(cancelButton).toBeDisabled()
-      expect(answers()).toHaveLength(1)
+      await test.step('the click answers exactly the ask shown, once', async () => {
+        await runButton.click()
+        await expect.poll(() => answers().length).toBe(1)
+        expect(answers()[0]).toEqual({
+          path: answerPath(RUN_ASK_ID),
+          body: { selected: ['run'] }
+        })
+        await expect(runButton).toBeDisabled()
+        await expect(cancelButton).toBeDisabled()
+        expect(answers()).toHaveLength(1)
+      })
 
-      send(askResolved(['run']))
-      await expect(panel.getByText(CARD_LEAD)).toHaveCount(0)
+      await test.step('the resolved run shows up as activity', async () => {
+        send(askResolved(['run']))
+        await expect(cardLead).toHaveCount(0)
+        const runActivity = panel
+          .getByRole('listitem')
+          .filter({ hasText: 'Run' })
+        await expect(runActivity).toHaveCount(0)
+        send(toolCall('run', 'running'))
+        await expect(runActivity.first()).toBeVisible()
+      })
 
-      // The run becomes visible to the user as activity, not just as a final
-      // message: the running frame puts a `run` row in the activity trace.
-      // Asserted absent first so this cannot pass on some other 'Run' text —
-      // the card's own button is already gone by here.
-      const runActivity = panel.getByRole('listitem').filter({ hasText: 'Run' })
-      await expect(runActivity).toHaveCount(0)
-      send(toolCall('run', 'running'))
-      await expect(runActivity.first()).toBeVisible()
-
-      send(toolCall('run', 'success'))
-      const done = 'Submitted. I will report back when it finishes.'
-      send({ type: 'agent_message_delta', data: { delta: done, ...ids } })
-      send({ type: 'agent_message_done', data: { ...ids, usage: null } })
-      await expect(panel.getByText(done, { exact: true })).toBeVisible()
-      expect(answers()).toHaveLength(1)
+      await test.step('the turn finishes without another answer', async () => {
+        send(toolCall('run', 'success'))
+        const done = 'Submitted. I will report back when it finishes.'
+        send({
+          type: 'agent_message_delta',
+          data: { delta: done, ...askTurnIds }
+        })
+        send({
+          type: 'agent_message_done',
+          data: { ...askTurnIds, usage: null }
+        })
+        await expect(panel.getByText(done, { exact: true })).toBeVisible()
+        expect(answers()).toHaveLength(1)
+      })
     })
 
-    test('declining the card answers cancel exactly once', async ({ page }) => {
+    test('declining the card answers cancel exactly once', async ({
+      startAskTurn
+    }) => {
       test.setTimeout(60_000)
-      const { panel, send, answers } = await startTurn(
-        page,
+      const { panel, send, answers } = await startAskTurn(
         'Run it.',
         'ask_approval'
       )
+      const cardLead = panel.getByText(enMessages.agent.runApproval.leadBound)
 
       send(runApprovalAsk())
-      await expect(panel.getByText(CARD_LEAD)).toBeVisible()
+      await expect(cardLead).toBeVisible()
       await panel
-        .getByRole('button', { name: CANCEL_LABEL, exact: true })
+        .getByRole('button', {
+          name: enMessages.agent.runApproval.cancel,
+          exact: true
+        })
         .click()
       await expect.poll(() => answers().length).toBe(1)
       expect(answers()[0]).toEqual({
-        path: ANSWER_PATH,
+        path: answerPath(RUN_ASK_ID),
         body: { selected: ['cancel'] }
       })
 
       send(askResolved(['cancel']))
-      await expect(panel.getByText(CARD_LEAD)).toHaveCount(0)
+      await expect(cardLead).toHaveCount(0)
       const done = 'Understood — I won’t run it.'
-      send({ type: 'agent_message_delta', data: { delta: done, ...ids } })
-      send({ type: 'agent_message_done', data: { ...ids, usage: null } })
+      send({
+        type: 'agent_message_delta',
+        data: { delta: done, ...askTurnIds }
+      })
+      send({ type: 'agent_message_done', data: { ...askTurnIds, usage: null } })
       await expect(panel.getByText(done, { exact: true })).toBeVisible()
       expect(answers()).toHaveLength(1)
     })
 
     test('the panel never answers a run approval by itself, whatever the stored preference says', async ({
-      page
+      startAskTurn
     }) => {
       test.setTimeout(60_000)
-      // The stored preference reads `auto` while the server still raised an
-      // ask — the divergence produced by a stale cached mode. Auto-approving
-      // from the client copy would spend money the server's gate was holding;
-      // the card must wait for the user regardless.
-      const { panel, send, answers } = await startTurn(page, 'Run it.', 'auto')
-
-      send(runApprovalAsk())
+      const { panel, send, answers } = await startAskTurn('Run it.', 'auto')
+      const cardLead = panel.getByText(enMessages.agent.runApproval.leadBound)
       const runButton = panel.getByRole('button', {
-        name: RUN_LABEL,
+        name: enMessages.agent.runApproval.run,
         exact: true
       })
-      await expect(panel.getByText(CARD_LEAD)).toBeVisible()
+
+      send(runApprovalAsk())
+      await expect(cardLead).toBeVisible()
       await expect(runButton).toBeEnabled()
 
-      // Flush a later frame through the same pipeline so the ask has been
-      // fully processed before asserting nothing answered it.
-      const draft = 'Waiting on your approval.'
-      send({ type: 'agent_message_draft', data: { text: draft, ...ids } })
-      await expect(panel.getByText(draft, { exact: true })).toBeVisible()
+      await test.step('a later frame has been processed', async () => {
+        const draft = 'Waiting on your approval.'
+        send({
+          type: 'agent_message_draft',
+          data: { text: draft, ...askTurnIds }
+        })
+        await expect(panel.getByText(draft, { exact: true })).toBeVisible()
+      })
 
       expect(answers()).toHaveLength(0)
       await expect(runButton).toBeEnabled()
-      await expect(panel.getByText(CARD_LEAD)).toBeVisible()
+      await expect(cardLead).toBeVisible()
     })
   }
 )
@@ -340,50 +160,137 @@ test.describe(
   'Agent ask_user question',
   { tag: ['@cloud', '@agent', '@screenshot'] },
   () => {
-    test('the card answers only the ask it shows and then reads back the answer', async ({
-      page
+    test.use({ viewport: { width: 1920, height: 1280 } })
+
+    test('the question card posts its answer to its ask and reads back the committed answer', async ({
+      startAskTurn
     }) => {
-      test.setTimeout(60_000)
-      await page.setViewportSize({ width: 1920, height: 1280 })
-      const { panel, send, answers } = await startTurn(
-        page,
-        'Paint it.',
-        'auto'
-      )
+      const askId = askIdFor('call-ask')
+      const { panel, send, answers } = await startAskTurn('Paint it.', 'auto')
+      const card = panel.getByRole('group', {
+        name: enMessages.agent.askUser.card
+      })
       const choices = panel.getByRole('group', { name: ASK_USER_QUESTION })
-      const submit = panel.getByRole('button', { name: t('g.submit') })
 
       await test.step('the question arrives as a card with every option', async () => {
-        send(askUserQuestionFrame(ids, QUESTION_ASK_ID))
+        send(askUserQuestionFrame(askId))
         await expect(
           choices.getByRole('checkbox', { name: 'Oil painting' })
         ).toBeVisible()
-        await expect(
-          panel.getByRole('group', { name: t('agent.askUser.card') })
-        ).toHaveScreenshot('agent-ask-user-card.png')
+        await expect(card).toHaveScreenshot('agent-ask-user-card.png')
       })
 
       await test.step('answering posts once, to that ask', async () => {
         await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
         await panel
-          .getByRole('textbox', { name: t('agent.askUser.other') })
+          .getByRole('textbox', { name: enMessages.agent.askUser.other })
           .fill('watercolor')
-        await submit.click()
+        await panel.getByRole('button', { name: enMessages.g.submit }).click()
         await expect.poll(() => answers().length).toBe(1)
         expect(answers()[0]).toEqual({
-          path: QUESTION_PATH,
+          path: answerPath(askId),
           body: { selected: ['oil'], other_text: 'watercolor' }
         })
       })
 
-      await test.step('the resolved card reads back the answer', async () => {
-        send(askResolved(['oil'], QUESTION_ASK_ID))
+      await test.step('the resolved card reads back the committed answer', async () => {
+        send(askResolved(['oil'], askId, { other_text: 'watercolor' }))
+        await expect(card.getByRole('status').getByRole('listitem')).toHaveText(
+          ['Oil painting', 'Other: watercolor']
+        )
+        await expect(card).toHaveScreenshot('agent-ask-user-card-answered.png')
+      })
+    })
+
+    test('each card state renders as its own card', async ({
+      startAskTurn
+    }) => {
+      const { panel, send, holdAnswer, refuseAnswer, questionCard } =
+        await startAskTurn('Paint it.', 'auto')
+
+      await test.step('a single-choice question reads as radios', async () => {
+        send(singleChoiceQuestionFrame(askIdFor('call-radio'), 'Which first?'))
         await expect(
-          panel
-            .getByRole('status')
-            .filter({ hasText: t('agent.askUser.answered') })
-        ).toContainText('Oil painting')
-        await expect(submit).toHaveCount(0)
+          questionCard('Which first?').getByRole('radio', {
+            name: 'Oil painting'
+          })
+        ).toBeEnabled()
+        await expect(questionCard('Which first?')).toHaveScreenshot(
+          'agent-ask-user-card-radio.png'
+        )
+      })
+
+      await test.step('an answer in flight locks the card', async () => {
+        const release = await holdAnswer(askIdFor('call-radio'))
+        await questionCard('Which first?').getByText('Oil painting').click()
+        const submit = questionCard('Which first?').getByRole('button', {
+          name: enMessages.g.submit
+        })
+        await submit.click()
+        await expect(submit).toBeDisabled()
+        await expect(questionCard('Which first?')).toHaveScreenshot(
+          'agent-ask-user-card-in-flight.png'
+        )
+        release()
+      })
+
+      await test.step('a question closed without an answer says so', async () => {
+        send(
+          singleChoiceQuestionFrame(askIdFor('call-closed'), 'Which palette?')
+        )
+        send(askCancelled(askIdFor('call-closed')))
+        await expect(questionCard('Which palette?')).toContainText(
+          enMessages.agent.askUser.closed
+        )
+        await expect(questionCard('Which palette?')).toHaveScreenshot(
+          'agent-ask-user-card-closed.png'
+        )
+      })
+
+      await test.step('a refused answer leaves the card no longer open', async () => {
+        await refuseAnswer(askIdFor('call-retired'), 403)
+        send(singleChoiceQuestionFrame(askIdFor('call-retired'), 'Which size?'))
+        await questionCard('Which size?').getByText('Oil painting').click()
+        await questionCard('Which size?')
+          .getByRole('button', { name: enMessages.g.submit })
+          .click()
+        await expect(questionCard('Which size?')).toContainText(
+          enMessages.agent.askUser.retired
+        )
+        await expect(questionCard('Which size?')).toHaveScreenshot(
+          'agent-ask-user-card-retired.png'
+        )
+      })
+
+      await test.step('an answer that may have landed reads as unconfirmed', async () => {
+        await refuseAnswer(askIdFor('call-unconfirmed'), 500)
+        send(
+          singleChoiceQuestionFrame(
+            askIdFor('call-unconfirmed'),
+            'Which light?'
+          )
+        )
+        await questionCard('Which light?').getByText('Oil painting').click()
+        await questionCard('Which light?')
+          .getByRole('button', { name: enMessages.g.submit })
+          .click()
+        await expect(questionCard('Which light?')).toContainText(
+          enMessages.agent.askUser.unconfirmed
+        )
+        await expect(questionCard('Which light?')).toHaveScreenshot(
+          'agent-ask-user-card-unconfirmed.png'
+        )
+      })
+
+      await test.step('an ask the panel cannot render shows a notice', async () => {
+        send(pausedAskFrame(askIdFor('call-paused')))
+        const notice = panel
+          .getByRole('status')
+          .filter({ hasText: enMessages.agent.askUnavailable })
+        await expect(notice).toBeVisible()
+        await expect(notice).toHaveScreenshot(
+          'agent-ask-unavailable-notice.png'
+        )
       })
     })
   }
@@ -393,26 +300,30 @@ test.describe(
   'Agent delete approval',
   { tag: ['@cloud', '@agent', '@screenshot'] },
   () => {
+    test.use({ viewport: { width: 1920, height: 1280 } })
+
     test('the card names the nodes and answers only the ask it shows', async ({
-      page
+      startAskTurn
     }) => {
-      test.setTimeout(60_000)
-      await page.setViewportSize({ width: 1920, height: 1280 })
-      const { panel, send, answers } = await startTurn(page, 'Tidy up.', 'auto')
+      const askId = askIdFor('call-delete')
+      const { panel, send, answers, holdAnswer } = await startAskTurn(
+        'Tidy up.',
+        'auto'
+      )
       const nodes = panel.getByRole('list', {
-        name: t('agent.deleteApproval.nodes')
+        name: enMessages.agent.deleteApproval.nodes
       })
       const deleteButton = panel.getByRole('button', {
-        name: t('agent.deleteApproval.delete'),
+        name: enMessages.agent.deleteApproval.delete,
         exact: true
       })
       const keepButton = panel.getByRole('button', {
-        name: t('agent.deleteApproval.keep'),
+        name: enMessages.agent.deleteApproval.keep,
         exact: true
       })
 
       await test.step('the card lists the nodes it would delete', async () => {
-        send(deleteApprovalFrame(ids, DELETE_ASK_ID))
+        send(deleteApprovalFrame(askId))
         await expect(panel.getByText(DELETE_APPROVAL_PROMPT)).toBeVisible()
         await expect(nodes.getByRole('listitem')).toHaveText([
           /Hero sampler\s*#12/,
@@ -421,43 +332,30 @@ test.describe(
         await expect(deleteButton).toBeEnabled()
         await expect(keepButton).toBeEnabled()
         await expect(
-          panel.getByRole('group', { name: t('agent.deleteApproval.card') })
+          panel.getByRole('group', {
+            name: enMessages.agent.deleteApproval.card
+          })
         ).toHaveScreenshot('agent-delete-approval-card.png')
       })
 
       await test.step('the click posts once, to that ask, and locks the card', async () => {
-        let release = () => {}
-        const held = new Promise<void>((resolve) => {
-          release = resolve
-        })
-        const isDeleteAnswer = (url: URL) =>
-          decodeURIComponent(url.pathname) === DELETE_PATH
-        await page.route(isDeleteAnswer, async (route) => {
-          await held
-          await route.fallback()
-        })
-        const posted = page.waitForRequest((request) =>
-          isDeleteAnswer(new URL(request.url()))
-        )
+        const release = await holdAnswer(askId)
         await deleteButton.click()
-        await posted
         await expect(deleteButton).toBeDisabled()
         await expect(keepButton).toBeDisabled()
 
         release()
         await expect.poll(() => answers().length).toBe(1)
         expect(answers()[0]).toEqual({
-          path: DELETE_PATH,
+          path: answerPath(askId),
           body: { selected: ['delete'] }
         })
       })
 
       await test.step('the resolved card reads back the answer', async () => {
-        send(askResolved(['delete'], DELETE_ASK_ID))
+        send(askResolved(['delete'], askId))
         await expect(
-          panel
-            .getByRole('status')
-            .filter({ hasText: t('agent.deleteApproval.deleted', 2) })
+          panel.getByRole('status').filter({ hasText: 'Answered: delete them' })
         ).toBeVisible()
         await expect(deleteButton).toHaveCount(0)
       })

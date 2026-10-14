@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
+import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { askIdOf } from '../../services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
@@ -891,7 +892,7 @@ describe('useAgentConversationStore', () => {
         message.parts.filter((part) => part.type === 'askUser')
       )
 
-    it('restores a pending question as the live turn and ignores its redelivery', () => {
+    it('restores a pending question as the live turn', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.hydrate(askUserTranscript())
@@ -899,8 +900,14 @@ describe('useAgentConversationStore', () => {
       expect(store.activeTurnId).toBe('assistant-message-1')
       expect(store.isStreaming).toBe(true)
       expect(askUserCards(store)).toEqual([
-        expect.objectContaining({ askId: 'turn-1:call-1', allowOther: true })
+        expect.objectContaining({ askId: 'turn-1:call-1' })
       ])
+    })
+
+    it('keeps one card when a restored question is delivered again', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
 
       store.ingest(
         chat({
@@ -908,7 +915,14 @@ describe('useAgentConversationStore', () => {
           data: { ...pendingAskUser, thread_id: 'th' }
         })
       )
+
       expect(askUserCards(store)).toHaveLength(1)
+    })
+
+    it('keeps the turn live after a restored question resolves', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
 
       store.ingest(
         chat({
@@ -922,6 +936,7 @@ describe('useAgentConversationStore', () => {
           }
         })
       )
+
       expect(askUserCards(store)).toEqual([
         expect.objectContaining({
           resolution: { status: 'answered', selected: ['ink'] }
@@ -943,7 +958,7 @@ describe('useAgentConversationStore', () => {
         }
         store.hydrate(askUserTranscript())
         store.ingest(chat({ type: 'agent_ask', data: ask }))
-        store.retireAsk('turn-1:call-2', 'th')
+        store.retireAsk('turn-1:call-2', 'th', { status: 'retired' })
 
         store.ingest(chat({ type: 'agent_ask', data: ask }))
 
@@ -957,13 +972,16 @@ describe('useAgentConversationStore', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.hydrate(askUserTranscript())
-      store.recordAskSelection('turn-1:call-1', { selected: ['oil'] })
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] })
       store.retireAsk('turn-1:call-1', 'th', {
         status: 'answered',
         selected: ['ink']
       })
 
-      store.commitAsk('turn-1:call-1', 'th')
+      store.commitAsk('turn-1:call-1', 'th', {
+        status: 'answered',
+        selected: []
+      })
       store.hydrate(askUserTranscript())
 
       expect(askUserCards(store)).toEqual([
@@ -1081,7 +1099,7 @@ describe('useAgentConversationStore', () => {
       ])[0]
     ]
     store.hydrate(parkedTranscript)
-    store.retireAsk('turn-1:call-1')
+    store.retireAsk('turn-1:call-1', undefined, { status: 'retired' })
 
     store.hydrate(parkedTranscript)
 
@@ -1092,9 +1110,6 @@ describe('useAgentConversationStore', () => {
         )
       )
     ).toBe(false)
-    // The TURN is still adopted, though: answering the card is what lets it
-    // resume, so it is live and must keep routing. Dropping it here would
-    // strand the row mid-flight with every later frame discarded.
     expect(store.activeTurnId).toBe('assistant-message-1')
     store.ingest(delta('assistant-message-1', 'Running it now.'))
     expect(partTexts(store)).toContain('Running it now.')
@@ -1120,17 +1135,16 @@ describe('useAgentConversationStore', () => {
         store.hydrate(parkedApprovalTranscript('th-A'))
         expect(store.activeTurnId).toBe('assistant-message-1')
 
-        if (timing === 'watchdog') store.commitAsk('turn-1:call-1', 'th-A')
+        if (timing === 'watchdog')
+          store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
-        // The user leaves A for B while the answer is still settling.
         store.stashActiveTurn()
         store.setThreadId('th-B')
         store.hydrate([])
 
         if (timing === 'watchdog') vi.advanceTimersByTime(60_000)
-        else store.commitAsk('turn-1:call-1', 'th-A')
+        else store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
-        // Back to A: the stashed turn is handed back to the screen.
         store.setThreadId('th-A')
         store.resumeBackgroundTurn()
 
@@ -1189,7 +1203,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
     expect(hasCard()).toBe(true)
 
-    store.retireAsk('turn-1:call-1')
+    store.retireAsk('turn-1:call-1', undefined, { status: 'retired' })
 
     expect(hasCard()).toBe(false)
     expect(store.entries.map((entry) => entry.role)).toEqual([
@@ -1955,17 +1969,19 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
-  it.for([
+  it.for<{
+    name: string
+    persisted: AssistantMessage['parts'] | undefined
+    kept: string[]
+  }>([
     {
       name: 'a persisted reply',
-      persisted: [
-        { type: 'text' as const, text: 'done', state: 'done' as const }
-      ],
-      kept: ['text']
+      persisted: [{ type: 'text', text: 'done', state: 'done' }],
+      kept: ['askUser', 'text']
     },
-    { name: 'an empty terminal row', persisted: undefined, kept: [] }
+    { name: 'an empty terminal row', persisted: undefined, kept: ['askUser'] }
   ])(
-    'drops pending questions, delete approvals and stand-ins when $name settles the turn',
+    'keeps an answered question but drops pending questions, delete approvals and stand-ins when $name settles the turn',
     ({ persisted, kept }) => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1979,6 +1995,24 @@ describe('useAgentConversationStore', () => {
         max_selections: 1,
         allow_other: false
       }
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-0', kind: 'ask_user' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask_resolved',
+          data: {
+            message_id: 't1',
+            thread_id: 'th',
+            ask_id: 'q-0',
+            status: 'answered',
+            selected: ['oil']
+          }
+        })
+      )
       store.ingest(
         chat({
           type: 'agent_ask',
@@ -2010,6 +2044,7 @@ describe('useAgentConversationStore', () => {
         })
       )
       expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+        'askUser',
         'askUser',
         'askUnavailable',
         'deleteApproval'

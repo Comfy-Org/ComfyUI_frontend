@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { ActivityPart } from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,

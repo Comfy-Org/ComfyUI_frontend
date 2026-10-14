@@ -1,11 +1,14 @@
 import type {
   AgentAdmissionError,
+  AgentAnswerRequest,
+  AgentAskResolvedData,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -40,6 +43,7 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import type { AskUserResolution } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
@@ -2059,13 +2063,12 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   describe('ask_user', () => {
-    const parkedOnQuestion = async () => {
-      const answerAsk = vi.fn(
-        async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered',
-          selected: []
-        })
-      )
+    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+
+    const parkedOnQuestion = async (
+      receipt: AgentAnswerAccepted = { status: 'answered', selected: [] }
+    ) => {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
       const { source, emit } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -2080,10 +2083,22 @@ describe('useAgentSession (v1 composition root)', () => {
       useAgentConversationStore().messages[0].parts.find(
         (part) => part.type === 'askUser'
       )
+    const answerPastBackoff = async (
+      session: ReturnType<typeof useAgentSession>,
+      answer: AgentAnswerRequest
+    ) => {
+      vi.useFakeTimers()
+      try {
+        const answered = session.answerAsk('turn-1:call-1', answer)
+        await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+        await answered
+      } finally {
+        vi.useRealTimers()
+      }
+    }
 
     it('posts the answer, free text included, against the ask it was given for', async () => {
       const { session, answerAsk, emit } = await parkedOnQuestion()
-      expect(card()).toMatchObject({ askId: 'turn-1:call-1', maxSelections: 2 })
 
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
@@ -2096,13 +2111,28 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
 
-      emit(askResolved('msg-1', 'turn-1:call-1', ['sdxl']))
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['sdxl'],
+            other_text: 'a LoRA'
+          }
+        })
+      )
 
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
       expect(card()).toMatchObject({
-        resolution: { status: 'answered', selected: ['sdxl'] }
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
       })
-      expect(card()).not.toHaveProperty('resolution.otherText')
       expect(session.notices.value).toEqual([])
     })
 
@@ -2136,14 +2166,106 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
 
-    it('reads as answered, naming nothing, when the frame names no selection', async () => {
-      const { session, emit } = await parkedOnQuestion()
-      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+    it('shows the answer the 202 committed when no frame follows', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+      emit(done('msg-1'))
 
-      emit(askResolved('msg-1', 'turn-1:call-1', null))
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
 
       expect(card()).toMatchObject({
-        resolution: { status: 'answered', selected: [] }
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('reports the answer the 202 committed when another one won', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      emit(done('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('warns once when the 202 and the frame both name another answer', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: i18n.global.t('agent.runApproval.answerSuperseded')
+        }
+      ])
+    })
+
+    it('shows the answer a 409 reports as already committed', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          selected: ['flux']
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('puts the card back in service when the server rejects the selection', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).not.toHaveProperty('resolution')
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: i18n.global.t('agent.askUser.answerRejected')
+        }
+      ])
+
+      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+      expect(answerAsk).toHaveBeenLastCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['flux']
       })
     })
 
@@ -2153,11 +2275,9 @@ describe('useAgentSession (v1 composition root)', () => {
         new AgentApiError('backend blip', 500, undefined)
       )
 
-      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+      await answerPastBackoff(session, { selected: ['flux'] })
 
-      expect(card()).toMatchObject({
-        resolution: { status: 'unknown', selected: [] }
-      })
+      expect(card()).toMatchObject({ resolution: { status: 'unknown' } })
     })
 
     it('lets the server cancel replace an unconfirmed answer', async () => {
@@ -2165,47 +2285,92 @@ describe('useAgentSession (v1 composition root)', () => {
       answerAsk.mockRejectedValue(
         new AgentApiError('backend blip', 500, undefined)
       )
-      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+      await answerPastBackoff(session, { selected: ['flux'] })
 
       emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
 
-      expect(card()).toMatchObject({
-        resolution: { status: 'closed', selected: [] }
-      })
+      expect(card()).toMatchObject({ resolution: { status: 'closed' } })
     })
 
-    it('shows the committed answer when another answer won', async () => {
-      const { session, emit } = await parkedOnQuestion()
-      await session.answerAsk('turn-1:call-1', {
-        selected: ['sdxl'],
-        other_text: 'a LoRA'
-      })
+    it.for<{
+      name: string
+      committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
+      expected: AskUserResolution
+    }>([
+      {
+        name: 'a different option',
+        committed: { selected: ['flux'] },
+        expected: { status: 'answered', selected: ['flux'] }
+      },
+      {
+        name: 'a superset of it',
+        committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
+        expected: {
+          status: 'answered',
+          selected: ['sdxl', 'flux'],
+          otherText: 'a LoRA'
+        }
+      },
+      {
+        name: 'free text alone',
+        committed: { selected: [], other_text: 'someone else' },
+        expected: {
+          status: 'answered',
+          selected: [],
+          otherText: 'someone else'
+        }
+      },
+      {
+        name: 'the same option with other free text',
+        committed: { selected: ['sdxl'], other_text: 'a VAE' },
+        expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
+      }
+    ])(
+      'shows the committed answer when $name won',
+      async ({ committed, expected }) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: ['sdxl'],
+          other_text: 'a LoRA'
+        })
 
-      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              ...committed
+            }
+          })
+        )
 
-      expect(card()).toMatchObject({
-        resolution: { status: 'answered', selected: ['flux'] }
-      })
-      expect(card()).not.toHaveProperty('resolution.otherText')
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
-      )
-    })
+        const shown = card()
+        assert(shown?.type === 'askUser')
+        expect(shown.resolution).toEqual(expected)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+      }
+    )
 
-    it('shows the card as closed when the answer is refused', async () => {
-      const { session, answerAsk } = await parkedOnQuestion()
-      answerAsk.mockRejectedValueOnce(
-        new AgentApiError('forbidden', 403, undefined)
-      )
+    it.for([400, 403, 404, 501])(
+      'shows the card as no longer open here when the answer is refused with %i',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValueOnce(
+          new AgentApiError('refused', status, undefined)
+        )
 
-      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+        await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
 
-      expect(card()).toMatchObject({
-        resolution: { status: 'retired', selected: [] }
-      })
-      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
-    })
+        expect(card()).toMatchObject({ resolution: { status: 'retired' } })
+        expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      }
+    )
   })
 
   it('collapses a stale approval on 409 without surfacing an error', async () => {

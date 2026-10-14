@@ -1,4 +1,5 @@
 import type {
+  AgentAnswerRequest,
   AgentPostMessageRequest,
   UploadImageResponse,
   WorkflowResponse
@@ -37,7 +38,6 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
-  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,

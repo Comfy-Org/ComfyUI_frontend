@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 
-import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
 import type { AskUserPart } from '../../../services/agent/agentMessageParts'
+import { choosableCount } from '../../../services/agent/agentMessageParts'
 import AskUserAnswer from './AskUserAnswer.vue'
 import AskUserCheckboxOptions from './AskUserCheckboxOptions.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
@@ -25,8 +26,10 @@ const baseId = useId()
 const selected = ref<string[]>([])
 const otherText = ref('')
 
-const exclusive = computed(() => part.maxSelections === 1)
-const single = computed(() => exclusive.value && part.minSelections > 0)
+const replacesSelection = computed(() => part.maxSelections === 1)
+const requiredSingleChoice = computed(
+  () => replacesSelection.value && part.minSelections > 0
+)
 const trimmedOther = computed(() =>
   part.allowOther ? otherText.value.trim() : ''
 )
@@ -42,15 +45,15 @@ const canSubmit = computed(
 )
 
 const hint = computed(() => {
-  if (single.value || part.resolution) return undefined
+  if (requiredSingleChoice.value || part.resolution) return undefined
   const { minSelections: min, maxSelections: max } = part
-  const choosable = part.options.length + (part.allowOther ? 1 : 0)
   if (min > 0 && min === max) return t('agent.askUser.chooseExactly', { min })
-  if (max >= choosable)
+  if (max >= choosableCount(part))
     return min > 0
       ? t('agent.askUser.chooseAtLeast', { min })
       : t('agent.askUser.chooseAny')
   if (min > 0) return t('agent.askUser.chooseBetween', { min, max })
+  if (max === 1) return t('agent.askUser.chooseOneOrNone')
   return t('agent.askUser.chooseUpTo', { max })
 })
 
@@ -63,14 +66,14 @@ const otherDescribedBy = computed(() =>
 
 const singleValue = computed(() => selected.value[0])
 
-function chooseSingle(value: unknown): void {
-  if (typeof value !== 'string') return
+function chooseSingle(value: string | undefined): void {
+  if (value === undefined) return
   selected.value = [value]
   otherText.value = ''
 }
 
 function chooseMany(next: string[]): void {
-  if (!exclusive.value) {
+  if (!replacesSelection.value) {
     selected.value = next
     return
   }
@@ -83,12 +86,14 @@ const otherModel = computed({
   get: () => otherText.value,
   set: (value: string | number | undefined) => {
     otherText.value = String(value ?? '')
-    if (exclusive.value && otherText.value.trim()) selected.value = []
+    if (replacesSelection.value && otherText.value.trim()) selected.value = []
   }
 })
 
 const otherDisabled = computed(
-  () => answering || (!exclusive.value && atMax.value && !trimmedOther.value)
+  () =>
+    answering ||
+    (!replacesSelection.value && atMax.value && !trimmedOther.value)
 )
 
 const IME_PROCESS_KEY_CODE = 229
@@ -113,10 +118,9 @@ function onOtherEnter(event: KeyboardEvent): void {
 
 function submit(): void {
   if (!canSubmit.value) return
-  const order = new Map(part.options.map(({ id }, index) => [id, index]))
-  const chosen = [...selected.value].sort(
-    (a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0)
-  )
+  const chosen = part.options
+    .map(({ id }) => id)
+    .filter((id) => selected.value.includes(id))
   emit(
     'answer',
     part.askId,
@@ -153,7 +157,7 @@ function submit(): void {
 
     <template v-else>
       <AskUserRadioOptions
-        v-if="single"
+        v-if="requiredSingleChoice"
         :model-value="singleValue"
         :options="part.options"
         :id-prefix="baseId"
@@ -170,7 +174,7 @@ function submit(): void {
         :labelled-by="promptId"
         :described-by="hint ? hintId : undefined"
         :disabled="answering"
-        :full="!exclusive && atMax"
+        :full="!replacesSelection && atMax"
         @update:model-value="chooseMany"
       />
 

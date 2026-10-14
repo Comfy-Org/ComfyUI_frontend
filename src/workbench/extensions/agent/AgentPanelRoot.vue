@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentAnswerRequest,
+  GetFeaturesResponse
+} from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -94,7 +97,6 @@ import {
 } from './composables/agent/useCanvasSelection'
 import type {
   AgentActiveTabData,
-  AgentAnswerRequest,
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
@@ -1296,8 +1298,7 @@ async function onAnswerAsk(
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  const decision =
-    shownAt === undefined ? undefined : runApprovalDecision(answer)
+  const decision = runApprovalDecision(answer)
   if ((await answerAsk(askId, answer)) && decision)
     trackApprovalResolved(askId, decision, decidedAt, shownAt)
 }

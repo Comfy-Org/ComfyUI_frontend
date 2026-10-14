@@ -24,7 +24,6 @@ export type AgentMessageGroup =
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
 
-/** Groups a message's parts into the blocks the message renders. */
 export function groupMessageParts(
   parts: readonly MessagePart[]
 ): AgentMessageGroup[] {

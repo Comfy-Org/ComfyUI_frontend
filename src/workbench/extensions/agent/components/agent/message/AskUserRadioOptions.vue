@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { AgentAskOption } from '@comfyorg/ingest-types'
 import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
 import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 
-import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import {
   askUserOptionDescribedBy,

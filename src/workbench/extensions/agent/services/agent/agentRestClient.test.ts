@@ -9,7 +9,6 @@ import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
-import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -401,17 +400,12 @@ describe('postMessage wire body', () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', { content: 'just text' })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as Record<
-      string,
-      unknown
-    >
-    expect(Object.keys(parsed)).toEqual(['content', 'ask_kinds'])
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'just text',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
+    })
   })
 
-  // The id this send already reports on app:agent_message_sent has to reach the
-  // server, which echoes it onto agent_turn_started. Without it on the wire the
-  // message -> turn step of the activation funnel is countable but not
-  // attributable, and nothing else fails loudly - so assert the wire key.
   it('sends client_message_id so the turn can be joined back to this message', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -421,7 +415,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: [...RENDERED_ASK_KINDS],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -444,7 +438,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: [...RENDERED_ASK_KINDS],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })

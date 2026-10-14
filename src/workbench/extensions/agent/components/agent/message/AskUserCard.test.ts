@@ -1,10 +1,13 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 
-import type { AskUserPart } from '../../../services/agent/agentMessageParts'
+import type {
+  AskUserPart,
+  AskUserResolution
+} from '../../../services/agent/agentMessageParts'
 
 import AskUserCard from './AskUserCard.vue'
 
@@ -76,7 +79,6 @@ describe('AskUserCard', () => {
   it('caps multi-choice at max and sends ids in option order', async () => {
     const { user, submit, emitted } = renderCard({ maxSelections: 2 })
 
-    expect(screen.getByText('Choose 1 to 2')).toBeInTheDocument()
     expect(
       screen.getByRole('group', { name: 'Which model should I use?' })
     ).toHaveAccessibleDescription('Choose 1 to 2')
@@ -104,20 +106,17 @@ describe('AskUserCard', () => {
   })
 
   it.for([
-    { min: 2, max: 2, hint: 'Choose 2' },
-    { min: 2, max: 3, hint: 'Choose 2 to 3', allowOther: true },
-    { min: 1, max: 2, hint: 'Choose 1 to 2' },
-    { min: 1, max: 3, hint: 'Choose at least 1' },
-    { min: 0, max: 3, hint: 'Choose all that apply' },
-    { min: 0, max: 2, hint: 'Choose up to 2' }
+    { min: 2, max: 2, allowOther: false, hint: 'Choose 2' },
+    { min: 2, max: 3, allowOther: true, hint: 'Choose 2 to 3' },
+    { min: 1, max: 2, allowOther: false, hint: 'Choose 1 to 2' },
+    { min: 1, max: 3, allowOther: false, hint: 'Choose at least 1' },
+    { min: 0, max: 3, allowOther: false, hint: 'Choose all that apply' },
+    { min: 0, max: 2, allowOther: false, hint: 'Choose up to 2' },
+    { min: 0, max: 1, allowOther: false, hint: 'Choose one, or none' }
   ])(
-    'hints "$hint" for min $min / max $max',
-    ({ min, max, hint, allowOther }) => {
-      renderCard({
-        minSelections: min,
-        maxSelections: max,
-        allowOther: allowOther ?? false
-      })
+    'hints "$hint" for min $min / max $max / Other $allowOther',
+    ({ min, max, allowOther, hint }) => {
+      renderCard({ minSelections: min, maxSelections: max, allowOther })
       expect(screen.getByText(hint)).toBeInTheDocument()
     }
   )
@@ -226,7 +225,7 @@ describe('AskUserCard', () => {
     )
     expect(emitted().answer).toBeUndefined()
 
-    await new Promise((resolve) => setTimeout(resolve))
+    await vi.advanceTimersByTimeAsync(0)
     await user.keyboard('{Enter}')
     expect(emitted().answer).toEqual([
       ['ask-1', { selected: [], other_text: '日本' }]
@@ -316,37 +315,34 @@ describe('AskUserCard', () => {
       expect(screen.queryByText(/^Choose/)).not.toBeInTheDocument()
     })
 
-    it('says the question closed when it ended without an answer', () => {
-      renderCard({ resolution: { status: 'closed', selected: [] } })
+    it.for<{ resolution: AskUserResolution; copy: string }>([
+      {
+        resolution: { status: 'closed' },
+        copy: 'This question was closed without an answer.'
+      },
+      {
+        resolution: { status: 'retired' },
+        copy: 'This question is no longer open here.'
+      },
+      {
+        resolution: { status: 'unknown' },
+        copy: "We couldn't confirm your answer reached the agent."
+      }
+    ])(
+      'says "$copy" for a $resolution.status question',
+      ({ resolution, copy }) => {
+        renderCard({ resolution })
 
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'This question was closed without an answer.'
-      )
-      expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-    })
+        expect(screen.getByRole('status')).toHaveTextContent(copy)
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+      }
+    )
 
     it('reads as answered, naming nothing, when the server named no answer', () => {
       renderCard({ resolution: { status: 'answered', selected: [] } })
 
       expect(screen.getByRole('status')).toHaveTextContent('Answered')
       expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
-    })
-
-    it('says the question is no longer open here after a local retirement', () => {
-      renderCard({ resolution: { status: 'retired', selected: [] } })
-
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'This question is no longer open here.'
-      )
-    })
-
-    it('says the answer could not be confirmed when the outcome is unknown', () => {
-      renderCard({ resolution: { status: 'unknown', selected: [] } })
-
-      expect(screen.getByRole('status')).toHaveTextContent(
-        "We couldn't confirm your answer was received."
-      )
-      expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     })
 
     it('turns read-only in place when the resolution arrives', async () => {

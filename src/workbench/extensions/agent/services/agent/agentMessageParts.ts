@@ -1,4 +1,7 @@
-import type { AgentAskResolvedData } from '@comfyorg/ingest-types'
+import type {
+  AgentAskOption,
+  AgentAskResolvedData
+} from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentRunApprovalContext
@@ -6,7 +9,6 @@ import {
 import { isEqual, uniqBy } from 'es-toolkit'
 
 import type {
-  AgentAskOption,
   AgentMessages,
   RenderedAskKind,
   TurnId
@@ -52,7 +54,6 @@ export interface NoticePart {
   retryAfterSeconds?: number
 }
 
-/** Stands in for an ask the panel cannot render. */
 export interface AskUnavailablePart {
   type: 'askUnavailable'
   askId: string
@@ -72,59 +73,46 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
-/** How an ask was closed. */
-export interface AskUserResolution {
-  status: 'answered' | 'closed' | 'unknown' | 'retired'
-  selected: string[]
-  otherText?: string
+export type AskUserResolution =
+  | { status: 'answered'; selected: string[]; otherText?: string }
+  | { status: 'closed' | 'unknown' | 'retired' }
+
+const UNANSWERED_SCORE: Record<
+  Exclude<AskUserResolution['status'], 'answered'>,
+  number
+> = { retired: 0, unknown: 1, closed: 2 }
+
+function resolutionScore(resolution: AskUserResolution): number {
+  if (resolution.status !== 'answered')
+    return UNANSWERED_SCORE[resolution.status]
+  return resolution.selected.length > 0 || resolution.otherText !== undefined
+    ? 3
+    : 2
 }
 
-const RESOLUTION_RANK: Record<AskUserResolution['status'], number> = {
-  retired: 0,
-  unknown: 1,
-  closed: 2,
-  answered: 2
-}
-
-function isServerDecided({ status }: AskUserResolution): boolean {
-  return status === 'answered' || status === 'closed'
-}
-
-function namesAnswer({ selected, otherText }: AskUserResolution): boolean {
-  return selected.length > 0 || otherText !== undefined
-}
-
-function supersedes(
-  next: AskUserResolution,
-  shown: AskUserResolution
-): boolean {
-  const rank = RESOLUTION_RANK[next.status] - RESOLUTION_RANK[shown.status]
-  if (rank !== 0) return rank > 0
-  return isServerDecided(next) && !namesAnswer(shown) && namesAnswer(next)
-}
-
-/** The resolution an ask keeps when `next` arrives after `shown`. */
 export function settleResolution(
   shown: AskUserResolution | undefined,
-  next: AskUserResolution = { status: 'retired', selected: [] }
+  next: AskUserResolution
 ): AskUserResolution {
-  return shown === undefined || supersedes(next, shown) ? next : shown
+  return shown === undefined || resolutionScore(next) > resolutionScore(shown)
+    ? next
+    : shown
 }
 
-/** The resolution an `agent_ask_resolved` frame reports. */
 export function toAskResolution({
   status,
   selected,
   other_text: otherText
-}: AgentAskResolvedData): AskUserResolution {
-  if (status !== 'answered') return { status: 'closed', selected: [] }
-  if (selected === null) return { status: 'answered', selected: [] }
+}: Partial<
+  Pick<AgentAskResolvedData, 'status' | 'selected' | 'other_text'>
+>): AskUserResolution {
+  if (status === undefined) return { status: 'retired' }
+  if (status !== 'answered') return { status: 'closed' }
   return otherText
-    ? { status: 'answered', selected, otherText }
-    : { status: 'answered', selected }
+    ? { status: 'answered', selected: selected ?? [], otherText }
+    : { status: 'answered', selected: selected ?? [] }
 }
 
-/** The generic `ask_user` question. */
 export interface AskUserPart {
   type: 'askUser'
   askId: string
@@ -153,7 +141,7 @@ export interface DeleteApprovalPart {
 
 export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
 
-export function isAskPart(part: MessagePart): part is AskPart {
+function isAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
     part.type === 'askUser' ||
@@ -161,7 +149,6 @@ export function isAskPart(part: MessagePart): part is AskPart {
   )
 }
 
-/** An ask card still waiting on the user. */
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
@@ -169,26 +156,20 @@ export function isPendingAskPart(part: MessagePart): part is AskPart {
   )
 }
 
-/** A pending ask card or the notice standing in for one. */
 export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
 }
 
-/** The ask a part belongs to: its card or its stand-in notice. */
 export function askIdOf(part: MessagePart): string | undefined {
-  return isAskPart(part) || part.type === 'askUnavailable'
-    ? part.askId
-    : undefined
+  return 'askId' in part ? part.askId : undefined
 }
 
-/** The parts with ask `askId` retired; returns `parts` when nothing changed. */
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
-  resolution?: AskUserResolution
+  resolution: AskUserResolution
 ): MessagePart[] {
-  if (!parts.some((part) => askIdOf(part) === askId)) return parts
-  return parts.flatMap((part): MessagePart[] => {
+  const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
     if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
@@ -196,24 +177,17 @@ export function retireAskParts(
       settled === part.resolution ? part : { ...part, resolution: settled }
     ]
   })
+  return next.length === parts.length &&
+    next.every((part, index) => part === parts[index])
+    ? parts
+    : next
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
-type AskInput = Pick<
-  PendingAsk,
-  | 'kind'
-  | 'ask_id'
-  | 'context'
-  | 'prompt'
-  | 'options'
-  | 'min_selections'
-  | 'max_selections'
-  | 'allow_other'
->
+type AskInput = Omit<PendingAsk, 'message_id'>
 
-/** Bounds on what an ask frame may render. */
-export const ASK_LIMITS = {
+const ASK_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
@@ -235,9 +209,16 @@ function toAskUserOptions(options: AgentAskOption[]): AgentAskOption[] {
     }))
 }
 
+export function choosableCount({
+  options,
+  allowOther
+}: Pick<AskUserPart, 'options' | 'allowOther'>): number {
+  return options.length + (allowOther ? 1 : 0)
+}
+
 function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   const options = toAskUserOptions(ask.options)
-  const choosable = options.length + (ask.allow_other ? 1 : 0)
+  const choosable = choosableCount({ options, allowOther: ask.allow_other })
   if (choosable === 0) return undefined
   const maxSelections = Math.min(Math.max(1, ask.max_selections), choosable)
   return {
@@ -300,18 +281,16 @@ const ASK_PART_BUILDERS: Record<
   delete_approval: toDeleteApprovalPart
 }
 
-export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
+function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
   return RENDERED_ASK_KINDS.some((rendered) => rendered === kind)
 }
 
-/** The card for an ask, by its explicit kind. */
 export function toAskPart(ask: AskInput): AskPart | undefined {
   return isRenderedAskKind(ask.kind)
     ? ASK_PART_BUILDERS[ask.kind](ask)
     : undefined
 }
 
-/** The ask's card, or a stand-in notice when it cannot be rendered. */
 export function toAskOrNoticePart(ask: AskInput): AskPart | AskUnavailablePart {
   return toAskPart(ask) ?? { type: 'askUnavailable', askId: ask.ask_id }
 }

@@ -39,7 +39,7 @@ const notice = computed<NoticePart>(() =>
         class="text-xs text-muted-foreground"
       >
         {{
-          $t('agent.retryAfterSeconds', {
+          t('agent.retryAfterSeconds', {
             seconds: notice.retryAfterSeconds
           })
         }}
