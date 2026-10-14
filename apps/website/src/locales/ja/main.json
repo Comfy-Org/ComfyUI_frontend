@@ -2660,15 +2660,6 @@
       "step": "ステップ"
     }
   },
-  "modelDiscovery": {
-    "browse": "すべてのモデルを見る",
-    "browseWorkflows": "すべてのワークフローを見る",
-    "heading": "最新モデルを、\nすぐに実行",
-    "label": "ハブ",
-    "rowLabel": "モデルプロバイダー",
-    "subtitle": "ブラウザ上ですぐに利用できます。インストールも設定も不要です。",
-    "workflowRowLabel": "ワークフロー"
-  },
   "modelLaunch": {
     "copyPrompt": "プロンプトをコピー",
     "tagFree": "無料",

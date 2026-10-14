@@ -2431,14 +2431,23 @@
       "step": "步骤"
     }
   },
-  "modelDiscovery": {
-    "browse": "浏览全部模型",
-    "workflowRowLabel": "工作流",
-    "browseWorkflows": "浏览全部工作流",
-    "heading": "最新模型，\n即刻运行",
-    "label": "HUB",
-    "rowLabel": "模型提供商",
-    "subtitle": "直接在浏览器中运行。无需安装，无需配置。"
+  "homeHub": {
+    "eyebrow": "Comfy Hub",
+    "heading": "创作所需，\n一应俱全",
+    "subtitle": "合作伙伴模型、现成工作流和一键应用，直接在浏览器中使用。",
+    "explore": "探索 Hub",
+    "sections": "Hub 分区",
+    "apps": "应用",
+    "workflows": "工作流",
+    "models": "合作伙伴模型",
+    "pick": "挑选",
+    "remix": "改编",
+    "run": "运行",
+    "pickRemixRunHeading": "在 Comfy Hub 中挑选、改编和运行",
+    "pickRemixRunSubtitle": "挑选应用、改编工作流或调用模型。尽在 Hub，直接在浏览器中完成。",
+    "showcase": "Hub 中的工作流和模型",
+    "workflowBy": "工作流 · {maker}",
+    "modelBy": "模型 · {maker}"
   },
   "modelLaunch": {
     "copyPrompt": "复制提示词",
@@ -4857,7 +4866,8 @@
     },
     "preview": {
       "label": "预览控制",
-      "community": "来自社区"
+      "community": "来自社区",
+      "homePickRemixRun": "首页：挑选 · 改编 · 运行横幅"
     }
   },
   "cinematic": {

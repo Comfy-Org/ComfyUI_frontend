@@ -6,7 +6,11 @@ import { useWorkshopFlag } from '@/scripts/posthog'
 
 /** The Hub sections a preview build can switch, each named by its PostHog flag. */
 export const PREVIEW_SWITCHES = [
-  { id: 'hub-home-community', labelKey: 'workshop.preview.community' }
+  { id: 'hub-home-community', labelKey: 'workshop.preview.community' },
+  {
+    id: 'home-hub-pick-remix-run',
+    labelKey: 'workshop.preview.homePickRemixRun'
+  }
 ] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
 
 export type PreviewSwitchId = (typeof PREVIEW_SWITCHES)[number]['id']
