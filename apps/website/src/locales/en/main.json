@@ -74,14 +74,12 @@
       "emptyBody": "Nothing is waiting for review. Changes and workflow submissions land here.",
       "noMatches": "No changes match. Try another filter or search.",
       "allTypes": "All types",
-      "fresh": {
-        "title": "New content",
-        "help": "Models, workflows and apps that aren't on the Hub yet."
+      "tab": {
+        "ALL": "All {count}",
+        "NEW": "New content {count}",
+        "UPDATES": "Updates {count}"
       },
-      "updates": {
-        "title": "Updates",
-        "help": "Edits to what's already on the Hub. Open one to see what changes, or to undo it."
-      }
+      "tabLabel": "Show changes by kind"
     },
     "review": {
       "position": "{index} of {total}",
@@ -399,7 +397,6 @@
       "confirmBody": "It replaces what the draft has for this page now. Later saves stay in the history, so you can come back to them."
     },
     "bulk": {
-      "selected": "{count} selected",
       "selectAll": "Select all {count} shown",
       "publish": "Publish | Publish {count} change | Publish {count} changes"
     },

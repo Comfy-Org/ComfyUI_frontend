@@ -74,14 +74,12 @@
       "emptyBody": "没有待审核内容。更改和工作流提交会出现在这里。",
       "noMatches": "没有匹配的更改，请尝试其他筛选或搜索。",
       "allTypes": "全部类型",
-      "fresh": {
-        "title": "新内容",
-        "help": "尚未上线 Hub 的模型、工作流和应用。"
+      "tab": {
+        "ALL": "全部 {count}",
+        "NEW": "新内容 {count}",
+        "UPDATES": "更新 {count}"
       },
-      "updates": {
-        "title": "更新",
-        "help": "对 Hub 上已有内容的修改。打开一项可查看变化或撤销。"
-      }
+      "tabLabel": "按更改类型显示"
     },
     "review": {
       "position": "第 {index} 项，共 {total} 项",
@@ -399,7 +397,6 @@
       "confirmBody": "它会替换草稿中此页面的当前内容。之后的保存仍保留在历史中，可以随时恢复。"
     },
     "bulk": {
-      "selected": "已选 {count} 项",
       "selectAll": "选择显示的全部 {count} 项",
       "publish": "发布 | 发布 {count} 项更改 | 发布 {count} 项更改"
     },

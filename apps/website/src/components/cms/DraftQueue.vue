@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Eye } from '@lucide/vue'
+import { Eye, Upload } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import DraftBulkBar from '@/components/cms/DraftBulkBar.vue'
-import DraftLists from '@/components/cms/DraftLists.vue'
+import DraftTable from '@/components/cms/DraftTable.vue'
 import FinalReviewDialog from '@/components/cms/FinalReviewDialog.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminTabs from '@/components/cms/ui/AdminTabs.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -46,24 +46,33 @@ const query = ref('')
 const openId = ref<string>()
 const publishing = ref(false)
 
-const kinds = computed(() => kindCounts(items.map((item) => item.kind)))
-const shown = computed(() =>
-  items.filter((item) =>
-    matchesListing(filter.value, query.value, item.kind, [
-      item.title,
-      item.source === 'submission' ? item.author : item.provider,
-      item.source === 'submission' ? item.shareId : item.slug
-    ])
+type DraftTab = 'ALL' | 'NEW' | 'UPDATES'
+const tab = ref<DraftTab>('ALL')
+const inTab = (value: DraftTab) =>
+  items.filter(
+    (item) => value === 'ALL' || (value === 'NEW') === (item.change === 'new')
   )
+const tabs = computed(() =>
+  (['ALL', 'NEW', 'UPDATES'] as const).map((value) => ({
+    value,
+    label: t(`cmsAdmin.draft.tab.${value}`, { count: inTab(value).length })
+  }))
 )
-const shownNew = computed(() =>
-  shown.value.filter((item) => item.change === 'new')
+const kinds = computed(() =>
+  kindCounts(inTab(tab.value).map((item) => item.kind))
 )
-const shownUpdates = computed(() =>
-  shown.value.filter((item) => item.change !== 'new')
+// New content first, so a brand-new page is never buried under edits.
+const visible = computed(() =>
+  inTab(tab.value)
+    .filter((item) =>
+      matchesListing(filter.value, query.value, item.kind, [
+        item.title,
+        item.source === 'submission' ? item.author : item.provider,
+        item.source === 'submission' ? item.shareId : item.slug
+      ])
+    )
+    .toSorted((a, b) => Number(b.change === 'new') - Number(a.change === 'new'))
 )
-// The sheet steps through rows in the order the page shows them.
-const visible = computed(() => [...shownNew.value, ...shownUpdates.value])
 const openIndex = computed(() =>
   visible.value.findIndex((item) => item.id === openId.value)
 )
@@ -101,9 +110,6 @@ function selectShown(checked: boolean) {
     ? [...new Set([...selected.value, ...ids])]
     : selected.value.filter((id) => !ids.includes(id))
 }
-const shownPicked = computed(
-  () => visible.value.filter((item) => selected.value.includes(item.id)).length
-)
 </script>
 
 <template>
@@ -121,6 +127,17 @@ const shownPicked = computed(
           :icon="Eye"
         >
           {{ t('cmsAdmin.previewDraft') }}
+        </AdminButton>
+        <AdminButton
+          v-if="canApply && items.length > 0"
+          variant="primary"
+          :icon="Upload"
+          :disabled="picked.length === 0"
+          @click="publishing = true"
+        >
+          {{
+            t('cmsAdmin.bulk.publish', { count: picked.length }, picked.length)
+          }}
         </AdminButton>
       </template>
     </PageHeader>
@@ -149,24 +166,21 @@ const shownPicked = computed(
         :counts="kinds"
         :search-label="t('cmsAdmin.draft.search')"
         :locale
-      />
-      <DraftBulkBar
-        v-if="canApply && visible.length > 0"
-        :count="picked.length"
-        :shown="visible.length"
-        :shown-picked="shownPicked"
-        :locale
-        @all="selectShown"
-        @publish="publishing = true"
-      />
-      <DraftLists
-        :fresh="shownNew"
-        :updates="shownUpdates"
+      >
+        <AdminTabs
+          v-model="tab"
+          :options="tabs"
+          :label="t('cmsAdmin.draft.tabLabel')"
+        />
+      </ListingFilters>
+      <DraftTable
+        :items="visible"
         :open-id="openId"
         :selectable="canApply"
         :selected
         :locale
         @select="toggle"
+        @all="selectShown"
         @open="openId = $event"
       />
     </template>
