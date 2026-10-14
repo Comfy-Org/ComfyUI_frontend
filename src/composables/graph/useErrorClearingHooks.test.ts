@@ -24,6 +24,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -33,6 +34,11 @@ import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionEr
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+
+vi.mock(import('@/platform/missingModel/releaseModelOptions'), () => ({
+  cloudReleaseModelOptions: vi.fn(),
+  releaseModelOptions: vi.fn()
+}))
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
@@ -1483,6 +1489,31 @@ describe('realtime scan verifies pending cloud candidates', () => {
     })
   })
 
+  it('hands the scan the lookup of the models the boot Release has', async () => {
+    const releaseModelOptions = vi.fn(async () => ['release.safetensors'])
+    vi.mocked(cloudReleaseModelOptions).mockReturnValue(releaseModelOptions)
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.mode = LGraphEventMode.BYPASS
+    graph.add(node)
+    stubAppRootGraph(graph)
+    const scanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+    setNodeMode(graph, node, LGraphEventMode.ALWAYS)
+
+    expect(scanSpy).toHaveBeenCalledWith(
+      graph,
+      node,
+      expect.any(Function),
+      expect.any(Function),
+      releaseModelOptions
+    )
+  })
+
   it('does not add candidates that remain confirmed-present after verification', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -1795,19 +1826,22 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       rootGraph,
       outerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       leafNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       innerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, outerSubgraphNode)
     expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
