@@ -218,7 +218,7 @@ const userName = computed(
 const rest = createAgentRestClient()
 
 const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
+  endpoint: useAgentPanelStore().agentEventsUrl,
   getAuthParams: agentSocketAuthParams
 })
 

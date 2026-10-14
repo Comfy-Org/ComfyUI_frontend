@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import {
   authenticatedRemoteConfigState,
@@ -555,12 +556,18 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
+  // Off cloud ComfyUI's agent flag enables the panel, so a dev server forces
+  // it on only on cloud or the standalone harness.
+  const devForcedOn =
+    import.meta.env.MODE === 'development' &&
+    (isCloud || import.meta.env.VITE_AGENT_STANDALONE === 'true')
 
   watch(
     () =>
       [
-        import.meta.env.MODE === 'development' ||
-          flags.agentInAppExperienceEnabled,
+        devForcedOn ||
+          flags.agentInAppExperienceEnabled ||
+          agentPanelStore.comfyAgent?.state === 'ready',
         remoteConfigRevision.value
       ] as const,
     ([enabled]) => {

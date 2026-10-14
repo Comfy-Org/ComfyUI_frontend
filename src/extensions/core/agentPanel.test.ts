@@ -233,6 +233,7 @@ describe('AgentPanel extension flag gate', () => {
     workflowStore = useWorkflowStore()
     agentStore.close.mockClear()
     agentStore.enabled = false
+    agentStore.comfyAgent = undefined
     agentStore.isOpen = true
     agentFlagEnabled.value = false
     releaseFirstRunScreen()
@@ -1584,12 +1585,36 @@ describe('AgentPanel extension flag gate', () => {
 
   it('forces the panel on in development even while the flag is false', async () => {
     vi.stubEnv('MODE', 'development')
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
     agentFlagEnabled.value = false
 
     await loadEntryAndSetup()
 
     expect(agentStore.enabled).toBe(true)
     expect(consentStore.load).toHaveBeenCalledOnce()
+  })
+
+  it("leaves a development build off cloud to ComfyUI's agent", async () => {
+    vi.stubEnv('MODE', 'development')
+
+    await loadEntryAndSetup()
+
+    expect(agentStore.enabled).toBe(false)
+  })
+
+  it('enables the panel once ComfyUI reports its agent ready', async () => {
+    agentStore.comfyAgent = { state: 'starting', url: null, reason: null }
+
+    await loadEntryAndSetup()
+    expect(agentStore.enabled).toBe(false)
+
+    agentStore.comfyAgent = { state: 'ready', url: '/api/agent', reason: null }
+    await nextTick()
+    expect(agentStore.enabled).toBe(true)
+
+    agentStore.comfyAgent = { state: 'failed', url: null, reason: 'unknown' }
+    await nextTick()
+    expect(agentStore.enabled).toBe(false)
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {

@@ -38,6 +38,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
+  AgentStatusWsMessage,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   AssetSeedCompletedWsMessage,
@@ -268,6 +269,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
@@ -1116,6 +1118,12 @@ export class ComfyApi extends EventTarget {
               this.serverFeatureFlags.value = msg.data
               this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
+              break
+            case 'agent_status':
+              this.serverFeatureFlags.value = {
+                ...this.serverFeatureFlags.value,
+                agent: msg.data
+              }
               break
             default:
               if (this._registered.has(msg.type)) {
