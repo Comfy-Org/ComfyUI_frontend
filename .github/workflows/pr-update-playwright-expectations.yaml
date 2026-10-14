@@ -10,7 +10,12 @@ on:
 # GitHub keeps one pending run per concurrency group, so only update requests
 # share the PR's group; other comment events would displace a queued request.
 concurrency:
-  group: ${{ github.workflow }}-${{ (github.event.label.name == 'New Browser Test Expectations' || startsWith(github.event.comment.body, '/update-playwright') || github.event.comment.user.login == 'github-actions[bot]') && (github.event.issue.number || github.event.number) || github.run_id }}
+  group: >-
+    ${{ github.workflow }}-${{ (
+      github.event.label.name == 'New Browser Test Expectations' ||
+      (github.event.action == 'created' && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) && startsWith(github.event.comment.body, '/update-playwright')) ||
+      (github.event.comment.user.login == 'github-actions[bot]' && contains(github.event.comment.body, '- [x] Update Playwright expectations') && !contains(github.event.changes.body.from, '- [x] Update Playwright expectations'))
+    ) && (github.event.issue.number || github.event.number) || github.run_id }}
   cancel-in-progress: false
 
 jobs:
