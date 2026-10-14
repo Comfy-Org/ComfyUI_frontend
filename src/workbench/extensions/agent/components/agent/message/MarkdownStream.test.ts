@@ -127,6 +127,15 @@ describe('MarkdownStream', () => {
     expect(screen.getByText(/hi/)).toBeInTheDocument()
   })
 
+  it('keeps <kbd> keycaps so keyboard shortcuts can be styled', () => {
+    render(MarkdownStream, {
+      props: { text: 'Press <kbd>Ctrl</kbd>+<kbd>B</kbd> to bypass.' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('Ctrl', { selector: 'kbd' })).toBeInTheDocument()
+    expect(screen.getByText('B', { selector: 'kbd' })).toBeInTheDocument()
+  })
+
   it('opens links in a new tab with rel=noopener', () => {
     render(MarkdownStream, { props: { text: '[docs](https://example.com)' } })
     const link = screen.getByRole('link', { name: 'docs' })
