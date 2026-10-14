@@ -85,15 +85,9 @@ function hasUnmodifiableUrlMetadata(event: RumErrorEvent): boolean {
 function tagRumErrorOrigin(event: RumErrorEvent): void {
   try {
     const context = event.context ?? {}
-    const failureSignals = getExtensionFailureSignals(context)
-    const errorSignals = isExtensionLoadReport(context)
-      ? [...failureSignals, event.error.stack]
-      : [event.error.stack]
-    const origins = errorSignals.map(classifyRumErrorOrigin)
-    const errorOrigin =
-      origins.find((origin) => origin.origin === 'extension') ??
-      origins.find((origin) => origin.origin === 'first_party') ??
-      classifyRumErrorOrigin(event.error.stack)
+    const errorOrigin = isExtensionLoadReport(context)
+      ? classifyExtensionLoadReport(context, event.error.stack)
+      : classifyRumErrorOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
       typeof existingErrorContext === 'object' && existingErrorContext !== null
@@ -142,15 +136,15 @@ function redactRumViewPerformance(event: RumViewEvent): void {
   }
 }
 
-function getExtensionFailureSignals(
+function getExtensionFailureOrigins(
   context: Record<string, unknown>
-): string[] {
+): RumErrorOrigin[] {
   const failures = context.failures
   if (!Array.isArray(failures)) return []
 
   return failures.flatMap((failure) => {
     if (typeof failure !== 'object' || failure === null) return []
-    return ['ext', 'stack'].flatMap((key) => {
+    const signals = ['ext', 'stack'].flatMap((key) => {
       try {
         const value = Reflect.get(failure, key)
         return typeof value === 'string' ? [value] : []
@@ -158,7 +152,43 @@ function getExtensionFailureSignals(
         return []
       }
     })
+    const origins = signals.map(classifyRumErrorOrigin)
+    return [
+      origins.find((origin) => origin.origin === 'extension') ??
+        origins.find((origin) => origin.origin === 'first_party') ?? {
+          origin: 'third_party'
+        }
+    ]
   })
+}
+
+function classifyExtensionLoadReport(
+  context: Record<string, unknown>,
+  stack?: string
+): RumErrorOrigin {
+  const origins = getExtensionFailureOrigins(context)
+  const extensionNames = new Set(
+    origins.flatMap((origin) =>
+      origin.origin === 'extension' ? [origin.extension] : []
+    )
+  )
+  const extensionOrigin = origins.find(
+    (origin): origin is Extract<RumErrorOrigin, { origin: 'extension' }> =>
+      origin.origin === 'extension'
+  )
+
+  if (
+    extensionOrigin &&
+    origins.length > 0 &&
+    origins.every((origin) => origin.origin === 'extension') &&
+    extensionNames.size === 1
+  ) {
+    return extensionOrigin
+  }
+
+  return origins.length > 0
+    ? { origin: 'first_party' }
+    : classifyRumErrorOrigin(stack)
 }
 
 function isExtensionLoadReport(context: Record<string, unknown>): boolean {

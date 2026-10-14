@@ -3,8 +3,6 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { toError } from '@/utils/errorUtil'
-
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
   '/extensions/cloud/sentry.js'
@@ -27,25 +25,43 @@ export interface ExtensionLoadFailure {
   error: unknown
 }
 
-function safeToError(value: unknown): Error {
+interface ExtensionFailureDiagnostic {
+  ext: string
+  message: string
+  stack?: string
+}
+
+function readStringProperty(
+  value: object,
+  property: string
+): string | undefined {
   try {
-    return toError(value)
+    const result = Reflect.get(value, property)
+    return typeof result === 'string' ? result : undefined
   } catch {
-    return new Error('Unknown extension load failure')
+    return undefined
   }
 }
 
-function readErrorDetail(
-  value: unknown,
-  key: 'message' | 'stack'
-): string | undefined {
+function readFailureMessage(error: unknown): string {
+  if (typeof error === 'string') return error
+  if (typeof error === 'object' && error !== null) {
+    const message = readStringProperty(error, 'message')
+    if (message) return message
+    if (error instanceof Error) return 'Unknown extension load failure'
+  }
+
   try {
-    const detail = value instanceof Error ? value[key] : undefined
-    return typeof detail === 'string'
-      ? detail.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
-      : undefined
+    const serialized = JSON.stringify(error)
+    if (typeof serialized === 'string') return serialized
   } catch {
-    return undefined
+    return 'Unknown extension load failure'
+  }
+
+  try {
+    return String(error)
+  } catch {
+    return 'Unknown extension load failure'
   }
 }
 
@@ -53,6 +69,23 @@ function truncateExtensionPath(ext: string): string {
   if (ext.length <= MAX_EXTENSION_PATH_LENGTH) return ext
   const limit = ext.lastIndexOf('/', MAX_EXTENSION_PATH_LENGTH)
   return ext.slice(0, Math.max(limit, MAX_EXTENSION_PATH_LENGTH))
+}
+
+function toFailureDiagnostic({
+  ext,
+  error
+}: ExtensionLoadFailure): ExtensionFailureDiagnostic {
+  const stack =
+    error instanceof Error ? readStringProperty(error, 'stack') : undefined
+
+  return {
+    ext: truncateExtensionPath(ext),
+    message: readFailureMessage(error).slice(
+      0,
+      MAX_EXTENSION_DIAGNOSTIC_LENGTH
+    ),
+    stack: stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+  }
 }
 
 /**
@@ -88,30 +121,25 @@ export function reportExtensionLoadFailures(
   if (failures.length === 0) return
 
   const noun = failures.length === 1 ? 'extension' : 'extensions'
-  const errors = failures.map(({ error }) => safeToError(error))
-  const reportedFailures = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
-
-  reportError(
-    new AggregateError(errors, `Error loading ${failures.length} ${noun}`),
-    {
-      errorType: 'error_loading_extension',
-      surface: 'platform',
-      level: 'warning',
-      tags: { failed_extension_count: failures.length },
-      context: {
-        failures: reportedFailures.map(({ ext }, index) => ({
-          ext: truncateExtensionPath(ext),
-          message:
-            readErrorDetail(failures[index].error, 'message') ??
-            readErrorDetail(errors[index], 'message') ??
-            'Unknown extension load failure',
-          stack:
-            readErrorDetail(failures[index].error, 'stack') ??
-            readErrorDetail(errors[index], 'stack')
-        }))
-      }
-    }
+  const reportedFailures = failures
+    .slice(0, MAX_NAMED_FAILED_EXTENSIONS)
+    .map(toFailureDiagnostic)
+  const errors = reportedFailures.map(({ message }) => new Error(message))
+  const aggregate = new AggregateError(
+    errors,
+    `Error loading ${failures.length} ${noun}`
   )
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+
+  reportError(aggregate, {
+    errorType: 'error_loading_extension',
+    surface: 'platform',
+    level: 'warning',
+    tags: { failed_extension_count: failures.length },
+    context: {
+      failures: reportedFailures
+    }
+  })
 }
 
 /**

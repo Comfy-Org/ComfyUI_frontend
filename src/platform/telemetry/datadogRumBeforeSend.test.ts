@@ -339,6 +339,25 @@ describe('rumBeforeSend', () => {
     })
   })
 
+  it('keeps mixed extension batches in first-party telemetry', () => {
+    const event = createErrorEvent(
+      'Error loading 2 extensions',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: 'error_loading_extension',
+      failures: [
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { ext: '/extensions/comfyui-bar/main.js' }
+      ]
+    }
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.context).toMatchObject({
+      error: { origin: 'first_party' }
+    })
+  })
+
   const malformedContexts: Array<[string, Record<string, unknown>]> = [
     ['missing error type', { failures: [] }],
     [

@@ -70,6 +70,9 @@ describe('extension loading', () => {
       assert(cause instanceof Error)
       expect(cause.message).toBe('Error loading 2 extensions')
       expect(cause).toBeInstanceOf(AggregateError)
+      expect(cause.stack).toContain(
+        `Failed extensions: ${BROKEN}, /extensions/b/b.js`
+      )
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',
         surface: 'platform',
@@ -102,6 +105,46 @@ describe('extension loading', () => {
       expect(cause.message).toBe('Error loading 13 extensions')
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
       expect(options.context?.failures).toHaveLength(10)
+      expect((cause as AggregateError).errors).toHaveLength(10)
+    })
+
+    it('keeps hostile extension failures from aborting bootstrap', () => {
+      const hostile = Object.create(null)
+      Object.defineProperties(hostile, {
+        message: {
+          get: () => {
+            throw new Error('message getter failed')
+          }
+        },
+        stack: {
+          get: () => {
+            throw new Error('stack getter failed')
+          }
+        },
+        toJSON: {
+          value: () => {
+            throw new Error('serialization failed')
+          }
+        },
+        toString: {
+          value: () => {
+            throw new Error('conversion failed')
+          }
+        }
+      })
+
+      expect(() =>
+        reportExtensionLoadFailures([{ ext: BROKEN, error: hostile }])
+      ).not.toThrow()
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [
+          {
+            ext: BROKEN,
+            message: 'Unknown extension load failure',
+            stack: undefined
+          }
+        ]
+      )
     })
 
     it('keeps hostile error details from aborting telemetry', () => {
