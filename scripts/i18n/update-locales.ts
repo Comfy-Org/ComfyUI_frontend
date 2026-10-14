@@ -514,6 +514,9 @@ type TranslationOutcome =
     }
   | { state: LocaleFileState; failure: string }
 
+type CompletedOutcome = Extract<TranslationOutcome, { output: LocaleObject }>
+type FailedOutcome = Extract<TranslationOutcome, { failure: string }>
+
 function withoutFailedLeaves(
   pendingLeaves: readonly LocaleLeafEntry[],
   translation: TranslationPlan,
@@ -713,17 +716,37 @@ function writeOutcomes({
     serializeManifest({ version: 1, files, knownViolations })
   )
   const written = writeCatalogUpdates(updates, inputs)
+  const problems = [
+    ...describeFailedFiles(failures, failedFiles),
+    ...describeUnfinishedStrings(completed)
+  ]
+  if (problems.length) throw new Error(problems.join('\n'))
+  return written
+}
+
+function describeFailedFiles(
+  failures: readonly FailedOutcome[],
+  failedFiles: ReadonlySet<string>
+): string[] {
+  if (!failures.length) return []
+  const details = failures
+    .map(({ state, failure }) => `${state.label}: ${failure}`)
+    .join('\n')
+  return [
+    `Translation failed for ${failures.length} locale files:\n${details}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`
+  ]
+}
+
+function describeUnfinishedStrings(
+  completed: readonly CompletedOutcome[]
+): string[] {
   const unfinished = completed.flatMap(({ state, unfinished }) =>
     unfinished.map((context) => `${state.label}: ${context}`)
   )
-  const problems = [
-    failures.length &&
-      `Translation failed for ${failures.length} locale files:\n${failures.map(({ state, failure }) => `${state.label}: ${failure}`).join('\n')}\nAll locale results for ${[...failedFiles].join(', ')} were discarded together. Other entry files were written and recorded in the manifest.`,
-    unfinished.length &&
-      `${unfinished.length} strings were rejected on every attempt and left out; they render in English and retry on the next run:\n${unfinished.join('\n')}`
-  ].filter(Boolean)
-  if (problems.length) throw new Error(problems.join('\n'))
-  return written
+  if (!unfinished.length) return []
+  return [
+    `${unfinished.length} strings were rejected on every attempt and left out; they render in English and retry on the next run:\n${unfinished.join('\n')}`
+  ]
 }
 
 function writeCatalogUpdates(

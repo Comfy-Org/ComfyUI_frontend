@@ -79,8 +79,8 @@ jobs:
             --title 'fix(website): update locale catalogs' --body "$body" \
             --label area:i18n --assignee benceruleanlu
 
-      - name: Fail if some strings were not translated
+      - name: Fail if translation did not finish
         if: steps.translate.outcome == 'failure'
         run: |
-          echo "::error::Some website strings were not translated; the Update translations step lists them. Everything else was published, and the rest retry on the next run."
+          echo "::error::Website translation did not finish; the Update translations step lists what failed. It retries on the next run."
           exit 1
