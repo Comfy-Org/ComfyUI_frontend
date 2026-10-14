@@ -100,6 +100,8 @@ describe('native CONTENT presentation', () => {
           ],
           website_media: {
             '$.workflow_versions[0].download': `/preview-media/2/${download}/${version}`,
+            '$.workflow_versions[0].api': `/preview-media/2/${api}/${version}`,
+            '$.workflow_versions[1].api': `/preview-media/2/${download}/${version}`,
             '$.workflow_versions[1].download': `/preview-media/2/${api}/${version}`
           },
           website_api_workflow: {
@@ -123,6 +125,12 @@ describe('native CONTENT presentation', () => {
         href: `/preview-media/2/${download}/${version}`
       }
     ])
+    expect(view.catalogDetails?.apiWorkflowFile).toEqual({
+      name: 'V1',
+      uid: api,
+      version,
+      href: `/preview-media/2/${api}/${version}`
+    })
     expect(
       workflowCloudRequest(view.workflow, {
         workflowId: view.workflow.id,
@@ -158,9 +166,10 @@ describe('native CONTENT presentation', () => {
     )
     if (view.type !== 'CLOUD') throw new Error('Not workflow detail')
     expect(view.workflow.cloud).toBeUndefined()
+    expect(view.catalogDetails?.apiWorkflowFile).toBeUndefined()
     expect(view.catalogDetails?.runnable).toBe(false)
   })
-  it.each(['video/mp4', 'video/webm'])(
+  it.for(['video/mp4', 'video/webm'])(
     'uses exact verified %s metadata for native hero playback',
     (mime) => {
       const view = catalogPresentation({
@@ -179,7 +188,7 @@ describe('native CONTENT presentation', () => {
       })
     }
   )
-  it.each(['video/mp4', 'video/webm'])(
+  it.for(['video/mp4', 'video/webm'])(
     'preserves verified %s on extensionless examples through the actual page schemas',
     (mime) => {
       const view = catalogPresentation({

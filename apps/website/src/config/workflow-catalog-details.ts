@@ -66,20 +66,19 @@ export function validAuthorAvatarURL(raw: string) {
   }
 }
 
+const workflowFileSchema = z.object({
+  name: z.string().min(1),
+  uid: z.uuid(),
+  version: z.uuid().optional(),
+  href: z.string().refine(validWorkflowDownloadURL)
+})
+
 export const workflowCatalogDetailsSchema = z.object({
   locale: z.enum(['en', 'zh-CN', 'ja']),
   cloudShareURL: z.string().refine(validCloudShareURL).optional(),
   documentationURL: z.string().refine(validDocumentationURL).optional(),
-  workflowFiles: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        uid: z.uuid(),
-        version: z.uuid().optional(),
-        href: z.string().refine(validWorkflowDownloadURL)
-      })
-    )
-    .optional(),
+  workflowFiles: z.array(workflowFileSchema).optional(),
+  apiWorkflowFile: workflowFileSchema.extend({ version: z.uuid() }).optional(),
   longDescription: z.string().optional(),
   faqs: z.array(
     z.object({

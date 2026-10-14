@@ -116,6 +116,11 @@ localized model titles, with a localized unavailable label for unresolved models
 Workflow editors expose element 0 of `workflow_versions`: named `download` graph
 JSON and `api` execution JSON, separately uploaded and exactly pinned in Media.
 The initial name is V1; later stored pairs are preserved but ignored by the site.
+Workflow code sections offer `Download API JSON` for that first pair's exact API
+media file, separate from the graph JSON download. The protected link is omitted
+when no eligible API file is resolved. Generated snippets already embed their API
+graph and remain self-contained; the existing generated-graph download remains
+available for legacy workflows without a stored API-file link.
 API files are at most 1 MiB and shape-validated by the backend, not executed on Save.
 Graph preview/download never becomes an API execution fallback. Historical
 `workflow_files` remains readable until ordinary versioned Draft conversion.

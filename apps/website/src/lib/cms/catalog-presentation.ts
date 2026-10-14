@@ -127,6 +127,25 @@ export function catalogPresentation(
       validDocumentationURL(d.documentation_url)
         ? d.documentation_url
         : undefined,
+    apiWorkflowFile: hasWorkflowVersions
+      ? (() => {
+          const file = objectPresentation(firstWorkflowVersion?.api)
+          const href = urls.success
+            ? urls.data['$.workflow_versions[0].api']
+            : undefined
+          return typeof href === 'string' && validWorkflowDownloadURL(href)
+            ? {
+                name:
+                  typeof firstWorkflowVersion?.name === 'string'
+                    ? firstWorkflowVersion.name
+                    : 'V1',
+                uid: file.id,
+                version: file.file_version_uid,
+                href
+              }
+            : undefined
+        })()
+      : undefined,
     workflowFiles: hasWorkflowVersions
       ? (() => {
           const file = objectPresentation(firstWorkflowVersion?.download)

@@ -20,6 +20,76 @@ const model = markRaw(fixture)
 const values = initialWorkshopPageState(model).values
 
 describe('WorkflowApi', () => {
+  it.for([
+    { locale: 'en' as const, label: 'Download API JSON' },
+    { locale: 'zh-CN' as const, label: '下载 API JSON' }
+  ])(
+    'offers the stored exact API JSON beside code in $locale',
+    ({ locale, label }) => {
+      const href =
+        '/preview-media/6/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000081'
+      render(WorkflowApi, {
+        props: {
+          model: {
+            ...model,
+            catalogDetails: {
+              locale,
+              models: [],
+              faqs: [],
+              apiWorkflowFile: {
+                name: 'V1',
+                uid: '00000000-0000-4000-8000-000000000080',
+                version: '00000000-0000-4000-8000-000000000081',
+                href
+              }
+            }
+          },
+          values
+        }
+      })
+      const download = screen.getByRole('link', { name: label })
+      expect(download).toHaveAttribute('href', href)
+      expect(download).toHaveAttribute(
+        'download',
+        'animate-reference-sheet-api.json'
+      )
+      expect(screen.getByTestId('workflow-api-snippet')).toBeVisible()
+      expect(
+        screen.queryByRole('button', { name: 'Download the API graph' })
+      ).toBeNull()
+    }
+  )
+
+  it('keeps the uploaded API download available when snippet inference is unavailable', () => {
+    const href =
+      '/catalog-media/00000000-0000-4000-8000-000000000080/00000000-0000-4000-8000-000000000081'
+    render(WorkflowApi, {
+      props: {
+        model: {
+          ...model,
+          workflow: { ...model.workflow, cloud: undefined },
+          catalogDetails: {
+            locale: 'en',
+            models: [],
+            faqs: [],
+            apiWorkflowFile: {
+              name: 'V1',
+              uid: '00000000-0000-4000-8000-000000000080',
+              version: '00000000-0000-4000-8000-000000000081',
+              href
+            }
+          }
+        },
+        values: {},
+        downloadOnly: true
+      }
+    })
+    expect(
+      screen.getByRole('link', { name: 'Download API JSON' })
+    ).toHaveAttribute('href', href)
+    expect(screen.queryByTestId('workflow-api-snippet')).toBeNull()
+    expect(screen.queryByTestId('api-get-key')).toBeNull()
+  })
   it('does not conceal invalid current inputs behind stored code', () => {
     const invalidValues = Object.fromEntries(
       Object.keys(model.workflow.inputSchema.properties).map((name) => [
@@ -149,14 +219,16 @@ describe('WorkflowApi', () => {
     expect(screen.queryByTestId('workflow-api-steps')).toBeNull()
   })
   it('omits the blank download-only API section', () => {
-    const { container } = render(WorkflowApi, {
+    render(WorkflowApi, {
       props: {
         model: { ...model, workflow: { ...model.workflow, cloud: undefined } },
         values: {},
         downloadOnly: true
       }
     })
-    expect(container.querySelector('section')).toBeNull()
+    expect(
+      screen.queryByRole('region', { name: 'Use this workflow from code' })
+    ).toBeNull()
   })
   // A developer opening this tab wants the address before they want the
   // snippet, and it was only ever readable by picking it out of the cURL.

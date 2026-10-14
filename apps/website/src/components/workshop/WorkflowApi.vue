@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Download } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -107,6 +108,7 @@ const highlightLanguage = {
   curl: 'shell'
 } satisfies Record<SnippetLanguage, CodeLang>
 const graphFile = `${model.slug.split('/').pop()}-api.json`
+const apiFile = computed(() => model.catalogDetails?.apiWorkflowFile)
 
 function downloadGraph() {
   if (!request.value) return
@@ -159,7 +161,7 @@ const facts = computed(() => {
 
 <template>
   <section
-    v-if="!downloadOnly || request || languages.length"
+    v-if="!downloadOnly || request || languages.length || apiFile"
     class="flex flex-col gap-6"
     aria-labelledby="workflow-api-heading"
   >
@@ -198,7 +200,7 @@ const facts = computed(() => {
           <template #append><span aria-hidden="true">↗</span></template>
         </Button>
         <Button
-          v-if="request"
+          v-if="request && !apiFile"
           variant="outline"
           class="w-full justify-between"
           @click="downloadGraph"
@@ -226,6 +228,15 @@ const facts = computed(() => {
       </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-4">
+        <a
+          v-if="apiFile"
+          :href="apiFile.href"
+          :download="graphFile"
+          class="inline-flex min-h-11 items-center gap-2 self-start rounded-lg border border-transparency-white-t20 px-4 py-2 text-sm font-medium text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:text-primary-warm-white focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
+        >
+          <Download class="size-4" aria-hidden="true" />
+          {{ t('cccWorkflow.downloadApiJSON') }}
+        </a>
         <div
           v-if="code"
           class="overflow-hidden rounded-2xl border border-transparency-white-t20"
