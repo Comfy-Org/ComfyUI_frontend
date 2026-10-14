@@ -107,6 +107,10 @@ export const zTestWorkflowImportRequest = z.object({
 })
 
 export const zTestWorkflowSummary = z.object({
+  models: z.array(z.string()).optional(),
+  packs: z.array(z.string()).optional(),
+  partner_nodes: z.array(z.string()).optional(),
+  media_type: z.enum(['image', 'video', 'other']).optional(),
   workflow_sha256: z.string(),
   metadata_sha256: z.string(),
   name: z.string(),
@@ -120,6 +124,8 @@ export const zTestWorkflowSummary = z.object({
 })
 
 export const zTestWorkflowPage = z.object({
+  corpus_version: z.string().optional(),
+  archive_only: z.number().int().gte(0).optional(),
   entries: z.array(zTestWorkflowSummary),
   total: z.number().int(),
   verified: z.number().int(),
@@ -128,6 +134,8 @@ export const zTestWorkflowPage = z.object({
 })
 
 export const zTestWorkflowFacets = z.object({
+  partner_nodes: z.array(z.string()),
+  media_types: z.array(z.enum(['image', 'video', 'other'])),
   tags: z.array(z.string()),
   tasks: z.array(z.string()),
   packs: z.array(z.string()),

@@ -102,6 +102,13 @@ export type TestWorkflowImportRequest = {
 }
 
 export type TestWorkflowSummary = {
+  models?: Array<string>
+  packs?: Array<string>
+  partner_nodes?: Array<string>
+  /**
+   * Media represented by explicit graph types/native schemas; no execution claim.
+   */
+  media_type?: 'image' | 'video' | 'other'
   workflow_sha256: string
   metadata_sha256: string
   name: string
@@ -118,6 +125,8 @@ export type TestWorkflowSummary = {
 }
 
 export type TestWorkflowPage = {
+  corpus_version?: string
+  archive_only?: number
   entries: Array<TestWorkflowSummary>
   total: number
   verified: number
@@ -126,6 +135,8 @@ export type TestWorkflowPage = {
 }
 
 export type TestWorkflowFacets = {
+  partner_nodes: Array<string>
+  media_types: Array<'image' | 'video' | 'other'>
   tags: Array<string>
   tasks: Array<string>
   packs: Array<string>
@@ -196,6 +207,11 @@ export type ListTestWorkflowEntriesData = {
     task?: string
     pack?: string
     model?: string
+    /**
+     * Exact native API node class ID. AND with every other filter.
+     */
+    partner_node?: string
+    media_type?: 'image' | 'video' | 'other'
     complexity?: 'small' | 'medium' | 'large'
     cluster?: string
   }
@@ -253,7 +269,7 @@ export type GetTestWorkflowFacetsErrors = {
 
 export type GetTestWorkflowFacetsResponses = {
   /**
-   * Maximum 100 values per facet, truncation indicated
+   * Collection-wide model, pack, task, tag, native API node and media choices
    */
   200: TestWorkflowFacets
 }

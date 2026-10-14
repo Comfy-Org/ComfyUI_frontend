@@ -95,10 +95,51 @@ async function chooseCollection(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('option', { name: 'corpus-pilot (120000)' })
   )
-  return screen.findByRole('button', { name: /Unknown node original/ })
+  return screen.findByRole('button', {
+    name: 'Unknown node original'
+  })
+}
+
+const observers: TestIntersectionObserver[] = []
+class TestIntersectionObserver implements IntersectionObserver {
+  readonly root = null
+  readonly rootMargin = '256px'
+  readonly scrollMargin = '0px'
+  readonly thresholds = [0]
+  target: Element | null = null
+  constructor(private readonly callback: IntersectionObserverCallback) {
+    observers.push(this)
+  }
+  observe(target: Element) {
+    this.target = target
+  }
+  disconnect() {}
+  unobserve() {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return []
+  }
+  intersect() {
+    if (!this.target) throw new Error('Expected an observed sentinel')
+    this.callback(
+      [
+        {
+          target: this.target,
+          isIntersecting: true,
+          intersectionRatio: 1,
+          time: 0,
+          boundingClientRect: new DOMRect(),
+          intersectionRect: new DOMRect(),
+          rootBounds: null
+        }
+      ],
+      this
+    )
+  }
 }
 
 beforeEach(() => {
+  observers.length = 0
+  vi.stubGlobal('IntersectionObserver', TestIntersectionObserver)
   scope.value = 'fixture-account/fixture-workspace'
   vi.stubGlobal('crypto', webcrypto)
   mocks.fetch.mockImplementation(async (route: string) => {
@@ -113,6 +154,8 @@ beforeEach(() => {
         tasks: ['image'],
         packs: [],
         models: [],
+        partner_nodes: [],
+        media_types: [],
         truncated: false
       })
     if (route.includes('include_workflow=true'))
@@ -130,6 +173,184 @@ beforeEach(() => {
 })
 
 describe('Test workflow library UI', () => {
+  it('combines exact corpus-backed model, pack, partner, media and graph-size filters and clears them', async () => {
+    const baseline = mocks.fetch.getMockImplementation()
+    mocks.fetch.mockImplementation((route: string, options: RequestInit) => {
+      if (route.includes('/facets'))
+        return response({
+          tags: [],
+          tasks: [],
+          models: ['model & exact.safetensors'],
+          packs: ['owner/pack'],
+          partner_nodes: ['NativePartnerClass'],
+          media_types: ['video'],
+          truncated: false
+        })
+      return baseline?.(route, options)
+    })
+    const user = userEvent.setup()
+    renderLibrary()
+    await screen.findByRole('button', {
+      name: 'Unknown node original'
+    })
+    for (const [label, value] of [
+      ['Model name', 'model & exact.safetensors'],
+      ['Node packs', 'owner/pack'],
+      ['Partner/API nodes', 'NativePartnerClass'],
+      ['Media type', 'Video'],
+      ['Graph size', messages.testWorkflowLibrary.medium]
+    ]) {
+      await user.click(screen.getByRole('combobox', { name: label }))
+      await user.click(await screen.findByRole('option', { name: value }))
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Search' })).toBeEnabled()
+      )
+    }
+    const lastRoute: string = mocks.fetch.mock.lastCall?.[0]
+    const query = new URL(lastRoute, 'https://fixture.invalid').searchParams
+    expect(Object.fromEntries(query)).toMatchObject({
+      model: 'model & exact.safetensors',
+      pack: 'owner/pack',
+      partner_node: 'NativePartnerClass',
+      media_type: 'video',
+      complexity: 'medium'
+    })
+    expect(query.has('cursor')).toBe(false)
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    await waitFor(() =>
+      expect(mocks.fetch).toHaveBeenLastCalledWith(
+        expect.stringMatching(/entries\?limit=24$/),
+        expect.anything()
+      )
+    )
+  })
+
+  it('does not invent partner or media choices when the corpus has no classification index', async () => {
+    renderLibrary()
+    await screen.findByRole('button', {
+      name: 'Unknown node original'
+    })
+    expect(
+      screen.getByRole('combobox', { name: 'Partner/API nodes' })
+    ).toBeDisabled()
+    expect(screen.getByRole('combobox', { name: 'Media type' })).toBeDisabled()
+  })
+  it('opens directly from a result and closes only after the normal loader finishes', async () => {
+    const user = userEvent.setup()
+    const result = renderLibrary()
+    let finish: () => void = () => {}
+    mocks.handleFile.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        })
+    )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Open Unknown node original'
+      })
+    )
+    await waitFor(() => expect(mocks.handleFile).toHaveBeenCalledOnce())
+    expect(result.emitted().close).toBeUndefined()
+    expect(
+      mocks.fetch.mock.calls.filter(([route]) =>
+        String(route).includes(`/entries/${hash}`)
+      )
+    ).toHaveLength(1)
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(raw)
+    finish()
+    await waitFor(() => expect(result.emitted().close).toHaveLength(1))
+  })
+
+  it('appends on intersection, fills a short viewport, and stops at end without pagination controls', async () => {
+    const user = userEvent.setup()
+    renderLibrary()
+    await chooseCollection(user)
+    await waitFor(() => expect(observers.length).toBeGreaterThan(0))
+    expect(
+      screen.queryByRole('button', { name: 'Next page' })
+    ).not.toBeInTheDocument()
+    const second = {
+      ...detail.summary,
+      name: 'Second result',
+      workflow_sha256: 'b'.repeat(64)
+    }
+    const third = {
+      ...detail.summary,
+      name: 'Third result',
+      workflow_sha256: 'c'.repeat(64)
+    }
+    mocks.fetch.mockResolvedValueOnce(
+      response({
+        entries: [detail.summary, second],
+        total: 3,
+        unresolved: 3,
+        verified: 0,
+        next_cursor: 'last'
+      })
+    )
+    const firstObserver = observers.at(-1)
+    firstObserver?.intersect()
+    await screen.findByRole('button', { name: 'Second result' })
+    await waitFor(() => expect(observers.at(-1)).not.toBe(firstObserver))
+    mocks.fetch.mockResolvedValueOnce(
+      response({
+        entries: [third],
+        total: 3,
+        unresolved: 3,
+        verified: 0,
+        next_cursor: ''
+      })
+    )
+    observers.at(-1)?.intersect()
+    await screen.findByRole('button', { name: 'Third result' })
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Unknown node original'
+      })
+    ).toHaveLength(1)
+    expect(
+      screen.getByText(messages.testWorkflowLibrary.endOfResults)
+    ).toBeVisible()
+    const count = mocks.fetch.mock.calls.length
+    firstObserver?.intersect()
+    await nextTick()
+    expect(mocks.fetch.mock.calls).toHaveLength(count)
+    expect(screen.queryByTestId('workflow-load-more')).not.toBeInTheDocument()
+  })
+
+  it('keeps loaded cards usable after an append failure and retries on request', async () => {
+    renderLibrary()
+    await screen.findByRole('button', {
+      name: 'Unknown node original'
+    })
+    await waitFor(() => expect(observers.length).toBeGreaterThan(0))
+    mocks.fetch.mockResolvedValueOnce(response({}, 503))
+    observers.at(-1)?.intersect()
+    expect(await screen.findByRole('alert')).toHaveTextContent('503')
+    expect(
+      screen.getByRole('button', {
+        name: 'Open Unknown node original'
+      })
+    ).toBeEnabled()
+    expect(screen.queryByTestId('workflow-load-more')).not.toBeInTheDocument()
+    mocks.fetch.mockResolvedValueOnce(
+      response({
+        entries: [],
+        total: 1,
+        unresolved: 1,
+        verified: 0,
+        next_cursor: ''
+      })
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    await screen.findByText(messages.testWorkflowLibrary.endOfResults)
+    expect(
+      screen.getByRole('button', { name: 'Unknown node original' })
+    ).toBeVisible()
+  })
   it('shows archive-only detail without qualifying metadata and opens its exact original on request', async () => {
     const user = userEvent.setup()
     const archive = {
@@ -186,7 +407,7 @@ describe('Test workflow library UI', () => {
   it('keeps card selection alive after an explicit search with a pending input debounce', async () => {
     renderLibrary()
     const entry = await screen.findByRole('button', {
-      name: /Unknown node original/
+      name: 'Unknown node original'
     })
     const baseline = mocks.fetch.getMockImplementation()
     let resolveDetail: (value: Response) => void = () => {}
@@ -320,20 +541,15 @@ describe('Test workflow library UI', () => {
     ).toBe(true)
   })
 
-  it('paginates on demand and groups variants without loading the whole corpus', async () => {
+  it('groups structural variants without loading the whole corpus', async () => {
     const user = userEvent.setup()
     renderLibrary()
     const entry = await chooseCollection(user)
     expect(
-      screen.getAllByRole('button', { name: /Unknown node original/ })
+      screen.getAllByRole('button', {
+        name: 'Unknown node original'
+      })
     ).toHaveLength(1)
-    await user.click(screen.getByRole('button', { name: 'Next page' }))
-    await waitFor(() =>
-      expect(mocks.fetch).toHaveBeenLastCalledWith(
-        expect.stringContaining('cursor=next-page-token'),
-        expect.anything()
-      )
-    )
     await user.click(entry)
     await user.click(
       await screen.findByRole('button', { name: 'Browse structural variants' })
@@ -360,7 +576,9 @@ describe('Test workflow library UI', () => {
   it('shows the first bounded page immediately when only one collection is available', async () => {
     renderLibrary()
     expect(
-      await screen.findByRole('button', { name: /Unknown node original/ })
+      await screen.findByRole('button', {
+        name: 'Unknown node original'
+      })
     ).toBeVisible()
     expect(mocks.handleFile).not.toHaveBeenCalled()
   })

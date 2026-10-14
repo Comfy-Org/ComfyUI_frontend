@@ -2,6 +2,7 @@
 import type { TestWorkflowSummary } from '@comfyorg/ingest-types/test-workflows'
 
 import PackCardLayout from '@/components/common/PackCardLayout.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   entry,
@@ -12,18 +13,19 @@ const {
   selected?: boolean
   busy?: boolean
 }>()
-defineEmits<{ select: [hash: string] }>()
+defineEmits<{ select: [hash: string]; open: [hash: string] }>()
 </script>
 
 <template>
-  <button
-    type="button"
-    :disabled="busy"
-    :aria-pressed="selected"
-    :aria-label="entry.name"
-    class="rounded-lg border-0 bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2"
-    @click="$emit('select', entry.workflow_sha256)"
-  >
+  <div class="relative rounded-lg text-left">
+    <button
+      type="button"
+      :disabled="busy"
+      :aria-pressed="selected"
+      :aria-label="entry.name"
+      class="absolute inset-0 z-10 rounded-lg border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2"
+      @click="$emit('select', entry.workflow_sha256)"
+    />
     <PackCardLayout
       :name="entry.name"
       :description="entry.description"
@@ -58,14 +60,27 @@ defineEmits<{ select: [hash: string] }>()
         >
       </div>
       <template #footer>
-        <span class="block px-3 py-2 text-xs text-muted-foreground">{{
-          $t(
-            entry.verified
-              ? 'testWorkflowLibrary.verified'
-              : 'testWorkflowLibrary.notVerified'
-          )
-        }}</span>
+        <div class="flex items-center justify-between gap-2 px-3 py-2">
+          <span class="text-xs text-muted-foreground">{{
+            $t(
+              entry.verified
+                ? 'testWorkflowLibrary.verified'
+                : 'testWorkflowLibrary.notVerified'
+            )
+          }}</span>
+          <Button
+            variant="secondary"
+            size="md"
+            class="relative z-20 shrink-0"
+            :disabled="busy"
+            :aria-label="
+              $t('testWorkflowLibrary.openEntry', { name: entry.name })
+            "
+            @click="$emit('open', entry.workflow_sha256)"
+            >{{ $t('testWorkflowLibrary.open') }}</Button
+          >
+        </div>
       </template>
     </PackCardLayout>
-  </button>
+  </div>
 </template>

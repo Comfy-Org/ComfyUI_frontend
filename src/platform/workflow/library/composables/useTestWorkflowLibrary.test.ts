@@ -103,6 +103,8 @@ beforeEach(() => {
         tasks: [],
         packs: [],
         models: [],
+        partner_nodes: [],
+        media_types: [],
         truncated: false
       })
     if (route.includes('include_workflow=true'))
@@ -114,6 +116,173 @@ beforeEach(() => {
 })
 
 describe('Test workflow library', () => {
+  it('opens a result directly without selecting or importing a different detail', async () => {
+    const { library, owner } = setup()
+    await library.chooseCollection('corpus-pilot')
+    expect(await library.openEntry(hash)).toBe(true)
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(raw)
+    expect(
+      mocks.fetch.mock.calls.filter(([route]) =>
+        String(route).includes(`/entries/${hash}`)
+      )
+    ).toHaveLength(1)
+    owner.stop()
+  })
+
+  it('appends once, deduplicates overlap and stops at the actual end', async () => {
+    const { library, owner } = setup()
+    await library.initialize()
+    await library.select(hash)
+    let finish: (value: Response) => void = () => {}
+    mocks.fetch.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve
+        })
+    )
+    const pending = library.loadMore()
+    expect(library.busy.value).toBe(false)
+    expect(await library.loadMore()).toBe(false)
+    const second = {
+      ...detail.summary,
+      workflow_sha256: 'b'.repeat(64),
+      name: 'Second'
+    }
+    finish(
+      response({
+        ...page,
+        entries: [detail.summary, second, second],
+        next_cursor: ''
+      })
+    )
+    expect(await pending).toBe(true)
+    expect(library.data.value.page?.entries).toEqual([detail.summary, second])
+    expect(library.data.value.selected?.summary).toEqual(detail.summary)
+    expect(library.hasMore.value).toBe(false)
+    const count = mocks.fetch.mock.calls.length
+    expect(await library.loadMore()).toBe(false)
+    expect(mocks.fetch.mock.calls).toHaveLength(count)
+    owner.stop()
+  })
+
+  it('retains results after a page error and retries the same cursor', async () => {
+    const { library, owner } = setup()
+    await library.initialize()
+    mocks.fetch.mockResolvedValueOnce(response({}, 503))
+    expect(await library.loadMore()).toBe(false)
+    expect(library.state.value).toMatchObject({
+      phase: 'page-failed',
+      status: 503
+    })
+    expect(library.data.value.page?.entries).toEqual([detail.summary])
+    mocks.fetch.mockResolvedValueOnce(
+      response({ ...page, entries: [], next_cursor: '' })
+    )
+    expect(await library.loadMore()).toBe(true)
+    expect(mocks.fetch).toHaveBeenLastCalledWith(
+      expect.stringContaining('cursor=next-page-token'),
+      expect.anything()
+    )
+    expect(library.data.value.page?.entries).toEqual([detail.summary])
+    owner.stop()
+  })
+
+  it('refuses a looping cursor without silently claiming end of results', async () => {
+    const { library, owner } = setup()
+    await library.initialize()
+    expect(await library.loadMore()).toBe(false)
+    expect(library.state.value).toMatchObject({
+      phase: 'page-failed',
+      status: 0
+    })
+    expect(library.hasMore.value).toBe(true)
+    expect(library.data.value.page?.entries).toEqual([detail.summary])
+    owner.stop()
+  })
+
+  it('preserves the current page when a subsequent page belongs to a different corpus version', async () => {
+    const baseline = mocks.fetch.getMockImplementation()
+    mocks.fetch.mockImplementation((route: string, options: RequestInit) =>
+      route.includes('/entries?')
+        ? response({ ...page, corpus_version: 'original' })
+        : baseline?.(route, options)
+    )
+    const { library, owner } = setup()
+    await library.initialize()
+    mocks.fetch.mockResolvedValueOnce(
+      response({ ...page, corpus_version: 'changed', next_cursor: '' })
+    )
+    expect(await library.loadMore()).toBe(false)
+    expect(library.state.value.phase).toBe('page-failed')
+    expect(library.data.value.page?.corpus_version).toBe('original')
+    owner.stop()
+  })
+
+  it.for(['search', 'collection', 'account', 'dispose'] as const)(
+    'denies a late page after %s changes',
+    async (change) => {
+      const { library, owner } = setup()
+      await library.initialize()
+      let finish: (value: Response) => void = () => {}
+      let signal: AbortSignal | null | undefined
+      mocks.fetch.mockImplementationOnce(
+        (_route: string, options: RequestInit) => {
+          signal = options.signal
+          return new Promise<Response>((resolve) => {
+            finish = resolve
+          })
+        }
+      )
+      const pending = library.loadMore()
+      if (change === 'search') await library.search({ model: 'new-model' })
+      if (change === 'collection') await library.chooseCollection('other')
+      if (change === 'account') scope.value = 'account-b/workspace-b'
+      if (change === 'dispose') owner.stop()
+      expect(signal?.aborted).toBe(true)
+      const before = library.data.value
+      finish(
+        response({
+          ...page,
+          entries: [{ ...detail.summary, name: 'Stale result' }],
+          next_cursor: ''
+        })
+      )
+      expect(await pending).toBe(false)
+      expect(library.data.value).toEqual(before)
+      owner.stop()
+    }
+  )
+
+  it('gives detail selection priority over append and prevents a late detail reopening after Close', async () => {
+    const { library, owner } = setup()
+    await library.initialize()
+    let finishPage: (value: Response) => void = () => {}
+    mocks.fetch.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finishPage = resolve
+        })
+    )
+    const append = library.loadMore()
+    expect(await library.select(hash)).toBe(true)
+    finishPage(response({ ...page, next_cursor: '' }))
+    expect(await append).toBe(false)
+    expect(library.data.value.selected?.summary).toEqual(detail.summary)
+    let finishDetail: (value: Response) => void = () => {}
+    mocks.fetch.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finishDetail = resolve
+        })
+    )
+    const selection = library.select(hash)
+    library.closeDetails()
+    finishDetail(response(detail))
+    expect(await selection).toBe(false)
+    expect(library.data.value.selected).toBeNull()
+    owner.stop()
+  })
   it('selects an archive-only original and opens only its SHA-matching bytes', async () => {
     const archive = {
       ...archiveDetail,
@@ -318,7 +487,7 @@ describe('Test workflow library', () => {
       expect.objectContaining({ cache: 'no-store' })
     )
     expect(mocks.handleFile).not.toHaveBeenCalled()
-    await library.search(undefined, page.next_cursor)
+    await library.loadMore()
     expect(mocks.fetch).toHaveBeenLastCalledWith(
       expect.stringContaining('cursor=next-page-token'),
       expect.anything()
@@ -398,11 +567,15 @@ describe('Test workflow library', () => {
     await library.search({
       tag: 'a&b',
       pack: 'owner/pack',
+      model: 'checkpoint/name & version.safetensors',
+      complexity: 'medium',
+      partner_node: 'Partner/ExactClass',
+      media_type: 'video',
       cluster: 'same variant'
     })
     expect(mocks.fetch).toHaveBeenLastCalledWith(
       expect.stringContaining(
-        'tag=a%26b&pack=owner%2Fpack&cluster=same+variant'
+        'tag=a%26b&pack=owner%2Fpack&model=checkpoint%2Fname+%26+version.safetensors&complexity=medium&partner_node=Partner%2FExactClass&media_type=video&cluster=same+variant'
       ),
       expect.anything()
     )

@@ -10,6 +10,7 @@ import {
   zTestWorkflowPage
 } from '@comfyorg/ingest-types/test-workflows/zod'
 import type { ZodType } from 'zod'
+import { uniqBy } from 'es-toolkit'
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
 import { useNodeAccountScope } from '@/platform/customNodes/composables/useNodeAccountScope'
@@ -36,8 +37,8 @@ type Data = {
   selected: CommunityWorkflowDetail | null
 }
 type State =
-  | { phase: 'idle' | 'ready' | 'loading'; data: Data }
-  | { phase: 'failed'; data: Data; status: number }
+  | { phase: 'idle' | 'ready' | 'loading' | 'loading-more'; data: Data }
+  | { phase: 'failed' | 'page-failed'; data: Data; status: number }
 
 const empty = (): Data => ({
   collections: [],
@@ -58,18 +59,23 @@ export function useTestWorkflowLibrary(
   let active: AbortController | null = null
   let sequence = 0
   let filters: Filters = {}
+  let usedCursors = new Set<string>()
 
   function reset() {
     sequence += 1
     active?.abort()
     collection.value = ''
     filters = {}
+    usedCursors = new Set()
     state.value = { phase: 'idle', data: empty() }
   }
   watch(identity.scope, reset, { flush: 'sync' })
   onScopeDispose(reset)
 
-  async function command(operation: (signal: AbortSignal) => Promise<Data>) {
+  async function command(
+    operation: (signal: AbortSignal) => Promise<Data>,
+    phase: 'loading' | 'loading-more' = 'loading'
+  ) {
     const scope = identity.capture()
     if (scope.scope === null) return false
     active?.abort()
@@ -77,7 +83,7 @@ export function useTestWorkflowLibrary(
     const controller = active
     const current = ++sequence
     const data = state.value.data
-    state.value = { phase: 'loading', data }
+    state.value = { phase, data }
     try {
       const next = await operation(controller.signal)
       if (current !== sequence || !identity.current(scope)) return false
@@ -86,7 +92,7 @@ export function useTestWorkflowLibrary(
     } catch (error) {
       if (current !== sequence || !identity.current(scope)) return false
       state.value = {
-        phase: 'failed',
+        phase: phase === 'loading-more' ? 'page-failed' : 'failed',
         data,
         status: error instanceof LibraryRequestError ? error.status : 0
       }
@@ -99,6 +105,21 @@ export function useTestWorkflowLibrary(
 
   function root(id: string) {
     return `/test-workflow-library/collections/${encodeURIComponent(id)}`
+  }
+
+  function pageRoute(id: string, selectedFilters: Filters, cursor = '') {
+    const query = new URLSearchParams({ limit: '24' })
+    for (const [key, value] of Object.entries(selectedFilters)) {
+      if (
+        value !== undefined &&
+        value !== '' &&
+        key !== 'limit' &&
+        key !== 'cursor'
+      )
+        query.set(key, String(value))
+    }
+    if (cursor) query.set('cursor', cursor)
+    return `${root(id)}/entries?${query}`
   }
 
   async function initialize() {
@@ -120,33 +141,69 @@ export function useTestWorkflowLibrary(
     return success
   }
 
-  async function search(nextFilters: Filters = filters, cursor = '') {
+  async function search(nextFilters: Filters = filters) {
     const id = collection.value
     if (!id) return false
     const previous = state.value.data
+    const requestedFilters = { ...nextFilters }
+    usedCursors = new Set()
     const success = await command(async (signal) => {
-      const query = new URLSearchParams({ limit: '24' })
-      for (const [key, value] of Object.entries(nextFilters)) {
-        if (
-          value !== undefined &&
-          value !== '' &&
-          key !== 'limit' &&
-          key !== 'cursor'
-        )
-          query.set(key, String(value))
-      }
-      if (cursor) query.set('cursor', cursor)
       const page = await request(
-        `${root(id)}/entries?${query}`,
+        pageRoute(id, requestedFilters),
         zTestWorkflowPage,
         signal
       )
       const facets =
         previous.facets ??
         (await request(`${root(id)}/facets`, zTestWorkflowFacets, signal))
-      return { ...previous, page, facets, selected: null }
+      return {
+        ...previous,
+        page: {
+          ...page,
+          entries: uniqBy(page.entries, (entry) => entry.workflow_sha256)
+        },
+        facets,
+        selected: null
+      }
     })
-    if (success) filters = nextFilters
+    if (success) filters = requestedFilters
+    return success
+  }
+
+  async function loadMore() {
+    if (state.value.phase !== 'ready' && state.value.phase !== 'page-failed')
+      return false
+    const previous = state.value.data
+    const page = previous.page
+    const cursor = page?.next_cursor
+    const cursors = usedCursors
+    const id = collection.value
+    if (!id || !page || !cursor || cursors.has(cursor)) return false
+    const success = await command(async (signal) => {
+      const next = await request(
+        pageRoute(id, filters, cursor),
+        zTestWorkflowPage,
+        signal
+      )
+      if (
+        next.next_cursor &&
+        (next.next_cursor === cursor || cursors.has(next.next_cursor))
+      )
+        throw new LibraryRequestError(0)
+      if (page.corpus_version && next.corpus_version !== page.corpus_version)
+        throw new LibraryRequestError(0)
+      return {
+        ...previous,
+        page: {
+          ...next,
+          entries: uniqBy(
+            [...page.entries, ...next.entries],
+            (entry) => entry.workflow_sha256
+          )
+        }
+      }
+    }, 'loading-more')
+    if (success) cursors.add(cursor)
     return success
   }
 
@@ -181,6 +238,13 @@ export function useTestWorkflowLibrary(
   async function open(variant: TestWorkflowGraphVariant = 'original') {
     const hash = state.value.data.selected?.summary.workflow_sha256
     if (!hash) return false
+    return openEntry(hash, variant)
+  }
+
+  async function openEntry(
+    hash: string,
+    variant: TestWorkflowGraphVariant = 'original'
+  ) {
     const id = collection.value
     const previous = state.value.data
     const scope = identity.capture()
@@ -227,8 +291,10 @@ export function useTestWorkflowLibrary(
   }
 
   function closeDetails() {
+    sequence += 1
+    active?.abort()
     state.value = {
-      ...state.value,
+      phase: 'ready',
       data: { ...state.value.data, selected: null }
     }
   }
@@ -238,11 +304,14 @@ export function useTestWorkflowLibrary(
     collection,
     data: computed(() => state.value.data),
     busy: computed(() => state.value.phase === 'loading'),
+    hasMore: computed(() => Boolean(state.value.data.page?.next_cursor)),
     initialize,
     chooseCollection,
     search,
+    loadMore,
     select,
     open,
+    openEntry,
     closeDetails
   }
 }

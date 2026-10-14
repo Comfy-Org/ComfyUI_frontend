@@ -12,7 +12,7 @@ it('keeps a large facet list bounded while making its last value searchable and 
     props: {
       label: 'Models',
       modelValue: 'model-17',
-      options: Array.from({ length: 5000 }, (_, index) => ({
+      options: Array.from({ length: 35457 }, (_, index) => ({
         value: `model-${index}`,
         name: `Model ${index}`
       }))
@@ -30,10 +30,10 @@ it('keeps a large facet list bounded while making its last value searchable and 
   expect(screen.getAllByRole('option').length).toBeLessThan(100)
   await user.type(
     screen.getByRole('combobox', { name: 'Search Models' }),
-    'model 4999'
+    'model 35456'
   )
-  await user.click(await screen.findByRole('option', { name: 'Model 4999' }))
-  expect(result.emitted()['update:modelValue']).toEqual([['model-4999']])
+  await user.click(await screen.findByRole('option', { name: 'Model 35456' }))
+  expect(result.emitted()['update:modelValue']).toEqual([['model-35456']])
 })
 
 it('keeps the selected value discoverable and searchable with an icon trigger', async () => {

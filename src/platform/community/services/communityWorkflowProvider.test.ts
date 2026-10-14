@@ -25,6 +25,50 @@ const entries = Array.from({ length: 25 }, (_, index) => ({
 }))
 
 describe('Community workflow list provider', () => {
+  it('supplies actual partner/media facets and applies them with exact model, pack and size filters', async () => {
+    const catalog = entries.map((entry, index) => ({
+      ...entry,
+      partner_nodes: index === 24 ? ['NativePartnerClass'] : [],
+      media_type: index === 24 ? 'video' : 'image'
+    }))
+    const request = createCommunityWorkflowRequest(
+      vi.fn().mockResolvedValue({ entries: catalog })
+    )
+    expect(await (await request(`${root}/facets`)).json()).toMatchObject({
+      partner_nodes: ['NativePartnerClass'],
+      media_types: ['image', 'video']
+    })
+    const result = await (
+      await request(
+        `${root}/entries?model=flux.safetensors&pack=comfyui-kjnodes&partner_node=NativePartnerClass&media_type=video&complexity=large&q=UnknownCustomNode`
+      )
+    ).json()
+    expect(result.entries.map((entry: { name: string }) => entry.name)).toEqual(
+      ['Workflow 24']
+    )
+    expect(result.total).toBe(1)
+    const noMatch = await (
+      await request(
+        `${root}/entries?partner_node=NativePartnerClass&media_type=image`
+      )
+    ).json()
+    expect(noMatch.entries).toEqual([])
+    expect((await request(`${root}/entries?media_type=audio`)).status).toBe(400)
+  })
+
+  it('leaves unsupported classification unavailable instead of inventing options', async () => {
+    const request = createCommunityWorkflowRequest(
+      vi.fn().mockResolvedValue({ entries })
+    )
+    expect(await (await request(`${root}/facets`)).json()).toMatchObject({
+      partner_nodes: [],
+      media_types: []
+    })
+    expect((await request(`${root}/entries?media_type=other`)).status).toBe(400)
+    expect((await request(`${root}/entries?partner_node=Guessed`)).status).toBe(
+      400
+    )
+  })
   it('preserves verification evidence and fetches the adapted graph only for the explicit adapted choice', async () => {
     const hash = metadata.workflow_sha256
     const summary = { ...entries[0], workflow_sha256: hash }

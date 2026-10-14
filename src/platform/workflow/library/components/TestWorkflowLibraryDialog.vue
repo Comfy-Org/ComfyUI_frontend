@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, provide } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import type { TestWorkflowSummary } from '@comfyorg/ingest-types/test-workflows'
 
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -21,13 +23,28 @@ const { size = 'lg', fetchLibrary } = defineProps<{
 provide(OnCloseKey, () => emit('close'))
 const { t } = useI18n()
 const library = useTestWorkflowLibrary(fetchLibrary)
-const { data, state, busy, collection } = library
+const { data, state, busy, collection, hasMore } = library
+const loadTrigger = ref<HTMLElement | null>(null)
+useIntersectionObserver(
+  loadTrigger,
+  (entries) => {
+    if (
+      entries.some(
+        (entry) => entry.target === loadTrigger.value && entry.isIntersecting
+      )
+    )
+      void library.loadMore()
+  },
+  { rootMargin: '256px' }
+)
 const query = ref('')
 let searchedQuery = ''
 const tag = ref<string>()
 const task = ref<string>()
 const pack = ref<string>()
 const model = ref<string>()
+const partner = ref<string>()
+const media = ref<TestWorkflowSummary['media_type']>()
 const complexity = ref<'small' | 'medium' | 'large'>()
 const cluster = ref('')
 const rightOpen = computed({
@@ -50,6 +67,13 @@ const tags = computed(() => choices(data.value.facets?.tags))
 const tasks = computed(() => choices(data.value.facets?.tasks))
 const packs = computed(() => choices(data.value.facets?.packs))
 const models = computed(() => choices(data.value.facets?.models))
+const partners = computed(() => choices(data.value.facets?.partner_nodes))
+const mediaTypes = computed(() =>
+  (data.value.facets?.media_types ?? []).map((value) => ({
+    value,
+    name: t(`testWorkflowLibrary.media.${value}`)
+  }))
+)
 const complexities = computed(() =>
   ['small', 'medium', 'large'].map((value) => ({
     value,
@@ -65,6 +89,8 @@ function search() {
     task: task.value,
     pack: pack.value,
     model: model.value,
+    partner_node: partner.value,
+    media_type: media.value,
     complexity: complexity.value,
     cluster: cluster.value
   })
@@ -78,6 +104,8 @@ function resetFilters() {
     task.value =
     pack.value =
     model.value =
+    partner.value =
+    media.value =
     complexity.value =
       undefined
   cluster.value = ''
@@ -90,6 +118,8 @@ function choose(id: string | undefined) {
     task.value =
     pack.value =
     model.value =
+    partner.value =
+    media.value =
     complexity.value =
       undefined
   cluster.value = ''
@@ -98,6 +128,13 @@ function choose(id: string | undefined) {
 function selectComplexity(value: string | undefined) {
   complexity.value =
     value === 'small' || value === 'medium' || value === 'large'
+      ? value
+      : undefined
+  void search()
+}
+function selectMedia(value: string | undefined) {
+  media.value =
+    value === 'image' || value === 'video' || value === 'other'
       ? value
       : undefined
   void search()
@@ -112,6 +149,9 @@ function clearCluster() {
 }
 async function open(variant: TestWorkflowGraphVariant) {
   if (await library.open(variant)) emit('close')
+}
+async function openEntry(hash: string) {
+  if (await library.openEntry(hash)) emit('close')
 }
 onMounted(library.initialize)
 </script>
@@ -206,6 +246,24 @@ onMounted(library.initialize)
           class="shrink-0"
           @update:model-value="selectComplexity"
         />
+        <CommunityFacetSelect
+          v-model="partner"
+          :options="partners"
+          :label="t('testWorkflowLibrary.partnerNodes')"
+          :disabled="busy || !partners.length"
+          icon="icon-[lucide--plug]"
+          class="shrink-0"
+          @update:model-value="search"
+        />
+        <CommunityFacetSelect
+          :model-value="media"
+          :options="mediaTypes"
+          :label="t('testWorkflowLibrary.mediaType')"
+          :disabled="busy || !mediaTypes.length"
+          icon="icon-[lucide--clapperboard]"
+          class="shrink-0"
+          @update:model-value="selectMedia"
+        />
         <Button
           variant="secondary"
           size="icon"
@@ -295,6 +353,7 @@ onMounted(library.initialize)
             data.selected?.summary.workflow_sha256 === entry.workflow_sha256
           "
           @select="library.select"
+          @open="openEntry"
         />
       </div>
       <p v-if="data.page && !data.page.entries.length">
@@ -304,7 +363,7 @@ onMounted(library.initialize)
         <p role="status" class="m-0 mr-auto text-xs text-muted-foreground">
           {{
             t(
-              'testWorkflowLibrary.pageCount',
+              'testWorkflowLibrary.loadedCount',
               {
                 count: data.page.entries.length
               },
@@ -312,16 +371,44 @@ onMounted(library.initialize)
             )
           }}
         </p>
-        <Button variant="secondary" :disabled="busy" @click="search">{{
-          t('testWorkflowLibrary.firstPage')
-        }}</Button>
-        <Button
-          variant="secondary"
-          :disabled="busy || !data.page.next_cursor"
-          @click="library.search(undefined, data.page.next_cursor)"
-          >{{ t('testWorkflowLibrary.nextPage') }}</Button
+        <p
+          v-if="state.phase === 'loading-more'"
+          role="status"
+          class="m-0 text-sm"
         >
+          {{ t('g.loading') }}
+        </p>
+        <p
+          v-else-if="state.phase === 'page-failed'"
+          role="alert"
+          class="m-0 text-sm"
+        >
+          {{
+            t('testWorkflowLibrary.nextPageFailed', {
+              status: state.status || t('testWorkflowLibrary.invalidResponse')
+            })
+          }}
+        </p>
+        <Button
+          v-if="state.phase === 'page-failed'"
+          variant="secondary"
+          @click="library.loadMore"
+          >{{ t('testWorkflowLibrary.retry') }}</Button
+        >
+        <p
+          v-else-if="!hasMore"
+          role="status"
+          class="m-0 text-xs text-muted-foreground"
+        >
+          {{ t('testWorkflowLibrary.endOfResults') }}
+        </p>
       </div>
+      <div
+        v-if="hasMore && state.phase === 'ready'"
+        ref="loadTrigger"
+        data-testid="workflow-load-more"
+        class="h-1 shrink-0"
+      />
     </template>
     <template #rightPanel>
       <TestWorkflowDetails

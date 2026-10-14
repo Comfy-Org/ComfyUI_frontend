@@ -64,19 +64,48 @@ export function createCommunityWorkflowRequest(
     }
     const root = '/test-workflow-library/collections/harvey-qa'
     if (url.pathname === `${root}/facets`) {
-      const values = (key: 'tags' | 'tasks' | 'packs' | 'models') =>
+      const values = (
+        key: 'tags' | 'tasks' | 'packs' | 'models' | 'partner_nodes'
+      ) =>
         [
-          ...new Set(entries.flatMap((entry) => entry[key]).filter(Boolean))
+          ...new Set(
+            entries.flatMap((entry) => entry[key] ?? []).filter(Boolean)
+          )
         ].sort()
       return Response.json({
         tags: values('tags'),
         tasks: values('tasks'),
         packs: values('packs'),
         models: values('models'),
+        partner_nodes: values('partner_nodes'),
+        media_types: [
+          ...new Set(
+            entries.flatMap((entry) =>
+              entry.media_type ? [entry.media_type] : []
+            )
+          )
+        ].sort(),
         truncated: false
       })
     }
     if (url.pathname === `${root}/entries`) {
+      const partner = url.searchParams.get('partner_node')
+      const media = url.searchParams.get('media_type')
+      if (
+        (partner || media) &&
+        !entries.some(
+          (entry) =>
+            entry.partner_nodes !== undefined || entry.media_type !== undefined
+        )
+      )
+        return Response.json({}, { status: 400 })
+      if (
+        media !== null &&
+        media !== 'image' &&
+        media !== 'video' &&
+        media !== 'other'
+      )
+        return Response.json({}, { status: 400 })
       const terms = (url.searchParams.get('q') ?? '')
         .toLowerCase()
         .trim()
@@ -90,11 +119,14 @@ export function createCommunityWorkflowRequest(
           ...entry.tasks,
           ...entry.packs,
           ...entry.models,
-          ...entry.node_types
+          ...entry.node_types,
+          ...(entry.partner_nodes ?? [])
         ]
           .join(' ')
           .toLowerCase()
         if (!terms.every((term) => text.includes(term))) return false
+        if (partner && !entry.partner_nodes?.includes(partner)) return false
+        if (media && entry.media_type !== media) return false
         for (const [filter, key] of [
           ['tag', 'tags'],
           ['task', 'tasks'],

@@ -68,6 +68,20 @@ paths:
           schema:
             type: string
             maxLength: 2000
+        - name: partner_node
+          in: query
+          description: Exact native API node class ID. AND with every other filter.
+          schema:
+            type: string
+            maxLength: 500
+        - name: media_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - image
+              - video
+              - other
         - name: complexity
           in: query
           schema:
@@ -101,10 +115,10 @@ paths:
       tags:
         - test-workflow-library
       operationId: getTestWorkflowFacets
-      summary: Bounded facet choices for the authenticated collection
+      summary: Complete facet choices for the authenticated collection
       responses:
         '200':
-          description: Maximum 100 values per facet, truncation indicated
+          description: Collection-wide model, pack, task, tag, native API node and media choices
           content:
             application/json:
               schema:
@@ -457,6 +471,25 @@ components:
         - unresolved_pack_count
         - verified
       properties:
+        models:
+          type: array
+          items:
+            type: string
+        packs:
+          type: array
+          items:
+            type: string
+        partner_nodes:
+          type: array
+          items:
+            type: string
+        media_type:
+          type: string
+          enum:
+            - image
+            - video
+            - other
+          description: Media represented by explicit graph types/native schemas; no execution claim.
         workflow_sha256:
           type: string
         metadata_sha256:
@@ -491,6 +524,11 @@ components:
         - unresolved
         - next_cursor
       properties:
+        corpus_version:
+          type: string
+        archive_only:
+          type: integer
+          minimum: 0
         entries:
           type: array
           items:
@@ -511,7 +549,21 @@ components:
         - packs
         - models
         - truncated
+        - partner_nodes
+        - media_types
       properties:
+        partner_nodes:
+          type: array
+          items:
+            type: string
+        media_types:
+          type: array
+          items:
+            type: string
+            enum:
+              - image
+              - video
+              - other
         tags:
           type: array
           items:

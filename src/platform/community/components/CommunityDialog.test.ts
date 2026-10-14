@@ -89,6 +89,8 @@ beforeEach(() => {
         tasks: entry.tasks,
         packs: entry.packs,
         models: entry.models,
+        partner_nodes: [],
+        media_types: [],
         truncated: false
       })
     if (route.startsWith(`${libraryRoot}/entries?`))
