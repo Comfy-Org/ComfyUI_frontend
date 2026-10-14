@@ -28,8 +28,8 @@ measured costs.
    `DECISION PENDING`. Same shape as BE-17672.
 3. **Merge cloud#13014**, then run `/add-rates app-proxy`. Set `starting_at` in
    `rates.json` and `products.yaml` to the apply day; both say 2026-10-12 now.
-4. **Add a browser test with a faked app proxy**, as
-   `e2e/fixtures/reshootProxy.ts` does for Re-shoot. Not started.
+4. **Browser test with a faked app proxy**: done, `e2e/openjutsu.spec.ts` with
+   `e2e/fixtures/openjutsuProxy.ts`.
 5. **Run one swap through the staging app proxy** with a signed-in account and
    check the quote, the charge and a refusal. Nothing but the local proxy has
    been exercised so far.
