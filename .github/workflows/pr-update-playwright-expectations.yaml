@@ -89,23 +89,28 @@ jobs:
           echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
 
       # Other workflow changes still come from the default branch on this path.
-      - name: Warn when this workflow differs from the default branch
-        if: github.event_name == 'issue_comment'
+      - name: Warn when the update workflows differ from the default branch
         shell: bash
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
 
-          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
+          paths=(
+            .github/workflows/pr-update-playwright-expectations.yaml
+            .github/workflows/snapshot-update-plan.yaml
+            .github/workflows/snapshot-update-commit.yaml
+            .github/actions/stage-rewritten-snapshots
+          )
 
           if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
             echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
             exit 0
           fi
 
-          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
-            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run."
+          changed=$(git diff --name-only FETCH_HEAD -- "${paths[@]}" | paste -sd ' ')
+          if [ -n "$changed" ]; then
+            echo "::warning::This PR modifies ${changed}, but /update-playwright runs the ${DEFAULT_BRANCH} copies. Only the container image is taken from the PR; those changes are NOT in effect for this run."
           fi
 
       - name: Setup frontend
