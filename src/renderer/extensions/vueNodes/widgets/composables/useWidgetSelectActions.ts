@@ -78,12 +78,14 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
     async (widgetValue: string | undefined) => {
-      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+      if (!widgetValue) return
+
+      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
+      if (!isHdrImageFilename(filepath)) return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
       const separatorIndex = filepath.lastIndexOf('/')
       setPreviewImage({
         filename: filepath.slice(separatorIndex + 1),
