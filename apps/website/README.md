@@ -59,8 +59,9 @@ back to English. The catalog test compiles every message in every locale.
 nested feature key.
 
 Write new and changed copy in the English catalog only. Do not add or edit
-other locales by hand: the generation workflow below translates it after it
-merges, and until then those strings render in English.
+eligible copy in other locales by hand: the generation workflow below
+translates it after it merges, and until then those strings render in English.
+People maintain the excluded namespaces listed below.
 Catalog files use two-space JSON indentation and a final newline. Legal and
 content pages render their sections in the order they appear in the catalog, so
 keep `en/main.json` in document order and never sort its keys.
@@ -101,11 +102,11 @@ have no `/ja/` route yet. Generation never enables routes or indexing.
 The `i18n: Update Website` workflow runs when English catalogs or translation
 config change on main, and daily. It opens or updates one
 `fix(website): update locale catalogs` PR from the `i18n/website-locales`
-branch. Each run regenerates that branch from main, so merge the PR before
-editing its translations by hand. A string the model keeps getting wrong is
-left out, so it renders in English, and is retried on the next run; the rest
-of the file is still written. Running the workflow by hand on another branch
-commits the translations to that branch instead.
+branch. While that PR is open, each run merges main into the branch and
+translates only what changed, so translations edited on the branch are kept.
+When the branch conflicts with main, the run regenerates it from main instead.
+Running the workflow by hand on another branch commits the translations to that
+branch instead.
 
 Inside this package, run `pnpm locale:check` for an offline preflight, or
 `pnpm locale` with `OPENAI_API_KEY` to translate eligible missing or changed
@@ -122,8 +123,10 @@ protected-token violations as JSON-encoded key paths, such as
 `["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
 blob is missing, `locale:check` warns and skips change detection and token
 validation for that file, and `pnpm locale` fails. When a translation request
-for an entry file fails, its English, locale catalogs and manifest entry keep
-their previous contents.
+for an entry file throws, such as an HTTP or network error, its English, locale
+catalogs and manifest entry keep their previous contents. Strings the provider
+defers or the model keeps getting wrong are left out and retried on the next
+run.
 
 Commit the generated English catalog, locale catalogs and manifest together. If
 you edit any of them after generation, run `pnpm locale` again before

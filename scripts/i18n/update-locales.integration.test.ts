@@ -386,76 +386,75 @@ describe('failure isolation', () => {
 
   const aFiles = ['en/a.json', 'ja/a.json', 'zh-CN/a.json']
 
-  it.for([
-    {
-      label: 'the provider fails',
-      translator: () =>
-        createTranslator(
-          undefined,
-          (locale, item) =>
-            locale === 'zh-CN' && item.context.startsWith('a.json:')
-        ),
-      failures: ['zh-CN/a.json: provider unavailable']
-    }
-  ])(
-    'discards one entry file when $label while another file is written',
-    async ({ translator, failures }) => {
-      const repo = createTwoFileRepo()
-      const before = repo.readTree()
-      const recordedA = repo.blobId({ alpha: 'Alpha' })
-
-      const error = await repo.run(false, translator().translate).then(
-        () => undefined,
-        (rejection: unknown) => String(rejection)
-      )
-
-      expect(error).toContain(`Translation failed for ${failures.length}`)
-      expect(error?.split('\n')).toEqual(
-        expect.arrayContaining(
-          failures.map((failure) => expect.stringContaining(failure))
-        )
-      )
-      const after = repo.readTree()
-      expect(aFiles.map((file) => after[file])).toEqual(
-        aFiles.map((file) => before[file])
-      )
-      expect(after['ja/b.json']).toBe(
-        json({ delta: '[ja] Delta', gamma: 'ガンマ' })
-      )
-      expect(after['zh-CN/b.json']).toBe(
-        json({ delta: '[zh-CN] Delta', gamma: '伽马' })
-      )
-      expect(repo.readManifest()).toEqual({
-        version: 1,
-        files: {
-          'a.json': recordedA,
-          'b.json': repo.blobId({ delta: 'Delta', gamma: 'Gamma' })
-        },
-        knownViolations: { 'a.json': ['["alpha"]'] }
-      })
-    }
-  )
-})
-
-describe('strings rejected on every attempt', () => {
-  it('writes the rest of the file, leaves them out, and retries them next run', async () => {
-    const repo = createCatalogRepo()
-    const english = { greeting: 'Hello {name}', title: 'Title' }
-    repo.writeCatalog('en/main.json', english)
-    repo.writeText(manifestFile, json({ version: 1, files: {} }))
-    const corrupting = createTranslator((locale, item) =>
-      `[${locale}] ${item.source}`.replace(' {name}', '')
+  it('discards one entry file when the provider fails while another file is written', async () => {
+    const repo = createTwoFileRepo()
+    const before = repo.readTree()
+    const recordedA = repo.blobId({ alpha: 'Alpha' })
+    const failingZhA = createTranslator(
+      undefined,
+      (locale, item) => locale === 'zh-CN' && item.context.startsWith('a.json:')
     )
 
-    const error = await repo.run(false, corrupting.translate).then(
+    const error = await repo.run(false, failingZhA.translate).then(
       () => undefined,
       (rejection: unknown) => String(rejection)
     )
 
-    expect(error).toContain('2 strings were rejected on every attempt')
-    expect(error).toContain('ja/main.json: main.json: greeting')
+    expect(error).toContain(
+      'Translation failed for 1 locale files:\nzh-CN/a.json: provider unavailable'
+    )
+    const after = repo.readTree()
+    expect(aFiles.map((file) => after[file])).toEqual(
+      aFiles.map((file) => before[file])
+    )
+    expect(after['ja/b.json']).toBe(
+      json({ delta: '[ja] Delta', gamma: 'ガンマ' })
+    )
+    expect(after['zh-CN/b.json']).toBe(
+      json({ delta: '[zh-CN] Delta', gamma: '伽马' })
+    )
+    expect(repo.readManifest()).toEqual({
+      version: 1,
+      files: {
+        'a.json': recordedA,
+        'b.json': repo.blobId({ delta: 'Delta', gamma: 'Gamma' })
+      },
+      knownViolations: { 'a.json': ['["alpha"]'] }
+    })
+  })
+})
+
+describe('strings with no valid translation after every attempt', () => {
+  it('leaves out strings one locale rejects and retries only those next run', async () => {
+    const repo = createCatalogRepo()
+    repo.recordEnglish({ 'main.json': { greeting: 'Hi {name}' } })
+    const english = {
+      greeting: 'Hello {name}',
+      steps: ['Step {name}', 'Plain'],
+      title: 'Title'
+    }
+    repo.writeCatalog('en/main.json', english)
+    repo.writeCatalog('ja/main.json', { greeting: 'やあ {name}' })
+    repo.writeCatalog('zh-CN/main.json', { greeting: '嗨 {name}' })
+    const corruptingJapanese = createTranslator((locale, item) =>
+      locale === 'ja'
+        ? `[ja] ${item.source}`.replace(' {name}', '')
+        : `[${locale}] ${item.source}`
+    )
+
+    const error = await repo.run(false, corruptingJapanese.translate).then(
+      () => undefined,
+      (rejection: unknown) => String(rejection)
+    )
+
+    expect(error).toContain(
+      '2 strings had no valid translation after every attempt'
+    )
+    expect(error).toContain('ja/main.json: main.json: steps[0]')
     expect(repo.readCatalog('ja/main.json')).toEqual({ title: '[ja] Title' })
     expect(repo.readCatalog('zh-CN/main.json')).toEqual({
+      greeting: '[zh-CN] Hello {name}',
+      steps: ['[zh-CN] Step {name}', '[zh-CN] Plain'],
       title: '[zh-CN] Title'
     })
     expect(repo.readManifest()).toEqual({
@@ -466,8 +465,7 @@ describe('strings rejected on every attempt', () => {
     const healthy = createTranslator()
     expect((await repo.run(false, healthy.translate)).status).toBe(0)
     expect(healthy.sourcesByLocale()).toEqual({
-      ja: ['Hello {name}'],
-      'zh-CN': ['Hello {name}']
+      ja: ['Hello {name}', 'Step {name}', 'Plain']
     })
   })
 })

@@ -391,7 +391,10 @@ export async function translateLocaleItems(
     | 'maxTranslationRounds'
     | 'strictProtectedTokens'
   >
-): Promise<{ translated: Map<string, string>; failed: TranslationItem[] }> {
+): Promise<{
+  translated: Map<string, string>
+  untranslated: TranslationItem[]
+}> {
   const translated = new Map<string, string>()
   let remaining = [...items]
 
@@ -439,5 +442,5 @@ export async function translateLocaleItems(
     remaining = failed
   }
 
-  return { translated, failed: remaining }
+  return { translated, untranslated: remaining }
 }
