@@ -240,7 +240,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(
       '{"count":"7","self":"[Circular]"}'
     )
   })
@@ -262,7 +262,9 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith('[unserializable detail]')
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(
+      '[unserializable detail]'
+    )
   })
 
   it('bounds retained details and truncates excerpts on code-point boundaries', async () => {
@@ -279,19 +281,19 @@ describe('CrdtDevPanel clipboard controls', () => {
       name: 'Copy log detail'
     })
     await user.click(detailButtons[1])
-    expect(writeText.mock.calls[0][0]).toHaveLength(20_001)
-    expect(writeText.mock.calls[0][0]).toMatch(/…$/)
+    expect(copyToClipboard.mock.calls[0][0]).toHaveLength(20_001)
+    expect(copyToClipboard.mock.calls[0][0]).toMatch(/…$/)
   })
 
   it('keeps feedback on the latest click when writes settle out of order', async () => {
-    let resolveFirst: (() => void) | undefined
-    let resolveSecond: (() => void) | undefined
-    writeText
+    let resolveFirst: ((value: boolean) => void) | undefined
+    let resolveSecond: ((value: boolean) => void) | undefined
+    copyToClipboard
       .mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveFirst = resolve))
+        () => new Promise<boolean>((resolve) => (resolveFirst = resolve))
       )
       .mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveSecond = resolve))
+        () => new Promise<boolean>((resolve) => (resolveSecond = resolve))
       )
     recordDevEvent('doc_nodes_changed', {
       added: ['node-a', 'node-b'],
@@ -304,10 +306,10 @@ describe('CrdtDevPanel clipboard controls', () => {
 
     first.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     second.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    expect(writeText).toHaveBeenCalledTimes(2)
-    resolveSecond?.()
+    expect(copyToClipboard).toHaveBeenCalledTimes(2)
+    resolveSecond?.(true)
     await vi.waitFor(() => expect(second).toHaveTextContent(/^Copied$/))
-    resolveFirst?.()
+    resolveFirst?.(true)
     await flushPromises()
 
     expect(second).toHaveTextContent(/^Copied$/)
@@ -317,19 +319,19 @@ describe('CrdtDevPanel clipboard controls', () => {
   it('does not update feedback after unmount', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      let resolveWrite: (() => void) | undefined
-      writeText.mockImplementationOnce(
-        () => new Promise<void>((resolve) => (resolveWrite = resolve))
+      let resolveWrite: ((value: boolean) => void) | undefined
+      copyToClipboard.mockImplementationOnce(
+        () => new Promise<boolean>((resolve) => (resolveWrite = resolve))
       )
       const panel = renderPanel()
       screen
         .getByRole('button', { name: 'Copy document id' })
         .dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      expect(writeText).toHaveBeenCalledOnce()
+      expect(copyToClipboard).toHaveBeenCalledOnce()
 
       panel.unmount()
       expect(vi.getTimerCount()).toBe(0)
-      resolveWrite?.()
+      resolveWrite?.(true)
       await flushPromises()
 
       expect(vi.getTimerCount()).toBe(0)
