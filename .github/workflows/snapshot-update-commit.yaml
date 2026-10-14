@@ -273,7 +273,7 @@ jobs:
           section-content: ${{ steps.content.outputs.section-content }}
 
       - name: Remove label
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ inputs.pr-number }}
