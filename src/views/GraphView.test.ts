@@ -6,6 +6,7 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -345,5 +346,44 @@ describe('GraphView - partner nodes education card', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('GraphView - deployment pick at startup', () => {
+  const pickGone = 'The deployment you picked no longer exists.'
+
+  beforeEach(() => {
+    const deploymentPick = useDeploymentPickStore()
+    vi.spyOn(deploymentPick, 'loadOnce').mockImplementation(async () => {
+      deploymentPick.state = {
+        phase: 'ready',
+        deployments: [],
+        pickedDeploymentId: 'dep-gone',
+        pickSource: 'browser',
+        defaultDeploymentId: null,
+        gonePickedDeploymentId: null,
+        goneDefaultDeploymentId: null,
+        buildsVisible: true
+      }
+    })
+  })
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it("warns on Cloud that this browser's picked deployment is gone, without opening the account menu", async () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(pickGone)).toBeInTheDocument()
+  })
+
+  it('does not look up the deployment on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+    expect(screen.queryByText(pickGone)).toBeNull()
   })
 })
