@@ -270,6 +270,18 @@ describe('formatReport', () => {
     )
   })
 
+  it('escapes commas and colons in an annotation file property', () => {
+    expect(
+      formatReport(
+        {
+          errors: [],
+          warnings: [{ message: 'unclaimed', file: 'src/a,b:c%.ts' }]
+        },
+        true
+      )
+    ).toBe('::warning file=src/a%2Cb%3Ac%25.ts,title=Architecture::unclaimed\n')
+  })
+
   it('emits one escaped GitHub Actions annotation per finding', () => {
     expect(formatReport(report, true)).toBe(
       '::warning file=src/new.ts,title=Architecture::src/new.ts is unclaimed\n' +

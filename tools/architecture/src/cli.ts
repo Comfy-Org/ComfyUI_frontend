@@ -80,6 +80,9 @@ export function runArchitecture(
 const escapeWorkflowCommand = (text: string) =>
   text.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
 
+const escapeWorkflowProperty = (text: string) =>
+  escapeWorkflowCommand(text).replaceAll(':', '%3A').replaceAll(',', '%2C')
+
 const bulletSection = (title: string, lines: string[]) =>
   lines.length
     ? `${title} (${lines.length}):\n${lines.map((line) => `- ${line}`).join('\n')}\n`
@@ -100,7 +103,7 @@ export function formatReport(
   return [
     ...warnings.map(
       ({ message, file }) =>
-        `::warning file=${file},title=Architecture::${escapeWorkflowCommand(message)}\n`
+        `::warning file=${escapeWorkflowProperty(file)},title=Architecture::${escapeWorkflowCommand(message)}\n`
     ),
     ...errors.map(
       (error) => `::error title=Architecture::${escapeWorkflowCommand(error)}\n`
