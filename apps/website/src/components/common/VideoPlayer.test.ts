@@ -217,6 +217,28 @@ describe('VideoPlayer', () => {
     }
   )
 
+  it('writes the mute toggle to the video element and shows what the element reports', async () => {
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        ariaLabel: 'Clip',
+        persistentControls: true
+      }
+    })
+    const video = screen.getByLabelText('Clip')
+    if (!(video instanceof HTMLVideoElement))
+      throw new Error('Expected the labelled video element')
+    expect(video.muted).toBe(false)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mute' }))
+    expect(video.muted).toBe(true)
+    expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Unmute' }))
+    expect(video.muted).toBe(false)
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
   it('shows play and mute for a paused, unmuted video', async () => {
     render(VideoPlayer, {
       props: { src: 'https://example.com/clip.mp4', muteOnly: true }

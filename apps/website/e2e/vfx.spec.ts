@@ -115,3 +115,30 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
     )
   })
 }
+
+for (const { path, heading, cta, href } of [
+  {
+    path: '/solutions/vfx/',
+    heading: 'Build your custom workflows with our Forward Deployed Creatives',
+    cta: 'LEARN MORE',
+    href: '/forward-deployed-creatives/'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/',
+    heading: '与前沿驻场创意人才一起构建你的定制工作流',
+    cta: '了解更多',
+    href: '/zh-CN/forward-deployed-creatives/'
+  }
+]) {
+  test(`${path} links the Forward Deployed Creatives module below the studio section`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    const module = page.locator('section').filter({
+      has: page.getByRole('heading', { name: heading, exact: true })
+    })
+    await expect(
+      module.getByRole('link', { name: cta, exact: true })
+    ).toHaveAttribute('href', href)
+  })
+}

@@ -171,6 +171,16 @@ function startPlayback() {
   showControls()
 }
 
+// The icon, the element, and the audio must agree: write the element first and
+// read its real `muted` back, so a browser that refuses the change cannot leave
+// the button claiming sound is on.
+function toggleMute() {
+  const video = videoEl.value
+  if (!video) return
+  video.muted = !video.muted
+  muted.value = video.muted
+}
+
 function togglePlayback() {
   if (hideControls || muteOnly) return
   if (isPreview.value) startPlayback()
@@ -399,7 +409,7 @@ function toggleFullscreen() {
         type="button"
         class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"
-        @click="muted = !muted"
+        @click="toggleMute"
       >
         <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
         <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
@@ -517,7 +527,7 @@ function toggleFullscreen() {
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"
-        @click="muted = !muted"
+        @click="toggleMute"
       >
         <VolumeMutedIcon
           v-if="muted"

@@ -24,9 +24,17 @@ const examples = [
     videoSrc:
       'https://media.comfy.org/hub-media/video/8a3a846f-5017-428e-b2a2-24025c55e884.mp4'
   },
-  { id: 'restyling', workflow: vfxWorkflows[1] }
+  {
+    id: 'restyling',
+    workflow: vfxWorkflows[1],
+    videoSrc:
+      'https://media.comfy.org/hub-media/video/93d4af64-c1a4-4a44-8d5a-e1f4d0ea28e3.mp4'
+  }
 ] as const
 const selectedId = ref<(typeof examples)[number]['id']>('upscale')
+// A clip that fails to load falls back to the workflow's poster card instead of
+// a black player that cannot start.
+const failedIds = ref(new Set<string>())
 const selected = computed(
   () =>
     examples.find((example) => example.id === selectedId.value) ?? examples[0]
@@ -83,7 +91,10 @@ const modelLogos = computed(() =>
           </button>
         </div>
 
-        <div v-if="'videoSrc' in selected" class="relative">
+        <div
+          v-if="'videoSrc' in selected && !failedIds.has(selected.id)"
+          class="relative"
+        >
           <VideoPlayer
             :key="selected.id"
             :locale
@@ -92,6 +103,7 @@ const modelLogos = computed(() =>
             :aria-label="t(`vfxV2.proof.${selected.id}`)"
             persistent-controls
             preview
+            @failed="failedIds = new Set(failedIds).add(selected.id)"
           />
           <span
             class="pointer-events-none absolute top-5 left-5 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 text-xs text-primary-comfy-canvas backdrop-blur-sm"
