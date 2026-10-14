@@ -180,6 +180,27 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('keeps the server message and code of a creator-only refusal', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
+        isAxiosError: true,
+        response: {
+          status: 403,
+          data: {
+            code: 'NOT_ORIGINAL_OWNER',
+            message: 'Only the workspace creator can change the plan.'
+          }
+        },
+        message: 'Request failed'
+      })
+
+      await expect(workspaceApi.acceptInvite('token')).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 403,
+        code: 'NOT_ORIGINAL_OWNER',
+        message: 'Only the workspace creator can change the plan.'
+      })
+    })
+
     it.for([
       {
         operation: 'getBillingOpStatus',

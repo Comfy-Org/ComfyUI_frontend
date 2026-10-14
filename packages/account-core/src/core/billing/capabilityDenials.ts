@@ -27,6 +27,23 @@ export type CapabilityDenialReason =
   | 'subscription_change_in_progress'
   /** The server has no guidance for the row — distinct from a deliberate refusal. */
   | 'subscription_status_unrecognized'
+  | 'not_original_owner'
+  | 'creator_only_provisioning'
+  | 'payment_past_due'
+  | 'free_plan'
+  | 'no_subscription'
+  | 'subscription_ended'
+  | 'billing_operation_in_progress'
+  | 'billing_operation_parked'
+  | 'cancellation_scheduled'
+  | 'cancellation_not_scheduled'
+  | 'workspace_sso_attached'
+  | 'personal_workspace'
+  | 'plan_not_ended'
+  | 'membership_managed_by_directory'
+  | 'personal_workspace_creator'
+  | 'workspace_creator'
+  | 'only_owner'
   /**
    * A reason outside the set above. Kept as a reason rather than dropped so a
    * refusal the server explained still reads as explained; the copy it maps to
@@ -40,13 +57,30 @@ const KNOWN_REASONS: ReadonlySet<string> = new Set<CapabilityDenialReason>([
   'tier_not_self_serve',
   'subscription_not_started',
   'subscription_change_in_progress',
-  'subscription_status_unrecognized'
+  'subscription_status_unrecognized',
+  'not_original_owner',
+  'creator_only_provisioning',
+  'payment_past_due',
+  'free_plan',
+  'no_subscription',
+  'subscription_ended',
+  'billing_operation_in_progress',
+  'billing_operation_parked',
+  'cancellation_scheduled',
+  'cancellation_not_scheduled',
+  'workspace_sso_attached',
+  'personal_workspace',
+  'plan_not_ended',
+  'membership_managed_by_directory',
+  'personal_workspace_creator',
+  'workspace_creator',
+  'only_owner'
 ])
 
 /**
- * Only `can_subscribe_self_serve` carries a reason today. The record is open
- * because the server adds keys as policy grows, and a client that rejected an
- * unknown key would fail the whole read over a field it does not use.
+ * The record is open because the server adds keys as policy grows, and a
+ * client that rejected an unknown key would fail the whole read over a field
+ * it does not use.
  */
 export type CapabilityDenials = Readonly<
   Partial<Record<string, CapabilityDenialReason>>

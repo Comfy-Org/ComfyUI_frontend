@@ -44,6 +44,12 @@ const CAPABILITIES = {
   can_downgrade_to_personal: false,
   can_invite_members: false,
   can_manage_members: false,
+  can_delete_workspace: false,
+  can_leave_workspace: false,
+  can_manage_billing: false,
+  can_manage_partner_node_access: false,
+  can_view_pending_invites: false,
+  can_view_team_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_subscribe_self_serve: false,
@@ -393,6 +399,31 @@ describe('createCapabilitiesReader', () => {
       expect(result.value.denials['can_subscribe_self_serve']).toBe(
         'not_workspace_owner'
       )
+    })
+
+    it.for([
+      ['can_subscribe_self_serve', 'not_original_owner'],
+      ['can_subscribe_self_serve', 'creator_only_provisioning'],
+      ['can_top_up', 'payment_past_due'],
+      ['can_cancel', 'billing_operation_parked'],
+      ['can_reactivate', 'cancellation_not_scheduled'],
+      ['can_delete_workspace', 'plan_not_ended'],
+      ['can_leave_workspace', 'workspace_creator'],
+      ['can_leave_workspace', 'only_owner']
+    ])('decodes %s denied for %s', async ([capability, reason]) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ denied_reasons: { [capability]: reason } }))
+      ])
+
+      const result = await createCapabilitiesReader({
+        transport,
+        scopeSource
+      }).read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.denials[capability]).toBe(reason)
     })
 
     it('falls back to the generic reason for a value it does not recognize', async () => {
