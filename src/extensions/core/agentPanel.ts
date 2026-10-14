@@ -556,8 +556,6 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const { flags } = useFeatureFlags()
-  // Off cloud ComfyUI's agent flag enables the panel, so a dev server forces
-  // it on only on cloud or the standalone harness.
   const devForcedOn =
     import.meta.env.MODE === 'development' &&
     (isCloud || import.meta.env.VITE_AGENT_STANDALONE === 'true')

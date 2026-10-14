@@ -163,7 +163,9 @@ const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
 const comfyAgentNotReady = computed(() =>
-  agentPanelStore.enabled ? undefined : agentPanelStore.comfyAgent
+  agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
+    ? undefined
+    : agentPanelStore.comfyAgent
 )
 const showAgentEntry = computed(
   () =>
@@ -172,7 +174,7 @@ const showAgentEntry = computed(
 )
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isOpeningAgent.value) return
+  if (isOpeningAgent.value || comfyAgentNotReady.value) return
   isOpeningAgent.value = true
 
   try {

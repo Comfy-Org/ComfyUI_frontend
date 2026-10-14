@@ -6,14 +6,17 @@
       cn(
         'group no-drag shrink-0 gap-1 rounded-lg',
         active && 'bg-secondary-background-hover',
-        inviting && !active && 'agent-shimmer-outline'
+        inviting && !active && !comfyAgent && 'agent-shimmer-outline',
+        comfyAgent && 'cursor-default opacity-50'
       )
     "
     :aria-pressed="active"
-    :disabled="comfyAgent !== undefined"
+    :aria-disabled="comfyAgent !== undefined || undefined"
     :title="
       comfyAgent?.state === 'failed'
-        ? $t('agent.entryFailedReason', { reason: comfyAgent.reason })
+        ? $t('agent.entryFailedReason', {
+            reason: comfyAgent.reason ?? 'unknown'
+          })
         : undefined
     "
   >
@@ -49,7 +52,7 @@ const {
   active?: boolean
   /** Draw attention to the button for a user who has never opened the panel. */
   inviting?: boolean
-  /** ComfyUI's agent while it is not ready: shown, but not clickable. */
+  /** ComfyUI's agent while it is not ready: shown, but inert. */
   comfyAgent?: AgentStatusWsMessage
 }>()
 </script>

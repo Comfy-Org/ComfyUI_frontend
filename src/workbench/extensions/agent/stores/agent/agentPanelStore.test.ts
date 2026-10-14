@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -34,6 +34,10 @@ describe('agentPanelStore engagement telemetry', () => {
   })
 
   it("opens the event socket at ComfyUI's agent url, under ComfyUI's base", () => {
+    onTestFinished(() => {
+      api.api_base = ''
+      api.serverFeatureFlags.value = {}
+    })
     const store = useAgentPanelStore()
     expect(store.agentEventsUrl).toBe(api.apiURL('/agent/events'))
 
@@ -47,8 +51,20 @@ describe('agentPanelStore engagement telemetry', () => {
       agent: { state: 'ready', url: 'http://127.0.0.1:9000/a', reason: null }
     }
     expect(store.agentEventsUrl).toBe('http://127.0.0.1:9000/a/events')
-    api.api_base = ''
-    api.serverFeatureFlags.value = {}
+  })
+
+  it("leaves the standalone harness on its own agent, not ComfyUI's", () => {
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', url: 'http://127.0.0.1:9000/a', reason: null }
+    }
+    const store = useAgentPanelStore()
+
+    expect(store.comfyAgent).toBeUndefined()
+    expect(store.agentEventsUrl).toBe(api.apiURL('/agent/events'))
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

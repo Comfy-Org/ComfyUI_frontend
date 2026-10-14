@@ -221,6 +221,7 @@ describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     api.serverFeatureFlagsSettled.value = false
+    api.serverFeatureFlags.value = {}
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -243,33 +244,6 @@ describe('WorkflowTabs agent entry button', () => {
 
   // The separator divides the button off from the avatar, so it must leave
   // with it rather than trailing the icon group.
-  it("shows ComfyUI's agent starting, then failed with its reason, without opening", async () => {
-    const store = useAgentPanelStore()
-    store.enabled = false
-    api.serverFeatureFlags.value = {
-      agent: { state: 'starting', url: null, reason: null }
-    }
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: enMessages.agent.entryStarting })
-    ).toBeDisabled()
-
-    api.serverFeatureFlags.value = {
-      agent: { state: 'failed', url: null, reason: 'not_found' }
-    }
-    await nextTick()
-    const failed = screen.getByRole('button', {
-      name: enMessages.agent.entryFailed
-    })
-    expect(failed).toBeDisabled()
-    expect(failed).toHaveAttribute(
-      'title',
-      'ComfyUI could not start the agent: not_found'
-    )
-    api.serverFeatureFlags.value = {}
-  })
-
   it('takes the separator away with the button when the flag is off', () => {
     useAgentPanelStore().enabled = false
     renderComponent()
@@ -283,6 +257,59 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(screen.getByTestId('agent-entry-separator')).toBeInTheDocument()
+  })
+
+  it("shows ComfyUI's agent starting, then failed with its reason, inert until ready", async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', url: null, reason: null }
+    }
+    const { user } = renderComponent()
+
+    const starting = screen.getByRole('button', {
+      name: enMessages.agent.entryStarting
+    })
+    expect(starting).toHaveAttribute('aria-disabled', 'true')
+    await user.click(starting)
+    expect(withConsent).not.toHaveBeenCalled()
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'failed', url: null, reason: 'not_found' }
+    }
+    await nextTick()
+    const failed = screen.getByRole('button', {
+      name: enMessages.agent.entryFailed
+    })
+    expect(failed).toHaveAttribute('aria-disabled', 'true')
+    expect(failed).toHaveAttribute(
+      'title',
+      'ComfyUI could not start the agent: not_found'
+    )
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', url: '/api/agent', reason: null }
+    }
+    store.enabled = true
+    await nextTick()
+    const ready = screen.getByRole('button', {
+      name: enMessages.agent.entryButton
+    })
+    expect(ready).not.toHaveAttribute('aria-disabled')
+    await user.click(ready)
+    expect(withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('hides the entry button when the agent is ready but the panel extension is off', () => {
+    useAgentPanelStore().enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', url: '/api/agent', reason: null }
+    }
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
+    ).toBeNull()
   })
 
   // Two entry controls once shipped side by side after a merge, which broke

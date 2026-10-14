@@ -45,8 +45,6 @@ if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
 } else {
-  // Enabled by ComfyUI's `agent` feature, or by the local agent harness
-  // (VITE_AGENT_STANDALONE).
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
 }
