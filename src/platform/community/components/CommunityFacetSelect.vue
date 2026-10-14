@@ -12,6 +12,8 @@ import {
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import {
   selectContentClass,
   selectItemVariants,
@@ -24,11 +26,15 @@ import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 const {
   label,
   options = [],
-  disabled = false
+  disabled = false,
+  icon,
+  defaultValue
 } = defineProps<{
   label: string
   options?: SelectOption[]
   disabled?: boolean
+  icon?: string
+  defaultValue?: string
 }>()
 const selected = defineModel<string | undefined>({ required: true })
 const isOpen = ref(false)
@@ -68,12 +74,43 @@ function onKeydown(event: KeyboardEvent) {
       <ComboboxTrigger
         role="combobox"
         :aria-label="label"
-        :class="selectTriggerVariants({ size: 'lg', border: 'none' })"
+        :title="icon ? `${label}: ${selectedName || label}` : undefined"
+        :class="
+          cn(
+            selectTriggerVariants({
+              size: icon ? 'md' : 'lg',
+              border:
+                icon && selected && selected !== defaultValue
+                  ? 'active'
+                  : 'none'
+            }),
+            icon && 'w-11 justify-center gap-1'
+          )
+        "
       >
-        <span class="min-w-0 flex-1 truncate px-2 text-left text-sm">{{
-          selectedName || label
-        }}</span>
-        <i class="icon-[lucide--chevron-down] size-4 shrink-0" />
+        <i
+          v-if="icon"
+          :class="cn(icon, 'size-4 shrink-0')"
+          aria-hidden="true"
+        />
+        <span
+          :class="
+            cn(
+              'min-w-0 flex-1 truncate px-2 text-left text-sm',
+              icon && 'sr-only'
+            )
+          "
+          >{{ selectedName || label }}</span
+        >
+        <i
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] shrink-0',
+              icon ? 'size-3' : 'size-4'
+            )
+          "
+          aria-hidden="true"
+        />
       </ComboboxTrigger>
     </ComboboxAnchor>
     <ComboboxPortal>
@@ -81,7 +118,7 @@ function onKeydown(event: KeyboardEvent) {
         position="popper"
         :side-offset="8"
         align="start"
-        :class="selectContentClass"
+        :class="cn(selectContentClass, icon && 'p-1')"
         :style="liftedContentStyle"
         @keydown="onKeydown"
         @focus-outside.prevent
@@ -91,14 +128,26 @@ function onKeydown(event: KeyboardEvent) {
             v-model="query"
             :aria-label="$t('community.searchFacet', { label })"
             :placeholder="$t('community.searchFacet', { label })"
-            class="m-2 w-64 rounded-md border border-border-default bg-secondary-background px-3 py-2 text-sm outline-none focus-visible:ring-1"
+            :class="
+              cn(
+                'm-2 w-64 rounded-md border border-border-default bg-secondary-background px-3 py-2 text-sm outline-none focus-visible:ring-1',
+                icon && 'm-1 w-56 px-2 py-1.5'
+              )
+            "
           />
-          <ComboboxViewport class="max-h-80 min-w-72 overflow-y-auto">
+          <ComboboxViewport
+            :class="cn('max-h-80 min-w-72 overflow-y-auto', icon && 'min-w-60')"
+          >
             <ComboboxItem
               v-for="option in visible"
               :key="option.value"
               :value="option.value"
-              :class="selectItemVariants({ layout: 'single' })"
+              :class="
+                cn(
+                  selectItemVariants({ layout: 'single' }),
+                  icon && 'gap-2 py-1.5'
+                )
+              "
             >
               <span class="truncate">{{ option.name }}</span>
             </ComboboxItem>

@@ -25,7 +25,7 @@
         role="toolbar"
         :aria-label="$t('g.filter')"
         data-testid="registry-filter-bar"
-        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1"
+        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1"
       >
         <SearchInput
           v-model="query"
@@ -45,21 +45,27 @@
           v-model="tag"
           :options="tagOptions"
           :label="$t('community.workflowTags')"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--tags]"
+          default-value="__community_all__"
+          class="shrink-0"
         />
-        <SingleSelect
+        <CommunityFacetSelect
           v-if="!showUserNodes"
           v-model="version"
           :options="versionOptions"
           :label="$t('customNodePacks.registry.nodeVersion')"
-          class="w-36 shrink-0"
+          icon="icon-[lucide--braces]"
+          default-value="all"
+          class="shrink-0"
         />
-        <SingleSelect
+        <CommunityFacetSelect
           v-if="!showUserNodes"
           v-model="sort"
           :options="sortOptions"
           :label="$t('g.sort')"
-          class="w-36 shrink-0"
+          icon="icon-[lucide--arrow-down-a-z]"
+          default-value="name"
+          class="shrink-0"
         />
         <Button
           v-if="!showUserNodes"
@@ -68,6 +74,7 @@
           class="shrink-0"
           :disabled="busy"
           :aria-label="$t('customNodePacks.registry.refresh')"
+          :title="$t('customNodePacks.registry.refresh')"
           @click="refresh"
         >
           <i class="icon-[lucide--refresh-cw] size-4" />
@@ -180,7 +187,6 @@ import { useI18n } from 'vue-i18n'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useCloudNodeRegistry } from '@/platform/customNodes/composables/useCloudNodeRegistry'

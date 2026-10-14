@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import CommunityFacetSelect from '@/platform/community/components/CommunityFacetSelect.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import type { api } from '@/scripts/api'
@@ -132,7 +131,7 @@ onMounted(library.initialize)
         role="toolbar"
         :aria-label="t('g.filter')"
         data-testid="workflow-filter-bar"
-        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1"
+        class="flex scrollbar-custom min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1"
       >
         <SearchInput
           v-model="query"
@@ -144,17 +143,22 @@ onMounted(library.initialize)
         />
         <Button
           variant="secondary"
+          size="icon"
           class="shrink-0"
           :disabled="busy"
+          :aria-label="t('g.search')"
+          :title="t('g.search')"
           @click="search"
-          >{{ t('g.search') }}</Button
         >
-        <SingleSelect
+          <i class="icon-[lucide--search] size-4" aria-hidden="true" />
+        </Button>
+        <CommunityFacetSelect
           :model-value="collection || undefined"
           :options="collections"
           :label="t('testWorkflowLibrary.collection')"
           :disabled="busy"
-          class="w-44 shrink-0"
+          icon="icon-[lucide--library]"
+          class="shrink-0"
           @update:model-value="choose"
         />
         <CommunityFacetSelect
@@ -162,7 +166,8 @@ onMounted(library.initialize)
           :options="tags"
           :label="t('testWorkflowLibrary.tags')"
           :disabled="busy"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--tags]"
+          class="shrink-0"
           @update:model-value="search"
         />
         <CommunityFacetSelect
@@ -170,7 +175,8 @@ onMounted(library.initialize)
           :options="tasks"
           :label="t('testWorkflowLibrary.tasks')"
           :disabled="busy"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--list-checks]"
+          class="shrink-0"
           @update:model-value="search"
         />
         <CommunityFacetSelect
@@ -178,7 +184,8 @@ onMounted(library.initialize)
           :options="packs"
           :label="t('testWorkflowLibrary.packs')"
           :disabled="busy"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--package]"
+          class="shrink-0"
           @update:model-value="search"
         />
         <CommunityFacetSelect
@@ -186,32 +193,42 @@ onMounted(library.initialize)
           :options="models"
           :label="t('testWorkflowLibrary.models')"
           :disabled="busy"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--box]"
+          class="shrink-0"
           @update:model-value="search"
         />
-        <SingleSelect
+        <CommunityFacetSelect
           :model-value="complexity"
           :options="complexities"
           :label="t('testWorkflowLibrary.complexity')"
           :disabled="busy"
-          class="w-28 shrink-0"
+          icon="icon-[lucide--gauge]"
+          class="shrink-0"
           @update:model-value="selectComplexity"
         />
         <Button
           variant="secondary"
+          size="icon"
           class="shrink-0"
           :disabled="busy || !collection"
+          :aria-label="t('testWorkflowLibrary.resetFilters')"
+          :title="t('testWorkflowLibrary.resetFilters')"
           @click="resetFilters"
-          >{{ t('testWorkflowLibrary.resetFilters') }}</Button
         >
+          <i class="icon-[lucide--rotate-ccw] size-4" aria-hidden="true" />
+        </Button>
         <Button
           v-if="cluster"
           variant="secondary"
+          size="icon"
           class="shrink-0"
           :disabled="busy"
+          :aria-label="t('testWorkflowLibrary.clearCluster')"
+          :title="t('testWorkflowLibrary.clearCluster')"
           @click="clearCluster"
-          >{{ t('testWorkflowLibrary.clearCluster') }}</Button
         >
+          <i class="icon-[lucide--unlink] size-4" aria-hidden="true" />
+        </Button>
       </div>
     </template>
     <template #contentFilter>
