@@ -83,15 +83,19 @@ function timelineBadgeClass(id: string) {
       <li
         v-for="step in steps"
         :key="step.id"
-        class="relative pb-10 text-center"
+        class="relative pb-10 pl-10 text-left before:absolute before:top-2 before:-bottom-2 before:left-2 before:w-px before:-translate-x-1/2 before:bg-primary-comfy-yellow/60 last:before:hidden md:pl-0 md:text-center md:before:hidden"
       >
+        <span
+          class="absolute top-2 left-0 size-4 rounded-full bg-primary-comfy-yellow md:hidden"
+          aria-hidden="true"
+        ></span>
         <h3 v-if="step.title" :class="timelineHeadingClass(step.id)">
           {{ step.title }}
         </h3>
         <span :class="timelineBadgeClass(step.id)">
           <span class="inline-block skew-x-12">{{ step.label }}</span>
         </span>
-        <div class="relative mt-12 h-4" aria-hidden="true">
+        <div class="relative mt-12 hidden h-4 md:block" aria-hidden="true">
           <div
             class="absolute top-1/2 h-px w-full bg-primary-comfy-yellow/60"
           ></div>
@@ -99,7 +103,9 @@ function timelineBadgeClass(id: string) {
             class="absolute left-1/2 size-4 -translate-x-1/2 rounded-full bg-primary-comfy-yellow"
           ></div>
         </div>
-        <p class="mt-6 px-6 text-sm/relaxed text-primary-comfy-canvas/70">
+        <p
+          class="mt-4 text-sm/relaxed text-primary-comfy-canvas/70 md:mt-6 md:px-6"
+        >
           {{ step.description }}
         </p>
       </li>

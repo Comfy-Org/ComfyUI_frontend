@@ -10,12 +10,12 @@ const locales = [
   {
     prefix: '',
     details: 'The details',
-    general: 'General',
-    glance: 'What to know before you enter.',
+    howToEnter: 'How to enter',
+    partners: 'Partners',
     timeline: 'Timeline',
     deadline: 'October 30 · 9am PT',
     submit: 'Submit your entry',
-    register: 'Register',
+    buildNight: 'Comfy Build Night: San Francisco',
     question: 'Do I have to attend a Build Night?',
     answer: 'The online competition and the Build Nights are separate.',
     shareAlt: 'Open Source Higgsfield: $25,000 in prizes'
@@ -23,12 +23,12 @@ const locales = [
   {
     prefix: '/zh-CN',
     details: '活动详情',
-    general: '概览',
-    glance: '参赛前需要了解什么。',
+    howToEnter: '如何参赛',
+    partners: '合作伙伴',
     timeline: '时间线',
     deadline: '10 月 30 日 · 太平洋时间上午 9 点',
     submit: '提交作品',
-    register: '报名',
+    buildNight: 'Comfy 构建之夜：旧金山',
     question: '必须参加构建之夜线下活动吗？',
     answer: '线上比赛与构建之夜各自独立。',
     shareAlt: 'Open Source Higgsfield：25,000 美元奖品'
@@ -50,11 +50,15 @@ for (const locale of locales) {
         page.locator(`meta[property="${key}"], meta[name="${key}"]`)
       ).toHaveAttribute('content', locale.shareAlt)
     }
+    const partners = page.getByRole('region', { name: locale.partners })
+    for (const name of ['NVIDIA', 'Runpod']) {
+      await expect(partners.getByRole('img', { name })).toBeVisible()
+    }
     await expect(
       page.getByRole('link', { name: locale.submit }).first()
     ).toHaveAttribute('href', 'https://form.typeform.com/to/V1dSQrkS')
     await expect(
-      page.getByRole('link', { name: locale.register }).first()
+      page.getByRole('link', { name: locale.buildNight }).first()
     ).toHaveAttribute('href', 'https://luma.com/5mydmvu6')
     const question = page.getByRole('button', {
       name: locale.question,
@@ -79,11 +83,11 @@ for (const locale of locales) {
 
     await page
       .getByRole('navigation', { name: locale.details })
-      .getByRole('link', { name: locale.general, exact: true })
+      .getByRole('link', { name: locale.howToEnter, exact: true })
       .click()
     await expect(page).toHaveURL(`${base}#challenge-content`)
     await expect(
-      page.getByRole('heading', { name: locale.glance, exact: true })
+      page.getByRole('heading', { name: locale.howToEnter, exact: true })
     ).toBeInViewport()
   })
 }

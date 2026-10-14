@@ -3,7 +3,6 @@ import Button from '@/components/ui/button/Button.vue'
 
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
-import { resolveRel } from '@/utils/cta'
 
 type Cta = { label: string; href: string; target?: '_blank' }
 
@@ -16,7 +15,6 @@ export interface FeatureStep {
 
 defineProps<{
   heading: string
-  subtitle?: string
   steps: readonly FeatureStep[]
   primaryCta?: Cta
   secondaryCta?: Cta
@@ -25,16 +23,7 @@ defineProps<{
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader>
-      {{ heading }}
-      <template v-if="subtitle" #subtitle>
-        <p
-          class="mx-auto mt-6 max-w-2xl text-base text-primary-comfy-canvas/70"
-        >
-          {{ subtitle }}
-        </p>
-      </template>
-    </SectionHeader>
+    <SectionHeader>{{ heading }}</SectionHeader>
 
     <!-- Step cards in a row, joined by node-union connectors on desktop -->
     <div
@@ -52,7 +41,7 @@ defineProps<{
         </div>
 
         <div
-          class="flex min-w-0 flex-1 flex-col rounded-[40px] border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-2"
+          class="flex flex-1 flex-col rounded-[40px] border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-2"
         >
           <div class="flex flex-1 flex-col gap-4 p-8">
             <div>
@@ -68,15 +57,13 @@ defineProps<{
                 {{ step.title }}
               </h3>
             </div>
-            <p class="wrap-anywhere text-primary-comfy-canvas">
+            <p class="text-primary-comfy-canvas">
               {{ step.description }}
             </p>
           </div>
         </div>
       </template>
     </div>
-
-    <slot />
 
     <div
       v-if="primaryCta || secondaryCta"
@@ -87,7 +74,9 @@ defineProps<{
         as="a"
         :href="primaryCta.href"
         :target="primaryCta.target"
-        :rel="resolveRel(primaryCta)"
+        :rel="
+          primaryCta.target === '_blank' ? 'noopener noreferrer' : undefined
+        "
         size="lg"
         class="w-full lg:w-auto lg:min-w-48"
       >
@@ -98,7 +87,9 @@ defineProps<{
         as="a"
         :href="secondaryCta.href"
         :target="secondaryCta.target"
-        :rel="resolveRel(secondaryCta)"
+        :rel="
+          secondaryCta.target === '_blank' ? 'noopener noreferrer' : undefined
+        "
         variant="outline"
         size="lg"
         class="w-full lg:w-auto lg:min-w-48"

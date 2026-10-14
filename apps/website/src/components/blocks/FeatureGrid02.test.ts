@@ -51,14 +51,4 @@ describe('FeatureGrid02', () => {
 
     expect(screen.getByText('01')).toBeTruthy()
   })
-
-  it('renders a subtitle under the heading and slotted content under the steps', () => {
-    render(FeatureGrid02, {
-      props: { ...requiredProps, subtitle: 'Every submission must include:' },
-      slots: { default: '<p>Requirements</p>' }
-    })
-
-    expect(screen.getByText('Every submission must include:')).toBeTruthy()
-    expect(screen.getByText('Requirements')).toBeTruthy()
-  })
 })
