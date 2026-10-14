@@ -122,11 +122,11 @@ describe('useQueueProgress', () => {
 
     expect(composable.totalProgressStyle.value).toEqual({
       transform: 'scaleX(0.1)',
-      background: 'var(--color-primary)'
+      background: 'var(--primary)'
     })
     expect(composable.currentNodeProgressStyle.value).toEqual({
       transform: 'scaleX(0.25)',
-      background: 'color-mix(in srgb, var(--color-primary) 30%, transparent)'
+      background: 'color-mix(in srgb, var(--primary) 30%, transparent)'
     })
 
     setExecutionProgress(0.755)

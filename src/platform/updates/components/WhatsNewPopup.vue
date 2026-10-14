@@ -429,6 +429,6 @@ defineExpose({
 }
 
 .action-primary:hover {
-  background: var(--accent);
+  background: var(--muted);
 }
 </style>
