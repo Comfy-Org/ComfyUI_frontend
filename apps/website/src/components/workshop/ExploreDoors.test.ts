@@ -17,10 +17,7 @@ describe('ExploreDoors', () => {
           within(door).getByTestId('explore-door-hint').textContent.trim()
         ])
     ).toEqual([
-      [
-        'Run or call any model',
-        'Call the latest models from your code. Try them here first.'
-      ],
+      ['Run or call any model', 'Call the latest models through one API.'],
       ['Download and remix', 'Open the graph and change any step.'],
       ['Make it in one click', 'Upload, click, done. No nodes, no setup.']
     ])

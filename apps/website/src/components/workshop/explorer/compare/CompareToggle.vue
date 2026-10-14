@@ -22,7 +22,7 @@ const checked = defineModel<boolean>({ required: true })
   <label
     :class="
       cn(
-        'inline-flex items-center gap-1.5 rounded-lg bg-primary-comfy-ink/60 px-2 py-1 text-2xs font-semibold text-primary-warm-white backdrop-blur-md transition select-none has-focus-visible:ring-3 has-focus-visible:ring-primary-comfy-yellow/50',
+        'inline-flex h-7 items-center gap-1.5 rounded-lg bg-primary-comfy-ink/60 px-2 text-2xs font-semibold text-primary-warm-white backdrop-blur-md transition select-none has-focus-visible:ring-3 has-focus-visible:ring-primary-comfy-yellow/50',
         disabled
           ? 'cursor-not-allowed opacity-50'
           : 'cursor-pointer hover:bg-primary-comfy-ink/80'

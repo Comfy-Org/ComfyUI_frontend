@@ -743,7 +743,7 @@
       "doorWorkflows": "Workflows",
       "workflowsHint": "Open the graph and change any step.",
       "modelsTitle": "Models",
-      "modelsHint": "Call the latest models from your code. Try them here first.",
+      "modelsHint": "Call the latest models through one API.",
       "communityTitle": "From the community",
       "communityHeading": "See what people make with Comfy",
       "communityBody": "Real work from the community, made in ComfyUI.",

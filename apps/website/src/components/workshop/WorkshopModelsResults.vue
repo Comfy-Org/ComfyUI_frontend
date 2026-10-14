@@ -65,7 +65,7 @@ defineEmits<{
           :locale
           :class="
             cn(
-              'absolute top-4 left-4 z-20 transition-opacity',
+              'absolute top-6 left-6 z-20 transition-opacity',
               !compared.length &&
                 'opacity-0 group-focus-within/compare:opacity-100 group-hover/compare:opacity-100 pointer-coarse:opacity-100'
             )

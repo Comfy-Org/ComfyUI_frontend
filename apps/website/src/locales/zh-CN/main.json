@@ -4755,7 +4755,7 @@
       "doorWorkflows": "工作流",
       "workflowsHint": "打开节点图，修改任意步骤。",
       "modelsTitle": "模型",
-      "modelsHint": "在代码中调用最新模型，也可以先在这里试用。",
+      "modelsHint": "通过一个 API 调用最新模型。",
       "communityTitle": "来自社区",
       "communityHeading": "看看大家用 Comfy 做了什么",
       "communityBody": "社区用 ComfyUI 创作的真实作品。",
