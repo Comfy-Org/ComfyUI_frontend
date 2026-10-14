@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 import ContentTable from '@/components/cms/ContentTable.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
+import AdminTabs from '@/components/cms/ui/AdminTabs.vue'
 import AdminPagination from '@/components/cms/ui/AdminPagination.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
@@ -113,7 +113,7 @@ const emptyText = computed(() => {
       :search-label="t('cmsAdmin.content.search')"
       :locale
     >
-      <AdminSegmented
+      <AdminTabs
         v-model="status"
         :options="statuses"
         :label="t('cmsAdmin.content.statusLabel')"

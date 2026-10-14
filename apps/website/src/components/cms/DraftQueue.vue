@@ -10,7 +10,7 @@ import ListingFilters from '@/components/cms/ListingFilters.vue'
 import RejectDialog from '@/components/cms/RejectDialog.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
+import AdminTabs from '@/components/cms/ui/AdminTabs.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -242,13 +242,13 @@ function rejectOpen() {
         :search-label="t('cmsAdmin.draft.search')"
         :locale
       >
-        <AdminSegmented
+        <AdminTabs
           v-model="tab"
           :options="tabs"
           :label="t('cmsAdmin.stage.tabLabel')"
         />
       </ListingFilters>
-      <p v-if="guidance" class="-mt-2 text-xs text-admin-muted">
+      <p v-if="guidance" class="-mt-1 text-xs text-admin-muted">
         {{ guidance }}
       </p>
       <DraftBulkBar

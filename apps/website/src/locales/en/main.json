@@ -54,7 +54,6 @@
     "draft": {
       "title": "Draft",
       "help": "Approve what should go live, then publish it after a final review.",
-      "all": "All",
       "filter": {
         "MODEL": "Models",
         "WORKFLOW": "Workflows",
@@ -81,7 +80,8 @@
       "team": {
         "title": "Content changes",
         "help": "Saved to the draft by the team. Approve them, leave them for later, or undo one in its panel."
-      }
+      },
+      "allTypes": "All types"
     },
     "review": {
       "position": "{index} of {total}",

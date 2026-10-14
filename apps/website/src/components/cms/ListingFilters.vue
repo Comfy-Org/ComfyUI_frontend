@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
+import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { LISTING_KINDS } from '@/lib/cms/format'
 
+/** A list's views on the left (slot), then its type filter and search on the right. */
 const {
   counts,
   searchLabel,
@@ -19,44 +21,34 @@ const {
 const filter = defineModel<ListingFilter>('filter', { required: true })
 const query = defineModel<string>('query', { required: true })
 const { t } = translationsFor(locale)
-const options = ['ALL', ...LISTING_KINDS] as const
-const label = (option: ListingFilter) =>
-  option === 'ALL'
-    ? t('cmsAdmin.draft.all')
-    : t(`cmsAdmin.draft.filter.${option}`)
+const options = computed(() =>
+  (['ALL', ...LISTING_KINDS] as const).map((value) => ({
+    value,
+    label: `${
+      value === 'ALL'
+        ? t('cmsAdmin.draft.allTypes')
+        : t(`cmsAdmin.draft.filter.${value}`)
+    } (${counts[value]})`
+  }))
+)
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2">
+  <div
+    class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-admin-line"
+  >
     <slot />
-    <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+    <div class="flex w-full items-center gap-2 pb-2 sm:w-auto">
       <div
-        role="group"
-        :aria-label="t('cmsAdmin.draft.filterLabel')"
-        class="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5"
+        class="w-40 shrink-0 [&_button]:h-8 [&_button]:py-0 [&_button]:text-xs"
       >
-        <button
-          v-for="option in options"
-          :key="option"
-          type="button"
-          :aria-pressed="filter === option"
-          :class="
-            cn(
-              'inline-flex h-6.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
-              filter === option
-                ? 'bg-admin-selected text-admin-fg'
-                : 'text-admin-muted hover:text-admin-fg'
-            )
-          "
-          @click="filter = option"
-        >
-          {{ label(option) }}
-          <span class="text-admin-subtle tabular-nums">{{
-            counts[option]
-          }}</span>
-        </button>
+        <AdminSelect
+          v-model="filter"
+          :options
+          :label="t('cmsAdmin.draft.filterLabel')"
+        />
       </div>
-      <label class="relative w-full sm:w-64">
+      <label class="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
         <span class="sr-only">{{ searchLabel }}</span>
         <Search
           class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-admin-muted"

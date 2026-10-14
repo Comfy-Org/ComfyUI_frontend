@@ -54,7 +54,6 @@
     "draft": {
       "title": "草稿",
       "help": "批准要上线的内容，最终审核后发布。",
-      "all": "全部",
       "filter": {
         "MODEL": "模型",
         "WORKFLOW": "工作流",
@@ -81,7 +80,8 @@
       "team": {
         "title": "内容更改",
         "help": "由团队保存到草稿。批准、留到稍后，或在面板中撤销某项。"
-      }
+      },
+      "allTypes": "全部类型"
     },
     "review": {
       "position": "第 {index} 项，共 {total} 项",
